@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Files changed &middot; #482 tariff: cache lane quotes and align rate windows &middot; hollowmill/brine-gateway &middot; Kettleforge</title>
+<link rel="stylesheet" href="../../forge.css">
+</head>
+<body>
+<header class="masthead">
+  <span class="mark">Kettle<em>forge</em></span>
+  <nav>
+    <a href="/forge/">Repositories</a>
+    <a href="/forge/pulls/">Pull requests</a>
+    <a href="/forge/">Anvil</a>
+    <a href="/forge/">Registry</a>
+  </nav>
+  <span class="who">signed in as <b>r.vandermolen</b></span>
+</header>
+
+<div class="crumbbar">
+  <div class="crumb"><a href="/forge/">hollowmill</a><span class="sep">/</span><b>brine-gateway</b><span class="vis">internal</span></div>
+  <div class="tabs">
+    <a href="/forge/">Code</a>
+    <a href="/forge/">Issues<span class="n">12</span></a>
+    <span class="here">Pull requests<span class="n">3</span></span>
+    <a href="/forge/">Anvil</a>
+    <a href="/forge/">Insights</a>
+    <a href="/forge/">Settings</a>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="prhead">
+    <h1>tariff: cache lane quotes and align rate windows <span class="num">#482</span></h1>
+    <div class="prmeta">
+      <span class="state">Open</span>
+      <span><b>t.ashgrove</b> wants to merge 6 commits into <span class="branch">trunk</span> from <span class="branch">tariff-cache-window</span></span>
+    </div>
+  </div>
+
+  <nav class="subtabs">
+    <a href="./">Conversation<span class="n">4</span></a>
+    <a href="./commits.html">Commits<span class="n">6</span></a>
+    <a href="./checks.html">Checks<span class="n">5</span></a>
+    <span class="here">Files changed<span class="n">3</span></span>
+  </nav>
+
+  <section class="reviewbar">
+    <div class="cardhead">Review changes</div>
+    <div class="body">
+      <div class="pending" id="pending">No line comments staged yet. Use the plus button in a line-number gutter to comment on one line.</div>
+      <div class="verdicts">
+        <span><input type="radio" name="verdict" id="v-comment" value="comment"> <label for="v-comment">Comment</label></span>
+        <span><input type="radio" name="verdict" id="v-approve" value="approve"> <label for="v-approve">Approve</label></span>
+        <span><input type="radio" name="verdict" id="v-changes" value="changes"> <label for="v-changes">Request changes</label></span>
+      </div>
+      <textarea id="summary" rows="3" aria-label="Review summary" placeholder="Summary for the author"></textarea>
+      <p><button class="btn primary" id="submitreview">Submit review</button></p>
+      <p class="result" id="result"></p>
+    </div>
+  </section>
+
+  <div id="diff"></div>
+  <div class="gate" id="gate" hidden>The diff for this pull request could not be loaded. Reload the page to start a new review session.</div>
+</main>
+
+<footer class="sitefoot">
+  <div class="links">
+    <a href="/forge/">Status</a>
+    <a href="/forge/">Docs</a>
+    <a href="/forge/">Keyboard shortcuts</a>
+    <a href="/forge/">Privacy</a>
+    <a href="/forge/">Terms</a>
+    <a href="/forge/">Contact support</a>
+  </div>
+  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Ashcombe AS4 2QN. &copy; 2026 Bellhollow Systems Ltd.</div>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const pending = [];
+let sending = false;
+
+const shortOf = (path) => path.split('/').pop().replace(/\.[a-z]+$/, '');
+
+function renderPending() {
+  const box = document.getElementById('pending');
+  box.textContent = '';
+  if (!pending.length) {
+    box.textContent = 'No line comments staged yet. Use the plus button in a line-number gutter to comment on one line.';
+    return;
+  }
+  box.append(document.createTextNode(pending.length + ' line comment(s) staged:'));
+  const ol = document.createElement('ol');
+  for (const c of pending) {
+    const li = document.createElement('li');
+    li.append(document.createTextNode(c.file + ' line ' + c.line + ' '));
+    const drop = document.createElement('button');
+    drop.className = 'unstage';
+    drop.type = 'button';
+    drop.setAttribute('aria-label', 'Remove staged comment on ' + c.file + ' line ' + c.line);
+    drop.textContent = 'Remove';
+    drop.addEventListener('click', () => {
+      const at = pending.indexOf(c);
+      if (at >= 0) pending.splice(at, 1);
+      renderPending();
+    });
+    li.append(drop);
+    ol.append(li);
+  }
+  box.append(ol);
+}
+
+function closeComposer() {
+  for (const row of document.querySelectorAll('tr.cmtrow.open')) row.remove();
+  for (const row of document.querySelectorAll('tr.picked')) row.classList.remove('picked');
+}
+
+function openComposer(button) {
+  const file = button.dataset.file;
+  const line = Number(button.dataset.line);
+  closeComposer();
+  const anchor = button.closest('tr');
+  anchor.classList.add('picked');
+  const row = document.createElement('tr');
+  row.className = 'cmtrow open';
+  const cell = document.createElement('td');
+  cell.colSpan = 4;
+  const who = document.createElement('span');
+  who.className = 'who';
+  who.textContent = file + ' line ' + line;
+  const area = document.createElement('textarea');
+  area.rows = 3;
+  area.setAttribute('aria-label', 'Comment on line ' + line);
+  area.placeholder = 'Leave a comment on this line';
+  // The composer's accessible name never changes: an empty submit reports itself
+  // in its own element so the textarea stays findable by the name it started with.
+  const note = document.createElement('span');
+  note.className = 'cmterr';
+  const add = document.createElement('button');
+  add.className = 'primary';
+  add.textContent = 'Add review comment';
+  const cancel = document.createElement('button');
+  cancel.textContent = 'Cancel';
+  add.addEventListener('click', () => {
+    const body = area.value.trim();
+    if (!body) {
+      note.textContent = 'Write something before adding the comment.';
+      area.focus();
+      return;
+    }
+    note.textContent = '';
+    pending.push({ file, line, body });
+    cell.textContent = '';
+    const done = document.createElement('span');
+    done.className = 'saved';
+    done.textContent = 'Staged comment on line ' + line;
+    const quoted = document.createElement('span');
+    quoted.className = 'who';
+    quoted.textContent = body;
+    cell.append(done, quoted);
+    row.classList.remove('open');
+    renderPending();
+  });
+  cancel.addEventListener('click', closeComposer);
+  cell.append(who, area, add, cancel, note);
+  row.append(cell);
+  anchor.after(row);
+  area.focus();
+}
+
+function gutterCell(row, side, no, file) {
+  const cell = document.createElement('td');
+  cell.className = 'gut ' + side;
+  if (no === null) return cell;
+  cell.append(document.createTextNode(String(no)));
+  if (side === 'new') {
+    const btn = document.createElement('button');
+    btn.className = 'gutbtn';
+    btn.id = 'c-' + shortOf(file) + '-' + no;
+    btn.type = 'button';
+    btn.dataset.file = file;
+    btn.dataset.line = String(no);
+    btn.setAttribute('aria-label', 'Comment on new line ' + no);
+    btn.textContent = '+';
+    btn.addEventListener('click', () => openComposer(btn));
+    cell.append(btn);
+  }
+  return cell;
+}
+
+function diffRow(entry, file) {
+  const tr = document.createElement('tr');
+  tr.className = entry.t === 'add' ? 'add' : entry.t === 'del' ? 'del' : 'ctx';
+  tr.append(gutterCell(tr, 'old', entry.oldNo ?? null, file));
+  tr.append(gutterCell(tr, 'new', entry.newNo ?? null, file));
+  const mark = document.createElement('td');
+  mark.className = 'mark';
+  mark.textContent = entry.t === 'add' ? '+' : entry.t === 'del' ? '-' : '';
+  tr.append(mark);
+  const code = document.createElement('td');
+  code.className = 'code';
+  const span = document.createElement('span');
+  span.className = 'ln';
+  span.textContent = entry.s;
+  code.append(span);
+  tr.append(code);
+  return tr;
+}
+
+function renderFile(file) {
+  const box = document.createElement('section');
+  box.className = 'filebox';
+  box.id = 'f-' + shortOf(file.path);
+  const head = document.createElement('div');
+  head.className = 'filehead';
+  const path = document.createElement('a');
+  path.className = 'path';
+  path.href = '#f-' + shortOf(file.path);
+  path.textContent = file.path;
+  const counts = document.createElement('span');
+  counts.className = 'counts';
+  const plus = document.createElement('span');
+  plus.className = 'plus';
+  plus.textContent = '+' + file.additions;
+  const minus = document.createElement('span');
+  minus.className = 'minus';
+  minus.textContent = ' -' + file.deletions;
+  counts.append(plus, minus);
+  head.append(path, counts);
+  const body = document.createElement('div');
+  body.className = 'filebody';
+  const table = document.createElement('table');
+  table.className = 'diff';
+  const tbody = document.createElement('tbody');
+  for (const hunk of file.hunks) {
+    const head2 = document.createElement('tr');
+    head2.className = 'hunk';
+    const gut = document.createElement('td');
+    gut.className = 'gut';
+    gut.colSpan = 2;
+    if (hunk.expand.length) {
+      const exp = document.createElement('button');
+      exp.className = 'expander';
+      exp.type = 'button';
+      exp.setAttribute('aria-label', 'Expand ' + hunk.expand.length + ' unchanged lines');
+      exp.textContent = 'Expand ' + hunk.expand.length;
+      exp.addEventListener('click', () => {
+        for (const entry of hunk.expand) head2.before(diffRow(entry, file.path));
+        exp.remove();
+      });
+      gut.append(exp);
+    }
+    head2.append(gut);
+    const mark = document.createElement('td');
+    mark.className = 'mark';
+    head2.append(mark);
+    const code = document.createElement('td');
+    code.className = 'code';
+    const span = document.createElement('span');
+    span.className = 'ln';
+    span.textContent = hunk.header;
+    code.append(span);
+    head2.append(code);
+    tbody.append(head2);
+    for (const entry of hunk.rows) tbody.append(diffRow(entry, file.path));
+  }
+  table.append(tbody);
+  body.append(table);
+  box.append(head, body);
+  return box;
+}
+
+// Reviews can be submitted more than once, as on a real code host: the staged
+// comments stay staged, so a wrong verdict is corrected by picking the right
+// radio and submitting again.
+async function submitReview() {
+  if (sending) return;
+  const result = document.getElementById('result');
+  const chosen = document.querySelector('input[name=verdict]:checked');
+  if (!chosen) {
+    result.className = 'result bad';
+    result.textContent = 'Choose Comment, Approve or Request changes.';
+    return;
+  }
+  sending = true;
+  try {
+    const res = await fetch('/api/forge/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nonce: NONCE,
+        verdict: chosen.value,
+        summary: document.getElementById('summary').value,
+        comments: pending,
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.ok) {
+      result.className = 'result bad';
+      result.textContent = body.error || 'The review could not be submitted.';
+      return;
+    }
+    result.className = 'result good';
+    result.textContent =
+      body.state + ' as ' + body.reviewId + '. Submit again to send another review.';
+  } finally {
+    sending = false;
+  }
+}
+
+async function load() {
+  const res = await fetch('/api/forge/diff', { headers: { 'X-Session-Nonce': NONCE } });
+  if (!res.ok) {
+    document.getElementById('gate').hidden = false;
+    return;
+  }
+  const body = await res.json();
+  const host = document.getElementById('diff');
+  for (const file of body.files) host.append(renderFile(file));
+}
+
+document.getElementById('submitreview').addEventListener('click', submitReview);
+load();
+</script>
+</body>
+</html>

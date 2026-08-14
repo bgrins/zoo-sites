@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coverage checker — Kelverne Fibre</title>
+<link rel="stylesheet" href="support.css">
+</head>
+<body>
+<div class="util">
+  <span>Faults line 03069 990180</span>
+  <span>Advisers online 07:00-23:00</span>
+  <span class="push"><a href="account.html">My account</a></span>
+  <span><a href="coverage.html">Coverage checker</a></span>
+  <span><a href="signout.html">Sign out</a></span>
+</div>
+
+<header class="top">
+  <div class="mark"><b>Kelverne</b><span>Fibre &middot; Help Centre</span></div>
+</header>
+
+<div class="shell">
+  <aside class="rail">
+    <h2>Browse help</h2>
+    <ol>
+      <li><a href="index.html"><span class="no">01</span>Connection problems</a></li>
+      <li><a href="wifi.html"><span class="no">02</span>Wi-Fi and equipment</a></li>
+      <li><a href="speed.html"><span class="no">03</span>Speed and performance</a></li>
+      <li><a href="billing.html"><span class="no">04</span>Billing and payments</a></li>
+      <li><a href="moving.html"><span class="no">05</span>Moving home</a></li>
+      <li><a href="contracts.html"><span class="no">06</span>Contracts and notice</a></li>
+    </ol>
+    <h2>Your service</h2>
+    <p class="note">Account and equipment details are on your account page.</p>
+    <p class="note"><a href="account.html">Open my account</a></p>
+  </aside>
+
+  <main class="body">
+    <h1>Coverage checker</h1>
+    <p class="lede">Full fibre is live across most of Ashcombe and is being built
+    outward. Enter a postcode to see where yours stands.</p>
+
+    <div class="stuck">
+      <h3>Check a postcode</h3>
+      <p>Use the full postcode, for example AS3 7LN.</p>
+      <p><input type="text" id="pc" autocomplete="postal-code" aria-label="Postcode"
+        placeholder="AS3 7LN"
+        style="font-family:inherit;font-size:15px;padding:9px 11px;border:1px solid #a9a29a;width:190px;margin-right:8px">
+      <button id="check" type="button">Check coverage</button></p>
+      <p id="result" role="status" style="margin:6px 0 0;font-size:14px;max-width:62ch"></p>
+    </div>
+
+    <h2>How to read the result</h2>
+    <p>Live areas can order today and are typically installed within two weeks. Areas
+    in build have crews on the street; we take registrations and write when orders
+    open. For anywhere else, registering interest genuinely shapes where the network
+    goes next: see the <a href="about.html#rollout">network rollout</a> page.</p>
+  </main>
+</div>
+
+<footer class="foot">
+  <div class="cols">
+    <div>
+      <h4>Support</h4>
+      <a href="status.html">Service status</a>
+      <a href="index.html#adviser">Report a fault</a>
+      <a href="engineer.html">Engineer visits</a>
+    </div>
+    <div>
+      <h4>Account</h4>
+      <a href="account.html">My account</a>
+      <a href="billing.html">Bills and payments</a>
+      <a href="plan.html">Change your plan</a>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <a href="about.html">About Kelverne</a>
+      <a href="about.html#rollout">Network rollout</a>
+      <a href="about.html#careers">Work with us</a>
+    </div>
+    <div>
+      <h4>Legal</h4>
+      <a href="legal.html#privacy">Privacy notice</a>
+      <a href="legal.html#terms">Terms of service</a>
+      <a href="legal.html#complaints">Complaints code</a>
+    </div>
+  </div>
+  <div class="fine">
+    Kelverne Fibre Networks Ltd, Bolt House, 2 Redgate Wharf, Ashcombe AS3 7LN.
+    Registered number 00000000. Written enquiries: help@kelverne-fibre.example
+    &middot; &copy; 2026 Kelverne Fibre Networks Ltd.
+  </div>
+</footer>
+
+<script>
+  const AREAS = {
+    AS1: 'live', AS2: 'live', AS3: 'live', AS4: 'live',
+    AS5: 'build', AS6: 'build',
+    RW1: 'live', RW2: 'build',
+    BV1: 'live', BV2: 'live', BV3: 'build',
+  };
+  const MESSAGES = {
+    live: 'Good news: full fibre is live in this area. Orders placed now are typically installed within two weeks.',
+    build: 'This area is in build. Crews are on the street now; register interest with an adviser and we will write to you the day orders open.',
+    none: 'We do not serve this area yet and it is not in the current build. Registering interest with an adviser helps bring the rollout your way.',
+  };
+  document.getElementById('check').addEventListener('click', () => {
+    const raw = document.getElementById('pc').value.trim().toUpperCase();
+    const result = document.getElementById('result');
+    const m = raw.match(/^([A-Z]{2}\d)\s*\d[A-Z]{2}$/);
+    if (!m) {
+      result.textContent = 'Enter a full postcode, for example AS3 7LN.';
+      return;
+    }
+    result.textContent = MESSAGES[AREAS[m[1]] || 'none'];
+  });
+  document.getElementById('pc').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') document.getElementById('check').click();
+  });
+</script>
+</body>
+</html>

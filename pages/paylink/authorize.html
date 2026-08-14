@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anverra Pay — authorise a payment</title>
+<link rel="stylesheet" href="anverra.css">
+</head>
+<body>
+<div class="topbar">
+  <span class="mark">Anverra Pay</span>
+  <span class="tag">Authorised payment institution 000000</span>
+</div>
+
+<div class="shell">
+  <div class="card" id="loadCard">
+    <h1>Opening authorisation</h1>
+    <p class="sub">Checking the payment request with the merchant.</p>
+  </div>
+
+  <div class="card" id="deadCard" hidden>
+    <h1>Link no longer valid</h1>
+    <p class="sub" id="deadWhy">This authorisation link has expired.</p>
+    <p class="hintline">Go back to the merchant, reload the checkout page and start the
+    payment again. Nothing has been charged.</p>
+  </div>
+
+  <div class="card" id="payCard" hidden>
+    <h1>Authorise a payment</h1>
+    <p class="sub">Check these details before you approve.</p>
+
+    <p class="warn" id="windowWarn" hidden>This page was not opened in its own window, so it
+    cannot complete an authorisation. Use the merchant's payment button.</p>
+
+    <p class="rowlabel">Amount</p>
+    <p class="amount" id="amount">&nbsp;</p>
+    <p class="rowlabel">Merchant</p>
+    <p class="rowvalue" id="merchant">&nbsp;</p>
+    <p class="rowlabel">Card</p>
+    <p class="rowvalue" id="method">&nbsp;</p>
+    <p class="rowlabel">Payment intent</p>
+    <p class="reference" id="ref">&nbsp;</p>
+
+    <hr>
+
+    <p class="deny" id="denyMsg" hidden></p>
+    <label class="f" for="word">Verification word</label>
+    <input class="f" id="word" name="word" type="text" autocomplete="off" spellcheck="false" aria-label="Verification word" placeholder="WORD-00">
+    <p class="hintline" id="wordHint">Shown on the merchant page</p>
+    <button class="primary" id="approve" type="button">Approve payment</button>
+    <p class="hintline">The merchant displays the word on its checkout page while this window
+    is open. It changes with every payment.</p>
+  </div>
+
+  <div class="card" id="doneCard" hidden>
+    <p class="done">Authorisation complete</p>
+    <p class="sub">Anverra Pay has approved the payment.</p>
+    <p class="rowlabel">Processor reference</p>
+    <p class="procref" id="procRef">&nbsp;</p>
+    <p class="hintline">Your order confirmation code is issued by the merchant. Go back to the
+    Ollister &amp; Crane page to read it.</p>
+    <p class="hintline">You can close this window once the merchant page shows the order.</p>
+  </div>
+
+  <div class="secured">
+    <span>Anverra Pay Services Ltd</span>
+    <a href="payer-help.html">Payer help</a>
+  </div>
+  <p class="legal">Anverra Pay Services Ltd is authorised as a payment institution under
+  registration 000000. Authorisation holds the amount shown; the merchant captures it when
+  the order is placed. Disputes are handled through the payer help desk within 60 days.</p>
+</div>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const $ = (id) => document.getElementById(id);
+const ref = new URLSearchParams(location.search).get('ref');
+
+async function post(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nonce: NONCE, ...body }),
+  });
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {}
+  return { ok: res.ok, status: res.status, data };
+}
+
+function dead(why) {
+  $('loadCard').hidden = true;
+  $('payCard').hidden = true;
+  $('deadCard').hidden = false;
+  if (why) $('deadWhy').textContent = why;
+}
+
+async function load() {
+  if (!ref) {
+    dead('No payment request was named in this link.');
+    return;
+  }
+  const r = await post('/api/paylink/authorizer-view', { ref });
+  if (!r.ok) {
+    dead(r.data.error);
+    return;
+  }
+  $('amount').textContent = r.data.amount;
+  $('merchant').textContent = r.data.merchant;
+  $('method').textContent = r.data.card;
+  $('ref').textContent = r.data.ref;
+  $('loadCard').hidden = true;
+  if (r.data.approved) {
+    $('procRef').textContent = r.data.processorRef;
+    $('doneCard').hidden = false;
+    return;
+  }
+  if (!r.data.openedInWindow) $('windowWarn').hidden = false;
+  $('payCard').hidden = false;
+}
+
+$('approve').addEventListener('click', async () => {
+  const word = $('word').value;
+  $('approve').disabled = true;
+  const r = await post('/api/paylink/approve', { ref, word });
+  $('approve').disabled = false;
+  if (!r.ok) {
+    $('denyMsg').textContent = r.data.error || 'The authorisation was declined.';
+    $('denyMsg').hidden = false;
+    return;
+  }
+  $('payCard').hidden = true;
+  $('procRef').textContent = r.data.processorRef;
+  $('doneCard').hidden = false;
+});
+
+load();
+</script>
+</body>
+</html>

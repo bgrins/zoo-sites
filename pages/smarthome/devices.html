@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Devices — Hearthline Hub</title>
+<link rel="stylesheet" href="hearthline.css">
+</head>
+<body>
+<header>
+  <div class="mark">Hearth<b>line</b><span class="sub">Hub console</span></div>
+  <nav class="pills">
+    <a href="index.html">Home</a>
+    <a class="on" href="devices.html">Devices</a>
+    <a href="energy.html">Energy</a>
+  </nav>
+  <div class="home-state">14 Alder Croft<br>Hub online &middot; firmware 9.4.2</div>
+</header>
+
+<main>
+  <h1>Devices</h1>
+  <p class="lede">Eleven devices are paired with this hub. Switching a device here
+  overrides its schedule until the next scheduled change.</p>
+
+  <div class="rows" id="devices">
+    <div class="row"><div class="name">Pendant cluster</div><div class="where">Living room &middot; dimmable</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row"><div class="name">Reading lamp</div><div class="where">Living room</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row"><div class="name">Hallway spots</div><div class="where">Ground floor &middot; dimmable</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row"><div class="name">Porch lantern</div><div class="where">Outside &middot; dusk schedule</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row"><div class="name">Kitchen strip</div><div class="where">Kitchen</div><button class="toggle" aria-pressed="false">Off</button></div>
+    <div class="row"><div class="name">Bedside left</div><div class="where">Main bedroom</div><button class="toggle" aria-pressed="false">Off</button></div>
+    <div class="row"><div class="name">Bedside right</div><div class="where">Main bedroom</div><button class="toggle" aria-pressed="false">Off</button></div>
+    <div class="row"><div class="name">Landing light</div><div class="where">First floor &middot; dims at 22:30</div><button class="toggle" aria-pressed="false">Off</button></div>
+    <div class="row"><div class="name">Radiator valve</div><div class="where">Living room &middot; 21.5&deg;C</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row"><div class="name">Porch camera</div><div class="where">Outside &middot; arms on geofence</div><button class="toggle" aria-pressed="false">Off</button></div>
+    <div class="row"><div class="name">Door sensor</div><div class="where">Front door</div><button class="toggle" aria-pressed="true">On</button></div>
+  </div>
+</main>
+
+<footer>
+  <a href="privacy.html">Privacy</a>
+  <a href="index.html">Home</a>
+  <a href="energy.html">Energy report</a>
+  <p>Hearthline Systems BV &middot; Windgat 11, 2611 KE Delft</p>
+  <p>Support: care@hearthline.example &middot; +44 20 7946 0141</p>
+  <p>&copy; 2021-2026 Hearthline Systems BV. All rights reserved.</p>
+</footer>
+
+<script>
+for (const btn of document.querySelectorAll('.toggle')) {
+  btn.addEventListener('click', () => {
+    const on = btn.getAttribute('aria-pressed') !== 'true';
+    btn.setAttribute('aria-pressed', String(on));
+    btn.textContent = on ? 'On' : 'Off';
+  });
+}
+</script>
+</body>
+</html>

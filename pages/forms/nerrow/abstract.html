@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Nerrow Strait Marine Symposium — Abstract Desk</title>
+<style>
+  :root {
+    --tide: #e9edf1;
+    --sheet: #ffffff;
+    --ink: #1a2430;
+    --muted: #5b6875;
+    --rule: #c6cfd9;
+    --marine: #1d4a72;
+    --deep: #123048;
+    --ok: #2f6b4f;
+    --flag: #a2681a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--tide);
+    color: var(--ink);
+    font-family: "Iowan Old Style", Constantia, Cambria, "Liberation Serif", Georgia, serif;
+    font-size: 16px;
+    line-height: 1.62;
+  }
+  .banner { background: var(--sheet); }
+  .banner-in {
+    max-width: 1020px; margin: 0 auto; padding: 20px 26px 16px;
+    display: flex; align-items: flex-end; gap: 30px;
+  }
+  .title { font-size: 26px; color: var(--deep); letter-spacing: 0.01em; }
+  .title span {
+    display: block; font-size: 13px; letter-spacing: 0; color: var(--muted);
+    font-style: italic; margin-top: 3px;
+  }
+  .convened { margin: 0 0 3px auto; font-size: 13px; color: var(--muted); text-align: right; }
+  .sitenav { background: var(--marine); }
+  .sitenav-in { max-width: 1020px; margin: 0 auto; padding: 0 26px; display: flex; }
+  .sitenav a {
+    display: block; padding: 9px 15px; color: #cfdeea; text-decoration: none; font-size: 14px;
+  }
+  .sitenav a:hover { color: #fff; }
+  .sitenav a[aria-current] { color: #fff; background: rgba(255, 255, 255, 0.17); }
+  .page {
+    max-width: 1020px; margin: 0 auto; padding: 26px 26px 40px;
+    display: grid; grid-template-columns: 258px minmax(0, 1fr); gap: 34px;
+  }
+  h1 { font-size: 27px; font-weight: normal; margin: 0 0 2px; color: var(--deep); }
+  h2 {
+    font-size: 13px; letter-spacing: 0.04em; color: var(--marine); font-weight: normal;
+    font-style: italic; margin: 0 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--rule);
+  }
+  .standfirst { margin: 0 0 20px; color: var(--muted); }
+  .record dl { margin: 0; font-size: 14px; }
+  .record dt { font-size: 12px; color: var(--muted); margin-top: 11px; }
+  .record dd { margin: 0; }
+  .marginal {
+    margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--rule);
+    font-size: 13px; font-style: italic; color: var(--muted);
+  }
+  .filed {
+    background: var(--sheet); border-radius: 6px; border-left: 5px solid var(--marine);
+    padding: 16px 20px 18px; margin-bottom: 26px;
+  }
+  .filed p { margin: 0 0 10px; }
+  .filed p:last-child { margin-bottom: 0; }
+  form { background: var(--sheet); border-radius: 6px; padding: 16px 20px 20px; }
+  .rubric { margin: 0 0 14px; font-size: 14px; color: var(--muted); }
+  .rubric b { color: var(--ink); font-weight: normal; border-bottom: 1px dotted var(--marine); }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+  textarea {
+    width: 100%; font: inherit; font-size: 15px; line-height: 1.55;
+    padding: 9px 11px; color: var(--ink); background: #fbfcfd;
+    border: 1px solid #a9b6c3; border-radius: 5px; resize: vertical;
+  }
+  textarea:focus { outline: 2px solid var(--marine); outline-offset: 1px; }
+  .meter { display: flex; align-items: baseline; gap: 14px; margin-top: 7px; }
+  #count { font-size: 20px; color: var(--deep); }
+  #gauge { font-size: 13px; color: var(--muted); }
+  #gauge.ok { color: var(--ok); }
+  #gauge.off { color: var(--flag); }
+  .track { flex: 1; height: 6px; border-radius: 3px; background: #dde4ea; }
+  .track i { display: block; height: 100%; border-radius: 3px; background: #a9b6c3; }
+  .track i.ok { background: var(--ok); }
+  .track i.off { background: var(--flag); }
+  .error:not(:empty) {
+    margin-top: 12px; padding: 8px 12px; font-size: 14px; border-radius: 5px;
+    color: var(--ink); background: #f6efe1; border-left: 4px solid var(--flag);
+  }
+  button {
+    margin-top: 16px; font: inherit; font-size: 15px; padding: 8px 22px; cursor: pointer;
+    color: #fff; background: var(--marine); border: 0; border-radius: 5px;
+  }
+  button:hover { background: var(--deep); }
+  button:disabled { background: #9fb2c2; cursor: default; }
+  #done {
+    display: none; background: var(--sheet); border-radius: 6px;
+    border-left: 5px solid var(--ok); padding: 16px 20px 20px;
+  }
+  #confid {
+    font-family: "Courier New", Courier, monospace; font-size: 21px;
+    letter-spacing: 0.06em; background: #eef2f6; padding: 2px 8px; border-radius: 4px;
+  }
+  #done .after { font-size: 14px; color: var(--muted); margin-bottom: 0; }
+  footer { border-top: 1px solid var(--rule); font-size: 13px; color: var(--muted); }
+  footer div { max-width: 1020px; margin: 0 auto; padding: 18px 26px 26px; }
+  footer a { color: var(--marine); }
+  footer p { margin: 0 0 4px; }
+</style>
+</head>
+<body>
+<header class="banner">
+  <div class="banner-in">
+    <div class="title">Nerrow Strait Marine Symposium
+      <span>Twenty-second meeting, Weyburn Point</span>
+    </div>
+    <p class="convened">Convened 3 to 6 November 2026<br>Weyburn Point Marine Station</p>
+  </div>
+</header>
+<nav class="sitenav">
+  <div class="sitenav-in">
+    <a href="programme.html">Programme</a>
+    <a href="sessions.html">Sessions</a>
+    <a href="abstract.html" aria-current="page">Abstract desk</a>
+    <a href="reviewers.html">Reviewers</a>
+    <a href="travel.html">Travel and lodging</a>
+  </div>
+</nav>
+
+<main class="page">
+  <aside class="record">
+    <h2>Study record</h2>
+    <dl>
+      <dt>Record</dt><dd>NS-118</dd>
+      <dt>Station</dt><dd>Weyburn Point Marine Station</dd>
+      <dt>Session</dt><dd>4C, Nearshore macroalgae</dd>
+      <dt>Field season</dt><dd>March to September 2025</dd>
+      <dt>Desk status</dt><dd>Open for capsules</dd>
+    </dl>
+    <p class="marginal">Capsules are printed in the pocket programme exactly as lodged.
+    The desk does not copy-edit them and does not rank them on style.</p>
+  </aside>
+
+  <div class="desk">
+    <h1>Capsule submission</h1>
+    <p class="standfirst">Lodge the one-line capsule that will sit under this study in the printed programme.</p>
+
+    <section class="filed" id="filed">
+      <h2>Field summary as filed</h2>
+      <p id="filed-1">Between March and September 2025 the Weyburn Point field crew surveyed
+      eleven bull kelp beds along the Nerrow Strait. Four beds were cut on a rotating
+      fourteen-day harvest schedule; the remaining seven were left uncut as controls.</p>
+      <p id="filed-2">Cut beds regrew to 82 percent of control canopy density within six weeks,
+      but holdfast counts in the two beds harvested closest to the spring recruitment window
+      fell by roughly a fifth. The crew recommends moving the season's first cut to late April
+      and capping removal at 30 percent of standing biomass.</p>
+    </section>
+
+    <form id="capsule-form" novalidate>
+      <h2>Your capsule</h2>
+      <p class="rubric">The desk accepts a capsule of <b>140 to 160 characters</b> that names
+      both <b>kelp</b> and <b>harvest</b>. Length is counted by the desk on the text it
+      receives, including spaces and punctuation. Wording, phrasing and style are not assessed,
+      but the capsule is printed as lodged, so write a real sentence rather than padding one out
+      with runs of spaces.</p>
+      <label for="capsule">Capsule text</label>
+      <textarea id="capsule" rows="4" spellcheck="false"></textarea>
+      <div class="meter">
+        <span id="count">0 / 160</span>
+        <span id="gauge" class="off">Under minimum</span>
+        <span class="track"><i id="bar" style="width: 0%"></i></span>
+      </div>
+      <div class="error" id="err" role="alert"></div>
+      <button type="submit" id="lodge">Lodge capsule</button>
+    </form>
+
+    <section id="done">
+      <h2>Capsule lodged</h2>
+      <p>Confirmation id: <span id="confid"></span></p>
+      <p class="after">Quote this id in any correspondence with the desk. Amendments close
+      three weeks before the meeting.</p>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div>
+    <p>Weyburn Point Marine Station, 4 Cobble Quay, Weyburn Point.
+    Abstract desk: <a href="mailto:desk@nerrowstrait.example">desk@nerrowstrait.example</a>, weekdays 09:00 to 16:00.</p>
+    <p>Copyright 2026 Weyburn Point Marine Station.
+    <a href="policies.html#privacy">Privacy notice</a> · <a href="policies.html#terms">Terms of participation</a> ·
+    <a href="travel.html#accessibility">Accessibility</a></p>
+  </div>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const field = document.getElementById('capsule');
+  const count = document.getElementById('count');
+  const gauge = document.getElementById('gauge');
+  const bar = document.getElementById('bar');
+  const err = document.getElementById('err');
+
+  function measure() {
+    const n = field.value.length;
+    count.textContent = n + ' / 160';
+    const ok = n >= 140 && n <= 160;
+    gauge.textContent = ok ? 'Within range' : n < 140 ? 'Under minimum' : 'Over maximum';
+    gauge.className = ok ? 'ok' : 'off';
+    bar.className = ok ? 'ok' : n > 160 ? 'off' : '';
+    bar.style.width = Math.min(100, Math.round((n / 160) * 100)) + '%';
+  }
+
+  field.addEventListener('input', measure);
+  measure();
+
+  document.getElementById('capsule-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = document.getElementById('lodge');
+    button.disabled = true;
+    err.textContent = '';
+    try {
+      const res = await fetch('/api/abstract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, summary: field.value }),
+      });
+      const body = await res.json();
+      if (!res.ok || !body.ok) {
+        err.textContent = body.message ?? 'The desk could not accept this capsule.';
+        return;
+      }
+      document.getElementById('confid').textContent = body.id;
+      document.getElementById('done').style.display = 'block';
+      document.getElementById('capsule-form').style.display = 'none';
+    } catch {
+      err.textContent = 'The desk did not respond. Try lodging again.';
+    } finally {
+      button.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

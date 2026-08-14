@@ -1,0 +1,63 @@
+{
+  "rank": 15,
+  "comments": [
+    {
+      "author": "spectrogrammar",
+      "age": "18 hours ago",
+      "text": "The amplitude finding gets the headlines but the frequency shift is the more interesting result. Urban birds don't just sing louder, they sing higher — pushing their songs above the low-frequency rumble of traffic. It's the acoustic equivalent of moving your wifi off a crowded channel.\n\nWhat the article glosses over is that this is partly plastic (individual birds adjusting in real time) and partly selective (birds with higher songs are the ones whose signals get through, so they get the territory and the mate). Disentangling those two is where the field's actual arguments live.",
+      "replies": [
+        {
+          "author": "decibelle",
+          "age": "17 hours ago",
+          "text": "OP here — yes, and I wish I'd had another thousand words for the plasticity vs. selection debate. The real-time adjustment result is wild: some species raise amplitude within seconds of a noise onset, same reflex as humans raising their voice at a loud party.",
+          "replies": [
+            {
+              "author": "lombardeffect",
+              "age": "16 hours ago",
+              "text": "That reflex has a name in the human literature and it was genuinely surprising when it turned up in songbirds, since the neural circuitry for song is so different from mammalian speech. Convergent solutions to the same physics problem.",
+              "replies": []
+            }
+          ]
+        },
+        {
+          "author": "nullhypothesizer",
+          "age": "14 hours ago",
+          "text": "Is anyone controlling for the fact that cities have different species mixes to begin with? If loud, high-pitched generalists are the ones that colonize cities, you'd see this pattern with zero adaptation involved.",
+          "replies": [
+            {
+              "author": "spectrogrammar",
+              "age": "13 hours ago",
+              "text": "Yes — the stronger studies compare the same species across an urban-rural gradient, and a few compare the same individuals before and after noise events. The within-individual designs are what killed the pure species-sorting explanation.",
+              "replies": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "bitrotting",
+      "age": "12 hours ago",
+      "text": "Anecdote: I lived under a flight path for six years and the blackbird in my street sang in the gaps between planes. You could set your watch by it — engine noise fades, three seconds, song starts. Moved to the countryside and honestly the dawn chorus felt disorganized by comparison.",
+      "replies": [
+        {
+          "author": "kernelpanda",
+          "age": "10 hours ago",
+          "text": "The gap-timing behavior is documented — some urban birds shift singing earlier into the pre-dawn quiet window too. Your blackbird was doing latency-aware scheduling.",
+          "replies": []
+        }
+      ]
+    },
+    {
+      "author": "fieldrecordist",
+      "age": "8 hours ago",
+      "text": "Plug: I run chorusmap.example.com, a volunteer project collecting dawn-chorus recordings with phone GPS so researchers can get urban gradient data for free. We're short on recordings from industrial zones — apparently nobody wants to stand outside a warehouse at 5am, which, fair.",
+      "replies": []
+    },
+    {
+      "author": "quietparts",
+      "age": "5 hours ago",
+      "text": "Louder song has a metabolic cost, right? Genuinely curious whether urban birds are paying for this in body condition or lifespan.",
+      "replies": []
+    }
+  ]
+}

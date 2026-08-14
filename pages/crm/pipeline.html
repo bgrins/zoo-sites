@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline - Kelsmere CRM</title>
+<link rel="stylesheet" href="crm.css">
+</head>
+<body>
+<header class="topbar">
+  <span class="brand">Kelsmere CRM</span>
+  <span class="ws">wkspc northfield-supply &middot; fiscal 2026 &middot; role: analyst</span>
+  <span class="who">dana.kessler@northfield.example</span>
+</header>
+<nav class="tabs">
+  <a href="index.html">Dashboard</a>
+  <a href="orders.html">Orders</a>
+  <a href="customers.html">Customers</a>
+  <a href="pipeline.html" class="on">Pipeline</a>
+  <a href="reports.html">Reports</a>
+  <a href="tasks.html">Tasks</a>
+  <a href="admin.html">Admin</a>
+</nav>
+<div class="pathbar">
+  <span>northfield-supply / pipeline</span>
+  <span class="build">grid engine v3 &middot; build 3.14.2</span>
+</div>
+<main class="main">
+  <h1>Pipeline</h1>
+  <p class="sub">Open opportunities by stage. Deal amounts are entered by owners and are not shown on shared workspace links.</p>
+  <div class="tiles">
+    <div class="tile"><span class="tk">Open opportunities</span><span class="tv">9</span></div>
+    <div class="tile"><span class="tk">Prospecting</span><span class="tv">3</span></div>
+    <div class="tile"><span class="tk">Qualified</span><span class="tv">2</span></div>
+    <div class="tile"><span class="tk">Proposal</span><span class="tv">3</span></div>
+    <div class="tile"><span class="tk">Negotiation</span><span class="tv">1</span></div>
+  </div>
+  <table class="grid">
+    <thead>
+      <tr><th>Opportunity</th><th>Account</th><th>Stage</th><th>Owner</th><th>Expected close</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>OP-3101</td><td>Merrow Glassworks</td><td>Negotiation</td><td>R. Lindgren</td><td>2026-08-14</td></tr>
+      <tr><td>OP-3102</td><td>Lanthorn Optics</td><td>Proposal</td><td>M. Okonkwo</td><td>2026-08-21</td></tr>
+      <tr><td>OP-3103</td><td>Iverly Marine</td><td>Proposal</td><td>D. Kessler</td><td>2026-09-04</td></tr>
+      <tr><td>OP-3104</td><td>Garrow Instruments</td><td>Proposal</td><td>S. Vale</td><td>2026-09-11</td></tr>
+      <tr><td>OP-3105</td><td>Bracken Mills</td><td>Qualified</td><td>D. Kessler</td><td>2026-09-25</td></tr>
+      <tr><td>OP-3106</td><td>Alderway Freight</td><td>Qualified</td><td>R. Lindgren</td><td>2026-10-02</td></tr>
+      <tr><td>OP-3107</td><td>Fennhollow Dairy</td><td>Prospecting</td><td>D. Kessler</td><td>2026-10-16</td></tr>
+      <tr><td>OP-3108</td><td>Jarrow Textiles</td><td>Prospecting</td><td>S. Vale</td><td>2026-10-23</td></tr>
+      <tr><td>OP-3109</td><td>Orrick Bearings</td><td>Prospecting</td><td>M. Okonkwo</td><td>2026-11-06</td></tr>
+    </tbody>
+  </table>
+  <p class="muted">rows 9/9 &middot; stage changes sync to the warehouse at the nightly 02:00 rebuild.</p>
+</main>
+<footer class="siteftr">
+  Kelsmere CRM &middot; workspace data is confidential to northfield-supply.
+  Support: help.kelsmerecrm.example &middot; Status &middot; Keyboard shortcuts &middot;
+  Terms &middot; Privacy
+</footer>
+</body>
+</html>

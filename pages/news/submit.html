@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Submit a link | Millrace</title>
+<link rel="stylesheet" href="millrace.css">
+</head>
+<body>
+<header id="masthead">
+  <div class="masthead-in">
+    <a class="wordmark" href="/news/">millrace</a>
+    <span class="tagline">a working stream for people who build things</span>
+    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+  </div>
+</header>
+<nav id="tabs" aria-label="Sections">
+  <div class="tabs-in">
+    <a class="tab" href="/news/">Stream</a>
+    <a class="tab" href="/news/?sort=fresh">Fresh</a>
+    <a class="tab" href="/news/?view=threads">Threads</a>
+    <a class="tab" href="/news/?tag=asks">Asks</a>
+    <a class="tab" href="/news/?tag=build">Build logs</a>
+    <a class="tab" href="/news/?tag=jobs">Hiring</a>
+    <a class="tab on" href="/news/submit.html">Submit a link</a>
+    <form class="seek" action="/news/" method="get" role="search">
+      <input type="search" name="q" aria-label="Search the stream" placeholder="Search the stream">
+      <button type="submit">Go</button>
+    </form>
+  </div>
+</nav>
+<div id="wrap">
+  <main id="main">
+    <p class="crumbs"><a href="/news/">stream</a> &rsaquo; submit</p>
+    <div class="doc">
+      <h1>Submit a link</h1>
+      <p class="gatebar">You are not signed in. Submitting needs an account that is
+        at least a week old &mdash; <a href="/news/signin.html">sign in</a> or
+        <a href="/news/signin.html#register">open an account</a>. The form below is
+        shown so you can see what a submission asks for; it unlocks once you are
+        signed in.</p>
+      <form>
+        <fieldset class="plain" disabled>
+          <div class="field">
+            <label for="subtitle">Title</label>
+            <input id="subtitle" name="title" type="text" maxlength="120">
+            <p class="hint">Title it the way the author would. "Ask Millrace:" and
+              "Show Millrace:" prefixes mark asks and demos.</p>
+          </div>
+          <div class="field">
+            <label for="suburl">Link</label>
+            <input id="suburl" name="url" type="url" placeholder="https://">
+            <p class="hint">Leave the link empty to start a text thread instead.</p>
+          </div>
+          <div class="field">
+            <label for="subtext">Text</label>
+            <textarea id="subtext" name="text"></textarea>
+            <p class="hint">For asks and demos: context, what you tried, what you
+              want from the thread. Ignored when a link is given.</p>
+          </div>
+          <div class="field">
+            <label for="subtag">Tag</label>
+            <input id="subtag" name="tag" type="text" maxlength="24" placeholder="build, infra, science...">
+            <p class="hint">One tag. The stewards merge synonyms weekly.</p>
+          </div>
+          <button class="btn" type="submit">Submit to the stream</button>
+        </fieldset>
+      </form>
+      <p class="formnote">Duplicates within a few days are folded into the earlier
+        thread. Your own work is welcome &mdash; say so in the thread. The
+        <a href="/news/guidelines.html">guidelines</a> cover the rest.</p>
+    </div>
+  </main>
+  <aside id="rail">
+    <div class="card">
+      <h2>House rules</h2>
+      <ul>
+        <li>Title your submission the way the author would.</li>
+        <li>Submit other people's work more often than your own.</li>
+        <li>No paywalled teasers, no outrage bait.</li>
+      </ul>
+      <p class="meta"><a href="/news/guidelines.html">Full guidelines</a></p>
+    </div>
+    <div class="card">
+      <h2>New accounts</h2>
+      <p>New accounts can reply immediately and can submit links after their first
+        week. The wait keeps the front page honest.</p>
+      <p class="meta"><a href="/news/signin.html#register">Open an account</a></p>
+    </div>
+  </aside>
+</div>
+<footer id="footer">
+  <div class="footer-in">
+    <p class="footer-nav">
+      <a href="/news/about.html">About</a> &middot;
+      <a href="/news/guidelines.html">Guidelines</a> &middot;
+      <a href="/news/moderation.html">Moderation log</a> &middot;
+      <a href="/news/feeds.html">Feeds</a> &middot;
+      <a href="/news/status.html">Status</a> &middot;
+      <a href="/news/advertise.html">Sponsor a day</a> &middot;
+      <a href="/news/privacy.html">Privacy</a> &middot;
+      <a href="/news/terms.html">Terms</a> &middot;
+      <a href="/news/contact.html">Contact</a>
+    </p>
+    <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
+      Ashvale, VT 05412. Moderation questions go to
+      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      help@millrace.example.</p>
+    <p>Submissions and replies remain the work of their authors. Copyright 2026
+      Weirgate Collective LLC.</p>
+  </div>
+</footer>
+</body>
+</html>

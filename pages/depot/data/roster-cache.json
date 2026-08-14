@@ -1,0 +1,14 @@
+{
+  "shiftDate": "Sun 27 Jul",
+  "source": "cache",
+  "rows": [
+    { "bay": "B1", "operator": "K. Ademi", "role": "Reach truck", "window": "06:00-14:00" },
+    { "bay": "B2", "operator": "R. Calloway", "role": "Counterbalance", "window": "06:00-14:00" },
+    { "bay": "B3", "operator": "S. Ferro", "role": "Picker lead", "window": "06:00-14:00" },
+    { "bay": "B4", "operator": "T. Lindqvist", "role": "Reach truck", "window": "07:00-15:00" },
+    { "bay": "C1", "operator": "D. Okafor", "role": "Goods-in", "window": "06:00-14:00" },
+    { "bay": "C2", "operator": "H. Marsh", "role": "Goods-in", "window": "08:00-16:00" },
+    { "bay": "D1", "operator": "P. Reyes", "role": "Despatch", "window": "06:00-14:00" },
+    { "bay": "D2", "operator": "A. Szabo", "role": "Despatch", "window": "10:00-18:00" }
+  ]
+}

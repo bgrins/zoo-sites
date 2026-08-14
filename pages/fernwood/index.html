@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fernwood Commons — the neighbourhood feed</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Gill Sans", "Lucida Grande", sans-serif;
+    background: #f4f1e8;
+    color: #33302a;
+    line-height: 1.5;
+  }
+  .topbar {
+    background: #fffdf7;
+    border-bottom: 1px solid #e0dbcb;
+    padding: 14px 20px;
+  }
+  .topbar .inner {
+    max-width: 640px; margin: 0 auto;
+    display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap;
+  }
+  .brand {
+    font-size: 22px; font-weight: bold; color: #35563b; text-decoration: none;
+  }
+  .brand .dot {
+    display: inline-block; width: 11px; height: 11px; border-radius: 50% 50% 50% 0;
+    background: #6f9a72; margin-right: 7px; transform: rotate(-45deg);
+  }
+  .tag { font-size: 12px; color: #8a836f; }
+  .topbar nav { margin-left: auto; }
+  .topbar nav a {
+    color: #35563b; text-decoration: none; font-size: 14px; margin-left: 16px;
+    padding: 5px 12px; border-radius: 999px;
+  }
+  .topbar nav a.here, .topbar nav a:hover { background: #e4ecdd; }
+  main { max-width: 640px; margin: 0 auto; padding: 20px 16px 60px; }
+  .feed { display: flex; flex-direction: column; gap: 16px; }
+  article.card {
+    background: #fffdf7; border: 1px solid #e0dbcb; border-radius: 16px;
+    padding: 16px 18px 12px; box-shadow: 0 1px 3px rgba(70, 62, 45, 0.08);
+  }
+  .who { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .avatar {
+    width: 44px; height: 44px; border-radius: 50%; flex: none;
+    background: #dce8d4; color: #35563b;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 15px; letter-spacing: 1px;
+  }
+  .avatar::before { content: attr(data-initials); }
+  .name { font-weight: bold; color: #2f4a34; }
+  .meta { font-size: 12px; color: #8a836f; }
+  article.card h3 { margin: 0 0 6px; font-size: 16px; color: #33302a; }
+  article.card p { margin: 0 0 6px; font-size: 14px; }
+  .cardfoot {
+    margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0dbcb;
+    font-size: 12px; color: #8a836f;
+  }
+  #status {
+    text-align: center; font-size: 13px; color: #8a836f;
+    padding: 26px 0 10px;
+  }
+  footer {
+    background: #35563b; color: #e4ecdd; font-size: 12px;
+    padding: 18px 20px 24px;
+  }
+  footer .inner { max-width: 640px; margin: 0 auto; }
+  footer a { color: #e4ecdd; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="inner">
+    <a class="brand" href="/fernwood/"><span class="dot"></span>Fernwood Commons</a>
+    <span class="tag">Notes between neighbours</span>
+    <nav>
+      <a href="/fernwood/" class="here">Feed</a>
+      <a href="/fernwood/about.html">About</a>
+    </nav>
+  </div>
+</div>
+
+<main>
+  <div class="feed" id="feed"></div>
+  <div id="status">Loading the feed</div>
+</main>
+
+<footer>
+  <div class="inner">
+    Fernwood Commons is run by volunteers from the Fernwood Neighbourhood
+    Association. Posts belong to their authors.
+    <a href="/fernwood/about.html">House rules and contact</a>.
+  </div>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const feedEl = document.getElementById('feed');
+const statusEl = document.getElementById('status');
+let next = { batch: 1, cursor: null };
+let busy = false;
+
+function card(p) {
+  const el = document.createElement('article');
+  el.className = 'card';
+  const who = document.createElement('div');
+  who.className = 'who';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.dataset.initials = p.author
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+  const id = document.createElement('div');
+  const name = document.createElement('div');
+  name.className = 'name';
+  name.textContent = p.author;
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = p.when + ' - ' + p.where;
+  id.append(name, meta);
+  who.append(avatar, id);
+  const title = document.createElement('h3');
+  title.textContent = p.title;
+  el.append(who, title);
+  for (const line of p.body) {
+    const para = document.createElement('p');
+    para.textContent = line;
+    el.append(para);
+  }
+  const foot = document.createElement('div');
+  foot.className = 'cardfoot';
+  foot.textContent = 'Ref ' + p.ref + ' - ' + p.cheers + ' cheers';
+  el.append(foot);
+  return el;
+}
+
+async function loadBatch(via) {
+  if (busy || !next) return;
+  busy = true;
+  statusEl.textContent = 'Loading older posts';
+  try {
+    const q = new URLSearchParams({ batch: String(next.batch), via });
+    if (next.cursor) q.set('cursor', next.cursor);
+    q.set('y', String(Math.round(window.scrollY)));
+    const r = await fetch('/api/fernwood/feed?' + q, {
+      headers: { 'X-Session-Nonce': NONCE },
+    });
+    if (!r.ok) throw new Error('feed ' + r.status);
+    const data = await r.json();
+    for (const p of data.posts) feedEl.append(card(p));
+    next = data.next ? { batch: data.next.batch, cursor: data.next.cursor } : null;
+    if (next) {
+      statusEl.textContent = 'Scroll for older posts';
+      io.unobserve(statusEl);
+      io.observe(statusEl);
+    } else {
+      statusEl.textContent = 'You are all caught up.';
+      io.unobserve(statusEl);
+    }
+  } catch {
+    statusEl.textContent = 'The feed did not load. Reload the page to try again.';
+  } finally {
+    busy = false;
+  }
+}
+
+const io = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+    if (e.isIntersecting && next && !busy) loadBatch('sentinel-' + next.batch);
+  }
+});
+
+loadBatch('load').then(() => io.observe(statusEl));
+</script>
+</body>
+</html>

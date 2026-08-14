@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Product - Monitors - Marrowgate</title>
+<link rel="stylesheet" href="marrowgate.css">
+<style>
+  .pdp { display: flex; gap: 26px; margin: 12px 22px 0; background: #fff; border: 1px solid var(--nb-rule); padding: 18px; }
+  .pdp .hero { width: 340px; flex: none; }
+  .pdp .hero svg { width: 340px; height: 200px; }
+  .pdp .detail { flex: 1; min-width: 0; }
+  .pdp h1 { font-size: 21px; margin: 0 0 6px; }
+  .pdp .modelline { font-size: 13px; color: #414a5e; margin: 0 0 10px; }
+  .pdp .spec { list-style: square; margin: 10px 0 0 18px; padding: 0; font-size: 13px; }
+  .pdp .spec li { margin: 2px 0; }
+  .buypanel { width: 250px; flex: none; border-left: 1px dotted var(--nb-rule); padding-left: 18px; }
+  .buypanel .pricetag { color: var(--nb-price); line-height: 1; }
+  .buypanel .whole { font-size: 34px; font-weight: bold; letter-spacing: -.02em; }
+  .buypanel .cur, .buypanel .frac { font-size: 16px; vertical-align: 16px; font-weight: bold; }
+  .buypanel .exc { font-size: 12px; color: #5b6478; margin: 6px 0 12px; }
+  .qline { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 10px; }
+  .qline input { width: 54px; font: inherit; padding: 4px; border: 1px solid var(--nb-rule); }
+  .buypanel button.add {
+    display: block; width: 100%; background: var(--nb-price); color: #fff; border: 0;
+    font: inherit; font-weight: bold; font-size: 15px; padding: 11px 0; cursor: pointer;
+  }
+  .buypanel button.add[disabled] { background: #e7e9ef; color: #6b7385; cursor: default; }
+  .buypanel .after { font-size: 12px; margin: 10px 0 0; min-height: 16px; }
+  .buypanel .after.bad { color: #8f1220; font-weight: bold; }
+  .buypanel .after.good { color: #1d5c2c; font-weight: bold; }
+  #missing { margin: 18px 22px; background: #fff; border: 1px solid var(--nb-rule); padding: 16px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="locstrip">
+  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <a href="stores.html">Change store</a>
+  <a href="orderstatus.html">Order status</a>
+  <a href="recycling.html">Trade-in and recycling</a>
+</div>
+<header class="masthead">
+  <a class="wordmark" href="index.html">marrowgate</a>
+  <form class="finder" onsubmit="return false">
+    <input aria-label="Search Marrowgate" placeholder="What can we help you find today?">
+    <button type="submit">Search</button>
+  </form>
+  <div class="acct">
+    <a href="account.html">My Marrowgate</a>
+    <a href="promos.html">Offers</a>
+    <a id="basketlink" href="basket.html">Basket</a>
+  </div>
+</header>
+<nav class="deptbar" aria-label="Departments">
+  <a href="departments.html#tv">TV &amp; Home Theater</a>
+  <a href="departments.html#computers">Computers &amp; Tablets</a>
+  <a class="on" href="index.html">Monitors</a>
+  <a href="departments.html#audio">Audio</a>
+  <a href="departments.html#smarthome">Smart Home</a>
+  <a href="departments.html#cameras">Cameras</a>
+  <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
+  <a href="departments.html#services">Services</a>
+</nav>
+<p class="crumbs">Home / Computers &amp; Tablets / Monitors / <span id="crumbname">Product</span></p>
+<div class="pdp" id="pdp" hidden>
+  <div class="hero" id="hero"></div>
+  <div class="detail">
+    <h1 id="pname"></h1>
+    <p class="modelline" id="modelline"></p>
+    <p id="blurb" style="font-size:13px;margin:0"></p>
+    <ul class="spec" id="spec"></ul>
+  </div>
+  <div class="buypanel">
+    <div class="pricetag" id="pricetag"></div>
+    <p class="exc">Price excludes tax and fees.</p>
+    <div class="qline">
+      <span>Quantity</span>
+      <input type="number" id="qty" min="1" max="10" value="1" aria-label="Quantity">
+    </div>
+    <button class="add" type="button" id="add">Add to basket</button>
+    <p class="after" id="after" role="status"></p>
+    <p class="exc" id="avail"></p>
+  </div>
+</div>
+<div id="missing" hidden>
+  That SKU is not carried at the Riverside store.
+  <a href="index.html">Back to all monitors</a>.
+</div>
+<footer class="legal">
+  <ul>
+    <li><a href="basket-help.html">Basket help</a></li>
+    <li><a href="returns.html">Return policy</a></li>
+    <li><a href="price-match.html">Price match</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="stores.html">Store directory</a></li>
+  </ul>
+  Prices shown exclude tax. Online prices may differ from prices in store. Marrowgate
+  matches any advertised price from a qualifying local retailer within seven days of
+  purchase. &copy; 2026 Marrowgate Retail Group.
+</footer>
+<script>window.MARROWGATE_NONCE = '__SESSION_NONCE__';</script>
+<script src="marrowgate-feed.js"></script>
+<script>
+const RESOLUTION = {
+  '1080p': 'Full HD 1920 x 1080',
+  '1440p': 'Quad HD 2560 x 1440',
+  '4K': '4K Ultra HD 3840 x 2160',
+};
+const sku = new URLSearchParams(location.search).get('sku') ?? '';
+const item = MARROWGATE_FEED.find((it) => it.sku === sku);
+
+function priceMarkup(price) {
+  const [whole, frac] = Number(price).toFixed(2).split('.');
+  return '<span class="cur">$</span><span class="whole">' + whole +
+    '</span><span class="frac">' + frac + '</span>';
+}
+
+async function refreshBasket() {
+  const res = await fetch('/api/shop/cart?store=marrowgate', {
+    headers: { 'X-Session-Nonce': window.MARROWGATE_NONCE },
+  });
+  if (!res.ok) return;
+  const body = await res.json();
+  document.getElementById('basketlink').textContent =
+    'Basket · ' + body.count + ' item' + (body.count === 1 ? '' : 's');
+}
+
+if (!item) {
+  document.getElementById('missing').hidden = false;
+} else {
+  const ready = item.availability === 'ships';
+  document.title = item.title + ' - Monitors - Marrowgate';
+  document.getElementById('crumbname').textContent = item.title;
+  document.getElementById('pname').textContent = item.title;
+  document.getElementById('modelline').textContent =
+    'SKU ' + item.sku + ' · ' + item.title.split(' ')[0];
+  const hue = (item.title.length * 29 + item.title.charCodeAt(0) * 7) % 360;
+  document.getElementById('hero').innerHTML =
+    '<svg viewBox="0 0 340 200" role="img" aria-label="Product image, ' + item.title + '">' +
+    '<rect width="340" height="200" fill="hsl(' + hue + ',22%,94%)"/>' +
+    '<rect x="34" y="16" width="272" height="148" rx="4" fill="#20242c"/>' +
+    '<rect x="46" y="26" width="248" height="126" fill="#39414f"/>' +
+    '<rect x="154" y="164" width="32" height="14" fill="#8a8f99"/>' +
+    '<rect x="118" y="178" width="104" height="8" fill="#b3b8c2"/></svg>';
+  document.getElementById('blurb').textContent =
+    item.screen + ' inch ' + RESOLUTION[item.res] + ' IPS panel, rated ' +
+    item.rating + ' out of 5 by ' + item.reviews.toLocaleString() + ' customers.';
+  document.getElementById('spec').innerHTML = [
+    item.screen + ' inch diagonal, matte anti-glare finish',
+    RESOLUTION[item.res] + ' native resolution',
+    (item.res === '4K' ? '60' : '165') + ' Hz refresh, IPS panel',
+    'HDMI and DisplayPort inputs, 100 x 100 VESA',
+  ].map((s) => '<li>' + s + '</li>').join('');
+  document.getElementById('pricetag').innerHTML = priceMarkup(item.price);
+  document.getElementById('avail').textContent = ready
+    ? 'Available to ship today.'
+    : 'Sold out online.';
+  const add = document.getElementById('add');
+  const after = document.getElementById('after');
+  add.disabled = !ready;
+  add.addEventListener('click', async () => {
+    after.className = 'after';
+    after.textContent = '';
+    const res = await fetch('/api/shop/cart/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nonce: window.MARROWGATE_NONCE,
+        store: 'marrowgate',
+        sku: item.sku,
+        qty: Number(document.getElementById('qty').value),
+      }),
+    });
+    const body = await res.json();
+    if (res.ok) {
+      after.className = 'after good';
+      after.textContent = 'Added to basket.';
+      document.getElementById('basketlink').textContent =
+        'Basket · ' + body.count + ' item' + (body.count === 1 ? '' : 's');
+    } else {
+      after.className = 'after bad';
+      after.textContent = body.error;
+    }
+  });
+  document.getElementById('pdp').hidden = false;
+  refreshBasket();
+}
+</script>
+</body>
+</html>

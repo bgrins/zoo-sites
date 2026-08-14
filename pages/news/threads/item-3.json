@@ -1,0 +1,91 @@
+{
+  "rank": 3,
+  "comments": [
+    {
+      "author": "chorded",
+      "age": "22 hours ago",
+      "text": "Lovely piece. One correction though: the article implies the ball-in-socket pointing concept originated in consumer computing and worked backwards into military systems. It was the other way around — early fire-control and radar plotting consoles needed a way to designate targets on a screen, and an inverted ball was the obvious mechanically robust answer for an operator wearing gloves on a moving platform. Consumer devices inherited the idea decades later.",
+      "replies": [
+        {
+          "author": "quietcursor",
+          "age": "21 hours ago",
+          "text": "OP here — you're right and I've updated the ordering in section 2, with a note crediting the correction. I conflated \"first widely documented\" with \"first built,\" which is exactly the trap the piece warns about in its intro. Embarrassing but fixable.",
+          "replies": [
+            {
+              "author": "chorded",
+              "age": "20 hours ago",
+              "text": "Respect for the fast correction. The radar-console lineage is genuinely underdocumented — most of what survives is in equipment maintenance manuals rather than anything historians would call a source."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "bitrotting",
+      "age": "20 hours ago",
+      "text": "Trackball evangelist checking in. I switched after a wrist injury in 2019 and never went back. The thing nobody tells you: thumb-operated and finger-operated trackballs are completely different devices that happen to share a name. Thumb balls are basically mice with the motion relocated; finger balls change your whole hand posture. The article lumps them together in the ergonomics section and it weakens an otherwise great piece.",
+      "replies": [
+        {
+          "author": "ulnarnerve",
+          "age": "19 hours ago",
+          "text": "Seconding this hard. Thumb trackballs gave me a different RSI than the mouse did — traded wrist extension for thumb overuse. Finger-operated with a wrist rest is what actually worked. N=1 obviously, but the distinction matters enough that conflating them is almost misinformation in an ergonomics context.",
+          "replies": [
+            {
+              "author": "flexortendon",
+              "age": "18 hours ago",
+              "text": "It really is N=1 all the way down with input ergonomics. I know people who fixed everything with a vertical mouse, people who needed a pen tablet, and one person who swears by a foot pedal for clicks. The honest general advice is \"vary your posture and rotate devices,\" which is unsatisfying, so nobody writes articles about it.",
+              "replies": [
+                {
+                  "author": "ulnarnerve",
+                  "age": "17 hours ago",
+                  "text": "\"The best input device is the next one\" — like exercise programs. Adaptation is the feature."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "opticalpickup",
+      "age": "18 hours ago",
+      "text": "The section on the transition from mechanical rollers to optical tracking undersells how big a deal it was. Mechanical trackballs needed constant cleaning — everyone of a certain age remembers scraping the gunk ring off the rollers. Optical tracking of the ball's surface pattern removed the single biggest maintenance annoyance and arguably saved the trackball from extinction in the arcade era, where machines took thousands of plays a week.",
+      "replies": [
+        {
+          "author": "coinop",
+          "age": "17 hours ago",
+          "text": "Arcade operator perspective (well, former): trackball games were simultaneously the most beloved and most hated cabinets on the floor. Beloved by players, hated by techs. A bowling or golf game trackball took genuinely violent abuse — full-palm slams, drinks, once a shoe. The mechanical assemblies were built like tank bearings and still needed monthly service. Optical helped but the bearings were still the wear item."
+        },
+        {
+          "author": "quietcursor",
+          "age": "16 hours ago",
+          "text": "OP here — the arcade durability angle is great, and honestly deserved more than the one paragraph I gave it. If either of you have sources on arcade trackball service intervals I'd love to expand that section. My email's in the footer."
+        }
+      ]
+    },
+    {
+      "author": "staticdrift",
+      "age": "14 hours ago",
+      "text": "Is there a good reason trackballs never got the high-DPI gaming treatment? Serious question. Modern mouse sensors are absurdly good, and a ball gives you effectively infinite travel with no desk space. You'd think at least one niche vendor would chase the flick-heavy gaming crowd.",
+      "replies": [
+        {
+          "author": "yawpitch",
+          "age": "13 hours ago",
+          "text": "The ball has mass, and that's the whole answer. Precision aiming is about stopping, not moving — a mouse stops when your hand stops, a ball has angular momentum you have to actively arrest. Low-mass balls help but then you lose the smooth coasting that makes trackballs pleasant. It's a genuine physics tradeoff, not a market oversight.",
+          "replies": [
+            {
+              "author": "staticdrift",
+              "age": "12 hours ago",
+              "text": "Momentum as a feature for scrolling and a bug for aiming — that's a satisfying answer, thanks."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "tokenring",
+      "age": "6 hours ago",
+      "text": "Fun thread. Related shameless plug: I maintain a little museum site cataloging pointing device patents by mechanism (pointertaxonomy.example.com) — ball, puck, stick, pad, pen, and the truly weird stuff like knee-operated levers. The trackball family tree alone has 40+ entries. Corrections welcome, the older patents are hard to interpret."
+    }
+  ]
+}

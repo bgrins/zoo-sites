@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Binthral — Replenishment — Brantmoor Depot</title>
+<style>
+  :root {
+    --teal: #10403b; --teal-dark: #0a2b28; --rust: #a8442a; --paper: #f4f2ec;
+    --rule: #cfcabb; --rule-soft: #e3dfd4; --ink: #23241f; --dim: #6b6a60;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", sans-serif; font-size: 13px; line-height: 1.4; }
+  a { color: var(--teal); }
+  .topbar { display: flex; align-items: baseline; gap: 18px; background: var(--teal); color: #e8efe9; padding: 9px 18px; border-bottom: 3px solid var(--teal-dark); }
+  .topbar .brand { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; }
+  .topbar .app { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #9dbdb2; }
+  .topbar .who { margin-left: auto; font-size: 11px; color: #b8cec6; }
+  .subbar { display: flex; align-items: center; gap: 14px; background: #e8e4d9; border-bottom: 1px solid var(--rule); padding: 5px 18px; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.09em; }
+  .subbar b { color: var(--ink); font-weight: bold; }
+  .layout { display: flex; align-items: stretch; min-height: 520px; }
+  .rail { width: 178px; flex: 0 0 178px; background: #ebe7dc; border-right: 1px solid var(--rule); padding: 14px 0; }
+  .rail h2 { margin: 0 0 6px; padding: 0 14px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8878; font-weight: bold; }
+  .rail a, .rail span.item { display: block; padding: 5px 14px; color: #33352c; text-decoration: none; border-left: 3px solid transparent; }
+  .rail span.item.on { background: #fbfaf6; border-left-color: var(--rust); font-weight: bold; }
+  .rail .sep { height: 1px; background: var(--rule); margin: 12px 0; }
+  .main { flex: 1; padding: 18px 22px 26px; min-width: 0; }
+  h1 { margin: 0 0 2px; font-size: 19px; letter-spacing: 0.01em; }
+  .lede { margin: 0 0 16px; color: var(--dim); font-size: 12px; }
+  .empty { border: 1px dashed var(--rule); background: #fbfaf6; color: var(--dim); padding: 16px 14px; margin: 0 0 16px; max-width: 640px; }
+  .panel { border: 1px solid var(--rule); border-top: 3px solid var(--teal); background: #fbfaf6; padding: 12px 14px 13px; margin: 0 0 16px; max-width: 640px; }
+  .panel h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--teal); }
+  .panel p { margin: 0 0 8px; }
+  .panel p:last-child { margin-bottom: 0; }
+  .panel ol, .panel ul { margin: 0 0 8px; padding-left: 18px; }
+  .panel li { margin: 0 0 4px; }
+  footer { margin-top: 26px; border-top: 1px solid var(--rule); padding: 12px 22px 30px; font-size: 11px; color: #7c7b6d; }
+  footer p { margin: 0 0 3px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="brand">Brantmoor Depot</span>
+  <span class="app">Binthral 4.2</span>
+  <span class="who">Warehouse 03 &middot; Signed in: a.vetter (Count supervisor)</span>
+</div>
+<div class="subbar">
+  <span>Inventory</span><span>&rsaquo;</span><b>Replenishment</b>
+</div>
+<div class="layout">
+  <nav class="rail">
+    <h2>Operations</h2>
+    <a href="/grid-edit/receiving.html">Receiving</a>
+    <a href="/grid-edit/putaway.html">Putaway</a>
+    <a href="/grid-edit/">Cycle counts</a>
+    <span class="item on">Replenishment</span>
+    <a href="/grid-edit/despatch.html">Despatch</a>
+    <div class="sep"></div>
+    <h2>Reference</h2>
+    <a href="/grid-edit/bin-map.html">Bin map</a>
+    <a href="/grid-edit/item-master.html">Item master</a>
+    <a href="/grid-edit/count-history.html">Count history</a>
+  </nav>
+  <main class="main">
+    <h1>Replenishment</h1>
+    <p class="lede">Moves that top up pick faces in Bays D to F from bulk and reserve
+      storage.</p>
+    <div class="empty">No replenishment moves are waiting. All pick faces were brought up
+      to standard in the morning wave and no urgent top-ups have been raised since.</div>
+    <div class="panel">
+      <h3>Wave schedule</h3>
+      <ul>
+        <li>06:00 &mdash; full sweep of every pick face before the day shift picks.</li>
+        <li>11:30 &mdash; midday top-up covering the morning's fast movers.</li>
+        <li>16:00 &mdash; pre-despatch wave ahead of the evening carrier collections.</li>
+      </ul>
+      <p>Between waves, a team leader can raise an urgent move when a picker reports an
+        empty face. Urgent moves jump the queue and are confirmed by scan like any other
+        move.</p>
+      <p>Replenishment never adjusts counted stock; if a face looks wrong rather than
+        empty, it is referred to <a href="/grid-edit/">cycle counts</a> instead.</p>
+    </div>
+  </main>
+</div>
+<footer>
+  <p>Brantmoor Depot Ltd &middot; Unit 7, Kelvinbrae Industrial Estate, Ardwick &middot; Stock desk 0161 496 0142</p>
+  <p>&copy; 2026 Brantmoor Depot Ltd. <a href="/grid-edit/privacy.html">Privacy notice</a> &middot; <a href="/grid-edit/terms.html">Terms of use</a> &middot; <a href="/grid-edit/standards.html">Warehouse standards</a></p>
+</footer>
+</body>
+</html>

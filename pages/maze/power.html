@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Power and thermal — Kestrel 4 — Ostara Surface Systems</title>
+<link rel="stylesheet" href="maze.css">
+</head>
+<body>
+<div class="mast">
+  <span class="org">Ostara Surface Systems</span>
+  <span class="div">Surface fleet operations</span>
+  <span class="who">drive team 2 &middot; k.oyelaran@ostara-surface.example</span>
+</div>
+<div class="chips">
+  <span class="chip">Sol 214</span>
+  <span class="chip">Site Vantor Basin</span>
+  <span class="chip">Rover Kestrel 4</span>
+  <span class="chip">Panel power and thermal</span>
+</div>
+<div class="shell">
+  <nav class="rail">
+    <h2>Kestrel 4</h2>
+    <a href="index.html">Traverse</a>
+    <a href="survey.html">Survey record</a>
+    <a href="power.html" class="on">Power and thermal</a>
+    <a href="instruments.html">Instruments</a>
+    <a href="uplink.html">Uplink windows</a>
+    <a href="hazard.html">Hazard review</a>
+    <a href="archive.html">Sol archive</a>
+    <a href="handbook.html" class="sep">Drive handbook</a>
+  </nav>
+  <main class="content">
+    <h1>Power and thermal</h1>
+    <p class="lede">Bus, array and thermal readings for Kestrel 4, refreshed at each downlink.
+    Values below are the sol 214 morning pass. Drive power draw is bounded by the interlock,
+    so the traverse budget is set by array output and battery margin, not by drive count.</p>
+
+    <div class="decks">
+      <section class="deck deck-drive">
+        <h2>Electrical bus</h2>
+        <p class="tel">BUS 28.3 V</p>
+        <p class="tel">BATT 87 PCT</p>
+        <p class="tel">ARRAY 412 W</p>
+        <p class="tel">LOAD 143 W</p>
+        <p class="tel">MARGIN 269 W</p>
+        <p class="legend">Battery state of charge must stay above 40 percent before the
+        overnight heater load is committed. Below that floor the drive deck is inhibited
+        for the rest of the sol.</p>
+      </section>
+
+      <section class="deck deck-log">
+        <h2>Thermal zones</h2>
+        <p class="tel">AVIONICS +18 C</p>
+        <p class="tel">BATT BAY +11 C</p>
+        <p class="tel">MOTOR 1 +26 C</p>
+        <p class="tel">MOTOR 2 +24 C</p>
+        <p class="tel">MAST HEAD -4 C</p>
+        <p class="legend">Motor windings are limited to +65 C. Repeated drives against the
+        hazard interlock raise winding temperature without covering ground, which is one of
+        the reasons refused headings should not be retried back to back.</p>
+      </section>
+
+      <section class="deck deck-log">
+        <h2>Energy plan, sol 214</h2>
+        <ul class="logbook">
+          <li>WAKE 07:40 LST heaters off</li>
+          <li>ARRAY peak expected 13:10 LST</li>
+          <li>DRIVE window 09:00-16:30 LST</li>
+          <li>COMM pass reserve 55 Wh held</li>
+          <li>SLEEP 18:05 LST heaters on</li>
+        </ul>
+        <p class="legend">The drive window closes early if battery margin drops. Timing of
+        downlinks is listed on the <a href="uplink.html">uplink windows</a> sheet.</p>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="foot">
+  <p class="links">
+    <a href="data-policy.html">Data policy</a>
+    <a href="terms.html">Operating terms</a>
+    <a href="contact.html">Contact the drive desk</a>
+  </p>
+  <p>&copy; 2026 Ostara Surface Systems Ltd. Registered office: 14 Bellamy Wharf,
+  Tarnbridge TR4 2QN. Flight operations support: ops-desk@ostara-surface.example,
+  +44 20 7946 0812.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Millrace</title>
+<link rel="stylesheet" href="millrace.css">
+<style>
+  #digestveil { position: fixed; inset: 0; background: rgba(28, 20, 52, 0.66); z-index: 90; }
+  #digestbox { position: fixed; top: 15%; left: 50%; transform: translateX(-50%);
+               width: 412px; max-width: 88%; background: #fff; z-index: 91;
+               border: 1px solid #cfc5ec; border-radius: 8px;
+               padding: 18px 20px 18px; box-shadow: 0 14px 34px rgba(30, 20, 60, 0.34); }
+  #digestbox h2 { font-size: 15px; margin: 0 0 7px; color: #33265f; letter-spacing: 0.02em; }
+  #digestbox p { font-size: 12.5px; line-height: 1.55; color: #4a4364; margin: 0 0 12px; }
+  #digestbox .fine { font-size: 11px; color: #8b83a3; margin: 10px 0 0; }
+  #digestbox input { font-family: inherit; font-size: 12.5px; padding: 6px 9px;
+                     border: 1px solid #ded8ee; border-radius: 4px; background: #faf9fe;
+                     color: #241f33; width: 58%; }
+  #digestbox button.join { font-family: inherit; font-size: 12.5px; font-weight: 700;
+                           padding: 6px 15px; margin-left: 6px; border: 0; border-radius: 4px;
+                           background: #5b3fc4; color: #fff; cursor: pointer; }
+  #digestclose { position: absolute; top: 8px; right: 9px; width: 22px; height: 22px;
+                 line-height: 20px; font-family: inherit; font-size: 15px; padding: 0;
+                 border: 1px solid #e4dff3; border-radius: 4px; background: #f6f3fe;
+                 color: #6d6688; cursor: pointer; }
+  #digestbox .note { font-size: 11.5px; color: #3f7a4a; margin: 10px 0 0; }
+</style>
+</head>
+<body>
+<header id="masthead">
+  <div class="masthead-in">
+    <a class="wordmark" href="/news/">millrace</a>
+    <span class="tagline">a working stream for people who build things</span>
+    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+  </div>
+</header>
+<nav id="tabs" aria-label="Sections">
+  <div class="tabs-in">
+    <a class="tab on" href="/news/">Stream</a>
+    <a class="tab" href="/news/?sort=fresh">Fresh</a>
+    <a class="tab" href="/news/?view=threads">Threads</a>
+    <a class="tab" href="/news/?tag=asks">Asks</a>
+    <a class="tab" href="/news/?tag=build">Build logs</a>
+    <a class="tab" href="/news/?tag=jobs">Hiring</a>
+    <a class="tab" href="/news/submit.html">Submit a link</a>
+    <form class="seek" action="/news/" method="get" role="search">
+      <input type="search" name="q" aria-label="Search the stream" placeholder="Search the stream">
+      <button type="submit">Go</button>
+    </form>
+  </div>
+</nav>
+<div id="wrap">
+  <main id="main">
+    <div class="streamhead">
+      <h1>Today on the stream</h1>
+      <span class="note">re-ranked every ten minutes on votes and reply pace</span>
+    </div>
+    <ol id="stream"></ol>
+    <p class="pager"><a href="/news/?p=2">older submissions</a></p>
+  </main>
+  <aside id="rail">
+    <div class="card">
+      <h2>About millrace</h2>
+      <p>Forty-one thousand people who build software, hardware and other stubborn
+        things, reading each other's work. Anyone with an account can submit a link
+        or start a thread.</p>
+      <p class="meta"><a href="/news/about.html">How the ranking works</a></p>
+    </div>
+    <div class="card">
+      <h2>House rules</h2>
+      <ul>
+        <li>Reply to the strongest version of the argument.</li>
+        <li>Say who you work for when it is relevant.</li>
+        <li>Title your submission the way the author would.</li>
+        <li>One account per person, one vote per submission.</li>
+      </ul>
+      <p class="meta"><a href="/news/guidelines.html">Full guidelines</a> &middot;
+        <a href="/news/moderation.html">Moderation log</a></p>
+    </div>
+    <div class="card">
+      <h2>Threads moving fastest</h2>
+      <ul>
+        <li><a href="item.html?id=25">Notes on running a tiny ISP for my street</a>
+          <span class="meta">4 new replies</span></li>
+        <li><a href="item.html?id=26">The typography of transit maps</a>
+          <span class="meta">3 new replies</span></li>
+        <li><a href="item.html?id=31">Estimating pi with a pendulum and a webcam</a>
+          <span class="meta">2 new replies</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>From our sister letter</h2>
+      <p><a href="article.html">Keeping a Small Team Sane</a> &mdash; Rowena Callis
+        on no-meeting days, decision memos and the interrupt catcher, in Grindstone
+        Weekly's management column.</p>
+      <p class="meta">Grindstone Weekly is Weirgate's print letter on running small
+        companies; one essay a week crosses the stream.</p>
+    </div>
+    <div class="card">
+      <h2>Friday digest</h2>
+      <p>The week's ten highest-ranked submissions and one thread worth reading in
+        full, in a single email.</p>
+      <p class="meta"><a href="/news/?promo=1">See this week's issue</a></p>
+    </div>
+  </aside>
+</div>
+<footer id="footer">
+  <div class="footer-in">
+    <p class="footer-nav">
+      <a href="/news/about.html">About</a> &middot;
+      <a href="/news/guidelines.html">Guidelines</a> &middot;
+      <a href="/news/moderation.html">Moderation log</a> &middot;
+      <a href="/news/feeds.html">Feeds</a> &middot;
+      <a href="/news/status.html">Status</a> &middot;
+      <a href="/news/advertise.html">Sponsor a day</a> &middot;
+      <a href="/news/privacy.html">Privacy</a> &middot;
+      <a href="/news/terms.html">Terms</a> &middot;
+      <a href="/news/contact.html">Contact</a>
+    </p>
+    <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
+      Ashvale, VT 05412. Moderation questions go to
+      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      help@millrace.example.</p>
+    <p>Submissions and replies remain the work of their authors. Copyright 2026
+      Weirgate Collective LLC.</p>
+  </div>
+</footer>
+<script>
+  (function () {
+    const params = new URLSearchParams(location.search);
+    const page = params.get('p') === '2' ? 2 : 1;
+    const sort = params.get('sort') || '';
+    const view = params.get('view') || '';
+    const tag = (params.get('tag') || '').trim().toLowerCase();
+    const query = (params.get('q') || '').trim();
+    const away = page === 2 || sort === 'fresh' || view === 'threads' || tag !== '' || query !== '';
+
+    const stream = document.getElementById('stream');
+
+    function entryHtml(item) {
+      const itemUrl = `item.html?id=${item.rank}`;
+      const origin = item.site ? ` <span class="origin">${item.site}</span>` : '';
+      const lead =
+        item.type === 'job'
+          ? '<span class="chip">hiring</span>'
+          : `<a class="tally" href="/news/signin.html" title="Vote this up">${item.points}` +
+            `<span class="unit">points</span></a>`;
+      const replies =
+        item.comments === 0
+          ? `<a href="${itemUrl}">no replies yet</a>`
+          : `<a href="${itemUrl}">${item.comments}&nbsp;${item.comments === 1 ? 'reply' : 'replies'}</a>`;
+      const byline =
+        item.type === 'job'
+          ? `sponsored listing &middot; posted ${item.age} &middot; ` +
+            `<a class="topic" href="/news/?tag=jobs">jobs</a>`
+          : `<a class="who" href="member.html?u=${item.author}">${item.author}</a> &middot; ${item.age} &middot; ` +
+            `<a class="topic" href="/news/?tag=${item.tag}">${item.tag}</a> &middot; ${replies}`;
+      return (
+        `<li class="entry${item.type === 'job' ? ' sponsor' : ''}" data-slot="${item.rank}">` +
+        `${lead}` +
+        `<p class="headline"><span class="slot">${item.rank}</span>` +
+        `<a href="${itemUrl}">${item.title}</a>${origin}</p>` +
+        `<p class="byline">${byline}</p></li>`
+      );
+    }
+
+    function render(list) {
+      for (const item of list) {
+        stream.insertAdjacentHTML('beforeend', entryHtml(item));
+      }
+    }
+
+    if (!away) {
+      fetch('items.json')
+        .then((r) => r.json())
+        .then(render);
+      return;
+    }
+
+    // The query-string views re-rank or filter the same data the front page
+    // renders, plus the older second page of the stream.
+    const seek = document.querySelector('.seek input');
+    if (seek && query) seek.value = query;
+
+    const want = tag
+      ? `/news/?tag=${tag}`
+      : sort === 'fresh'
+        ? '/news/?sort=fresh'
+        : view === 'threads'
+          ? '/news/?view=threads'
+          : '';
+    for (const t of document.querySelectorAll('#tabs .tab')) {
+      t.classList.toggle('on', t.getAttribute('href') === want);
+    }
+
+    const hoursOld = (age) => {
+      const m = /(\d+)\s+(hour|day)/.exec(age || '');
+      return m ? Number(m[1]) * (m[2] === 'day' ? 24 : 1) : 0;
+    };
+
+    const TAB_NAMES = { asks: 'Asks', build: 'Build logs', jobs: 'Hiring' };
+    const head = document.querySelector('.streamhead h1');
+    const note = document.querySelector('.streamhead .note');
+    const pager = document.querySelector('.pager');
+
+    Promise.all([
+      fetch('items.json').then((r) => r.json()),
+      fetch('items2.json').then((r) => (r.ok ? r.json() : [])).catch(() => []),
+    ]).then(([front, older]) => {
+      let list;
+      let empty = 'Nothing on the stream matches.';
+      if (page === 2) {
+        list = older;
+        head.textContent = 'Older submissions';
+        note.textContent =
+          'page 2 — submissions drop off the stream entirely after a couple of days';
+        pager.innerHTML =
+          '<a href="/news/">back to the front page</a> <span class="meta">&middot; ' +
+          'this is the end of the stream</span>';
+      } else {
+        list = front.concat(older);
+        pager.innerHTML = '<a href="/news/">back to the full stream</a>';
+        if (tag) {
+          list = list.filter((item) => (item.type === 'job' ? 'jobs' : item.tag) === tag);
+          head.textContent = TAB_NAMES[tag] ?? 'Tagged: ' + tag;
+          note.textContent = 'submissions tagged "' + tag + '", best-ranked first';
+          empty = 'Nothing on the stream is tagged "' + tag + '" right now.';
+        }
+        if (query) {
+          const needle = query.toLowerCase();
+          list = list.filter((item) =>
+            [item.title, item.author, item.site, item.tag]
+              .filter(Boolean)
+              .some((v) => v.toLowerCase().includes(needle))
+          );
+          head.textContent = 'Search the stream';
+          note.textContent = 'submissions matching "' + query + '"';
+          empty =
+            'Nothing on the stream matches "' + query + '". The stream only keeps ' +
+            'a couple of days of submissions; the tag pages cover the same ground.';
+        }
+        if (view === 'threads') {
+          list = list
+            .filter((item) => (item.comments ?? 0) > 0)
+            .sort((a, b) => b.comments - a.comments || a.rank - b.rank);
+          head.textContent = 'Threads';
+          note.textContent = 'the busiest discussions on the stream, most replies first';
+        }
+        if (sort === 'fresh') {
+          list = list.slice().sort((a, b) => hoursOld(a.age) - hoursOld(b.age) || a.rank - b.rank);
+          head.textContent = 'Fresh';
+          note.textContent = 'newest submissions first, before the ranking has had its say';
+        }
+      }
+      if (!list.length) {
+        const holder = document.createElement('li');
+        holder.className = 'empty';
+        holder.textContent = empty;
+        stream.appendChild(holder);
+        return;
+      }
+      render(list);
+    });
+  })();
+</script>
+<script>
+  (function () {
+    if (new URLSearchParams(location.search).get('promo') !== '1') return;
+
+    const NONCE = '__SESSION_NONCE__';
+    let closed = false;
+    let token = null;
+
+    function announce() {
+      return fetch('/api/modal-shown', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE }),
+      }).then(async (res) => {
+        const body = await res.json().catch(() => null);
+        if (body && body.token) {
+          token = body.token;
+          box.dataset.dismissToken = body.token;
+        }
+        return res;
+      });
+    }
+
+    // Announced before the modal exists, so a dismissal can never reach the
+    // server before the server knows the modal was shown.
+    let announceSettled = false;
+    const announced = announce()
+      .catch(() => {})
+      .finally(() => {
+        announceSettled = true;
+      });
+
+    function post(method) {
+      // The body is built per attempt so a retry after a fresh announce
+      // carries the current token, not the one from before the 409/403.
+      const opts = () => ({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, method, token }),
+        keepalive: true,
+      });
+      return fetch('/api/modal-dismiss', opts()).then((res) =>
+        res.status === 409 || res.status === 403
+          ? announce().then(() => fetch('/api/modal-dismiss', opts()))
+          : res
+      );
+    }
+
+    function send(method, viaBeacon) {
+      if (viaBeacon && navigator.sendBeacon) {
+        // Sent synchronously: it has to survive a same-turn navigation. If the
+        // announce is still in flight it may arrive too early, so fall through
+        // to the ordered retry in that case only.
+        navigator.sendBeacon(
+          '/api/modal-dismiss',
+          new Blob([JSON.stringify({ nonce: NONCE, method, token })], {
+            type: 'application/json',
+          })
+        );
+        if (announceSettled && token) return;
+      }
+      announced.then(() => post(method)).catch(() => {});
+    }
+
+    const veil = document.createElement('div');
+    veil.id = 'digestveil';
+
+    const box = document.createElement('div');
+    box.id = 'digestbox';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-labelledby', 'digesttitle');
+    box.innerHTML =
+      '<button id="digestclose" type="button" aria-label="Close" title="Close">&times;</button>' +
+      '<h2 id="digesttitle">The Friday digest</h2>' +
+      '<p>One email a week: the ten highest-ranked submissions, the thread we would ' +
+      'have sent a friend, and nothing else. Free while the list stays small.</p>' +
+      '<div><input id="digestemail" type="email" autocomplete="email" ' +
+      'placeholder="you@example.com" aria-label="Email address">' +
+      '<button class="join" id="digestjoin" type="button">Subscribe</button></div>' +
+      '<p class="fine" id="digestfine">One message a week, and we never rent the list. ' +
+      'Unsubscribe from the footer of any issue.</p>';
+
+    const wrap = document.getElementById('wrap');
+
+    function focusables() {
+      return Array.from(
+        box.querySelectorAll('button, input, [href], [tabindex]:not([tabindex="-1"])')
+      ).filter((el) => !el.disabled && el.offsetParent !== null);
+    }
+
+    function onKeydown(e) {
+      if (closed) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        dismiss('esc');
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const list = focusables();
+      if (!list.length) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !box.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !box.contains(active))) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    function onFocusIn(e) {
+      if (closed || box.contains(e.target)) return;
+      const list = focusables();
+      if (list.length) list[0].focus();
+    }
+
+    function teardown() {
+      document.removeEventListener('keydown', onKeydown, true);
+      document.removeEventListener('focusin', onFocusIn, true);
+      veil.remove();
+      box.remove();
+      if (wrap) wrap.removeAttribute('aria-hidden');
+    }
+
+    const observer = new MutationObserver(() => {
+      if (closed || (box.isConnected && veil.isConnected)) return;
+      closed = true;
+      observer.disconnect();
+      send('removed', true);
+      teardown();
+    });
+
+    function dismiss(method) {
+      if (closed) return;
+      closed = true;
+      observer.disconnect();
+      send(method);
+      teardown();
+    }
+
+    veil.addEventListener('click', () => {
+      if (!closed) send('overlay');
+    });
+    box.addEventListener('click', (e) => {
+      if (e.target.id === 'digestclose') dismiss('button');
+      if (e.target.id !== 'digestjoin') return;
+      const email = box.querySelector('#digestemail');
+      const fine = box.querySelector('#digestfine');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim())) {
+        fine.textContent = 'Enter a valid email address to subscribe.';
+        return;
+      }
+      fine.className = 'note';
+      fine.textContent = 'Almost there: confirm the link we just emailed you.';
+    });
+
+    document.addEventListener('keydown', onKeydown, true);
+    document.addEventListener('focusin', onFocusIn, true);
+
+    if (wrap) wrap.setAttribute('aria-hidden', 'true');
+    document.body.prepend(veil, box);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    box.querySelector('#digestclose').focus();
+  })();
+</script>
+</body>
+</html>

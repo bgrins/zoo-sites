@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Help centre — Kelverne Fibre</title>
+<link rel="stylesheet" href="support.css">
+</head>
+<body>
+<div class="util">
+  <span>Faults line 03069 990180</span>
+  <span>Advisers online 07:00-23:00</span>
+  <span class="push"><a href="account.html">My account</a></span>
+  <span><a href="coverage.html">Coverage checker</a></span>
+  <span><a href="signout.html">Sign out</a></span>
+</div>
+
+<header class="top">
+  <div class="mark"><b>Kelverne</b><span>Fibre &middot; Help Centre</span></div>
+</header>
+
+<div class="shell">
+  <aside class="rail">
+    <h2>Browse help</h2>
+    <ol>
+      <li><a href="index.html" class="here"><span class="no">01</span>Connection problems</a></li>
+      <li><a href="wifi.html"><span class="no">02</span>Wi-Fi and equipment</a></li>
+      <li><a href="speed.html"><span class="no">03</span>Speed and performance</a></li>
+      <li><a href="billing.html"><span class="no">04</span>Billing and payments</a></li>
+      <li><a href="moving.html"><span class="no">05</span>Moving home</a></li>
+      <li><a href="contracts.html"><span class="no">06</span>Contracts and notice</a></li>
+    </ol>
+    <h2>Your service</h2>
+    <p class="note">Account and equipment details are on your account page.</p>
+    <p class="note"><a href="account.html">Open my account</a></p>
+  </aside>
+
+  <main class="body">
+    <h1>Connection problems</h1>
+    <p class="lede">Most dropouts clear themselves within a few minutes. If yours keep
+    coming back, an adviser can raise a case and book an engineer.</p>
+
+    <h2>Before you get in touch</h2>
+    <div class="cards">
+      <a class="item" href="status.html"><b>Check for an outage</b><span>Planned work and faults in your area</span></a>
+      <a class="item" href="guides.html#lights"><b>Read the status lights</b><span>What white, amber and red mean</span></a>
+      <a class="item" href="guides.html#restart"><b>Restart your gateway</b><span>The order to power things back up in</span></a>
+      <a class="item" href="guides.html#wired"><b>Test a wired device</b><span>Ruling Wi-Fi in or out in two minutes</span></a>
+    </div>
+
+    <h2 id="adviser">Raise it with an adviser</h2>
+    <div class="stuck">
+      <h3>Still dropping out?</h3>
+      <p>Start a chat and describe what you are seeing. The adviser will check your
+      equipment record against the line before raising a case, so have your account
+      page to hand.</p>
+      <button id="startChat" type="button">Chat with an adviser</button>
+    </div>
+
+    <h2>Other ways to reach us</h2>
+    <p>Call the faults line on 03069 990180 (07:00-23:00, seven days). Cases raised in
+    chat are worked in the same queue as calls, and you keep the reference either way.</p>
+  </main>
+</div>
+
+<footer class="foot">
+  <div class="cols">
+    <div>
+      <h4>Support</h4>
+      <a href="status.html">Service status</a>
+      <a href="index.html#adviser">Report a fault</a>
+      <a href="engineer.html">Engineer visits</a>
+    </div>
+    <div>
+      <h4>Account</h4>
+      <a href="account.html">My account</a>
+      <a href="billing.html">Bills and payments</a>
+      <a href="plan.html">Change your plan</a>
+    </div>
+    <div>
+      <h4>Legal</h4>
+      <a href="legal.html#privacy">Privacy notice</a>
+      <a href="legal.html#terms">Terms of service</a>
+      <a href="legal.html#complaints">Complaints code</a>
+    </div>
+  </div>
+  <div class="fine">
+    Kelverne Fibre Networks Ltd, Bolt House, 2 Redgate Wharf, Ashcombe AS3 7LN.
+    Registered number 00000000. Written enquiries: help@kelverne-fibre.example
+    &middot; &copy; 2026 Kelverne Fibre Networks Ltd.
+  </div>
+</footer>
+
+<div class="dock" id="dock" hidden>
+  <div class="bar">
+    <span class="who" id="dockWho">Support chat</span>
+    <span class="ref" id="dockRef"></span>
+    <button class="shut" id="shut" type="button" aria-label="Hide chat">Hide</button>
+  </div>
+  <div class="log" id="log" role="log" aria-live="polite"></div>
+  <p class="state" id="state" role="status">Connecting you to an adviser.</p>
+  <div class="compose">
+    <textarea id="draft" rows="2" placeholder="Type your message" aria-label="Message to the adviser"></textarea>
+    <button id="send" type="button">Send</button>
+  </div>
+</div>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const dock = document.getElementById('dock');
+  const launcher = document.getElementById('startChat');
+  const log = document.getElementById('log');
+  const state = document.getElementById('state');
+  const draft = document.getElementById('draft');
+  const send = document.getElementById('send');
+  const dockWho = document.getElementById('dockWho');
+  const dockRef = document.getElementById('dockRef');
+  const shut = document.getElementById('shut');
+  // The transcript is a scroll box, not an archive: only the most recent
+  // exchanges stay in the DOM, so a long conversation does not grow the widget
+  // without bound.
+  const KEPT = 8;
+  let shown = 0;
+  let timer = null;
+
+  function addMessage(msg, adviser) {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + (msg.from === 'you' ? 'you' : 'adviser');
+    const who = document.createElement('p');
+    who.className = 'who';
+    who.textContent = msg.from === 'you' ? 'You' : adviser.split(' ')[0];
+    const txt = document.createElement('p');
+    txt.className = 'txt';
+    txt.textContent = msg.text;
+    wrap.appendChild(who);
+    wrap.appendChild(txt);
+    log.appendChild(wrap);
+    while (log.children.length > KEPT) log.removeChild(log.firstElementChild);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  async function poll() {
+    let data;
+    try {
+      const res = await fetch('/api/support/thread', { headers: { 'X-Session-Nonce': NONCE } });
+      data = await res.json();
+    } catch {
+      state.textContent = 'Reconnecting to the chat service.';
+      return;
+    }
+    if (!data || !Array.isArray(data.messages)) return;
+    dockWho.textContent = data.adviser;
+    for (let i = shown; i < data.messages.length; i++) addMessage(data.messages[i], data.adviser);
+    shown = data.messages.length;
+    if (data.caseNumber) dockRef.textContent = 'Case ' + data.caseNumber;
+    state.textContent = data.typing
+      ? data.adviser.split(' ')[0] + ' is typing'
+      : 'Adviser is waiting for you.';
+  }
+
+  function openChat() {
+    dock.hidden = false;
+    launcher.disabled = true;
+    launcher.textContent = 'Chat open';
+    try {
+      sessionStorage.setItem('kf-chat', 'open');
+    } catch {}
+    if (!timer) {
+      poll();
+      timer = setInterval(poll, 1100);
+    }
+    draft.focus();
+  }
+
+  // Minimising only hides the widget: the conversation is server-side, so
+  // reopening replays whatever has fallen due in the meantime.
+  function minimiseChat() {
+    dock.hidden = true;
+    launcher.disabled = false;
+    launcher.textContent = 'Chat with an adviser';
+    try {
+      sessionStorage.removeItem('kf-chat');
+    } catch {}
+    launcher.focus();
+  }
+
+  async function submit() {
+    const text = draft.value.trim();
+    if (!text) {
+      state.textContent = 'Type a message first.';
+      return;
+    }
+    send.disabled = true;
+    draft.value = '';
+    try {
+      const res = await fetch('/api/support/msg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, text }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        state.textContent = err.error ? 'Not sent: ' + err.error : 'Message was not sent.';
+      }
+    } catch {
+      state.textContent = 'Message was not sent.';
+    }
+    send.disabled = false;
+    poll();
+  }
+
+  launcher.addEventListener('click', openChat);
+  shut.addEventListener('click', minimiseChat);
+  try {
+    if (sessionStorage.getItem('kf-chat') === 'open') openChat();
+  } catch {}
+  send.addEventListener('click', submit);
+  draft.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      submit();
+    }
+  });
+</script>
+</body>
+</html>

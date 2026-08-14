@@ -1,0 +1,34 @@
+{
+  "rank": 29,
+  "comments": [
+    {
+      "author": "tokenring",
+      "age": "20 hours ago",
+      "text": "Given my handle I feel personally addressed by chapter 4. For the record: deterministic latency was a real advantage, and some of us maintained rings well into an era when it was deeply unfashionable. The protocols didn't fail, the economics did.",
+      "replies": [
+        {
+          "author": "gopherhole",
+          "age": "18 hours ago",
+          "text": "OP here — that's basically the thesis of the whole guide. Almost none of these protocols were abandoned for technical reasons. They lost procurement battles, or their one committed vendor pivoted, or they solved a problem that stopped existing. Writing the obituaries fairly meant separating the engineering from the funeral.",
+          "replies": [
+            {
+              "author": "pagetable",
+              "age": "15 hours ago",
+              "text": "The exception being the ones that died of their own extensibility. A few of those protocols collapsed under optional-feature matrices no two implementations agreed on. That's a technical death, just a slow one."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "lambdacurious",
+      "age": "13 hours ago",
+      "text": "Is there a companion list of abandoned protocols that quietly refuse to die? I keep finding twenty-year-old field equipment chattering away in serial dialects that officially ceased to exist. Abandonment is a spectrum, and the far end of it is \"still running in a pump station nobody can find the keys to.\""
+    },
+    {
+      "author": "octetstream",
+      "age": "7 hours ago",
+      "text": "Minor nit: the guide describes the handshake in section 9 as three-way, but the original spec allowed a two-way fast path when the responder had cached state. I only know this because I implemented it wrong once, in both directions."
+    }
+  ]
+}

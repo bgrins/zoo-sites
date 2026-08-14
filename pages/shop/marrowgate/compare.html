@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Compare monitors - Marrowgate</title>
+<link rel="stylesheet" href="marrowgate.css">
+<style>
+  .cmp { margin: 12px 22px 26px; background: #fff; border: 1px solid var(--nb-rule); padding: 16px; overflow-x: auto; }
+  table.cmp-grid { border-collapse: collapse; font-size: 13px; min-width: 520px; }
+  table.cmp-grid th, table.cmp-grid td { border: 1px solid var(--nb-rule); padding: 8px 12px; text-align: left; vertical-align: top; }
+  table.cmp-grid thead th { background: #eaf0ff; color: var(--nb-blue); }
+  table.cmp-grid td.rowcap { background: #f6f8fc; font-weight: bold; white-space: nowrap; }
+  .cmp .price { color: var(--nb-price); font-weight: bold; font-size: 16px; }
+  #note { margin: 12px 22px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="locstrip">
+  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <a href="stores.html">Change store</a>
+  <a href="orderstatus.html">Order status</a>
+  <a href="recycling.html">Trade-in and recycling</a>
+</div>
+<header class="masthead">
+  <a class="wordmark" href="index.html">marrowgate</a>
+  <form class="finder" onsubmit="return false">
+    <input aria-label="Search Marrowgate" placeholder="What can we help you find today?">
+    <button type="submit">Search</button>
+  </form>
+  <div class="acct">
+    <a href="account.html">My Marrowgate</a>
+    <a href="promos.html">Offers</a>
+    <a href="basket.html">Basket</a>
+  </div>
+</header>
+<nav class="deptbar" aria-label="Departments">
+  <a href="departments.html#tv">TV &amp; Home Theater</a>
+  <a href="departments.html#computers">Computers &amp; Tablets</a>
+  <a class="on" href="index.html">Monitors</a>
+  <a href="departments.html#audio">Audio</a>
+  <a href="departments.html#smarthome">Smart Home</a>
+  <a href="departments.html#cameras">Cameras</a>
+  <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
+  <a href="departments.html#services">Services</a>
+</nav>
+<p class="crumbs">Home / Computers &amp; Tablets / Monitors / Compare</p>
+<div class="pagehead"><h1>Compare monitors</h1></div>
+<p id="note"></p>
+<div class="cmp" id="cmp" hidden>
+  <table class="cmp-grid" id="grid"></table>
+</div>
+<footer class="legal">
+  <ul>
+    <li><a href="basket-help.html">Basket help</a></li>
+    <li><a href="returns.html">Return policy</a></li>
+    <li><a href="price-match.html">Price match</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="stores.html">Store directory</a></li>
+  </ul>
+  Prices shown exclude tax. Online prices may differ from prices in store.
+  &copy; 2026 Marrowgate Retail Group.
+</footer>
+<script src="marrowgate-feed.js"></script>
+<script>
+const RESOLUTION = {
+  '1080p': 'Full HD 1920 x 1080',
+  '1440p': 'Quad HD 2560 x 1440',
+  '4K': '4K Ultra HD 3840 x 2160',
+};
+const skus = (new URLSearchParams(location.search).get('skus') ?? '')
+  .split(',')
+  .filter(Boolean)
+  .slice(0, 4);
+const items = skus
+  .map((sku) => MARROWGATE_FEED.find((it) => it.sku === sku))
+  .filter(Boolean);
+const note = document.getElementById('note');
+if (items.length < 2) {
+  note.innerHTML =
+    'Pick at least two monitors to compare: use the "Add to compare" link on the ' +
+    '<a href="index.html">Monitors listing</a>.';
+} else {
+  note.textContent = 'Comparing ' + items.length + ' monitors, side by side.';
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const rows = [
+    ['Model', (it) => '<a href="' +
+      (it.sku === '6428193' ? 'cs27-4k.html' : 'product.html?sku=' + it.sku) +
+      '">' + esc(it.title) + '</a>'],
+    ['SKU', (it) => it.sku],
+    ['Price', (it) => '<span class="price">$' + it.price.toFixed(2) + '</span>'],
+    ['Screen size', (it) => it.screen + ' in diagonal'],
+    ['Resolution', (it) => RESOLUTION[it.res]],
+    ['Refresh rate', (it) => (it.res === '4K' ? '60 Hz' : '165 Hz')],
+    ['Customer rating', (it) => it.rating + ' out of 5 (' + it.reviews.toLocaleString() + ')'],
+    ['Availability', (it) => (it.availability === 'ships' ? 'Available to ship' : 'Sold out')],
+  ];
+  document.getElementById('grid').innerHTML =
+    '<thead><tr><th></th>' +
+    items.map((it) => '<th>' + esc(it.title) + '</th>').join('') +
+    '</tr></thead><tbody>' +
+    rows
+      .map(
+        ([cap, fn]) =>
+          '<tr><td class="rowcap">' + cap + '</td>' +
+          items.map((it) => '<td>' + fn(it) + '</td>').join('') + '</tr>'
+      )
+      .join('') +
+    '</tbody>';
+  document.getElementById('cmp').hidden = false;
+}
+</script>
+</body>
+</html>

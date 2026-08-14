@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book a collection — Corvane Parcel Network</title>
+<link rel="stylesheet" href="corvane.css">
+</head>
+<body>
+<div class="topstrip">
+  <span>Customer service 0808 157 0420</span>
+  <span>Claims desk open 08:00-18:00</span>
+  <span class="sep"><a href="signin.html">Sign in</a></span>
+  <span><a href="business.html">Open a business account</a></span>
+</div>
+
+<header class="chrome">
+  <div class="bar">
+    <div class="wordmark"><b>Corvane</b><span>Parcel Network</span></div>
+    <div class="acct">Guest session &middot; rates shown ex VAT</div>
+  </div>
+  <nav class="main">
+    <a href="./">Track</a>
+    <a href="send.html">Send</a>
+    <a href="rates.html">Rates and zones</a>
+    <a href="drop-points.html">Drop points</a>
+    <a href="claims.html">Claims</a>
+    <a href="support.html">Support</a>
+  </nav>
+</header>
+
+<div class="crumb"><a href="./">Home</a> / Book a collection</div>
+
+<div class="wrap">
+  <main>
+    <section class="panel">
+      <div class="head"><h1>Book a collection</h1></div>
+      <div class="body">
+        <p class="lede">A driver collects from your door on the next round with space,
+        usually the next working day. Collections booked before 20:00 join the following
+        day's rounds; morning and afternoon windows are confirmed by the depot.</p>
+        <form class="stack" id="collect" autocomplete="off" novalidate>
+          <div class="field">
+            <label for="postcode">Collection postcode</label>
+            <input id="postcode" name="postcode" type="text" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="parcels">Number of parcels</label>
+            <input id="parcels" name="parcels" type="number" min="1" max="20">
+          </div>
+          <div class="field">
+            <label for="day">Preferred day</label>
+            <select id="day" name="day">
+              <option value="">Choose a day</option>
+              <option>Next working day</option>
+              <option>In 2 working days</option>
+              <option>In 3 working days</option>
+            </select>
+          </div>
+          <button type="submit">Check availability</button>
+        </form>
+        <div class="note" id="collectNote" role="status"></div>
+        <h3>What the driver needs</h3>
+        <ul>
+          <li>Parcels packed and sealed to the <a href="packaging.html">packaging guide</a>, each under 30 kg.</li>
+          <li>Labels attached if pre-paid; otherwise the driver labels and the fare is charged to the booking card.</li>
+          <li>Someone at the address through the confirmed window to hand the parcels over.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <div class="rail">
+    <section class="panel">
+      <div class="head"><h2>Good to know</h2></div>
+      <div class="body">
+        <ul>
+          <li>Collections in the northern zone close 90 minutes early this week while the Marbeck sort hall is re-laid.</li>
+          <li>Business accounts get a standing daily collection window; see <a href="business.html">business accounts</a>.</li>
+          <li>No one in when the driver calls? The round moves on and the booking rolls to the next working day.</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</div>
+
+<footer>
+  <div class="cols">
+    <div>
+      <h4>Shipping</h4>
+      <a href="collections.html">Book a collection</a>
+      <a href="prohibited.html">Prohibited items</a>
+      <a href="packaging.html">Packaging guide</a>
+    </div>
+    <div>
+      <h4>Accounts</h4>
+      <a href="business.html#pricing">Business pricing</a>
+      <a href="business.html#invoices">Invoices</a>
+      <a href="business.html#api">API access</a>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <a href="about.html">About Corvane</a>
+      <a href="network.html">Network map</a>
+      <a href="careers.html">Careers</a>
+    </div>
+    <div>
+      <h4>Legal</h4>
+      <a href="privacy.html">Privacy notice</a>
+      <a href="terms.html">Terms of carriage</a>
+      <a href="cookies.html">Cookie settings</a>
+    </div>
+  </div>
+  <div class="fine">
+    Corvane Parcel Network Ltd, Registered office: Unit 9, Marbeck Distribution Park,
+    Halston HL4 2QR. Registered number 00000000. Support: help@corvane-parcel.example
+    &middot; &copy; 2026 Corvane Parcel Network Ltd. All rights reserved.
+  </div>
+</footer>
+
+<script>
+  const form = document.getElementById('collect');
+  const postcode = document.getElementById('postcode');
+  const parcels = document.getElementById('parcels');
+  const day = document.getElementById('day');
+  const note = document.getElementById('collectNote');
+
+  function setNote(kind, message) {
+    note.className = 'note ' + kind;
+    note.textContent = message;
+  }
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!postcode.value.trim()) {
+      setNote('warn', 'Enter the collection postcode.');
+      postcode.focus();
+      return;
+    }
+    const count = Number(parcels.value);
+    if (!count || count < 1 || count > 20) {
+      setNote('warn', 'Enter a parcel count between 1 and 20.');
+      parcels.focus();
+      return;
+    }
+    if (!day.value) {
+      setNote('warn', 'Choose a preferred day.');
+      day.focus();
+      return;
+    }
+    setNote('warn', 'Guest bookings are not confirmed online. Call 0808 157 0420 (option 2) with these details before 20:00 to secure the slot, or sign in to book against an account.');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cookie settings — Corvane Parcel Network</title>
+<link rel="stylesheet" href="corvane.css">
+<style>
+  .toggle-row {
+    display: flex; align-items: flex-start; gap: 14px;
+    border: 1px solid var(--rule); background: #fbfdfd;
+    padding: 12px 16px; margin-bottom: 10px;
+  }
+  .toggle-row input[type="checkbox"] { margin-top: 4px; width: 16px; height: 16px; }
+  .toggle-row .desc b {
+    font-family: var(--display); text-transform: uppercase;
+    letter-spacing: 0.1em; font-size: 13px; display: block;
+  }
+  .toggle-row .desc p { margin: 3px 0 0; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="topstrip">
+  <span>Customer service 0808 157 0420</span>
+  <span>Claims desk open 08:00-18:00</span>
+  <span class="sep"><a href="signin.html">Sign in</a></span>
+  <span><a href="business.html">Open a business account</a></span>
+</div>
+
+<header class="chrome">
+  <div class="bar">
+    <div class="wordmark"><b>Corvane</b><span>Parcel Network</span></div>
+    <div class="acct">Guest session &middot; rates shown ex VAT</div>
+  </div>
+  <nav class="main">
+    <a href="./">Track</a>
+    <a href="send.html">Send</a>
+    <a href="rates.html">Rates and zones</a>
+    <a href="drop-points.html">Drop points</a>
+    <a href="claims.html">Claims</a>
+    <a href="support.html">Support</a>
+  </nav>
+</header>
+
+<div class="crumb"><a href="./">Home</a> / Cookie settings</div>
+
+<div class="wrap single">
+  <main>
+    <section class="panel">
+      <div class="head"><h1>Cookie settings</h1></div>
+      <div class="body">
+        <p class="lede">This site stores small amounts of data in your browser. Strictly
+        necessary storage cannot be switched off; the optional categories below are off
+        until you turn them on, and your choice is saved in this browser only.</p>
+
+        <div class="toggle-row">
+          <input type="checkbox" id="essential" checked disabled>
+          <div class="desc">
+            <b>Strictly necessary</b>
+            <p>Session state for the tracking service and the preferences saved on this
+            page. Always active.</p>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <input type="checkbox" id="analytics">
+          <div class="desc">
+            <b>Service analytics</b>
+            <p>Anonymous counts of page visits and search use, aggregated to plan
+            counter hours and site improvements.</p>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <input type="checkbox" id="preferences">
+          <div class="desc">
+            <b>Convenience preferences</b>
+            <p>Remembers your last chosen depot and preferred service between visits so
+            forms start pre-filled.</p>
+          </div>
+        </div>
+
+        <button type="button" id="save">Save choices</button>
+        <div class="note" id="cookieNote" role="status"></div>
+        <p class="rowmeta" style="margin-top:14px">How this data is handled is described
+        in the <a href="privacy.html">privacy notice</a>. Clearing your browser storage
+        resets these choices to off.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <div class="cols">
+    <div>
+      <h4>Shipping</h4>
+      <a href="collections.html">Book a collection</a>
+      <a href="prohibited.html">Prohibited items</a>
+      <a href="packaging.html">Packaging guide</a>
+    </div>
+    <div>
+      <h4>Accounts</h4>
+      <a href="business.html#pricing">Business pricing</a>
+      <a href="business.html#invoices">Invoices</a>
+      <a href="business.html#api">API access</a>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <a href="about.html">About Corvane</a>
+      <a href="network.html">Network map</a>
+      <a href="careers.html">Careers</a>
+    </div>
+    <div>
+      <h4>Legal</h4>
+      <a href="privacy.html">Privacy notice</a>
+      <a href="terms.html">Terms of carriage</a>
+      <a href="cookies.html">Cookie settings</a>
+    </div>
+  </div>
+  <div class="fine">
+    Corvane Parcel Network Ltd, Registered office: Unit 9, Marbeck Distribution Park,
+    Halston HL4 2QR. Registered number 00000000. Support: help@corvane-parcel.example
+    &middot; &copy; 2026 Corvane Parcel Network Ltd. All rights reserved.
+  </div>
+</footer>
+
+<script>
+  const KEY = 'corvane-cookie-choices';
+  const analytics = document.getElementById('analytics');
+  const preferences = document.getElementById('preferences');
+  const note = document.getElementById('cookieNote');
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+    analytics.checked = !!saved.analytics;
+    preferences.checked = !!saved.preferences;
+  } catch {}
+
+  document.getElementById('save').addEventListener('click', () => {
+    const choices = { analytics: analytics.checked, preferences: preferences.checked };
+    try {
+      localStorage.setItem(KEY, JSON.stringify(choices));
+      note.className = 'note good';
+      note.textContent = 'Choices saved in this browser.';
+    } catch {
+      note.className = 'note bad';
+      note.textContent = 'Could not save: this browser is blocking local storage.';
+    }
+  });
+</script>
+</body>
+</html>

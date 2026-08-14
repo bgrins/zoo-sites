@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intake - Marlowe Depot Systems</title>
+<link rel="stylesheet" href="depot.css">
+</head>
+<body>
+<header class="mast">
+  <img class="mark" src="assets/mark.svg" alt="" width="26" height="26">
+  <span class="brand">Marlowe Depot Systems</span>
+  <span class="site">Yard 4 &middot; Grenford</span>
+  <span class="grow"></span>
+  <span class="meta">Ops console 6.2.4</span>
+</header>
+<nav class="tabs">
+  <a href="shifts.html" data-tab="shifts">Shifts</a>
+  <a href="manifests.html" data-tab="manifests">Manifests</a>
+  <a href="intake.html" data-tab="intake">Intake</a>
+  <a href="incidents.html" data-tab="incidents">Incidents</a>
+  <span class="grow"></span>
+  <a href="index.html" class="signout" data-tab="signin">Sign in</a>
+</nav>
+
+<div class="wrap">
+  <div class="cols">
+    <div class="col">
+      <section class="panel">
+        <h2>Post delivery manifest</h2>
+        <div class="bd">
+          <p class="muted">Load the pending delivery manifest, or paste manifest lines
+          as <span class="stamp">key,sku,qty</span> - one line per carton.</p>
+          <div class="btnrow">
+            <button type="button" id="load">Load manifest DM-2116</button>
+            <button type="button" id="post" class="primary">Post to intake</button>
+          </div>
+          <label for="lines">Manifest lines</label>
+          <textarea id="lines" rows="14" spellcheck="false"></textarea>
+          <p class="status" id="intake-status"></p>
+          <p class="status" id="intake-detail"></p>
+        </div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel">
+        <h2>Intake procedure</h2>
+        <div class="bd prose">
+          <ol>
+            <li>Load or paste the delivery manifest for the trailer on door 6.</li>
+            <li>Check the line count against the delivery note.</li>
+            <li>Post to intake. Posted lines release putaway tasks to the floor.</li>
+            <li>File the paper delivery note in the goods-in tray.</li>
+          </ol>
+          <p>A manifest can be posted once per session. Corrections go through the
+          <a href="incidents.html">incidents form</a> under Goods-in.</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Pending deliveries</h2>
+        <div class="bd tight">
+          <table>
+            <tr><th>Manifest</th><th>Carrier</th><th>Lines</th></tr>
+            <tr><td>DM-2116</td><td>Osprey Linehaul</td><td class="num">40</td></tr>
+            <tr><td class="muted">DM-2117</td><td class="muted">Cardew Freight</td><td class="num muted">due 14:10</td></tr>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<footer class="foot">
+  <span>&copy; 2026 Marlowe Depot Systems Ltd. Registered office: Unit 9, Grenford Trade Park, Grenford GR2 4LX.</span>
+  <a href="legal.html#privacy">Privacy</a>
+  <a href="legal.html#terms">Terms</a>
+  <a href="incidents.html">Report an incident</a>
+  <span>Ops desk: 01632 960 210</span>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const status = document.getElementById('intake-status');
+const detail = document.getElementById('intake-detail');
+const ta = document.getElementById('lines');
+
+document.getElementById('load').addEventListener('click', async () => {
+  try {
+    const r = await fetch('data/manifest-dm2116.txt');
+    ta.value = (await r.text()).trim();
+    status.textContent = 'Manifest DM-2116 loaded';
+    detail.textContent = ta.value.split('\n').length + ' lines in the editor.';
+  } catch {
+    status.textContent = 'Manifest file unavailable.';
+  }
+});
+
+document.getElementById('post').addEventListener('click', async () => {
+  const lines = ta.value.split('\n').map((s) => s.trim()).filter(Boolean).map((s) => {
+    const parts = s.split(',').map((p) => p.trim());
+    return { key: parts[0], sku: parts[1] ?? '', qty: Number(parts[2] ?? 0) };
+  });
+  if (!lines.length) {
+    status.textContent = 'Nothing to post.';
+    detail.textContent = 'Load or paste a manifest first.';
+    return;
+  }
+  status.textContent = 'Posting...';
+  detail.textContent = '';
+  try {
+    const res = await fetch('/api/depot/intake', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, lines }),
+    });
+    if (res.ok && res.body) {
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, i);
+          buf = buf.slice(i + 1);
+          if (!line.trim()) continue;
+          const row = JSON.parse(line);
+          if (row.ok === false) console.warn('intake reject ' + row.key + ' ' + row.diag);
+        }
+      }
+    }
+  } catch {}
+  status.textContent = 'Intake complete';
+  detail.textContent = lines.length + ' lines posted.';
+});
+</script>
+<script src="depot.js"></script>
+</body>
+</html>

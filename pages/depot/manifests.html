@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manifests - Marlowe Depot Systems</title>
+<link rel="stylesheet" href="depot.css">
+</head>
+<body>
+<header class="mast">
+  <img class="mark" src="assets/mark.svg" alt="" width="26" height="26">
+  <span class="brand">Marlowe Depot Systems</span>
+  <span class="site">Yard 4 &middot; Grenford</span>
+  <span class="grow"></span>
+  <span class="meta">Ops console 6.2.4</span>
+</header>
+<nav class="tabs">
+  <a href="shifts.html" data-tab="shifts">Shifts</a>
+  <a href="manifests.html" data-tab="manifests">Manifests</a>
+  <a href="intake.html" data-tab="intake">Intake</a>
+  <a href="incidents.html" data-tab="incidents">Incidents</a>
+  <span class="grow"></span>
+  <a href="index.html" class="signout" data-tab="signin">Sign in</a>
+</nav>
+
+<div class="wrap">
+  <div class="cols">
+    <div class="col">
+      <section class="panel">
+        <h2>Shift manifests &middot; Mon 28 Jul</h2>
+        <div class="bd tight">
+          <table id="manifest-table">
+            <thead>
+              <tr><th>Manifest</th><th>Carrier</th><th>Lines</th><th>Window</th></tr>
+            </thead>
+            <tbody id="manifest-body"></tbody>
+          </table>
+        </div>
+        <div class="bd">
+          <p class="status" id="manifest-note">Loading...</p>
+          <div class="btnrow">
+            <button type="button" id="refresh">Refresh</button>
+          </div>
+          <p class="stamp">Manifests are pulled from the store service each time this
+          page loads or refreshes.</p>
+        </div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel">
+        <h2>Carrier windows</h2>
+        <div class="bd tight">
+          <table>
+            <tr><th>Carrier</th><th>Window</th></tr>
+            <tr><td>Ferrant &amp; Blythe</td><td>08:40, 14:20</td></tr>
+            <tr><td>Osprey Linehaul</td><td>09:10, 15:00</td></tr>
+            <tr><td>Cardew Freight</td><td>10:30</td></tr>
+            <tr><td>Northgate Pallet Co-op</td><td>11:45, 16:20</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Manifest handling</h2>
+        <div class="bd prose">
+          <p>Every despatch trailer needs its manifest confirmed before the seal
+          goes on. Confirm line counts against the pick summary, not against the
+          load plan.</p>
+          <p>Shortages are raised on the <a href="incidents.html">incidents form</a>
+          under the Despatch category before the carrier leaves the yard.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<footer class="foot">
+  <span>&copy; 2026 Marlowe Depot Systems Ltd. Registered office: Unit 9, Grenford Trade Park, Grenford GR2 4LX.</span>
+  <a href="legal.html#privacy">Privacy</a>
+  <a href="legal.html#terms">Terms</a>
+  <a href="incidents.html">Report an incident</a>
+  <span>Ops desk: 01632 960 210</span>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+async function loadManifests() {
+  const body = document.getElementById('manifest-body');
+  const note = document.getElementById('manifest-note');
+  note.textContent = 'Loading...';
+  body.innerHTML = '';
+  try {
+    const r = await fetch('/api/depot/manifests');
+    if (r.ok) {
+      const out = await r.json();
+      body.innerHTML = out.manifests.map((m) =>
+        '<tr><td>' + esc(m.id) + '</td><td>' + esc(m.carrier) + '</td><td class="num">' +
+        esc(m.lines) + '</td><td>' + esc(m.window) + '</td></tr>').join('');
+      note.textContent = out.manifests.length + ' manifests on file.';
+      return;
+    }
+  } catch {}
+  note.textContent = 'No manifests for this shift.';
+}
+
+document.getElementById('refresh').addEventListener('click', loadManifests);
+loadManifests();
+</script>
+<script src="depot.js"></script>
+</body>
+</html>

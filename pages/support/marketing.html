@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marketing choices — Kelverne Fibre</title>
+<link rel="stylesheet" href="support.css">
+</head>
+<body>
+<div class="util">
+  <span>Faults line 03069 990180</span>
+  <span>Advisers online 07:00-23:00</span>
+  <span class="push"><a href="index.html">Help centre</a></span>
+  <span><a href="coverage.html">Coverage checker</a></span>
+  <span><a href="signout.html">Sign out</a></span>
+</div>
+
+<header class="top">
+  <div class="mark"><b>Kelverne</b><span>Fibre &middot; My Account</span></div>
+</header>
+
+<div class="shell">
+  <aside class="rail">
+    <h2>My account</h2>
+    <ol>
+      <li><a href="account.html"><span class="no">01</span>Overview</a></li>
+      <li><a href="billing.html"><span class="no">02</span>Bills and payments</a></li>
+      <li><a href="plan.html"><span class="no">03</span>Plan and add-ons</a></li>
+      <li><a href="contact.html"><span class="no">04</span>Contact details</a></li>
+      <li><a href="marketing.html" class="here"><span class="no">05</span>Marketing choices</a></li>
+    </ol>
+    <h2>Need help</h2>
+    <p class="note"><a href="index.html">Back to the help centre</a></p>
+  </aside>
+
+  <main class="body">
+    <h1>Marketing choices</h1>
+    <p class="lede">Tick the channels you are happy for us to use. Service messages
+    about faults, engineer visits and bills are not affected by these choices.</p>
+
+    <div class="stuck">
+      <h3>Channels</h3>
+      <p><label><input type="checkbox" id="mk-email"> Email about new plans and
+      add-ons</label><br>
+      <label><input type="checkbox" id="mk-text"> Text messages about offers in your
+      area</label><br>
+      <label><input type="checkbox" id="mk-post"> Post, no more than twice a
+      year</label></p>
+      <button id="saveChoices" type="button">Save choices</button>
+      <p class="note" id="choicesState" role="status" style="margin-top:10px"></p>
+    </div>
+
+    <h2>How the choices apply</h2>
+    <p>Choices saved here are kept in this browser and picked up by the account
+    record overnight; an adviser can set the same choices on the record immediately
+    in chat if you prefer. Unticking a channel stops future sends but cannot recall
+    anything already queued for the current week.</p>
+  </main>
+</div>
+
+<footer class="foot">
+  <div class="cols">
+    <div>
+      <h4>Support</h4>
+      <a href="status.html">Service status</a>
+      <a href="index.html#adviser">Report a fault</a>
+      <a href="engineer.html">Engineer visits</a>
+    </div>
+    <div>
+      <h4>Account</h4>
+      <a href="account.html">My account</a>
+      <a href="billing.html">Bills and payments</a>
+      <a href="plan.html">Change your plan</a>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <a href="about.html">About Kelverne</a>
+      <a href="about.html#rollout">Network rollout</a>
+      <a href="about.html#careers">Work with us</a>
+    </div>
+    <div>
+      <h4>Legal</h4>
+      <a href="legal.html#privacy">Privacy notice</a>
+      <a href="legal.html#terms">Terms of service</a>
+      <a href="legal.html#complaints">Complaints code</a>
+    </div>
+  </div>
+  <div class="fine">
+    Kelverne Fibre Networks Ltd, Bolt House, 2 Redgate Wharf, Ashcombe AS3 7LN.
+    Registered number 00000000. Written enquiries: help@kelverne-fibre.example
+    &middot; &copy; 2026 Kelverne Fibre Networks Ltd.
+  </div>
+</footer>
+
+<script>
+  const KEYS = ['mk-email', 'mk-text', 'mk-post'];
+  const state = document.getElementById('choicesState');
+  try {
+    const saved = JSON.parse(localStorage.getItem('kf-marketing') || 'null');
+    if (saved) {
+      for (const key of KEYS) document.getElementById(key).checked = !!saved[key];
+      state.textContent = 'Showing your saved choices.';
+    }
+  } catch {}
+  document.getElementById('saveChoices').addEventListener('click', () => {
+    const choices = {};
+    for (const key of KEYS) choices[key] = document.getElementById(key).checked;
+    try {
+      localStorage.setItem('kf-marketing', JSON.stringify(choices));
+      state.textContent = 'Saved. The account record picks these up overnight.';
+    } catch {
+      state.textContent = 'Could not save in this browser.';
+    }
+  });
+</script>
+</body>
+</html>

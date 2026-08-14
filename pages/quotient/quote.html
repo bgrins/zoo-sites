@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Freight quotes — Quotient</title>
+<link rel="stylesheet" href="quotient.css">
+</head>
+<body>
+<div class="frame">
+  <aside class="side">
+    <p class="brand"><a href="/quotient/">Quotient</a></p>
+    <p class="org">Ashline Bindery Ltd</p>
+    <div class="navgroup">Workspace</div>
+    <nav>
+      <a href="/quotient/">Overview</a>
+      <a href="reconcile.html">Reconciliation</a>
+      <span class="here">Freight quotes</span>
+      <a href="exports.html">Exports</a>
+    </nav>
+    <div class="navgroup">Account</div>
+    <nav>
+      <a href="settings.html">Settings</a>
+      <a href="legal.html">Terms &amp; privacy</a>
+    </nav>
+    <div class="period">Period open<br><b>July 2026</b></div>
+  </aside>
+  <main class="main">
+    <h1>Freight quotes</h1>
+    <p class="lede">Price a consignment on any of the four contracted lanes. The
+    lane charge covers carriage per kilogram plus terminal handling; the quoted
+    total applies the market rate multiplier current at the moment of quoting and
+    is rounded to the nearest dollar.</p>
+    <div class="panel">
+      <h2>New quote</h2>
+      <div class="lanes" id="lanes">
+        <label class="lane"><input type="radio" name="lane" value="harlow-dunmere" checked>
+          <b>Harlow &ndash; Dunmere</b><span class="fee">$3.62/kg + $12.40 terminal</span></label>
+        <label class="lane"><input type="radio" name="lane" value="casterway">
+          <b>Casterway Corridor</b><span class="fee">$2.90/kg + $18.00 terminal</span></label>
+        <label class="lane"><input type="radio" name="lane" value="veldt-north">
+          <b>Veldt North</b><span class="fee">$3.95/kg + $9.75 terminal</span></label>
+        <label class="lane"><input type="radio" name="lane" value="ilbrook-ferry">
+          <b>Ilbrook Ferry</b><span class="fee">$2.45/kg + $22.60 terminal</span></label>
+      </div>
+      <div class="fieldrow">
+        <label for="weight">Weight (kg)</label>
+        <input type="number" id="weight" min="1" max="200" step="0.1" value="25" aria-label="Weight in kilograms">
+        <button class="action" id="price" type="button">Price it</button>
+      </div>
+      <div class="notice" id="qnotice" hidden></div>
+      <div id="result" hidden>
+        <div class="figure" id="total"></div>
+        <div class="figurenote" id="resultnote"></div>
+      </div>
+    </div>
+    <h2>Lane notes</h2>
+    <p class="lede">Rate card v14 applies from 1 July 2026 and covers consignments
+    from 1 to 200 kg. Heavier consignments are priced by the carrier desk under the
+    groupage schedule. The market rate multiplier moves with the carrier index and
+    is fixed per quote at the moment it is issued.</p>
+    <footer class="site">
+      &copy; 2026 Quotient Software Ltd &middot; 4 Millpond Row, Harwell Point &middot;
+      <a href="legal.html">Terms &amp; privacy</a> &middot; support@quotientledger.example
+    </footer>
+  </main>
+</div>
+<script>window.QT_NONCE = '__SESSION_NONCE__';</script>
+<script src="quote.js"></script>
+</body>
+</html>

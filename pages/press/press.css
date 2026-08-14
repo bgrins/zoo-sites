@@ -1,0 +1,148 @@
+:root {
+  --petrol: #0d3b3f;
+  --petrol-soft: #14555a;
+  --paper: #f5f0e6;
+  --card: #fffdf8;
+  --ink: #23201b;
+  --quiet: #6b6459;
+  --rule: #d8cfbd;
+  --copper: #b4552d;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Trebuchet MS", "Lucida Grande", Tahoma, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+a { color: var(--petrol-soft); }
+.masthead { background: var(--petrol); color: #eae3d5; }
+.masthead .bar {
+  max-width: 1080px; margin: 0 auto; padding: 18px 28px 14px;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
+}
+.wordmark { font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; }
+.wordmark b {
+  display: block; font-size: 23px; font-weight: normal; letter-spacing: 0.06em;
+  text-transform: uppercase; color: #fffdf8;
+}
+.wordmark a { text-decoration: none; }
+.wordmark span {
+  display: block; font-family: "Trebuchet MS", Tahoma, sans-serif; font-size: 10px;
+  letter-spacing: 0.28em; text-transform: uppercase; color: #8fb0ad; margin-top: 5px;
+}
+.utility { font-size: 12px; letter-spacing: 0.06em; }
+.utility a { color: #cfe0dd; text-decoration: none; margin-left: 20px; }
+.utility a:hover { color: #fffdf8; text-decoration: underline; }
+.tabs { background: #0a2e31; border-bottom: 3px solid var(--copper); }
+.tabs ul {
+  max-width: 1080px; margin: 0 auto; padding: 0 28px; list-style: none;
+  display: flex; gap: 2px;
+}
+.tabs a {
+  display: block; padding: 9px 16px; font-size: 12px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: #9fbcb9; text-decoration: none;
+}
+.tabs a:hover { color: #fffdf8; background: #123c40; }
+.tabs li.here a { background: var(--paper); color: var(--petrol); }
+
+.shell { max-width: 1080px; margin: 0 auto; padding: 0 28px 56px; }
+.crumbs {
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--quiet); padding: 16px 0 22px;
+}
+.crumbs a { color: var(--quiet); text-decoration: none; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 268px; gap: 40px; }
+
+.eyebrow {
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--copper); margin: 0 0 10px;
+}
+h1 {
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  font-size: 34px; font-weight: normal; line-height: 1.18; margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+h2 {
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  font-size: 21px; font-weight: normal; margin: 28px 0 10px;
+}
+.standfirst { font-size: 17px; color: #3f3a32; margin: 0 0 22px; max-width: 60ch; }
+.filed {
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  padding: 9px 0; font-size: 12px; color: var(--quiet);
+  display: flex; gap: 26px; flex-wrap: wrap; margin-bottom: 28px;
+}
+.filed b { font-weight: normal; color: var(--ink); }
+
+.prose p { margin: 0 0 16px; max-width: 62ch; }
+.prose p.lede { font-size: 16px; }
+.prose ul { max-width: 62ch; margin: 0 0 16px; padding-left: 22px; }
+.prose li { margin-bottom: 6px; }
+.dateline { font-size: 13px; color: var(--quiet); margin: 0 0 18px; }
+
+.boiler { font-size: 13px; color: #4d473f; border-top: 1px solid var(--rule); padding-top: 16px; margin-top: 28px; }
+.boiler h3 {
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--quiet); margin: 0 0 6px; font-weight: normal;
+}
+.boiler p { margin: 0 0 14px; max-width: 62ch; }
+
+.archive { list-style: none; padding: 0; margin: 0 0 26px; }
+.archive li {
+  background: var(--card); border: 1px solid var(--rule);
+  padding: 14px 18px; margin-bottom: 10px;
+}
+.archive a { text-decoration: none; font-size: 16px; }
+.archive a:hover { text-decoration: underline; }
+.archive .date { display: block; font-size: 11px; color: var(--quiet); letter-spacing: 0.06em; margin-top: 2px; }
+.archive .note { display: block; font-size: 13px; color: #4d473f; margin-top: 4px; max-width: 62ch; }
+
+.datatable { border-collapse: collapse; width: 100%; margin: 0 0 26px; font-size: 14px; }
+.datatable th {
+  text-align: left; font-weight: normal; font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--quiet); border-bottom: 1px solid var(--rule);
+  padding: 6px 14px 6px 0;
+}
+.datatable td { border-bottom: 1px dotted var(--rule); padding: 8px 14px 8px 0; vertical-align: top; }
+
+.person { background: var(--card); border: 1px solid var(--rule); padding: 16px 18px; margin-bottom: 12px; }
+.person h3 {
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  font-size: 18px; font-weight: normal; margin: 0 0 2px;
+}
+.person .role { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--copper); margin: 0 0 8px; }
+.person p { margin: 0; font-size: 14px; color: #45403a; max-width: 62ch; }
+
+.rail section { margin-bottom: 26px; }
+.rail h3 {
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--petrol);
+  border-bottom: 1px solid var(--rule); padding-bottom: 6px; margin: 0 0 10px; font-weight: normal;
+}
+.rail p, .rail li { font-size: 13px; color: #4d473f; margin: 0 0 8px; }
+.rail ul { list-style: none; padding: 0; margin: 0; }
+.rail ul li { border-bottom: 1px dotted var(--rule); padding-bottom: 7px; margin-bottom: 7px; }
+.rail ul a { text-decoration: none; }
+.rail .date { display: block; font-size: 11px; color: var(--quiet); letter-spacing: 0.06em; }
+.rail .ticker {
+  background: var(--petrol); color: #dfe9e7; padding: 12px 14px; font-size: 13px;
+}
+.rail .ticker b { display: block; font-size: 21px; color: #fffdf8; font-weight: normal; }
+.rail .ticker span { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8fb0ad; }
+
+footer {
+  border-top: 1px solid var(--rule); background: #ece5d7; color: #575045;
+}
+footer .inner {
+  max-width: 1080px; margin: 0 auto; padding: 24px 28px 34px; font-size: 12px; color: #5f584c;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;
+}
+footer h4 {
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--petrol);
+  margin: 0 0 8px; font-weight: normal;
+}
+footer a { color: #5f584c; text-decoration: none; display: block; margin-bottom: 4px; }
+footer a:hover { text-decoration: underline; }
+.legal { max-width: 1080px; margin: 0 auto; padding: 0 28px 30px; font-size: 11px; color: #7a7365; }

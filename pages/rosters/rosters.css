@@ -1,0 +1,203 @@
+body {
+  margin: 0;
+  background: #ded8c9;
+  color: #2b2723;
+  font: 15.5px/1.62 "Palatino Linotype", Palatino, "Book Antiqua",
+    "URW Palladio L", "Iowan Old Style", "Times New Roman", serif;
+}
+a {
+  color: #6d2530;
+}
+a:visited {
+  color: #4c2340;
+}
+#banner {
+  background: #fdfbf6;
+  text-align: center;
+  padding: 26px 24px 12px;
+  border-bottom: 3px double #6d2530;
+}
+#banner p {
+  margin: 0;
+  text-align: center;
+}
+#banner .mark {
+  font-size: 11px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: #8a7f6d;
+  margin-bottom: 10px;
+}
+#banner .mark::before {
+  content: "Founded 1961 \00a0\00b7\00a0 ";
+}
+#banner h1 {
+  margin: 0;
+  font-size: 27px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: #241f1b;
+}
+#banner .sub {
+  display: block;
+  margin-top: 7px;
+  font-size: 13px;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: #6b6255;
+}
+#nav {
+  background: #fdfbf6;
+  text-align: center;
+  padding: 9px 24px 10px;
+  border-bottom: 1px solid #c9bda6;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+#nav a {
+  color: #4a423a;
+  text-decoration: none;
+  margin: 0 4px;
+}
+#nav a + a::before {
+  content: "\2014";
+  color: #b7a98e;
+  margin-right: 9px;
+}
+#nav a:hover {
+  color: #6d2530;
+  text-decoration: underline;
+}
+#crumbs {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 10px 46px 0;
+  font-size: 12.5px;
+  font-style: italic;
+  color: #7a7164;
+  text-align: right;
+}
+#shell {
+  max-width: 780px;
+  margin: 0 auto 40px;
+  padding: 0;
+  background: #fdfbf6;
+  border: 1px solid #cfc4ad;
+  border-bottom-width: 2px;
+}
+#main {
+  display: block;
+  padding: 6px 46px 34px;
+}
+h2 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #6d2530;
+  margin: 34px 0 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #c9bda6;
+}
+h3 {
+  font-size: 16px;
+  font-weight: 400;
+  font-style: italic;
+  margin: 20px 0 2px;
+}
+p {
+  margin: 0 0 12px;
+  text-align: justify;
+  hyphens: auto;
+}
+p.note {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #5d5548;
+  padding-left: 22px;
+  border-left: 1px solid #d8cdb6;
+}
+ul.plain {
+  padding-left: 22px;
+  list-style: square;
+}
+ul.plain li {
+  margin-bottom: 5px;
+}
+table.roster {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+  margin: 14px 0 20px;
+}
+table.roster caption {
+  caption-side: top;
+  text-align: left;
+  font-size: 12.5px;
+  font-style: italic;
+  color: #5d5548;
+  padding-bottom: 8px;
+  border-bottom: 3px double #6d2530;
+  margin-bottom: 0;
+}
+table.roster th,
+table.roster td {
+  border: 0;
+  border-bottom: 1px solid #e0d7c2;
+  padding: 4px 10px 4px 0;
+  text-align: left;
+  vertical-align: baseline;
+}
+table.roster thead th {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #4a423a;
+  border-bottom: 1px solid #a89a7d;
+  padding-top: 6px;
+}
+table.roster tr.dept th {
+  padding: 14px 0 3px;
+  font-size: 12px;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6d2530;
+  border-bottom: 1px solid #c9bda6;
+}
+table.roster td.ext {
+  text-align: right;
+  width: 66px;
+  font-variant-numeric: tabular-nums;
+  color: #4a423a;
+  padding-right: 2px;
+}
+table.roster tbody tr:hover td {
+  background: #f5efe1;
+}
+.aside {
+  margin: 22px 0;
+  padding: 2px 30px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  font-style: italic;
+  color: #4a423a;
+  border-top: 1px solid #d8cdb6;
+  border-bottom: 1px solid #d8cdb6;
+}
+.aside b {
+  font-style: normal;
+  letter-spacing: 0.04em;
+}
+#foot {
+  border-top: 3px double #c9bda6;
+  margin-top: 32px;
+  padding-top: 12px;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: #7a7164;
+  text-align: center;
+}

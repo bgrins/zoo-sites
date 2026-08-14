@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expansion &middot; Northgate Media &middot; Halbeck</title>
+<link rel="stylesheet" href="halbeck.css">
+</head>
+<body>
+<div class="bar">
+  <span class="logo">Hal<i>beck</i></span>
+  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <span class="spacer"></span>
+  <a class="lnk" href="sources.html">Data sources</a>
+  <a class="lnk" href="alerts.html">Alerts</a>
+  <a class="lnk" href="docs.html">Docs</a>
+  <span class="who">NM</span>
+</div>
+
+<div class="shell">
+  <nav class="rail">
+    <h3>Workspace</h3>
+    <a href="overview.html">Overview</a>
+    <a href="index.html">Seat usage</a>
+    <a href="retention.html">Retention</a>
+    <a href="expansion.html" class="on">Expansion</a>
+    <a href="events.html">Product events</a>
+    <h3>Saved views</h3>
+    <a href="views.html#seats-by-plan-tier">Seats by plan tier</a>
+    <a href="views.html#weekly-actives">Weekly actives</a>
+    <a href="views.html#trial-conversions">Trial conversions</a>
+    <a href="views.html#support-touched-accounts">Support-touched accounts</a>
+    <h3>Admin</h3>
+    <a href="sources.html">Data sources</a>
+    <a href="members.html">Members</a>
+    <a href="billing.html">Billing</a>
+  </nav>
+
+  <main>
+    <p class="crumbs"><a href="overview.html">Northgate Media</a> / Analytics / Expansion</p>
+    <h1>Expansion</h1>
+    <p class="sub">Movement between plan tiers across the connected accounts: teams that
+    upgraded, teams that stepped down, and the net effect per quarter. Counted in team
+    accounts, not seats.</p>
+
+    <section class="panel">
+      <header><h2>Tier movement</h2><span class="meta">team accounts, last four quarters</span></header>
+      <div class="pad">
+        <div class="tablewrap">
+          <table class="data">
+            <thead>
+              <tr><th scope="col">Quarter</th><th scope="col">Upgraded</th><th scope="col">Stepped down</th><th scope="col">Net</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">2025 Q3</th><td class="num">14</td><td class="num">6</td><td class="num">+8</td></tr>
+              <tr><th scope="row">2025 Q4</th><td class="num">11</td><td class="num">9</td><td class="num">+2</td></tr>
+              <tr><th scope="row">2026 Q1</th><td class="num">17</td><td class="num">5</td><td class="num">+12</td></tr>
+              <tr><th scope="row">2026 Q2</th><td class="num">9</td><td class="num">11</td><td class="num">-2</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="legend">2026 Q2 reflects the end of the Brackhill regional site licence in
+        April; the affected teams moved to standard tiers.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header><h2>About this metric</h2></header>
+      <div class="pad">
+        <dl class="defn">
+          <dt>Definition</dt>
+          <dd>Team accounts whose plan tier changed within the quarter, by direction.</dd>
+          <dt>Grain</dt>
+          <dd>Calendar quarter; a team that moved twice counts once, by net direction.</dd>
+          <dt>Source</dt>
+          <dd>billing.plan_changes, refreshed hourly.</dd>
+          <dt>Owner</dt>
+          <dd>Commercial Operations, Northgate Media</dd>
+        </dl>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer class="foot">
+  <span>Halbeck Analytics Ltd</span>
+  <a href="status.html">Status</a>
+  <a href="privacy.html">Privacy notice</a>
+  <a href="terms.html">Terms of service</a>
+  <a href="support.html">Support</a>
+  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+</footer>
+</body>
+</html>

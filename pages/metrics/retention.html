@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retention &middot; Northgate Media &middot; Halbeck</title>
+<link rel="stylesheet" href="halbeck.css">
+</head>
+<body>
+<div class="bar">
+  <span class="logo">Hal<i>beck</i></span>
+  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <span class="spacer"></span>
+  <a class="lnk" href="sources.html">Data sources</a>
+  <a class="lnk" href="alerts.html">Alerts</a>
+  <a class="lnk" href="docs.html">Docs</a>
+  <span class="who">NM</span>
+</div>
+
+<div class="shell">
+  <nav class="rail">
+    <h3>Workspace</h3>
+    <a href="overview.html">Overview</a>
+    <a href="index.html">Seat usage</a>
+    <a href="retention.html" class="on">Retention</a>
+    <a href="expansion.html">Expansion</a>
+    <a href="events.html">Product events</a>
+    <h3>Saved views</h3>
+    <a href="views.html#seats-by-plan-tier">Seats by plan tier</a>
+    <a href="views.html#weekly-actives">Weekly actives</a>
+    <a href="views.html#trial-conversions">Trial conversions</a>
+    <a href="views.html#support-touched-accounts">Support-touched accounts</a>
+    <h3>Admin</h3>
+    <a href="sources.html">Data sources</a>
+    <a href="members.html">Members</a>
+    <a href="billing.html">Billing</a>
+  </nav>
+
+  <main>
+    <p class="crumbs"><a href="overview.html">Northgate Media</a> / Analytics / Retention</p>
+    <h1>Retention</h1>
+    <p class="sub">Cohort survival: of the seats first active in a quarter, the share still
+    signing in three, six and twelve months later. Cohorts are closed at quarter end and
+    percentages are never restated.</p>
+
+    <section class="panel">
+      <header><h2>Quarterly cohorts</h2><span class="meta">seat survival, per cent</span></header>
+      <div class="pad">
+        <div class="tablewrap">
+          <table class="data">
+            <thead>
+              <tr><th scope="col">Cohort</th><th scope="col">3 months</th><th scope="col">6 months</th><th scope="col">12 months</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">2024 Q3</th><td class="num">91.2%</td><td class="num">86.4%</td><td class="num">78.9%</td></tr>
+              <tr><th scope="row">2024 Q4</th><td class="num">92.7%</td><td class="num">87.0%</td><td class="num">80.3%</td></tr>
+              <tr><th scope="row">2025 Q1</th><td class="num">90.8%</td><td class="num">84.9%</td><td class="num">77.5%</td></tr>
+              <tr><th scope="row">2025 Q2</th><td class="num">93.1%</td><td class="num">88.2%</td><td class="num">&mdash;</td></tr>
+              <tr><th scope="row">2025 Q3</th><td class="num">92.0%</td><td class="num">86.8%</td><td class="num">&mdash;</td></tr>
+              <tr><th scope="row">2025 Q4</th><td class="num">89.6%</td><td class="num">&mdash;</td><td class="num">&mdash;</td></tr>
+              <tr><th scope="row">2026 Q1</th><td class="num">91.9%</td><td class="num">&mdash;</td><td class="num">&mdash;</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="legend">A dash means the cohort has not aged far enough for that reading.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header><h2>About this metric</h2></header>
+      <div class="pad">
+        <dl class="defn">
+          <dt>Definition</dt>
+          <dd>Share of a cohort's seats with at least one sign-in in the target month.</dd>
+          <dt>Cohort key</dt>
+          <dd>Quarter of first sign-in, workspace timezone Europe/London.</dd>
+          <dt>Source</dt>
+          <dd>identity.sign_in_events joined to seat first-seen dates.</dd>
+          <dt>Owner</dt>
+          <dd>Platform Analytics, Northgate Media</dd>
+        </dl>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer class="foot">
+  <span>Halbeck Analytics Ltd</span>
+  <a href="status.html">Status</a>
+  <a href="privacy.html">Privacy notice</a>
+  <a href="terms.html">Terms of service</a>
+  <a href="support.html">Support</a>
+  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+</footer>
+</body>
+</html>

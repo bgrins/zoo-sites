@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farholt Freight Union — Account</title>
+<style>
+  :root {
+    --bone: #efe9dd; --paper: #f8f5ee; --ink: #1b1714;
+    --rule: #c9bda6; --oxblood: #7d2118; --dim: #59504a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bone); color: var(--ink);
+    font-family: "Lucida Sans", "Lucida Sans Unicode", "Lucida Grande", "DejaVu Sans", sans-serif;
+    font-size: 14px; line-height: 1.55;
+  }
+  h1, h2, h3, .wordmark, .tabs a, button {
+    font-family: Rockwell, "Roboto Slab", Serifa, "Bitstream Charter", Georgia, serif;
+  }
+  .masthead {
+    background: var(--ink); color: var(--bone);
+    padding: 14px 28px; display: flex; align-items: center; gap: 18px;
+  }
+  .wordmark {
+    border: 2px solid var(--bone); padding: 5px 12px;
+    text-transform: uppercase; letter-spacing: 3px; font-size: 15px;
+  }
+  .masthead .est { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #a99e8c; }
+  .masthead .tel { margin-left: auto; font-size: 12px; letter-spacing: 1px; color: #cfc4b0; }
+  .tabs { background: var(--paper); border-bottom: 3px solid var(--ink); padding: 0 28px; }
+  .tabs a {
+    display: inline-block; padding: 11px 16px 8px; text-decoration: none;
+    color: var(--dim); text-transform: uppercase; letter-spacing: 2px; font-size: 11px;
+    border-bottom: 3px solid transparent; margin-bottom: -3px;
+  }
+  .tabs a:hover { color: var(--ink); }
+  .tabs a.here { color: var(--oxblood); border-bottom-color: var(--oxblood); }
+  .sheet { max-width: 980px; margin: 0 auto; padding: 26px 28px 44px; }
+  .path { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); margin-bottom: 14px; }
+  .path a { color: var(--oxblood); text-decoration: none; }
+  h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.2px; }
+  .lede { margin: 0 0 22px; max-width: 66ch; color: var(--dim); }
+  .slab { background: var(--paper); border: 2px solid var(--ink); margin-bottom: 22px; }
+  .slab > h2 {
+    margin: 0; background: var(--ink); color: var(--bone);
+    font-size: 12px; letter-spacing: 3px; text-transform: uppercase; padding: 8px 16px;
+  }
+  .slab .inner { padding: 18px 16px; }
+  .slab .inner p { margin: 0 0 12px; max-width: 70ch; }
+  .slab .inner p:last-child { margin-bottom: 0; }
+  .field { display: flex; gap: 16px; padding: 12px 0; border-bottom: 1px dashed var(--rule); }
+  .field:last-of-type { border-bottom: 0; }
+  .field > label { flex: 0 0 168px; padding-top: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 1.4px; }
+  .field > div { flex: 1 1 auto; min-width: 0; }
+  input {
+    width: 100%; max-width: 380px; font: inherit; font-size: 14px;
+    padding: 7px 8px; border: 2px solid var(--ink); border-radius: 0;
+    background: #fff; color: var(--ink);
+  }
+  .help { margin: 5px 0 0; font-size: 12px; color: var(--dim); }
+  .actions { margin-top: 18px; display: flex; align-items: center; gap: 14px; }
+  button {
+    font-size: 12px; letter-spacing: 2.5px; text-transform: uppercase;
+    padding: 10px 22px; border: 2px solid var(--oxblood); border-radius: 0;
+    background: var(--oxblood); color: #fff; cursor: pointer;
+  }
+  button:hover { background: #5f1810; border-color: #5f1810; }
+  .msg { font-size: 13px; color: var(--oxblood); min-height: 18px; }
+  footer {
+    border-top: 3px solid var(--ink); margin-top: 40px; padding: 18px 28px 34px;
+    font-size: 12px; color: var(--dim);
+  }
+  footer a { color: var(--oxblood); text-decoration: none; }
+  footer .legal { margin-top: 8px; letter-spacing: 0.4px; }
+</style>
+</head>
+<body>
+<div class="masthead">
+  <span class="wordmark">Farholt</span>
+  <span class="est">Freight Union · Customs and cartage since 1934</span>
+  <span class="tel">Traffic desk 0808 157 0662</span>
+</div>
+<nav class="tabs">
+  <a href="services.html">Services</a>
+  <a href="tariffs.html">Tariffs</a>
+  <a href="office-finder.html">Branch directory</a>
+  <a href="claims.html">Claims</a>
+  <a href="account.html" class="here">Account</a>
+</nav>
+
+<div class="sheet">
+  <p class="path"><a href="index.html">Home</a> / Account</p>
+  <h1>Account</h1>
+  <p class="lede">Regular shippers may settle monthly instead of paying each
+  booking at the counter. Settlement accounts are opened in person at any
+  branch counter; bring the trading name, the registered address and a
+  specimen signature for each person authorised to book against the account.</p>
+
+  <div class="slab">
+    <h2>Account facilities</h2>
+    <div class="inner">
+      <p>Account holders book cartage and customs work by telephone against
+      the account number, receive one statement per calendar month, and settle
+      by draft or standing credit within 14 days of the statement date.
+      Accounts in arrears are suspended and bookings revert to counter terms.</p>
+    </div>
+  </div>
+
+  <form id="signin" class="slab" novalidate>
+    <h2>Sign in</h2>
+    <div class="inner">
+      <div class="field">
+        <label for="acct">Account number</label>
+        <div>
+          <input id="acct" name="acct" type="text" autocomplete="off">
+          <p class="help">As printed at the head of your monthly statement.</p>
+        </div>
+      </div>
+      <div class="field">
+        <label for="pass">Counter passphrase</label>
+        <div>
+          <input id="pass" name="pass" type="password">
+          <p class="help">Issued when the account was opened.</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit">Open settlement session</button>
+        <span class="msg" id="msg" role="status"></span>
+      </div>
+    </div>
+  </form>
+</div>
+
+<footer>
+  Farholt Freight Union · Registry House, 4 Ordnance Wharf, Korrin ·
+  <a href="privacy.html">Privacy notice</a> · <a href="terms-of-carriage.html">Terms of carriage</a> ·
+  <a href="traffic-desk.html">Traffic desk</a> · support@halveck-freight.example
+  <div class="legal">Copyright 2026 Farholt Freight Union. Cartage licence 1934/HFU.</div>
+</footer>
+
+<script>
+  document.getElementById('signin').addEventListener('submit', (event) => {
+    event.preventDefault();
+    document.getElementById('msg').textContent =
+      'Account numbers are validated at the counter. This terminal cannot open a settlement session.';
+  });
+</script>
+</body>
+</html>

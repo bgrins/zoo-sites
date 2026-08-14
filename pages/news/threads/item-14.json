@@ -1,0 +1,69 @@
+{
+  "rank": 14,
+  "comments": [
+    {
+      "author": "glyphgremlin",
+      "age": "11 hours ago",
+      "text": "For anyone confused by the title: the font contains a special ligature sequence — type a magic string and it draws a table of its own kerning pairs, rendered as glyphs, with the values typeset using the font itself. It's a quine, but for typography. Utterly useless and utterly delightful.",
+      "replies": [
+        {
+          "author": "sidebearing",
+          "age": "10 hours ago",
+          "text": "OP here — 'utterly useless and utterly delightful' is going on the project page, thank you. The magic string is KERNME, chosen after I discovered my first choice collided with a real word in Estonian.",
+          "replies": [
+            {
+              "author": "lambdacurious",
+              "age": "9 hours ago",
+              "text": "How did you find the Estonian collision? Do you have a pipeline that checks candidate strings against wordlists, or did an actual Estonian speaker file a bug?",
+              "replies": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "hintingnerd",
+      "age": "10 hours ago",
+      "text": "Pedantic correction: what the shaping engine consumes here isn't technically the legacy kern table, it's the pair adjustment lookups in the positioning table, which is a different beast (and why this works in modern shapers at all). The distinction matters if anyone tries to reproduce this — the old table format caps out in ways that would break the trick.",
+      "replies": [
+        {
+          "author": "sidebearing",
+          "age": "9 hours ago",
+          "text": "Correct, and I was sloppy in the README. Fixed. The substitution machinery that makes the quine work definitely wouldn't fly in the legacy format.",
+          "replies": []
+        },
+        {
+          "author": "staticdrift",
+          "age": "8 hours ago",
+          "text": "This thread is peak HN: a joke font posted for fun, immediately followed by a rigorous spec-level correction that the author gratefully accepts. I love it here.",
+          "replies": []
+        }
+      ]
+    },
+    {
+      "author": "printnostalgic",
+      "age": "8 hours ago",
+      "text": "This reminds me of metal type days when the kerning literally was physical — you'd file the shoulder off a sort so the letters could tuck closer. A font that can describe its own fit would have sounded like witchcraft to my old shop teacher. He measured letterfit by squinting at a proof upside down.",
+      "replies": []
+    },
+    {
+      "author": "offbyfun",
+      "age": "7 hours ago",
+      "text": "Obligatory: does it kern the kerning table correctly? If the table's own digits have bad letterfit, we need a second font that renders the kerning table of the kerning table.",
+      "replies": [
+        {
+          "author": "sidebearing",
+          "age": "6 hours ago",
+          "text": "It does, and yes, the numerals in the rendered table are themselves pair-adjusted, so the table is self-hosting. Turtles all the way down, but only one turtle deep because I have a day job.",
+          "replies": []
+        }
+      ]
+    },
+    {
+      "author": "securityhat",
+      "age": "4 hours ago",
+      "text": "Half-serious question: substitution rules powerful enough to do this are powerful enough to exfiltrate document content into rendered output in sneaky ways. Has anyone audited what the upper bound of mischief is for a malicious font along these lines?",
+      "replies": []
+    }
+  ]
+}

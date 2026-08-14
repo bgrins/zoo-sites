@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in | Millrace</title>
+<link rel="stylesheet" href="millrace.css">
+</head>
+<body>
+<header id="masthead">
+  <div class="masthead-in">
+    <a class="wordmark" href="/news/">millrace</a>
+    <span class="tagline">a working stream for people who build things</span>
+    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+  </div>
+</header>
+<nav id="tabs" aria-label="Sections">
+  <div class="tabs-in">
+    <a class="tab" href="/news/">Stream</a>
+    <a class="tab" href="/news/?sort=fresh">Fresh</a>
+    <a class="tab" href="/news/?view=threads">Threads</a>
+    <a class="tab" href="/news/?tag=asks">Asks</a>
+    <a class="tab" href="/news/?tag=build">Build logs</a>
+    <a class="tab" href="/news/?tag=jobs">Hiring</a>
+    <a class="tab" href="/news/submit.html">Submit a link</a>
+    <form class="seek" action="/news/" method="get" role="search">
+      <input type="search" name="q" aria-label="Search the stream" placeholder="Search the stream">
+      <button type="submit">Go</button>
+    </form>
+  </div>
+</nav>
+<div id="wrap">
+  <main id="main">
+    <p class="crumbs"><a href="/news/">stream</a> &rsaquo; sign in</p>
+    <div class="doc">
+      <h1>Sign in</h1>
+      <form id="signinform">
+        <div class="field">
+          <label for="siuser">Username or email</label>
+          <input id="siuser" name="user" type="text" autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="sipass">Password</label>
+          <input id="sipass" name="pass" type="password" autocomplete="current-password">
+        </div>
+        <button class="btn" type="submit">Sign in</button>
+        <p class="formnote err" id="sierr" hidden></p>
+      </form>
+      <p class="formnote">Forgotten password? Write to help@millrace.example from
+        the address on the account; resets are confirmed by hand within a day.</p>
+
+      <h2 id="register">Open an account</h2>
+      <p>Accounts are free and pseudonymous: a username, an email for resets, a
+        password. New accounts can reply immediately and can submit links after
+        their first week.</p>
+      <p>Registration is confirmed by email, and while a spam wave has us
+        throttled, confirmations go out in batches on the hour &mdash; see the
+        <a href="/news/moderation.html">moderation log</a> for the wave that
+        earned everyone this inconvenience. To get one, send a blank message to
+        join@millrace.example from the address you want on file, and finish the
+        form the reply links to. One account per person; the
+        <a href="/news/guidelines.html">guidelines</a> are the terms you are
+        agreeing to.</p>
+    </div>
+  </main>
+  <aside id="rail">
+    <div class="card">
+      <h2>Why sign in</h2>
+      <ul>
+        <li>Vote on submissions and replies.</li>
+        <li>Reply in threads immediately.</li>
+        <li>Submit links after your first week.</li>
+        <li>Flag what the stewards should see.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Reading needs no account</h2>
+      <p>The stream, every thread and the <a href="/news/feed.json">feed</a> are
+        public and always will be.</p>
+      <p class="meta"><a href="/news/about.html">About millrace</a></p>
+    </div>
+  </aside>
+</div>
+<footer id="footer">
+  <div class="footer-in">
+    <p class="footer-nav">
+      <a href="/news/about.html">About</a> &middot;
+      <a href="/news/guidelines.html">Guidelines</a> &middot;
+      <a href="/news/moderation.html">Moderation log</a> &middot;
+      <a href="/news/feeds.html">Feeds</a> &middot;
+      <a href="/news/status.html">Status</a> &middot;
+      <a href="/news/advertise.html">Sponsor a day</a> &middot;
+      <a href="/news/privacy.html">Privacy</a> &middot;
+      <a href="/news/terms.html">Terms</a> &middot;
+      <a href="/news/contact.html">Contact</a>
+    </p>
+    <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
+      Ashvale, VT 05412. Moderation questions go to
+      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      help@millrace.example.</p>
+    <p>Submissions and replies remain the work of their authors. Copyright 2026
+      Weirgate Collective LLC.</p>
+  </div>
+</footer>
+<script>
+  document.getElementById('signinform').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const err = document.getElementById('sierr');
+    const user = document.getElementById('siuser').value.trim();
+    const pass = document.getElementById('sipass').value;
+    err.hidden = false;
+    err.textContent = !user || !pass
+      ? 'Enter both a username and a password.'
+      : 'No account matches that username and password. Five failures in a row pauses sign-in for an hour.';
+  });
+</script>
+</body>
+</html>

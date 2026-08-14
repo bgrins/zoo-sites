@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rotation — Stavelock</title>
+<link rel="stylesheet" href="stavelock.css">
+</head>
+<body>
+<div class="rail">
+  <p class="mark">Stave<span>lock</span></p>
+  <p class="tag">Credential vault</p>
+  <nav>
+    <a href="index.html">Secrets</a>
+    <a class="on" href="rotate.html">Rotation</a>
+    <a href="audit.html">Audit log</a>
+    <a href="policy.html">Access policy</a>
+  </nav>
+  <p class="who">Signed in as d.pellworth<br>Platform Delivery<br>Vault region: eu-north</p>
+</div>
+
+<main>
+  <p class="crumb"><a href="index.html">Secrets</a> / Rotation</p>
+  <h1 id="title">sluicegate-api/deploy</h1>
+  <p class="lede">Rotation replaces the stored value and issues a rotation receipt. To
+  prove you hold the credential you are replacing, enter its current value in full. The
+  masked form shown in the console will not be accepted.</p>
+
+  <div class="panel">
+    <div class="facts" id="facts"></div>
+  </div>
+
+  <div class="panel">
+    <form id="form">
+      <div class="field">
+        <span class="lab" id="tokenLab">Current token value</span>
+        <input type="text" id="token" name="token" autocomplete="off" spellcheck="false"
+               aria-label="Current token value" placeholder="Paste the current value">
+        <p class="hint">Whitespace is trimmed. The value is checked against the sealed
+        record and is not stored in this form.</p>
+      </div>
+      <div class="field">
+        <span class="lab">Reason for rotation</span>
+        <input type="text" id="reason" name="reason" autocomplete="off"
+               aria-label="Reason for rotation" placeholder="Recorded against the change">
+      </div>
+      <div class="acts">
+        <button id="submit" type="submit">Rotate token</button>
+        <a class="btn ghost" href="index.html">Cancel</a>
+      </div>
+    </form>
+    <div class="result" id="ok" hidden>
+      <p class="receiptlab">Rotation receipt</p>
+      <p class="receipt" id="receipt"></p>
+      <p class="state good" id="okNote"></p>
+    </div>
+    <div class="result bad" id="bad" hidden>
+      <p class="state bad" id="badNote"></p>
+    </div>
+  </div>
+
+  <h2>What rotation does</h2>
+  <p class="lede">The previous value stops authenticating the moment the receipt is
+  issued. Build agents holding a lease on the old value fail their next renewal and pull
+  the replacement automatically; anything pinned to the old value by hand has to be
+  updated from the vault.</p>
+
+  <footer>
+    <a href="policy.html">Access policy</a>
+    <a href="policy.html#handling">Key handling</a>
+    <a href="policy.html#privacy">Privacy</a>
+    <p>Stavelock Systems Ltd, Fettergate House, 3 Marl Row, Barrowfield</p>
+    <p>Vault support: vaultdesk@stavelock.example &middot; (555) 017-2204</p>
+    <p>&copy; 2019-2026 Stavelock Systems Ltd. Registered no. 000000.</p>
+  </footer>
+</main>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const $ = (id) => document.getElementById(id);
+const ID = new URLSearchParams(location.search).get('id') || 'sluicegate-deploy';
+let sawPaste = false;
+
+async function post(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nonce: NONCE, ...body }),
+  });
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {}
+  return { ok: res.ok, data };
+}
+
+function fact(k, v) {
+  const row = document.createElement('div');
+  row.className = 'fact';
+  const key = document.createElement('span');
+  key.className = 'k';
+  key.textContent = k;
+  const val = document.createElement('span');
+  val.textContent = v;
+  row.append(key, val);
+  return row;
+}
+
+async function load() {
+  const res = await fetch('/api/vault/secret?id=' + encodeURIComponent(ID), {
+    headers: { 'X-Session-Nonce': NONCE },
+  });
+  if (!res.ok) {
+    $('title').textContent = 'Vault session expired';
+    return;
+  }
+  const s = await res.json();
+  $('title').textContent = s.name;
+  const facts = $('facts');
+  facts.innerHTML = '';
+  facts.appendChild(fact('Secret', s.name));
+  facts.appendChild(fact('Environment', s.environment));
+  facts.appendChild(fact('Stored value', s.masked));
+  facts.appendChild(fact('Last rotated', s.lastRotated));
+  if (!s.rotatable) {
+    $('submit').disabled = true;
+    $('badNote').textContent = 'Rotation for this secret is handled by Security Engineering.';
+    $('bad').hidden = false;
+  }
+}
+
+$('token').addEventListener('paste', () => {
+  sawPaste = true;
+});
+
+$('form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  $('ok').hidden = true;
+  $('bad').hidden = true;
+  const r = await post('/api/vault/rotate', {
+    id: ID,
+    token: $('token').value,
+    reason: $('reason').value,
+    entry: sawPaste ? 'paste' : 'typed',
+  });
+  if (!r.ok || !r.data.ok) {
+    $('badNote').textContent = r.data.error || 'Rotation could not be completed.';
+    $('bad').hidden = false;
+    return;
+  }
+  $('receipt').textContent = r.data.receipt;
+  $('okNote').textContent = 'Stored value replaced. New masked form ' + r.data.masked + '.';
+  $('ok').hidden = false;
+  $('token').value = '';
+  sawPaste = false;
+  load();
+});
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+{
+  "rank": 17,
+  "comments": [
+    {
+      "author": "warmstart",
+      "age": "10 hours ago",
+      "text": "Buried lede: the '90%' is measured against their own previous setup, which ran the full test suite on every push to every branch, including docs-only changes. Going from 'maximally wasteful' to 'reasonable' is a 90% cut, sure, but most shops already do change-based test selection. The scheduler is neat; the baseline is doing the heavy lifting in that headline.",
+      "replies": [
+        {
+          "author": "yamlwhisperer",
+          "age": "9 hours ago",
+          "text": "OP here — guilty on the baseline, and I tried to be upfront about it in the methodology section. But the scheduler part is real: bin-packing jobs onto preemptible machines by historical duration got us the last 40 points, and that's the part I haven't seen written up elsewhere.",
+          "replies": [
+            {
+              "author": "warmstart",
+              "age": "8 hours ago",
+              "text": "That's fair, and the duration-prediction section is genuinely good. I'd read a whole post on just the preemption-recovery logic.",
+              "replies": []
+            },
+            {
+              "author": "spotinstancekarma",
+              "age": "7 hours ago",
+              "text": "How do you handle the thundering herd when a whole pool gets preempted at once? We tried this and ended up with retry storms that cost more than the savings during two bad weeks.",
+              "replies": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "pagetable",
+      "age": "8 hours ago",
+      "text": "Every CI cost story eventually converges on the same three moves: don't run what didn't change, cache what did, and stop paying on-demand prices for interruptible work. The remaining 10% of the bill is the part that actually needed to run, and no scheduler saves you from your own test suite taking forty minutes.",
+      "replies": [
+        {
+          "author": "flakehunter",
+          "age": "6 hours ago",
+          "text": "Move four: delete the flaky tests, which are secretly the most expensive ones because they charge you in reruns AND in developer trust.",
+          "replies": []
+        }
+      ]
+    },
+    {
+      "author": "bitrotting",
+      "age": "3 hours ago",
+      "text": "One weird scheduler. CFOs hate him.",
+      "replies": []
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "rank": 30,
+  "comments": [
+    {
+      "author": "kernelpanda",
+      "age": "19 hours ago",
+      "text": "Love the energy budget table. For anyone skimming: the dynamo produces ~3W while riding, the station needs ~40mW average, and the supercap bridges the gaps. The whole design question is \"how many days of no cycling can it survive,\" and the answer (9 days) is honestly better than some solar setups I've deployed under trees.",
+      "replies": [
+        {
+          "author": "spokesperson",
+          "age": "17 hours ago",
+          "text": "OP here — the 9 days is measured, not calculated, which matters because the anemometer bearing draws triple its datasheet current below 5C. Winter was educational. Next revision moves the wind sensor to a solid-state design so the whole thing has no moving parts except, of course, the bicycle.",
+          "replies": [
+            {
+              "author": "kernelpanda",
+              "age": "15 hours ago",
+              "text": "\"No moving parts except the bicycle\" is a great line and also a great spec."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "hubdynamo",
+      "age": "12 hours ago",
+      "text": "Skeptical of one claim: you say the dynamo charging adds \"no perceptible drag.\" Hub dynamos under load cost real watts — riders absolutely notice on climbs. It's fine to say the drag is worth it, but let's not pretend physics took the day off.",
+      "replies": [
+        {
+          "author": "offbyfun",
+          "age": "10 hours ago",
+          "text": "Counterpoint from experience: I ran a dynamo light for years and never noticed until the day I removed it and suddenly felt like a superhero. The drag is real; perception is the thing that's unreliable."
+        }
+      ]
+    },
+    {
+      "author": "staticdrift",
+      "age": "5 hours ago",
+      "text": "What's the story on data upload? I saw LoRa in the parts list but the writeup only mentions the SD card."
+    }
+  ]
+}

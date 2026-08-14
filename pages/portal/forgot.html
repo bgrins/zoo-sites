@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reset your password — Overlane Carrier Access</title>
+<link rel="stylesheet" href="portal.css">
+<style>
+  .sent {
+    border: 1px solid #cfe6e2;
+    border-left: 4px solid var(--teal);
+    background: var(--teal-tint);
+    color: #0a5f57;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+  .hint { font-size: 13px; color: var(--muted); margin: -6px 0 18px; }
+  .retry { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+</style>
+</head>
+<body class="signin">
+<div class="signin-head">
+  <span class="logo">
+    <svg class="logo-mark" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+      <rect width="30" height="30" rx="8" fill="#ffffff"></rect>
+      <path d="M7 20h11M7 15h15M7 10h8" stroke="#2f4bb5" stroke-width="2.2" stroke-linecap="round"></path>
+      <circle cx="22.5" cy="20" r="2.6" fill="#0d8d80"></circle>
+    </svg>
+    <span class="logo-word">Overlane</span>
+    <span class="logo-sub">Carrier Access</span>
+  </span>
+</div>
+
+<div class="card">
+  <h1>Reset your password</h1>
+  <p class="lede">We will send a single-use link to the mailbox on file for your
+  Overlane account.</p>
+  <form id="forgot" novalidate>
+    <div class="field">
+      <label for="email">Work email</label>
+      <input id="email" type="email" autocomplete="off" placeholder="you@yourcarrier.example">
+    </div>
+    <p class="hint">The link stays valid for 30 minutes and can be used once.</p>
+    <button type="submit" id="submitBtn" class="btn btn-primary">Send reset link</button>
+    <div id="status" role="alert"></div>
+  </form>
+  <div id="sent" class="sent" role="status" hidden></div>
+  <p id="retry" class="retry" hidden>Used the wrong address? Correct the work
+  email above and send again.</p>
+  <div class="card-foot">
+    <a href="index.html">Back to sign-in</a>
+  </div>
+</div>
+
+<div class="help">
+  <h2>If the link does not arrive</h2>
+  <ul>
+    <li>Check the junk folder of the mailbox your administrator registered.</li>
+    <li>Reset links are sent to the registered mailbox only, never to a new address.</li>
+    <li>Requesting a second link cancels the first one.</li>
+    <li>Service desk: +1 206 555 0148, option 2, 06:00-20:00 Pacific.</li>
+  </ul>
+</div>
+
+<footer class="sitefoot">
+  <nav>
+    <a href="support.html">Support centre</a>
+    <a href="status.html">Network status</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+  </nav>
+  <p>Overlane Logistics Group, 1400 Harbor Way, Suite 620, Tacoma WA 98402</p>
+  <p>Copyright 2026 Overlane Logistics Group. All rights reserved.</p>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const status = document.getElementById('status');
+  const form = document.getElementById('forgot');
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = document.getElementById('submitBtn');
+    button.disabled = true;
+    status.className = '';
+    status.textContent = 'Sending…';
+    try {
+      const res = await fetch('/api/portal/reset-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nonce: NONCE,
+          email: document.getElementById('email').value,
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        status.className = 'err';
+        status.textContent =
+          res.status === 403
+            ? 'This page has been open too long. Reload it and send the link again.'
+            : body.error ?? 'Request failed.';
+        return;
+      }
+      status.textContent = '';
+      const sent = document.getElementById('sent');
+      sent.hidden = false;
+      sent.textContent = body.message;
+      document.getElementById('retry').hidden = false;
+    } catch {
+      status.className = 'err';
+      status.textContent = 'Network error — try again.';
+    } finally {
+      button.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

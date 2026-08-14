@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gadgetron | Store maintenance</title>
+<style>
+  body {
+    margin: 0;
+    background: #fbfbfc;
+    color: #1f2430;
+    font-family: "Arial Narrow", "Helvetica Neue Condensed", Arial, sans-serif;
+    font-size: 13px;
+  }
+  a { color: #0d5c8a; }
+  .railbar {
+    background: #1f2430; color: #f2f3f5; padding: 7px 14px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .railbar .mark {
+    font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: .16em;
+    color: #ffb020;
+  }
+  .railbar .tagline {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: #9aa2b1;
+  }
+  .railbar .who { margin-left: auto; font-size: 11px; color: #9aa2b1; }
+  .strip {
+    background: #2c3242; border-bottom: 2px solid #ffb020; padding: 6px 14px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: #c8cdd8;
+  }
+  .pane { max-width: 74ch; padding: 18px 14px 30px; }
+  h1 { font-size: 19px; margin: 0 0 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .sub { font-size: 12px; color: #626a7a; margin: 0 0 14px; }
+  p { max-width: 74ch; line-height: 1.55; }
+  .board {
+    border: 1px solid #d7dae2; border-left: 3px solid #ffb020; background: #fff;
+    padding: 9px 12px; margin: 0 0 16px;
+  }
+  .board h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .12em;
+    color: #626a7a; margin: 0 0 6px;
+  }
+  .board dl { margin: 0; display: grid; grid-template-columns: 150px 1fr; gap: 3px 10px; }
+  .board dt { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #626a7a; }
+  .board dd { margin: 0; font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; }
+  .route { border-top: 1px solid #dcdfe6; padding-top: 12px; }
+  .route h2 { font-size: 14px; margin: 0 0 4px; }
+  .route .path {
+    font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 14px;
+    font-weight: bold; margin: 6px 0 2px;
+  }
+  .route .hint { font-size: 12px; color: #626a7a; margin: 2px 0 0; }
+  ul.offline { margin: 4px 0 14px 18px; padding: 0; }
+  ul.offline li { margin-bottom: 2px; }
+  .legalstrip {
+    border-top: 3px solid #ffb020; background: #1f2430; color: #9aa2b1;
+    font-size: 11px; padding: 14px; line-height: 1.6;
+  }
+  .legalstrip a { color: #cfd4de; }
+</style>
+</head>
+<body>
+<div class="railbar">
+  <span class="mark">Gadgetron</span>
+  <span class="tagline">Spec index and price engine</span>
+  <span class="who">Support desk: 1-800-555-0142</span>
+</div>
+<div class="strip">Service notice &middot; primary warehouse cluster offline</div>
+<div class="pane">
+  <h1>Store maintenance in progress</h1>
+  <p class="sub">Incident MB-3-1174 &middot; warehouse database migration</p>
+  <p>The spec index and price engine are offline while the warehouse database is
+  migrated to the new pricing cluster. Every catalog path on the primary store answers
+  with this notice until the window closes, so a bookmark or a saved search will land
+  here too.</p>
+  <div class="board">
+    <h2>Window</h2>
+    <dl>
+      <dt>Scheduled</dt><dd>04:00 to 09:30 (UTC-05)</dd>
+      <dt>Incident</dt><dd>MB-3-1174</dd>
+      <dt>Primary cluster</dt><dd>offline</dd>
+      <dt>Last good sync</dt><dd>06:40</dd>
+    </dl>
+  </div>
+  <p>Unavailable for the duration of the window:</p>
+  <ul class="offline">
+    <li>order queueing and bulk quotes</li>
+    <li>price history and open-box listings</li>
+    <li>marketplace seller messaging</li>
+  </ul>
+  <div class="route">
+    <h2>Read-only mirror</h2>
+    <p>Current pricing and specifications are served from the mirror node built from the
+    06:40 snapshot. The mirror accepts no orders.</p>
+    <p class="path"><a href="__ORIGIN_GADGETRON_MIRROR__/">the community mirror node</a></p>
+    <p class="hint">Same host, mirror node MB-3.</p>
+  </div>
+</div>
+<footer class="legalstrip">
+  <a href="#">Service status history</a> &middot; <a href="#">Privacy notice</a> &middot;
+  <a href="#">Terms of sale</a> &middot; <a href="#">Contact the support desk</a><br>
+  Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Brantwell. &copy; 2026 Gadgetron
+  Trading Co. All rights reserved.
+</footer>
+</body>
+</html>

@@ -1,0 +1,34 @@
+body { font-family: Arial, sans-serif; margin: 0; color: #0f1111; }
+header { background: #131921; color: #fff; padding: 12px 20px; display: flex; gap: 16px; align-items: center; }
+header b { border-left: 3px solid #ff9900; padding-left: 6px; font-size: 18px; }
+header a { color: #ddd; font-size: 13px; text-decoration: none; margin-left: auto; }
+.steps { background: #232f3e; color: #aaa; padding: 8px 20px; font-size: 13px; }
+.steps b { color: #ffd814; }
+main { max-width: 640px; margin: 28px auto; padding: 0 20px; }
+h1 { font-size: 22px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+td, th { border-bottom: 1px solid #e3e6e6; padding: 10px 8px; text-align: left; }
+.total { font-weight: 700; }
+label { display: block; margin: 12px 0 4px; font-weight: 700; font-size: 14px; }
+input { padding: 8px; width: 100%; max-width: 360px; box-sizing: border-box; font-size: 14px; }
+button, .btn { display: inline-block; margin-top: 16px; background: #ffd814; border: 1px solid #fcd200;
+  border-radius: 20px; padding: 9px 22px; font-size: 14px; cursor: pointer; color: #0f1111; text-decoration: none; }
+#status { margin-top: 14px; font-size: 14px; min-height: 20px; }
+#status.error { color: #b12704; }
+.summary-box { border: 1px solid #d5d9d9; border-radius: 6px; padding: 16px 20px; margin-top: 16px; }
+.promobox { border: 1px solid #d5d9d9; border-radius: 6px; padding: 14px 20px 18px; margin-top: 24px; }
+.promobox h2 { font-size: 15px; margin: 0 0 6px; }
+.promobox p { font-size: 13px; color: #565959; margin: 0 0 8px; }
+.promorow { display: flex; gap: 8px; align-items: center; }
+.promorow input { max-width: 200px; text-transform: uppercase; }
+.promorow button { margin-top: 0; padding: 7px 18px; }
+#promostatus { margin-top: 10px; font-size: 13px; min-height: 18px; }
+#promostatus.error { color: #b12704; font-weight: 700; }
+#promostatus.good { color: #007600; font-weight: 700; }
+.hash { font-size: 20px; font-weight: 700; background: #fdf3d8; padding: 6px 12px; display: inline-block; }
+.deal { border: 2px solid #ff9900; background: #fff7e6; border-radius: 6px; padding: 14px 18px; margin-top: 20px; }
+.deal b { color: #b12704; }
+footer { padding: 20px; background: #131921; color: #999; font-size: 12px; margin-top: 48px; }
+footer a { color: #ddd; }
+.crossnote { font-size: 12px; color: #565959; margin-top: 18px; }
+.crossnote a { color: #007185; }

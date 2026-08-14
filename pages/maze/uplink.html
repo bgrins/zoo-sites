@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uplink windows — Kestrel 4 — Ostara Surface Systems</title>
+<link rel="stylesheet" href="maze.css">
+</head>
+<body>
+<div class="mast">
+  <span class="org">Ostara Surface Systems</span>
+  <span class="div">Surface fleet operations</span>
+  <span class="who">drive team 2 &middot; k.oyelaran@ostara-surface.example</span>
+</div>
+<div class="chips">
+  <span class="chip">Sol 214</span>
+  <span class="chip">Site Vantor Basin</span>
+  <span class="chip">Rover Kestrel 4</span>
+  <span class="chip">Panel uplink windows</span>
+</div>
+<div class="shell">
+  <nav class="rail">
+    <h2>Kestrel 4</h2>
+    <a href="index.html">Traverse</a>
+    <a href="survey.html">Survey record</a>
+    <a href="power.html">Power and thermal</a>
+    <a href="instruments.html">Instruments</a>
+    <a href="uplink.html" class="on">Uplink windows</a>
+    <a href="hazard.html">Hazard review</a>
+    <a href="archive.html">Sol archive</a>
+    <a href="handbook.html" class="sep">Drive handbook</a>
+  </nav>
+  <main class="content">
+    <h1>Uplink windows</h1>
+    <p class="lede">Relay passes available to Kestrel 4 for sol 214 and the following two
+    sols, local solar time. Drive commands ride the continuous low-rate link; the windows
+    below carry bulk telemetry, imaging and software loads.</p>
+
+    <div class="decks">
+      <section class="deck deck-map">
+        <h2>Pass schedule</h2>
+        <ul class="recordlist">
+          <li>SOL 214 08:12 R1 11 MIN</li>
+          <li>SOL 214 13:47 R2 8 MIN</li>
+          <li>SOL 214 19:03 R1 14 MIN</li>
+          <li>SOL 215 08:41 R1 10 MIN</li>
+          <li>SOL 215 14:19 R2 7 MIN</li>
+          <li>SOL 215 19:36 R1 13 MIN</li>
+          <li>SOL 216 09:10 R1 9 MIN</li>
+          <li>SOL 216 14:52 R2 7 MIN</li>
+          <li>SOL 216 20:08 R1 12 MIN</li>
+        </ul>
+        <p class="legend">R1 and R2 are the two relay orbiters supporting this site. Pass
+        times shift roughly half an hour later each sol as the orbits precess.</p>
+      </section>
+
+      <section class="deck deck-log">
+        <h2>Link rules</h2>
+        <ul class="logbook">
+          <li>DRIVE cmds low-rate link only</li>
+          <li>BULK data queued to next pass</li>
+          <li>EXTRACTION readback voice loop</li>
+          <li>SW loads evening passes only</li>
+        </ul>
+        <p class="legend">If the low-rate link drops, the console inhibits its deck and asks
+        for a reload; the rover holds position and keeps its survey record. Extraction code
+        readback to mission control happens on the ops voice loop, not on a relay pass.</p>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="foot">
+  <p class="links">
+    <a href="data-policy.html">Data policy</a>
+    <a href="terms.html">Operating terms</a>
+    <a href="contact.html">Contact the drive desk</a>
+  </p>
+  <p>&copy; 2026 Ostara Surface Systems Ltd. Registered office: 14 Bellamy Wharf,
+  Tarnbridge TR4 2QN. Flight operations support: ops-desk@ostara-surface.example,
+  +44 20 7946 0812.</p>
+</div>
+</body>
+</html>

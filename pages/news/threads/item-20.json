@@ -1,0 +1,50 @@
+{
+  "rank": 20,
+  "comments": [
+    {
+      "author": "proofburden",
+      "age": "15 hours ago",
+      "text": "The article's core claim — that lightweight specification catches most of the bugs full verification would, at a tenth of the effort — matches my experience running a verification team for five years. The proofs that found real bugs were almost never the deep ones. They were the boring invariants: this index is in bounds, this state machine can't skip a step, this counter never goes backwards.\n\nThe deep proofs found bugs too, but they cost so much that we could only afford them for two components. The invariant checks we could sprinkle everywhere, and coverage beat depth every single quarter.",
+      "replies": [
+        {
+          "author": "hoarelogic",
+          "age": "14 hours ago",
+          "text": "OP here — 'coverage beat depth every single quarter' is the whole thesis stated better than I managed in 3000 words. May I quote this (with your handle) in a follow-up?",
+          "replies": [
+            {
+              "author": "proofburden",
+              "age": "13 hours ago",
+              "text": "Go ahead. For balance you should also quote my failure: we once spent four months proving a property of a module that was deleted the following sprint. Choose your targets by churn, not by elegance.",
+              "replies": []
+            }
+          ]
+        },
+        {
+          "author": "bitrotting",
+          "age": "12 hours ago",
+          "text": "The 'proved a property of deleted code' story exists in every verification shop. It's our version of the perfectly optimized function that profiling later shows was never called.",
+          "replies": []
+        }
+      ]
+    },
+    {
+      "author": "typesarelaws",
+      "age": "11 hours ago",
+      "text": "Gentle pushback on the framing: 'for the rest of us' still assumes a team that writes specs at all. In twenty years of industry work I've seen maybe three teams that maintained even doc comments accurately. The bottleneck isn't tooling ergonomics, it's that specification is a distinct skill nobody is hired for or evaluated on.",
+      "replies": [
+        {
+          "author": "kernelpanda",
+          "age": "9 hours ago",
+          "text": "Property-based testing has been quietly fixing this by stealth. Nobody thinks they're 'writing a spec' when they write a generator and an invariant, but they are, and it's spec-writing with an immediate payoff. Best gateway drug we have.",
+          "replies": []
+        }
+      ]
+    },
+    {
+      "author": "curiousundergrad",
+      "age": "6 hours ago",
+      "text": "Student here — if I wanted to get into this professionally, is the move to learn a proof assistant deeply, or to get good at the lightweight tools the article covers?",
+      "replies": []
+    }
+  ]
+}

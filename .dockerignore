@@ -1,0 +1,13 @@
+# Allowlist: the inverse of the Dockerfile's COPY set. The build context is the
+# repo root, so without this a local build ships node_modules, results/ and
+# staging/ to the daemon.
+*
+
+!manifest.mjs
+!preview.html
+!serve.mjs
+!server.mjs
+!sites/
+!pages/
+!LICENSE
+!NOTICE

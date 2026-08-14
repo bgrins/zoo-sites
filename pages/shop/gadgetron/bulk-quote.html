@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gadgetron | Bulk quote</title>
+<link rel="stylesheet" href="gadgetron.css">
+<style>
+  .policy { flex: 1; padding: 10px 14px 26px; min-width: 0; max-width: 90ch; }
+  .policy h1 { font-size: 17px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .policy .lede { font-size: 12px; color: #454c5c; margin: 0 0 10px; max-width: 82ch; }
+  .policy p { font-size: 12px; margin: 0 0 6px; }
+  .quoteform { border: 1px solid #d7dae2; background: #fff; padding: 12px; max-width: 560px; }
+  .quoteform label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #626a7a; margin: 10px 0 3px; }
+  .quoteform input, .quoteform textarea { font: inherit; border: 1px solid #b9bfcc; padding: 5px 7px; width: 100%; box-sizing: border-box; }
+  .quoteform textarea { height: 92px; font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; }
+  .quoteform button {
+    margin-top: 12px; font: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    font-weight: bold; background: #ffb020; border: 1px solid #d18f10; color: #1f2430;
+    padding: 6px 14px; cursor: pointer;
+  }
+  #verdict { margin-top: 10px; font-size: 12px; min-height: 16px; padding: 5px 8px; }
+  #verdict.bad { background: #fdeceb; border-left: 3px solid #a3230f; color: #7d1a0b; font-weight: bold; }
+  #verdict.good { background: #eef7ee; border-left: 3px solid #1d7a3c; color: #14562a; font-weight: bold; }
+  .crumbline { background: #fff5e0; border-bottom: 1px solid #e8d49c; padding: 5px 14px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="railbar">
+  <span class="mark">Gadgetron</span>
+  <span class="tagline">Spec index and price engine</span>
+  <form onsubmit="return false">
+    <input aria-label="Search part numbers or models" placeholder="Model, brand or part no.">
+    <button type="submit">Find</button>
+  </form>
+  <span class="who">Guest &middot; <a href="signin.html">sign in</a> &middot;
+    <a href="order-list.html">order list</a></span>
+</div>
+<nav class="tabs" aria-label="Sections">
+  <a href="index.html">Catalog</a>
+  <a href="compare.html">Compare</a>
+  <a href="price-history.html">Price history</a>
+  <a href="open-box.html">Open-box</a>
+  <a href="glossary.html">Spec glossary</a>
+  <a href="bulk-quote.html" aria-current="page">Bulk quote</a>
+</nav>
+<div class="crumbline">Catalog &rsaquo; Bulk quote</div>
+<div class="layout">
+  <section class="policy">
+    <h1>Bulk quote</h1>
+    <p class="lede">For 10 units or more of any part number, the buying desk quotes tiered
+    pricing off the spec index list price. Quotes are answered within one business day and
+    held for 14 days.</p>
+    <div class="quoteform">
+      <label for="qemail">Work email for the quote</label>
+      <input id="qemail" type="email" autocomplete="off">
+      <label for="qlines">Part numbers and quantities, one per line (e.g. CS27-Q x 25)</label>
+      <textarea id="qlines" spellcheck="false"></textarea>
+      <button type="button" id="submitquote">Request quote</button>
+      <div id="verdict" role="status"></div>
+    </div>
+    <p style="margin-top:10px">Part numbers are shown in the Model column of the
+    <a href="index.html">catalog index</a>. Sold-out part numbers cannot be quoted; see the
+    <a href="substitutions.html">approved substitution list</a>.</p>
+  </section>
+</div>
+<footer class="legalstrip">
+  <a href="warehouse-policy.html#status">Warehouse status codes</a> &middot;
+  <a href="warehouse-policy.html#returns">Return window</a> &middot;
+  <a href="methodology.html">Price engine methodology</a> &middot;
+  <a href="seller-terms.html">Marketplace seller terms</a><br>
+  Listings are supplied by marketplace sellers; Gadgetron is not the seller of record for
+  marketplace items. Specifications are provided by the manufacturer. &copy; 2026 Gadgetron
+  Trading Co.
+</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const verdict = document.getElementById('verdict');
+document.getElementById('submitquote').addEventListener('click', async () => {
+  const email = document.getElementById('qemail').value.trim();
+  const lines = document.getElementById('qlines').value
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  verdict.className = '';
+  verdict.textContent = '';
+  if (!email || !lines.length) {
+    verdict.className = 'bad';
+    verdict.textContent = 'Enter a work email and at least one part number line.';
+    return;
+  }
+  try {
+    const res = await fetch('/api/gadgetron/bulk-quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, email, lines }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      verdict.className = 'bad';
+      verdict.textContent = body.error ?? 'The quote request could not be filed.';
+      return;
+    }
+    verdict.className = 'good';
+    verdict.textContent =
+      'Filed as ' + body.ref + '. ' + body.message;
+  } catch {
+    verdict.className = 'bad';
+    verdict.textContent = 'Network error. Try again.';
+  }
+});
+</script>
+</body>
+</html>

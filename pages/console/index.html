@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run 4192 - orchid-api - Cindergrid</title>
+<link rel="stylesheet" href="console.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html">CINDERGRID</a>
+  <span class="crumb">gridworks-eu / orchid-api</span>
+  <span class="env">production</span>
+  <span class="spacer"></span>
+  <span class="who">t.ashgrove</span>
+</header>
+
+<div class="shell">
+  <nav class="rail">
+    <span class="rail-label">Project</span>
+    <a href="index.html" class="on">Deployments</a>
+    <a href="runs.html">Run history</a>
+    <a href="secrets.html">Secrets</a>
+    <a href="settings.html">Settings</a>
+    <a href="support.html">Support</a>
+  </nav>
+
+  <main>
+    <div class="runhead">
+      <h1>Run 4192</h1>
+      <span class="chip chip-fail">Failed</span>
+    </div>
+    <p class="subhead">orchid-api to production, change 861. Stopped at step release/gate.</p>
+
+    <div class="facts">
+      <div class="fact"><span class="fact-k">Commit</span><span class="fact-v">5f3c9a1</span></div>
+      <div class="fact"><span class="fact-k">Image tag</span><span class="fact-v">2026.03.11-4192</span></div>
+      <div class="fact"><span class="fact-k">Started</span><span class="fact-v">2026-03-11 09:38:04 UTC</span></div>
+      <div class="fact"><span class="fact-k">Duration</span><span class="fact-v">4m 21s</span></div>
+    </div>
+
+    <h2>Run log</h2>
+    <div class="logbar">
+      <input id="q" type="search" placeholder="Search log" aria-label="Search log">
+      <button id="go" type="button">Search</button>
+      <span class="stat" id="stat">loading</span>
+      <span class="spacer"></span>
+      <a id="raw" href="/api/console/raw">Raw log</a>
+    </div>
+    <div class="hits" id="hits" aria-live="polite">
+      <p class="hint">Search the run log to list matching lines here.</p>
+    </div>
+    <div class="term-frame">
+      <canvas id="term" width="1160" height="520"></canvas>
+      <div class="term-viewport" id="viewport"><div class="term-scroll" id="scrollarea"></div></div>
+    </div>
+    <div class="logfoot">
+      <span id="pos">-</span>
+      <span>Rendered with gridterm 3.2</span>
+      <span>Retained until 2026-03-25</span>
+    </div>
+
+    <h2>Step summary</h2>
+    <div class="steps">
+      <div class="step"><span class="step-name">checkout</span><span class="step-status ok">Passed</span><span class="step-dur">2.6s</span></div>
+      <div class="step"><span class="step-name">build/image</span><span class="step-status ok">Passed</span><span class="step-dur">1m 58s</span></div>
+      <div class="step"><span class="step-name">scan/deps</span><span class="step-status warn">Passed with findings</span><span class="step-dur">12.1s</span></div>
+      <div class="step"><span class="step-name">push/registry</span><span class="step-status warn">Passed after 2 retries</span><span class="step-dur">41.0s</span></div>
+      <div class="step"><span class="step-name">migrate/schema</span><span class="step-status ok">Passed</span><span class="step-dur">8.2s</span></div>
+      <div class="step"><span class="step-name">release/gate</span><span class="step-status bad">Failed</span><span class="step-dur">3.4s</span></div>
+      <div class="step"><span class="step-name">rollout/canary</span><span class="step-status">Skipped</span><span class="step-dur">-</span></div>
+      <div class="step"><span class="step-name">notify/webhook</span><span class="step-status">Skipped</span><span class="step-dur">-</span></div>
+      <div class="step"><span class="step-name">diagnostics</span><span class="step-status ok">Passed</span><span class="step-dur">9.4s</span></div>
+      <div class="step"><span class="step-name">cleanup/artifacts</span><span class="step-status warn">Passed with warnings</span><span class="step-dur">6.0s</span></div>
+    </div>
+  </main>
+</div>
+
+<footer>
+  Cindergrid Systems Ltd, 4 Alder Wharf, Bristol BS1 4RN, United Kingdom<br>
+  <a href="status.html">Status</a> &middot; <a href="docs.html">Documentation</a> &middot;
+  <a href="terms.html">Terms of service</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  support@cindergrid.example.net<br>
+  &copy; 2026 Cindergrid Systems Ltd
+</footer>
+
+<script>
+(() => {
+  const NONCE = '__SESSION_NONCE__';
+  const LINE_H = 20;
+  const PAD_X = 12;
+  const COLOURS = { ERROR: '#ff6f5e', WARN: '#f2b23a', INFO: '#ccd6e0', DEBUG: '#7d8b9b' };
+  const canvas = document.getElementById('term');
+  const ctx = canvas.getContext('2d');
+  const viewport = document.getElementById('viewport');
+  const scrollarea = document.getElementById('scrollarea');
+  const stat = document.getElementById('stat');
+  const pos = document.getElementById('pos');
+  const hits = document.getElementById('hits');
+  const buffer = [];
+  let total = 0;
+  let cssW = 1160;
+  let cssH = 520;
+
+  const rows = () => Math.floor(cssH / LINE_H);
+
+  function fit() {
+    const frame = canvas.parentElement;
+    const dpr = window.devicePixelRatio || 1;
+    cssW = Math.max(560, frame.clientWidth);
+    cssH = Math.max(200, frame.clientHeight);
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function paint() {
+    ctx.fillStyle = '#070a0d';
+    ctx.fillRect(0, 0, cssW, cssH);
+    ctx.font = '12px ui-monospace, Menlo, Consolas, monospace';
+    ctx.textBaseline = 'middle';
+    const first = Math.min(
+      Math.max(0, Math.ceil(viewport.scrollTop / LINE_H)),
+      Math.max(0, buffer.length - rows())
+    );
+    for (let i = 0; i < rows(); i++) {
+      const line = buffer[first + i];
+      if (!line) break;
+      const y = i * LINE_H + LINE_H / 2;
+      ctx.fillStyle = '#3f4a56';
+      ctx.fillText(String(line.n).padStart(4, ' '), PAD_X, y);
+      ctx.fillStyle = '#55606d';
+      ctx.fillText(line.ts, PAD_X + 46, y);
+      ctx.fillStyle = COLOURS[line.level] || '#ccd6e0';
+      ctx.fillText(line.level, PAD_X + 152, y);
+      const body = (line.code ? line.code + ' ' : '') + line.text;
+      ctx.fillText(body, PAD_X + 208, y);
+    }
+    const last = Math.min(buffer.length, first + rows());
+    pos.textContent = buffer.length
+      ? `lines ${first + 1}-${last} of ${buffer.length}`
+      : 'no output';
+  }
+
+  async function load() {
+    let after = 0;
+    for (let page = 0; page < 40; page++) {
+      const res = await fetch(`/api/console/log?after=${after}`, {
+        headers: { 'X-Session-Nonce': NONCE },
+      });
+      if (!res.ok) {
+        stat.textContent = 'log unavailable';
+        return;
+      }
+      const data = await res.json();
+      total = data.total;
+      buffer.push(...data.lines);
+      after += data.lines.length;
+      scrollarea.style.height = buffer.length * LINE_H + 'px';
+      viewport.scrollTop = scrollarea.offsetHeight;
+      paint();
+      stat.textContent = `${buffer.length} of ${total} lines`;
+      if (after >= total || data.lines.length === 0) break;
+    }
+    stat.textContent = `${buffer.length} lines`;
+    viewport.scrollTop = scrollarea.offsetHeight;
+    paint();
+  }
+
+  function levelClass(level) {
+    if (level === 'ERROR') return 'hit-lvl lvl-error';
+    if (level === 'WARN') return 'hit-lvl lvl-warn';
+    return 'hit-lvl';
+  }
+
+  function renderHits(data) {
+    hits.textContent = '';
+    const head = document.createElement('div');
+    head.className = 'hits-head';
+    const count = document.createElement('span');
+    count.textContent = data.total === 1 ? '1 match' : `${data.total} matches`;
+    const term = document.createElement('span');
+    term.textContent = `query ${data.query}`;
+    head.append(count, term);
+    hits.append(head);
+    if (!data.matches.length) {
+      const none = document.createElement('p');
+      none.className = 'hint';
+      none.textContent = 'No lines matched.';
+      hits.append(none);
+      return;
+    }
+    for (const line of data.matches) {
+      const row = document.createElement('div');
+      row.className = 'hit';
+      const n = document.createElement('span');
+      n.className = 'hit-n';
+      n.textContent = line.n;
+      const lvl = document.createElement('span');
+      lvl.className = levelClass(line.level);
+      lvl.textContent = line.level;
+      const code = document.createElement('span');
+      code.className = 'hit-code';
+      code.textContent = line.code;
+      const msg = document.createElement('span');
+      msg.className = 'hit-msg';
+      msg.textContent = line.text;
+      row.append(n, lvl, code, msg);
+      row.addEventListener('click', () => {
+        viewport.scrollTop = Math.max(0, (line.n - 1) * LINE_H);
+        paint();
+      });
+      hits.append(row);
+    }
+  }
+
+  async function search() {
+    const q = document.getElementById('q').value.trim();
+    if (!q) return;
+    const res = await fetch('/api/console/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, q }),
+    });
+    if (!res.ok) {
+      hits.textContent = '';
+      const err = document.createElement('p');
+      err.className = 'hint';
+      err.textContent = 'Search unavailable.';
+      hits.append(err);
+      return;
+    }
+    renderHits(await res.json());
+  }
+
+  document.getElementById('go').addEventListener('click', search);
+  document.getElementById('q').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      search();
+    }
+  });
+  viewport.addEventListener('scroll', paint);
+  window.addEventListener('resize', () => {
+    fit();
+    paint();
+  });
+  fit();
+  load();
+})();
+</script>
+</body>
+</html>

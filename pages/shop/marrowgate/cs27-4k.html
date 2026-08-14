@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ClaritySee CS27-4K - Monitors - Marrowgate</title>
+<link rel="stylesheet" href="marrowgate.css">
+<style>
+  .pdp { display: flex; gap: 26px; margin: 12px 22px 0; background: #fff; border: 1px solid var(--nb-rule); padding: 18px; }
+  .pdp .hero { width: 340px; flex: none; }
+  .pdp .hero svg { width: 340px; height: 200px; }
+  .pdp .detail { flex: 1; min-width: 0; }
+  .pdp h1 { font-size: 21px; margin: 0 0 6px; }
+  .pdp .modelline { font-size: 13px; color: #414a5e; margin: 0 0 10px; }
+  .pdp .spec { list-style: square; margin: 10px 0 0 18px; padding: 0; font-size: 13px; }
+  .pdp .spec li { margin: 2px 0; }
+  .buypanel { width: 250px; flex: none; border-left: 1px dotted var(--nb-rule); padding-left: 18px; }
+  .buypanel .pricetag { color: var(--nb-price); line-height: 1; }
+  .buypanel .whole { font-size: 34px; font-weight: bold; letter-spacing: -.02em; }
+  .buypanel .cur, .buypanel .frac { font-size: 16px; vertical-align: 16px; font-weight: bold; }
+  .buypanel .exc { font-size: 12px; color: #5b6478; margin: 6px 0 12px; }
+  .qline { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 10px; }
+  .qline input { width: 54px; font: inherit; padding: 4px; border: 1px solid var(--nb-rule); }
+  .buypanel button.add {
+    display: block; width: 100%; background: var(--nb-price); color: #fff; border: 0;
+    font: inherit; font-weight: bold; font-size: 15px; padding: 11px 0; cursor: pointer;
+  }
+  .buypanel .after { font-size: 12px; margin: 10px 0 0; min-height: 16px; }
+  .buypanel .after.bad { color: #8f1220; font-weight: bold; }
+  .buypanel .after.good { color: #1d5c2c; font-weight: bold; }
+  .offerlink { margin: 12px 22px 0; background: #fff8d6; border: 1px solid #e4d284; padding: 9px 12px; font-size: 13px; }
+  .infopanels { display: flex; gap: 18px; margin: 12px 22px 24px; }
+  .infopanels section { flex: 1; background: #fff; border: 1px solid var(--nb-rule); padding: 14px 16px; }
+  .infopanels h2 { font-size: 14px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .06em; color: #33405c; }
+  .infopanels p { font-size: 13px; margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<div class="locstrip">
+  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <a href="stores.html">Change store</a>
+  <a href="orderstatus.html">Order status</a>
+  <a href="recycling.html">Trade-in and recycling</a>
+</div>
+<header class="masthead">
+  <a class="wordmark" href="index.html">marrowgate</a>
+  <form class="finder" onsubmit="return false">
+    <input aria-label="Search Marrowgate" placeholder="What can we help you find today?">
+    <button type="submit">Search</button>
+  </form>
+  <div class="acct">
+    <a href="account.html">My Marrowgate</a>
+    <a href="promos.html">Offers</a>
+    <a id="basketlink" href="basket.html">Basket</a>
+  </div>
+</header>
+<nav class="deptbar" aria-label="Departments">
+  <a href="departments.html#tv">TV &amp; Home Theater</a>
+  <a href="departments.html#computers">Computers &amp; Tablets</a>
+  <a class="on" href="index.html">Monitors</a>
+  <a href="departments.html#audio">Audio</a>
+  <a href="departments.html#smarthome">Smart Home</a>
+  <a href="departments.html#cameras">Cameras</a>
+  <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
+  <a href="departments.html#services">Services</a>
+</nav>
+<p class="crumbs">Home / Computers &amp; Tablets / Monitors / ClaritySee CS27-4K</p>
+<div class="offerlink">Promotion codes can be entered in your basket. See <a href="promos.html">this week's offers</a>.</div>
+<div class="pdp">
+  <div class="hero">
+    <svg viewBox="0 0 340 200" role="img" aria-label="Product image, ClaritySee CS27-4K">
+      <rect width="340" height="200" fill="hsl(206,22%,94%)"/>
+      <rect x="34" y="16" width="272" height="148" rx="4" fill="#20242c"/>
+      <rect x="46" y="26" width="248" height="126" fill="#39414f"/>
+      <rect x="154" y="164" width="32" height="14" fill="#8a8f99"/>
+      <rect x="118" y="178" width="104" height="8" fill="#b3b8c2"/>
+    </svg>
+  </div>
+  <div class="detail">
+    <h1>ClaritySee CS27-4K</h1>
+    <p class="modelline">SKU 6428193 &middot; Model CS27-4K-B &middot; ClaritySee</p>
+    <p id="blurb" style="font-size:13px;margin:0">Loading specifications.</p>
+    <ul class="spec">
+      <li>27 inch diagonal, matte anti-glare finish</li>
+      <li>3840 x 2160 native, 10-bit colour, 99% sRGB</li>
+      <li>Two HDMI 2.0 inputs, one DisplayPort 1.4, headphone out</li>
+      <li>Height, tilt and swivel adjustable stand, 100 x 100 VESA</li>
+      <li>Three year parts and labour warranty</li>
+    </ul>
+  </div>
+  <div class="buypanel">
+    <div class="pricetag" id="pricetag"></div>
+    <p class="exc">Price excludes tax and fees.</p>
+    <div class="qline">
+      <span>Quantity</span>
+      <input type="number" id="qty" min="1" max="10" value="1" aria-label="Quantity">
+    </div>
+    <button class="add" type="button" id="add" aria-label="Add ClaritySee CS27-4K to basket">Add to basket</button>
+    <p class="after" id="after" role="status"></p>
+    <p class="exc" id="avail"></p>
+  </div>
+</div>
+<div class="infopanels">
+  <section>
+    <h2>Delivery and pickup</h2>
+    <p>Ships free to your address.</p>
+    <p>Store pickup: check nearby stores.</p>
+  </section>
+  <section>
+    <h2>Protection plan</h2>
+    <p>Two extra years, $29.99.</p>
+    <p>Added at the review step, not here.</p>
+  </section>
+  <section>
+    <h2>Returns</h2>
+    <p>15 days for monitors.</p>
+    <p>Original packaging required.</p>
+  </section>
+</div>
+<footer class="legal">
+  <ul>
+    <li><a href="basket-help.html">Basket help</a></li>
+    <li><a href="returns.html">Return policy</a></li>
+    <li><a href="price-match.html">Price match</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="stores.html">Store directory</a></li>
+  </ul>
+  Prices shown exclude tax. Online prices may differ from prices in store. Marrowgate
+  matches any advertised price from a qualifying local retailer within seven days of
+  purchase. &copy; 2026 Marrowgate Retail Group.
+</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const SKU = '6428193';
+const after = document.getElementById('after');
+const basketLink = document.getElementById('basketlink');
+let product = null;
+
+function priceMarkup(price) {
+  const [whole, frac] = Number(price).toFixed(2).split('.');
+  return '<span class="cur">$</span><span class="whole">' + whole +
+    '</span><span class="frac">' + frac + '</span>';
+}
+
+async function refreshBasket() {
+  const res = await fetch('/api/shop/cart?store=marrowgate', {
+    headers: { 'X-Session-Nonce': NONCE },
+  });
+  if (!res.ok) return;
+  const body = await res.json();
+  basketLink.textContent = 'Basket · ' + body.count + ' items';
+}
+
+(async () => {
+  const res = await fetch('/api/shop/catalog?store=marrowgate', {
+    headers: { 'X-Session-Nonce': NONCE },
+  });
+  if (!res.ok) {
+    document.getElementById('blurb').textContent =
+      'Product details are unavailable. Reload the page.';
+    return;
+  }
+  const body = await res.json();
+  product = body.items.find((item) => item.sku === SKU);
+  document.getElementById('pricetag').innerHTML = priceMarkup(product.price);
+  document.getElementById('blurb').textContent = product.blurb;
+  document.getElementById('avail').textContent = product.inStock
+    ? 'Available to ship today.'
+    : 'Sold out online.';
+  await refreshBasket();
+})();
+
+document.getElementById('add').addEventListener('click', async () => {
+  after.className = 'after';
+  after.textContent = '';
+  const res = await fetch('/api/shop/cart/add', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      nonce: NONCE,
+      store: 'marrowgate',
+      sku: SKU,
+      qty: Number(document.getElementById('qty').value),
+    }),
+  });
+  const body = await res.json();
+  if (res.ok) {
+    after.className = 'after good';
+    after.textContent = 'Added to basket.';
+    basketLink.textContent = 'Basket · ' + body.count + ' items';
+  } else {
+    after.className = 'after bad';
+    after.textContent = body.error;
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Brindle Fig — Order Ahead</title>
+<link rel="stylesheet" href="bistro.css">
+<style>
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+  .stepname {
+    margin: 16px 0 6px; font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--gold);
+  }
+  .choice { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; }
+  .choice .cname { font-size: 15px; }
+  .choice .hint { color: var(--faded); font-size: 13px; }
+  .echo { margin: 4px 0 12px; min-height: 26px; }
+  .chip {
+    display: inline-block; margin: 2px 6px 2px 0; padding: 2px 9px;
+    border: 1px solid var(--rule); background: var(--cream); font-size: 13px;
+  }
+  .chip.price { border-color: var(--gold); color: var(--wine); }
+  #ticket { margin: 0; padding: 0 0 0 20px; }
+  #ticket li { margin: 0 0 10px; }
+  #ticket .rm {
+    font-size: 12px; padding: 1px 8px; margin-left: 4px;
+    background: var(--paper); color: var(--wine); border: 1px solid var(--rule);
+  }
+  .totalrow {
+    display: flex; justify-content: space-between; margin: 14px 0;
+    padding-top: 10px; border-top: 1px solid var(--rule); font-size: 17px;
+  }
+  #confirm { margin-top: 16px; border: 3px double var(--wine); padding: 12px 14px; }
+  #confirm h3 {
+    margin: 0 0 8px; font-weight: normal; font-variant: small-caps;
+    letter-spacing: 2px; color: var(--wine); font-size: 18px;
+  }
+  .conf { margin: 4px 0; font-size: 17px; }
+  .note { color: var(--faded); font-size: 13px; margin: 6px 0 0; }
+  .msg { display: block; margin-top: 8px; font-size: 13px; color: var(--faded); min-height: 18px; }
+  .msg.bad { color: #8c2f1b; }
+  #empty { color: var(--faded); font-style: italic; }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="est">Kitchen &amp; Counter · Est. 2011</div>
+  <h1>The Brindle Fig</h1>
+  <div class="rulewrap"></div>
+  <nav>
+    <a href="index.html">Menu</a><span class="dot">·</span>
+    <a href="order.html" class="on">Order ahead</a><span class="dot">·</span>
+    <a href="hours.html">Hours &amp; directions</a>
+  </nav>
+</header>
+
+<main class="sheet">
+  <p class="lede">Counter pick-up only. Build each dish, add it to your ticket,
+  then place the order; the kitchen starts cooking when the ticket prints.</p>
+
+  <div class="cols">
+    <section class="card">
+      <h2>Build a Dish</h2>
+      <div class="stepname">1 · Choose a dish</div>
+      <div id="dishes"><span class="msg">Fetching the card from the kitchen.</span></div>
+      <div id="config" hidden>
+        <div class="stepname">2 · Size</div>
+        <div id="sizes"></div>
+        <div class="stepname">3 · Comes with — untick anything to leave off</div>
+        <div id="comeswith"></div>
+        <div class="stepname">4 · Extras</div>
+        <div id="extras"></div>
+        <div class="stepname">Now building</div>
+        <p class="echo" id="buildline"></p>
+        <button type="button" id="addline">Add to ticket</button>
+        <span class="msg" id="buildmsg" role="status"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Your Ticket</h2>
+      <p id="empty">Nothing on the ticket yet.</p>
+      <ol id="ticket"></ol>
+      <p class="totalrow"><span>Ticket total</span> <span id="tickettotal">$0.00</span></p>
+      <button type="button" id="place">Place order</button>
+      <span class="msg" id="placemsg" role="status"></span>
+      <div id="confirm" hidden>
+        <h3>Order placed</h3>
+        <p class="conf" id="confcode"></p>
+        <p class="conf" id="conftotal"></p>
+        <div id="conflines"></div>
+        <p class="note" id="confnote"></p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  The Brindle Fig · 14 Waldron Lane · (555) 014-0180 · hello@brindlefig.example<br>
+  <a href="hours.html">Hours &amp; directions</a> · Walk-ins welcome · No service charge<br>
+  &copy; The Brindle Fig. All rights reserved.
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const money = (n) => '$' + n.toFixed(2);
+  const cap = (s) => s[0].toUpperCase() + s.slice(1);
+  let MENU = [];
+  let dish = null;
+
+  const el = (id) => document.getElementById(id);
+
+  function choiceRow(input, name, hint) {
+    const row = document.createElement('div');
+    row.className = 'choice';
+    const cname = document.createElement('span');
+    cname.className = 'cname';
+    cname.textContent = name;
+    row.append(input, cname);
+    if (hint) {
+      const h = document.createElement('span');
+      h.className = 'hint';
+      h.textContent = hint;
+      row.append(h);
+    }
+    return row;
+  }
+
+  function chips(target, parts, priceText) {
+    target.innerHTML = '';
+    for (const part of parts) {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.textContent = part;
+      target.append(chip);
+    }
+    if (priceText) {
+      const chip = document.createElement('span');
+      chip.className = 'chip price';
+      chip.textContent = priceText;
+      target.append(chip);
+    }
+  }
+
+  function lineParts(item, size, added, removed) {
+    const extraLabel = (id) => item.extras.find((e) => e.id === id).label;
+    const withLabel = (id) => item.comesWith.find((m) => m.id === id).label;
+    return [
+      cap(size),
+      item.name,
+      ...added.map((id) => 'add ' + extraLabel(id)),
+      ...removed.map((id) => 'no ' + withLabel(id)),
+    ];
+  }
+
+  function currentSize() {
+    return document.querySelector('#sizes input:checked')?.value ?? 'medium';
+  }
+
+  function currentBuild() {
+    return {
+      added: [...document.querySelectorAll('#extras input:checked')].map((i) => i.dataset.id),
+      removed: [...document.querySelectorAll('#comeswith input:not(:checked)')].map(
+        (i) => i.dataset.id
+      ),
+    };
+  }
+
+  function buildPrice(item, size, added) {
+    return (
+      item.base +
+      (size === 'large' ? item.largeUpcharge : 0) +
+      added.reduce((sum, id) => sum + item.extras.find((e) => e.id === id).price, 0)
+    );
+  }
+
+  function updateBuild() {
+    if (!dish) return;
+    const size = currentSize();
+    const { added, removed } = currentBuild();
+    chips(
+      el('buildline'),
+      lineParts(dish, size, added, removed),
+      money(buildPrice(dish, size, added))
+    );
+  }
+
+  function pickDish(id) {
+    dish = MENU.find((m) => m.id === id);
+    el('buildmsg').textContent = '';
+    const sizes = el('sizes');
+    sizes.innerHTML = '';
+    for (const size of ['medium', 'large']) {
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'size';
+      input.value = size;
+      input.checked = size === 'medium';
+      input.setAttribute('aria-label', cap(size));
+      input.addEventListener('change', updateBuild);
+      const price = size === 'large' ? dish.base + dish.largeUpcharge : dish.base;
+      sizes.append(choiceRow(input, cap(size), money(price)));
+    }
+    const cw = el('comeswith');
+    cw.innerHTML = '';
+    for (const mod of dish.comesWith) {
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = true;
+      input.dataset.id = mod.id;
+      input.setAttribute('aria-label', mod.label);
+      input.addEventListener('change', updateBuild);
+      cw.append(choiceRow(input, mod.label, 'included'));
+    }
+    const ex = el('extras');
+    ex.innerHTML = '';
+    for (const mod of dish.extras) {
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.dataset.id = mod.id;
+      input.setAttribute('aria-label', mod.label);
+      input.addEventListener('change', updateBuild);
+      ex.append(choiceRow(input, mod.label, '+' + money(mod.price)));
+    }
+    el('config').hidden = false;
+    updateBuild();
+  }
+
+  function renderTicket(payload) {
+    const list = el('ticket');
+    list.innerHTML = '';
+    for (const line of payload.lines) {
+      const li = document.createElement('li');
+      li.className = 'tline';
+      const echo = document.createElement('span');
+      const item = MENU.find((m) => m.id === line.item);
+      chips(echo, lineParts(item, line.size, line.added, line.removed), money(line.price));
+      const rm = document.createElement('button');
+      rm.type = 'button';
+      rm.className = 'rm';
+      rm.textContent = 'Remove';
+      rm.setAttribute('aria-label', 'Remove line ' + (line.index + 1));
+      rm.addEventListener('click', () => removeLine(line.index));
+      li.append(echo, rm);
+      list.append(li);
+    }
+    el('empty').hidden = payload.lines.length > 0;
+    el('tickettotal').textContent = money(payload.subtotal);
+  }
+
+  async function post(path, body) {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, ...body }),
+    });
+    return { ok: res.ok, body: await res.json() };
+  }
+
+  async function removeLine(index) {
+    const { ok, body } = await post('/api/bistro/cart/remove', { index });
+    if (ok) renderTicket(body);
+  }
+
+  el('addline').addEventListener('click', async () => {
+    if (!dish) return;
+    const msg = el('buildmsg');
+    msg.className = 'msg';
+    msg.textContent = 'Sending to the ticket…';
+    const { added, removed } = currentBuild();
+    const { ok, body } = await post('/api/bistro/cart', {
+      item: dish.id,
+      size: currentSize(),
+      added,
+      removed,
+    });
+    if (!ok) {
+      msg.className = 'msg bad';
+      msg.textContent = body.error || 'The kitchen refused that line.';
+      return;
+    }
+    msg.textContent = 'Added. Check the ticket, then place the order.';
+    el('confirm').hidden = true;
+    renderTicket(body);
+  });
+
+  el('place').addEventListener('click', async () => {
+    const msg = el('placemsg');
+    msg.className = 'msg';
+    msg.textContent = 'Printing the ticket…';
+    const { ok, body } = await post('/api/bistro/order', {});
+    if (!ok) {
+      msg.className = 'msg bad';
+      msg.textContent = body.error || 'The order could not be placed.';
+      return;
+    }
+    msg.textContent = '';
+    el('confcode').textContent = 'Order code ' + body.code;
+    el('conftotal').textContent = 'Total charged ' + money(body.total);
+    const recap = el('conflines');
+    recap.innerHTML = '';
+    for (const line of body.lines) {
+      const echo = document.createElement('p');
+      echo.className = 'echo';
+      const item = MENU.find((m) => m.id === line.item);
+      chips(echo, lineParts(item, line.size, line.added, line.removed), money(line.price));
+      recap.append(echo);
+    }
+    el('confnote').textContent = body.message || '';
+    el('confirm').hidden = false;
+    renderTicket({ lines: [], subtotal: 0 });
+  });
+
+  async function load() {
+    let body;
+    try {
+      const res = await fetch('/api/bistro/menu', { headers: { 'X-Session-Nonce': NONCE } });
+      body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'menu unavailable');
+    } catch {
+      el('dishes').innerHTML =
+        '<span class="msg bad">The kitchen could not be reached. Refresh to try again.</span>';
+      return;
+    }
+    MENU = body.menu;
+    try {
+      const res = await fetch('/api/bistro/cart', { headers: { 'X-Session-Nonce': NONCE } });
+      const cart = await res.json();
+      if (res.ok) renderTicket(cart);
+    } catch {}
+    const box = el('dishes');
+    box.innerHTML = '';
+    for (const item of MENU) {
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'dish';
+      input.value = item.id;
+      input.setAttribute('aria-label', item.name);
+      input.addEventListener('change', () => pickDish(item.id));
+      box.append(
+        choiceRow(input, item.name, money(item.base) + ' / ' + money(item.base + item.largeUpcharge))
+      );
+    }
+  }
+  load();
+</script>
+</body>
+</html>

@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Millrace</title>
+<link rel="stylesheet" href="millrace.css">
+<style>
+  #cmpveil { position: fixed; inset: 0; background: rgba(28, 20, 52, 0.72); z-index: 90; }
+  #cmp { position: fixed; top: 6%; left: 50%; transform: translateX(-50%);
+         width: 560px; max-width: 92%; max-height: 84vh; overflow: auto;
+         background: #fff; z-index: 91; border: 1px solid #cfc5ec; border-radius: 8px;
+         box-shadow: 0 16px 38px rgba(30, 20, 60, 0.36); }
+  #cmp .pane { padding: 18px 22px 20px; }
+  #cmp h2 { font-size: 15.5px; margin: 0 0 9px; color: #33265f; line-height: 1.35; }
+  #cmp h3 { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+            color: #33265f; margin: 16px 0 6px; }
+  #cmp p { font-size: 12.5px; line-height: 1.55; color: #4a4364; margin: 0 0 10px; }
+  #cmp p.tiny { font-size: 11px; color: #8b83a3; margin: 0 0 8px; }
+  #cmp p.note { font-size: 11.5px; color: #3f7a4a; margin: 8px 0 0; }
+  #cmp p.warn { font-size: 11.5px; color: #9d3b3b; margin: 8px 0 0; }
+  #cmp ul.rows { list-style: none; margin: 0; padding: 0;
+                 border: 1px solid #ebe6f7; border-radius: 6px; }
+  #cmp li.prow { display: grid; grid-template-columns: minmax(0, 1fr) auto;
+                 column-gap: 12px; align-items: center;
+                 padding: 8px 12px; border-top: 1px solid #f1eef9; }
+  #cmp li.prow:first-child { border-top: 0; }
+  #cmp li.prow .pdesc { grid-column: 1; font-size: 11px; color: #8b83a3; margin: 2px 0 0; }
+  #cmp button.sw { grid-column: 2; grid-row: 1 / span 2; justify-self: end;
+                   font-family: inherit; font-size: 11px; letter-spacing: 0.04em;
+                   min-width: 62px; padding: 4px 10px; cursor: pointer;
+                   border: 1px solid #ded8ee; border-radius: 11px;
+                   background: #f4f1fc; color: #6d6688; }
+  #cmp button.sw[aria-checked="true"] { background: #5b3fc4; border-color: #4b32aa; color: #fff; }
+  #cmp button.sw[aria-disabled="true"] { background: #cdc4ea; border-color: #b8ace0;
+                                         color: #fff; cursor: default; }
+  #cmp .swname { grid-column: 1; font-size: 12.5px; color: #241f33; }
+  #cmp li.crow { display: flex; align-items: baseline; gap: 8px;
+                 padding: 7px 12px; border-top: 1px solid #f1eef9; font-size: 12.5px; }
+  #cmp li.crow:first-child { border-top: 0; }
+  #cmp li.crow label { color: #241f33; }
+  #cmp .acts { display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+               margin-top: 16px; padding-top: 14px; border-top: 1px solid #ebe6f7; }
+  #cmp button.big { font-family: inherit; font-size: 13.5px; font-weight: 700;
+                    padding: 9px 26px; border: 0; border-radius: 5px;
+                    background: #5b3fc4; color: #fff; cursor: pointer; }
+  #cmp button.linky { font-family: inherit; font-size: 11.5px; padding: 2px 0;
+                      border: 0; background: none; color: #7d76a0;
+                      text-decoration: underline; cursor: pointer; }
+  #cmp button.ghost { font-family: inherit; font-size: 11.5px; padding: 4px 11px;
+                      border: 1px solid #ded8ee; border-radius: 4px;
+                      background: #faf9fe; color: #6d6688; cursor: pointer; }
+  #cmp button.disc { font-family: inherit; font-size: 12.5px; font-weight: 600;
+                     width: 100%; text-align: left; padding: 8px 12px; cursor: pointer;
+                     border: 1px solid #ded8ee; border-radius: 6px;
+                     background: #f7f5fd; color: #33265f; }
+  #cmp .vendormeta { font-size: 11px; color: #8b83a3; }
+  #cmp .partners { font-size: 11.5px; color: #6d6688; }
+  #wrap[hidden], #cmp[hidden], #cmpveil[hidden], #prefslink[hidden] { display: none; }
+  #prefslink { font-family: inherit; font-size: 11.5px; padding: 0; border: 0;
+               background: none; color: #5b3fc4; text-decoration: underline;
+               cursor: pointer; }
+  #footer button.footlink { font-family: inherit; font-size: 11.5px; padding: 0;
+                            border: 0; background: none; color: #d5cdf2;
+                            text-decoration: underline; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="cmpveil"></div>
+<section id="cmp" role="dialog" aria-modal="true" aria-labelledby="cmptitle">
+  <div class="pane" id="layer1">
+    <h2 id="cmptitle">Millrace and 214 partners use cookies</h2>
+    <p>We and our advertising partners read and write information on your device to
+      measure the stream, rank submissions and sell the ads that keep the site free.
+      The stream loads once you have made a choice.</p>
+    <p class="tiny">You can change this at any time from Cookie preferences in the footer.</p>
+    <div class="acts">
+      <button class="big" type="button" id="acceptTop">Accept all</button>
+      <button class="linky" type="button" id="manage">Manage options</button>
+    </div>
+  </div>
+
+  <div class="pane" id="layer2" hidden>
+    <h2>Your privacy choices</h2>
+    <p>Choose which purposes you consent to. Consent is separate from the purposes
+      we run under legitimate interest, which are listed further down.</p>
+    <h3>Purposes we ask consent for</h3>
+    <p class="tiny" id="psum">6 of 6 enabled</p>
+    <ul class="rows" id="purposes">
+      <li class="prow">
+        <span class="swname">Strictly necessary</span>
+        <p class="pdesc">Sign-in, vote integrity, load balancing.</p>
+        <button class="sw" type="button" role="switch" aria-checked="true"
+                aria-disabled="true" data-key="essential" data-sec="locked"
+                aria-label="Strictly necessary">Always on</button>
+      </li>
+      <li class="prow">
+        <span class="swname">Basic ads</span>
+        <p class="pdesc">Show ads that are not based on a profile of you.</p>
+        <button class="sw" type="button" role="switch" aria-checked="true"
+                data-key="basicAds" data-sec="purpose" aria-label="Basic ads">On</button>
+      </li>
+      <li class="prow">
+        <span class="swname">Personalised ads</span>
+        <p class="pdesc">Build an advertising profile and select ads from it.</p>
+        <button class="sw" type="button" role="switch" aria-checked="true"
+                data-key="personalisedAds" data-sec="purpose"
+                aria-label="Personalised ads">On</button>
+      </li>
+      <li class="prow">
+        <span class="swname">Personalised content</span>
+        <p class="pdesc">Re-rank the stream from what you have read before.</p>
+        <button class="sw" type="button" role="switch" aria-checked="true"
+                data-key="personalisedContent" data-sec="purpose"
+                aria-label="Personalised content">On</button>
+      </li>
+      <li class="prow">
+        <span class="swname">Audience measurement</span>
+        <p class="pdesc">Report how many people saw each submission.</p>
+        <button class="sw" type="button" role="switch" aria-checked="true"
+                data-key="audienceMeasurement" data-sec="purpose"
+                aria-label="Audience measurement">On</button>
+      </li>
+      <li class="prow">
+        <span class="swname">Content measurement</span>
+        <p class="pdesc">Measure reading time and scroll depth per thread.</p>
+        <button class="sw" type="button" role="switch" aria-checked="true"
+                data-key="contentMeasurement" data-sec="purpose"
+                aria-label="Content measurement">On</button>
+      </li>
+      <li class="prow">
+        <span class="swname">Develop new services</span>
+        <p class="pdesc">Use your activity to build and test new features.</p>
+        <button class="sw" type="button" role="switch" aria-checked="true"
+                data-key="developServices" data-sec="purpose"
+                aria-label="Develop new services">On</button>
+      </li>
+    </ul>
+    <p class="tiny" style="margin-top:8px">
+      <button class="ghost" type="button" id="rejectPurposes">Reject all purposes</button>
+    </p>
+
+    <h3>Legitimate interest</h3>
+    <button class="disc" type="button" id="lidisc" aria-expanded="false"
+            aria-controls="lipanel">Legitimate interest (3)</button>
+    <div id="lipanel" hidden>
+      <p class="tiny" id="lisum">3 of 3 enabled</p>
+      <p class="tiny">These run without consent unless you object to them.</p>
+      <ul class="rows" id="liRows"></ul>
+      <p class="tiny" style="margin-top:8px">
+        <button class="ghost" type="button" id="objectAll">Object to all</button>
+      </p>
+    </div>
+
+    <h3>Partners</h3>
+    <p class="partners">Two partners keep their own switches, which are set on the
+      vendor screen and are not covered by the purposes above.</p>
+    <p class="tiny" id="vsumOuter">2 of 2 enabled</p>
+    <button class="ghost" type="button" id="toVendors">Vendor preferences (2)</button>
+
+    <div class="acts">
+      <button class="big" type="button" id="acceptManage">Accept all</button>
+      <button class="linky" type="button" id="saveChoices">Save my choices</button>
+      <span class="tiny" id="csum">Optional on: 11</span>
+    </div>
+    <p class="warn" id="cmperr" hidden></p>
+  </div>
+
+  <div class="pane" id="layer3" hidden>
+    <h2>Vendor preferences</h2>
+    <p>Each partner sets its own storage on this device. Switching a partner off
+      applies to every purpose it processes.</p>
+    <p class="tiny" id="vsum">2 of 2 enabled</p>
+    <ul class="rows" id="vendors"></ul>
+    <div class="acts">
+      <button class="ghost" type="button" id="backToPurposes">Back to purposes</button>
+      <span class="vendormeta">Partner list version 41</span>
+    </div>
+  </div>
+</section>
+
+<header id="masthead">
+  <div class="masthead-in">
+    <a class="wordmark" href="/news/">millrace</a>
+    <span class="tagline">a working stream for people who build things</span>
+    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+  </div>
+</header>
+<nav id="tabs" aria-label="Sections">
+  <div class="tabs-in">
+    <a class="tab on" href="/news/consent.html">Stream</a>
+    <a class="tab" href="/news/?sort=fresh">Fresh</a>
+    <a class="tab" href="/news/?view=threads">Threads</a>
+    <a class="tab" href="/news/?tag=build">Build logs</a>
+    <a class="tab" href="/news/submit.html">Submit a link</a>
+  </div>
+</nav>
+<div id="wrap" hidden>
+  <main id="main">
+    <div class="streamhead">
+      <h1>Today on the stream</h1>
+      <span class="note" id="gatenote"></span>
+      <button type="button" id="prefslink" hidden>Change cookie choices</button>
+    </div>
+    <ol id="stream"></ol>
+    <p class="pager"><a href="/news/?p=2">next 30 submissions</a></p>
+  </main>
+  <aside id="rail">
+    <div class="card">
+      <h2>About millrace</h2>
+      <p>Forty-one thousand people who build software, hardware and other stubborn
+        things, reading each other's work.</p>
+      <p class="meta"><a href="/news/about.html">How the ranking works</a></p>
+    </div>
+    <div class="card">
+      <h2>House rules</h2>
+      <ul>
+        <li>Reply to the strongest version of the argument.</li>
+        <li>Say who you work for when it is relevant.</li>
+      </ul>
+      <p class="meta"><a href="/news/guidelines.html">Full guidelines</a></p>
+    </div>
+  </aside>
+</div>
+<footer id="footer">
+  <div class="footer-in">
+    <p class="footer-nav">
+      <a href="/news/about.html">About</a> &middot;
+      <a href="/news/guidelines.html">Guidelines</a> &middot;
+      <a href="/news/feeds.html">Feeds</a> &middot;
+      <a href="/news/privacy.html">Privacy</a> &middot;
+      <a href="/news/terms.html">Terms</a> &middot;
+      <button class="footlink" type="button" id="reopen">Cookie preferences</button>
+    </p>
+    <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
+      Ashvale, VT 05412. Moderation questions go to
+      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      help@millrace.example.</p>
+    <p>Submissions and replies remain the work of their authors. Copyright 2026
+      Weirgate Collective LLC.</p>
+  </div>
+</footer>
+<script>
+  (function () {
+    const NONCE = '__SESSION_NONCE__';
+    const cmp = document.getElementById('cmp');
+    const veil = document.getElementById('cmpveil');
+    const panes = {
+      1: document.getElementById('layer1'),
+      2: document.getElementById('layer2'),
+      3: document.getElementById('layer3'),
+    };
+    const err = document.getElementById('cmperr');
+    // The legitimate-interest rows and the vendor rows are fetched from
+    // /api/consent/tier when their section is opened, so they are not in the
+    // DOM at first paint; until then the section counts as fully enabled, which
+    // is also how /api/consent/save records a tier this session never opened.
+    const TOTALS = { purpose: 6, li: 3, vendor: 2 };
+    const TIER_SEC = { li: 'li', vendors: 'vendor' };
+    const TIER_LIST = { li: 'liRows', vendors: 'vendors' };
+    const tierFetches = {};
+    let storedToggles = null;
+
+    const rows = () => Array.from(document.querySelectorAll('#cmp [data-key]'));
+    const rowsIn = (sec) => rows().filter((el) => el.dataset.sec === sec);
+    const isOn = (el) =>
+      el.tagName === 'INPUT' ? el.checked : el.getAttribute('aria-checked') === 'true';
+
+    function setOn(el, on) {
+      if (el.tagName === 'INPUT') {
+        el.checked = on;
+        return;
+      }
+      el.setAttribute('aria-checked', on ? 'true' : 'false');
+      el.textContent = on ? 'On' : 'Off';
+    }
+
+    function count(sec) {
+      const list = rowsIn(sec);
+      if (!list.length) return { on: TOTALS[sec], all: TOTALS[sec] };
+      return { on: list.filter(isOn).length, all: list.length };
+    }
+
+    function applyStored(list) {
+      if (!storedToggles) return;
+      for (const el of list) {
+        if (el.dataset.sec === 'locked') continue;
+        if (typeof storedToggles[el.dataset.key] === 'boolean') {
+          setOn(el, storedToggles[el.dataset.key]);
+        }
+      }
+    }
+
+    function tierRowHtml(name, row) {
+      if (name === 'li') {
+        return (
+          '<li class="crow"><input type="checkbox" id="li-' + row.key +
+          '" data-key="' + row.key + '" data-sec="li" checked>' +
+          '<label for="li-' + row.key + '">' + row.name + '</label></li>'
+        );
+      }
+      return (
+        '<li class="prow"><span class="swname">' + row.name + '</span>' +
+        '<p class="pdesc">' + row.desc + '</p>' +
+        '<button class="sw" type="button" role="switch" aria-checked="true" data-key="' +
+        row.key + '" data-sec="vendor" aria-label="' + row.name + '">On</button></li>'
+      );
+    }
+
+    function loadTier(name) {
+      if (tierFetches[name]) return tierFetches[name];
+      const list = document.getElementById(TIER_LIST[name]);
+      tierFetches[name] = fetch('/api/consent/tier?name=' + name, {
+        headers: { 'X-Session-Nonce': NONCE },
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (!Array.isArray(data.rows) || list.children.length) return;
+          for (const row of data.rows) {
+            list.insertAdjacentHTML('beforeend', tierRowHtml(name, row));
+          }
+          applyStored(rowsIn(TIER_SEC[name]));
+          refresh();
+        })
+        .catch(() => {});
+      return tierFetches[name];
+    }
+
+    function refresh() {
+      const p = count('purpose');
+      const li = count('li');
+      const v = count('vendor');
+      document.getElementById('psum').textContent = p.on + ' of ' + p.all + ' enabled';
+      document.getElementById('lisum').textContent = li.on + ' of ' + li.all + ' enabled';
+      const vtext = v.on + ' of ' + v.all + ' enabled';
+      document.getElementById('vsum').textContent = vtext;
+      document.getElementById('vsumOuter').textContent = vtext;
+      document.getElementById('csum').textContent = 'Optional on: ' + (p.on + li.on + v.on);
+    }
+
+    function beacon(kind, data) {
+      return fetch('/api/beacon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, kind, data }),
+      }).catch(() => {});
+    }
+
+    function show(layer) {
+      for (const n of [1, 2, 3]) panes[n].hidden = n !== layer;
+      cmp.hidden = false;
+      veil.hidden = false;
+      beacon('consent-layer', { layer });
+    }
+
+    function toggles() {
+      const map = {};
+      for (const el of rows()) map[el.dataset.key] = isOn(el);
+      return map;
+    }
+
+    function entryHtml(item) {
+      const itemUrl = 'item.html?id=' + item.rank;
+      const origin = item.site ? ' <span class="origin">' + item.site + '</span>' : '';
+      return (
+        '<li class="entry" data-slot="' + item.rank + '">' +
+        '<a class="tally" href="/news/consent.html" title="Vote this up">' +
+        item.points + '<span class="unit">points</span></a>' +
+        '<p class="headline"><span class="slot">' + item.rank + '</span>' +
+        '<a href="' + itemUrl + '">' + item.title + '</a>' + origin + '</p>' +
+        '<p class="byline"><a class="who" href="/news/consent.html">' + item.author +
+        '</a> &middot; ' + item.age + ' &middot; <a class="topic" href="/news/?tag=' +
+        item.tag + '">' + item.tag + '</a> &middot; <a href="' + itemUrl + '">' +
+        item.comments + '&nbsp;replies</a></p></li>'
+      );
+    }
+
+    let rendered = false;
+    function render() {
+      document.getElementById('wrap').hidden = false;
+      if (rendered) return Promise.resolve();
+      rendered = true;
+      return fetch('items.json')
+        .then((r) => r.json())
+        .then((items) => {
+          const stream = document.getElementById('stream');
+          for (const item of items.slice(0, 10)) {
+            stream.insertAdjacentHTML('beforeend', entryHtml(item));
+          }
+        })
+        .catch(() => {});
+    }
+
+    function noteFor(optionalOn) {
+      return optionalOn === 0
+        ? 'Optional cookies declined.'
+        : 'Choices saved: ' + optionalOn + ' optional purposes allowed.';
+    }
+
+    function closeCmp(note) {
+      cmp.hidden = true;
+      veil.hidden = true;
+      document.getElementById('gatenote').textContent = note;
+      document.getElementById('prefslink').hidden = false;
+      render();
+    }
+
+    function save(via) {
+      err.hidden = true;
+      return fetch('/api/consent/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, via: via, toggles: toggles() }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (!data.ok) {
+            err.hidden = false;
+            err.textContent = data.error || 'Your choices could not be saved.';
+            return;
+          }
+          closeCmp(noteFor(data.optionalOn));
+        })
+        .catch(() => {
+          err.hidden = false;
+          err.textContent = 'Your choices could not be saved.';
+        });
+    }
+
+    function acceptAll() {
+      for (const el of rows()) setOn(el, true);
+      refresh();
+      return save('accept-all');
+    }
+
+    cmp.addEventListener('click', (event) => {
+      const sw = event.target.closest('button.sw');
+      if (sw) {
+        if (sw.getAttribute('aria-disabled') === 'true') return;
+        setOn(sw, !isOn(sw));
+        refresh();
+        return;
+      }
+      const id = event.target.id;
+      if (id === 'manage') show(2);
+      else if (id === 'toVendors') {
+        loadTier('vendors');
+        show(3);
+      }
+      else if (id === 'backToPurposes') show(2);
+      else if (id === 'acceptTop' || id === 'acceptManage') acceptAll();
+      else if (id === 'saveChoices') save('save');
+      else if (id === 'rejectPurposes') {
+        for (const el of rowsIn('purpose')) setOn(el, false);
+        refresh();
+      } else if (id === 'objectAll') {
+        for (const el of rowsIn('li')) setOn(el, false);
+        refresh();
+      } else if (id === 'lidisc') {
+        const panel = document.getElementById('lipanel');
+        const open = panel.hidden;
+        panel.hidden = !open;
+        event.target.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) {
+          loadTier('li');
+          beacon('consent-layer', { layer: 'legitimate-interest' });
+        }
+      }
+    });
+
+    document.getElementById('liRows').addEventListener('change', refresh);
+
+    function reopen() {
+      fetch('/api/consent/state', { headers: { 'X-Session-Nonce': NONCE } })
+        .then((r) => r.json())
+        .then((data) => {
+          storedToggles = data.toggles ?? null;
+          // Only the tiers this session has already opened come back with their
+          // stored values; reopening the dialog is not a way around the
+          // disclosure or the vendor screen.
+          const back = (data.served ?? []).map((name) => loadTier(name));
+          return Promise.all(back).then(() => {
+            applyStored(rows());
+            refresh();
+            show(2);
+          });
+        })
+        .catch(() => show(2));
+    }
+
+    document.getElementById('reopen').addEventListener('click', reopen);
+    document.getElementById('prefslink').addEventListener('click', reopen);
+
+    refresh();
+    fetch('/api/consent/state', { headers: { 'X-Session-Nonce': NONCE } })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.decided) {
+          closeCmp(noteFor(data.optionalOn));
+          return;
+        }
+        show(1);
+      })
+      .catch(() => show(1));
+  })();
+</script>
+</body>
+</html>

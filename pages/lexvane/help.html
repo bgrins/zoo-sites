@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to play — Lexvane from Marrowfield Press</title>
+<style>
+  :root {
+    --pine: #14442f; --pine-deep: #0b2b1d; --lime: #cde36f;
+    --stone: #8b8478; --bone: #f2ece0; --paper: #fffdf7;
+    --rule: #ddd4c2; --ink: #22201b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans Unicode", Tahoma, sans-serif;
+    color: var(--ink); background-color: var(--bone);
+    background-image: radial-gradient(var(--rule) 1px, transparent 1px);
+    background-size: 18px 18px; line-height: 1.5;
+  }
+  a { color: var(--pine); }
+  .mast { background: var(--pine); color: var(--paper); border-bottom: 5px solid var(--lime); }
+  .mast-inner {
+    max-width: 660px; margin: 0 auto; padding: 18px 20px 14px;
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+  }
+  .kicker {
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+    font-style: italic; font-size: 13px; color: var(--lime); letter-spacing: .02em;
+  }
+  .wordmark { font-size: 34px; font-weight: bold; letter-spacing: .22em; text-transform: uppercase; line-height: 1.05; }
+  .tagline { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #a9c4b1; }
+  .mast-side { text-align: right; font-size: 12px; color: #a9c4b1; }
+  .mast-side .sub {
+    display: inline-block; margin-top: 6px; padding: 5px 11px;
+    background: var(--lime); color: var(--pine-deep); font-weight: bold;
+    border-radius: 999px; text-decoration: none; letter-spacing: .04em;
+  }
+  .mast-nav { background: var(--pine-deep); }
+  .mast-nav-inner { max-width: 660px; margin: 0 auto; padding: 0 20px; display: flex; flex-wrap: wrap; }
+  .mast-nav a {
+    color: #cfe0d3; text-decoration: none; font-size: 12px; letter-spacing: .12em;
+    text-transform: uppercase; padding: 9px 14px 9px 0;
+  }
+  .mast-nav a.here { color: var(--lime); font-weight: bold; }
+  main { max-width: 660px; margin: 0 auto; padding: 22px 20px 8px; }
+  .card {
+    background: var(--paper); border: 3px solid var(--pine); border-radius: 12px;
+    box-shadow: 7px 7px 0 rgba(20, 68, 47, .14); padding: 20px; margin-bottom: 20px;
+  }
+  h1 { font-size: 23px; margin: 0 0 10px; letter-spacing: .01em; }
+  h2 { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 10px; color: #5d6b60; }
+  .card p { font-size: 14px; margin: 0 0 10px; }
+  ul.marks { list-style: none; margin: 0 0 10px; padding: 0; }
+  ul.marks li {
+    font-size: 14px; padding: 8px 12px; margin-bottom: 6px;
+    background: #f6f3e8; border-left: 6px solid var(--lime); border-radius: 0 8px 8px 0;
+  }
+  ul.marks li b { color: var(--pine); }
+  .contact-line { font-family: "Courier New", monospace; font-size: 14px; }
+  footer { background: var(--pine-deep); color: #b8cbbd; margin-top: 10px; }
+  .foot-inner { max-width: 660px; margin: 0 auto; padding: 24px 20px 30px; font-size: 12.5px; }
+  .foot-inner p { margin: 0 0 8px; }
+  .foot-links a { color: var(--lime); text-decoration: none; margin-right: 14px; }
+  .foot-links a:hover { text-decoration: underline; }
+  .foot-rule { border-top: 1px solid #24503a; margin: 14px 0 12px; }
+</style>
+</head>
+<body>
+<header class="mast">
+  <div class="mast-inner">
+    <div>
+      <div class="kicker">Marrowfield Press</div>
+      <div class="wordmark">Lexvane</div>
+      <div class="tagline">The daily five</div>
+    </div>
+    <div class="mast-side">
+      Games desk
+      <br>
+      <a class="sub" href="subscribe.html">Subscribe</a>
+    </div>
+  </div>
+  <div class="mast-nav">
+    <nav class="mast-nav-inner">
+      <a href="./">Today</a>
+      <a href="archive.html">Archive</a>
+      <a href="leaderboard.html">Leaderboard</a>
+      <a href="puzzles.html#mini-crossword">Mini crossword</a>
+      <a class="here" href="help.html">Help</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="card">
+    <h1>How to play</h1>
+    <p>The games desk sets one word each day, and you have six tries to find it. Type a
+    guess of the right length and submit it; the desk marks every letter and sends the
+    marks back to your grid.</p>
+    <ul class="marks">
+      <li><b>Right spot</b> — the letter is in the word, exactly where you placed it.</li>
+      <li><b>In word</b> — the letter is in the word, but somewhere else.</li>
+      <li><b>Not in word</b> — the letter does not appear in the word at all.</li>
+    </ul>
+    <p>Use the marks to narrow things down before your six tries run out. The letter
+    board under the grid keeps a running tally of what you have learned. An unsolved
+    grid keeps its word until the next morning, when a fresh puzzle is posted.</p>
+    <h2>Hard mode</h2>
+    <p>Hard mode lengthens the word to seven letters and shortens the allowance to five
+    tries. Every hint you uncover is binding: a letter marked right-spot must stay in
+    that spot in every later guess, and a letter marked in-word must appear again in
+    every later guess. A guess that drops a hint is refused, and a refused guess costs
+    you no try.</p>
+  </section>
+  <section class="card" id="subscribers">
+    <h2>Subscribers</h2>
+    <p>Account and billing questions are handled by the subscriptions team, not the
+    games desk. Sign in with the email address on your account to update payment
+    details, change tier, or pause delivery of the print edition.</p>
+    <p>If your subscription has lapsed, archive access and streak statistics are held
+    for ninety days and restored in full when you resubscribe.</p>
+  </section>
+  <section class="card" id="contact">
+    <h2>Contact the games desk</h2>
+    <p>Spotted a marking error, or want to submit a puzzle? Write to us — the desk
+    reads everything, though replies can take a few days around the Saturday edition.</p>
+    <p class="contact-line"><a href="mailto:help@marrowfieldpress.example">help@marrowfieldpress.example</a></p>
+    <p class="contact-line">03069 990402 (weekdays, 9am to 5pm)</p>
+  </section>
+</main>
+<footer>
+  <div class="foot-inner">
+    <p>Lexvane is written and edited by the Marrowfield Press games desk. A new puzzle is posted at 00:01 each day.</p>
+    <p class="foot-links">
+      <a href="archive.html">Puzzle archive</a><a href="help.html">How to play</a><a href="help.html#subscribers">Subscriber help</a><a href="legal.html#privacy">Privacy notice</a><a href="legal.html#terms">Terms of use</a><a href="help.html#contact">Contact the games desk</a>
+    </p>
+    <div class="foot-rule"></div>
+    <p>Marrowfield Press Ltd, 8 Calder Wharf, Bramlington BR4 2QN. Registered in England and Wales, no. 00000000.</p>
+    <p>Subscriber enquiries: help@marrowfieldpress.example &middot; 03069 990402</p>
+    <p>&copy; 2026 Marrowfield Press Ltd. All rights reserved.</p>
+  </div>
+</footer>
+</body>
+</html>

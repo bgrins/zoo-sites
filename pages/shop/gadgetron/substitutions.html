@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gadgetron | Approved substitution list</title>
+<link rel="stylesheet" href="gadgetron.css">
+<style>
+  .policy { flex: 1; padding: 10px 14px 26px; min-width: 0; }
+  .policy h1 { font-size: 17px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .policy .lede { font-size: 12px; color: #454c5c; margin: 0 0 10px; max-width: 82ch; }
+  .policy h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #626a7a; margin: 16px 0 6px; }
+  .policy p { font-size: 12px; margin: 0 0 6px; max-width: 82ch; }
+  .policy .rule { border-left: 3px solid #ffb020; padding-left: 9px; }
+  .policy .warn { color: #a3230f; font-weight: bold; }
+  .statline .count { font-size: 12px; color: #626a7a; }
+  table.grid td.sub { font-weight: bold; white-space: nowrap; }
+  .crumbline { background: #fff5e0; border-bottom: 1px solid #e8d49c; padding: 5px 14px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="railbar">
+  <span class="mark">Gadgetron</span>
+  <span class="tagline">Spec index and price engine</span>
+  <form onsubmit="return false">
+    <input aria-label="Search part numbers or models" placeholder="Model, brand or part no.">
+    <button type="submit">Find</button>
+  </form>
+  <span class="who">Guest &middot; <a href="signin.html">sign in</a> &middot;
+    <a href="order-list.html">order list</a></span>
+</div>
+<nav class="tabs" aria-label="Sections">
+  <a href="index.html">Catalog</a>
+  <a href="compare.html">Compare</a>
+  <a href="price-history.html">Price history</a>
+  <a href="open-box.html">Open-box</a>
+  <a href="glossary.html">Spec glossary</a>
+  <a href="bulk-quote.html">Bulk quote</a>
+</nav>
+<div class="crumbline">Catalog &rsaquo; Warehouse policy &rsaquo; Approved substitution list</div>
+<div class="layout">
+  <aside class="facets" aria-label="Related policies">
+    <h2>Warehouse policy</h2>
+    <details open>
+      <summary>Availability</summary>
+      <p style="font-size:12px;margin:4px 0 0 4px"><a href="warehouse-policy.html#status">Status codes</a></p>
+      <p style="font-size:12px;margin:4px 0 0 4px"><a href="order-list.html">Quick order</a></p>
+      <p style="font-size:12px;margin:4px 0 0 4px"><a href="warehouse-policy.html#backorder">Backorder terms</a></p>
+    </details>
+    <details>
+      <summary>Fulfilment</summary>
+      <p style="font-size:12px;margin:4px 0 0 4px"><a href="warehouse-policy.html#cutoff">Cut-off times</a></p>
+      <p style="font-size:12px;margin:4px 0 0 4px"><a href="warehouse-policy.html#partial">Partial shipments</a></p>
+    </details>
+    <details>
+      <summary>Returns</summary>
+      <p style="font-size:12px;margin:4px 0 0 4px"><a href="warehouse-policy.html#returns">Return window</a></p>
+      <p style="font-size:12px;margin:4px 0 0 4px"><a href="warehouse-policy.html#restocking">Restocking fees</a></p>
+    </details>
+  </aside>
+  <section class="policy">
+    <div class="statline">
+      <h1>Approved substitution list</h1>
+      <span class="count">3 active substitutions</span>
+    </div>
+    <p class="lede">When a part is sold out online, the buying desk publishes the alternate it
+    will accept in its place. Only the alternate named in the table below may be ordered against
+    a sold-out part number. The list is revised every Monday.</p>
+    <table class="grid">
+      <caption>Sold-out part numbers and the alternate approved for each. One approved alternate per part.</caption>
+      <thead>
+        <tr>
+          <th>Sold-out part no.</th>
+          <th>Sold-out model</th>
+          <th>Approved alternate part no.</th>
+          <th>Approved alternate model</th>
+          <th>Reason</th>
+          <th>Effective</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">CS27-OB</td>
+          <td class="model">ClaritySee CS27-4K Open-Box</td>
+          <td class="mono sub">CS27-Q</td>
+          <td class="sub">ClaritySee CS27-Q</td>
+          <td>Open-box pool exhausted</td>
+          <td class="mono">2026-07-13</td>
+        </tr>
+        <tr>
+          <td class="mono">PF-27</td>
+          <td class="model">PixelForge PF-27</td>
+          <td class="mono sub">BP-27U</td>
+          <td class="sub">BrightPanel BP-27U</td>
+          <td>Supplier allocation withdrawn</td>
+          <td class="mono">2026-07-20</td>
+        </tr>
+        <tr>
+          <td class="mono">GDX-HUB</td>
+          <td class="model">GadgetDock DX Hub</td>
+          <td class="mono sub">GDX-HUB2</td>
+          <td class="sub">GadgetDock DX2 Hub</td>
+          <td>Superseded revision</td>
+          <td class="mono">2026-06-29</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="rowsnote">Rows 1-3 of 3. Alternates are matched on panel class and connector set,
+    not on price; an alternate may cost more than the part it replaces.</p>
+    <h2>How a substitution is applied</h2>
+    <p class="rule">Order the approved alternate's own part number. The desk does not convert a
+    sold-out line for you, and a sold-out part number cannot be added to an order list.</p>
+    <p class="rule">Price is the alternate's list price on the day of the order. No price
+    protection is carried over from the sold-out part.</p>
+    <h2>Alternates that are not approved</h2>
+    <p>Buyers frequently propose the ScreenCraft SC-27U HDR against PixelForge PF-27 because the
+    panel class matches. <span class="warn">SC-27U HDR is not an approved alternate</span> and
+    the desk will reject the line at goods-in.</p>
+    <p>Likewise the ClaritySee CS27-4K Pro is not accepted against any open-box part number,
+    and the PixelPeak P27U Value is not accepted against PixelForge PF-27.</p>
+    <h2>Escalation</h2>
+    <p>To propose an alternate that is not on the list, raise a buying desk ticket with the
+    manufacturer datasheet attached. Decisions are published in the following Monday revision.</p>
+  </section>
+</div>
+<footer class="legalstrip">
+  <a href="warehouse-policy.html#status">Warehouse status codes</a> &middot;
+  <a href="warehouse-policy.html#returns">Return window</a> &middot;
+  <a href="methodology.html">Price engine methodology</a> &middot;
+  <a href="seller-terms.html">Marketplace seller terms</a><br>
+  Listings are supplied by marketplace sellers; Gadgetron is not the seller of record for
+  marketplace items. Specifications are provided by the manufacturer. &copy; 2026 Gadgetron
+  Trading Co.
+</footer>
+</body>
+</html>

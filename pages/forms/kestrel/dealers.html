@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kestrel Peak Trailers — Dealers</title>
+<style>
+  :root {
+    --char: #17140f;
+    --cream: #f6f1e7;
+    --sand: #cfc3ae;
+    --rust: #9c4a2f;
+    --stone: #7a7266;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--cream); color: var(--char);
+    font-family: Optima, Candara, "Noto Sans", "Segoe UI", sans-serif;
+    font-size: 16px; line-height: 1.55;
+  }
+  h1, h2, h3, .kicker, nav a {
+    font-family: "Avenir Next Condensed", "Arial Narrow", "Liberation Sans Narrow", sans-serif;
+  }
+  nav.top {
+    position: sticky; top: 0; z-index: 6;
+    background: rgba(23, 20, 15, 0.94); color: var(--cream);
+    display: flex; align-items: center; gap: 24px; padding: 12px 34px;
+  }
+  nav.top .word {
+    font-family: "Avenir Next Condensed", "Arial Narrow", sans-serif;
+    text-transform: uppercase; letter-spacing: 4px; font-size: 17px; font-weight: 600;
+  }
+  nav.top a {
+    color: var(--sand); text-decoration: none; text-transform: uppercase;
+    letter-spacing: 2px; font-size: 12px;
+  }
+  nav.top a:hover, nav.top a.on { color: #fff; }
+  nav.top .tel { margin-left: auto; font-size: 12px; letter-spacing: 1.5px; color: var(--sand); }
+  .hero {
+    position: relative; min-height: 240px; display: flex; align-items: flex-end;
+    padding: 0 34px 36px; color: #fff; overflow: hidden;
+    background: linear-gradient(180deg, #2c3a4a 0%, #5b6472 42%, #8a7a68 74%, #b09a80 100%);
+  }
+  .hero .ridge {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 130px; background: #22271f;
+    clip-path: polygon(0 70%, 10% 52%, 22% 68%, 34% 44%, 48% 62%, 60% 46%, 74% 66%, 86% 50%, 100% 68%, 100% 100%, 0 100%);
+  }
+  .hero .copy { position: relative; }
+  .kicker { text-transform: uppercase; letter-spacing: 4px; font-size: 11px; color: var(--sand); margin: 0 0 8px; }
+  .hero h1 { margin: 0; font-size: 44px; line-height: 0.96; font-weight: 600; text-transform: uppercase; }
+  .strip {
+    background: var(--char); color: var(--sand);
+    display: flex; flex-wrap: wrap; gap: 6px 44px; padding: 14px 34px;
+    text-transform: uppercase; letter-spacing: 2px; font-size: 11px;
+  }
+  .layout { max-width: 1040px; margin: 0 auto; padding: 46px 34px 70px; }
+  .layout > p { max-width: 66ch; margin: 0 0 30px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 22px; }
+  .dealer { background: #fff; border-top: 4px solid var(--rust); padding: 22px 24px; }
+  .dealer.factory { border-top-color: var(--char); }
+  .dealer h2 { margin: 0 0 2px; font-size: 21px; text-transform: uppercase; letter-spacing: -0.2px; }
+  .dealer .where { text-transform: uppercase; letter-spacing: 2px; font-size: 11px; color: var(--rust); margin: 0 0 12px; }
+  .dealer p { margin: 0 0 4px; font-size: 14.5px; }
+  .dealer .tel { color: var(--stone); }
+  footer { background: var(--char); color: var(--sand); padding: 30px 34px; font-size: 12.5px; }
+  footer .cols { display: flex; flex-wrap: wrap; gap: 6px 40px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; }
+</style>
+</head>
+<body>
+<nav class="top">
+  <span class="word">Kestrel Peak</span>
+  <a href="models.html">Models</a>
+  <a href="build.html">Build yours</a>
+  <a href="owners.html">Owners</a>
+  <a href="dealers.html" class="on">Dealers</a>
+  <a href="brochure.html">Brochure</a>
+  <span class="tel">541-555-0142</span>
+</nav>
+
+<header class="hero">
+  <div class="ridge"></div>
+  <div class="copy">
+    <p class="kicker">Factory showroom and western dealers</p>
+    <h1>Dealers</h1>
+  </div>
+</header>
+
+<div class="strip">
+  <span>Aluminium monocoque</span>
+  <span>Three chassis lengths</span>
+  <span>Six-year frame warranty</span>
+  <span>Made in Oregon</span>
+</div>
+
+<div class="layout">
+  <p>Every trailer is built at the Switchback Road shop. Our dealers stock
+  demonstrators of all three chassis, handle warranty inspections, and can
+  arrange delivery of a factory build.</p>
+
+  <div class="grid">
+    <section class="dealer factory">
+      <h2>Factory showroom</h2>
+      <p class="where">Oregon</p>
+      <p>1180 Switchback Rd, Bldg C</p>
+      <p>Open Tue–Sat</p>
+      <p class="tel">541-555-0142</p>
+    </section>
+    <section class="dealer">
+      <h2>Basin Overland Supply</h2>
+      <p class="where">Bend, Oregon</p>
+      <p>2240 Juniper Flat Ave</p>
+      <p>Open Mon–Sat</p>
+      <p class="tel">541-555-0178</p>
+    </section>
+    <section class="dealer">
+      <h2>Sawtooth Trailer Co.</h2>
+      <p class="where">Boise, Idaho</p>
+      <p>815 Packline Way</p>
+      <p>Open Tue–Sat</p>
+      <p class="tel">208-555-0134</p>
+    </section>
+    <section class="dealer">
+      <h2>Granite Ridge Outfitters</h2>
+      <p class="where">Reno, Nevada</p>
+      <p>4410 Talus Loop</p>
+      <p>Open Mon–Fri</p>
+      <p class="tel">775-555-0191</p>
+    </section>
+    <section class="dealer">
+      <h2>Front Range Teardrops</h2>
+      <p class="where">Fort Collins, Colorado</p>
+      <p>127 Moraine Ct</p>
+      <p>Open Wed–Sun</p>
+      <p class="tel">970-555-0126</p>
+    </section>
+  </div>
+</div>
+
+<footer>
+  <div class="cols">
+    <span>Showroom open Tue–Sat</span>
+    <span>1180 Switchback Rd, Bldg C</span>
+    <span>541-555-0142</span>
+  </div>
+  © 2026 Kestrel Peak Trailers, Inc.
+</footer>
+</body>
+</html>

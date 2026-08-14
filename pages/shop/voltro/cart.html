@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voltro — Cart</title>
+<link rel="stylesheet" href="checkout.css">
+</head>
+<body>
+<header><b>Voltro</b><span>Secure checkout</span><a href="index.html">Continue shopping</a></header>
+<div class="steps"><b>Cart</b> › Shipping › Payment › Review</div>
+<main>
+  <h1>Your cart</h1>
+  <div id="empty" style="display:none">
+    <p>Your cart is empty.</p>
+    <a class="btn" href="index.html">Browse monitors</a>
+  </div>
+  <div id="filled" style="display:none">
+    <table>
+      <thead><tr><th>Item</th><th>Price</th></tr></thead>
+      <tbody id="items"></tbody>
+      <tfoot><tr class="total"><td>Subtotal</td><td id="subtotal"></td></tr></tfoot>
+    </table>
+    <a class="btn" href="shipping.html">Proceed to shipping</a>
+  </div>
+  <div id="status" role="status"></div>
+  <p class="crossnote">Desk Setup accessories are kept in a separate
+    <a href="basket.html">Desk Setup basket</a> with its own checkout.</p>
+</main>
+<footer><a href="conditions.html">Conditions of Use</a> &middot; <a href="privacy.html">Privacy Notice</a> &middot; <a href="help.html#orders">Your Orders</a> &middot; <a href="help.html">Help</a> &middot; © 2026 Voltro Marketplace</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+(async () => {
+  const status = document.getElementById('status');
+  try {
+    const res = await fetch('/api/voltro/cart', { headers: { 'X-Session-Nonce': NONCE } });
+    const body = await res.json();
+    if (!res.ok) {
+      status.className = 'error';
+      status.textContent = body.error ?? 'Could not load your cart.';
+      return;
+    }
+    if (!body.items.length) {
+      document.getElementById('empty').style.display = 'block';
+      return;
+    }
+    const rows = document.getElementById('items');
+    for (const item of body.items) {
+      const tr = document.createElement('tr');
+      const name = document.createElement('td');
+      name.textContent = item.product;
+      const price = document.createElement('td');
+      price.textContent = '$' + item.price.toFixed(2);
+      tr.append(name, price);
+      rows.appendChild(tr);
+    }
+    document.getElementById('subtotal').textContent = '$' + body.subtotal.toFixed(2);
+    document.getElementById('filled').style.display = 'block';
+  } catch {
+    status.className = 'error';
+    status.textContent = 'Network error — reload the page.';
+  }
+})();
+</script>
+</body>
+</html>

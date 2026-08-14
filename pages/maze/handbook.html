@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drive handbook — Kestrel 4 — Ostara Surface Systems</title>
+<link rel="stylesheet" href="maze.css">
+</head>
+<body>
+<div class="mast">
+  <span class="org">Ostara Surface Systems</span>
+  <span class="div">Surface fleet operations</span>
+  <span class="who">drive team 2 &middot; k.oyelaran@ostara-surface.example</span>
+</div>
+<div class="chips">
+  <span class="chip">Sol 214</span>
+  <span class="chip">Site Vantor Basin</span>
+  <span class="chip">Rover Kestrel 4</span>
+  <span class="chip">Panel drive handbook</span>
+</div>
+<div class="shell">
+  <nav class="rail">
+    <h2>Kestrel 4</h2>
+    <a href="index.html">Traverse</a>
+    <a href="survey.html">Survey record</a>
+    <a href="power.html">Power and thermal</a>
+    <a href="instruments.html">Instruments</a>
+    <a href="uplink.html">Uplink windows</a>
+    <a href="hazard.html">Hazard review</a>
+    <a href="archive.html">Sol archive</a>
+    <a href="handbook.html" class="on sep">Drive handbook</a>
+  </nav>
+  <main class="content">
+    <h1>Drive handbook</h1>
+    <p class="lede">Fleet-standard procedure for blind-drive traverses. This is the same
+    procedure summarised at the top of the traverse console; the handbook is the reference
+    wording.</p>
+
+    <div class="decks">
+      <section class="deck deck-map">
+        <h2>Drive rules</h2>
+        <ul class="logbook">
+          <li>R1 one cell per drive command</li>
+          <li>R2 headings are N E S W only</li>
+          <li>R3 interlock refuses obstructions</li>
+          <li>R4 sequence halts at first refusal</li>
+          <li>R5 refused heading not retried blind</li>
+        </ul>
+        <p class="legend">The hazard interlock senses from the cell the rover occupies and
+        refuses any drive into a confirmed obstruction. A refusal leaves the rover exactly
+        where it was; nothing about a refusal damages the vehicle or the sol plan.</p>
+      </section>
+
+      <section class="deck deck-map">
+        <h2>Surveying</h2>
+        <p class="legend">Hazard mapping is line of sight. Entering a cell resolves which of
+        its four headings are clear, and that result is written to the survey record held on
+        the rover. Cells the rover has never entered stay unsurveyed no matter how long the
+        console is open. Drivers plan from the accumulated record, extend it a cell at a
+        time, and treat unsurveyed terrain as unknown rather than clear.</p>
+      </section>
+
+      <section class="deck deck-map">
+        <h2>Sequences</h2>
+        <p class="legend">Queued sequences accept up to twenty-four headings. Because a
+        sequence stops at the first refusal, long queues through unsurveyed cells are legal
+        but rarely useful; the fleet habit is short sequences through surveyed ground and
+        single drives at the frontier.</p>
+      </section>
+
+      <section class="deck deck-map">
+        <h2>Closing a sol plan</h2>
+        <p class="legend">When the rover reaches the designated extraction pad the console
+        retires its drive deck and issues an extraction code. The driver reads the code back
+        to mission control on the ops voice loop, which releases the recovery window and
+        closes the sol plan. Anomalies during a traverse go to the
+        <a href="contact.html">drive desk</a> and are dispositioned through the
+        <a href="hazard.html">hazard review</a>.</p>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="foot">
+  <p class="links">
+    <a href="data-policy.html">Data policy</a>
+    <a href="terms.html">Operating terms</a>
+    <a href="contact.html">Contact the drive desk</a>
+  </p>
+  <p>&copy; 2026 Ostara Surface Systems Ltd. Registered office: 14 Bellamy Wharf,
+  Tarnbridge TR4 2QN. Flight operations support: ops-desk@ostara-surface.example,
+  +44 20 7946 0812.</p>
+</div>
+</body>
+</html>

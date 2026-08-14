@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Documentation - Cindergrid</title>
+<link rel="stylesheet" href="console.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html">CINDERGRID</a>
+  <span class="crumb">gridworks-eu / orchid-api</span>
+  <span class="env">production</span>
+  <span class="spacer"></span>
+  <span class="who">t.ashgrove</span>
+</header>
+
+<div class="shell">
+  <nav class="rail">
+    <span class="rail-label">Project</span>
+    <a href="index.html">Deployments</a>
+    <a href="runs.html">Run history</a>
+    <a href="secrets.html">Secrets</a>
+    <a href="settings.html">Settings</a>
+    <a href="support.html">Support</a>
+  </nav>
+
+  <main>
+    <div class="runhead">
+      <h1>Documentation</h1>
+    </div>
+    <p class="subhead">The short version of how Cindergrid runs your deployments. Anything not
+    answered here goes to <a href="support.html">support</a>.</p>
+
+    <h2>Runs and steps</h2>
+    <div class="doc">
+      <p>A run is one attempt to take a commit to an environment. Steps execute in a fixed
+      order - checkout, build/image, scan/deps, push/registry, migrate/schema, release/gate,
+      rollout/canary, notify/webhook, diagnostics, cleanup/artifacts - and a failed step stops
+      everything after it except diagnostics and cleanup, which always run. The step summary on
+      the run page shows each step's outcome; the run log carries the full line-by-line record,
+      searchable from the toolbar or downloadable as a raw text file.</p>
+    </div>
+
+    <h2>Release gates</h2>
+    <div class="doc">
+      <p>Production promotions are evaluated against a release policy (currently
+      release-prod-v4). Rules cover the change window, recorded approvals, scan findings and
+      image provenance. A denied rule fails the release/gate step and the run; the log states
+      which rule denied promotion and why. Gates are policy, not advice - there is no override
+      button in the console.</p>
+    </div>
+
+    <h2>Secrets</h2>
+    <div class="doc">
+      <p>Org-level secrets are injected as environment variables at step start and are
+      write-only after creation. See the <a href="secrets.html">Secrets</a> tab for names,
+      rotation schedules and the steps that consume each one.</p>
+    </div>
+
+    <h2>Logs and retention</h2>
+    <div class="doc">
+      <p>Run logs and support bundles are retained for fourteen days from the end of the run.
+      The raw log is a plain-text document linked from the run page toolbar; the viewer's search
+      runs server-side over the same lines. Older material lives in the archive and is restored
+      on request through support.</p>
+    </div>
+  </main>
+</div>
+
+<footer>
+  Cindergrid Systems Ltd, 4 Alder Wharf, Bristol BS1 4RN, United Kingdom<br>
+  <a href="status.html">Status</a> &middot; <a href="docs.html">Documentation</a> &middot;
+  <a href="terms.html">Terms of service</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  support@cindergrid.example.net<br>
+  &copy; 2026 Cindergrid Systems Ltd
+</footer>
+</body>
+</html>

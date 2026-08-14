@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Eval fixtures — contact sheet</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 16px; background: #f5f5f4; color: #1c1c1a; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .intro { color: #57534e; margin: 0 0 12px; font-size: 13px; max-width: 70ch; }
+  .controls { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; font-size: 13px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--cell), 1fr)); gap: 16px; }
+  figure { margin: 0; background: #fff; border: 1px solid #d6d3d1; border-radius: 4px; overflow: hidden; }
+  figcaption { padding: 6px 8px; font-size: 12px; display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid #e7e5e4; }
+  figcaption b { font-weight: 600; }
+  figcaption a { color: #0369a1; text-decoration: none; white-space: nowrap; }
+  .shot { position: relative; height: var(--shotHeight); overflow: hidden; background: #fff; }
+  .shot iframe { position: absolute; top: 0; left: 0; width: var(--vw); height: var(--vh); border: 0; transform: scale(var(--scale)); transform-origin: top left; }
+  .note { font-size: 12px; color: #57534e; margin-top: 24px; }
+</style>
+</head>
+<body>
+<h1>Eval fixtures — contact sheet</h1>
+<p class="intro">Every fixture entry point, live in an iframe on this server's origin.
+Interactions run for real, so loading this page fires the fixtures' own beacons and seeds
+their sessions. It is served only when the server is started with <code>--preview</code>,
+so it is never reachable during an eval run.</p>
+
+<div class="controls">
+  <label>Width <input id="vw" type="number" value="1200" min="320" max="2000" step="20"></label>
+  <label>Zoom <input id="zoom" type="range" min="20" max="100" value="34"> <span id="zoomOut">34%</span></label>
+  <label><input id="reload" type="button" value="Reload all"></label>
+</div>
+
+<div class="grid" id="grid"></div>
+<p class="note" id="note"></p>
+
+<script>
+const PAGES = [
+  ['Voltro', '/shop/voltro/'],
+  ['Marrowgate', '/shop/marrowgate/'],
+  ['Gadgetron', '/shop/gadgetron/'],
+  ['Voltro desk setup', '/shop/voltro/desk-setup.html'],
+  ['Voltro basket', '/shop/voltro/basket.html'],
+  ['Voltro deals of the day', '/shop/voltro/deals.html'],
+  ['Marrowgate CS27-4K product', '/shop/marrowgate/cs27-4k.html'],
+  ['Marrowgate offers', '/shop/marrowgate/promos.html'],
+  ['Marrowgate basket', '/shop/marrowgate/basket.html'],
+  ['Marrowgate Norvindle mat', '/shop/marrowgate/norvindle.html'],
+  ['Gadgetron substitutions', '/shop/gadgetron/substitutions.html'],
+  ['Gadgetron order list', '/shop/gadgetron/order-list.html'],
+  ['Gadgetron maintenance splash', '/shop/gadgetron-maintenance.html'],
+  ['Gadgetron mirror node', '/shop/gadgetron-mirror/'],
+  ['Gadgetron mirror docks', '/shop/gadgetron-mirror/docks.html'],
+  ['Gadgetron mirror VoltCharge sheet', '/shop/gadgetron-mirror/voltcharge-dock.html'],
+  ['Gadgetron mirror pending department', '/shop/gadgetron-mirror/unavailable.html'],
+  ['Bureau of Civic Revenue', '/gov/'],
+  ['Gov fee schedule', '/gov/fee-schedule.html'],
+  ['Gov handbook', '/gov/handbook.html'],
+  ['Gov offices (iframe widget)', '/gov/offices.html'],
+  ['Gov department directory', '/gov/departments/'],
+  ['Gov Subsurface Permits desk', '/gov/departments/assessment-standards/field-operations/ground-works/subsurface-permits.html'],
+  ['Gov site search (RV-7)', '/gov/search.html?q=Form+RV-7+mailing+address'],
+  ['Gov RV-7A instructions', '/gov/rv7a-instructions.html'],
+  ['Gov RV-3 legacy redirect notice', '/gov/legacy/rv3'],
+  ['Millrace', '/news/'],
+  ['Millrace (digest modal)', '/news/?promo=1'],
+  ['News article (prompts)', '/news/article.html'],
+  ['Millrace (consent wall)', '/news/consent.html'],
+  ['Overlane Carrier Access', '/portal/'],
+  ['Overlane forgot password', '/portal/forgot.html'],
+  ['Overlane carrier home', '/portal/carrier.html'],
+  ['Fernmail webmail', '/inbox/'],
+  ['Overlane console (signed out)', '/portal/dashboard.html'],
+  ['CaldmoorBank (caldmoorbank-online)', '/bank/caldmoorbank-online/'],
+  ['CaldmoorBank (caldmoor-bank-login)', '/bank/caldmoor-bank-login/'],
+  ['Meridian Dental form', '/forms/'],
+  ['Partner registration', '/forms/vendor/register.html'],
+  ['Solstice Summit roster', '/forms/summit/roster.html'],
+  ['Brochure request', '/forms/kestrel/brochure.html'],
+  ['Beta waitlist', '/forms/fernlight/beta-signup.html'],
+  ['Beta terms', '/forms/fernlight/beta-terms.html'],
+  ['Waypost rate calculator', '/forms/waypost/shipping-quote.html'],
+  ['Nerrow Strait abstract desk', '/forms/nerrow/abstract.html'],
+  ['Thornbury Trust grants', '/forms/thornbury/draft.html'],
+  ['Halveck branch directory', '/forms/farholt/office-finder.html'],
+  ['Draymere attestation upload', '/forms/draymere/upload.html'],
+  ['Binthral cycle count', '/grid-edit/'],
+  ['Tealwave unsubscribe', '/unsub/'],
+  ['Tealwave unsubscribe step 2', '/unsub/step2.html'],
+  ['Tealwave unsubscribe step 3', '/unsub/step3.html'],
+  ['Orsino onboarding intake', '/intake/'],
+  ['Trelowen ledger', '/ledger/'],
+  ['Kelsmere CRM', '/crm/'],
+  ['CRM orders', '/crm/orders.html'],
+  ['Ferncliff rosters', '/rosters/'],
+  ['Roster 2026', '/rosters/2026.html'],
+  ['Quennell employee directory', '/biglist/'],
+  ['Northmarsh gallery', '/gallery/'],
+  ['Lexvane', '/lexvane/'],
+  ['Lexvane hard mode', '/lexvane/?mode=hard&day=3'],
+  ['Canvas swatch', '/canvas/swatch.html'],
+  ['Shadow console', '/shadow/'],
+  ['Kestrel 4 traverse console', '/maze/'],
+  ['Kestrel 4 survey record', '/maze/survey.html'],
+  ['Promotions', '/promo/'],
+  ['File manager', '/filemgr/'],
+  ['Zellick flaky report', '/flaky/'],
+  ['Zellick archive retrieval (8s restore)', '/flaky/slow.html'],
+  ['Northwind newsroom (embargo)', '/press/'],
+  ['Corvane parcel tracking', '/parcels/'],
+  ['Cadre Workplace space plan', '/floorplan/'],
+  ['Ollister & Crane checkout (cross-tab pay)', '/paylink/checkout.html'],
+  ['Kettleforge repository', '/forge/'],
+  ['Kettleforge pull requests', '/forge/pulls/'],
+  ['Kettleforge PR 482 conversation', '/forge/pulls/482/'],
+  ['Kettleforge PR 482 checks', '/forge/pulls/482/checks.html'],
+  ['Kettleforge PR 482 files changed', '/forge/pulls/482/files.html'],
+  ['Kelverne Fibre help centre', '/support/'],
+  ['Kelverne Fibre my account', '/support/account.html'],
+  ['Peregrine Court day book', '/schedule/'],
+  ['Cindergrid run 4192 (canvas log)', '/console/'],
+  ['Cindergrid run history', '/console/runs.html'],
+  ['Qandara advisories (English)', '/intl/advisory.html?dest=port-vasiri'],
+  ['Qandara advisories (Arabic, RTL)', '/intl/ar/advisory.html?dest=port-vasiri'],
+  ['Qandara advisories (Japanese)', '/intl/ja/advisory.html?dest=port-vasiri'],
+  ['Halbeck seat usage console', '/metrics/'],
+  ['Abaca workbook (Q3 freight recovery)', '/calc/'],
+  ['Marlstone Salerooms sale 1174', '/auction/'],
+  ['Marlstone lot 418 (live bidding)', '/auction/lot-418.html'],
+  ['Marlstone conditions of sale', '/auction/conditions.html'],
+  ['Alderpost vacancy desk', '/roles/'],
+  ['Alderpost desk notes', '/roles/notes.html'],
+  ['Stavelock credential vault', '/vault/'],
+  ['Stavelock secret detail', '/vault/secret.html?id=sluicegate-deploy'],
+  ['Stavelock rotation', '/vault/rotate.html'],
+  ['Coppermast shift triage board', '/kanban/'],
+  ['Skerrow Coastal Radio bulletin (0535 recording)', '/media/bulletin.html'],
+  ['Nimbrel Edge status', '/status/'],
+  ['Nimbrel Edge incident history', '/status/history.html'],
+  ['Hearthline Hub console', '/smarthome/'],
+  ['Cresthaven Mutual Insurance', '/insure/'],
+  ['Cresthaven homeowner application', '/insure/quote.html'],
+  ['The Brindle Fig order-ahead counter', '/bistro/order.html'],
+  ['Tamarack Hollow cabin booking', '/cabins/'],
+  ['Aurelia Playhouse box office', '/boxoffice/'],
+  ['Marlowe Depot sign-in', '/depot/'],
+  ['Marlowe Depot intake', '/depot/intake.html'],
+  ['Quotient reconciliation', '/quotient/reconcile.html'],
+  ['Quotient freight quotes', '/quotient/quote.html'],
+  ['Lumeva Mobile plan builder', '/telco/'],
+  ['Fernwood Commons feed', '/fernwood/'],
+  ['Northgate Domains DNS records', '/registrar/'],
+  ['Grelsby Water home', '/utility/'],
+  ['Grelsby Water transfer desk', '/utility/transfer.html'],
+  ['Harrowgate Works careers', '/jobs/'],
+  ['Harrowgate Works openings', '/jobs/openings.html'],
+  ['Verlan Transit ticket kiosk', '/kiosk/'],
+  ['Verlan Transit fare information', '/kiosk/fares.html'],
+  ['basic/title', '/basic/title.html'],
+  ['basic/click-reveal', '/basic/click-reveal.html'],
+  ['basic/form-fill', '/basic/form-fill.html'],
+];
+
+const grid = document.getElementById('grid');
+const vw = document.getElementById('vw');
+const zoom = document.getElementById('zoom');
+const zoomOut = document.getElementById('zoomOut');
+
+for (const [label, path] of PAGES) {
+  const fig = document.createElement('figure');
+  const cap = document.createElement('figcaption');
+  const name = document.createElement('b');
+  name.textContent = label;
+  const link = document.createElement('a');
+  link.href = path;
+  link.target = '_blank';
+  link.textContent = path;
+  cap.append(name, link);
+  const shot = document.createElement('div');
+  shot.className = 'shot';
+  const frame = document.createElement('iframe');
+  frame.src = path;
+  frame.title = label;
+  shot.append(frame);
+  fig.append(cap, shot);
+  grid.append(fig);
+}
+
+function apply() {
+  const width = Number(vw.value) || 1200;
+  const scale = Number(zoom.value) / 100;
+  const height = Math.round(width * 0.75);
+  const root = document.documentElement.style;
+  root.setProperty('--vw', width + 'px');
+  root.setProperty('--vh', height + 'px');
+  root.setProperty('--scale', scale);
+  root.setProperty('--cell', Math.round(width * scale) + 'px');
+  root.setProperty('--shotHeight', Math.round(height * scale) + 'px');
+  zoomOut.textContent = zoom.value + '%';
+}
+
+vw.addEventListener('input', apply);
+zoom.addEventListener('input', apply);
+document.getElementById('reload').addEventListener('click', () => {
+  for (const frame of document.querySelectorAll('iframe')) {
+    frame.src = frame.src;
+  }
+});
+apply();
+document.getElementById('note').textContent = PAGES.length + ' fixture pages.';
+</script>
+</body>
+</html>

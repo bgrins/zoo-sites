@@ -1,0 +1,41 @@
+{
+  "rank": 28,
+  "comments": [
+    {
+      "author": "warmstart",
+      "age": "21 hours ago",
+      "text": "For those who haven't read it yet: the trick is that each spreadsheet row is one machine step, and the whole program is a single array formula that computes row N+1 from row N. Memory is a wide range of columns, registers are named cells. Recalculation is the clock.\n\nIt's a Turing tarpit, obviously, but it's a beautifully documented one. The calling convention section alone is worth the click.",
+      "replies": [
+        {
+          "author": "iferror",
+          "age": "19 hours ago",
+          "text": "OP here — \"recalculation is the clock\" is a better one-line summary than anything I wrote. Stealing it for the README. The worst part was pointers: dereferencing means an indirect lookup per access, and the formula engine's dependency tracker assumes you'd never do such a thing. Load-bearing INDIRECT everywhere.",
+          "replies": [
+            {
+              "author": "warmstart",
+              "age": "17 hours ago",
+              "text": "How do you handle stack overflow? Genuinely asking — do you just run out of columns?"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "rowmajor",
+      "age": "15 hours ago",
+      "text": "I did something adjacent for a compilers course: a tiny Forth in formulas, at forthcell.example.com. The dependency-graph recalculation model is secretly a dataflow machine, which is why this works better than it has any right to. The formula engine is doing topological scheduling for free."
+    },
+    {
+      "author": "bitrotting",
+      "age": "12 hours ago",
+      "text": "Skeptic take: fun hack, but the article claims this is \"useful for environments where you can only ship a spreadsheet.\" If your deployment target is a spreadsheet, the fix is organizational, not a C compiler.",
+      "replies": [
+        {
+          "author": "cellwise",
+          "age": "9 hours ago",
+          "text": "You'd think so, but I've worked places where the spreadsheet WAS the approved runtime and getting a real program deployed took two quarters. People build tunnels where the walls are."
+        }
+      ]
+    }
+  ]
+}

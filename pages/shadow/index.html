@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Facility Access Console — Metronome Systems</title>
+<style>
+  body {
+    margin: 0; background: #23262a;
+    background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 4px);
+    color: #cdd3cf;
+    font-family: Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: 13px;
+  }
+  .hazard {
+    height: 10px;
+    background: repeating-linear-gradient(135deg, #d9a406 0 14px, #1c1d1f 14px 28px);
+    border-bottom: 2px solid #101113;
+  }
+  header {
+    background: linear-gradient(#4a4f55, #33373c 55%, #2a2e32);
+    border-bottom: 3px solid #14161a;
+    padding: 12px 26px; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: inset 0 1px 0 #6d747c;
+  }
+  header .plate { display: flex; align-items: center; gap: 14px; }
+  header h1 {
+    margin: 0; font-size: 15px; font-weight: bold; text-transform: uppercase;
+    letter-spacing: 0.16em; color: #e6ebe6; text-shadow: 0 1px 0 #16181b;
+  }
+  header .unit {
+    border: 1px solid #6d747c; padding: 2px 7px; font-size: 10px; letter-spacing: 0.12em;
+    color: #a9b1ab; background: #262a2e;
+  }
+  .strip {
+    display: flex; gap: 0; background: #1b1e21; border-bottom: 2px solid #101113;
+    padding: 0 20px;
+  }
+  .lamp {
+    display: flex; align-items: center; gap: 8px; padding: 9px 18px 9px 0;
+    border-right: 1px solid #2c3034; margin-right: 18px;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #7f8783;
+  }
+  .lamp:last-child { border-right: 0; }
+  .led {
+    width: 11px; height: 11px; border-radius: 50%; background: #3c4043;
+    box-shadow: inset 0 0 3px #000, 0 0 0 1px #14161a;
+  }
+  .led.green { background: radial-gradient(circle at 35% 30%, #b7ffcd, #14b34a 60%, #0a5d27);
+                box-shadow: 0 0 7px rgba(30,220,110,0.55), 0 0 0 1px #14161a; }
+  .led.amber { background: radial-gradient(circle at 35% 30%, #ffe6a8, #e2a109 60%, #7a5504);
+                box-shadow: 0 0 7px rgba(240,180,30,0.5), 0 0 0 1px #14161a; }
+  .led.red { background: radial-gradient(circle at 35% 30%, #ffc3bb, #c62b1c 60%, #6d1109);
+                box-shadow: 0 0 7px rgba(220,60,40,0.45), 0 0 0 1px #14161a; }
+  main { max-width: 760px; margin: 26px auto 0; padding: 0 22px; }
+  .instr {
+    border-left: 3px solid #d9a406; background: #1e2124; padding: 12px 16px;
+    color: #9aa29d; font-size: 12px; line-height: 1.7;
+  }
+  .instr b { color: #d9a406; letter-spacing: 0.1em; }
+  .log {
+    margin-top: 24px; border: 1px solid #14161a; background: #14171a;
+    box-shadow: inset 0 0 0 1px #2b2f33;
+  }
+  .log h2 {
+    margin: 0; padding: 8px 14px; font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: #8b938e; background: #1c1f22; border-bottom: 1px solid #2b2f33;
+  }
+  .log ol { list-style: none; margin: 0; padding: 8px 0; font-size: 12px; color: #79817c; }
+  .log li { padding: 3px 14px; display: flex; gap: 16px; }
+  .log li span { color: #5f6763; }
+  .log li em { font-style: normal; color: #a8b0ab; }
+  footer {
+    margin-top: 30px; border-top: 2px solid #14161a; background: #1b1e21;
+    padding: 14px 26px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #5c6360; display: flex; justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<header>
+  <div class="plate">
+    <h1>Metronome Systems</h1>
+    <span class="unit">FAC-CONSOLE / 07</span>
+  </div>
+  <span class="unit">CLEARANCE MODULE REV D</span>
+</header>
+<div class="strip">
+  <div class="lamp"><i class="led green"></i>bus 24v</div>
+  <div class="lamp"><i class="led green"></i>interlock</div>
+  <div class="lamp"><i class="led amber"></i>stage two armed</div>
+  <div class="lamp"><i class="led red"></i>door 4 held</div>
+  <div class="lamp"><i class="led"></i>maint bypass</div>
+</div>
+<main>
+  <p class="instr"><b>OPERATOR NOTICE</b><br>
+  Authorized personnel only. Key the stage access code into the keypad module below.
+  Codes are issued per shift by the operations desk. Three rejected attempts latch the
+  console for review by the duty engineer.</p>
+  <fx-panel></fx-panel>
+  <div class="log">
+    <h2>Console event log</h2>
+    <ol>
+      <li><span>06:12:04</span><em>SHIFT ROTATION</em> operations desk reissued stage codes</li>
+      <li><span>06:12:06</span><em>SELFTEST</em> keypad module ok, interlock ok</li>
+      <li><span>07:40:51</span><em>DOOR 4</em> held open 41s by loading crew</li>
+      <li><span>08:03:19</span><em>STAGE TWO</em> armed, awaiting clearance entry</li>
+    </ol>
+  </div>
+</main>
+<footer>
+  <span>Metronome Systems facility terminal &middot; build 7.2.19 &middot; uptime nominal</span>
+  <span>Site engineering &middot; ext 4410</span>
+</footer>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+
+  class FxInput extends HTMLElement {
+    connectedCallback() {
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `
+        <style>
+          :host { display: block; font-family: Menlo, Consolas, "DejaVu Sans Mono", monospace; }
+          .label {
+            font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+            color: #8b938e; margin-bottom: 6px;
+          }
+          .row { display: flex; gap: 12px; align-items: stretch; }
+          input {
+            flex: 1; padding: 11px 13px; background: #0d1e14; color: #7dffb0;
+            border: 2px solid #0a0c0b; border-radius: 0; font: inherit; font-size: 16px;
+            letter-spacing: 0.24em;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), inset 0 0 14px rgba(40,200,120,0.12);
+          }
+          input::placeholder { color: #2f6d4a; letter-spacing: 0.18em; }
+          input:focus { outline: 0; border-color: #d9a406; }
+          button {
+            font: inherit; font-size: 12px; font-weight: bold; letter-spacing: 0.2em;
+            text-transform: uppercase; padding: 0 26px; cursor: pointer; color: #201a06;
+            background: linear-gradient(#f0cf5c, #d9a406 55%, #a97e04);
+            border: 2px solid #0a0c0b; border-radius: 2px;
+            box-shadow: inset 0 1px 0 #fff0b8, 0 3px 0 #6d5203, 0 4px 6px rgba(0,0,0,0.5);
+          }
+          button:active { box-shadow: inset 0 2px 5px rgba(0,0,0,0.5); transform: translateY(3px); }
+          .msg {
+            margin-top: 16px; min-height: 20px; font-size: 12px; letter-spacing: 0.06em;
+            color: #8b938e; border-top: 1px dashed #3a3f42; padding-top: 10px;
+          }
+          .msg.granted { color: #4ede8c; }
+          .msg.denied { color: #ff8b76; }
+        </style>
+        <div class="label">Stage access code</div>
+        <div class="row">
+          <input type="text" aria-label="Access code" placeholder="----------">
+          <button>Unlock</button>
+        </div>
+        <div class="msg" role="status"></div>`;
+      root.querySelector('button').addEventListener('click', () => this.unlock(root));
+      root.querySelector('input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') this.unlock(root);
+      });
+    }
+    async unlock(root) {
+      const msg = root.querySelector('.msg');
+      msg.textContent = 'Checking…';
+      msg.className = 'msg';
+      try {
+        const res = await fetch('/api/shadow/unlock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nonce: NONCE, code: root.querySelector('input').value.trim() }),
+        });
+        const body = await res.json();
+        msg.textContent = body.message ?? 'Terminal error';
+        msg.className = 'msg ' + (body.granted ? 'granted' : 'denied');
+      } catch {
+        msg.textContent = 'Terminal error: could not reach the access service.';
+        msg.className = 'msg denied';
+      }
+    }
+  }
+
+  class FxPanel extends HTMLElement {
+    connectedCallback() {
+      const root = this.attachShadow({ mode: 'open' });
+      root.innerHTML = `
+        <style>
+          :host { display: block; font-family: Menlo, Consolas, "DejaVu Sans Mono", monospace; }
+          .panel {
+            position: relative; margin: 24px 0;
+            background: linear-gradient(#43484d, #35393e 40%, #2b2f33);
+            border: 2px solid #14161a; border-radius: 3px;
+            box-shadow: inset 0 1px 0 #6d747c, inset 0 -2px 0 #1c1f22, 0 6px 14px rgba(0,0,0,0.45);
+            padding: 0 0 22px;
+          }
+          .cap {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 18px; background: #22262a; border-bottom: 2px solid #14161a;
+          }
+          h2 {
+            margin: 0; font-size: 11px; font-weight: bold; letter-spacing: 0.22em;
+            text-transform: uppercase; color: #e6ebe6;
+          }
+          .cap span { font-size: 9px; letter-spacing: 0.16em; color: #7f8783; }
+          .inner { padding: 18px 22px 0; }
+          p {
+            margin: 0 0 16px; font-size: 11px; line-height: 1.7; color: #9aa29d;
+            letter-spacing: 0.04em;
+          }
+          .rivet {
+            position: absolute; width: 7px; height: 7px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #8b9299, #4a4f55);
+            box-shadow: inset 0 -1px 1px #2b2f33;
+          }
+          .r1 { top: 7px; left: 7px; } .r2 { top: 7px; right: 7px; }
+          .r3 { bottom: 7px; left: 7px; } .r4 { bottom: 7px; right: 7px; }
+        </style>
+        <div class="panel">
+          <i class="rivet r1"></i><i class="rivet r2"></i><i class="rivet r3"></i><i class="rivet r4"></i>
+          <div class="cap">
+            <h2>Stage clearance keypad</h2>
+            <span>MOD 2 / KEYPAD</span>
+          </div>
+          <div class="inner">
+            <p>Key the code exactly as issued: letters, digits and dashes. The module
+            latches after three rejections.</p>
+            <fx-input></fx-input>
+          </div>
+        </div>`;
+    }
+  }
+
+  customElements.define('fx-input', FxInput);
+  customElements.define('fx-panel', FxPanel);
+</script>
+</body>
+</html>

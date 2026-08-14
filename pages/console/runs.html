@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run history - orchid-api - Cindergrid</title>
+<link rel="stylesheet" href="console.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html">CINDERGRID</a>
+  <span class="crumb">gridworks-eu / orchid-api</span>
+  <span class="env">production</span>
+  <span class="spacer"></span>
+  <span class="who">t.ashgrove</span>
+</header>
+
+<div class="shell">
+  <nav class="rail">
+    <span class="rail-label">Project</span>
+    <a href="index.html">Deployments</a>
+    <a href="runs.html" class="on">Run history</a>
+    <a href="secrets.html">Secrets</a>
+    <a href="settings.html">Settings</a>
+    <a href="support.html">Support</a>
+  </nav>
+
+  <main>
+    <div class="runhead">
+      <h1>Run history</h1>
+      <span class="chip">Last 14 days</span>
+    </div>
+    <p class="subhead">Runs are retained for 14 days. Logs older than that are available in the archive on request.</p>
+
+    <h2>Production</h2>
+    <div class="runs">
+      <div class="run-row">
+        <span class="run-id"><a href="index.html">4192</a></span>
+        <span class="run-state bad">Failed</span>
+        <span class="run-when">2026-03-11 09:38 UTC</span>
+        <span class="run-msg">release/gate stopped the promotion of 2026.03.11-4192</span>
+      </div>
+      <div class="run-row">
+        <span class="run-id">4191</span>
+        <span class="run-state ok">Promoted</span>
+        <span class="run-when">2026-03-10 16:02 UTC</span>
+        <span class="run-msg">routing hints for tenant sharding</span>
+      </div>
+      <div class="run-row">
+        <span class="run-id">4188</span>
+        <span class="run-state ok">Promoted</span>
+        <span class="run-when">2026-03-10 11:47 UTC</span>
+        <span class="run-msg">bump gateway client to 4.9.2</span>
+      </div>
+      <div class="run-row">
+        <span class="run-id">4184</span>
+        <span class="run-state ok">Promoted</span>
+        <span class="run-when">2026-03-09 09:12 UTC</span>
+        <span class="run-msg">quota accounting rewrite, phase two</span>
+      </div>
+      <div class="run-row">
+        <span class="run-id">4179</span>
+        <span class="run-state bad">Failed</span>
+        <span class="run-when">2026-03-06 14:55 UTC</span>
+        <span class="run-msg">migrate/schema timed out waiting for advisory lock</span>
+      </div>
+      <div class="run-row">
+        <span class="run-id">4176</span>
+        <span class="run-state ok">Promoted</span>
+        <span class="run-when">2026-03-05 08:31 UTC</span>
+        <span class="run-msg">retire legacy quota endpoint</span>
+      </div>
+    </div>
+
+    <h2>Staging</h2>
+    <div class="runs">
+      <div class="run-row">
+        <span class="run-id">4193</span>
+        <span class="run-state ok">Promoted</span>
+        <span class="run-when">2026-03-11 09:52 UTC</span>
+        <span class="run-msg">rebuild of 5f3c9a1 for verification</span>
+      </div>
+      <div class="run-row">
+        <span class="run-id">4190</span>
+        <span class="run-state ok">Promoted</span>
+        <span class="run-when">2026-03-10 15:40 UTC</span>
+        <span class="run-msg">routing hints for tenant sharding</span>
+      </div>
+      <div class="run-row">
+        <span class="run-id">4187</span>
+        <span class="run-state ok">Promoted</span>
+        <span class="run-when">2026-03-10 10:58 UTC</span>
+        <span class="run-msg">bump gateway client to 4.9.2</span>
+      </div>
+    </div>
+
+    <h2>Retention</h2>
+    <p class="subhead">Support bundles are sealed at the end of every run and kept for fourteen days.
+    Raw logs remain downloadable from the run page for the same period. Ask <a href="support.html">support</a> for anything older.</p>
+  </main>
+</div>
+
+<footer>
+  Cindergrid Systems Ltd, 4 Alder Wharf, Bristol BS1 4RN, United Kingdom<br>
+  <a href="status.html">Status</a> &middot; <a href="docs.html">Documentation</a> &middot;
+  <a href="terms.html">Terms of service</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  support@cindergrid.example.net<br>
+  &copy; 2026 Cindergrid Systems Ltd
+</footer>
+</body>
+</html>

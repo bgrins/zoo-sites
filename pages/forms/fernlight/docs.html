@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fernlight Atlas 3 — Documentation</title>
+<style>
+  :root {
+    --ink: #16161a;
+    --dim: #6c6c78;
+    --hair: #dedbd4;
+    --paper: #fbfbf9;
+    --accent: #5b4bd6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: 14px; line-height: 1.65;
+  }
+  a { color: var(--accent); }
+  header.bar {
+    border-bottom: 1px solid var(--hair); background: #fff;
+    display: flex; align-items: center; gap: 18px; padding: 10px 22px; font-size: 13px;
+  }
+  header.bar .brand { font-weight: 700; letter-spacing: -0.3px; }
+  header.bar .ver { border: 1px solid var(--hair); padding: 0 6px; color: var(--dim); font-size: 11px; }
+  header.bar nav { margin-left: auto; display: flex; gap: 16px; }
+  header.bar nav a { text-decoration: none; color: var(--dim); }
+  header.bar nav a[aria-current] { color: var(--ink); border-bottom: 2px solid var(--accent); }
+  main { max-width: 74ch; margin: 0 auto; padding: 30px 22px 64px; }
+  .crumbs { color: var(--dim); font-size: 12px; margin: 0 0 18px; }
+  h1 { font-size: 22px; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.5px; }
+  h1::before { content: "# "; color: var(--accent); }
+  .tagline { color: var(--dim); margin: 0 0 22px; font-size: 13px; }
+  h2 {
+    font-size: 14px; font-weight: 700; margin: 34px 0 8px;
+    padding-bottom: 5px; border-bottom: 1px solid var(--hair);
+  }
+  h2::before { content: "## "; color: var(--accent); font-weight: 400; }
+  p { margin: 0 0 14px; }
+  code { background: #fff; border: 1px solid var(--hair); padding: 0 4px; font-size: 13px; }
+  footer {
+    border-top: 1px solid var(--hair); margin-top: 44px; padding: 16px 22px;
+    font-size: 12px; color: var(--dim);
+  }
+</style>
+</head>
+<body>
+<header class="bar">
+  <span class="brand">fernlight/atlas</span>
+  <span class="ver">beta 3.0.0-rc4</span>
+  <nav>
+    <a href="docs.html" aria-current="page">docs</a>
+    <a href="changelog.html">changelog</a>
+    <a href="beta-terms.html">terms</a>
+    <a href="beta-signup.html">waitlist</a>
+  </nav>
+</header>
+
+<main>
+<p class="crumbs">docs / index</p>
+<h1>Atlas 3 documentation</h1>
+<p class="tagline">Field mapping and survey tooling for small crews.</p>
+
+<h2 id="getting-started">Getting started</h2>
+<p>When your seat opens we email an install link and a workspace key. Run the
+installer, then activate with <code>atlas auth login --key</code> and the key
+we sent. The client works offline once a workspace has synced; the first sync
+pulls your base layers and can take a few minutes on slow links.</p>
+<p>The <code>atlas doctor</code> command checks GPU support, disk headroom, and
+connectivity, and is the first thing to run if anything looks wrong.</p>
+
+<h2 id="workspaces">Workspaces and keys</h2>
+<p>A workspace holds projects, base layers, and crew invitations. One key
+authenticates one workspace; invite colleagues from the console rather than
+sharing the key itself. If a key is lost, write to the beta address and we
+rotate it — the old key stops working immediately.</p>
+
+<h2 id="survey-import">Survey import</h2>
+<p>Atlas 3 imports total-station and GNSS observation files directly.
+Drop files onto an open project or use <code>atlas import</code> with a path.
+Point codes map to layer styles through the code table in project settings;
+unmatched codes land on a review layer instead of being dropped.</p>
+
+<h2 id="interchange">Interchange export</h2>
+<p>Every project can be exported at any time in the documented interchange
+format: a zip archive holding geometry as line-delimited JSON, raw observation
+files unmodified, and a manifest with checksums. Exports are self-contained
+and re-import losslessly, so they double as archival snapshots.</p>
+
+<h2 id="telemetry">Telemetry settings</h2>
+<p>The beta client reports crash traces, timing samples, and feature usage
+counts. Under settings, telemetry can be set to <code>full</code> or
+<code>reduced</code>; the reduced level drops timing samples and usage counts
+but keeps crash traces for the duration of the beta. Payloads are viewable
+locally with <code>atlas telemetry show</code> before they are sent.</p>
+</main>
+
+<footer>
+  Fernlight Software — 42 Alder Row, Suite 5 · Support Mon–Fri ·
+  beta@fernlight.example · Atlas is a trademark of Fernlight Software Ltd.
+</footer>
+</body>
+</html>

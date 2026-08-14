@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard - Kelsmere CRM</title>
+<link rel="stylesheet" href="crm.css">
+</head>
+<body>
+<header class="topbar">
+  <span class="brand">Kelsmere CRM</span>
+  <span class="ws">wkspc northfield-supply &middot; fiscal 2026 &middot; role: analyst</span>
+  <span class="who">dana.kessler@northfield.example</span>
+</header>
+<nav class="tabs">
+  <a href="index.html" class="on">Dashboard</a>
+  <a href="orders.html">Orders</a>
+  <a href="customers.html">Customers</a>
+  <a href="pipeline.html">Pipeline</a>
+  <a href="reports.html">Reports</a>
+  <a href="tasks.html">Tasks</a>
+  <a href="admin.html">Admin</a>
+</nav>
+<div class="pathbar">
+  <span>northfield-supply / dashboard</span>
+  <span class="build">grid engine v3 &middot; build 3.14.2</span>
+</div>
+<main class="main">
+  <h1>Dashboard</h1>
+  <p class="sub">Fiscal year 2026 to date. Warehouse snapshot rebuilt nightly at 02:00.</p>
+  <div class="tiles">
+    <div class="tile"><span class="tk">Orders recorded</span><span class="tv">40</span></div>
+    <div class="tile"><span class="tk">Active accounts</span><span class="tv">15</span></div>
+    <div class="tile"><span class="tk">Total order value</span><span class="tv">$658,057.00</span></div>
+    <div class="tile"><span class="tk">Average order value</span><span class="tv">$16,451.43</span></div>
+    <div class="tile"><span class="tk">Largest single order</span><span class="tv">$38,940.25</span></div>
+    <div class="tile"><span class="tk">Sales regions</span><span class="tv">4</span></div>
+  </div>
+  <div class="cards">
+    <section class="card">
+      <h2>Release notes 3.14</h2>
+      <p><a href="orders.html">Orders</a> and <a href="customers.html">Customers</a> now run on the
+      v3 grid engine. Column widths and sort order persist per operator.</p>
+      <p class="muted">Saved views are read-only on shared workspace links.</p>
+    </section>
+    <section class="card">
+      <h2>Region rollup</h2>
+      <p class="warn">Rebuilding</p>
+      <p>This report was retired with the v3 warehouse migration and region
+      totals are no longer published here. Compile them from Orders and
+      Customers until the replacement ships.</p>
+    </section>
+    <section class="card">
+      <h2>Order feed (tail)</h2>
+      <table class="mini">
+        <tr><th>Order</th><th>Account</th><th class="num">Value</th></tr>
+        <tr><td>SO-2440</td><td>Lanthorn Optics</td><td class="num">$7,480.95</td></tr>
+        <tr><td>SO-2439</td><td>Northcott Paper</td><td class="num">$8,470.60</td></tr>
+        <tr><td>SO-2438</td><td>Merrow Glassworks</td><td class="num">$18,412.90</td></tr>
+        <tr><td>SO-2437</td><td>Haskett Timber</td><td class="num">$12,875.50</td></tr>
+      </table>
+    </section>
+    <section class="card">
+      <h2>Operator notices</h2>
+      <p>Quarter-end close is the 9th. Late orders roll into the next period.</p>
+      <p>Territory reassignments are frozen until the rollup report returns.</p>
+    </section>
+  </div>
+</main>
+<footer class="siteftr">
+  Kelsmere CRM &middot; workspace data is confidential to northfield-supply.
+  Support: help.kelsmerecrm.example &middot; Status &middot; Keyboard shortcuts &middot;
+  Terms &middot; Privacy
+</footer>
+</body>
+</html>

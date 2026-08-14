@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Service status · Waypost</title>
+<style>
+  :root {
+    --bg: #f4f6fb; --surface: #ffffff; --line: #e3e8f0; --ink: #101828;
+    --muted: #667085; --brand: #2f5bea; --brand-dark: #1f42b5; --brand-tint: #eef3ff;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 10px 28px rgba(16, 24, 40, 0.05);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.55;
+    font-family: Inter, "Inter var", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--brand); }
+  .appbar {
+    background: var(--surface); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 28px; padding: 0 24px; height: 60px;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; font-size: 17px; font-weight: 650; letter-spacing: -0.3px; }
+  .brand .glyph {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(140deg, var(--brand) 0%, #6f8cff 100%);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 13px; font-weight: 700;
+  }
+  .appnav { display: flex; gap: 4px; }
+  .appnav a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; padding: 7px 12px; border-radius: 8px; }
+  .appnav a:hover { background: #f1f4f9; color: var(--ink); }
+  .appbar .right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .appbar .right a { color: var(--muted); text-decoration: none; font-size: 14px; }
+  .account {
+    display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 5px;
+    border: 1px solid var(--line); border-radius: 999px; font-size: 13px; color: var(--ink);
+    background: var(--surface); cursor: pointer;
+  }
+  .account .avatar {
+    width: 26px; height: 26px; border-radius: 999px; background: #dfe6f7; color: var(--brand-dark);
+    display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 650;
+  }
+  .account .who { line-height: 1.2; }
+  .account .who small { display: block; color: var(--muted); font-size: 11px; }
+  .page { max-width: 1040px; margin: 0 auto; padding: 28px 24px 64px; }
+  h1 { font-size: 26px; font-weight: 650; letter-spacing: -0.5px; margin: 0 0 6px; }
+  .sub { margin: 0 0 24px; color: var(--muted); max-width: 62ch; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); margin: 0 0 22px; }
+  .card > header { padding: 16px 20px 14px; border-bottom: 1px solid var(--line); }
+  .card > header h2 { margin: 0; font-size: 15px; font-weight: 600; }
+  .card > header p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+  .card .body { padding: 20px; font-size: 14px; color: #475467; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 9px 10px; border-bottom: 1px solid #f0f3f8; }
+  tr:last-child td { border-bottom: 0; }
+  .ok { color: #067647; font-weight: 550; }
+  footer { border-top: 1px solid var(--line); background: var(--surface); padding: 22px 24px 40px; font-size: 13px; color: var(--muted); }
+  footer .inner { max-width: 1040px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px 22px; }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--brand); }
+  footer .legal { width: 100%; color: #98a2b3; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<header class="appbar">
+  <div class="brand"><span class="glyph">W</span>Waypost</div>
+  <nav class="appnav">
+    <a href="ship.html">Ship</a>
+    <a href="track.html">Track</a>
+    <a href="rates.html">Rates</a>
+    <a href="pickups.html">Pickups</a>
+    <a href="invoices.html">Invoices</a>
+  </nav>
+  <div class="right">
+    <a href="help.html">Help center</a>
+    <div class="account">
+      <span class="avatar">AR</span>
+      <span class="who">Alba Renko<small>Renko Studio · Acct 4482</small></span>
+    </div>
+  </div>
+</header>
+
+<div class="page">
+  <h1>Service status</h1>
+  <p class="sub">All systems normal as of 26 July 2026, 08:00.</p>
+
+  <div class="card">
+    <header>
+      <h2>Components</h2>
+    </header>
+    <div class="body">
+      <table>
+        <thead>
+          <tr><th>Component</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Console</td><td class="ok">Operational</td></tr>
+          <tr><td>Rate calculator</td><td class="ok">Operational</td></tr>
+          <tr><td>Tracking</td><td class="ok">Operational</td></tr>
+          <tr><td>Label generation</td><td class="ok">Operational</td></tr>
+          <tr><td>Pickup scheduling</td><td class="ok">Operational</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <header>
+      <h2>Past incidents</h2>
+      <p>Resolved incidents from the last 90 days.</p>
+    </header>
+    <div class="body">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Incident</th><th>Duration</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>14 July 2026</td><td>Tracking events delayed for some shipments</td><td>2 h 10 min</td></tr>
+          <tr><td>30 June 2026</td><td>Label generation slower than normal</td><td>45 min</td></tr>
+          <tr><td>12 May 2026</td><td>Console sign-in intermittently failing</td><td>1 h 25 min</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="inner">
+    <span>Waypost Logistics, Inc. · 220 Alder Street, Suite 400, Calder Springs</span>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms of carriage</a>
+    <a href="status.html">Service status</a>
+    <a href="developers.html">Developers</a>
+    <a href="mailto:support@waypost.example">support@waypost.example</a>
+    <span class="legal">Copyright 2026 Waypost Logistics, Inc. All rights reserved.</span>
+  </div>
+</footer>
+</body>
+</html>

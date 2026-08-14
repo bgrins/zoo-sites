@@ -1,0 +1,56 @@
+{
+  "rank": 16,
+  "comments": [
+    {
+      "author": "staticdrift",
+      "age": "13 hours ago",
+      "text": "The honest thing about this postmortem is that it admits the first design failed for social reasons as much as technical ones. The colorless-function dream was genuinely elegant, but it made stack traces lie and debuggers weep, and no amount of elegance survives contact with 'I cannot figure out where my program is'.",
+      "replies": [
+        {
+          "author": "allocfree",
+          "age": "12 hours ago",
+          "text": "OP here. The debugging story was the single biggest theme in the feedback we collected. People will tolerate a lot of ceremony if stepping through code works, and almost none if it doesn't.",
+          "replies": [
+            {
+              "author": "greenthreadhead",
+              "age": "11 hours ago",
+              "text": "This is why I keep beating the drum for plain OS threads plus good synchronization primitives. Every async design eventually rediscovers that the scheduler you didn't write is the one you don't have to debug.",
+              "replies": []
+            }
+          ]
+        },
+        {
+          "author": "colorwheel",
+          "age": "10 hours ago",
+          "text": "Strong disagree that the old design 'failed'. It shipped, people built real servers on it, and the pain points were fixable with tooling investment rather than a ground-up redo. Redesigns like this cost the ecosystem years of churn and the postmortem hand-waves that cost in one paragraph.",
+          "replies": [
+            {
+              "author": "staticdrift",
+              "age": "9 hours ago",
+              "text": "Tooling investment by whom, though? 'Fixable with tooling' assumes a tooling team that doesn't exist. When the fix requires resources you don't have, the design has failed in practice even if it's sound on the whiteboard. That's not hand-waving, that's the actual constraint.",
+              "replies": []
+            },
+            {
+              "author": "allocfree",
+              "age": "8 hours ago",
+              "text": "OP — this is a fair criticism and the churn cost was real, we said as much in the migration section. For what it's worth the ecosystem survey we ran put 'would accept a breaking redesign for better debugging' at a large majority, which surprised us too.",
+              "replies": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "lambdacurious",
+      "age": "7 hours ago",
+      "text": "Question from someone outside the ecosystem: does the new design still let you write code that's agnostic to whether IO is blocking or evented? That was the property I found genuinely novel, and I can't tell from the post whether it survived.",
+      "replies": []
+    },
+    {
+      "author": "tokenring",
+      "age": "4 hours ago",
+      "text": "Postmortems of designs that were merely retired, not on fire, are rare and valuable. Most languages just quietly stop mentioning the old thing. More of this please.",
+      "replies": []
+    }
+  ]
+}

@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Track a shipment — Corvane Parcel Network</title>
+<style>
+  :root {
+    --chrome: #0a3a3c;
+    --chrome-2: #0f4b4e;
+    --aqua: #0f9aa2;
+    --aqua-dark: #0b7b81;
+    --page: #e9efee;
+    --card: #ffffff;
+    --ink: #12211f;
+    --muted: #58706d;
+    --rule: #c7d7d4;
+    --hold: #a35c05;
+    --stop: #9c3226;
+    --ok: #17734f;
+    --display: "Arial Narrow", "Avenir Next Condensed", "Liberation Sans Narrow", Impact, sans-serif;
+    --mono: ui-monospace, "Andale Mono", Menlo, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  a { color: var(--aqua-dark); }
+
+  .topstrip {
+    background: #06282a; color: #7fa5a3; font-size: 11px;
+    padding: 5px 22px; display: flex; gap: 18px; align-items: center;
+  }
+  .topstrip .sep { margin-left: auto; }
+  .topstrip a { color: #b9d5d2; text-decoration: none; }
+  .topstrip a:hover { color: #fff; }
+
+  header.chrome { background: var(--chrome); color: #fff; padding: 0 22px; }
+  .bar { display: flex; align-items: flex-end; gap: 26px; padding: 14px 0 0; }
+  .wordmark { font-family: var(--display); line-height: 1; }
+  .wordmark b {
+    display: block; font-size: 30px; letter-spacing: 0.16em; text-transform: uppercase;
+    font-weight: 700;
+  }
+  .wordmark span {
+    display: block; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--aqua); margin-top: 3px;
+  }
+  .bar .acct { margin-left: auto; font-size: 11px; color: #8fb4b2; padding-bottom: 4px; }
+  nav.main { display: flex; gap: 0; margin-top: 12px; }
+  nav.main a {
+    font-family: var(--display); font-size: 14px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: #cfe4e2; text-decoration: none;
+    padding: 9px 15px; border-bottom: 3px solid transparent;
+  }
+  nav.main a:hover { background: var(--chrome-2); color: #fff; }
+  nav.main a.here { color: #fff; border-bottom-color: var(--aqua); background: var(--chrome-2); }
+
+  .crumb {
+    background: #dde7e5; border-bottom: 1px solid var(--rule);
+    padding: 6px 22px; font-size: 11px; color: var(--muted);
+  }
+  .crumb a { color: var(--muted); text-decoration: none; }
+
+  .wrap {
+    max-width: 1040px; margin: 0 auto; padding: 20px 22px 46px;
+    display: grid; grid-template-columns: 1fr 292px; gap: 22px; align-items: start;
+  }
+  .panel { background: var(--card); border: 1px solid var(--rule); border-top: 3px solid var(--aqua); }
+  .panel > .head {
+    padding: 11px 18px 9px; border-bottom: 1px solid var(--rule);
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .panel > .head h1, .panel > .head h2 {
+    font-family: var(--display); text-transform: uppercase; letter-spacing: 0.1em;
+    margin: 0; font-size: 20px; font-weight: 700;
+  }
+  .panel > .head .tag { margin-left: auto; font-size: 10.5px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+  .panel > .body { padding: 16px 18px 20px; }
+  .lede { margin: 0 0 16px; color: #334744; max-width: 62ch; }
+
+  form.lookup { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label {
+    font-family: var(--display); font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--muted);
+  }
+  .field input {
+    font-family: var(--mono); font-size: 15px; letter-spacing: 0.06em;
+    padding: 9px 11px; width: 232px; border: 1px solid #9db3b0; border-radius: 0;
+    background: #f7fbfa; color: var(--ink);
+  }
+  .field input:focus { outline: 2px solid var(--aqua); outline-offset: -1px; }
+  button {
+    font-family: var(--display); font-size: 15px; text-transform: uppercase;
+    letter-spacing: 0.14em; padding: 10px 22px; border: 1px solid var(--aqua-dark);
+    background: var(--aqua); color: #04292b; cursor: pointer; border-radius: 0;
+  }
+  button:hover { background: var(--aqua-dark); color: #fff; }
+
+  .throttle {
+    margin-top: 14px; border-top: 1px dashed var(--rule); padding-top: 12px;
+    display: flex; gap: 16px; align-items: flex-start;
+  }
+  #cooldown {
+    font-family: var(--display); font-size: 15px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--aqua-dark); white-space: nowrap;
+    border: 1px solid var(--rule); background: #f2f8f7; padding: 5px 12px;
+  }
+  #cooldown.waiting { color: var(--hold); border-color: #e3cda6; background: #fdf6ea; }
+  .throttle p { margin: 0; font-size: 11.5px; color: var(--muted); max-width: 54ch; }
+
+  #notice { margin-top: 14px; min-height: 20px; font-size: 13px; }
+  #notice.warn { color: var(--hold); }
+  #notice.bad { color: var(--stop); }
+  #notice.good { color: var(--ok); }
+
+  .results { margin-top: 18px; }
+  .results > .caption {
+    font-family: var(--display); font-size: 13px; text-transform: uppercase;
+    letter-spacing: 0.14em; color: var(--muted); border-bottom: 1px solid var(--rule);
+    padding-bottom: 5px; margin-bottom: 12px;
+  }
+  .empty { color: var(--muted); font-size: 12.5px; }
+  article.hit {
+    border: 1px solid var(--rule); border-left: 5px solid var(--aqua);
+    padding: 12px 16px 14px; margin-bottom: 10px; background: #fbfdfd;
+  }
+  article.hit.hold { border-left-color: var(--hold); }
+  article.hit.pending { border-left-color: #8b9c99; }
+  article.hit.final { border-left-color: var(--ok); }
+  article.hit h3 {
+    font-family: var(--mono); font-size: 16px; margin: 0 0 6px;
+    letter-spacing: 0.06em; font-weight: 700;
+  }
+  .stat { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .stat.move { color: var(--aqua-dark); }
+  .stat.hold { color: var(--hold); }
+  .stat.final { color: var(--ok); }
+  .stat.pending { color: #556866; }
+  .rowmeta { font-size: 12px; color: var(--muted); }
+
+  .rail .panel { border-top-color: var(--chrome); margin-bottom: 18px; }
+  .rail h2 { font-size: 16px; }
+  .rail ul { margin: 0; padding-left: 17px; }
+  .rail li { font-size: 12px; color: #3b4f4c; margin-bottom: 7px; }
+  .rail .advisory { font-size: 12px; color: #3b4f4c; margin: 0 0 10px; }
+  .rail .advisory b { color: var(--stop); }
+  .zone { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #e4eceb; }
+  .zone span { color: var(--muted); }
+
+  footer {
+    background: var(--chrome); color: #9dbcba; padding: 24px 22px 30px;
+    font-size: 11.5px;
+  }
+  footer .cols { max-width: 1040px; margin: 0 auto; display: flex; gap: 44px; flex-wrap: wrap; }
+  footer h4 {
+    font-family: var(--display); font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.16em; color: #fff; margin: 0 0 7px;
+  }
+  footer a { color: #c4dcda; text-decoration: none; display: block; margin-bottom: 4px; }
+  footer a:hover { color: #fff; }
+  footer .fine { max-width: 1040px; margin: 20px auto 0; padding-top: 12px; border-top: 1px solid #16504f; color: #7ba09e; }
+</style>
+</head>
+<body>
+<div class="topstrip">
+  <span>Customer service 0808 157 0420</span>
+  <span>Claims desk open 08:00-18:00</span>
+  <span class="sep"><a href="signin.html">Sign in</a></span>
+  <span><a href="business.html">Open a business account</a></span>
+</div>
+
+<header class="chrome">
+  <div class="bar">
+    <div class="wordmark"><b>Corvane</b><span>Parcel Network</span></div>
+    <div class="acct">Guest session &middot; rates shown ex VAT</div>
+  </div>
+  <nav class="main">
+    <a href="./" class="here">Track</a>
+    <a href="send.html">Send</a>
+    <a href="rates.html">Rates and zones</a>
+    <a href="drop-points.html">Drop points</a>
+    <a href="claims.html">Claims</a>
+    <a href="support.html">Support</a>
+  </nav>
+</header>
+
+<div class="crumb"><a href="./">Home</a> / <a href="./">Tracking</a> / Shipment status</div>
+
+<div class="wrap">
+  <main>
+    <section class="panel">
+      <div class="head">
+        <h1>Track a shipment</h1>
+        <div class="tag">Network status: normal</div>
+      </div>
+      <div class="body">
+        <p class="lede">Enter a Corvane tracking number to see the current status and the
+        most recent network scan. Numbers are issued at the point of collection and stay
+        valid for 90 days after delivery.</p>
+
+        <form class="lookup" id="lookup" autocomplete="off">
+          <div class="field">
+            <label for="num">Tracking number</label>
+            <input id="num" name="num" type="text" placeholder="PX-0000" spellcheck="false">
+          </div>
+          <button id="go" type="submit">Look Up</button>
+        </form>
+
+        <div class="throttle">
+          <div id="cooldown">Cooldown: ready</div>
+          <p>The tracking service accepts one lookup every 5 seconds per visitor.
+          Requests sent sooner are rejected and the remaining wait is shown here.</p>
+        </div>
+
+        <div id="notice" role="status"></div>
+
+        <div class="results" id="resultsBox">
+          <div class="caption">Shipments looked up</div>
+          <div id="results"><div class="empty">No lookups yet in this session.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="head"><h2>Scan glossary</h2></div>
+      <div class="body">
+        <div class="zone"><b>Network scan</b><span>Parcel read at a hub or depot belt</span></div>
+        <div class="zone"><b>Depot hold</b><span>Parcel stopped at a depot pending action</span></div>
+        <div class="zone"><b>Pre-advice</b><span>Shipment registered, parcel not yet with us</span></div>
+        <div class="zone"><b>Final scan</b><span>Last scan on the parcel's journey</span></div>
+        <p class="rowmeta" style="margin-top:12px">Scan times are local to the site that
+        made the read. Depot holds are worked through in arrival order once the blocking
+        reason is cleared by the sender or the receiver.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="rail">
+    <section class="panel">
+      <div class="head"><h2>Service advisory</h2></div>
+      <div class="body">
+        <p class="advisory"><b>Tyburn depot</b> is running one working day behind after a
+        belt failure. Parcels held there are being released in arrival order.</p>
+        <p class="advisory">Collections in the northern zone close 90 minutes early this
+        week while the Marbeck sort hall is re-laid.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="head"><h2>Delivery standards</h2></div>
+      <div class="body">
+        <div class="zone"><b>Express 24</b><span>next working day by 18:00</span></div>
+        <div class="zone"><b>Ground Economy</b><span>2-4 working days</span></div>
+        <div class="zone"><b>Depot collect</b><span>held 7 days from arrival</span></div>
+        <div class="zone"><b>Return to sender</b><span>after 3 failed attempts</span></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="head"><h2>Help</h2></div>
+      <div class="body">
+        <ul>
+          <li>A number that has just been issued may not resolve until the parcel is first scanned.</li>
+          <li>Redelivery can be booked once a parcel reaches its delivery depot.</li>
+          <li>Claims for loss open 10 working days after the last scan.</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</div>
+
+<footer>
+  <div class="cols">
+    <div>
+      <h4>Shipping</h4>
+      <a href="collections.html">Book a collection</a>
+      <a href="prohibited.html">Prohibited items</a>
+      <a href="packaging.html">Packaging guide</a>
+    </div>
+    <div>
+      <h4>Accounts</h4>
+      <a href="business.html#pricing">Business pricing</a>
+      <a href="business.html#invoices">Invoices</a>
+      <a href="business.html#api">API access</a>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <a href="about.html">About Corvane</a>
+      <a href="network.html">Network map</a>
+      <a href="careers.html">Careers</a>
+    </div>
+    <div>
+      <h4>Legal</h4>
+      <a href="privacy.html">Privacy notice</a>
+      <a href="terms.html">Terms of carriage</a>
+      <a href="cookies.html">Cookie settings</a>
+    </div>
+  </div>
+  <div class="fine">
+    Corvane Parcel Network Ltd, Registered office: Unit 9, Marbeck Distribution Park,
+    Halston HL4 2QR. Registered number 00000000. Support: help@corvane-parcel.example
+    &middot; &copy; 2026 Corvane Parcel Network Ltd. All rights reserved.
+  </div>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const form = document.getElementById('lookup');
+  const input = document.getElementById('num');
+  const notice = document.getElementById('notice');
+  const results = document.getElementById('results');
+  const cooldown = document.getElementById('cooldown');
+  let readyAt = 0;
+
+  function paintCooldown() {
+    const left = readyAt - Date.now();
+    if (left > 0) {
+      cooldown.className = 'waiting';
+      cooldown.textContent = 'Cooldown: ' + Math.ceil(left / 1000) + 's';
+    } else {
+      cooldown.className = '';
+      cooldown.textContent = 'Cooldown: ready';
+    }
+  }
+  setInterval(paintCooldown, 200);
+
+  function setNotice(kind, message) {
+    notice.className = kind;
+    notice.textContent = message;
+  }
+
+  function render(shipment) {
+    const empty = results.querySelector('.empty');
+    if (empty) empty.remove();
+    const card = document.createElement('article');
+    card.className = 'hit ' + shipment.tone;
+    const head = document.createElement('h3');
+    head.textContent = shipment.num;
+    const stat = document.createElement('div');
+    stat.className = 'stat ' + shipment.tone;
+    stat.textContent = 'Status: ' + shipment.status;
+    const svc = document.createElement('div');
+    svc.className = 'rowmeta';
+    svc.textContent = 'Service: ' + shipment.service;
+    const scan = document.createElement('div');
+    scan.className = 'rowmeta';
+    scan.textContent = 'Last scan: ' + shipment.lastScan;
+    card.append(head, stat, svc, scan);
+    results.prepend(card);
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const num = input.value.trim().toUpperCase();
+    if (!num) {
+      setNotice('warn', 'Enter a tracking number');
+      return;
+    }
+    setNotice('', 'Checking the network...');
+    let res;
+    let body;
+    try {
+      res = await fetch('/api/parcels/track?num=' + encodeURIComponent(num), {
+        headers: { 'X-Session-Nonce': NONCE },
+      });
+      body = await res.json();
+    } catch {
+      setNotice('bad', 'Network error, try again');
+      return;
+    }
+    if (res.status === 429) {
+      readyAt = Date.now() + (body.retryAfterMs || 0);
+      paintCooldown();
+      setNotice('warn', 'Rate limit: wait ' + Math.ceil((body.retryAfterMs || 0) / 1000) + 's');
+      return;
+    }
+    if (res.status === 404) {
+      readyAt = Date.now() + (body.nextInMs || 0);
+      paintCooldown();
+      setNotice('bad', 'No shipment for that number');
+      return;
+    }
+    if (!res.ok) {
+      setNotice('bad', 'Tracking unavailable, reload');
+      return;
+    }
+    readyAt = Date.now() + (body.nextInMs || 0);
+    paintCooldown();
+    setNotice('good', 'Result for ' + body.num);
+    render(body);
+    input.value = '';
+    input.focus();
+  });
+</script>
+</body>
+</html>

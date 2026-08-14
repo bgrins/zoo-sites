@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thornbury Trust — Small Grants Application</title>
+<style>
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", "DejaVu Sans", sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #2c2622;
+    background: #f6f1e7;
+  }
+  a { color: #a8442a; }
+  .masthead {
+    background: #fffdf8;
+    border-bottom: 1px solid #ddd2be;
+    padding: 18px 28px 14px;
+    display: flex;
+    align-items: flex-end;
+    gap: 18px;
+  }
+  .mark span { display: block; font-size: 11px; letter-spacing: 2.4px; text-transform: uppercase; color: #8a7f70; margin-top: 3px; }
+  .mark .name {
+    font-size: 23px; font-weight: 600; letter-spacing: 0.2px;
+    text-transform: none; color: #2c2622; margin-top: 0;
+  }
+  .round { margin-left: auto; text-align: right; font-size: 12px; color: #6f6558; }
+  .round strong { display: block; color: #a8442a; font-size: 13px; letter-spacing: 0.4px; }
+  nav.tabs { background: #fffdf8; border-bottom: 1px solid #ddd2be; padding: 0 28px; }
+  nav.tabs a {
+    display: inline-block; padding: 9px 0 7px; margin-right: 26px;
+    font-size: 12.5px; letter-spacing: 0.6px; text-transform: uppercase;
+    color: #6f6558; text-decoration: none; border-bottom: 3px solid transparent;
+  }
+  nav.tabs a:hover { color: #2c2622; }
+  nav.tabs a.here { color: #a8442a; border-bottom-color: #a8442a; }
+  .crumbs { padding: 12px 28px 0; font-size: 12px; color: #8a7f70; }
+  .crumbs a { text-decoration: none; }
+  .layout { display: flex; gap: 30px; padding: 8px 28px 40px; align-items: flex-start; }
+  .col { flex: 1; min-width: 0; max-width: 760px; }
+  h1 { font-size: 26px; font-weight: 500; margin: 8px 0 2px; letter-spacing: -0.2px; }
+  .sub { color: #6f6558; margin: 0 0 20px; font-size: 13px; }
+  .panel { background: #fffdf8; border: 1px solid #ddd2be; padding: 20px 22px 22px; margin-bottom: 18px; }
+  .panel h2 {
+    margin: 0 0 4px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    color: #a8442a; font-weight: 600;
+  }
+  .panel p.lede { margin: 0 0 16px; color: #4d453c; font-size: 13px; }
+  .autosave {
+    border-left: 3px solid #c98a2e; background: #fbf3e2; padding: 10px 14px;
+    font-size: 12.5px; color: #5d5343; margin: 0 0 18px;
+  }
+  #restored {
+    display: none; border-left: 3px solid #3f7357; background: #eef5ef;
+    padding: 10px 14px; font-size: 12.5px; color: #2f4c3c; margin: 0 0 18px;
+  }
+  fieldset { border: 0; margin: 0; padding: 0; }
+  legend { display: none; }
+  .field {
+    display: grid; grid-template-columns: 210px minmax(0, 1fr);
+    gap: 4px 20px; padding: 13px 0; border-top: 1px dotted #d6cab4;
+  }
+  .field:first-of-type { border-top: 0; padding-top: 4px; }
+  .field .lab { padding-top: 4px; }
+  .field label { font-size: 13px; color: #3a332c; }
+  .field .num { display: block; font-size: 11px; letter-spacing: 1.4px; color: #a09484; text-transform: uppercase; }
+  input[type=text] {
+    width: 100%; font: inherit; font-size: 14px; padding: 7px 9px;
+    border: 1px solid #c3b7a2; border-radius: 0; background: #fffefb; color: #2c2622;
+  }
+  input[type=text]:focus { outline: none; border-color: #a8442a; box-shadow: inset 0 -2px 0 #a8442a; }
+  .help { font-size: 12px; color: #8a7f70; margin-top: 4px; }
+  .actions {
+    border-top: 1px solid #ddd2be; margin-top: 20px; padding-top: 18px;
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  }
+  button {
+    font: inherit; font-size: 12.5px; letter-spacing: 1.6px; text-transform: uppercase;
+    padding: 11px 26px; border: 0; border-radius: 0; cursor: pointer;
+    background: #a8442a; color: #fffdf8;
+  }
+  button:hover { background: #8c3520; }
+  button:disabled { background: #c9a89c; cursor: default; }
+  #savestate { font-size: 12.5px; color: #6f6558; }
+  #savestate.ok { color: #3f7357; }
+  #savestate.bad { color: #a8442a; font-weight: 600; }
+  .aside { width: 250px; flex: 0 0 250px; font-size: 12.5px; color: #5d5343; }
+  .aside h3 { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #8a7f70; margin: 14px 0 6px; }
+  .aside ul { margin: 0; padding-left: 16px; }
+  .aside li { margin-bottom: 6px; }
+  .aside .box { border: 1px solid #ddd2be; background: #fffdf8; padding: 14px 16px; }
+  #done { display: none; border: 1px solid #3f7357; border-left-width: 4px; }
+  #done h2 { color: #3f7357; }
+  #refcode {
+    display: inline-block; font-size: 26px; letter-spacing: 3px; color: #2c2622;
+    border-bottom: 2px solid #c98a2e; padding: 2px 4px 4px;
+  }
+  footer {
+    border-top: 1px solid #ddd2be; background: #efe8db; padding: 20px 28px 30px;
+    font-size: 12px; color: #6f6558;
+  }
+  footer p { margin: 0 0 5px; }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="mark"><span class="name">Thornbury Trust</span><span>Research Grants Portal</span></div>
+  <div class="round"><strong>Round 14</strong>Coastal ecology small grants</div>
+</header>
+
+<nav class="tabs">
+  <a href="draft.html" class="here">Application</a>
+  <a href="guidance.html">Guidance</a>
+  <a href="attachments.html">Attachments</a>
+  <a href="criteria.html">Assessment criteria</a>
+  <a href="contact.html">Contact the grants office</a>
+</nav>
+
+<div class="crumbs"><a href="portal.html">Portal home</a> / <a href="applications.html">My applications</a> / Draft SG-14</div>
+
+<div class="layout">
+  <div class="col">
+    <h1>Small grants application</h1>
+    <p class="sub">Round 14 · Awards of up to 12,000 USD for coastal ecology fieldwork</p>
+
+    <div class="panel">
+      <h2>Before you begin</h2>
+      <p class="lede">Complete all five sections. The grants office reviews applications
+      in the order they reach the review queue; incomplete drafts are not queued and
+      are cleared at the end of the round.</p>
+      <p class="autosave">This application saves automatically. Each section is stored
+      against your portal session as soon as you finish typing it, so you can leave the
+      page and pick the draft up again later.</p>
+    </div>
+
+    <div id="restored" role="status"></div>
+
+    <form id="appform" class="panel" novalidate>
+      <h2>Application detail</h2>
+      <p class="lede">Figures should be given in whole US dollars. The grants office
+      may contact the host organization to verify the details below.</p>
+      <fieldset>
+        <legend>Application detail</legend>
+        <div class="field">
+          <div class="lab"><span class="num">Section 1</span><label for="applicant">Principal applicant</label></div>
+          <div>
+            <input type="text" id="applicant" autocomplete="off">
+            <div class="help">Name of the researcher who will lead the work.</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lab"><span class="num">Section 2</span><label for="organization">Host organization</label></div>
+          <div>
+            <input type="text" id="organization" autocomplete="off">
+            <div class="help">The institution that will hold the award.</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lab"><span class="num">Section 3</span><label for="project">Project title</label></div>
+          <div>
+            <input type="text" id="project" autocomplete="off">
+            <div class="help">A short working title, as it should appear on the award letter.</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lab"><span class="num">Section 4</span><label for="budget">Requested budget (USD)</label></div>
+          <div>
+            <input type="text" id="budget" inputmode="numeric" autocomplete="off">
+            <div class="help">Whole dollars, no separators. Round 14 caps awards at 12,000.</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lab"><span class="num">Section 5</span><label for="duration">Project duration</label></div>
+          <div>
+            <input type="text" id="duration" autocomplete="off">
+            <div class="help">For example, 9 months. Work must conclude within 24 months.</div>
+          </div>
+        </div>
+      </fieldset>
+      <div class="actions">
+        <button type="submit" id="continue">Continue to review</button>
+        <span id="savestate" role="status"></span>
+      </div>
+    </form>
+
+    <div class="panel" id="done">
+      <h2>Application ready for review</h2>
+      <p class="lede">Your draft has been placed in the review queue for Round 14.
+      Quote this reference in any correspondence with the grants office:</p>
+      <p><span id="refcode"></span></p>
+      <p class="lede">Assessment outcomes are published to the portal within eight weeks
+      of the round closing.</p>
+    </div>
+  </div>
+
+  <div class="aside">
+    <div class="box">
+      <h3>Round 14 dates</h3>
+      <ul>
+        <li>Applications close 30 September</li>
+        <li>Panel meets 4 November</li>
+        <li>Awards confirmed 19 November</li>
+      </ul>
+      <h3>What we fund</h3>
+      <ul>
+        <li>Survey and sampling fieldwork</li>
+        <li>Equipment hire and consumables</li>
+        <li>Field assistant time</li>
+      </ul>
+      <h3>What we do not fund</h3>
+      <ul>
+        <li>Permanent staff salaries</li>
+        <li>Overheads above 8 per cent</li>
+        <li>Conference attendance</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>Thornbury Trust, 14 Weatherley Row, Bristol BS1 4QN · grants@thornburytrust.example · +44 117 496 0182</p>
+  <p>Registered charity 1148802 · Privacy notice · Terms of use · Accessibility statement · Complaints</p>
+  <p>&copy; 2026 Thornbury Trust</p>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const FIELDS = ['applicant', 'organization', 'project', 'budget', 'duration'];
+  const LABELS = {
+    applicant: 'Principal applicant',
+    organization: 'Host organization',
+    project: 'Project title',
+    budget: 'Requested budget',
+    duration: 'Project duration',
+  };
+  const saved = {};
+  const timers = {};
+  const state = document.getElementById('savestate');
+  // Saves are serialized on one promise chain so "Continue to review" can wait
+  // for every in-flight autosave before asking the server to queue the draft.
+  let chain = Promise.resolve();
+
+  function setState(text, cls) {
+    state.textContent = text;
+    state.className = cls ?? '';
+  }
+
+  function progressText(completed) {
+    return 'Draft saved — ' + completed + ' of 5 sections complete';
+  }
+
+  async function postSave(field, value) {
+    try {
+      const res = await fetch('/api/draft-save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, field, value }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error('rejected');
+      setState(progressText(body.completed), 'ok');
+    } catch {
+      saved[field] = undefined;
+      setState('Could not save ' + LABELS[field] + ' — try again', 'bad');
+    }
+  }
+
+  function queueSave(field) {
+    clearTimeout(timers[field]);
+    const value = document.getElementById(field).value.trim();
+    if (value === saved[field]) return;
+    saved[field] = value;
+    setState('Saving…');
+    chain = chain.then(() => postSave(field, value));
+  }
+
+  for (const field of FIELDS) {
+    const input = document.getElementById(field);
+    input.addEventListener('input', () => {
+      clearTimeout(timers[field]);
+      timers[field] = setTimeout(() => queueSave(field), 200);
+    });
+    input.addEventListener('change', () => queueSave(field));
+    input.addEventListener('blur', () => queueSave(field));
+  }
+
+  window.addEventListener('pagehide', () => {
+    for (const field of FIELDS) {
+      clearTimeout(timers[field]);
+      const value = document.getElementById(field).value.trim();
+      if (value === saved[field]) continue;
+      saved[field] = value;
+      navigator.sendBeacon(
+        '/api/draft-save',
+        new Blob([JSON.stringify({ nonce: NONCE, field, value })], { type: 'application/json' })
+      );
+    }
+  });
+
+  document.getElementById('appform').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = document.getElementById('continue');
+    button.disabled = true;
+    for (const field of FIELDS) {
+      queueSave(field);
+    }
+    await chain;
+    try {
+      const res = await fetch('/api/draft-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        const missing = (body.missing ?? []).map((f) => LABELS[f] ?? f).join(', ');
+        setState(missing ? 'Incomplete: ' + missing : (body.error ?? 'Cannot continue yet'), 'bad');
+        return;
+      }
+      document.getElementById('refcode').textContent = body.reference;
+      document.getElementById('done').style.display = 'block';
+      document.getElementById('appform').style.display = 'none';
+    } catch {
+      setState('Network error — try again', 'bad');
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  (async () => {
+    let fields = {};
+    try {
+      const res = await fetch('/api/draft', { headers: { 'X-Session-Nonce': NONCE } });
+      if (res.ok) fields = (await res.json()).fields ?? {};
+    } catch {}
+    let completed = 0;
+    for (const field of FIELDS) {
+      const value = fields[field] ?? '';
+      saved[field] = value;
+      document.getElementById(field).value = value;
+      if (value) completed++;
+    }
+    if (completed) {
+      const banner = document.getElementById('restored');
+      banner.textContent =
+        'Draft restored: ' + completed + ' of 5 sections carried over from your last visit.';
+      banner.style.display = 'block';
+    }
+    setState(completed ? progressText(completed) : 'No changes yet');
+  })();
+</script>
+</body>
+</html>

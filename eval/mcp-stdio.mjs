@@ -1,0 +1,84 @@
+// A stdio MCP client for the harness's own tool calls (verify workers, and
+// anything else that needs to drive a browser outside an agent session). The
+// server runs as a CHILD of this process - it dies with us, so a crashed
+// gate cannot leak detached Firefox instances.
+
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { createRequire } from 'node:module';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+
+const CALL_TIMEOUT_MS = 120000;
+
+// The firefox-devtools-mcp server entry. Two sources, in order:
+//   FIREFOX_DEVTOOLS_MCP  a local checkout of the tool, for the iterate-on-the-
+//                         tool loop and for working inside the tool's own repo
+//   the dependency        @mozilla/firefox-devtools-mcp, the normal case
+// The package name is scoped; `firefox-devtools-mcp` is only its bin name, so
+// resolving that unscoped specifier always throws. Both paths are checked for
+// existence here rather than at connect time: the server is spawned as a child
+// with its stderr captured, so a missing entry would otherwise surface as an
+// opaque "MCP error -32000: Connection closed" naming neither path nor cause.
+export function devtoolsMcpEntry() {
+  const fromEnv = process.env.FIREFOX_DEVTOOLS_MCP
+    ? join(process.env.FIREFOX_DEVTOOLS_MCP, 'dist', 'index.js')
+    : null;
+  if (fromEnv) {
+    if (existsSync(fromEnv)) return fromEnv;
+    throw new Error(
+      `FIREFOX_DEVTOOLS_MCP is set but ${fromEnv} does not exist. ` +
+        'Point it at a checkout of firefox-devtools-mcp that has been built (npm run build).'
+    );
+  }
+  let resolved;
+  try {
+    resolved = join(
+      createRequire(import.meta.url).resolve('@mozilla/firefox-devtools-mcp/package.json'),
+      '..',
+      'dist',
+      'index.js'
+    );
+  } catch {
+    throw new Error(
+      'Cannot find @mozilla/firefox-devtools-mcp. Run `npm install`, or set ' +
+        'FIREFOX_DEVTOOLS_MCP to a built checkout of the tool.'
+    );
+  }
+  if (!existsSync(resolved)) {
+    throw new Error(`@mozilla/firefox-devtools-mcp is installed but ${resolved} is missing.`);
+  }
+  return resolved;
+}
+
+export async function startMcpServer({ command, args, env = {} } = {}) {
+  const client = new Client({ name: 'zoo-sites-harness', version: '0.1.0' });
+  const transport = new StdioClientTransport({
+    command: command ?? process.execPath,
+    args,
+    env: { ...process.env, ...env },
+    // Piped, not inherited: the server logs on every run and inheriting would
+    // interleave that into the harness output. Kept only to explain a failed
+    // connect, which otherwise reports "Connection closed" with no cause.
+    stderr: 'pipe',
+  });
+  let stderr = '';
+  try {
+    await client.connect(transport);
+    transport.stderr?.on('data', () => {});
+  } catch (error) {
+    for await (const chunk of transport.stderr ?? []) {
+      stderr += String(chunk);
+      if (stderr.length > 4000) break;
+    }
+    error.message = stderr.trim()
+      ? `${error.message}\nMCP server stderr:\n${stderr.trim().slice(0, 4000)}`
+      : error.message;
+    throw error;
+  }
+  return {
+    call: (name, toolArgs = {}) =>
+      client.callTool({ name, arguments: toolArgs }, undefined, { timeout: CALL_TIMEOUT_MS }),
+    close: () => client.close().catch(() => {}),
+  };
+}

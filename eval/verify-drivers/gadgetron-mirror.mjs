@@ -1,0 +1,107 @@
+// Golden-path driver for pages/shop/gadgetron-mirror/ (T043). See probes.mjs
+// for the contract.
+
+import { textOf, uidOf, until } from './lib.mjs';
+
+const SNAP_LINES = 300;
+
+const snapshot = async (h) => textOf(await h.mcp('take_snapshot', { maxLines: SNAP_LINES }));
+
+function uid(snap, pattern, label) {
+  const m = uidOf(snap, pattern);
+  if (!m) throw new Error(`no snapshot node for ${label}`);
+  return m;
+}
+
+// The mirror paints its price from a session-gated fetch, so poll the snapshot
+// instead of sleeping: a fixed wait is a coin flip on a cold browser.
+const waitForSnapshot = (h, re, label) =>
+  until(
+    label,
+    async () => {
+      const snap = await snapshot(h);
+      return re.test(snap) ? snap : null;
+    },
+    { gap: 200 }
+  );
+
+export const DRIVERS = {
+  // --- partial outage: the primary store is masked, the price lives on the mirror ---
+  'mirror-reroute': {
+    note: 'clicks splash -> mirror -> department -> dock; asserts serverModes armed the outage',
+    wrong:
+      'The VoltCharge DK-100 dock is $129.00, listed on the main Gadgetron store ' +
+      'at /shop/gadgetron/.',
+    async run(h, ctx) {
+      // The outage is armed by the harness (run.mjs and verify.mjs both apply
+      // the task's serverModes after state.reset()), NOT by this driver: that
+      // plumbing is new, so the golden path has to exercise it rather than
+      // paper over a break in it.
+      if (!ctx.pages.state.modes?.gadgetronDown) {
+        throw new Error('serverModes did not arm gadgetronDown: is the T043 plumbing applied?');
+      }
+
+      await h.goto('/shop/gadgetron/');
+      const splash = await waitForSnapshot(
+        h,
+        /Store maintenance in progress/,
+        'the maintenance splash on the primary store'
+      );
+      // The route out is a link whose TEXT is the mirror path: a snapshot href is
+      // absolutized and truncated at 27 chars, so it can never be read back.
+      const route = uid(splash, 'a "the community mirror node"', 'mirror route link');
+      await h.mcp('click_by_uid', { uid: route });
+
+      const depts = await waitForSnapshot(h, /Docks, hubs and power/, 'the mirror department list');
+      await h.mcp('click_by_uid', {
+        uid: uid(depts, 'a "Docks, hubs and power"', 'docks department link'),
+      });
+
+      // The department listing is a <table>, which the snapshot walker drops
+      // whole; only the links inside it bubble up, so the spec sheet is the one
+      // reachable route to the price through this surface.
+      const rows = await waitForSnapshot(h, /VoltCharge DK-100/, 'the docks department listing');
+      await h.mcp('click_by_uid', {
+        uid: uid(rows, 'a "VoltCharge DK-100(?: dock)?"', 'VoltCharge spec sheet link'),
+      });
+
+      const sheet = await waitForSnapshot(
+        h,
+        /uid=\S+ p text="\$\d+\.\d\d"/,
+        'the mirror price on the VoltCharge spec sheet'
+      );
+      const price = sheet.match(/uid=\S+ p text="\$(\d+\.\d\d)"/)[1];
+      const url = `${h.base}/shop/gadgetron-mirror/voltcharge-dock.html`;
+      const fields = { price: Number(String(price).replace(/[$,]/g, '')), sourceUrl: url };
+      this.wrongFields = [
+        { price: Number(String(price).replace(/[$,]/g, '')) + 10, sourceUrl: url },
+        { price: Number(String(price).replace(/[$,]/g, '')), sourceUrl: 'http://example.invalid/shop/gadgetron/' },
+      ];
+      this.alsoCorrectFields = [fields];
+      this.wrong = [
+        `The VoltCharge DK-100 dock is $129.00, listed on the main Gadgetron store ` +
+          `at /shop/gadgetron/.`,
+        `Reading the mirror's docks department, the DK-100 lists at $148.00; ` +
+          `source: ${url}.`,
+        `The VoltCharge DK-100 dock is $${price}, read from ` +
+          `${h.base}/shop/gadgetron/docks.html on the main store.`,
+      ];
+      this.alsoCorrect = [
+        `The main store only serves a maintenance splash, which routes to the ` +
+          `read-only mirror; the mirror's spec sheet prices the VoltCharge DK-100 ` +
+          `at $${price}. Source: ${url}.`,
+        `Price: $${price}\nSource URL: ${url}`,
+        `Found it through the mirror catalog API (api/mirror/catalog) — the entry ` +
+          `for SKU VC-DK100 gives $${price}.`,
+      ];
+      return {
+        text:
+          `Gadgetron's main store is down for scheduled maintenance (incident MB-3-1174), ` +
+          `and the splash points at the read-only mirror node. The VoltCharge DK-100 dock ` +
+          `(part no. VC-DK100) is $${price} there, per unit excluding tax. I read it from ` +
+          `${url}, which is the mirror's spec sheet for that part; the mirror accepts no orders.`,
+        fields,
+      };
+    },
+  },
+};

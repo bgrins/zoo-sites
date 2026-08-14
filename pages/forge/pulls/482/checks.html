@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checks &middot; #482 tariff: cache lane quotes and align rate windows &middot; hollowmill/brine-gateway &middot; Kettleforge</title>
+<link rel="stylesheet" href="../../forge.css">
+</head>
+<body>
+<header class="masthead">
+  <span class="mark">Kettle<em>forge</em></span>
+  <nav>
+    <a href="/forge/">Repositories</a>
+    <a href="/forge/pulls/">Pull requests</a>
+    <a href="/forge/">Anvil</a>
+    <a href="/forge/">Registry</a>
+  </nav>
+  <span class="who">signed in as <b>r.vandermolen</b></span>
+</header>
+
+<div class="crumbbar">
+  <div class="crumb"><a href="/forge/">hollowmill</a><span class="sep">/</span><b>brine-gateway</b><span class="vis">internal</span></div>
+  <div class="tabs">
+    <a href="/forge/">Code</a>
+    <a href="/forge/">Issues<span class="n">12</span></a>
+    <span class="here">Pull requests<span class="n">3</span></span>
+    <a href="/forge/">Anvil</a>
+    <a href="/forge/">Insights</a>
+    <a href="/forge/">Settings</a>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="prhead">
+    <h1>tariff: cache lane quotes and align rate windows <span class="num">#482</span></h1>
+    <div class="prmeta">
+      <span class="state">Open</span>
+      <span><b>t.ashgrove</b> wants to merge 6 commits into <span class="branch">trunk</span> from <span class="branch">tariff-cache-window</span></span>
+    </div>
+  </div>
+
+  <nav class="subtabs">
+    <a href="./">Conversation<span class="n">4</span></a>
+    <a href="./commits.html">Commits<span class="n">6</span></a>
+    <span class="here">Checks<span class="n">5</span></span>
+    <a href="./files.html">Files changed<span class="n">3</span></a>
+  </nav>
+
+  <div class="card">
+    <div class="cardhead" id="pipehead">Anvil pipeline</div>
+    <table class="checklist">
+      <thead>
+        <tr><th>Job</th><th>Result</th><th>Duration</th></tr>
+      </thead>
+      <tbody id="jobs"></tbody>
+    </table>
+  </div>
+
+  <div class="card" id="logcard" hidden>
+    <div class="cardhead" id="loghead">Job output</div>
+    <pre class="joblog" id="joblog"></pre>
+  </div>
+
+  <div class="gate" id="gate" hidden>Pipeline results could not be loaded. Reload the page to start a new review session.</div>
+</main>
+
+<footer class="sitefoot">
+  <div class="links">
+    <a href="/forge/">Status</a>
+    <a href="/forge/">Docs</a>
+    <a href="/forge/">Keyboard shortcuts</a>
+    <a href="/forge/">Privacy</a>
+    <a href="/forge/">Terms</a>
+    <a href="/forge/">Contact support</a>
+  </div>
+  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Ashcombe AS4 2QN. &copy; 2026 Bellhollow Systems Ltd.</div>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+
+function chipFor(status) {
+  const span = document.createElement('span');
+  span.className = 'chip ' + status;
+  span.textContent = status === 'pass' ? 'passed' : status === 'fail' ? 'failed' : 'skipped';
+  return span;
+}
+
+async function load() {
+  const res = await fetch('/api/forge/checks', { headers: { 'X-Session-Nonce': NONCE } });
+  if (!res.ok) {
+    document.getElementById('gate').hidden = false;
+    return;
+  }
+  const body = await res.json();
+  const jobs = document.getElementById('jobs');
+  let failing = 0;
+  for (const check of body.checks) {
+    if (check.status === 'fail') failing += 1;
+    const tr = document.createElement('tr');
+    const job = document.createElement('td');
+    job.className = 'job';
+    job.textContent = check.name;
+    const result = document.createElement('td');
+    result.append(chipFor(check.status));
+    if (check.status === 'fail') {
+      result.append(document.createTextNode(' ' + check.failed + ' failing of ' + (check.failed + check.passed)));
+    }
+    const dur = document.createElement('td');
+    dur.className = 'dur';
+    dur.textContent = check.duration;
+    tr.append(job, result, dur);
+    jobs.append(tr);
+    if (check.log) {
+      document.getElementById('logcard').hidden = false;
+      document.getElementById('loghead').textContent = check.name + ' output (' + body.headSha + ')';
+      const log = document.getElementById('joblog');
+      for (const line of check.log) {
+        const row = document.createElement('span');
+        row.className = 'l';
+        row.textContent = line;
+        log.append(row);
+      }
+    }
+  }
+  document.getElementById('pipehead').textContent =
+    'Anvil pipeline for ' + body.headSha + ' - ' + failing + ' failing';
+}
+
+load();
+</script>
+</body>
+</html>

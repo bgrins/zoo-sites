@@ -1,0 +1,41 @@
+{
+  "rank": 26,
+  "comments": [
+    {
+      "author": "staticdrift",
+      "age": "20 hours ago",
+      "text": "The section on interchange symbols is great, but the piece undersells the real constraint: transit type has to survive being read at a 30 degree angle, through scratched polycarbonate, by someone in motion who is mildly panicking. Every \"beautiful\" map I've seen fail in the field failed at exactly this.",
+      "replies": [
+        {
+          "author": "helveticat",
+          "age": "18 hours ago",
+          "text": "OP here — completely agree, and it's why the article spends so long on x-height and counter apertures. A gorgeous geometric sans with closed counters turns to mush behind scratched plastic. The ugliest map in my survey was also the most legible from a moving escalator.",
+          "replies": [
+            {
+              "author": "staticdrift",
+              "age": "16 hours ago",
+              "text": "The escalator test should be an industry standard. Print the candidate map, tape it to a wall, walk past it briskly while looking for a specific minor station. Repeat until humbled."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "lambdacurious",
+      "age": "14 hours ago",
+      "text": "Tangent: the same legibility-under-stress constraints show up in aviation cockpit typography and, weirdly, in terminal fonts. Somebody should write the unified theory of \"type for people who cannot afford to squint.\""
+    },
+    {
+      "author": "kerningpair",
+      "age": "11 hours ago",
+      "text": "Pedantic but important: several of the specimens shown aren't the fonts the agencies specify, they're the fonts the sign shops actually had. Anyone who has audited a real transit system knows the official style guide and the platform signage diverge within one procurement cycle.",
+      "replies": [
+        {
+          "author": "offbyfun",
+          "age": "8 hours ago",
+          "text": "The signage equivalent of config drift. Somewhere there is a station sign that is the typographic version of a hand-edited production server."
+        }
+      ]
+    }
+  ]
+}

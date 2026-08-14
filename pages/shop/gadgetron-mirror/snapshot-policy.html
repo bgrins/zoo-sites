@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gadgetron mirror node MB-3 | Snapshot policy</title>
+<link rel="stylesheet" href="mirror.css">
+</head>
+<body>
+<div class="railbar">
+  <span class="mark">Gadgetron</span>
+  <span class="node">Mirror node MB-3</span>
+  <span class="who">Read-only &middot; support desk 1-800-555-0142</span>
+</div>
+<nav class="tabs" aria-label="Sections">
+  <a href="index.html">Departments</a>
+  <a href="sync-log.html">Sync log</a>
+  <a href="snapshot-policy.html" aria-current="page">Snapshot policy</a>
+  <a href="support.html">Support desk</a>
+</nav>
+<div class="syncstrip">snapshot 06:40 &middot; source primary-a &middot; mode read-only &middot; incident MB-3-1174</div>
+<p class="crumbs"><a href="index.html">Departments</a> &middot; Snapshot policy</p>
+<div class="sheet">
+  <div class="statline">
+    <h1>Snapshot policy</h1>
+    <span class="count">revision 4</span>
+  </div>
+  <div class="notices">
+    <h2>Policy</h2>
+    <p>This node serves the most recent complete snapshot taken from the primary store,
+    identified in the strip above by its capture time. It never mixes data from two
+    snapshots: a department is either rebuilt in full from the current snapshot or held
+    back as pending.</p>
+    <p>Prices and warehouse status reflect the primary store at capture time. They are not
+    updated while the node is in read-only mode, which is why order queueing is disabled
+    here rather than risk selling against stale stock.</p>
+    <p>When the incident on the primary closes, this node drains its readers and returns
+    to standby. Nothing entered on the mirror carries over, because nothing can be
+    entered on the mirror.</p>
+  </div>
+  <p class="rowsnote">Questions about a specific price in the snapshot: the
+  <a href="support.html">support desk</a> can read the live warehouse figure by phone.</p>
+</div>
+<footer class="legalstrip">
+  <a href="sync-log.html#incidents">Service status history</a> &middot; <a href="legal.html#privacy">Privacy notice</a> &middot;
+  <a href="legal.html#terms">Terms of sale</a> &middot; <a href="support.html">Contact the support desk</a><br>
+  Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Brantwell. &copy; 2026 Gadgetron
+  Trading Co. All rights reserved.
+</footer>
+</body>
+</html>

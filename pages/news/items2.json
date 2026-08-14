@@ -1,0 +1,122 @@
+[
+ {
+  "rank": 34,
+  "title": "Writing a raytracer on a graphing calculator",
+  "site": "z80optics.example.net",
+  "points": 104,
+  "author": "screenbuffer",
+  "comments": 3,
+  "age": "1 day ago",
+  "tag": "graphics"
+ },
+ {
+  "rank": 35,
+  "title": "Ask Millrace: what is your oldest surviving TODO comment?",
+  "site": "",
+  "points": 98,
+  "author": "fixmelater",
+  "comments": 4,
+  "age": "1 day ago",
+  "tag": "asks"
+ },
+ {
+  "rank": 36,
+  "title": "How mechanical watch escapements manage energy",
+  "site": "hairspring.example",
+  "points": 92,
+  "author": "beaterror",
+  "comments": 2,
+  "age": "1 day ago",
+  "tag": "hardware"
+ },
+ {
+  "rank": 37,
+  "title": "Benchmarking every JSON parser I could find",
+  "site": "parsebench.example",
+  "points": 87,
+  "author": "trailingcomma",
+  "comments": 2,
+  "age": "1 day ago",
+  "tag": "data"
+ },
+ {
+  "rank": 38,
+  "title": "The lost art of the demoscene intro",
+  "site": "cracktro.example.org",
+  "points": 83,
+  "author": "sizecoder",
+  "comments": 0,
+  "age": "1 day ago",
+  "tag": "history"
+ },
+ {
+  "rank": 39,
+  "title": "Growing oyster mushrooms on spent coffee grounds",
+  "site": "substrate.example",
+  "points": 78,
+  "author": "myceliyum",
+  "comments": 1,
+  "age": "1 day ago",
+  "tag": "science"
+ },
+ {
+  "rank": 40,
+  "title": "A static site generator in a single makefile",
+  "site": "makepage.example",
+  "points": 74,
+  "author": "phonytarget",
+  "comments": 2,
+  "age": "2 days ago",
+  "tag": "build"
+ },
+ {
+  "rank": 41,
+  "title": "Why the QWERTY slowdown myth will not die",
+  "site": "keylore.example.com",
+  "points": 69,
+  "author": "homerow",
+  "comments": 1,
+  "age": "2 days ago",
+  "tag": "history"
+ },
+ {
+  "rank": 42,
+  "title": "Undervolting a homelab until it whispers",
+  "site": "wattbudget.example",
+  "points": 64,
+  "author": "idlestates",
+  "comments": 0,
+  "age": "2 days ago",
+  "tag": "infra"
+ },
+ {
+  "rank": 43,
+  "title": "Field notes from repairing a 1970s reel-to-reel",
+  "site": "tapepath.example.net",
+  "points": 58,
+  "author": "capstandrift",
+  "comments": 1,
+  "age": "2 days ago",
+  "tag": "hardware"
+ },
+ {
+  "rank": 44,
+  "title": "The surprisingly deep math of fair cake cutting",
+  "site": "envyfree.example",
+  "points": 55,
+  "author": "lastdiminisher",
+  "comments": 2,
+  "age": "2 days ago",
+  "tag": "science"
+ },
+ {
+  "rank": 45,
+  "title": "Show Millrace: a terminal dashboard for beehive telemetry",
+  "site": "hivetop.example",
+  "points": 51,
+  "author": "waggledance",
+  "comments": 0,
+  "age": "2 days ago",
+  "tag": "build"
+ }
+]

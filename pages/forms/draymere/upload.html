@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nightly attestation upload — Draymere Depot Console</title>
+<style>
+  :root {
+    --shell: #0e1216;
+    --panel: #161c22;
+    --panel-2: #1d252d;
+    --edge: #2b353f;
+    --edge-hot: #3b4854;
+    --ink: #dfe6ec;
+    --dim: #8c9aa6;
+    --amber: #f0a02c;
+    --amber-dim: #b0761f;
+    --green: #56b98a;
+    --red: #e0685c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--shell);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", "Fira Sans", "Noto Sans", "Liberation Sans", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  a { color: var(--amber); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .mono { font-family: "IBM Plex Mono", "Fira Mono", "DejaVu Sans Mono", monospace; }
+
+  header.strip {
+    background: #090c0f;
+    border-bottom: 2px solid var(--amber-dim);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 10px 20px;
+  }
+  .mark {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #fff;
+  }
+  .mark span { color: var(--amber); }
+  .unit {
+    font-size: 11px;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--dim);
+    border-left: 1px solid var(--edge);
+    padding-left: 18px;
+  }
+  header.strip .who {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--dim);
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  nav.tabs {
+    background: var(--panel);
+    border-bottom: 1px solid var(--edge);
+    display: flex;
+    padding: 0 20px;
+  }
+  nav.tabs a {
+    color: var(--dim);
+    font-size: 12px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    padding: 11px 16px;
+    border-bottom: 2px solid transparent;
+  }
+  nav.tabs a:hover { color: var(--ink); text-decoration: none; }
+  nav.tabs a.on { color: var(--amber); border-bottom-color: var(--amber); }
+
+  .crumbs {
+    padding: 10px 20px;
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #6f7d89;
+  }
+  .crumbs .at { color: var(--dim); }
+
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 20px;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 6px 20px 40px;
+  }
+  @media (max-width: 820px) { main { grid-template-columns: minmax(0, 1fr); } }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--edge);
+  }
+  .card > h1, .card > h2 {
+    margin: 0;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--edge);
+    background: var(--panel-2);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+  }
+  .card .inner { padding: 18px; }
+  .lede { margin: 0 0 16px; color: var(--dim); max-width: 62ch; }
+
+  .flabel {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 6px;
+  }
+  .field { margin-bottom: 18px; }
+  .hint { font-size: 12px; color: #77848f; margin: 6px 0 0; }
+  input[type="file"] {
+    display: block;
+    width: 100%;
+    max-width: 460px;
+    background: #0b0f13;
+    border: 1px solid var(--edge-hot);
+    color: var(--ink);
+    padding: 9px;
+    font: inherit;
+  }
+  input[type="file"]::file-selector-button {
+    background: var(--panel-2);
+    border: 1px solid var(--edge-hot);
+    color: var(--ink);
+    padding: 5px 12px;
+    margin-right: 12px;
+    font: inherit;
+  }
+  .attached {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: var(--dim);
+  }
+  .confirm {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: #12181e;
+    border: 1px solid var(--edge);
+    padding: 12px;
+    max-width: 560px;
+  }
+  .confirm input { margin: 3px 0 0; }
+  .confirm .wording { font-size: 13px; color: #b9c5cf; }
+  .chip {
+    margin: 8px 0 0;
+    font-size: 11px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .chip.set { color: var(--green); }
+  button.go {
+    background: var(--amber);
+    border: 1px solid var(--amber);
+    color: #14181c;
+    font: inherit;
+    font-weight: 600;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    cursor: pointer;
+  }
+  button.go:hover { background: #ffb64a; }
+  .actions { display: flex; align-items: center; gap: 16px; margin-top: 20px; }
+  .actions .cancel { font-size: 12px; color: var(--dim); }
+
+  .alert {
+    border-left: 3px solid var(--red);
+    background: #211615;
+    color: #f3b3ac;
+    padding: 10px 14px;
+    margin: 0 0 16px;
+    font-size: 13px;
+  }
+  .receipt {
+    border-left: 3px solid var(--green);
+    background: #12201a;
+    padding: 14px 16px;
+    margin: 0 0 16px;
+  }
+  .receipt .ok {
+    margin: 0 0 12px;
+    color: #8fd9b4;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+  .receipt .rlabel {
+    margin: 0 0 2px;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .receipt .code {
+    margin: 0;
+    font-family: "IBM Plex Mono", "Fira Mono", "DejaVu Sans Mono", monospace;
+    font-size: 20px;
+    color: var(--amber);
+    letter-spacing: 1px;
+  }
+  .receipt .meta { margin: 10px 0 0; font-size: 12px; color: #7f8d98; }
+
+  aside .rules { list-style: none; margin: 0; padding: 0; }
+  aside .rules li {
+    border-bottom: 1px dotted var(--edge);
+    padding: 9px 0;
+    font-size: 13px;
+    color: #b9c5cf;
+  }
+  aside .rules li:last-child { border-bottom: 0; }
+  aside .rules .hi { color: var(--amber); }
+  aside .note { font-size: 12px; color: #77848f; margin: 14px 0 0; }
+
+  .log { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .log th {
+    text-align: left;
+    color: var(--dim);
+    font-weight: 500;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    font-size: 10px;
+    border-bottom: 1px solid var(--edge);
+    padding: 7px 8px;
+  }
+  .log td { border-bottom: 1px solid #212a32; padding: 7px 8px; color: #b9c5cf; }
+  .log td.st { color: var(--green); }
+  .log td.st.void { color: var(--dim); }
+
+  footer.foot {
+    border-top: 1px solid var(--edge);
+    margin-top: 10px;
+    padding: 18px 20px 30px;
+    color: #66727c;
+    font-size: 11px;
+  }
+  footer.foot .links { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+  footer.foot .links a { color: #8c9aa6; }
+</style>
+</head>
+<body>
+
+<header class="strip">
+  <div class="mark">Dray<span>mere</span></div>
+  <div class="unit">Cold Chain Operations</div>
+  <div class="who">
+    <span>Depot 41 &middot; Kettleworth</span>
+    <span class="mono">op.hedlund</span>
+    <a href="signout.html">Sign out</a>
+  </div>
+</header>
+
+<nav class="tabs">
+  <a href="dispatch.html">Dispatch</a>
+  <a href="receiving.html">Receiving</a>
+  <a href="inventory.html">Inventory</a>
+  <a href="queue.html" class="on">Attestations</a>
+  <a href="vehicles.html">Vehicles</a>
+  <a href="reports.html">Reports</a>
+</nav>
+
+<div class="crumbs">Attestations &rsaquo; <span class="at">Nightly count</span> &rsaquo; <span class="at">Upload</span></div>
+
+<main>
+  <div class="col">
+    <section class="card">
+      <h1>Nightly count attestation</h1>
+      <div class="inner">
+        <p class="lede">Transmit the attestation file exported by the handheld scanner at the
+          end of the count. The depot supervisor on shift is responsible for the transmission;
+          the receipt code returned below is the only proof the count was filed.</p>
+
+        <p class="alert" id="err" role="alert" hidden></p>
+
+        <div class="receipt" id="done" hidden>
+          <p class="ok">Attestation accepted and filed.</p>
+          <p class="rlabel">Receipt code</p>
+          <p class="code" id="receipt"></p>
+          <p class="meta">Retain this code until the regional audit closes the period.</p>
+        </div>
+
+        <form id="tx" autocomplete="off">
+          <div class="field">
+            <span class="flabel">Attestation file</span>
+            <input type="file" id="doc" name="doc" accept=".txt">
+            <p class="attached" id="attached">No file attached</p>
+            <p class="hint">Plain text export only. Transmissions above 1 KB are refused by
+              the intake service.</p>
+          </div>
+
+          <div class="field">
+            <label class="confirm">
+              <input type="checkbox" id="attested" name="attested">
+              <span class="wording">I confirm the physical count was completed on shift and
+                the export has not been edited.</span>
+            </label>
+            <p class="chip" id="confirmstate">Confirmation pending</p>
+          </div>
+
+          <div class="actions">
+            <button type="submit" class="go" id="send">Transmit attestation</button>
+            <span class="cancel">Or <a href="queue.html">return to the attestation queue</a>.</span>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:20px">
+      <h2>Recent transmissions &mdash; depot 41</h2>
+      <div class="inner">
+        <table class="log">
+          <thead>
+            <tr><th>Period</th><th>File</th><th>Bytes</th><th>Filed by</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>07-24</td><td class="mono">count-0724.txt</td><td>96</td><td>op.hedlund</td><td class="st">Accepted</td></tr>
+            <tr><td>07-23</td><td class="mono">count-0723.txt</td><td>102</td><td>op.marchetti</td><td class="st">Accepted</td></tr>
+            <tr><td>07-22</td><td class="mono">count-0722.txt</td><td>94</td><td>op.hedlund</td><td class="st">Accepted</td></tr>
+            <tr><td>07-21</td><td class="mono">count-0721.xls</td><td>21504</td><td>op.hedlund</td><td class="st void">Refused</td></tr>
+            <tr><td>07-21</td><td class="mono">count-0721.txt</td><td>98</td><td>op.hedlund</td><td class="st">Accepted</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <aside>
+    <section class="card">
+      <h2>Intake rules</h2>
+      <div class="inner">
+        <ul class="rules">
+          <li>Extension must be <span class="hi">.txt</span></li>
+          <li>Maximum size <span class="hi">1024 bytes</span></li>
+          <li>One file per transmission</li>
+          <li>Count confirmation must be ticked</li>
+          <li>Receipts are issued per depot session</li>
+        </ul>
+        <p class="note">Spreadsheet exports, archives and scanner logs are refused at intake.
+          Re-export as plain text from the handheld before transmitting.</p>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:20px">
+      <h2>Shift contact</h2>
+      <div class="inner">
+        <p class="note" style="margin-top:0">Regional operations desk, 20:00&ndash;06:00:<br>
+          <span class="mono">+44 1632 960 415</span><br>
+          <a href="mailto:ops.night@draymere.example">ops.night@draymere.example</a></p>
+      </div>
+    </section>
+  </aside>
+</main>
+
+<footer class="foot">
+  <div class="links">
+    <a href="handbook.html">Operations handbook</a>
+    <a href="cold-chain-policy.html">Cold chain policy</a>
+    <a href="legal.html#privacy">Privacy notice</a>
+    <a href="legal.html#terms">Terms of service</a>
+    <a href="status.html">Service status</a>
+  </div>
+  <div>Copyright 2026 Draymere Cold Chain Limited. Registered in England and Wales,
+    company 00000000. Registered office: Unit 12, Kettleworth Distribution Park,
+    Kettleworth KW7 3RN. Support: support@draymere.example</div>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const doc = document.getElementById('doc');
+  const attested = document.getElementById('attested');
+  const err = document.getElementById('err');
+  const done = document.getElementById('done');
+  const attachedLine = document.getElementById('attached');
+
+  const fail = (message) => {
+    err.textContent = message;
+    err.hidden = false;
+    done.hidden = true;
+  };
+
+  const confirmState = document.getElementById('confirmstate');
+
+  attested.addEventListener('change', () => {
+    confirmState.textContent = attested.checked ? 'Count confirmed' : 'Confirmation pending';
+    confirmState.classList.toggle('set', attested.checked);
+  });
+
+  doc.addEventListener('change', () => {
+    const file = doc.files[0];
+    attachedLine.textContent = file
+      ? file.name + ' (' + file.size + ' bytes)'
+      : 'No file attached';
+  });
+
+  document.getElementById('tx').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    err.hidden = true;
+    done.hidden = true;
+    const file = doc.files[0];
+    if (!file) {
+      fail('Attach an attestation file.');
+      return;
+    }
+    const body = new FormData();
+    body.append('nonce', NONCE);
+    body.append('attested', attested.checked ? 'yes' : 'no');
+    body.append('doc', file, file.name);
+    let result;
+    try {
+      const response = await fetch('/api/upload', { method: 'POST', body });
+      result = await response.json();
+    } catch {
+      fail('The intake service did not respond. Try again.');
+      return;
+    }
+    if (!result || result.ok !== true) {
+      fail((result && result.error) || 'Transmission failed at intake.');
+      return;
+    }
+    document.getElementById('receipt').textContent = result.receipt;
+    done.hidden = false;
+  });
+</script>
+</body>
+</html>

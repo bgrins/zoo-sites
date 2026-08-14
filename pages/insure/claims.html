@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claims Service — Cresthaven Mutual Insurance</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, "URW Palladio L", serif;
+    font-size: 16px; line-height: 1.55; color: #1d2433; background: #fbfbf8;
+    font-variant-numeric: tabular-nums;
+  }
+  .util {
+    background: #12284b; color: #c8d2e2; font-size: 12.5px;
+    padding: 5px 24px; display: flex; justify-content: space-between; letter-spacing: 0.3px;
+  }
+  .util span b { color: #fff; font-weight: normal; }
+  header { text-align: center; padding: 26px 24px 0; background: #fff; }
+  .wordmark { font-size: 30px; letter-spacing: 1px; color: #12284b; margin: 0; font-weight: normal; }
+  .wordmark .est { display: block; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #7a8397; margin-top: 2px; }
+  nav {
+    background: #fff; margin-top: 18px; border-top: 1px solid #12284b;
+    border-bottom: 3px double #12284b; text-align: center;
+  }
+  nav a {
+    display: inline-block; padding: 10px 22px; color: #12284b; text-decoration: none;
+    font-size: 12.5px; letter-spacing: 2.2px; text-transform: uppercase;
+  }
+  nav a.here { border-bottom: 3px solid #9d2c1e; margin-bottom: -3px; }
+  nav a:hover { color: #9d2c1e; }
+  .sheet { max-width: 760px; margin: 0 auto; padding: 40px 24px 70px; }
+  h2 { font-size: 26px; font-weight: normal; color: #12284b; margin: 0 0 4px; }
+  .sub { color: #7a8397; font-size: 14px; margin: 0 0 26px; }
+  .stage { display: flex; gap: 18px; background: #fff; border: 1px solid #cfd3c9; padding: 20px 24px; margin: 0 0 16px; }
+  .stage .n {
+    flex: none; width: 34px; height: 34px; border: 1px solid #12284b; border-radius: 50%;
+    text-align: center; line-height: 32px; color: #12284b; font-size: 16px;
+  }
+  .stage h3 { font-size: 17px; font-weight: normal; color: #12284b; margin: 2px 0 6px; }
+  .stage p { color: #3c4457; font-size: 14.5px; margin: 0; }
+  .hotline { border-left: 3px solid #9d2c1e; background: #faf5f0; padding: 14px 18px; font-size: 15px; color: #4a3f36; margin: 26px 0; }
+  footer {
+    background: #12284b; color: #a9b6cc; font-size: 12.5px; padding: 22px 24px;
+    text-align: center; line-height: 1.8;
+  }
+  footer a { color: #d7dfec; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="util">
+  <span>Policyholder line <b>1-800-555-0164</b> · Weekdays 8:00–18:00 CT</span>
+  <span>Claims desk: 24 hours</span>
+</div>
+<header>
+  <h1 class="wordmark">Cresthaven Mutual<span class="est">Insurance Company · Est. 1911</span></h1>
+  <nav>
+    <a href="/insure/">Home</a>
+    <a href="/insure/quote.html">Get a quote</a>
+    <a href="/insure/coverage.html">Coverage</a>
+    <a href="/insure/claims.html" class="here">Claims</a>
+  </nav>
+</header>
+
+<div class="sheet">
+  <h2>How a claim proceeds</h2>
+  <p class="sub">Four stages, one named adjuster, no queue.</p>
+
+  <div class="stage">
+    <div class="n">1</div>
+    <div>
+      <h3>Report the loss</h3>
+      <p>Call the claims desk at 1-800-555-0171, any hour. Have your policy number and
+      the date of loss; photographs help but are never required to open a file.</p>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="n">2</div>
+    <div>
+      <h3>Assignment within one business day</h3>
+      <p>Your file is assigned to a named adjuster who carries it to settlement. You
+      receive their direct line in the acknowledgement letter.</p>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="n">3</div>
+    <div>
+      <h3>Inspection and scope</h3>
+      <p>The adjuster inspects, agrees a scope of repair with you, and issues the
+      settlement basis in writing under your protection level.</p>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="n">4</div>
+    <div>
+      <h3>Payment</h3>
+      <p>Undisputed amounts are paid within ten days of the agreed scope. Supplements
+      are handled by the same adjuster, on the same file.</p>
+    </div>
+  </div>
+
+  <div class="hotline">
+    Storm event in your county? The catastrophe desk pre-positions adjusters ahead of
+    forecast weather. Report as usual; catastrophe files are triaged first.
+  </div>
+</div>
+
+<footer>
+  Cresthaven Mutual Insurance Company · 400 Assay Court, Harmon Falls ·
+  policyholders@cresthaven-mutual.example<br>
+  <a href="/insure/coverage.html">Coverage summaries</a> ·
+  <a href="/insure/claims.html">Claims service</a> ·
+  <a href="/insure/quote.html">Quotation desk</a><br>
+  Coverage subject to underwriting and to the terms of the issued policy. &copy; Cresthaven Mutual Insurance Company.
+</footer>
+</body>
+</html>

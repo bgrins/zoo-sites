@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>People Hub — Overview — Quennell Group</title>
+<link rel="stylesheet" href="directory.css">
+<style>
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 0 34px 22px;
+  max-width: 900px;
+}
+.tile {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(58, 34, 69, 0.05);
+}
+.tile h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: var(--plum);
+}
+.tile p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.tile a {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--plum-soft);
+  text-decoration: none;
+}
+.tile a:hover { text-decoration: underline; }
+.notice {
+  margin: 0 34px 20px;
+  max-width: 900px;
+  background: #f7f1fa;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--amber);
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 13px;
+  color: var(--ink);
+}
+</style>
+</head>
+<body class="shell">
+<aside class="rail">
+  <div class="mark">Quennell</div>
+  <div class="group">People Hub 4.2</div>
+  <nav>
+    <a href="/biglist/overview.html" class="on">Overview</a>
+    <a href="/biglist/">Directory</a>
+    <a href="/biglist/teams.html">Teams</a>
+    <a href="/biglist/onboarding.html">Onboarding</a>
+    <a href="/biglist/badge-records.html">Badge records</a>
+  </nav>
+  <p class="rail-foot">Directory service: connected</p>
+</aside>
+<div class="pane">
+  <div class="topbar">
+    <span class="crumbs">Workspace / People / Overview</span>
+    <span class="who">S. Okonkwo, HR Operations</span>
+  </div>
+  <h1>Overview</h1>
+  <p class="lede">People Hub is the Quennell Group workspace for everything people-related:
+  who works here, how teams are organised, how new starters get settled in, and how badge
+  and access records are administered.</p>
+  <div class="notice">The nightly HR sync completed on schedule. Roster, team, and badge
+  data shown across People Hub reflect the most recent overnight refresh.</div>
+  <div class="tiles">
+    <div class="tile">
+      <h2>Directory</h2>
+      <p>Browse the full group roster, ordered by hire record, with search across names,
+      badges, and departments.</p>
+      <a href="/biglist/">Open the directory</a>
+    </div>
+    <div class="tile">
+      <h2>Teams</h2>
+      <p>See how the group is organised into departments and where each one reports.</p>
+      <a href="/biglist/teams.html">Browse teams</a>
+    </div>
+    <div class="tile">
+      <h2>Onboarding</h2>
+      <p>The standard first-fortnight checklist for new starters and the managers who
+      welcome them.</p>
+      <a href="/biglist/onboarding.html">View onboarding</a>
+    </div>
+    <div class="tile">
+      <h2>Badge records</h2>
+      <p>Policy on identity badges, and how to request a copy of your own badge record.</p>
+      <a href="/biglist/badge-records.html">Read the policy</a>
+    </div>
+  </div>
+  <p class="fine">People Hub is maintained by HR Operations. Questions about any module on
+  this page can be raised with the people team through the workspace request queue.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voltro — Shipping</title>
+<link rel="stylesheet" href="checkout.css">
+</head>
+<body>
+<header><b>Voltro</b><span>Secure checkout</span><a href="cart.html">Back to cart</a></header>
+<div class="steps">Cart › <b>Shipping</b> › Payment › Review</div>
+<main>
+  <h1>Shipping address</h1>
+  <form id="ship" novalidate>
+    <label for="name">Full name</label>
+    <input id="name" autocomplete="off">
+    <label for="address">Street address</label>
+    <input id="address" autocomplete="off">
+    <button type="submit" id="continue">Continue to payment</button>
+    <div id="status" role="status"></div>
+  </form>
+</main>
+<footer><a href="conditions.html">Conditions of Use</a> &middot; <a href="privacy.html">Privacy Notice</a> &middot; <a href="returns.html">Delivery &amp; Returns</a> &middot; <a href="help.html">Help</a> &middot; © 2026 Voltro Marketplace</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const status = document.getElementById('status');
+document.getElementById('ship').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const name = document.getElementById('name').value.trim();
+  const address = document.getElementById('address').value.trim();
+  status.className = '';
+  if (!name || !address) {
+    status.className = 'error';
+    status.textContent = 'Enter your full name and street address.';
+    return;
+  }
+  const button = document.getElementById('continue');
+  button.disabled = true;
+  try {
+    const res = await fetch('/api/voltro/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, step: 'shipping', name, address }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      status.className = 'error';
+      status.textContent = body.error ?? 'Could not save the shipping address.';
+      return;
+    }
+    location.href = 'payment.html';
+  } catch {
+    status.className = 'error';
+    status.textContent = 'Network error — try again.';
+  } finally {
+    button.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

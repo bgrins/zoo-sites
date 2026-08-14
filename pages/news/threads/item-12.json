@@ -1,0 +1,63 @@
+{
+  "rank": 12,
+  "comments": [
+    {
+      "author": "pagetable",
+      "age": "14 hours ago",
+      "text": "The killer feature nobody mentions: a single-file format with transactional writes means your users stop emailing you corrupted documents. We shipped a desktop CAD tool for eight years with a zip-of-XML format and spent an embarrassing fraction of support time on 'file won't open' tickets. Power loss mid-save, cloud sync grabbing a half-written file, you name it.\n\nAfter migrating to a database-backed format the ticket category basically vanished. The migration itself was painful — we kept a compatibility exporter around for three major versions — but I'd never go back to hand-rolled serialization.",
+      "replies": [
+        {
+          "author": "vacuumfull",
+          "age": "13 hours ago",
+          "text": "OP here — this matches our experience almost exactly. The article undersells the sync angle honestly: half our corruption reports traced back to file-sync tools snapshotting mid-write. WAL mode plus atomic commit made those disappear.",
+          "replies": [
+            {
+              "author": "cloudskeptical",
+              "age": "12 hours ago",
+              "text": "Careful with WAL though — the -wal and -shm sidecar files break the 'single file' story. If a user copies just the main file while the app is open, they can get a stale or unreadable copy. We had to checkpoint-and-truncate on every save to keep the promise honest.",
+              "replies": []
+            }
+          ]
+        },
+        {
+          "author": "formatlawyer",
+          "age": "11 hours ago",
+          "text": "Counterpoint: zip-of-XML is grep-able, diff-able, and inspectable with tools everyone already has. A binary database is opaque to your users and to archivists twenty years from now. There's a reason document standards bodies keep landing on containers of text.",
+          "replies": [
+            {
+              "author": "pagetable",
+              "age": "10 hours ago",
+              "text": "The schema IS the documentation, and the file is readable with a universally available CLI. I'd argue that's more archivable than a bespoke zip layout where the manifest semantics live only in the app source.",
+              "replies": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "lambdacurious",
+      "age": "12 hours ago",
+      "text": "Genuine question: how do people handle undo history in this model? Do you store it in the same file (bloating it), a sidecar, or just keep it in memory and accept that undo dies with the session?",
+      "replies": [
+        {
+          "author": "vacuumfull",
+          "age": "11 hours ago",
+          "text": "OP again. We keep an undo log in a separate table with a row cap, and VACUUM on close if it grew past a threshold. Persistent undo across sessions turned out to be a feature users loved and never asked for.",
+          "replies": []
+        }
+      ]
+    },
+    {
+      "author": "bitrotting",
+      "age": "9 hours ago",
+      "text": "Every few years this idea gets rediscovered and the same two objections appear: 'binary blobs don't diff' and 'what about version control'. Both are real if your users are developers. Both are irrelevant if your users are dentists. Know your audience.",
+      "replies": []
+    },
+    {
+      "author": "shardnado",
+      "age": "6 hours ago",
+      "text": "Shameless plug: I built dbdiff.example.com, a little tool that produces semantic diffs of two database files given a schema hint. Started it precisely because we adopted this file format approach and code review of test fixtures became miserable. It's rough but free.",
+      "replies": []
+    }
+  ]
+}

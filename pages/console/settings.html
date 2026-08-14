@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings - orchid-api - Cindergrid</title>
+<link rel="stylesheet" href="console.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html">CINDERGRID</a>
+  <span class="crumb">gridworks-eu / orchid-api</span>
+  <span class="env">production</span>
+  <span class="spacer"></span>
+  <span class="who">t.ashgrove</span>
+</header>
+
+<div class="shell">
+  <nav class="rail">
+    <span class="rail-label">Project</span>
+    <a href="index.html">Deployments</a>
+    <a href="runs.html">Run history</a>
+    <a href="secrets.html">Secrets</a>
+    <a href="settings.html" class="on">Settings</a>
+    <a href="support.html">Support</a>
+  </nav>
+
+  <main>
+    <div class="runhead">
+      <h1>Settings</h1>
+      <span class="chip">orchid-api</span>
+    </div>
+    <p class="subhead">Project configuration is managed by organisation administrators.
+    Your role (member) can view every value but not change it; ask grid-admins@cindergrid.example.net
+    for changes.</p>
+
+    <h2>Project</h2>
+    <fieldset class="settings" disabled>
+      <legend>Identity</legend>
+      <div class="field">
+        <label for="org">Organisation</label>
+        <input id="org" type="text" value="gridworks-eu">
+      </div>
+      <div class="field">
+        <label for="proj">Project name</label>
+        <input id="proj" type="text" value="orchid-api">
+      </div>
+      <div class="field">
+        <label for="defenv">Default environment</label>
+        <select id="defenv">
+          <option selected>staging</option>
+          <option>production</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="region">Runner region</label>
+        <select id="region">
+          <option selected>eu-west-2</option>
+          <option>eu-central-1</option>
+        </select>
+      </div>
+    </fieldset>
+
+    <h2>Branch protections</h2>
+    <fieldset class="settings" disabled>
+      <legend>main</legend>
+      <label class="check"><input type="checkbox" checked> Require two approvals before a change can merge</label>
+      <label class="check"><input type="checkbox" checked> Block force pushes and history rewrites</label>
+      <label class="check"><input type="checkbox" checked> Require a promoted staging run of the same commit</label>
+      <label class="check"><input type="checkbox" checked> Enforce release policy release-prod-v4 on promotion</label>
+      <label class="check"><input type="checkbox"> Allow administrators to bypass protections</label>
+    </fieldset>
+
+    <h2>Notifications</h2>
+    <fieldset class="settings" disabled>
+      <legend>Delivery</legend>
+      <label class="check"><input type="checkbox" checked> Webhook to ops channel on every production run</label>
+      <label class="check"><input type="checkbox" checked> Email the change author when a run fails</label>
+      <label class="check"><input type="checkbox"> Email the whole team on staging failures</label>
+      <div class="field">
+        <label for="hook">Webhook endpoint</label>
+        <input id="hook" type="text" value="https://hooks.gridworks-eu.example/cindergrid">
+      </div>
+    </fieldset>
+    <p class="form-note">Changes to any section are recorded in the organisation audit log and
+    take effect on the next run.</p>
+  </main>
+</div>
+
+<footer>
+  Cindergrid Systems Ltd, 4 Alder Wharf, Bristol BS1 4RN, United Kingdom<br>
+  <a href="status.html">Status</a> &middot; <a href="docs.html">Documentation</a> &middot;
+  <a href="terms.html">Terms of service</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  support@cindergrid.example.net<br>
+  &copy; 2026 Cindergrid Systems Ltd
+</footer>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fernlight Atlas 3 — Changelog</title>
+<style>
+  :root {
+    --ink: #16161a;
+    --dim: #6c6c78;
+    --hair: #dedbd4;
+    --paper: #fbfbf9;
+    --accent: #5b4bd6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: 14px; line-height: 1.65;
+  }
+  a { color: var(--accent); }
+  header.bar {
+    border-bottom: 1px solid var(--hair); background: #fff;
+    display: flex; align-items: center; gap: 18px; padding: 10px 22px; font-size: 13px;
+  }
+  header.bar .brand { font-weight: 700; letter-spacing: -0.3px; }
+  header.bar .ver { border: 1px solid var(--hair); padding: 0 6px; color: var(--dim); font-size: 11px; }
+  header.bar nav { margin-left: auto; display: flex; gap: 16px; }
+  header.bar nav a { text-decoration: none; color: var(--dim); }
+  header.bar nav a[aria-current] { color: var(--ink); border-bottom: 2px solid var(--accent); }
+  main { max-width: 74ch; margin: 0 auto; padding: 30px 22px 64px; }
+  .crumbs { color: var(--dim); font-size: 12px; margin: 0 0 18px; }
+  h1 { font-size: 22px; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.5px; }
+  h1::before { content: "# "; color: var(--accent); }
+  .tagline { color: var(--dim); margin: 0 0 22px; font-size: 13px; }
+  h2 {
+    font-size: 14px; font-weight: 700; margin: 34px 0 8px;
+    padding-bottom: 5px; border-bottom: 1px solid var(--hair);
+  }
+  h2::before { content: "## "; color: var(--accent); font-weight: 400; }
+  h2 .date { color: var(--dim); font-weight: 400; font-size: 12px; }
+  ul { margin: 0 0 14px; padding-left: 22px; }
+  li { margin: 0 0 6px; }
+  .tag { border: 1px solid var(--hair); background: #fff; color: var(--dim); font-size: 11px; padding: 0 5px; margin-right: 4px; }
+  footer {
+    border-top: 1px solid var(--hair); margin-top: 44px; padding: 16px 22px;
+    font-size: 12px; color: var(--dim);
+  }
+</style>
+</head>
+<body>
+<header class="bar">
+  <span class="brand">fernlight/atlas</span>
+  <span class="ver">beta 3.0.0-rc4</span>
+  <nav>
+    <a href="docs.html">docs</a>
+    <a href="changelog.html" aria-current="page">changelog</a>
+    <a href="beta-terms.html">terms</a>
+    <a href="beta-signup.html">waitlist</a>
+  </nav>
+</header>
+
+<main>
+<p class="crumbs">docs / changelog</p>
+<h1>Changelog</h1>
+<p class="tagline">Release notes for the Atlas 3 private beta.</p>
+
+<h2>3.0.0-rc4 <span class="date">— 2026-07-14</span></h2>
+<ul>
+  <li><span class="tag">fixed</span>Crash reporter no longer stalls the exit path when the network is unreachable; traces are spooled to disk and sent on next launch.</li>
+  <li><span class="tag">fixed</span>Interchange export wrote an incomplete manifest when a project contained an empty layer.</li>
+  <li><span class="tag">tiles</span>Tile service retries now back off per host, cutting redundant requests on flaky links by about half.</li>
+  <li><span class="tag">changed</span>Reduced telemetry level now also omits per-tool timing samples.</li>
+</ul>
+
+<h2>3.0.0-rc3 <span class="date">— 2026-06-02</span></h2>
+<ul>
+  <li><span class="tag">fixed</span>GNSS import misread antenna heights recorded in feet; affected observations are flagged for review on upgrade.</li>
+  <li><span class="tag">tiles</span>Base layers are pre-warmed for the visible extent after project open, removing the grey flash on first pan.</li>
+  <li><span class="tag">crash</span>Crash reporting now includes the last twenty log lines, redacted of paths and coordinates.</li>
+  <li><span class="tag">fixed</span>Code table edits no longer require a project reload to take effect.</li>
+</ul>
+
+<h2>3.0.0-rc2 <span class="date">— 2026-04-20</span></h2>
+<ul>
+  <li><span class="tag">fixed</span>Workspace sync could duplicate a project if the first sync was interrupted; duplicates are merged on upgrade.</li>
+  <li><span class="tag">tiles</span>New tile cache eviction keeps the working set under the disk budget set in preferences.</li>
+  <li><span class="tag">changed</span>The doctor command now reports GPU driver age and warns below the supported baseline.</li>
+</ul>
+
+<h2>3.0.0-rc1 <span class="date">— 2026-03-09</span></h2>
+<ul>
+  <li><span class="tag">new</span>First release-candidate build issued to the beta cohort.</li>
+  <li><span class="tag">new</span>Interchange export with checksummed manifest replaces the Atlas 2 bundle format.</li>
+  <li><span class="tag">new</span>Crash reporting enabled by default, viewable locally before send.</li>
+  <li><span class="tag">tiles</span>Tile service moved to the workspace region selected at creation.</li>
+</ul>
+</main>
+
+<footer>
+  Fernlight Software — 42 Alder Row, Suite 5 · Support Mon–Fri ·
+  beta@fernlight.example · Atlas is a trademark of Fernlight Software Ltd.
+</footer>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Box office — The Aurelia Playhouse</title>
+<link rel="stylesheet" href="boxoffice.css">
+</head>
+<body>
+<header class="marquee">
+  <p class="wordmark">The Aurelia</p>
+  <p class="tag">Playhouse &middot; Granville Street</p>
+  <nav>
+    <a class="on" href="index.html">Box office</a>
+    <a href="access.html">Accessible booking</a>
+    <a href="programme.html">Programme</a>
+  </nav>
+</header>
+
+<main>
+<section class="bill">
+  <h1 id="showTitle">The Brass Nightingale</h1>
+  <p class="strap" id="showStrap">A revue in two acts &middot; This evening at 7:30</p>
+</section>
+
+<div class="split">
+  <div class="plan-wrap">
+    <h2>Stalls seating plan</h2>
+    <p id="planStatus">Loading the seating plan</p>
+    <svg id="plan" viewBox="0 0 622 376" role="group" aria-label="Stalls seating plan"></svg>
+    <ul class="legend">
+      <li class="l-open">Open</li>
+      <li class="l-restricted">Restricted view</li>
+      <li class="l-sold">Sold</li>
+      <li class="l-picked">Chosen</li>
+    </ul>
+    <ul class="blocks">
+      <li>Left block: seats 1-6</li>
+      <li>Right block: seats 7-12</li>
+      <li>Centre aisle: between 6 and 7</li>
+    </ul>
+    <p class="note">Row A is nearest the stage. Sight lines at the outer ends of
+    some rows are broken by the circle supports; those seats are marked
+    restricted view and sold at the counter only.</p>
+  </div>
+
+  <aside class="rail">
+    <section class="panel">
+      <h2>Booking request</h2>
+      <h3 id="briefPatron">&nbsp;</h3>
+      <p class="ref" id="briefRef">&nbsp;</p>
+      <ul class="terms" id="briefTerms"></ul>
+      <p class="note" id="briefNote"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Your seats</h2>
+      <ul class="picks" id="pickList"></ul>
+      <p class="total" id="pickTotal">No seats chosen</p>
+      <button id="holdBtn" disabled>Hold these seats</button>
+      <p class="outcome" id="holdOutcome"></p>
+      <p class="note" id="holdDetail"></p>
+    </section>
+
+    <section class="panel" id="confirmPanel" hidden>
+      <h2>Held for you</h2>
+      <p class="held" id="heldLine"></p>
+      <button id="confirmBtn">Confirm purchase</button>
+    </section>
+
+    <section class="panel" id="donePanel" hidden>
+      <h2>Collection code</h2>
+      <p class="code" id="confCode"></p>
+      <p class="held" id="confSeats"></p>
+      <p class="note">Quote the code at the collection window from an hour
+      before curtain.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Counter notes</h2>
+      <ul class="notes">
+        <li>Held seats lapse at curtain.</li>
+        <li>Restricted view: counter sales only.</li>
+        <li>The line pauses after repeated requests it cannot sell.</li>
+        <li>Prices include duty.</li>
+      </ul>
+    </section>
+  </aside>
+</div>
+</main>
+
+<footer>
+  <p>The Aurelia Playhouse, 11 Granville Street. Box office 0151 496 0114, from noon daily.</p>
+  <p><a href="programme.html">Programme</a><a href="access.html">Accessible booking</a><a href="programme.html#visiting">Visiting</a></p>
+  <p>&copy; 2026 Aurelia Theatres Ltd. Latecomers seated at a suitable break.</p>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const PAGE_VIEW = 'map';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const SEAT_W = 34;
+const SEAT_H = 26;
+const SEAT_GAP = 10;
+const AISLE_W = 32;
+const PLAN_TOP = 70;
+const ROW_GAP = 40;
+
+function svgEl(tag, attrs) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+  return node;
+}
+
+function seatX(n, aisleAfter) {
+  return 36 + (n - 1) * (SEAT_W + SEAT_GAP) + (n > aisleAfter ? AISLE_W : 0);
+}
+
+function renderPlan(p) {
+  const svg = document.getElementById('plan');
+  svg.textContent = '';
+  const width = seatX(12, p.aisleAfter) + SEAT_W + 36;
+  svg.appendChild(svgEl('path', {
+    d: `M 60 34 Q ${width / 2} 6 ${width - 60} 34`,
+    class: 'stageline',
+  }));
+  const stage = svgEl('text', { x: width / 2, y: 28, 'text-anchor': 'middle', class: 'stagemark' });
+  stage.textContent = 'STAGE';
+  svg.appendChild(stage);
+  p.rows.forEach((row, ri) => {
+    const y = PLAN_TOP + ri * ROW_GAP;
+    for (const x of [16, width - 24]) {
+      const mark = svgEl('text', { x, y: y + SEAT_H / 2 + 4, class: 'rowmark' });
+      mark.textContent = row.row;
+      svg.appendChild(mark);
+    }
+    for (const seat of row.seats) {
+      const rect = svgEl('rect', {
+        x: seatX(seat.n, p.aisleAfter),
+        y,
+        width: SEAT_W,
+        height: SEAT_H,
+        rx: 4,
+        class: `seat ${seat.state}`,
+      });
+      const id = row.row + seat.n;
+      if (seat.state === 'open' || seat.state === 'restricted' || seat.state === 'held') {
+        registerSeat(rect, { id, price: row.price, state: seat.state });
+      } else if (seat.state === 'yours') {
+        rect.setAttribute('role', 'button');
+        rect.setAttribute('aria-label', `${id} yours`);
+        rect.setAttribute('aria-disabled', 'true');
+      }
+      svg.appendChild(rect);
+    }
+  });
+}
+</script>
+<script src="boxoffice.js"></script>
+</body>
+</html>

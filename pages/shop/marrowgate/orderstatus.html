@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Order status - Marrowgate</title>
+<link rel="stylesheet" href="marrowgate.css">
+<style>
+  .info { margin: 12px 22px 26px; background: #fff; border: 1px solid var(--nb-rule); padding: 16px 18px; max-width: 640px; }
+  .info h2 { font-size: 15px; margin: 18px 0 6px; text-transform: uppercase; letter-spacing: .06em; color: #33405c; }
+  .info h2:first-child { margin-top: 0; }
+  .info p { font-size: 13px; margin: 0 0 7px; }
+  .lookup label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #5b6478; margin: 10px 0 3px; }
+  .lookup input { width: 100%; max-width: 320px; font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--nb-rule); }
+  .lookup button { display: block; margin-top: 12px; font: inherit; font-weight: bold; font-size: 13px;
+    background: var(--nb-blue); color: #fff; border: 0; padding: 9px 18px; cursor: pointer; }
+  #verdict { font-size: 13px; margin-top: 12px; min-height: 17px; }
+  #verdict.bad { color: #8f1220; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="locstrip">
+  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <a href="stores.html">Change store</a>
+  <a href="orderstatus.html">Order status</a>
+  <a href="recycling.html">Trade-in and recycling</a>
+</div>
+<header class="masthead">
+  <a class="wordmark" href="index.html">marrowgate</a>
+  <form class="finder" onsubmit="return false">
+    <input aria-label="Search Marrowgate" placeholder="What can we help you find today?">
+    <button type="submit">Search</button>
+  </form>
+  <div class="acct">
+    <a href="account.html">My Marrowgate</a>
+    <a href="promos.html">Offers</a>
+    <a href="basket.html">Basket</a>
+  </div>
+</header>
+<nav class="deptbar" aria-label="Departments">
+  <a href="departments.html#tv">TV &amp; Home Theater</a>
+  <a href="departments.html#computers">Computers &amp; Tablets</a>
+  <a href="index.html">Monitors</a>
+  <a href="departments.html#audio">Audio</a>
+  <a href="departments.html#smarthome">Smart Home</a>
+  <a href="departments.html#cameras">Cameras</a>
+  <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
+  <a href="departments.html#services">Services</a>
+</nav>
+<p class="crumbs">Home / Order status</p>
+<div class="pagehead"><h1>Order status</h1></div>
+<div class="info">
+  <h2>Look up an order</h2>
+  <p>Order numbers are printed on the till receipt and on your confirmation email
+  (format NB followed by nine digits).</p>
+  <form class="lookup" id="lookup" novalidate>
+    <label for="ordno">Order number</label>
+    <input id="ordno" autocomplete="off" placeholder="NB-000000000">
+    <label for="email">Email used at purchase</label>
+    <input id="email" type="email" autocomplete="off">
+    <button type="submit">Check status</button>
+    <p id="verdict" role="status"></p>
+  </form>
+  <h2>Signed-in customers</h2>
+  <p>Orders on a My Marrowgate membership appear under <a href="account.html">My
+  Marrowgate</a> as soon as the till issues the receipt. Guest orders can only be traced
+  with the lookup above.</p>
+</div>
+<footer class="legal">
+  <ul>
+    <li><a href="basket-help.html">Basket help</a></li>
+    <li><a href="returns.html">Return policy</a></li>
+    <li><a href="price-match.html">Price match</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="stores.html">Store directory</a></li>
+  </ul>
+  Prices shown exclude tax. Online prices may differ from prices in store.
+  &copy; 2026 Marrowgate Retail Group.
+</footer>
+<script>
+document.getElementById('lookup').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const verdict = document.getElementById('verdict');
+  const ordno = document.getElementById('ordno').value.trim();
+  const email = document.getElementById('email').value.trim();
+  verdict.className = '';
+  if (!ordno || !email) {
+    verdict.className = 'bad';
+    verdict.textContent = 'Enter the order number and the email used at purchase.';
+    return;
+  }
+  verdict.className = 'bad';
+  verdict.textContent =
+    'No order matches that number and email. Guest orders appear here about 15 ' +
+    'minutes after the till issues the receipt.';
+});
+</script>
+</body>
+</html>

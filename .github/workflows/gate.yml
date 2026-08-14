@@ -1,0 +1,31 @@
+name: gate
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Install Firefox for the drivers
+        run: npx playwright install --with-deps firefox
+      # --jobs is pinned rather than left to default, which derives from the
+      # runner's core count: the same workflow would otherwise run 1 worker on a
+      # 2-core runner and 2 on a 4-core one, so a flake would depend on which
+      # machine GitHub handed out. Drivers poll on a wall clock, so contention
+      # shows up as a phantom timeout.
+      - name: The gate, twice (once catches load races, twice catches flakiness)
+        run: |
+          node eval/verify.mjs --jobs 2
+          node eval/verify.mjs --jobs 2

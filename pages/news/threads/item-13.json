@@ -1,0 +1,70 @@
+{
+  "rank": 13,
+  "comments": [
+    {
+      "author": "warmstart",
+      "age": "16 hours ago",
+      "text": "The article blames chat tools but I think the real killer was search that never worked. Our intranet had eleven years of policy documents and the search box couldn't find the holiday calendar. People didn't leave for chat because chat was better at knowledge management — it's objectively worse — they left because asking a human in a channel beat fighting the search index.",
+      "replies": [
+        {
+          "author": "sharepointsurvivor",
+          "age": "15 hours ago",
+          "text": "OP here — search is the second act of the piece, keep reading! But yes, agreed. The tragedy is that broken search creates a doom loop: people stop trusting the intranet, so they stop updating it, so search results get staler, so trust drops further.",
+          "replies": [
+            {
+              "author": "warmstart",
+              "age": "14 hours ago",
+              "text": "Fair, I commented at the halfway mark. Guilty as charged.",
+              "replies": []
+            }
+          ]
+        },
+        {
+          "author": "taxonomite",
+          "age": "13 hours ago",
+          "text": "Former intranet information architect here. Search never worked because nobody would pay for content maintenance. Every org wanted a launch project, nobody wanted a gardening budget. The intranet didn't die of bad technology; it died of deferred weeding.",
+          "replies": [
+            {
+              "author": "kernelpanda",
+              "age": "11 hours ago",
+              "text": "This generalizes way beyond intranets. Wikis, runbooks, design docs — all of it is a garden, and orgs consistently fund the greenhouse and not the gardener.",
+              "replies": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "cubiclecartographer",
+      "age": "12 hours ago",
+      "text": "Anecdote: at my last job the intranet homepage still had a banner congratulating employees on the 2019 company picnic. Someone made a browser extension that replaced the whole page with a search box pointed at the wiki, and it spread through the org by word of mouth. IT eventually just adopted it.\n\nThat extension had more product-market fit than the seven-figure intranet replatforming project running at the same time.",
+      "replies": [
+        {
+          "author": "offbyfun",
+          "age": "10 hours ago",
+          "text": "The 2019 picnic banner is such a perfect detail. Every corporate intranet has one immortal artifact like this. Ours was a lunch menu for a cafeteria that closed during a renovation and never reopened.",
+          "replies": []
+        }
+      ]
+    },
+    {
+      "author": "b2bcontrarian",
+      "age": "9 hours ago",
+      "text": "Skeptical of the 'death' framing. Intranets didn't die, they fragmented into chat, wikis, and HR portals — and every one of those vendors is now converging back toward being... an intranet. Give it five years and we'll get breathless posts about the 'company home page' as if it's a new idea.",
+      "replies": [
+        {
+          "author": "sharepointsurvivor",
+          "age": "8 hours ago",
+          "text": "OP — honestly, yes, and I say as much in the conclusion. The pendulum swing is the story. The interesting question is whether round two fixes the incentive problem or just re-runs it with better fonts.",
+          "replies": []
+        }
+      ]
+    },
+    {
+      "author": "tokenring",
+      "age": "5 hours ago",
+      "text": "Pour one out for the intranet 'classifieds' page. Bought a canoe from a guy in accounting in 2007. No modern tool has replaced that.",
+      "replies": []
+    }
+  ]
+}

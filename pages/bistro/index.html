@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Brindle Fig — Menu</title>
+<link rel="stylesheet" href="bistro.css">
+<style>
+  .mrow { display: flex; align-items: baseline; gap: 8px; margin: 14px 0 0; }
+  .mname { font-size: 17px; white-space: nowrap; }
+  .leader { flex: 1; border-bottom: 1px dotted var(--gold); transform: translateY(-4px); }
+  .mprice { white-space: nowrap; }
+  .mblurb { margin: 2px 0 0; color: var(--faded); font-style: italic; font-size: 14px; }
+  .mdetail { margin: 2px 0 0; font-size: 13px; color: var(--faded); }
+  .sizesnote { text-align: center; font-size: 13px; color: var(--faded); margin: 4px 0 0; }
+  .orderbar {
+    text-align: center; margin: 26px 0 0; padding-top: 14px;
+    border-top: 1px solid var(--rule); font-size: 15px;
+  }
+  .orderbar a { color: var(--wine); }
+  #menu .pending { text-align: center; color: var(--faded); font-style: italic; margin: 18px 0; }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="est">Kitchen &amp; Counter · Est. 2011</div>
+  <h1>The Brindle Fig</h1>
+  <div class="rulewrap"></div>
+  <nav>
+    <a href="index.html" class="on">Menu</a><span class="dot">·</span>
+    <a href="order.html">Order ahead</a><span class="dot">·</span>
+    <a href="hours.html">Hours &amp; directions</a>
+  </nav>
+</header>
+
+<main class="sheet">
+  <p class="lede">A short menu, cooked from whatever the morning market had.
+  Everything is made at the pass; ask the counter about the day's special.</p>
+
+  <div class="card">
+    <h2>Daytime Menu</h2>
+    <p class="sizesnote">Prices shown medium / large. Every dish can be built to order.</p>
+    <div id="menu"><p class="pending">Fetching today's card from the kitchen.</p></div>
+    <div class="orderbar">
+      Skip the queue: <a href="order.html">build your ticket online</a> and
+      collect at the counter in about fifteen minutes.
+    </div>
+  </div>
+</main>
+
+<footer>
+  The Brindle Fig · 14 Waldron Lane · (555) 014-0180 · hello@brindlefig.example<br>
+  <a href="hours.html">Hours &amp; directions</a> · Walk-ins welcome · No service charge<br>
+  &copy; The Brindle Fig. All rights reserved.
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const money = (n) => '$' + n.toFixed(2);
+
+  async function load() {
+    const box = document.getElementById('menu');
+    let body;
+    try {
+      const res = await fetch('/api/bistro/menu', { headers: { 'X-Session-Nonce': NONCE } });
+      body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'menu unavailable');
+    } catch {
+      box.innerHTML = '<p class="pending">The kitchen could not be reached. Refresh to try again.</p>';
+      return;
+    }
+    box.innerHTML = '';
+    const courses = [];
+    for (const item of body.menu) {
+      if (!courses.includes(item.course)) courses.push(item.course);
+    }
+    for (const course of courses) {
+      const head = document.createElement('div');
+      head.className = 'course';
+      head.textContent = course;
+      box.append(head);
+      for (const item of body.menu.filter((m) => m.course === course)) {
+        const row = document.createElement('div');
+        row.className = 'mrow';
+        const name = document.createElement('span');
+        name.className = 'mname';
+        name.textContent = item.name;
+        const leader = document.createElement('span');
+        leader.className = 'leader';
+        const price = document.createElement('span');
+        price.className = 'mprice';
+        price.textContent = money(item.base) + ' / ' + money(item.base + item.largeUpcharge);
+        row.append(name, leader, price);
+        box.append(row);
+        const blurb = document.createElement('p');
+        blurb.className = 'mblurb';
+        blurb.textContent = item.blurb;
+        box.append(blurb);
+        const detail = document.createElement('p');
+        detail.className = 'mdetail';
+        detail.textContent =
+          'Comes with ' + item.comesWith.map((m) => m.label.toLowerCase()).join(', ') +
+          '. Extras: ' +
+          item.extras.map((e) => e.label.toLowerCase() + ' +' + money(e.price)).join(', ') + '.';
+        box.append(detail);
+      }
+    }
+  }
+  load();
+</script>
+</body>
+</html>

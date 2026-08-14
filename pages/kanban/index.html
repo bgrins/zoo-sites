@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shift triage board - Coppermast Dispatch</title>
+<link rel="stylesheet" href="coppermast.css">
+</head>
+<body>
+<div class="topbar">
+  <span class="mark"><b>Coppermast</b> Dispatch</span>
+  <nav class="topnav">
+    <a href="index.html" class="on">Board</a>
+    <a href="berths.html">Berths</a>
+    <a href="crews.html">Crews</a>
+    <a href="handover.html">Handover</a>
+  </nav>
+  <span class="who">Terminal 3 &middot; R. Aldwyn</span>
+</div>
+
+<p class="crumbs">Operations / Terminal 3 / Shift triage</p>
+
+<main class="sheet">
+  <h1>Shift triage board</h1>
+  <p class="blurb">Work orders raised against Terminal 3 quay equipment. Triage before the
+  16:00 handover so the incoming shift picks up an accurate board.</p>
+
+  <div class="toolstrip">
+    <button type="button" class="btn btn-primary" id="save">Save board</button>
+    <button type="button" class="btn" id="reload">Discard changes</button>
+    <span class="hint">Drag a card between lanes, or use the move buttons on the card.</span>
+    <span class="saveline" id="saveline">Not saved this shift</span>
+    <span class="revline" id="revline" hidden>Board revision <span id="revision"></span></span>
+  </div>
+
+  <p class="board-error" id="board-error" hidden></p>
+
+  <div class="board" id="board">
+    <section class="lane" data-col="backlog" aria-label="Backlog">
+      <div class="lane-head"><h2>Backlog</h2><span class="chip" id="count-backlog">0</span></div>
+      <div class="lane-body" data-col="backlog"></div>
+    </section>
+    <section class="lane" data-col="doing" aria-label="Doing">
+      <div class="lane-head"><h2>Doing</h2><span class="chip" id="count-doing">0</span></div>
+      <div class="lane-body" data-col="doing"></div>
+    </section>
+    <section class="lane" data-col="done" aria-label="Done">
+      <div class="lane-head"><h2>Done</h2><span class="chip" id="count-done">0</span></div>
+      <div class="lane-body" data-col="done"></div>
+    </section>
+  </div>
+
+  <div class="notes">
+    <h3>Triage rule, revision 7</h3>
+    <p>Lanes are Backlog, Doing and Done. A card only counts as triaged once the board has
+    been saved; the handover report is generated from the last saved layout, not from what
+    is on screen.</p>
+    <p>Berth supervisors review the saved board at 16:00. Queries to the duty controller on
+    extension 2214.</p>
+  </div>
+</main>
+
+<footer>
+  <div class="flinks">
+    <a href="handover.html">Handover log</a>
+    <a href="berths.html">Berth register</a>
+    <a href="crews.html">Crew roster</a>
+  </div>
+  <p>&copy; 2026 Coppermast Terminals Limited. Registered in England, company 00000000.</p>
+  <address>Coppermast Terminals, Ravensgate Quay, Hollingport HP4 2LN &middot; dispatch@coppermast-terminals.example</address>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const COLS = ['backlog', 'doing', 'done'];
+const LANE_NAME = { backlog: 'Backlog', doing: 'Doing', done: 'Done' };
+
+const moves = [];
+let dragging = null;
+
+function laneBody(col) {
+  return document.querySelector('.lane-body[data-col="' + col + '"]');
+}
+
+function cardEl(card) {
+  const el = document.createElement('article');
+  el.className = 'card' + (card.tag === 'urgent' ? ' urgent' : card.tag === 'blocked' ? ' blocked' : '');
+  el.draggable = true;
+  el.dataset.card = card.id;
+  el.dataset.tag = card.tag;
+  el.setAttribute('aria-label', card.ref + ' ' + card.tagLabel);
+
+  const head = document.createElement('div');
+  head.className = 'card-head';
+  const ref = document.createElement('span');
+  ref.className = 'ref';
+  ref.textContent = card.ref;
+  const tag = document.createElement('span');
+  tag.className = 'tag tag-' + card.tag;
+  tag.textContent = card.tagLabel;
+  head.append(ref, tag);
+
+  const ttl = document.createElement('p');
+  ttl.className = 'ttl';
+  ttl.textContent = card.title;
+
+  const meta = document.createElement('p');
+  meta.className = 'meta';
+  meta.textContent = card.berth + ' / raised ' + card.raised;
+
+  const acts = document.createElement('div');
+  acts.className = 'acts';
+  for (const col of COLS) {
+    if (col === card.col) continue;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = LANE_NAME[col];
+    b.setAttribute('aria-label', 'Move ' + card.ref + ' to ' + LANE_NAME[col]);
+    b.addEventListener('click', () => move(card.id, col, 'button'));
+    acts.append(b);
+  }
+
+  el.append(head, ttl, meta, acts);
+  el.addEventListener('dragstart', (e) => {
+    dragging = card.id;
+    el.classList.add('dragging');
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', card.id);
+    }
+  });
+  el.addEventListener('dragend', () => {
+    dragging = null;
+    el.classList.remove('dragging');
+  });
+  return el;
+}
+
+let board = null;
+
+function render() {
+  for (const col of COLS) {
+    const body = laneBody(col);
+    body.textContent = '';
+    const cards = board.filter((c) => c.col === col);
+    for (const card of cards) body.append(cardEl(card));
+    if (!cards.length) {
+      const empty = document.createElement('p');
+      empty.className = 'empty';
+      empty.textContent = 'No cards';
+      body.append(empty);
+    }
+    document.getElementById('count-' + col).textContent = String(cards.length);
+  }
+}
+
+function move(id, to, via) {
+  const card = board.find((c) => c.id === id);
+  if (!card || card.col === to) return;
+  moves.push({ card: id, from: card.col, to, via });
+  card.col = to;
+  render();
+  setSaveline('Unsaved changes', false);
+}
+
+function setSaveline(text, ok, revision) {
+  const line = document.getElementById('saveline');
+  line.textContent = text;
+  line.className = 'saveline' + (ok ? ' ok' : '');
+  const revline = document.getElementById('revline');
+  document.getElementById('revision').textContent = revision || '';
+  revline.hidden = !revision;
+}
+
+// The error goes in its own node so the three lanes survive a failed read and a
+// retry can put the board back.
+function setBoardError(text) {
+  const box = document.getElementById('board-error');
+  box.textContent = text || '';
+  box.hidden = !text;
+}
+
+for (const lane of document.querySelectorAll('.lane')) {
+  lane.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    lane.classList.add('over');
+  });
+  lane.addEventListener('dragleave', () => lane.classList.remove('over'));
+  lane.addEventListener('drop', (e) => {
+    e.preventDefault();
+    lane.classList.remove('over');
+    const id = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || dragging;
+    if (id) move(id, lane.dataset.col, 'drag');
+  });
+}
+
+async function load() {
+  if (!laneBody('backlog')) return;
+  let data;
+  try {
+    const res = await fetch('/api/kanban/board?src=board', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) throw new Error('board read failed');
+    data = await res.json();
+  } catch {
+    setBoardError('Board unavailable. Sign in again from the dispatch portal, then use Discard changes to retry.');
+    return;
+  }
+  setBoardError('');
+  board = data.cards.map((c) => ({ ...c }));
+  moves.length = 0;
+  render();
+  // A save survives a reload, so say so rather than claiming nothing was saved.
+  if (data.lastRevision) setSaveline('Last saved this shift', true, data.lastRevision);
+  else setSaveline('Not saved this shift', false);
+}
+
+document.getElementById('save').addEventListener('click', async () => {
+  if (!board || !laneBody('backlog')) return;
+  setSaveline('Saving...', false);
+  const columns = { backlog: [], doing: [], done: [] };
+  for (const col of COLS) {
+    for (const el of laneBody(col).querySelectorAll('.card')) columns[col].push(el.dataset.card);
+  }
+  let res;
+  let data;
+  try {
+    res = await fetch('/api/kanban/layout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, columns, moves }),
+    });
+    data = await res.json().catch(() => ({}));
+  } catch {
+    setSaveline('Save failed - the board could not be reached', false);
+    return;
+  }
+  if (!res.ok || !data.ok) {
+    setSaveline(data.error || 'Save failed', false);
+    return;
+  }
+  // The accepted layout carried these; leaving them queued would resend the same
+  // moves on the next save and double-count the route telemetry.
+  moves.length = 0;
+  setSaveline('Board saved', true, data.revision);
+});
+
+document.getElementById('reload').addEventListener('click', load);
+
+load();
+</script>
+</body>
+</html>

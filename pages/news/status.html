@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status | Millrace</title>
+<link rel="stylesheet" href="millrace.css">
+</head>
+<body>
+<header id="masthead">
+  <div class="masthead-in">
+    <a class="wordmark" href="/news/">millrace</a>
+    <span class="tagline">a working stream for people who build things</span>
+    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+  </div>
+</header>
+<nav id="tabs" aria-label="Sections">
+  <div class="tabs-in">
+    <a class="tab" href="/news/">Stream</a>
+    <a class="tab" href="/news/?sort=fresh">Fresh</a>
+    <a class="tab" href="/news/?view=threads">Threads</a>
+    <a class="tab" href="/news/?tag=asks">Asks</a>
+    <a class="tab" href="/news/?tag=build">Build logs</a>
+    <a class="tab" href="/news/?tag=jobs">Hiring</a>
+    <a class="tab" href="/news/submit.html">Submit a link</a>
+    <form class="seek" action="/news/" method="get" role="search">
+      <input type="search" name="q" aria-label="Search the stream" placeholder="Search the stream">
+      <button type="submit">Go</button>
+    </form>
+  </div>
+</nav>
+<div id="wrap">
+  <main id="main">
+    <p class="crumbs"><a href="/news/">stream</a> &rsaquo; status</p>
+    <div class="doc">
+      <h1>Status</h1>
+      <p class="statline">All services normal
+        <span class="asof">stream, threads, feed, sign-in</span></p>
+      <p>Millrace runs on two rented machines and a healthy respect for boring
+        technology. This page is written by hand when something breaks, which is
+        why it is usually short.</p>
+
+      <h2>Incident history</h2>
+      <ul class="loglist">
+        <li><span class="when">Jul 09</span><span class="act">Stream re-ranking
+          stuck for 40 minutes; the front page served a stale order. Votes and
+          replies were unaffected. Cause: a wedged ranking job after a deploy;
+          fixed by restarting it, then by making the deploy do that itself.</span></li>
+        <li><span class="when">Jun 21</span><span class="act">Sign-in unavailable
+          for 12 minutes during a certificate rotation that went less smoothly
+          than the runbook promised. Reading was unaffected.</span></li>
+        <li><span class="when">May 30</span><span class="act">Planned maintenance:
+          database failover test, 03:00 to 03:20 local. The stream was read-only
+          for the window, as announced in the footer the week before.</span></li>
+        <li><span class="when">May 02</span><span class="act">Thread pages slow
+          (2 to 6 seconds) for about an hour under a scraping wave that ignored
+          the feed. Rate limits tightened; the feed remains unthrottled.</span></li>
+      </ul>
+      <p class="fine">Seeing something this page does not admit to? Tell
+        help@millrace.example, ideally with the time and what you clicked. The
+        <a href="/news/feed.json">feed</a> is served from the same machines, so it
+        makes a fair independent probe.</p>
+    </div>
+  </main>
+  <aside id="rail">
+    <div class="card">
+      <h2>By the numbers</h2>
+      <ul>
+        <li>Uptime, trailing year <span class="meta">99.93 percent</span></li>
+        <li>Median page render <span class="meta">64 ms</span></li>
+        <li>Machines <span class="meta">two, plus one cold spare</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Report a problem</h2>
+      <p>Broken page, wrong count, thread that will not load: write to
+        help@millrace.example and include the address of the page.</p>
+      <p class="meta"><a href="/news/contact.html">All contact routes</a></p>
+    </div>
+  </aside>
+</div>
+<footer id="footer">
+  <div class="footer-in">
+    <p class="footer-nav">
+      <a href="/news/about.html">About</a> &middot;
+      <a href="/news/guidelines.html">Guidelines</a> &middot;
+      <a href="/news/moderation.html">Moderation log</a> &middot;
+      <a href="/news/feeds.html">Feeds</a> &middot;
+      <a href="/news/status.html">Status</a> &middot;
+      <a href="/news/advertise.html">Sponsor a day</a> &middot;
+      <a href="/news/privacy.html">Privacy</a> &middot;
+      <a href="/news/terms.html">Terms</a> &middot;
+      <a href="/news/contact.html">Contact</a>
+    </p>
+    <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
+      Ashvale, VT 05412. Moderation questions go to
+      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      help@millrace.example.</p>
+    <p>Submissions and replies remain the work of their authors. Copyright 2026
+      Weirgate Collective LLC.</p>
+  </div>
+</footer>
+</body>
+</html>

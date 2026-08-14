@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Millrace</title>
+<link rel="stylesheet" href="millrace.css">
+</head>
+<body>
+<header id="masthead">
+  <div class="masthead-in">
+    <a class="wordmark" href="/news/">millrace</a>
+    <span class="tagline">a working stream for people who build things</span>
+    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+  </div>
+</header>
+<nav id="tabs" aria-label="Sections">
+  <div class="tabs-in">
+    <a class="tab" href="/news/">Stream</a>
+    <a class="tab" href="/news/?sort=fresh">Fresh</a>
+    <a class="tab" href="/news/?view=threads">Threads</a>
+    <a class="tab" href="/news/?tag=asks">Asks</a>
+    <a class="tab" href="/news/?tag=build">Build logs</a>
+    <a class="tab" href="/news/?tag=jobs">Hiring</a>
+    <a class="tab" href="/news/submit.html">Submit a link</a>
+    <form class="seek" action="/news/" method="get" role="search">
+      <input type="search" name="q" aria-label="Search the stream" placeholder="Search the stream">
+      <button type="submit">Go</button>
+    </form>
+  </div>
+</nav>
+<div id="wrap">
+  <main id="main">
+    <p class="crumbs"><a href="/news/">stream</a> &rsaquo; <span id="crumbtag">submission</span> &rsaquo; discussion</p>
+    <article id="lede"></article>
+    <div class="threadhead">
+      <h2>Discussion</h2>
+      <span class="sortby">sorted by score, replies nested under their parent</span>
+    </div>
+    <section id="thread"></section>
+    <p id="replybar">Replying needs an account. <a href="/news/signin.html">Sign in</a> or
+      <a href="/news/signin.html#register">open one</a> &mdash; new accounts can reply immediately and can
+      submit links after their first week.</p>
+  </main>
+  <aside id="rail">
+    <div class="card">
+      <h2>This submission</h2>
+      <ul id="facts"></ul>
+    </div>
+    <div class="card">
+      <h2>House rules</h2>
+      <ul>
+        <li>Reply to the strongest version of the argument.</li>
+        <li>Say who you work for when it is relevant.</li>
+        <li>Flag rather than argue with spam.</li>
+      </ul>
+      <p class="meta"><a href="/news/guidelines.html">Full guidelines</a> &middot;
+        <a href="/news/moderation.html">Moderation log</a></p>
+    </div>
+  </aside>
+</div>
+<footer id="footer">
+  <div class="footer-in">
+    <p class="footer-nav">
+      <a href="/news/about.html">About</a> &middot;
+      <a href="/news/guidelines.html">Guidelines</a> &middot;
+      <a href="/news/moderation.html">Moderation log</a> &middot;
+      <a href="/news/feeds.html">Feeds</a> &middot;
+      <a href="/news/status.html">Status</a> &middot;
+      <a href="/news/advertise.html">Sponsor a day</a> &middot;
+      <a href="/news/privacy.html">Privacy</a> &middot;
+      <a href="/news/terms.html">Terms</a> &middot;
+      <a href="/news/contact.html">Contact</a>
+    </p>
+    <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
+      Ashvale, VT 05412. Moderation questions go to
+      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      help@millrace.example.</p>
+    <p>Submissions and replies remain the work of their authors. Copyright 2026
+      Weirgate Collective LLC.</p>
+  </div>
+</footer>
+<script>
+  const id = Number(new URLSearchParams(location.search).get('id'));
+
+  // Replies nest structurally inside their parent (not just visual indent)
+  // so the hierarchy survives DOM/accessibility snapshots.
+  let remarkSeq = 0;
+  function renderRemark(remark, parentAnchor) {
+    const wrap = document.createElement('div');
+    wrap.className = 'remark';
+    wrap.id = 'r-' + ++remarkSeq;
+    const paragraphs = remark.text
+      .split('\n\n')
+      .map((p) => `<p>${p}</p>`)
+      .join('');
+    wrap.innerHTML =
+      `<div class="remark-head"><a class="who" href="member.html?u=${remark.author}">${remark.author}</a> ` +
+      `&middot; ${remark.age} &middot; <a href="/news/signin.html">reply</a> &middot; ` +
+      `<a href="#${parentAnchor}">parent</a> &middot; <a href="/news/signin.html">flag</a></div>` +
+      `<div class="remark-body">${paragraphs}</div>`;
+    const replies = remark.replies ?? [];
+    if (replies.length) {
+      const nest = document.createElement('div');
+      nest.className = 'nest';
+      nest.setAttribute('role', 'group');
+      nest.setAttribute('aria-label', 'replies');
+      for (const reply of replies) {
+        nest.appendChild(renderRemark(reply, wrap.id));
+      }
+      wrap.appendChild(nest);
+    }
+    return wrap;
+  }
+
+  function hide(el) {
+    if (el) el.style.display = 'none';
+  }
+
+  function threadNote(text) {
+    const note = document.createElement('p');
+    note.className = 'threadnote';
+    note.textContent = text;
+    document.getElementById('thread').appendChild(note);
+  }
+
+  Promise.all([
+    fetch('items.json').then((r) => r.json()),
+    fetch('items2.json').then((r) => (r.ok ? r.json() : [])).catch(() => []),
+    fetch(`threads/item-${id}.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+  ]).then(([front, older, thread]) => {
+    const item = front.concat(older).find((entry) => entry.rank === id);
+    if (!item) {
+      document.title = 'Submission not found | Millrace';
+      document.getElementById('crumbtag').textContent = 'not found';
+      document.getElementById('lede').innerHTML =
+        '<div class="gone"><p class="headline">This submission is not on the stream.</p>' +
+        '<p class="byline">It may have dropped off after its couple of days on the front ' +
+        'pages, been withdrawn by its author, or the address may simply be wrong.</p>' +
+        '<p class="byline"><a href="/news/">Back to the stream</a> &middot; ' +
+        '<a href="/news/?p=2">older submissions</a> &middot; ' +
+        '<a href="/news/contact.html">report a broken link</a></p></div>';
+      hide(document.querySelector('.threadhead'));
+      hide(document.getElementById('replybar'));
+      hide(document.getElementById('facts').closest('.card'));
+      return;
+    }
+    document.title = item.title + ' | Millrace';
+    const tag = item.type === 'job' ? 'jobs' : item.tag;
+    document.getElementById('crumbtag').textContent = tag;
+    const itemUrl = `item.html?id=${item.rank}`;
+    const origin = item.site ? ` <span class="origin">${item.site}</span>` : '';
+    const lead =
+      item.type === 'job'
+        ? '<span class="chip">hiring</span>'
+        : `<a class="tally" href="/news/signin.html" title="Vote this up">${item.points}` +
+          `<span class="unit">points</span></a>`;
+    const byline =
+      item.type === 'job'
+        ? `sponsored listing &middot; posted ${item.age}`
+        : `<a class="who" href="member.html?u=${item.author}">${item.author}</a> &middot; ${item.age} &middot; ` +
+          `<a class="topic" href="/news/?tag=${item.tag}">${item.tag}</a> &middot; ` +
+          `${item.comments}&nbsp;replies &middot; <a href="/news/signin.html">flag</a> ` +
+          `&middot; <a href="/news/signin.html">save</a>`;
+    document.getElementById('lede').innerHTML =
+      `${lead}` +
+      `<p class="headline"><a href="${itemUrl}">${item.title}</a>${origin}</p>` +
+      `<p class="byline">${byline}</p>`;
+
+    const facts = [
+      `<li>Position on the stream: <strong>${item.rank}</strong></li>`,
+      `<li>Tag: <a class="topic" href="/news/?tag=${tag}">${tag}</a></li>`,
+      `<li>Submitted <span class="meta">${item.age}</span></li>`,
+    ];
+    if (item.type !== 'job') {
+      facts.push(`<li>Score: <strong>${item.points}</strong> points</li>`);
+      facts.push(`<li>Replies, including nested: <strong>${item.comments}</strong></li>`);
+    }
+    if (item.site) {
+      facts.push(`<li>Source: <span class="meta">${item.site}</span></li>`);
+    }
+    document.getElementById('facts').innerHTML = facts.join('');
+
+    if (item.type === 'job') {
+      threadNote(
+        'Sponsored listings do not take replies. Apply through the company, ' +
+          'and flag the listing to the stewards if something in it looks off.'
+      );
+      hide(document.getElementById('replybar'));
+      return;
+    }
+    if (!thread) {
+      threadNote(
+        `The ${item.comments} ${item.comments === 1 ? 'reply' : 'replies'} on this thread ` +
+          'have not reached the reading archive yet. Replies land here a few minutes ' +
+          'after they are posted; this thread is still settling. Check back shortly.'
+      );
+      return;
+    }
+    const container = document.getElementById('thread');
+    for (const remark of thread.comments) {
+      container.appendChild(renderRemark(remark, 'lede'));
+    }
+    if (!thread.comments.length) {
+      threadNote('No replies yet. Signed-in members see a reply box here.');
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Northmarsh Outfitters — Basket</title>
+<link rel="stylesheet" href="gallery.css">
+</head>
+<body>
+<header>
+  <img src="img/logo-mark.png" width="40" height="40" alt="Northmarsh Outfitters mark">
+  <span class="brand">NORTHMARSH OUTFITTERS</span>
+  <span class="tag">Field-tested kit since 1974 · Free returns for 60 days</span>
+  <a class="basket" href="basket.html">Basket (<span id="bcount">0</span>)</a>
+</header>
+<nav>
+  <a href="index.html?cat=packs">Packs</a>
+  <a href="index.html?cat=shelters">Shelters</a>
+  <a href="index.html" class="here">Summer Trail</a>
+  <a href="index.html?cat=footwear">Footwear</a>
+  <a href="index.html?cat=layers">Layers</a>
+  <a href="clearance.html">Clearance</a>
+</nav>
+<p class="crumbs">Home &mdash; Basket</p>
+<main>
+  <section class="results" style="max-width: 62rem;">
+
+    <h1>Your basket</h1>
+    <p class="count" id="bstate">Loading your basket…</p>
+    <ul id="grid"></ul>
+    <p class="count">Collection is free from any depot. Courier delivery is quoted at the counter while the autumn rate card is settled.</p>
+    <script>
+      (async () => {
+        const NONCE = '__SESSION_NONCE__';
+        const NAMES = {
+          'HR-4182': ['Halberd Ridge 45L Pack', 168.0], 'CP-2290': ['Cinderpost Camp Stove', 74.5],
+          'TW-6035': ['Thornwick Rain Shell', 212.0], 'ML-1174': ['Moorlight Trail Lantern', 38.0],
+          'SM-5417': ['Saltmarsh Wader Boot', 146.0], 'GB-5310': ['Grimsby Fleece Midlayer', 89.0],
+          'RG-7726': ['Ravensgill Dome Tent', 395.0], 'PT-3049': ['Ptarmigan Down Quilt', 259.0],
+          'QS-5761': ['Quarrystone Water Filter', 52.0], 'AG-2673': ['Ashgrove Trekking Poles', 96.0],
+          'FG-5528': ['Fellgate Summit Gloves', 64.0], 'WN-1806': ['Withernsea Dry Bag', 29.0],
+        };
+        const state = document.getElementById('bstate');
+        const grid = document.getElementById('grid');
+        try {
+          const r = await fetch('/api/gallery/basket', { headers: { 'X-Session-Nonce': NONCE } });
+          const body = await r.json();
+          if (!body.items.length) {
+            state.textContent = 'Your basket is empty. The Summer Trail collection is one click back.';
+            return;
+          }
+          let total = 0;
+          for (const it of body.items) {
+            const [name, price] = NAMES[it.sku] ?? [it.sku, 0];
+            total += price * it.qty;
+            const li = document.createElement('li');
+            li.className = 'card';
+            li.innerHTML = '<h3>' + name + '</h3><p class="sku">SKU ' + it.sku +
+              '</p><p class="price">' + (price * it.qty).toFixed(2) + '</p>' +
+              '<p class="blurb">Quantity ' + it.qty + '</p>';
+            grid.append(li);
+          }
+          state.textContent = body.items.length + ' line(s) · total ' + total.toFixed(2) + ' including VAT';
+        } catch {
+          state.textContent = 'The basket service did not answer. Try again in a moment.';
+        }
+      })();
+    </script>
+  </section>
+</main>
+<footer>
+  <p>Prices include VAT. Stock is held across the Northmarsh depot network and can change between page loads. &copy; Northmarsh Outfitters Ltd, Quay Lane, Northmarsh.</p>
+  <p><a href="depots.html">Depot hours</a> · <a href="repairs.html">Repairs and re-proofing</a> · <a href="trade.html">Trade accounts</a> · <a href="clearance.html">Catalogue archive</a></p>
+</footer>
+<script>window.NONCE = '__SESSION_NONCE__';</script>
+<script src="shopfront.js"></script>
+</body>
+</html>

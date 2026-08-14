@@ -1,0 +1,41 @@
+{
+  "rank": 25,
+  "comments": [
+    {
+      "author": "tokenring",
+      "age": "22 hours ago",
+      "text": "The part everyone skips in these writeups is the boring one: liability. What happens when a neighbor's kid torrents something and the notice arrives addressed to you? Did you register as an actual provider or is this all riding on your residential contract?",
+      "replies": [
+        {
+          "author": "fiberneighbor",
+          "age": "20 hours ago",
+          "text": "OP here — not skipped, just cut for length. I formed a tiny cooperative, each house is a member, and we buy transit through a regional wholesale provider that handles abuse notices per-member. It cost more in paperwork than in hardware. The switch was $60; the lawyer consult was $400.",
+          "replies": [
+            {
+              "author": "tokenring",
+              "age": "18 hours ago",
+              "text": "That's the right way to do it. Respect. The co-op structure also means you survive the founder moving away, which kills most of these projects."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "kernelpanda",
+      "age": "16 hours ago",
+      "text": "We did something similar for a twelve-unit building and the technical side was trivial compared to the social side. Two years in, the hard problems are: who answers the 11pm \"internet is down\" text, and how do you tell a neighbor their smart doorbell is saturating the uplink.\n\nMy advice to anyone tempted: write the governance doc before you crimp a single cable. Uptime is a social contract wearing an ethernet costume."
+    },
+    {
+      "author": "hollowfiber",
+      "age": "12 hours ago",
+      "text": "Question about the trenching: article says conduit at 45cm depth along the property line. Did every homeowner sign an easement, or are you relying on handshakes? Because the handshake version ends badly the first time someone sells their house.",
+      "replies": [
+        {
+          "author": "fiberneighbor",
+          "age": "10 hours ago",
+          "text": "Recorded easements, filed with the county. Handshakes are for the group chat, not for buried infrastructure."
+        }
+      ]
+    }
+  ]
+}

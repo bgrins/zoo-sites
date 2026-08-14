@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shift dashboard - Marlowe Depot Systems</title>
+<link rel="stylesheet" href="depot.css">
+</head>
+<body>
+<header class="mast">
+  <img class="mark" src="assets/mark.svg" alt="" width="26" height="26">
+  <span class="brand">Marlowe Depot Systems</span>
+  <span class="site">Yard 4 &middot; Grenford</span>
+  <span class="grow"></span>
+  <span class="meta">Ops console 6.2.4</span>
+</header>
+<nav class="tabs">
+  <a href="shifts.html" data-tab="shifts">Shifts</a>
+  <a href="manifests.html" data-tab="manifests">Manifests</a>
+  <a href="intake.html" data-tab="intake">Intake</a>
+  <a href="incidents.html" data-tab="incidents">Incidents</a>
+  <span class="grow"></span>
+  <a href="index.html" class="signout" data-tab="signin">Sign in</a>
+</nav>
+
+<div class="wrap">
+  <div class="cols">
+    <div class="col">
+      <section class="panel">
+        <h2 id="roster-head">Shift roster</h2>
+        <div class="bd tight">
+          <table id="roster-table">
+            <thead>
+              <tr><th>Bay</th><th>Operator</th><th>Role</th><th>Window</th></tr>
+            </thead>
+            <tbody id="roster-body"></tbody>
+          </table>
+        </div>
+        <div class="bd">
+          <p class="status" id="roster-note">No roster loaded.
+          <a href="index.html">Sign in</a> from the operator terminal.</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Bay occupancy</h2>
+        <div class="bd tight">
+          <table id="bays-table">
+            <tr><th>Bay</th><th>Trailer</th><th>Carrier</th><th>State</th></tr>
+            <tr><td colspan="4" class="muted">Loading...</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Recent yard moves</h2>
+        <div class="bd tight">
+          <table id="moves-table">
+            <tr><th>Time</th><th>Unit</th><th>From</th><th>To</th><th>Tug</th></tr>
+            <tr><td colspan="5" class="muted">Loading...</td></tr>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel">
+        <h2>Ops day &middot; Mon 28 Jul</h2>
+        <div class="bd"><div class="kv" id="kpis"><span class="muted">Loading...</span></div></div>
+      </section>
+
+      <section class="panel">
+        <h2>Dock status</h2>
+        <div class="bd"><div class="kv" id="docks"><span class="muted">Loading...</span></div></div>
+      </section>
+
+      <section class="panel">
+        <h2>Alerts</h2>
+        <div class="bd tight">
+          <table id="alerts-table"><tr><td class="muted">Loading...</td></tr></table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Equipment out</h2>
+        <div class="bd tight">
+          <table id="equip-table"><tr><td class="muted">Loading...</td></tr></table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Throughput</h2>
+        <div class="bd"><div class="kv" id="throughput"><span class="muted">Loading...</span></div></div>
+      </section>
+
+      <section class="panel">
+        <h2>Notices</h2>
+        <div class="bd tight">
+          <table id="notices-table"><tr><td class="muted">Loading...</td></tr></table>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<footer class="foot">
+  <span>&copy; 2026 Marlowe Depot Systems Ltd. Registered office: Unit 9, Grenford Trade Park, Grenford GR2 4LX.</span>
+  <a href="legal.html#privacy">Privacy</a>
+  <a href="legal.html#terms">Terms</a>
+  <a href="incidents.html">Report an incident</a>
+  <span>Ops desk: 01632 960 210</span>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+(function renderRoster() {
+  let roster = null;
+  try { roster = JSON.parse(sessionStorage.getItem('depot-roster')); } catch {}
+  if (!roster || !Array.isArray(roster.rows)) return;
+  document.getElementById('roster-head').textContent =
+    'Shift roster · ' + roster.shiftDate;
+  document.getElementById('roster-body').innerHTML =
+    roster.rows.map((r) =>
+      '<tr><td>' + esc(r.bay) + '</td><td>' + esc(r.operator) + '</td><td>' +
+      esc(r.role) + '</td><td>' + esc(r.window) + '</td></tr>').join('');
+  document.getElementById('roster-note').textContent =
+    roster.rows.length + ' operators rostered.';
+})();
+
+async function fill(path, render) {
+  try {
+    const r = await fetch(path);
+    if (r.ok) render(await r.json());
+  } catch {}
+}
+
+fill('/api/depot/bays', (d) => {
+  document.getElementById('bays-table').innerHTML =
+    '<tr><th>Bay</th><th>Trailer</th><th>Carrier</th><th>State</th></tr>' +
+    d.bays.map((b) =>
+      '<tr><td>' + esc(b.bay) + '</td><td>' + esc(b.trailer) + '</td><td>' +
+      esc(b.carrier) + '</td><td><span class="pill ' + esc(b.tone) + '">' +
+      esc(b.state) + '</span></td></tr>').join('');
+});
+
+fill('/api/depot/moves', (d) => {
+  document.getElementById('moves-table').innerHTML =
+    '<tr><th>Time</th><th>Unit</th><th>From</th><th>To</th><th>Tug</th></tr>' +
+    d.moves.map((m) =>
+      '<tr><td>' + esc(m.at) + '</td><td>' + esc(m.unit) + '</td><td>' +
+      esc(m.from) + '</td><td>' + esc(m.to) + '</td><td>' + esc(m.tug) +
+      '</td></tr>').join('');
+});
+
+const kvRows = (pairs) => pairs.map((p) =>
+  '<span class="k">' + esc(p[0]) + '</span><span class="v">' + esc(p[1]) + '</span>').join('');
+
+fill('/api/depot/kpis', (d) => {
+  document.getElementById('kpis').innerHTML = kvRows([
+    ['Trailers turned', d.trailersTurned],
+    ['Lines picked', d.linesPicked],
+    ['Putaway backlog', d.putawayBacklog],
+    ['Late departures', d.lateDepartures],
+  ]);
+});
+
+fill('/api/depot/dock-status', (d) => {
+  document.getElementById('docks').innerHTML = kvRows([
+    ['Doors live', d.live],
+    ['Doors held', d.held],
+    ['Doors down', d.down],
+    ['Next arrival', d.nextArrival],
+  ]);
+});
+
+fill('/api/depot/alerts', (d) => {
+  document.getElementById('alerts-table').innerHTML = d.alerts.map((a) =>
+    '<tr><td><span class="pill ' + esc(a.tone) + '">' + esc(a.level) +
+    '</span></td><td>' + esc(a.text) + '</td></tr>').join('');
+});
+
+fill('/api/depot/equipment', (d) => {
+  document.getElementById('equip-table').innerHTML =
+    '<tr><th>Unit</th><th>Holder</th><th>Due back</th></tr>' +
+    d.units.map((u) =>
+      '<tr><td>' + esc(u.unit) + '</td><td>' + esc(u.holder) + '</td><td>' +
+      esc(u.due) + '</td></tr>').join('');
+});
+
+fill('/api/depot/throughput', (d) => {
+  document.getElementById('throughput').innerHTML = kvRows([
+    ['Cases in', d.casesIn],
+    ['Cases out', d.casesOut],
+    ['Cross-dock', d.crossDock],
+    ['Returns', d.returns],
+  ]);
+});
+
+fill('/api/depot/notices', (d) => {
+  document.getElementById('notices-table').innerHTML = d.notices.map((n) =>
+    '<tr><td class="muted">' + esc(n.posted) + '</td><td>' + esc(n.text) +
+    '</td></tr>').join('');
+});
+</script>
+<script src="depot.js"></script>
+</body>
+</html>

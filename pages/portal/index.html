@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — Overlane Carrier Access</title>
+<link rel="stylesheet" href="portal.css">
+</head>
+<body class="signin">
+<div class="signin-head">
+  <span class="logo">
+    <svg class="logo-mark" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+      <rect width="30" height="30" rx="8" fill="#ffffff"></rect>
+      <path d="M7 20h11M7 15h15M7 10h8" stroke="#2f4bb5" stroke-width="2.2" stroke-linecap="round"></path>
+      <circle cx="22.5" cy="20" r="2.6" fill="#0d8d80"></circle>
+    </svg>
+    <span class="logo-word">Overlane</span>
+    <span class="logo-sub">Carrier Access</span>
+  </span>
+</div>
+
+<div class="card">
+  <div id="banner" class="notice" role="alert" hidden></div>
+  <h1>Sign in</h1>
+  <p class="lede">Use the account your carrier administrator issued you.</p>
+  <form id="login" novalidate>
+    <div class="field">
+      <label for="email">Work email</label>
+      <input id="email" type="email" autocomplete="off" placeholder="you@yourcarrier.example">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="off">
+    </div>
+    <button type="submit" id="submitBtn" class="btn btn-primary">Sign in</button>
+    <div id="status" role="alert"></div>
+    <div class="or">or</div>
+    <button type="button" id="ssoBtn" class="btn btn-secondary">Sign in with SSO</button>
+    <div id="ssoNote" hidden></div>
+  </form>
+  <div class="card-foot">
+    <a href="forgot.html">Forgot your password?</a> &middot;
+    <a href="#account-help">Trouble signing in?</a>
+  </div>
+</div>
+
+<div class="help" id="account-help">
+  <h2>Trouble signing in</h2>
+  <ul>
+    <li>Passwords expire every 90 days. Your administrator can issue a reset link.</li>
+    <li>Accounts lock after ten failed attempts and clear automatically after an hour.</li>
+    <li>Single sign-on is available once your carrier has completed federation.</li>
+    <li>Still stuck? Call the service desk on +1 206 555 0148, option 2.</li>
+  </ul>
+</div>
+
+<footer class="sitefoot">
+  <nav>
+    <a href="support.html">Support centre</a>
+    <a href="status.html">Network status</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+  </nav>
+  <p>Overlane Logistics Group, 1400 Harbor Way, Suite 620, Tacoma WA 98402</p>
+  <p>Copyright 2026 Overlane Logistics Group. All rights reserved.</p>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const params = new URLSearchParams(location.search);
+  const area = params.get('area') ?? '';
+  const banner = document.getElementById('banner');
+  if (params.get('expired') === '1') {
+    banner.hidden = false;
+    banner.textContent = 'Session expired — log in again.';
+  } else if (params.get('signedout') === '1') {
+    banner.hidden = false;
+    banner.className = 'notice notice-ok';
+    banner.textContent = 'You are signed out.';
+  }
+  const status = document.getElementById('status');
+
+  document.getElementById('ssoBtn').addEventListener('click', () => {
+    const note = document.getElementById('ssoNote');
+    note.hidden = false;
+    note.textContent =
+      'Single sign-on is not enabled for this carrier. Use your Overlane password.';
+  });
+
+  document.getElementById('login').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = document.getElementById('submitBtn');
+    button.disabled = true;
+    status.className = '';
+    status.textContent = 'Signing in…';
+    try {
+      const res = await fetch('/api/portal/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nonce: NONCE,
+          email: document.getElementById('email').value,
+          password: document.getElementById('password').value,
+          area,
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        status.className = 'err';
+        status.textContent =
+          res.status === 403
+            ? 'This sign-in page has been open too long. Reload it and try again.'
+            : body.error ?? 'Sign-in failed.';
+        return;
+      }
+      location.href = body.next;
+    } catch {
+      status.className = 'err';
+      status.textContent = 'Network error — try again.';
+    } finally {
+      button.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

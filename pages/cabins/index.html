@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tamarack Hollow — one cabin above Fernlee</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Rockwell, "Rockwell Nova", "Roboto Slab", "Zilla Slab", "DejaVu Serif", serif;
+    background: #f6f0e1;
+    color: #2b241a;
+    line-height: 1.55;
+  }
+  header {
+    background: #1e4632;
+    color: #f6f0e1;
+    padding: 26px 24px 18px;
+    border-bottom: 6px double #c9a04b;
+  }
+  .masthead { max-width: 960px; margin: 0 auto; }
+  .brand { font-size: 34px; letter-spacing: 1px; }
+  .brand small {
+    display: block; font-size: 12px; letter-spacing: 4px;
+    text-transform: uppercase; color: #cdbf9a; margin-top: 2px;
+  }
+  nav { max-width: 960px; margin: 14px auto 0; }
+  nav a {
+    color: #f6f0e1; text-decoration: none; text-transform: uppercase;
+    letter-spacing: 2px; font-size: 12px; margin-right: 22px;
+    border-bottom: 2px solid transparent; padding-bottom: 3px;
+  }
+  nav a:hover { border-bottom-color: #c9a04b; }
+  main { max-width: 960px; margin: 0 auto; padding: 26px 24px 40px; }
+  section { margin-bottom: 38px; }
+  h1 { font-size: 26px; margin: 0 0 10px; color: #1e4632; }
+  h2 {
+    font-size: 19px; color: #1e4632; margin: 0 0 12px;
+    border-bottom: 3px solid #1e4632; padding-bottom: 5px;
+  }
+  h3 { font-size: 15px; margin: 0 0 6px; color: #1e4632; }
+  p { margin: 0 0 10px; max-width: 74ch; }
+  .plaque {
+    background: #efe6cd; border: 1px solid #d6c8a2; border-left: 8px solid #1e4632;
+    padding: 12px 16px; margin: 0 0 14px;
+  }
+  .cols { display: flex; gap: 28px; flex-wrap: wrap; }
+  .cols > div { flex: 1 1 260px; }
+  ul { margin: 0 0 10px; padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  .calwrap { display: flex; gap: 26px; flex-wrap: wrap; margin: 20px 0 14px; }
+  .month { flex: 0 0 auto; }
+  .month h3 { text-align: center; }
+  .grid7 {
+    display: grid; grid-template-columns: repeat(7, 44px); gap: 3px;
+  }
+  .dow {
+    text-align: center; font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    color: #6e5f43; padding: 3px 0;
+  }
+  button.day {
+    font: inherit; font-size: 14px; width: 44px; height: 38px;
+    border: 1px solid #b7a87f; background: #fdfaf1; color: #2b241a; cursor: pointer;
+  }
+  button.day:hover:not(:disabled) { background: #e6dfc8; }
+  button.day:disabled {
+    background: repeating-linear-gradient(45deg, #ddd6c4, #ddd6c4 3px, #cfc6ae 3px, #cfc6ae 6px);
+    color: #8a7d61; cursor: not-allowed;
+  }
+  button.day.pick { background: #1e4632; color: #f6f0e1; border-color: #1e4632; }
+  button.day.stay { background: #58775f; color: #f6f0e1; border-color: #4a6851; }
+  .legend { font-size: 12px; color: #6e5f43; margin-bottom: 18px; }
+  .legend span { margin-right: 18px; }
+  .key {
+    display: inline-block; width: 12px; height: 12px; border: 1px solid #b7a87f;
+    vertical-align: -1px; margin-right: 5px;
+  }
+  .key.open { background: #fdfaf1; }
+  .key.blk { background: repeating-linear-gradient(45deg, #ddd6c4, #ddd6c4 3px, #cfc6ae 3px, #cfc6ae 6px); }
+  .key.sel { background: #1e4632; }
+  form.bookline {
+    background: #efe6cd; border: 1px solid #d6c8a2; padding: 16px;
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-end;
+  }
+  .field label { display: block; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #4a3f2b; margin-bottom: 4px; }
+  .field input {
+    font: inherit; padding: 7px 9px; border: 2px solid #1e4632; background: #fdfaf1;
+    width: 170px;
+  }
+  #quote { font-size: 14px; color: #4a3f2b; padding-bottom: 9px; min-width: 190px; }
+  button.reserve {
+    font: inherit; font-size: 15px; letter-spacing: 1px; text-transform: uppercase;
+    background: #1e4632; color: #f6f0e1; border: 0; padding: 11px 26px; cursor: pointer;
+  }
+  button.reserve:hover { background: #163524; }
+  #notice { display: none; margin-top: 14px; border: 2px solid #8f3b2c; background: #f4e2dc; padding: 12px 16px; }
+  #notice .head { color: #8f3b2c; font-size: 15px; margin-bottom: 4px; }
+  #confirmation { display: none; margin-top: 14px; border: 2px solid #1e4632; background: #e7eee4; padding: 14px 18px; }
+  #confirmation .line { margin: 2px 0; font-size: 15px; }
+  #confirmation .fine { font-size: 12px; color: #4a3f2b; margin-top: 8px; }
+  footer {
+    background: #1e4632; color: #cdbf9a; font-size: 12px;
+    padding: 18px 24px; border-top: 6px double #c9a04b;
+  }
+  footer .inner { max-width: 960px; margin: 0 auto; }
+  footer a { color: #f6f0e1; }
+</style>
+</head>
+<body>
+<header>
+  <div class="masthead">
+    <div class="brand">Tamarack Hollow<small>Cabin lettings on the Fernlee ridge</small></div>
+  </div>
+  <nav>
+    <a href="#cabin">The cabin</a>
+    <a href="#rates">Rates and season notes</a>
+    <a href="#book">Availability</a>
+    <a href="#directions">Getting here</a>
+  </nav>
+</header>
+<main>
+  <section id="cabin">
+    <h1>One timber cabin, a ridge to itself</h1>
+    <p>Tamarack Hollow is a single hand-built cabin on the wooded ridge above
+    Fernlee, half an hour past the last paved road. There is no reception desk
+    and no neighbouring plot: the booking calendar below is the whole of our
+    front office. The cabin sleeps four across a loft and a box bed, keeps a
+    wood stove going through the shoulder season, and draws its water from the
+    spring behind the woodshed.</p>
+    <div class="cols">
+      <div>
+        <h3>In the cabin</h3>
+        <ul>
+          <li>Loft with two full beds, box bed off the porch room</li>
+          <li>Wood stove, stacked cordwood included</li>
+          <li>Gas ring, cold pantry, spring water on tap</li>
+          <li>Lake sauna shared with no one</li>
+        </ul>
+      </div>
+      <div>
+        <h3>On the ridge</h3>
+        <ul>
+          <li>Marked paths to Fernlee tarn and the fire tower</li>
+          <li>Rowing boat at the tarn jetty, oars in the woodshed</li>
+          <li>Gate lodge attended mornings for key handover</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="rates">
+    <h2>Rates and season notes</h2>
+    <div class="plaque">
+      <p id="rate-line">Autumn rate loading</p>
+      <p id="window-line">Season window loading</p>
+    </div>
+    <ul>
+      <li>Stays run from two to fourteen nights.</li>
+      <li>A stay occupies every night from check-in to the morning of
+      check-out; the check-out morning itself is not a stay night.</li>
+      <li>Blackout dates are held for maintenance and private lettings. They
+      are hatched grey on the calendar and cannot be booked, and every night of
+      a stay must be clear of them.</li>
+      <li>The total for a stay and the reservation reference are issued when
+      the booking is confirmed. Quote the reference at the gate lodge.</li>
+    </ul>
+  </section>
+
+  <section id="book">
+    <h2>Availability and booking</h2>
+    <form class="bookline" id="bookform">
+      <div class="field">
+        <label for="checkin">Check-in</label>
+        <input id="checkin" name="checkin" aria-label="Check-in date YYYY-MM-DD"
+          placeholder="YYYY-MM-DD" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="checkout">Check-out</label>
+        <input id="checkout" name="checkout" aria-label="Check-out date YYYY-MM-DD"
+          placeholder="YYYY-MM-DD" autocomplete="off">
+      </div>
+      <div id="quote">Pick dates on the calendar or type them.</div>
+      <button type="submit" class="reserve">Reserve the cabin</button>
+    </form>
+    <div id="notice">
+      <div class="head" id="notice-msg"></div>
+      <div id="notice-detail"></div>
+    </div>
+    <div id="confirmation">
+      <h3>Reservation confirmed</h3>
+      <p class="line" id="conf-ref"></p>
+      <p class="line" id="conf-in"></p>
+      <p class="line" id="conf-out"></p>
+      <p class="line" id="conf-total"></p>
+      <p class="fine">Keep the reference for the gate lodge. Booking again with
+      new dates replaces this reservation and issues a fresh reference.</p>
+    </div>
+    <div class="calwrap" id="calendars"></div>
+    <div class="legend">
+      <span><span class="key open"></span>Open</span>
+      <span><span class="key blk"></span>Blackout</span>
+      <span><span class="key sel"></span>Your dates</span>
+    </div>
+  </section>
+
+  <section id="directions">
+    <h2>Getting here</h2>
+    <p>From Fernlee, take Millbrook Road north until the tarmac gives out at
+    the quarry turning, then follow the forestry track signed Tamarack Hollow
+    for another four kilometres. The gate lodge sits where the track forks;
+    collect the key there between eight and eleven any morning, or ring ahead
+    for the lockbox word. Snow chains are sensible from late October.</p>
+  </section>
+</main>
+<footer>
+  <div class="inner">
+    &copy; 2026 Tamarack Hollow Lettings &middot; Gate lodge, Millbrook Road,
+    Fernlee &middot; stay@tamarackhollow.example &middot; 01632 960 177 &middot;
+    <a href="policies.html#privacy">Privacy</a> &middot;
+    <a href="policies.html#terms">Booking terms</a>
+  </div>
+</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const MONTHS = [
+  { y: 2026, m: 8, name: 'September 2026' },
+  { y: 2026, m: 9, name: 'October 2026' },
+];
+const SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const iso = (y, m, d) =>
+  y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+// The weekday belongs in the name, not only in the column: a day cell carries no
+// clue which column it sits in unless the row is read as a whole, and the blank
+// lead cells that set the offset are decorative. Naming the weekday is also what
+// a booking calendar does for a screen reader.
+const shortDate = (s) => {
+  const p = s.split('-');
+  const dow = DOW[new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]))).getUTCDay()];
+  return dow + ' ' + SHORT[Number(p[1]) - 1] + ' ' + Number(p[2]);
+};
+let rate = null;
+let blackouts = new Set();
+let checkin = null;
+let checkout = null;
+
+const el = (id) => document.getElementById(id);
+
+function dayLabel(dateIso) {
+  const base = shortDate(dateIso);
+  if (blackouts.has(dateIso)) return base + ' - blackout';
+  if (dateIso === checkin) return base + ' - check-in';
+  if (dateIso === checkout) return base + ' - check-out';
+  if (checkin && checkout && dateIso > checkin && dateIso < checkout) return base + ' - stay';
+  return base + ' - open';
+}
+
+function render() {
+  const wrap = el('calendars');
+  wrap.textContent = '';
+  for (const spec of MONTHS) {
+    const box = document.createElement('div');
+    box.className = 'month';
+    const h = document.createElement('h3');
+    h.textContent = spec.name;
+    box.appendChild(h);
+    const grid = document.createElement('div');
+    grid.className = 'grid7';
+    for (const d of ['Mo','Tu','We','Th','Fr','Sa','Su']) {
+      const c = document.createElement('div');
+      c.className = 'dow';
+      c.textContent = d;
+      grid.appendChild(c);
+    }
+    const first = new Date(Date.UTC(spec.y, spec.m, 1));
+    const days = new Date(Date.UTC(spec.y, spec.m + 1, 0)).getUTCDate();
+    const lead = (first.getUTCDay() + 6) % 7;
+    for (let i = 0; i < lead; i++) grid.appendChild(document.createElement('div'));
+    for (let d = 1; d <= days; d++) {
+      const dateIso = iso(spec.y, spec.m, d);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'day';
+      b.textContent = d;
+      b.setAttribute('aria-label', dayLabel(dateIso));
+      if (blackouts.has(dateIso)) {
+        b.disabled = true;
+      } else {
+        if (dateIso === checkin || dateIso === checkout) b.classList.add('pick');
+        else if (checkin && checkout && dateIso > checkin && dateIso < checkout) b.classList.add('stay');
+        b.addEventListener('click', () => onDay(dateIso));
+      }
+      grid.appendChild(b);
+    }
+    box.appendChild(grid);
+    wrap.appendChild(box);
+  }
+  quote();
+}
+
+function onDay(dateIso) {
+  // Inputs can be edited without a change event ever firing, so re-adopt any
+  // typed dates before deciding whether this click picks a check-in or a
+  // check-out; otherwise a typed check-in would be silently overwritten.
+  const typed = (id) => {
+    const v = el(id).value.trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+  };
+  checkin = typed('checkin');
+  checkout = typed('checkout');
+  if (!checkin || (checkin && checkout) || dateIso <= checkin) {
+    checkin = dateIso;
+    checkout = null;
+  } else {
+    checkout = dateIso;
+  }
+  el('checkin').value = checkin ?? '';
+  el('checkout').value = checkout ?? '';
+  render();
+}
+
+function quote() {
+  const q = el('quote');
+  if (!checkin) {
+    q.textContent = 'Pick dates on the calendar or type them.';
+    return;
+  }
+  if (!checkout) {
+    q.textContent = 'Now pick a check-out date.';
+    return;
+  }
+  const nights = Math.round((Date.parse(checkout) - Date.parse(checkin)) / 86400000);
+  q.textContent = nights + (nights === 1 ? ' night' : ' nights') +
+    (rate ? ' at $' + rate + ' a night' : '');
+}
+
+function fromInputs() {
+  const a = el('checkin').value.trim();
+  const b = el('checkout').value.trim();
+  checkin = /^\d{4}-\d{2}-\d{2}$/.test(a) ? a : null;
+  checkout = /^\d{4}-\d{2}-\d{2}$/.test(b) ? b : null;
+  render();
+}
+
+el('checkin').addEventListener('change', fromInputs);
+el('checkout').addEventListener('change', fromInputs);
+
+el('bookform').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  el('notice').style.display = 'none';
+  const res = await fetch('/api/cabins/book', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      nonce: NONCE,
+      checkin: el('checkin').value.trim(),
+      checkout: el('checkout').value.trim(),
+    }),
+  });
+  const data = await res.json();
+  if (!data.ok) {
+    el('confirmation').style.display = 'none';
+    el('notice-msg').textContent = data.message ?? 'Booking refused';
+    el('notice-detail').textContent = data.detail ?? '';
+    el('notice').style.display = 'block';
+    return;
+  }
+  showConfirmed(data);
+});
+
+function showConfirmed(c) {
+  el('conf-ref').textContent = 'Reference ' + c.reference;
+  el('conf-in').textContent = 'Check-in ' + c.checkIn;
+  el('conf-out').textContent = 'Check-out ' + c.checkOut;
+  el('conf-total').textContent = 'Total $' + c.total + ' for ' + c.nights + ' nights';
+  el('confirmation').style.display = 'block';
+}
+
+async function load() {
+  const res = await fetch('/api/cabins/availability', {
+    headers: { 'X-Session-Nonce': NONCE },
+  });
+  if (!res.ok) {
+    el('rate-line').textContent = 'The availability sheet could not be loaded. Reload the page.';
+    return;
+  }
+  const data = await res.json();
+  rate = data.rate;
+  blackouts = new Set(data.blackouts);
+  el('rate-line').textContent = 'Autumn rate: $' + data.rate + ' a night';
+  el('window-line').textContent =
+    'Booking window: ' + data.window.from + ' to ' + data.window.to;
+  if (data.confirmed) showConfirmed(data.confirmed);
+  render();
+}
+
+load();
+</script>
+</body>
+</html>

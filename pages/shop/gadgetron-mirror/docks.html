@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gadgetron mirror node MB-3 | Docks, hubs and power</title>
+<link rel="stylesheet" href="mirror.css">
+</head>
+<body>
+<div class="railbar">
+  <span class="mark">Gadgetron</span>
+  <span class="node">Mirror node MB-3</span>
+  <span class="who">Read-only &middot; support desk 1-800-555-0142</span>
+</div>
+<nav class="tabs" aria-label="Sections">
+  <a href="index.html">Departments</a>
+  <a href="sync-log.html">Sync log</a>
+  <a href="snapshot-policy.html">Snapshot policy</a>
+  <a href="support.html">Support desk</a>
+</nav>
+<div class="syncstrip">snapshot 06:40 &middot; source primary-a &middot; mode read-only &middot; incident MB-3-1174</div>
+<p class="crumbs"><a href="index.html">Departments</a> &middot; Docks, hubs and power</p>
+<div class="sheet">
+  <div class="statline">
+    <h1>Docks, hubs and power</h1>
+    <span class="count" id="matched">loading rows</span>
+  </div>
+  <div class="notices">
+    <h2>Department notices</h2>
+    <p>Twelve-port docks now carry a full port map on their spec sheet:
+    <a href="voltcharge-dock.html">VoltCharge DK-100</a>.</p>
+    <p>Order queueing is disabled on this node. Prices are as of the 06:40 snapshot.</p>
+  </div>
+  <table class="grid">
+    <caption>Docking stations, hubs and chargers. One row per stock keeping unit.</caption>
+    <thead>
+      <tr>
+        <th>Part no.</th>
+        <th>Model</th>
+        <th>Type</th>
+        <th class="num">Ports</th>
+        <th class="num">Power</th>
+        <th>Stock</th>
+        <th class="num">Price USD</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <p class="rowsnote" id="rowsnote"></p>
+</div>
+<footer class="legalstrip">
+  <a href="sync-log.html#incidents">Service status history</a> &middot; <a href="legal.html#privacy">Privacy notice</a> &middot;
+  <a href="legal.html#terms">Terms of sale</a> &middot; <a href="support.html">Contact the support desk</a><br>
+  Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Brantwell. &copy; 2026 Gadgetron
+  Trading Co. All rights reserved.
+</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const SHEETS = { 'VC-DK100': 'voltcharge-dock.html' };
+
+async function load() {
+  const res = await fetch('/api/mirror/catalog', { headers: { 'X-Session-Nonce': NONCE } });
+  const body = await res.json().catch(() => null);
+  if (!res.ok || !body || !Array.isArray(body.rows)) {
+    document.getElementById('matched').textContent = 'rows unavailable';
+    document.getElementById('rowsnote').textContent =
+      'The mirror could not read the snapshot for this department. Reload from the ' +
+      'departments page.';
+    return;
+  }
+  const tbody = document.getElementById('rows');
+  for (const row of body.rows) {
+    const tr = document.createElement('tr');
+    tr.dataset.sku = row.sku;
+    const name = SHEETS[row.sku]
+      ? `<a href="${SHEETS[row.sku]}">${row.model}</a>`
+      : row.model;
+    tr.innerHTML =
+      `<td class="mono">${row.sku}</td>` +
+      `<td class="model">${name}</td>` +
+      `<td>${row.kind}</td>` +
+      `<td class="num">${row.ports}</td>` +
+      `<td class="num">${row.power}</td>` +
+      `<td class="stock">${row.stock === 'y' ? 'In stock' : 'Sold out'}</td>` +
+      `<td class="price" data-price="${row.price}">${row.price}</td>`;
+    tbody.appendChild(tr);
+  }
+  document.getElementById('matched').textContent = body.rows.length + ' SKUs in snapshot';
+  document.getElementById('rowsnote').textContent =
+    'Rows 1-' + body.rows.length + ' of ' + body.rows.length + '. Snapshot ' +
+    body.snapshot + '. Prices are per unit in USD, excluding tax and recycling levy.';
+}
+
+load();
+</script>
+</body>
+</html>

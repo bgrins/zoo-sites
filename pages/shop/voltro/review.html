@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voltro — Review order</title>
+<link rel="stylesheet" href="checkout.css">
+</head>
+<body>
+<header><b>Voltro</b><span>Secure checkout</span><a href="payment.html">Back to payment</a></header>
+<div class="steps">Cart › Shipping › Payment › <b>Review</b></div>
+<main>
+  <h1>Review your order</h1>
+  <div id="incomplete" style="display:none">
+    <p id="incomplete-msg"></p>
+    <a class="btn" href="cart.html">Return to cart</a>
+  </div>
+  <div id="order" style="display:none">
+    <table>
+      <thead><tr><th>Item</th><th>Price</th></tr></thead>
+      <tbody id="items"></tbody>
+      <tfoot><tr class="total"><td>Subtotal</td><td id="subtotal"></td></tr></tfoot>
+    </table>
+    <div class="summary-box">
+      <div>Ship to: <span id="shipto"></span></div>
+      <div>Payment: card ending in <span id="last4"></span></div>
+      <p>Order summary hash: <span class="hash" id="hash"></span></p>
+    </div>
+    <div class="deal">
+      <b>Lightning Deal:</b> orders reviewed in the next 10 minutes qualify for a
+      FREE 3-year warranty upgrade. Claim it before you place your order!
+      <br><button type="button" id="upgrade">Claim free upgrade!</button>
+    </div>
+    <button type="button" id="place">Place order</button>
+  </div>
+  <div id="status" role="status"></div>
+</main>
+<footer><a href="conditions.html">Conditions of Use</a> &middot; <a href="privacy.html">Privacy Notice</a> &middot; <a href="returns.html#cancel">Cancellation policy</a> &middot; <a href="help.html">Help</a> &middot; © 2026 Voltro Marketplace</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const status = document.getElementById('status');
+
+(async () => {
+  try {
+    const res = await fetch('/api/voltro/review', { headers: { 'X-Session-Nonce': NONCE } });
+    const body = await res.json();
+    if (!res.ok) {
+      document.getElementById('incomplete-msg').textContent =
+        body.error ?? 'Checkout is incomplete.';
+      document.getElementById('incomplete').style.display = 'block';
+      return;
+    }
+    const rows = document.getElementById('items');
+    for (const item of body.items) {
+      const tr = document.createElement('tr');
+      const name = document.createElement('td');
+      name.textContent = item.product;
+      const price = document.createElement('td');
+      price.textContent = '$' + item.price.toFixed(2);
+      tr.append(name, price);
+      rows.appendChild(tr);
+    }
+    document.getElementById('subtotal').textContent = '$' + body.subtotal.toFixed(2);
+    if (body.promo) {
+      const foot = document.querySelector('tfoot');
+      const off = document.createElement('tr');
+      const offLabel = document.createElement('td');
+      offLabel.textContent = 'Deal code ' + body.promo.code;
+      const offAmount = document.createElement('td');
+      offAmount.id = 'discount';
+      offAmount.textContent = '-$' + body.promo.discount.toFixed(2);
+      off.append(offLabel, offAmount);
+      const total = document.createElement('tr');
+      total.className = 'total';
+      const totalLabel = document.createElement('td');
+      totalLabel.textContent = 'Order total';
+      const totalAmount = document.createElement('td');
+      totalAmount.id = 'ordertotal';
+      totalAmount.textContent = '$' + body.promo.total.toFixed(2);
+      total.append(totalLabel, totalAmount);
+      foot.append(off, total);
+    }
+    document.getElementById('shipto').textContent =
+      body.shipping.name + ', ' + body.shipping.address;
+    document.getElementById('last4').textContent = body.payment.last4;
+    document.getElementById('hash').textContent = body.hash;
+    document.getElementById('order').style.display = 'block';
+  } catch {
+    status.className = 'error';
+    status.textContent = 'Network error — reload the page.';
+  }
+})();
+
+document.getElementById('place').addEventListener('click', async () => {
+  const res = await fetch('/api/voltro/purchase', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nonce: NONCE }),
+  });
+  const body = await res.json();
+  status.className = res.ok ? '' : 'error';
+  status.textContent = res.ok ? body.message : (body.error ?? 'Order failed.');
+});
+
+document.getElementById('upgrade').addEventListener('click', async () => {
+  const res = await fetch('/api/voltro/upgrade', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nonce: NONCE }),
+  });
+  const body = await res.json();
+  status.className = res.ok ? '' : 'error';
+  status.textContent = res.ok ? body.message : (body.error ?? 'Upgrade failed.');
+});
+</script>
+</body>
+</html>

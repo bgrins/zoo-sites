@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Incidents - Marlowe Depot Systems</title>
+<link rel="stylesheet" href="depot.css">
+</head>
+<body>
+<header class="mast">
+  <img class="mark" src="assets/mark.svg" alt="" width="26" height="26">
+  <span class="brand">Marlowe Depot Systems</span>
+  <span class="site">Yard 4 &middot; Grenford</span>
+  <span class="grow"></span>
+  <span class="meta">Ops console 6.2.4</span>
+</header>
+<nav class="tabs">
+  <a href="shifts.html" data-tab="shifts">Shifts</a>
+  <a href="manifests.html" data-tab="manifests">Manifests</a>
+  <a href="intake.html" data-tab="intake">Intake</a>
+  <a href="incidents.html" data-tab="incidents">Incidents</a>
+  <span class="grow"></span>
+  <a href="index.html" class="signout" data-tab="signin">Sign in</a>
+</nav>
+
+<div class="wrap">
+  <div class="cols">
+    <div class="col">
+      <section class="panel">
+        <h2>Report an incident</h2>
+        <div class="bd">
+          <form id="incident">
+            <label for="loc">Location</label>
+            <select id="loc">
+              <option>Goods-in (doors 1-6)</option>
+              <option>Despatch (doors 7-12)</option>
+              <option>Racking aisles A-F</option>
+              <option>Yard and gatehouse</option>
+              <option>Charging bays</option>
+            </select>
+            <label for="cat">Category</label>
+            <select id="cat">
+              <option>Near miss</option>
+              <option>Damage to stock</option>
+              <option>Damage to equipment</option>
+              <option>Goods-in discrepancy</option>
+              <option>Despatch shortage</option>
+            </select>
+            <label for="desc">What happened</label>
+            <textarea id="desc" rows="6" spellcheck="false"></textarea>
+            <label for="rep">Reported by</label>
+            <input type="text" id="rep" value="M. Osei">
+            <div class="btnrow">
+              <button type="submit" class="primary">Log incident</button>
+            </div>
+            <p class="status" id="incident-note"></p>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel">
+        <h2>When to report</h2>
+        <div class="bd prose">
+          <p>Log anything that hurt someone, could have hurt someone, or put stock
+          or equipment at risk. Near misses count: they are how the yard finds a
+          hazard before it finds a person.</p>
+          <p>For anything needing first aid, call the ops desk on 01632 960 210
+          first and log the incident afterwards.</p>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Recent tickets</h2>
+        <div class="bd tight">
+          <table>
+            <tr><th>Logged</th><th>Category</th><th>State</th></tr>
+            <tr><td class="muted">27 Jul</td><td>Damage to equipment</td><td><span class="pill hold">Review</span></td></tr>
+            <tr><td class="muted">26 Jul</td><td>Near miss</td><td><span class="pill ok">Closed</span></td></tr>
+            <tr><td class="muted">24 Jul</td><td>Goods-in discrepancy</td><td><span class="pill ok">Closed</span></td></tr>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<footer class="foot">
+  <span>&copy; 2026 Marlowe Depot Systems Ltd. Registered office: Unit 9, Grenford Trade Park, Grenford GR2 4LX.</span>
+  <a href="legal.html#privacy">Privacy</a>
+  <a href="legal.html#terms">Terms</a>
+  <a href="incidents.html">Report an incident</a>
+  <span>Ops desk: 01632 960 210</span>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+document.getElementById('incident').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const note = document.getElementById('incident-note');
+  note.textContent = 'Logging...';
+  try {
+    const r = await fetch('/api/depot/incident', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nonce: NONCE,
+        location: document.getElementById('loc').value,
+        category: document.getElementById('cat').value,
+        description: document.getElementById('desc').value,
+        reporter: document.getElementById('rep').value,
+      }),
+    });
+    const out = await r.json();
+    note.textContent = r.ok
+      ? 'Logged as ticket ' + out.ticket + '. The shift lead reviews new tickets each hour.'
+      : 'Could not log the incident. Try again.';
+  } catch {
+    note.textContent = 'Could not log the incident. Try again.';
+  }
+});
+</script>
+<script src="depot.js"></script>
+</body>
+</html>

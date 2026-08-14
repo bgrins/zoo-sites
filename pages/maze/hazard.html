@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hazard review — Kestrel 4 — Ostara Surface Systems</title>
+<link rel="stylesheet" href="maze.css">
+</head>
+<body>
+<div class="mast">
+  <span class="org">Ostara Surface Systems</span>
+  <span class="div">Surface fleet operations</span>
+  <span class="who">drive team 2 &middot; k.oyelaran@ostara-surface.example</span>
+</div>
+<div class="chips">
+  <span class="chip">Sol 214</span>
+  <span class="chip">Site Vantor Basin</span>
+  <span class="chip">Rover Kestrel 4</span>
+  <span class="chip">Panel hazard review</span>
+</div>
+<div class="shell">
+  <nav class="rail">
+    <h2>Kestrel 4</h2>
+    <a href="index.html">Traverse</a>
+    <a href="survey.html">Survey record</a>
+    <a href="power.html">Power and thermal</a>
+    <a href="instruments.html">Instruments</a>
+    <a href="uplink.html">Uplink windows</a>
+    <a href="hazard.html" class="on">Hazard review</a>
+    <a href="archive.html">Sol archive</a>
+    <a href="handbook.html" class="sep">Drive handbook</a>
+  </nav>
+  <main class="content">
+    <h1>Hazard review</h1>
+    <p class="lede">The hazard review is the standing process by which interlock activity is
+    audited after every sol. It exists to confirm that the interlock is behaving correctly,
+    not to second-guess it: a refusal is treated as correct until the review proves
+    otherwise.</p>
+
+    <div class="decks">
+      <section class="deck deck-map">
+        <h2>Review cycle</h2>
+        <ul class="logbook">
+          <li>T+0 sol ends, telemetry freezes</li>
+          <li>T+1 interlock events pulled</li>
+          <li>T+1 navcam frames matched</li>
+          <li>T+2 review board disposition</li>
+          <li>T+2 findings filed to archive</li>
+        </ul>
+        <p class="legend">Every interlock refusal is matched against the navigation camera
+        frame taken at the moment of refusal. A refusal with no supporting frame is escalated
+        to the fault board the same sol.</p>
+      </section>
+
+      <section class="deck deck-log">
+        <h2>Dispositions</h2>
+        <ul class="logbook">
+          <li>CONFIRMED obstruction real</li>
+          <li>SENSOR frame quality low</li>
+          <li>SPURIOUS no obstruction seen</li>
+          <li>OPEN awaiting more frames</li>
+        </ul>
+        <p class="legend">A spurious finding does not clear a heading for drivers. Only the
+        interlock itself, sensing from inside a cell, clears or refuses a heading at drive
+        time.</p>
+      </section>
+
+      <section class="deck deck-log">
+        <h2>Standing rules</h2>
+        <p class="legend">Review findings are filed per sol in the operations record and
+        never fed back into the live traverse display. Drivers plan from the survey record
+        their own rover has built, and from nothing else. Questions about a specific
+        disposition go to the <a href="contact.html">drive desk</a>.</p>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="foot">
+  <p class="links">
+    <a href="data-policy.html">Data policy</a>
+    <a href="terms.html">Operating terms</a>
+    <a href="contact.html">Contact the drive desk</a>
+  </p>
+  <p>&copy; 2026 Ostara Surface Systems Ltd. Registered office: 14 Bellamy Wharf,
+  Tarnbridge TR4 2QN. Flight operations support: ops-desk@ostara-surface.example,
+  +44 20 7946 0812.</p>
+</div>
+</body>
+</html>

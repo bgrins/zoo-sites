@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rooms — Peregrine Court Business Rooms</title>
+<link rel="stylesheet" href="schedule.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-top">
+    <div>
+      <h1 class="wordmark">Peregrine<span>Court</span></h1>
+      <p class="sub">Business rooms &middot; Ashgate Quay</p>
+    </div>
+    <p class="desk">Front desk 0117 496 0144<br>Viewings by arrangement</p>
+  </div>
+  <ul class="tabs">
+    <li><a href="index.html">Day book</a></li>
+    <li><a class="on" href="rooms.html">Rooms</a></li>
+    <li><a href="terms.html">Booking terms</a></li>
+  </ul>
+</header>
+
+<main>
+<div class="prose">
+  <h1>Room specifications</h1>
+  <p class="week">Three lettable rooms, first and second floor</p>
+
+  <p>All three rooms are let by the half hour between 08:00 and 17:00, Monday to
+  Friday. Seat counts below are for boardroom seating; theatre seating adds
+  roughly a third but removes the table.</p>
+
+  <ul class="rooms" id="roomList">
+    <li>Loading the room list</li>
+  </ul>
+
+  <h2>Fitting and access</h2>
+  <div id="roomDetail"></div>
+
+  <h2>Setting up</h2>
+  <p>The porter allows fifteen minutes between lettings for a reset. If you need
+  the room laid out differently from the standing plan, tell the desk when you
+  place the hold rather than on the day.</p>
+
+  <p>Deliveries for a booked room are accepted from 07:30 at the Wharf Row door
+  and held at the desk. We cannot take deliveries for a slot that is still
+  provisional.</p>
+
+  <h2>Access out of hours</h2>
+  <p>Evening and weekend lettings are arranged by the duty manager and are not
+  shown in the day book. Rates differ and a caretaker charge applies.</p>
+</div>
+</main>
+
+<footer>
+  <p>Peregrine Court Ltd, 14 Wharf Row, Ashgate Quay AQ2 7HN. Registered in England 08841127.</p>
+  <p><a href="terms.html">Booking terms</a><a href="index.html">Day book</a><a href="terms.html#privacy">Privacy</a></p>
+  <p>&copy; 2026 Peregrine Court Ltd. Rates exclude VAT.</p>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+
+async function load() {
+  const res = await fetch('/api/schedule/grid', { headers: { 'X-Session-Nonce': NONCE } });
+  const list = document.getElementById('roomList');
+  if (!res.ok) {
+    list.textContent = '';
+    const item = document.createElement('li');
+    item.textContent = 'The room list is unavailable at this terminal.';
+    list.appendChild(item);
+    return;
+  }
+  const grid = await res.json();
+  list.textContent = '';
+  for (const room of grid.rooms) {
+    const item = document.createElement('li');
+    item.textContent = `${room.name} - seats ${room.seats}`;
+    list.appendChild(item);
+  }
+  const detail = document.getElementById('roomDetail');
+  detail.textContent = '';
+  for (const room of grid.rooms) {
+    const heading = document.createElement('p');
+    heading.textContent = `${room.name}, ${room.floor}. ${room.kit}`;
+    detail.appendChild(heading);
+  }
+}
+
+load();
+</script>
+</body>
+</html>

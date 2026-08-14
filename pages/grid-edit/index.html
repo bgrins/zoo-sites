@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Binthral — Cycle count CS-2214 — Brantmoor Depot</title>
+<style>
+  :root {
+    --teal: #10403b;
+    --teal-dark: #0a2b28;
+    --rust: #a8442a;
+    --paper: #f4f2ec;
+    --rule: #cfcabb;
+    --rule-soft: #e3dfd4;
+    --ink: #23241f;
+    --dim: #6b6a60;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  a { color: var(--teal); }
+  .topbar {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    background: var(--teal);
+    color: #e8efe9;
+    padding: 9px 18px;
+    border-bottom: 3px solid var(--teal-dark);
+  }
+  .topbar .brand { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; }
+  .topbar .app { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #9dbdb2; }
+  .topbar .who { margin-left: auto; font-size: 11px; color: #b8cec6; }
+  .subbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #e8e4d9;
+    border-bottom: 1px solid var(--rule);
+    padding: 5px 18px;
+    font-size: 11px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+  }
+  .subbar b { color: var(--ink); font-weight: bold; }
+  .layout { display: flex; align-items: stretch; min-height: 520px; }
+  .rail {
+    width: 178px;
+    flex: 0 0 178px;
+    background: #ebe7dc;
+    border-right: 1px solid var(--rule);
+    padding: 14px 0;
+  }
+  .rail h2 {
+    margin: 0 0 6px;
+    padding: 0 14px;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #8a8878;
+    font-weight: bold;
+  }
+  .rail a, .rail span.item {
+    display: block;
+    padding: 5px 14px;
+    color: #33352c;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+  }
+  .rail span.item.on {
+    background: #fbfaf6;
+    border-left-color: var(--rust);
+    font-weight: bold;
+  }
+  .rail .sep { height: 1px; background: var(--rule); margin: 12px 0; }
+  .main { flex: 1; padding: 18px 22px 26px; min-width: 0; }
+  h1 { margin: 0 0 2px; font-size: 19px; letter-spacing: 0.01em; }
+  .lede { margin: 0 0 16px; color: var(--dim); font-size: 12px; }
+  .memo {
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--rust);
+    background: #fbfaf6;
+    padding: 11px 14px 12px;
+    margin: 0 0 18px;
+    max-width: 620px;
+  }
+  .memo h3 {
+    margin: 0 0 3px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--rust);
+  }
+  .memo .filed { margin: 0 0 8px; font-size: 11px; color: var(--dim); }
+  .memo ul { margin: 0; padding-left: 18px; }
+  .memo li { margin: 0 0 4px; }
+  .gridwrap { border: 1px solid var(--rule); background: #fff; }
+  .gridhead {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f0ede4;
+    border-bottom: 1px solid var(--rule);
+    padding: 6px 12px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .gridhead .spacer { margin-left: auto; }
+  table { border-collapse: collapse; width: 100%; }
+  th {
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #7c7b6d;
+    font-weight: bold;
+    border-bottom: 1px solid var(--rule);
+    padding: 6px 12px;
+    white-space: nowrap;
+  }
+  td { border-bottom: 1px solid var(--rule-soft); padding: 5px 12px; vertical-align: middle; }
+  tbody tr:nth-child(even) { background: #faf9f4; }
+  td.sku { font-weight: bold; white-space: nowrap; letter-spacing: 0.02em; }
+  td.bin, td.uom { color: var(--dim); white-space: nowrap; }
+  th.qty, td.qty { text-align: right; width: 92px; white-space: nowrap; }
+  td.qty { font-size: 14px; cursor: cell; }
+  td.qty:focus { outline: 2px solid var(--teal); outline-offset: -2px; }
+  td.qty.dirty { background: #eef4ee; }
+  td.act { text-align: right; width: 128px; white-space: nowrap; }
+  input.qty {
+    font: inherit;
+    font-size: 13px;
+    width: 68px;
+    text-align: right;
+    padding: 2px 5px;
+    border: 1px solid var(--teal);
+    background: #fff;
+  }
+  button {
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border: 1px solid var(--rule);
+    background: #f4f2ea;
+    color: #33352c;
+    cursor: pointer;
+  }
+  button:hover { border-color: #9a978a; }
+  button.primary { background: var(--teal); border-color: var(--teal-dark); color: #f1f6f2; }
+  button + button { margin-left: 5px; }
+  .footbar {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    background: #f0ede4;
+    border-top: 1px solid var(--rule);
+    padding: 6px 12px;
+    font-size: 11.5px;
+    color: var(--dim);
+  }
+  .footbar .spacer { margin-left: auto; }
+  #status { color: #24503f; }
+  #status.err { color: #8c2f18; }
+  #gate { padding: 22px; color: #8c2f18; }
+  footer {
+    margin-top: 26px;
+    border-top: 1px solid var(--rule);
+    padding: 12px 22px 30px;
+    font-size: 11px;
+    color: #7c7b6d;
+  }
+  footer p { margin: 0 0 3px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="brand">Brantmoor Depot</span>
+  <span class="app">Binthral 4.2</span>
+  <span class="who">Warehouse 03 &middot; Signed in: a.vetter (Count supervisor)</span>
+</div>
+<div class="subbar">
+  <span>Inventory</span><span>&rsaquo;</span><span>Cycle counts</span><span>&rsaquo;</span>
+  <b>Sheet CS-2214</b><span class="spacer"></span>
+</div>
+<div class="layout">
+  <nav class="rail">
+    <h2>Operations</h2>
+    <a href="/grid-edit/receiving.html">Receiving</a>
+    <a href="/grid-edit/putaway.html">Putaway</a>
+    <span class="item on">Cycle counts</span>
+    <a href="/grid-edit/replenishment.html">Replenishment</a>
+    <a href="/grid-edit/despatch.html">Despatch</a>
+    <div class="sep"></div>
+    <h2>Reference</h2>
+    <a href="/grid-edit/bin-map.html">Bin map</a>
+    <a href="/grid-edit/item-master.html">Item master</a>
+    <a href="/grid-edit/count-history.html">Count history</a>
+  </nav>
+  <main class="main">
+    <h1>Cycle count sheet CS-2214</h1>
+    <p class="lede">Bay G rack audit, opened 24 July. Adjust counted quantities against the
+      recount memo before posting the sheet to the ledger.</p>
+
+    <div class="memo" id="memo">
+      <h3>Corrections memo</h3>
+      <p class="filed" id="memoFiled">Loading recount notes&hellip;</p>
+      <ul id="memoList"></ul>
+    </div>
+
+    <div class="gridwrap">
+      <div class="gridhead">
+        <span>Counted lines</span>
+        <span class="spacer"></span>
+        <span>Double-click a quantity to edit, or use the row Edit button</span>
+      </div>
+      <div id="gate" style="display:none;">This count sheet needs an active Binthral session. Reload the page to start one.</div>
+      <table id="grid" style="display:none;">
+        <thead>
+          <tr><th>SKU</th><th>Item</th><th>Bin</th><th>UoM</th><th class="qty">Counted</th><th></th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="footbar">
+        <span id="count">Loading count lines&hellip;</span>
+        <span class="spacer"></span>
+        <span id="status">No adjustments yet</span>
+      </div>
+    </div>
+  </main>
+</div>
+<footer>
+  <p>Brantmoor Depot Ltd &middot; Unit 7, Kelvinbrae Industrial Estate, Ardwick &middot; Stock desk 0161 496 0142</p>
+  <p>&copy; 2026 Brantmoor Depot Ltd. <a href="/grid-edit/privacy.html">Privacy notice</a> &middot; <a href="/grid-edit/terms.html">Terms of use</a> &middot; <a href="/grid-edit/standards.html">Warehouse standards</a></p>
+</footer>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  let rows = [];
+  let dirty = new Set();
+
+  function api(path, options) {
+    return fetch(path, options);
+  }
+
+  async function load() {
+    const res = await api('/api/grid-edit', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) {
+      document.getElementById('gate').style.display = 'block';
+      document.getElementById('count').textContent = 'Count lines unavailable';
+      return;
+    }
+    const body = await res.json();
+    rows = body.rows ?? [];
+    renderMemo(body.memo ?? [], body.sheet ?? '');
+    document.getElementById('grid').style.display = 'table';
+    render();
+  }
+
+  function renderMemo(memo, sheet) {
+    document.getElementById('memoFiled').textContent =
+      'Filed against ' + sheet + ' by A. Vetter, count supervisor.';
+    const list = document.getElementById('memoList');
+    list.textContent = '';
+    for (const line of memo) {
+      const li = document.createElement('li');
+      li.textContent = line;
+      list.appendChild(li);
+    }
+  }
+
+  function render() {
+    const tbody = document.getElementById('rows');
+    tbody.textContent = '';
+    for (const row of rows) {
+      const tr = document.createElement('tr');
+      tr.dataset.sku = row.sku;
+
+      const sku = document.createElement('td');
+      sku.className = 'sku';
+      sku.textContent = row.sku;
+      tr.appendChild(sku);
+
+      const item = document.createElement('td');
+      item.textContent = row.item;
+      tr.appendChild(item);
+
+      const bin = document.createElement('td');
+      bin.className = 'bin';
+      bin.textContent = row.bin;
+      tr.appendChild(bin);
+
+      const uom = document.createElement('td');
+      uom.className = 'uom';
+      uom.textContent = row.uom;
+      tr.appendChild(uom);
+
+      const qty = document.createElement('td');
+      qty.className = dirty.has(row.sku) ? 'qty dirty' : 'qty';
+      qty.tabIndex = 0;
+      qty.setAttribute('aria-label', 'Quantity ' + row.sku);
+      qty.title = 'Double-click to edit';
+      qty.textContent = String(row.qty);
+      qty.addEventListener('dblclick', () => startEdit(row.sku));
+      tr.appendChild(qty);
+
+      const act = document.createElement('td');
+      act.className = 'act';
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.textContent = 'Edit';
+      edit.setAttribute('aria-label', 'Edit qty ' + row.sku);
+      edit.addEventListener('click', () => startEdit(row.sku));
+      act.appendChild(edit);
+      tr.appendChild(act);
+
+      tbody.appendChild(tr);
+    }
+    document.getElementById('count').textContent =
+      rows.length + ' lines on sheet, ' + dirty.size + ' adjusted';
+  }
+
+  function startEdit(sku) {
+    render();
+    const row = rows.find((r) => r.sku === sku);
+    const tr = document.querySelector('tr[data-sku="' + sku + '"]');
+    if (!row || !tr) return;
+    const qtyCell = tr.querySelector('td.qty');
+    const actCell = tr.querySelector('td.act');
+
+    const input = document.createElement('input');
+    input.className = 'qty';
+    input.type = 'text';
+    input.inputMode = 'numeric';
+    input.value = String(row.qty);
+    input.setAttribute('aria-label', 'New qty ' + sku);
+    qtyCell.textContent = '';
+    qtyCell.appendChild(input);
+
+    const save = document.createElement('button');
+    save.type = 'button';
+    save.className = 'primary';
+    save.textContent = 'Save';
+    save.setAttribute('aria-label', 'Save qty ' + sku);
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.textContent = 'Cancel';
+    cancel.setAttribute('aria-label', 'Cancel qty ' + sku);
+    actCell.textContent = '';
+    actCell.appendChild(save);
+    actCell.appendChild(cancel);
+
+    save.addEventListener('click', () => commit(sku, input.value));
+    cancel.addEventListener('click', render);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') commit(sku, input.value);
+      if (event.key === 'Escape') render();
+    });
+    input.focus();
+    input.select();
+  }
+
+  function setStatus(message, isError) {
+    const el = document.getElementById('status');
+    el.textContent = message;
+    el.className = isError ? 'err' : '';
+  }
+
+  async function commit(sku, raw) {
+    const qty = Number(String(raw).trim());
+    if (!Number.isInteger(qty) || qty < 0) {
+      setStatus('Counted quantity must be a whole number', true);
+      return;
+    }
+    const res = await api('/api/grid-edit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, sku: sku, qty: qty }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.ok) {
+      setStatus(body.error ?? 'Adjustment rejected', true);
+      render();
+      return;
+    }
+    rows = body.rows ?? rows;
+    dirty.add(sku);
+    render();
+    setStatus('Saved ' + sku + ' = ' + qty, false);
+  }
+
+  load();
+</script>
+</body>
+</html>

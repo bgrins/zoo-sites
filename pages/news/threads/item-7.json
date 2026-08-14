@@ -1,0 +1,65 @@
+{
+  "rank": 7,
+  "comments": [
+    {
+      "author": "structpacked",
+      "age": "7 hours ago",
+      "text": "The structure template feature is the whole product and I mean that as high praise. Every hex editor can show me bytes; almost none can show me \"this is a header, these four bytes are the length field, this region is the payload it describes.\" How expressive is the template language? Specifically: can a field's length depend on an earlier field's value, and can you do conditional layouts (tagged unions)?",
+      "replies": [
+        {
+          "author": "nybblenibble",
+          "age": "7 hours ago",
+          "text": "OP here — yes to both. Templates are declarative with computed fields: lengths, offsets, and repeat counts can be expressions over previously parsed fields, and match blocks handle tagged unions. There's a small standard library of templates (a few image formats, archive formats, a couple of common serialization framings) and writing your own for a simple record format takes maybe ten minutes.\n\nThe one thing it deliberately can't do is loop arbitrarily — templates must provably terminate, because \"opened a malformed file and the parser hung\" is the classic hex editor bug and I refuse to ship it.",
+          "replies": [
+            {
+              "author": "structpacked",
+              "age": "6 hours ago",
+              "text": "Provable termination as a design constraint for a template language is a genuinely good call. Downloading it now."
+            },
+            {
+              "author": "lambdacurious",
+              "age": "5 hours ago",
+              "text": "The termination constraint puts your template language in an interesting spot formally — total functions over binary input. You've reinvented a slice of the data-description-language literature, and honestly the pragmatic version you describe sounds more usable than most of the academic ones."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "vimveteran",
+      "age": "6 hours ago",
+      "text": "Tried it for twenty minutes. Feedback, in order of how much I care: (1) modal editing is great but the keybinding to switch between hex and ascii panes conflicts with my terminal multiplexer's prefix, please make it remappable; (2) undo across an insert-mode session behaves as one giant chunk, which surprised me; (3) startup on a 9GB disk image was instant, whatever you're doing with mmap, keep doing it.",
+      "replies": [
+        {
+          "author": "nybblenibble",
+          "age": "5 hours ago",
+          "text": "All noted. (1) is fixed on main as of an hour ago — everything's remappable now, that conflict was reported three times today. (2) is a real design bug, insert sessions should chunk at pause boundaries. (3) mmap plus a piece table for edits, so opening never copies the file. Thanks for the concrete list, this is the most useful kind of comment."
+        }
+      ]
+    },
+    {
+      "author": "bitrotting",
+      "age": "3 hours ago",
+      "text": "Used it this afternoon on a corrupted archive I'd been putting off for a week. Wrote a quick template for the entry framing, and the parse failure landed exactly at the corruption point — turned a hexdump-squinting session into a ten-minute fix. This is the tool I didn't know I was missing.",
+      "replies": [
+        {
+          "author": "hexpatriate",
+          "age": "2 hours ago",
+          "text": "This matches my experience with template-driven editors generally: the template's *failure* is often more informative than its success. A parser that dies at byte 0x4A2 is a corruption locator you didn't have to write."
+        }
+      ]
+    },
+    {
+      "author": "tuiskeptic",
+      "age": "1 hour ago",
+      "text": "Honest question, no snark intended: why terminal? Structure inspection seems like the one hex-editing task that genuinely benefits from a GUI — collapsible trees, hover details, colored regions. What does the terminal buy beyond aesthetics and ssh?",
+      "replies": [
+        {
+          "author": "offbyfun",
+          "age": "44 minutes ago",
+          "text": "Not the author, but: ssh. The files you hex-edit in anger are disproportionately on remote machines, embedded devices, and rescue environments where a GUI was never an option. Also worth noting from the screenshots that the template tree does collapse and regions are colored — terminals can do more than people assume. If your corrupted files live locally, a GUI preference is totally reasonable."
+        }
+      ]
+    }
+  ]
+}

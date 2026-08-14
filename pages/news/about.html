@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About | Millrace</title>
+<link rel="stylesheet" href="millrace.css">
+</head>
+<body>
+<header id="masthead">
+  <div class="masthead-in">
+    <a class="wordmark" href="/news/">millrace</a>
+    <span class="tagline">a working stream for people who build things</span>
+    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+  </div>
+</header>
+<nav id="tabs" aria-label="Sections">
+  <div class="tabs-in">
+    <a class="tab" href="/news/">Stream</a>
+    <a class="tab" href="/news/?sort=fresh">Fresh</a>
+    <a class="tab" href="/news/?view=threads">Threads</a>
+    <a class="tab" href="/news/?tag=asks">Asks</a>
+    <a class="tab" href="/news/?tag=build">Build logs</a>
+    <a class="tab" href="/news/?tag=jobs">Hiring</a>
+    <a class="tab" href="/news/submit.html">Submit a link</a>
+    <form class="seek" action="/news/" method="get" role="search">
+      <input type="search" name="q" aria-label="Search the stream" placeholder="Search the stream">
+      <button type="submit">Go</button>
+    </form>
+  </div>
+</nav>
+<div id="wrap">
+  <main id="main">
+    <p class="crumbs"><a href="/news/">stream</a> &rsaquo; about</p>
+    <div class="doc">
+      <h1>About millrace</h1>
+      <p>Millrace is a link stream run by and for people who build things: software,
+        hardware, instruments, businesses, the occasional shed. Members submit links
+        and questions; everyone votes and argues; the stream re-ranks itself every
+        ten minutes. Forty-one thousand people read it; a few thousand write.</p>
+      <p>It is operated by Weirgate Collective LLC, a two-letter publisher in
+        Ashvale, Vermont. Our other letter is Grindstone Weekly, a printed column
+        on running small companies; one Grindstone essay a week is set for the web
+        and shared on the stream.</p>
+
+      <h2>How the ranking works</h2>
+      <p>A submission's position is a function of three things:</p>
+      <ol>
+        <li><strong>Votes.</strong> One member, one vote per submission. Votes from
+          accounts younger than a week count at half weight.</li>
+        <li><strong>Reply pace.</strong> A thread gathering thoughtful replies rises
+          faster than one gathering only votes. Reply pace is measured over the last
+          two hours, so an old thread that wakes up can climb back.</li>
+        <li><strong>Decay.</strong> Everything sinks with age. Most submissions get
+          a day or two on the front pages; after that they drop off the stream
+          entirely and live on at their thread's address.</li>
+      </ol>
+      <p>Flags work against all three: a submission with credible flags falls fast
+        and shows up in the <a href="/news/moderation.html">moderation log</a> when
+        the stewards act on it.</p>
+
+      <h2>What the numbers mean</h2>
+      <p>The figure in a submission's pill is its points: votes minus flags-upheld.
+        The reply count next to the byline counts every reply in the thread,
+        including replies to replies; the thread page nests them under their
+        parents so you can tell conversation from chorus.</p>
+
+      <h2>Sponsored listings</h2>
+      <p>One slot a day is sold to a company that is hiring. It is marked with a
+        hiring chip instead of a points pill, never ranks above where it was
+        placed, and takes no replies. Details on the
+        <a href="/news/advertise.html">sponsor a day</a> page.</p>
+
+      <h2>Who runs this</h2>
+      <p>Three stewards, all working engineers, moderate part-time under the
+        published <a href="/news/guidelines.html">guidelines</a>. Everything they
+        remove or demote lands in the public
+        <a href="/news/moderation.html">moderation log</a>. Questions go to
+        stewards@millrace.example.</p>
+    </div>
+  </main>
+  <aside id="rail">
+    <div class="card">
+      <h2>House rules</h2>
+      <ul>
+        <li>Reply to the strongest version of the argument.</li>
+        <li>Say who you work for when it is relevant.</li>
+        <li>Title your submission the way the author would.</li>
+        <li>One account per person, one vote per submission.</li>
+      </ul>
+      <p class="meta"><a href="/news/guidelines.html">Full guidelines</a></p>
+    </div>
+    <div class="card">
+      <h2>Elsewhere</h2>
+      <ul>
+        <li><a href="/news/feeds.html">Feeds</a> <span class="meta">read the stream anywhere</span></li>
+        <li><a href="/news/status.html">Status</a> <span class="meta">uptime and incidents</span></li>
+        <li><a href="article.html">Grindstone Weekly</a> <span class="meta">this week's essay</span></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+<footer id="footer">
+  <div class="footer-in">
+    <p class="footer-nav">
+      <a href="/news/about.html">About</a> &middot;
+      <a href="/news/guidelines.html">Guidelines</a> &middot;
+      <a href="/news/moderation.html">Moderation log</a> &middot;
+      <a href="/news/feeds.html">Feeds</a> &middot;
+      <a href="/news/status.html">Status</a> &middot;
+      <a href="/news/advertise.html">Sponsor a day</a> &middot;
+      <a href="/news/privacy.html">Privacy</a> &middot;
+      <a href="/news/terms.html">Terms</a> &middot;
+      <a href="/news/contact.html">Contact</a>
+    </p>
+    <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
+      Ashvale, VT 05412. Moderation questions go to
+      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      help@millrace.example.</p>
+    <p>Submissions and replies remain the work of their authors. Copyright 2026
+      Weirgate Collective LLC.</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voltro — Desk Setup</title>
+<link rel="stylesheet" href="voltro.css">
+<style>
+  .card .part { color: #565959; font-size: 12px; }
+  .card .limitnote { color: #7d5a00; font-size: 12px; }
+  .card .qtyrow { margin-top: 8px; display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  .card .qtyrow input { width: 52px; padding: 4px; border: 1px solid #888; border-radius: 3px; }
+  .card .msg { margin-top: 6px; font-size: 12px; min-height: 16px; }
+  .card .msg.bad { color: #b12704; font-weight: 700; }
+  .card .msg.good { color: #007600; }
+  #basketbar { padding: 10px 16px; font-size: 13px; background: #f6f6f6; border-bottom: 1px solid #ddd; }
+  #basketbar a { color: #007185; }
+  header a.cart { color: #ffd814; font-weight: 700; text-decoration: none; }
+</style>
+</head>
+<body>
+<header>
+  <b>Voltro</b>
+  <input placeholder="Search Voltro" aria-label="Search">
+  <span>Hello, sign in</span>
+  <span>Orders</span>
+  <a class="cart" id="cartlink" href="basket.html">Basket (0)</a>
+</header>
+<nav>
+  <span>All</span><span>Today's Deals</span><span>Electronics</span>
+  <span>Computers</span><span>Monitors</span><span>Desk Setup</span><span>Customer Service</span>
+</nav>
+<div class="promo">Desk Setup Week: monitor arms, light bars and cable kits at reduced prices. Ends Sunday.</div>
+<div id="basketbar">Prices exclude sales tax. Tax is calculated in your <a href="basket.html">basket</a>.</div>
+<main>
+  <aside>
+    <h4>Department</h4>
+    Monitors<br>Desk Setup<br>Mounts &amp; Arms<br>Cable Management
+    <h4>Item Type</h4>
+    <label><input type="checkbox" data-type="monitor"> Monitors</label>
+    <label><input type="checkbox" data-type="mount"> Desk mounts</label>
+    <label><input type="checkbox" data-type="cable"> Cable kits</label>
+    <label><input type="checkbox" data-type="light"> Lighting</label>
+    <h4>Price</h4>
+    Under $25<br>$25 to $50<br>$50 and up<br>Voltro Retail only
+  </aside>
+  <section style="flex:1">
+    <div id="toolbar">
+      <h1>Desk Setup</h1>
+      <span id="tally">Loading results</span>
+      <label>Sort by:
+        <select id="sortsel" aria-label="Sort by">
+          <option>Featured</option>
+          <option>Price: Low to High</option>
+          <option>Price: High to Low</option>
+        </select>
+      </label>
+    </div>
+    <ul id="grid" role="list" aria-label="Desk setup results"></ul>
+  </section>
+</main>
+<footer>
+  &copy; 2026 Voltro Marketplace, Inc. Prices and availability are subject to change.
+  · <a href="conditions.html">Conditions of Use</a> · <a href="privacy.html">Privacy Notice</a>
+  · <a href="privacy.html#ads">Interest-Based Ads</a> · <a href="sell.html">Sell on Voltro</a>
+  · <a href="careers.html">Careers</a> · <a href="help.html">Customer Service</a>
+</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const grid = document.getElementById('grid');
+const tally = document.getElementById('tally');
+const cartLink = document.getElementById('cartlink');
+
+function thumb(name) {
+  const hue = (name.length * 37 + name.charCodeAt(0) * 11) % 360;
+  return `<svg viewBox="0 0 160 90" class="thumb" role="img" aria-label="${name} product photo">
+    <rect width="160" height="90" fill="hsl(${hue},18%,90%)"/>
+    <rect x="26" y="10" width="108" height="58" rx="3" fill="#1b1f27"/>
+    <rect x="72" y="70" width="16" height="8" fill="#444"/>
+    <rect x="54" y="78" width="52" height="4" fill="#666"/>
+  </svg>`;
+}
+
+async function refreshCount() {
+  const res = await fetch('/api/shop/cart?store=voltro', {
+    headers: { 'X-Session-Nonce': NONCE },
+  });
+  if (!res.ok) return;
+  const body = await res.json();
+  cartLink.textContent = 'Basket (' + body.count + ')';
+}
+
+function render(items) {
+  grid.innerHTML = '';
+  for (const item of items) {
+    const card = document.createElement('li');
+    card.className = 'card';
+    card.dataset.sku = item.sku;
+    card.innerHTML = `
+      ${thumb(item.name)}
+      <div class="name"><a href="item.html?sku=${encodeURIComponent(item.sku)}">${item.name}</a></div>
+      <div class="part">${item.sku} &middot; ${item.blurb}</div>
+      <div class="price">$${item.price.toFixed(2)}</div>
+      <div class="${item.inStock ? 'stock-in' : 'stock-out'}">${
+        item.inStock ? 'In stock. FREE shipping.' : 'Out of stock.'
+      }</div>
+      ${item.note ? `<div class="limitnote">${item.note}</div>` : ''}
+      <div class="qtyrow">
+        <input type="number" min="1" max="99" value="1" aria-label="Qty, ${item.name}">
+        <button aria-label="Add ${item.name} to basket">Add to Cart</button>
+      </div>
+      <div class="msg" role="status"></div>
+    `;
+    const button = card.querySelector('button');
+    const qty = card.querySelector('input');
+    const msg = card.querySelector('.msg');
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      msg.className = 'msg';
+      msg.textContent = '';
+      try {
+        const res = await fetch('/api/shop/cart/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nonce: NONCE,
+            store: 'voltro',
+            sku: item.sku,
+            qty: Number(qty.value),
+          }),
+        });
+        const body = await res.json();
+        if (res.ok) {
+          msg.className = 'msg good';
+          msg.textContent = 'Added ' + body.added.qty + ' to basket.';
+          cartLink.textContent = 'Basket (' + body.count + ')';
+        } else {
+          msg.className = 'msg bad';
+          msg.textContent = body.error;
+          if (typeof body.count === 'number') {
+            cartLink.textContent = 'Basket (' + body.count + ')';
+          }
+        }
+      } catch {
+        msg.className = 'msg bad';
+        msg.textContent = 'Network error. Try again.';
+      } finally {
+        button.disabled = false;
+      }
+    });
+    grid.appendChild(card);
+  }
+  tally.textContent = items.length
+    ? '1–' + items.length + ' of ' + allItems.length + ' results'
+    : 'No results match your filters.';
+}
+
+let allItems = [];
+
+function itemType(sku) {
+  if (sku.startsWith('HB-')) return 'monitor';
+  if (sku.startsWith('VAM-')) return 'mount';
+  if (sku.startsWith('CRD-')) return 'cable';
+  return 'light';
+}
+
+function applyListing() {
+  const types = [...document.querySelectorAll('aside [data-type]:checked')].map(
+    (box) => box.dataset.type
+  );
+  const items = allItems.filter((item) => !types.length || types.includes(itemType(item.sku)));
+  const mode = document.getElementById('sortsel').value;
+  if (mode === 'Price: Low to High') items.sort((a, b) => a.price - b.price);
+  else if (mode === 'Price: High to Low') items.sort((a, b) => b.price - a.price);
+  render(items);
+}
+
+for (const box of document.querySelectorAll('aside [data-type]')) {
+  box.addEventListener('change', applyListing);
+}
+document.getElementById('sortsel').addEventListener('change', applyListing);
+
+(async () => {
+  try {
+    const res = await fetch('/api/shop/catalog?store=voltro', {
+      headers: { 'X-Session-Nonce': NONCE },
+    });
+    if (!res.ok) {
+      tally.textContent = 'Results are unavailable. Reload the page.';
+      return;
+    }
+    const body = await res.json();
+    allItems = body.items;
+    render(allItems.slice());
+    await refreshCount();
+  } catch {
+    tally.textContent = 'Results are unavailable. Reload the page.';
+  }
+})();
+</script>
+</body>
+</html>

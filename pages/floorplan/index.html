@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ostmark House, Level 04 &mdash; Cadre Workplace</title>
+<link rel="stylesheet" href="cadre.css">
+</head>
+<body>
+<div class="topbar">
+  <span class="wordmark">Cadre <span>Workplace</span></span>
+  <nav class="tabs">
+    <a class="here" href="index.html">Space plan</a>
+    <a href="moves.html">Move requests</a>
+    <a href="standards.html">Workplace standards</a>
+  </nav>
+  <span class="operator">Halverd Estates Management</span>
+</div>
+<div class="crumbs">Portfolio / Ostmark House / Level 04 / Space plan</div>
+
+<main class="shell">
+  <aside class="rail">
+    <div class="rail-block">
+      <h2>Levels</h2>
+      <ul class="levels">
+        <li>Level 06</li>
+        <li>Level 05</li>
+        <li class="active">Level 04</li>
+        <li>Level 03</li>
+        <li>Level 02</li>
+        <li>Ground</li>
+      </ul>
+    </div>
+    <div class="rail-block">
+      <h2>Layers</h2>
+      <label class="layer" for="ly-tint"><input type="checkbox" id="ly-tint" value="no-tint" checked> Department tint</label>
+      <label class="layer" for="ly-desks"><input type="checkbox" id="ly-desks" value="no-desks" checked> Desk positions</label>
+      <label class="layer" for="ly-codes"><input type="checkbox" id="ly-codes" value="no-codes" checked> Room codes</label>
+    </div>
+    <div class="rail-block">
+      <h2>Department tint</h2>
+      <ul class="legend">
+        <li><span class="swatch sw-plan"></span>Space Planning</li>
+        <li><span class="swatch sw-fac"></span>Facilities Operations</li>
+        <li><span class="swatch sw-fin"></span>Finance and Estates</li>
+        <li><span class="swatch sw-shared"></span>Shared / bookable</li>
+      </ul>
+    </div>
+    <div class="rail-block">
+      <h2>Sheet</h2>
+      <p class="empty">OST-L04-SP rev D, issued 02 June. Occupancy figures are held in the
+      space record for each room and are not printed on the sheet.</p>
+    </div>
+  </aside>
+
+  <section class="canvas">
+    <div class="canvas-head">
+      <h1>Level 04 space plan</h1>
+      <span class="rev">OST-L04-SP rev D</span>
+    </div>
+    <p class="hint">Select a room on the sheet to open its space record.</p>
+    <p class="orient-key">Plan north: left</p>
+
+    <div class="sheet" id="sheet">
+      <svg id="plan" viewBox="0 0 720 470" role="img" aria-label="Level 04 space plan">
+        <rect class="corridor" x="44" y="180" width="632" height="44"></rect>
+        <rect class="core" x="322" y="180" width="112" height="44"></rect>
+        <rect class="wall" x="40" y="28" width="640" height="362"></rect>
+
+        <rect class="room r-plan" id="room-ne-4" data-room="NE-4" role="button" tabindex="0"
+          aria-label="Room NE-4" x="46" y="36" width="148" height="140"></rect>
+        <text class="tag" x="60" y="62">NE-4</text>
+        <text class="tag-sub" x="60" y="78">Space Planning</text>
+        <rect class="desk" x="60" y="130" width="40" height="18"></rect>
+
+        <rect class="room r-plan" id="room-ne-3" data-room="NE-3" role="button" tabindex="0"
+          aria-label="Room NE-3" x="206" y="36" width="148" height="140"></rect>
+        <text class="tag" x="220" y="62">NE-3</text>
+        <text class="tag-sub" x="220" y="78">Space Planning</text>
+        <rect class="desk" x="220" y="130" width="40" height="18"></rect>
+
+        <rect class="room r-fin" id="room-se-8" data-room="SE-8" role="button" tabindex="0"
+          aria-label="Room SE-8" x="366" y="36" width="148" height="140"></rect>
+        <text class="tag" x="380" y="62">SE-8</text>
+        <text class="tag-sub" x="380" y="78">Finance and Estates</text>
+        <rect class="desk" x="380" y="130" width="40" height="18"></rect>
+
+        <rect class="room r-fin" id="room-se-7" data-room="SE-7" role="button" tabindex="0"
+          aria-label="Room SE-7" x="526" y="36" width="148" height="140"></rect>
+        <text class="tag" x="540" y="62">SE-7</text>
+        <text class="tag-sub" x="540" y="78">Finance and Estates</text>
+        <rect class="desk" x="540" y="130" width="40" height="18"></rect>
+
+        <rect class="room r-fac" id="room-nw-1" data-room="NW-1" role="button" tabindex="0"
+          aria-label="Room NW-1" x="46" y="228" width="148" height="154"></rect>
+        <text class="tag" x="60" y="254">NW-1</text>
+        <text class="tag-sub" x="60" y="270">Facilities Operations</text>
+        <rect class="desk" x="60" y="336" width="40" height="18"></rect>
+
+        <rect class="room r-fac" id="room-nw-2" data-room="NW-2" role="button" tabindex="0"
+          aria-label="Room NW-2" x="206" y="228" width="148" height="154"></rect>
+        <text class="tag" x="220" y="254">NW-2</text>
+        <text class="tag-sub" x="220" y="270">Facilities Operations</text>
+        <rect class="desk" x="220" y="336" width="40" height="18"></rect>
+        <rect class="desk" x="272" y="336" width="40" height="18"></rect>
+
+        <rect class="room r-shared" id="room-sw-6" data-room="SW-6" role="button" tabindex="0"
+          aria-label="Room SW-6" x="366" y="228" width="148" height="154"></rect>
+        <text class="tag" x="380" y="254">SW-6</text>
+        <text class="tag-sub" x="380" y="270">Shared / bookable</text>
+
+        <rect class="room r-fin" id="room-sw-5" data-room="SW-5" role="button" tabindex="0"
+          aria-label="Room SW-5" x="526" y="228" width="148" height="154"></rect>
+        <text class="tag" x="540" y="254">SW-5</text>
+        <text class="tag-sub" x="540" y="270">Finance and Estates</text>
+        <rect class="desk" x="540" y="336" width="40" height="18"></rect>
+
+        <text class="plan-note" x="330" y="207">Lifts / stair core</text>
+
+        <circle class="rose" cx="112" cy="428" r="27"></circle>
+        <polygon class="rose-arrow" points="80,428 106,417 106,439"></polygon>
+        <text class="rose-label" x="58" y="433">N</text>
+        <text class="plan-note" x="146" y="433">plan north</text>
+        <line class="rose" x1="300" y1="428" x2="440" y2="428"></line>
+        <text class="plan-note" x="300" y="447">0</text>
+        <text class="plan-note" x="428" y="447">10 m</text>
+        <text class="plan-note" x="520" y="433">OST-L04-SP rev D</text>
+      </svg>
+    </div>
+    <p class="sheet-foot"><span>Scale 1:200 at A3</span><span>Issued 02 June</span><span>Drawn by Estates CAD</span></p>
+    <p class="orient">Sheet is drawn with plan north to the left, as marked by the north point below the
+    footprint; the east elevation runs along the top of the sheet.</p>
+  </section>
+
+  <aside class="drawer">
+    <h2>Space record</h2>
+    <div id="record">
+      <p class="empty">No room selected. Choose a room on the sheet to load its space record.</p>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <p>Cadre Workplace 4.6 &middot; space records are the system of record for occupancy reporting.</p>
+  <p>Halverd Estates Management, 14 Ostmark Row, Denhollow DH2 8QP &middot;
+  <a href="standards.html">Workplace standards</a> &middot;
+  <a href="moves.html">Move requests</a> &middot; estates.support@halverd-estates.example</p>
+  <p>&copy; 2026 Halverd Estates Management Ltd. Registered in Denhollow, company 00000000.</p>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const plan = document.getElementById('plan');
+const sheet = document.getElementById('sheet');
+const record = document.getElementById('record');
+
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"]/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]
+  );
+}
+
+function line(key, value) {
+  return '<p class="rec-line"><span class="k">' + esc(key) + '</span>' + esc(value) + '</p>';
+}
+
+function render(data) {
+  const parts = ['<p class="rec-room">Room ' + esc(data.id) + '</p>'];
+  if (data.occupant) {
+    parts.push('<p class="rec-name">' + esc(data.occupant) + '</p>');
+    parts.push('<p class="rec-role">' + esc(data.role) + '</p>');
+  } else {
+    parts.push('<p class="rec-name">' + esc(data.title) + '</p>');
+    parts.push('<p class="rec-role">No permanent occupant</p>');
+  }
+  parts.push(line('Space type', data.kind));
+  parts.push(line('Aspect', data.aspect));
+  parts.push(line('Department', data.department));
+  parts.push(line('Extension', data.ext));
+  parts.push(line('Desks', data.desks));
+  parts.push('<p class="rec-foot">Space record OST-L04-' + esc(data.id) +
+    ', last verified by Estates on ' + esc(data.verified) + '.</p>');
+  record.innerHTML = parts.join('');
+}
+
+// Two quick clicks must not leave an earlier room's record in the drawer, so
+// every response is dropped unless its request is still the current one.
+let seq = 0;
+
+async function openRoom(region) {
+  const id = region.getAttribute('data-room');
+  const token = ++seq;
+  for (const other of plan.querySelectorAll('.room')) other.classList.remove('sel');
+  region.classList.add('sel');
+  record.innerHTML = '<p class="empty">Loading space record for ' + esc(id) + '&hellip;</p>';
+  let data;
+  try {
+    const res = await fetch('/api/floorplan/room?id=' + encodeURIComponent(id), {
+      headers: { 'X-Session-Nonce': NONCE },
+    });
+    if (!res.ok) throw new Error('record refused');
+    data = await res.json();
+  } catch {
+    if (token !== seq) return;
+    record.innerHTML = '<p class="warn">Space records are locked to this console session. ' +
+      'Reload the sheet and select the room again.</p>';
+    return;
+  }
+  if (token !== seq) return;
+  render(data);
+}
+
+plan.addEventListener('click', (event) => {
+  const region = event.target.closest('.room');
+  if (region) openRoom(region);
+});
+
+plan.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const region = event.target.closest('.room');
+  if (!region) return;
+  event.preventDefault();
+  openRoom(region);
+});
+
+for (const box of document.querySelectorAll('.layer input')) {
+  box.addEventListener('change', () => sheet.classList.toggle(box.value, !box.checked));
+}
+</script>
+</body>
+</html>

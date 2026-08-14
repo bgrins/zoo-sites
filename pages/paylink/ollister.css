@@ -1,0 +1,272 @@
+html {
+  background: #efe7d6;
+}
+
+body {
+  margin: 0;
+  background: #f8f3e8;
+  color: #24211c;
+  font: 15px/1.55 "Trebuchet MS", "Lucida Grande", Tahoma, sans-serif;
+}
+
+a {
+  color: #9c3b24;
+}
+
+.masthead {
+  border-bottom: 3px double #24211c;
+  background: #f8f3e8;
+  padding: 18px 32px 10px;
+}
+
+.wordmark {
+  font: 400 27px/1 Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+.wordmark span {
+  color: #9c3b24;
+}
+
+.estd {
+  margin: 4px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #7d7566;
+}
+
+.shopnav {
+  margin-top: 14px;
+  border-top: 1px solid #d8ceb8;
+  padding-top: 8px;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.shopnav a {
+  margin-right: 22px;
+  text-decoration: none;
+  color: #4c4639;
+}
+
+.shopnav a:hover {
+  color: #9c3b24;
+}
+
+main {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 26px 32px 60px;
+}
+
+h1 {
+  font: 400 26px/1.25 Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  margin: 0 0 4px;
+}
+
+h2 {
+  font: 400 19px/1.3 Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  margin: 26px 0 8px;
+}
+
+.crumb {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7d7566;
+  margin: 0 0 18px;
+}
+
+.split {
+  display: flex;
+  gap: 34px;
+  align-items: flex-start;
+}
+
+.split > .col {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rail {
+  flex: 0 0 296px;
+  border: 1px solid #d8ceb8;
+  background: #fffdf7;
+  padding: 16px 18px;
+}
+
+.cap {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7d7566;
+}
+
+.line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px dotted #cdc2a9;
+  padding: 9px 0;
+}
+
+.line .qty {
+  color: #7d7566;
+  font-size: 12px;
+}
+
+.line .amt {
+  white-space: nowrap;
+}
+
+.totals {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.totals div {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+
+.totals .grand {
+  border-top: 1px solid #24211c;
+  margin-top: 8px;
+  padding-top: 8px;
+  font: 400 19px/1.2 Palatino, "Palatino Linotype", Georgia, serif;
+}
+
+.paybox {
+  border: 1px solid #d8ceb8;
+  background: #fffdf7;
+  padding: 18px;
+  margin-top: 14px;
+}
+
+.state {
+  margin: 6px 0 12px;
+  font: 400 20px/1.25 Palatino, "Palatino Linotype", Georgia, serif;
+}
+
+.vword,
+.ordercode {
+  margin: 4px 0 14px;
+  font: 700 23px/1.2 "Courier New", Courier, monospace;
+  letter-spacing: 0.06em;
+  color: #6d2717;
+}
+
+.hint {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #5a5346;
+}
+
+.paylink {
+  display: inline-block;
+  border: 1px solid #24211c;
+  background: #9c3b24;
+  color: #fdf8ee;
+  padding: 9px 20px;
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.paylink:hover {
+  background: #7d2c19;
+}
+
+.notice {
+  border-left: 3px solid #9c3b24;
+  background: #f3ead6;
+  padding: 8px 12px;
+  font-size: 13px;
+  margin: 0 0 14px;
+}
+
+.field {
+  margin: 12px 0;
+}
+
+.field label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7d7566;
+  margin-bottom: 4px;
+}
+
+.field input {
+  border: 1px solid #b9ac91;
+  background: #fffdf7;
+  padding: 7px 9px;
+  font: 15px "Trebuchet MS", Tahoma, sans-serif;
+  width: 260px;
+}
+
+.goods {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.good {
+  flex: 0 0 218px;
+  border: 1px solid #d8ceb8;
+  background: #fffdf7;
+  padding: 12px 14px;
+}
+
+.good h3 {
+  font: 400 16px/1.3 Palatino, "Palatino Linotype", Georgia, serif;
+  margin: 0 0 6px;
+}
+
+.good p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #5a5346;
+}
+
+.good .price {
+  font: 700 15px "Courier New", Courier, monospace;
+}
+
+.plate {
+  border: 1px solid #d8ceb8;
+  background: #fffdf7;
+  padding: 20px 24px;
+  margin-bottom: 22px;
+}
+
+.plate p {
+  margin: 0 0 10px;
+  max-width: 62ch;
+}
+
+footer {
+  border-top: 3px double #24211c;
+  margin-top: 40px;
+  padding: 18px 32px 34px;
+  font-size: 12px;
+  color: #6c6455;
+}
+
+footer a {
+  color: #6c6455;
+  margin-right: 16px;
+}
+
+footer .addr {
+  margin: 8px 0 0;
+  font-style: italic;
+}

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finish removal — Tealwave</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="wordmark">Tealwave</div>
+  <nav>
+    <a href="stories.html">Stories</a>
+    <a href="kitchen.html">Kitchen</a>
+    <a href="field-notes.html">Field Notes</a>
+    <a href="membership.html">Membership</a>
+    <a href="/unsub/" class="on">Account</a>
+  </nav>
+</header>
+
+<main>
+  <ol class="steps">
+    <li>1 Preferences</li>
+    <li>2 Confirm</li>
+    <li class="on">3 Finish</li>
+  </ol>
+
+  <section class="card" id="gate" hidden>
+    <p class="eyebrow">Account · Email preferences</p>
+    <h1>This removal request is not open</h1>
+    <p class="lede gate">The earlier steps of this removal request are missing.
+    Go back to <a href="/unsub/">email preferences</a> and start again.</p>
+  </section>
+
+  <section class="card" id="panel" hidden>
+    <p class="eyebrow">Step 3 of 3 · Finish</p>
+    <h1>Last step</h1>
+    <p class="lede">Tell us what went wrong if you like, then finish. The
+    address <span id="acct-email">on this account</span> is removed as soon as
+    this step is submitted.</p>
+
+    <fieldset class="reasons">
+      <legend>Why are you leaving? (optional)</legend>
+      <label><input type="radio" name="reason" value="frequency"> Too many emails</label>
+      <label><input type="radio" name="reason" value="price"> Membership costs too much</label>
+      <label><input type="radio" name="reason" value="relevance"> The writing is not for me</label>
+      <label><input type="radio" name="reason" value="other"> Something else</label>
+    </fieldset>
+
+    <div class="optin">
+      <input type="checkbox" id="digest" checked>
+      <label for="digest">Yes, keep sending me the Tealwave Weekly Digest —
+        seven stories every Thursday, free forever.
+        <span class="tag">Recommended</span></label>
+    </div>
+
+    <button id="finish" class="pill">Finish</button>
+
+    <p class="quiet-line"><a href="#" id="stay" class="quiet-link">never mind, keep my subscription</a></p>
+
+    <p class="notice" id="notice" role="status"></p>
+  </section>
+
+  <section class="card" id="done" hidden>
+    <p class="eyebrow">Removal complete</p>
+    <h1>You are off the list</h1>
+    <p class="lede">Confirmation phrase:</p>
+    <p class="code" id="phrase"></p>
+    <p class="lede" id="done-note"></p>
+  </section>
+
+  <p class="fineprint">Removal requests are processed by our mail operations
+  desk. Quote the confirmation phrase in any correspondence about this account.</p>
+</main>
+
+<footer>
+  Tealwave Media Ltd · 44 Harbor Lane, Suite 9, Bellhaven ·
+  support@tealwave.example
+  <br>
+  <a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="contact.html">Contact</a>
+  · Copyright 2026 Tealwave Media Ltd
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const notice = document.getElementById('notice');
+  let finishRef = null;
+
+  async function post(path, body) {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, ...body }),
+    });
+    return { ok: res.ok, body: await res.json().catch(() => ({})) };
+  }
+
+  async function load() {
+    try {
+      const res = await fetch('/api/unsub/state', { headers: { 'X-Session-Nonce': NONCE } });
+      const state = await res.json();
+      const steps = state.steps ?? [];
+      if (!res.ok || !steps.includes(1) || !steps.includes(2)) {
+        document.getElementById('gate').hidden = false;
+        return;
+      }
+      document.getElementById('acct-email').textContent = state.email;
+      finishRef = state.finishRef ?? null;
+      document.getElementById('panel').hidden = false;
+    } catch {
+      document.getElementById('gate').hidden = false;
+    }
+  }
+
+  document.getElementById('stay').addEventListener('click', async (event) => {
+    event.preventDefault();
+    await post('/api/unsub/stay', { control: 'step3-keep' });
+    // The removal request is closed server-side, so this screen falls back to
+    // the same gate an account with no open request gets.
+    document.getElementById('panel').hidden = true;
+    document.getElementById('gate').hidden = false;
+  });
+
+  document.getElementById('finish').addEventListener('click', async () => {
+    const reason = document.querySelector('input[name=reason]:checked');
+    const { ok, body } = await post('/api/unsub/finish', {
+      digest: document.getElementById('digest').checked,
+      reason: reason ? reason.value : '',
+      ref: finishRef,
+    });
+    if (!ok) {
+      notice.textContent = body.error ?? 'That request could not be completed.';
+      return;
+    }
+    if (!body.phrase) {
+      notice.textContent = body.message ?? 'Your preferences were saved.';
+      return;
+    }
+    document.getElementById('phrase').textContent = body.phrase;
+    document.getElementById('done-note').textContent = body.message;
+    document.getElementById('panel').hidden = true;
+    document.getElementById('done').hidden = false;
+  });
+
+  load();
+</script>
+</body>
+</html>

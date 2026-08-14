@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orsino Consulting — Onboarding Intake</title>
+<link rel="stylesheet" href="intake.css">
+</head>
+<body>
+<div class="masthead">
+  <div class="mast-top">
+    <span class="org">Orsino Consulting &mdash; People Operations</span>
+    <span class="mast-links"><a href="intranet.html">Staff intranet</a><a href="contact.html">Contact HR</a></span>
+  </div>
+  <h1>Day-one onboarding intake</h1>
+</div>
+<nav class="sitenav" aria-label="People Operations">
+  <a href="index.html" aria-current="page">Onboarding intake</a>
+  <a href="new-starters.html">New starters</a>
+  <a href="pay-benefits.html">Pay and benefits</a>
+  <a href="policies.html">Policies</a>
+  <a href="forms-library.html">Forms library</a>
+</nav>
+<div class="wrap">
+  <p class="crumbs"><a href="intranet.html">People Operations</a> / <a href="new-starters.html">New starters</a> / Onboarding intake</p>
+
+  <h2>Which path matches your paperwork?</h2>
+  <p class="lead">Pick the engagement path named on your offer letter or
+  engagement letter. We keep your selection for this intake session and use it
+  to build your document checklist on the next step.</p>
+  <div class="callout">Not sure which one applies? Your hiring coordinator wrote
+  the path name in the first paragraph of your welcome email.</div>
+
+  <div class="paths">
+    <section class="choice">
+      <span class="tag">Path A</span>
+      <h3>Employee</h3>
+      <p>Salaried or hourly staff joining under a standard employment offer from
+      Orsino Consulting, with payroll run through our internal system.</p>
+      <button id="pick-employee" type="button">Choose Employee path</button>
+    </section>
+    <section class="choice">
+      <span class="tag">Path B</span>
+      <h3>Contractor</h3>
+      <p>Independent contractors engaged under a signed scope of work or master
+      services agreement, invoicing us directly each month.</p>
+      <button id="pick-contractor" type="button">Choose Contractor path</button>
+    </section>
+  </div>
+
+  <div id="status" role="status"></div>
+  <p id="next" hidden><a class="continue" href="requirements.html">Continue to document requirements</a></p>
+
+  <div class="helpline">Need help with intake? Call People Operations on
+  extension 4120, weekdays 8am to 4pm. Intake sessions stay open for 30 days
+  from your start date.</div>
+</div>
+<footer>
+  <div class="footgrid">
+    <div>
+      <h2>People Operations</h2>
+      <ul>
+        <li><a href="index.html">Onboarding intake</a></li>
+        <li><a href="new-starters.html#first-day">First-day checklist</a></li>
+        <li><a href="policies.html#right-to-work">Right to work checks</a></li>
+        <li><a href="forms-library.html">Forms library</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Working here</h2>
+      <ul>
+        <li><a href="pay-benefits.html">Pay and benefits</a></li>
+        <li><a href="policies.html#leave">Leave and absence</a></li>
+        <li><a href="policies.html#expenses">Expenses policy</a></li>
+        <li><a href="policies.html#contractors">Contractor engagement</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Get in touch</h2>
+      <ul>
+        <li>People Operations, extension 4120</li>
+        <li>peopleops@orsino-consulting.example</li>
+        <li>Weekdays 8am to 4pm</li>
+        <li><a href="contact.html">Raise a support ticket</a></li>
+      </ul>
+    </div>
+  </div>
+  <p class="footlegal">Orsino Consulting LLP, registered office 15 Weatherby Court,
+  Harrogate HG1 5DN. Registered in England and Wales, partnership number OC000000.
+  Information you enter here is held under the firm's candidate privacy notice.<br>
+  Copyright 2026 Orsino Consulting LLP. <a href="legal.html#privacy">Privacy notice</a> &middot;
+  <a href="legal.html#terms">Terms of use</a> &middot; <a href="legal.html#accessibility">Accessibility</a> &middot;
+  <a href="legal.html#cookies">Cookies</a></p>
+</footer>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const status = document.getElementById('status');
+  async function choose(choice) {
+    status.textContent = 'Saving your selection...';
+    try {
+      const res = await fetch('/api/intake/choice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, choice }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        status.textContent = 'Could not save your selection. Reload and try again.';
+        return;
+      }
+      status.textContent = 'Path saved: ' + body.choice + '.';
+      document.getElementById('next').hidden = false;
+    } catch {
+      status.textContent = 'Network error. Try again.';
+    }
+  }
+  document.getElementById('pick-employee').addEventListener('click', () => choose('employee'));
+  document.getElementById('pick-contractor').addEventListener('click', () => choose('contractor'));
+</script>
+</body>
+</html>

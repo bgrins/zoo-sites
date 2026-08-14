@@ -1,0 +1,17 @@
+{
+  "rank": 37,
+  "comments": [
+    {
+      "author": "yakshaver",
+      "age": "1 day ago",
+      "text": "Benchmarks like this live or die on the corpus. Real-world JSON is mostly small objects with repeated keys, not the 100 MB twitter dump every parser optimises for. Did you measure per-document latency on small payloads or just bulk throughput?",
+      "replies": [
+        {
+          "author": "trailingcomma",
+          "age": "1 day ago",
+          "text": "Both, and the small-payload table surprised me most: the throughput champions invert order completely once you include setup cost per document. It is the second chart, easy to miss below the fold."
+        }
+      ]
+    }
+  ]
+}

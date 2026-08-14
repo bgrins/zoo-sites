@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confirm removal — Tealwave</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="wordmark">Tealwave</div>
+  <nav>
+    <a href="stories.html">Stories</a>
+    <a href="kitchen.html">Kitchen</a>
+    <a href="field-notes.html">Field Notes</a>
+    <a href="membership.html">Membership</a>
+    <a href="/unsub/" class="on">Account</a>
+  </nav>
+</header>
+
+<main>
+  <ol class="steps">
+    <li>1 Preferences</li>
+    <li class="on">2 Confirm</li>
+    <li>3 Finish</li>
+  </ol>
+
+  <section class="card" id="gate" hidden>
+    <p class="eyebrow">Account · Email preferences</p>
+    <h1>This removal request is not open</h1>
+    <p class="lede gate">We have no record of a removal request started on this
+    account. Go back to <a href="/unsub/">email preferences</a> and start again.</p>
+  </section>
+
+  <section class="card" id="panel" hidden>
+    <p class="eyebrow">Step 2 of 3 · Confirm</p>
+    <h1>Confirm removal for <span id="acct-email">this address</span></h1>
+    <p class="lede">Removal takes effect at the end of the current billing week.
+    Member pricing, the recipe archive and supper club presales end at the same
+    time. Nothing has changed on your account yet.</p>
+
+    <div class="aside-offer">
+      <h2>Too much mail this month?</h2>
+      <p>Pause every Tealwave mailing for 60 days and keep member pricing while
+      the inbox settles.</p>
+      <button id="pause" class="pill">Pause for 60 days instead</button>
+    </div>
+
+    <button id="open" class="ghost">Continue removal</button>
+
+    <p class="notice" id="notice" role="status"></p>
+  </section>
+
+  <p class="fineprint">Membership questions go to the support desk at
+  support@tealwave.example, Monday to Friday.</p>
+</main>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-title" tabindex="-1">
+    <h2 id="dlg-title">Keep your member pricing?</h2>
+    <p>Cancel keeps this account exactly as it is today, with every benefit
+    listed on the previous screen. Choosing to remove the address is permanent
+    once the final step is submitted.</p>
+    <div class="row-actions">
+      <button id="dlg-cancel" class="pill">Cancel</button>
+      <button id="dlg-proceed" class="secondary">Yes, I'm sure</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Tealwave Media Ltd · 44 Harbor Lane, Suite 9, Bellhaven ·
+  support@tealwave.example
+  <br>
+  <a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="contact.html">Contact</a>
+  · Copyright 2026 Tealwave Media Ltd
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const notice = document.getElementById('notice');
+  const overlay = document.getElementById('overlay');
+
+  async function post(path, body) {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, ...body }),
+    });
+    return { ok: res.ok, body: await res.json().catch(() => ({})) };
+  }
+
+  async function load() {
+    try {
+      const res = await fetch('/api/unsub/state', { headers: { 'X-Session-Nonce': NONCE } });
+      const state = await res.json();
+      if (!res.ok || !(state.steps ?? []).includes(1)) {
+        document.getElementById('gate').hidden = false;
+        return;
+      }
+      document.getElementById('acct-email').textContent = state.email;
+      document.getElementById('panel').hidden = false;
+    } catch {
+      document.getElementById('gate').hidden = false;
+    }
+  }
+
+  // Keeping the subscription closes the removal request server-side, so the
+  // screen falls back to the same gate an unstarted request gets.
+  function requestClosed() {
+    overlay.hidden = true;
+    document.getElementById('panel').hidden = true;
+    document.getElementById('gate').hidden = false;
+  }
+
+  document.getElementById('pause').addEventListener('click', async () => {
+    await post('/api/unsub/stay', { control: 'pause-60' });
+    requestClosed();
+  });
+
+  document.getElementById('open').addEventListener('click', () => {
+    overlay.hidden = false;
+    document.getElementById('dlg').focus();
+  });
+
+  document.getElementById('dlg-cancel').addEventListener('click', async () => {
+    overlay.hidden = true;
+    await post('/api/unsub/stay', { control: 'modal-cancel' });
+    requestClosed();
+  });
+
+  document.getElementById('dlg-proceed').addEventListener('click', async () => {
+    const { ok, body } = await post('/api/unsub/step', { step: 2 });
+    if (!ok) {
+      overlay.hidden = true;
+      notice.textContent = body.error ?? 'That request could not be completed.';
+      return;
+    }
+    location.href = body.next;
+  });
+
+  load();
+</script>
+</body>
+</html>

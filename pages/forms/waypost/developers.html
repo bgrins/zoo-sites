@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Developers · Waypost</title>
+<style>
+  :root {
+    --bg: #f4f6fb; --surface: #ffffff; --line: #e3e8f0; --ink: #101828;
+    --muted: #667085; --brand: #2f5bea; --brand-dark: #1f42b5; --brand-tint: #eef3ff;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 10px 28px rgba(16, 24, 40, 0.05);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.55;
+    font-family: Inter, "Inter var", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--brand); }
+  .appbar {
+    background: var(--surface); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 28px; padding: 0 24px; height: 60px;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; font-size: 17px; font-weight: 650; letter-spacing: -0.3px; }
+  .brand .glyph {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(140deg, var(--brand) 0%, #6f8cff 100%);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 13px; font-weight: 700;
+  }
+  .appnav { display: flex; gap: 4px; }
+  .appnav a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; padding: 7px 12px; border-radius: 8px; }
+  .appnav a:hover { background: #f1f4f9; color: var(--ink); }
+  .appbar .right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .appbar .right a { color: var(--muted); text-decoration: none; font-size: 14px; }
+  .account {
+    display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 5px;
+    border: 1px solid var(--line); border-radius: 999px; font-size: 13px; color: var(--ink);
+    background: var(--surface); cursor: pointer;
+  }
+  .account .avatar {
+    width: 26px; height: 26px; border-radius: 999px; background: #dfe6f7; color: var(--brand-dark);
+    display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 650;
+  }
+  .account .who { line-height: 1.2; }
+  .account .who small { display: block; color: var(--muted); font-size: 11px; }
+  .page { max-width: 1040px; margin: 0 auto; padding: 28px 24px 64px; }
+  h1 { font-size: 26px; font-weight: 650; letter-spacing: -0.5px; margin: 0 0 6px; }
+  .sub { margin: 0 0 24px; color: var(--muted); max-width: 62ch; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); margin: 0 0 22px; }
+  .card > header { padding: 16px 20px 14px; border-bottom: 1px solid var(--line); }
+  .card > header h2 { margin: 0; font-size: 15px; font-weight: 600; }
+  .card .body { padding: 20px; font-size: 14px; color: #475467; }
+  .card .body h3 { margin: 18px 0 6px; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .card .body h3:first-child { margin-top: 0; }
+  .card .body p { margin: 0 0 12px; }
+  .card .body p:last-child { margin-bottom: 0; }
+  footer { border-top: 1px solid var(--line); background: var(--surface); padding: 22px 24px 40px; font-size: 13px; color: var(--muted); }
+  footer .inner { max-width: 1040px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px 22px; }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--brand); }
+  footer .legal { width: 100%; color: #98a2b3; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<header class="appbar">
+  <div class="brand"><span class="glyph">W</span>Waypost</div>
+  <nav class="appnav">
+    <a href="ship.html">Ship</a>
+    <a href="track.html">Track</a>
+    <a href="rates.html">Rates</a>
+    <a href="pickups.html">Pickups</a>
+    <a href="invoices.html">Invoices</a>
+  </nav>
+  <div class="right">
+    <a href="help.html">Help center</a>
+    <div class="account">
+      <span class="avatar">AR</span>
+      <span class="who">Alba Renko<small>Renko Studio · Acct 4482</small></span>
+    </div>
+  </div>
+</header>
+
+<div class="page">
+  <h1>Developers</h1>
+  <p class="sub">Integrate your warehouse or storefront with the Waypost API. The
+  API mirrors everything the console can do on your account.</p>
+
+  <div class="card">
+    <header>
+      <h2>API overview</h2>
+    </header>
+    <div class="body">
+      <h3>Quotes</h3>
+      <p>Submit a parcel's dimensions and gross weight and receive the same
+      Waypost Standard rate the console's calculator returns, with the
+      chargeable and volumetric weights broken out. Quotes are held for 14 days
+      and can be referenced when the shipment is booked.</p>
+      <h3>Tracking</h3>
+      <p>Look up a shipment number to receive its current status and the full
+      list of tracking events. A webhook subscription can push new events to
+      your systems as they are recorded instead of polling.</p>
+      <h3>Pickups</h3>
+      <p>List the account's scheduled pickups, book a new window, or cancel one,
+      under the same cut-off rules that apply in the console.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <header>
+      <h2>Getting access</h2>
+    </header>
+    <div class="body">
+      <p>API keys are issued by account managers and are scoped to a single
+      account. Ask yours for a key by writing to
+      <a href="mailto:support@waypost.example">support@waypost.example</a> with
+      your account number. Keys can be rotated or revoked on request, and every
+      request made with a key is listed in the account's audit trail.</p>
+      <p>The full endpoint reference, including request and response fields, is
+      included in the onboarding pack your account manager sends with the key.</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="inner">
+    <span>Waypost Logistics, Inc. · 220 Alder Street, Suite 400, Calder Springs</span>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms of carriage</a>
+    <a href="status.html">Service status</a>
+    <a href="developers.html">Developers</a>
+    <a href="mailto:support@waypost.example">support@waypost.example</a>
+    <span class="legal">Copyright 2026 Waypost Logistics, Inc. All rights reserved.</span>
+  </div>
+</footer>
+</body>
+</html>

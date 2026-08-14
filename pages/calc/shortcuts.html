@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyboard shortcuts - Abaca</title>
+<link rel="stylesheet" href="calc.css">
+<style>
+  body { height: auto; }
+  .docbar { display: flex; align-items: center; gap: 14px; background: var(--chrome);
+    color: var(--chrome-ink); padding: 0 12px; height: 34px; }
+  .docbar .wordmark { font-weight: 700; letter-spacing: 0.02em; }
+  .docbar .wordmark span { font-weight: 400; color: var(--chrome-dim); margin-left: 6px; font-size: 11px; }
+  .docbar a { color: var(--chrome-dim); text-decoration: none; }
+  .docbar a:hover { color: var(--chrome-ink); }
+  .doc { max-width: 720px; margin: 28px auto 48px; background: var(--paper);
+    border: 1px solid var(--rule); border-radius: 4px; padding: 26px 32px 34px; }
+  .doc h1 { margin: 0 0 4px; font-size: 20px; }
+  .doc .sub { margin: 0 0 18px; color: var(--dim); }
+  .doc h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--moss-dark); margin: 22px 0 8px; }
+  table.keys { border-collapse: collapse; width: 100%; }
+  table.keys td { border-bottom: 1px solid var(--grid); padding: 6px 8px 6px 0; }
+  table.keys td:first-child { width: 200px; }
+  kbd { font-family: var(--mono); font-size: 11px; background: var(--shell);
+    border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 3px; padding: 1px 5px; }
+  .docfoot { max-width: 720px; margin: 0 auto 40px; color: var(--dim); font-size: 11px;
+    display: flex; gap: 16px; flex-wrap: wrap; }
+  .docfoot a { color: var(--dim); }
+</style>
+</head>
+<body>
+<div class="docbar">
+  <div class="wordmark">Abaca<span>Sheets 4.2</span></div>
+  <a href="index.html">Back to Q3 Freight Recovery</a>
+</div>
+<main class="doc">
+  <h1>Keyboard shortcuts</h1>
+  <p class="sub">Shortcuts apply while the grid has focus. On the compact keyboard layout, use the Fn row equivalents.</p>
+  <h2>Navigation</h2>
+  <table class="keys">
+    <tr><td><kbd>Arrow keys</kbd></td><td>Move the selection one cell</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>G</kbd></td><td>Focus the name box (Go to a cell reference)</td></tr>
+    <tr><td><kbd>Tab</kbd> / <kbd>Shift</kbd> + <kbd>Tab</kbd></td><td>Move right / left within a row</td></tr>
+  </table>
+  <h2>Editing</h2>
+  <table class="keys">
+    <tr><td><kbd>Enter</kbd> (formula bar)</td><td>Commit the entry to the selected cell</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Cancel and restore the cell's saved entry</td></tr>
+    <tr><td><kbd>F2</kbd></td><td>Focus the formula bar for the selected cell</td></tr>
+  </table>
+  <h2>Formulas</h2>
+  <table class="keys">
+    <tr><td><kbd>Ctrl</kbd> + <kbd>`</kbd></td><td>Toggle Show formulas</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd></td><td>Jump to the first formula-audit flag</td></tr>
+    <tr><td><kbd>F9</kbd></td><td>Recalculate the sheet</td></tr>
+  </table>
+  <p class="sub" style="margin-top: 20px">Shortcuts cannot be remapped on workbooks opened over a shared link.</p>
+</main>
+<div class="docfoot">
+  <span>Abaca Software Ltd, 4 Pellam Wharf, Lowfield</span>
+  <a href="support.html">Support</a>
+  <a href="privacy.html">Privacy</a>
+  <span>Copyright 2026 Abaca Software Ltd</span>
+</div>
+</body>
+</html>

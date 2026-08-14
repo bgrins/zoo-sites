@@ -1,0 +1,91 @@
+{
+  "rank": 1,
+  "comments": [
+    {
+      "author": "pagetable",
+      "age": "9 hours ago",
+      "text": "Neat idea, but I'm confused about the execution model. Spreadsheets are inherently reactive dataflow graphs — when cell A1 changes, everything downstream recomputes. Compiling to Wasm implies a static compilation step. So what happens when the user edits a cell? Do you recompile the whole sheet, or just the dirty subgraph?",
+      "replies": [
+        {
+          "author": "mlemvik",
+          "age": "8 hours ago",
+          "text": "OP here — good question, this was the hard part. Each strongly-connected region of the dependency graph compiles to its own Wasm function, and the runtime keeps a topological schedule of those functions. Editing a formula only recompiles the region it belongs to (usually a handful of cells), and editing a *value* recompiles nothing at all, it just re-runs the affected functions.\n\nThe win is that a column of 100k rows with the same formula shape compiles to one loop over a linear memory segment instead of 100k interpreted evaluations. On my benchmark sheet (financial model, ~400k formula cells) a full recalc went from 2.1s in my old interpreter to 60ms.",
+          "replies": [
+            {
+              "author": "pagetable",
+              "age": "7 hours ago",
+              "text": "That makes a lot more sense, thanks. The columnar loop trick is basically what the big engines do with shared formula records, but doing it through Wasm codegen is a nice twist. How do you handle spill ranges / dynamic arrays, where the shape of the output isn't known until runtime?"
+            },
+            {
+              "author": "warmstart",
+              "age": "6 hours ago",
+              "text": "60ms for 400k cells is impressive but I'd want to see the recompile latency numbers too. If typing a new formula into a cell costs 300ms of codegen before first paint, users will perceive it as slower than the 2.1s interpreter, because the interpreter gives you the edited cell's value instantly.",
+              "replies": [
+                {
+                  "author": "pagetable",
+                  "age": "5 hours ago",
+                  "text": "The architecture doc covers this — edits evaluate through a fallback interpreter immediately and the compiled version swaps in asynchronously. Tiering, basically. Codegen for a typical region is quoted at 3-8ms, so the window you're worried about exists but it's small."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "gridlockgrady",
+      "age": "8 hours ago",
+      "text": "This is just a compiler with extra steps. Every spreadsheet engine since the 80s has been an incremental computation engine; slapping Wasm on it doesn't change the fundamentals.",
+      "replies": [
+        {
+          "author": "lambdacurious",
+          "age": "8 hours ago",
+          "text": "I mean, sure, and a JIT is just an interpreter with extra steps. The steps are the point. Getting spreadsheet recalc into the same performance class as hand-written array code is genuinely useful — I've watched analysts wait 30 seconds for recalcs on sheets that are, computationally, a few matrix multiplies.",
+          "replies": [
+            {
+              "author": "gridlockgrady",
+              "age": "7 hours ago",
+              "text": "Ok, that's fair, \"extra steps\" was glib. My real objection is that the sheets that are slow in practice are slow because of volatile functions and cross-sheet lookups, not raw arithmetic throughput. Compiling the arithmetic hot loop optimizes the part that was already fast.",
+              "replies": [
+                {
+                  "author": "mlemvik",
+                  "age": "6 hours ago",
+                  "text": "OP here — you're half right. Lookups were the second thing I attacked: the compiler recognizes lookup-over-sorted-range patterns and emits binary searches, and unsorted lookups against a range that's referenced more than N times get a hash index built once per recalc. Volatile functions are still a recalc wall, no argument there."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "bitrotting",
+      "age": "7 hours ago",
+      "text": "Obligatory question for any spreadsheet post: how do you handle floating point? If SUM() over the same numbers gives different results depending on which compiled loop shape you picked, accountants will hunt you down. Reassociating float addition for SIMD changes the answer.",
+      "replies": [
+        {
+          "author": "decimaldrift",
+          "age": "7 hours ago",
+          "text": "The numerics page addresses this head-on: strict left-to-right accumulation by default, precisely so results stay bit-identical with the interpreter fallback. There's an opt-in fast-math mode per sheet that enables pairwise summation — which is actually *more* accurate on average, but not reproducible against the strict mode. Documented tradeoff, off by default. More care than I expected from a solo project."
+        }
+      ]
+    },
+    {
+      "author": "offbyfun",
+      "age": "6 hours ago",
+      "text": "Slightly off topic, but the deep irony of spreadsheets is that they're the most successful functional programming environment in history — pure functions, referential transparency, reactive evaluation — used daily by millions of people who would never touch a language with those words in the brochure. Compiling one is basically writing a Haskell compiler for people who don't know they're writing Haskell."
+    },
+    {
+      "author": "shredsheet",
+      "age": "4 hours ago",
+      "text": "I built something adjacent a couple years ago — a spreadsheet-to-SQL transpiler for a reporting team (writeup at shredsheet-notes.example.com). The lesson that nearly killed the project: circular references. Real-world sheets use intentional circularity with iterative calc turned on, for things like interest capitalization. How does a compile-to-Wasm model handle a cycle that's supposed to converge?",
+      "replies": [
+        {
+          "author": "lambdacurious",
+          "age": "3 hours ago",
+          "text": "Not OP, but this is answered in the FAQ: cycles compile to a fixpoint loop — the whole SCC becomes one function that iterates until max-delta < epsilon or an iteration cap, same semantics as iterative calc in mainstream engines. The FAQ has a wry note about the nasty part being that every engine has slightly different convergence defaults."
+        }
+      ]
+    }
+  ]
+}

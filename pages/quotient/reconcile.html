@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reconciliation — Quotient</title>
+<link rel="stylesheet" href="quotient.css">
+</head>
+<body>
+<div class="frame">
+  <aside class="side">
+    <p class="brand"><a href="/quotient/">Quotient</a></p>
+    <p class="org">Ashline Bindery Ltd</p>
+    <div class="navgroup">Workspace</div>
+    <nav>
+      <a href="/quotient/">Overview</a>
+      <span class="here">Reconciliation</span>
+      <a href="quote.html">Freight quotes</a>
+      <a href="exports.html">Exports</a>
+    </nav>
+    <div class="navgroup">Account</div>
+    <nav>
+      <a href="settings.html">Settings</a>
+      <a href="legal.html">Terms &amp; privacy</a>
+    </nav>
+    <div class="period">Period open<br><b>July 2026</b></div>
+  </aside>
+  <main class="main">
+    <h1>Supplier reconciliation</h1>
+    <p class="lede">Batch REC-2026-07 holds the July supplier lines that did not
+    auto-match. Running the reconciliation normalises vendor names, converts to
+    the home currency, separates recoverable tax, applies open credit notes and
+    posts each line to its cost centre.</p>
+    <div class="panel">
+      <div class="panelhead">
+        <h2>Batch REC-2026-07</h2>
+        <span class="meta">Supplier ledger &middot; 6 unmatched lines &middot; prepared by M. Ashworth</span>
+      </div>
+      <button class="action" id="run" type="button">Run reconciliation</button>
+      <div class="notice" id="notice" hidden></div>
+    </div>
+    <div class="cards" id="cards"></div>
+    <footer class="site">
+      &copy; 2026 Quotient Software Ltd &middot; 4 Millpond Row, Harwell Point &middot;
+      <a href="legal.html">Terms &amp; privacy</a> &middot; support@quotientledger.example
+    </footer>
+  </main>
+</div>
+<script>window.QT_NONCE = '__SESSION_NONCE__';</script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voltro — Your Basket</title>
+<link rel="stylesheet" href="voltro.css">
+<style>
+  #wrap { max-width: 820px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 22px; margin: 12px 0 4px; }
+  .sub { color: #565959; font-size: 13px; margin: 0 0 14px; }
+  .lines { border: 1px solid #ddd; border-radius: 6px; background: #fff; }
+  .bline { display: flex; gap: 14px; align-items: center; padding: 12px 14px; border-bottom: 1px solid #eee; font-size: 13px; }
+  .bline:last-child { border-bottom: 0; }
+  .bname { font-weight: 700; font-size: 14px; flex: 1; }
+  .bpart { color: #565959; width: 90px; }
+  .bqty { width: 62px; }
+  .bamt { width: 90px; text-align: right; color: #b12704; font-weight: 700; }
+  .bline button { background: #fff; border: 1px solid #888; border-radius: 3px; padding: 3px 9px; cursor: pointer; font-size: 12px; }
+  .totals { margin-top: 16px; border: 1px solid #ddd; border-radius: 6px; background: #fff; padding: 6px 14px 12px; }
+  .tot { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+  .tot.grand { border-top: 1px solid #ddd; margin-top: 6px; padding-top: 9px; font-size: 18px; font-weight: 700; color: #b12704; }
+  .taxnote { color: #565959; font-size: 12px; margin: 10px 0 0; }
+  #checkout { margin-top: 14px; background: #ffd814; border: 1px solid #fcd200; border-radius: 20px; padding: 8px 22px; cursor: pointer; font-size: 14px; }
+  #notice { margin-top: 10px; font-size: 13px; color: #565959; }
+  #empty { font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <b>Voltro</b>
+  <input placeholder="Search Voltro" aria-label="Search">
+  <span>Hello, sign in</span>
+  <span>Orders</span>
+  <span>Basket</span>
+</header>
+<nav>
+  <span>All</span><span>Today's Deals</span><span>Electronics</span>
+  <span>Computers</span><span>Monitors</span><span>Desk Setup</span><span>Customer Service</span>
+</nav>
+<div id="wrap">
+  <h1>Your Basket</h1>
+  <p class="sub">Items are held for 60 minutes. <a href="desk-setup.html" style="color:#007185">Continue shopping</a></p>
+  <div class="lines" id="lines"></div>
+  <p id="empty"></p>
+  <div class="totals" id="totals" hidden>
+    <div class="tot"><span>Items subtotal</span><span id="sub"></span></div>
+    <div class="tot"><span>Sales tax (8%)</span><span id="tax"></span></div>
+    <div class="tot grand"><span>Order total</span><span id="grand"></span></div>
+  </div>
+  <p class="taxnote">Sales tax is charged at 8% of the items subtotal for this delivery region.</p>
+  <button id="checkout" type="button">Proceed to checkout</button>
+  <p id="notice" role="status"></p>
+  <p class="crossnote">Monitors added from the storefront listing check out separately in your
+    <a href="cart.html" style="color:#007185">shopping cart</a>.</p>
+</div>
+<footer>
+  &copy; 2026 Voltro Marketplace, Inc. · <a href="conditions.html">Conditions of Use</a> ·
+  <a href="privacy.html">Privacy Notice</a> ·
+  Returns are accepted within 30 days of delivery: see <a href="returns.html">Delivery &amp; Returns</a>.
+  Registered office: 44 Halden Way, Brantmoor. Customer service: support@voltro.example
+</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const lines = document.getElementById('lines');
+const empty = document.getElementById('empty');
+const totals = document.getElementById('totals');
+
+function money(n) {
+  return '$' + Number(n).toFixed(2);
+}
+
+async function load() {
+  const res = await fetch('/api/shop/cart?store=voltro', {
+    headers: { 'X-Session-Nonce': NONCE },
+  });
+  if (!res.ok) {
+    empty.textContent = 'Sign-in required to view this basket.';
+    return;
+  }
+  const body = await res.json();
+  lines.innerHTML = '';
+  if (!body.lines.length) {
+    empty.textContent = 'Your Voltro basket is empty.';
+    totals.hidden = true;
+    return;
+  }
+  empty.textContent = '';
+  for (const line of body.lines) {
+    const row = document.createElement('div');
+    row.className = 'bline';
+    row.innerHTML =
+      `<span class="bname">${line.name}</span>` +
+      `<span class="bpart">${line.sku}</span>` +
+      `<span class="bqty">Qty ${line.qty}</span>` +
+      `<span class="bamt">${money(line.lineTotal)}</span>`;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = 'Remove';
+    remove.setAttribute('aria-label', 'Remove ' + line.name);
+    remove.addEventListener('click', async () => {
+      remove.disabled = true;
+      await fetch('/api/shop/cart/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, store: 'voltro', sku: line.sku }),
+      });
+      await load();
+    });
+    row.appendChild(remove);
+    lines.appendChild(row);
+  }
+  document.getElementById('sub').textContent = money(body.subtotal);
+  document.getElementById('tax').textContent = money(body.tax);
+  document.getElementById('grand').textContent = money(body.total);
+  totals.hidden = false;
+}
+
+document.getElementById('checkout').addEventListener('click', () => {
+  document.getElementById('notice').textContent =
+    'Checkout for Desk Setup orders opens once a delivery address is on file.';
+});
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kestrel Peak Trailers — Request a Brochure</title>
+<style>
+  :root {
+    --char: #17140f;
+    --cream: #f6f1e7;
+    --sand: #cfc3ae;
+    --rust: #9c4a2f;
+    --stone: #7a7266;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--char);
+    font-family: Optima, Candara, "Noto Sans", "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  h1, h2, h3, .cond, button, label, .kicker, nav a {
+    font-family: "Avenir Next Condensed", "Arial Narrow", "Liberation Sans Narrow", sans-serif;
+  }
+  nav.top {
+    position: sticky; top: 0; z-index: 6;
+    background: rgba(23, 20, 15, 0.94); color: var(--cream);
+    display: flex; align-items: center; gap: 24px; padding: 12px 34px;
+  }
+  nav.top .word {
+    font-family: "Avenir Next Condensed", "Arial Narrow", sans-serif;
+    text-transform: uppercase; letter-spacing: 4px; font-size: 17px; font-weight: 600;
+  }
+  nav.top a {
+    color: var(--sand); text-decoration: none; text-transform: uppercase;
+    letter-spacing: 2px; font-size: 12px;
+  }
+  nav.top a:hover, nav.top a.on { color: #fff; }
+  nav.top .tel { margin-left: auto; font-size: 12px; letter-spacing: 1.5px; color: var(--sand); }
+  .hero {
+    position: relative; min-height: 380px; display: flex; align-items: flex-end;
+    padding: 0 34px 40px; color: #fff; overflow: hidden;
+    background:
+      radial-gradient(120% 90% at 76% 12%, #f0c9a0 0%, rgba(240, 201, 160, 0) 48%),
+      linear-gradient(180deg, #2c3a4a 0%, #5b6472 42%, #8a7a68 74%, #b09a80 100%);
+  }
+  .hero .ridge, .hero .ridge2 {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 220px;
+  }
+  .hero .ridge {
+    background: #3d4a44;
+    clip-path: polygon(0 62%, 12% 40%, 24% 55%, 38% 26%, 52% 48%, 66% 30%, 80% 52%, 92% 38%, 100% 56%, 100% 100%, 0 100%);
+    opacity: 0.85;
+  }
+  .hero .ridge2 {
+    background: #22271f; height: 150px;
+    clip-path: polygon(0 70%, 10% 52%, 22% 68%, 34% 44%, 48% 62%, 60% 46%, 74% 66%, 86% 50%, 100% 68%, 100% 100%, 0 100%);
+  }
+  .hero .copy { position: relative; max-width: 30ch; }
+  .kicker {
+    text-transform: uppercase; letter-spacing: 4px; font-size: 11px;
+    color: var(--sand); margin: 0 0 8px;
+  }
+  .hero h1 {
+    margin: 0 0 10px; font-size: 58px; line-height: 0.94; font-weight: 600;
+    text-transform: uppercase; letter-spacing: -0.5px;
+  }
+  .hero p.tagline { margin: 0; font-size: 17px; color: #f0e9dc; }
+  .strip {
+    background: var(--char); color: var(--sand);
+    display: flex; flex-wrap: wrap; gap: 6px 44px; padding: 14px 34px;
+    text-transform: uppercase; letter-spacing: 2px; font-size: 11px;
+  }
+  .layout {
+    max-width: 1040px; margin: 0 auto; padding: 46px 34px 70px;
+    display: grid; grid-template-columns: 1fr 420px; gap: 54px; align-items: start;
+  }
+  .pitch h2 { font-size: 30px; text-transform: uppercase; letter-spacing: -0.3px; margin: 0 0 12px; }
+  .pitch p { margin: 0 0 16px; }
+  .specs { list-style: none; margin: 22px 0 0; padding: 0; border-top: 1px solid var(--sand); }
+  .specs li {
+    display: flex; justify-content: space-between; gap: 20px;
+    padding: 9px 0; border-bottom: 1px solid var(--sand); font-size: 14px;
+  }
+  .specs li span:first-child { text-transform: uppercase; letter-spacing: 1.6px; font-size: 11px; color: var(--stone); }
+  .panel { background: #fff; border-top: 4px solid var(--rust); padding: 26px 26px 30px; }
+  .panel > h3 {
+    margin: 0 0 4px; font-size: 24px; text-transform: uppercase; letter-spacing: -0.2px;
+  }
+  .panel > p.sub { margin: 0 0 20px; font-size: 14px; color: var(--stone); }
+  fieldset { border: 0; margin: 0 0 22px; padding: 0; }
+  legend {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 2.4px; color: var(--rust);
+    padding: 0 0 12px; font-family: "Avenir Next Condensed", "Arial Narrow", sans-serif;
+  }
+  .fl { position: relative; margin-bottom: 16px; }
+  .fl input, .fl select {
+    width: 100%; font: inherit; font-size: 16px; color: var(--char);
+    padding: 21px 12px 7px; border: 1px solid var(--sand); background: #fdfbf7;
+  }
+  .fl select { padding-top: 20px; }
+  .fl input:focus, .fl select:focus { outline: none; border-color: var(--rust); background: #fff; }
+  .fl label {
+    position: absolute; left: 12px; top: 13px; font-size: 15px; color: var(--stone);
+    pointer-events: none; transition: top 0.12s, font-size 0.12s, letter-spacing 0.12s;
+  }
+  .fl input:focus + label,
+  .fl input:not(:placeholder-shown) + label,
+  .fl.pinned label {
+    top: 5px; font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--rust);
+  }
+  .hint { display: block; font-size: 11px; letter-spacing: 0.6px; color: var(--stone); text-transform: none; }
+  .fl.pinned label .hint { display: inline; letter-spacing: 0.4px; }
+  .req { color: var(--rust); }
+  .error:not(:empty) {
+    color: #8b2318; font-size: 13px; margin: -10px 0 14px;
+    border-left: 3px solid #8b2318; padding-left: 9px; background: #fbf2ef;
+  }
+  button {
+    font-size: 15px; text-transform: uppercase; letter-spacing: 2.4px; cursor: pointer;
+    padding: 14px 26px; border: 1px solid var(--char); background: var(--char); color: var(--cream);
+  }
+  button:hover { background: var(--rust); border-color: var(--rust); }
+  #nag {
+    background: var(--char); color: var(--cream); border-left: 4px solid var(--rust);
+    padding: 18px 20px; margin: 0 0 18px;
+  }
+  #nag p { margin: 0 0 14px; font-size: 14px; color: #ece3d4; }
+  #nag strong { color: #fff; text-transform: uppercase; letter-spacing: 1.6px; }
+  #nag button { font-size: 12px; padding: 10px 18px; border-color: var(--sand); background: transparent; color: var(--cream); }
+  #nag button:hover { background: var(--rust); border-color: var(--rust); }
+  #reqbtn { width: 100%; }
+  #done { background: var(--char); color: var(--cream); padding: 26px; margin-top: 22px; }
+  #done p { margin: 0 0 10px; }
+  #done .lab { text-transform: uppercase; letter-spacing: 2.4px; font-size: 11px; color: var(--sand); }
+  #confnum { display: block; font-size: 30px; letter-spacing: 4px; color: #fff; font-family: "Avenir Next Condensed", "Arial Narrow", sans-serif; }
+  footer {
+    background: var(--char); color: var(--sand); padding: 30px 34px; font-size: 12.5px;
+  }
+  footer .cols { display: flex; flex-wrap: wrap; gap: 6px 40px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; }
+  @media (max-width: 880px) { .layout { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav class="top">
+  <span class="word">Kestrel Peak</span>
+  <a href="models.html">Models</a>
+  <a href="build.html">Build yours</a>
+  <a href="owners.html">Owners</a>
+  <a href="dealers.html">Dealers</a>
+  <a href="brochure.html" class="on">Brochure</a>
+  <span class="tel">541-555-0142</span>
+</nav>
+
+<header class="hero">
+  <div class="ridge"></div>
+  <div class="ridge2"></div>
+  <div class="copy">
+    <p class="kicker">2026 model year</p>
+    <h1>Built for the last mile of the map</h1>
+    <p class="tagline">Handbuilt teardrop and off-road trailers since 2011.</p>
+  </div>
+</header>
+
+<div class="strip">
+  <span>Aluminium monocoque</span>
+  <span>Three chassis lengths</span>
+  <span>Six-year frame warranty</span>
+  <span>Made in Oregon</span>
+</div>
+
+<div class="layout">
+  <section class="pitch">
+    <h2>The printed book, on your doorstep</h2>
+    <p>Request our 2026 model-year brochure and price sheet. We mail printed copies
+    and send a PDF to your inbox within one business day.</p>
+    <p>Every trailer leaves our Switchback Road shop on a jig we cut ourselves.
+    The brochure walks through all three chassis, the galley and sleeping layouts,
+    and the option groups that owners actually order.</p>
+    <ul class="specs">
+      <li><span>Dry weight</span><span>1,180 – 1,940 lb</span></li>
+      <li><span>Sleeps</span><span>Two adults, or two plus a bunk</span></li>
+      <li><span>Solar</span><span>200 W standard, 400 W optional</span></li>
+      <li><span>Lead time</span><span>14 – 22 weeks from deposit</span></li>
+    </ul>
+  </section>
+
+  <section class="panel">
+    <h3>Request a brochure</h3>
+    <p class="sub">Two fields is all we need. Everything else is optional and
+    only helps a specialist prepare before they call.</p>
+
+    <form id="brochure" novalidate>
+      <fieldset>
+        <legend>Contact details</legend>
+        <div class="fl">
+          <input id="name" placeholder=" " autocomplete="off">
+          <label for="name">Full name <span class="req">*</span></label>
+        </div>
+        <div class="error" id="err-name" role="alert"></div>
+        <div class="fl">
+          <input id="email" placeholder=" " autocomplete="off">
+          <label for="email">Email address <span class="req">*</span></label>
+        </div>
+        <div class="error" id="err-email" role="alert"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Help us tailor your brochure</legend>
+        <div class="fl">
+          <input id="phone" placeholder=" " autocomplete="off">
+          <label for="phone">Phone number <span class="hint">so a build specialist can call you</span></label>
+        </div>
+        <div class="fl pinned">
+          <input id="dob" type="date">
+          <label for="dob">Date of birth <span class="hint">for financing pre-checks</span></label>
+        </div>
+        <div class="fl pinned">
+          <select id="income">
+            <option value="">— select —</option>
+            <option>Under $50,000</option>
+            <option>$50,000 – $100,000</option>
+            <option>$100,000 – $200,000</option>
+            <option>Over $200,000</option>
+          </select>
+          <label for="income">Household income bracket</label>
+        </div>
+        <div class="fl">
+          <input id="taxid" placeholder=" " autocomplete="off">
+          <label for="taxid">Taxpayer ID <span class="hint">recommended for faster service</span></label>
+        </div>
+      </fieldset>
+
+      <div id="nag" hidden role="alert">
+        <p><strong>Are you sure?</strong> Most customers provide this. Complete
+        details help our specialists prepare pricing and financing options before
+        they reach out.</p>
+        <button type="button" id="adddetails">Add details</button>
+        <button type="button" id="skipsubmit">Skip and submit</button>
+      </div>
+
+      <button type="submit" id="reqbtn">Request brochure</button>
+    </form>
+
+    <div id="done" hidden>
+      <p>Thank you. Your brochure request has been received.</p>
+      <p class="lab">Confirmation number</p>
+      <p><span id="confnum"></span></p>
+      <p>Keep this number handy if you contact our showroom.</p>
+    </div>
+    <div class="error" id="err-submit" role="alert"></div>
+  </section>
+</div>
+
+<footer>
+  <div class="cols">
+    <span>Showroom open Tue–Sat</span>
+    <span>1180 Switchback Rd, Bldg C</span>
+    <span>541-555-0142</span>
+  </div>
+  © 2026 Kestrel Peak Trailers, Inc. · Warranty · Privacy · Dealer locator
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const OPTIONAL = ['phone', 'dob', 'income', 'taxid'];
+  let nagShown = false;
+
+  const value = (id) => document.getElementById(id).value.trim();
+
+  async function submitRequest() {
+    const payload = { nonce: NONCE, name: value('name'), email: value('email') };
+    for (const id of OPTIONAL) {
+      const v = value(id);
+      if (v) payload[id] = v;
+    }
+    const response = await fetch('/api/brochure-submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      document.getElementById('err-submit').textContent =
+        'Something went wrong sending your request. Please try again.';
+      return;
+    }
+    const result = await response.json();
+    document.getElementById('brochure').hidden = true;
+    document.getElementById('nag').hidden = true;
+    document.getElementById('confnum').textContent = result.confirmation;
+    document.getElementById('done').hidden = false;
+  }
+
+  document.getElementById('brochure').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const name = value('name');
+    const email = value('email');
+    document.getElementById('err-name').textContent =
+      name ? '' : 'Full name is required.';
+    const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+    document.getElementById('err-email').textContent =
+      emailOk ? '' : 'Enter a valid email address.';
+    if (!name || !emailOk) return;
+    const missing = OPTIONAL.some((id) => !value(id));
+    if (missing && !nagShown) {
+      nagShown = true;
+      document.getElementById('nag').hidden = false;
+      return;
+    }
+    submitRequest();
+  });
+
+  document.getElementById('skipsubmit').addEventListener('click', submitRequest);
+  document.getElementById('adddetails').addEventListener('click', () => {
+    document.getElementById('nag').hidden = true;
+    for (const id of OPTIONAL) {
+      if (!value(id)) {
+        document.getElementById(id).focus();
+        break;
+      }
+    }
+  });
+</script>
+</body>
+</html>

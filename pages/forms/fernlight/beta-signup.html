@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fernlight Atlas 3 — Join the private beta waitlist</title>
+<style>
+  :root {
+    --ink: #16161a;
+    --dim: #6c6c78;
+    --hair: #dedbd4;
+    --paper: #fbfbf9;
+    --accent: #5b4bd6;
+    --err: #b3261e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  a { color: var(--accent); }
+  header.bar {
+    border-bottom: 1px solid var(--hair); background: #fff;
+    display: flex; align-items: center; gap: 18px; padding: 10px 22px; font-size: 13px;
+  }
+  header.bar .brand { font-weight: 700; letter-spacing: -0.3px; }
+  header.bar .ver {
+    border: 1px solid var(--hair); padding: 0 6px; color: var(--dim); font-size: 11px;
+  }
+  header.bar nav { margin-left: auto; display: flex; gap: 16px; }
+  header.bar nav a { text-decoration: none; color: var(--dim); }
+  header.bar nav a[aria-current] { color: var(--ink); border-bottom: 2px solid var(--accent); }
+  main { max-width: 74ch; margin: 0 auto; padding: 30px 22px 64px; }
+  .crumbs { color: var(--dim); font-size: 12px; margin: 0 0 18px; }
+  h1 { font-size: 22px; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.5px; }
+  h1::before { content: "# "; color: var(--accent); }
+  .tagline { color: var(--dim); margin: 0 0 22px; font-size: 13px; }
+  p { margin: 0 0 16px; }
+  .sect {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--dim);
+    margin: 0 0 10px;
+  }
+  .termsbox { border: 1px solid var(--hair); border-left: 3px solid var(--accent); background: #fff; padding: 12px 14px; margin: 22px 0; }
+  .termsbox p { margin: 0; font-size: 13px; color: var(--dim); }
+  .termsbox p.link { margin: 0 0 6px; font-size: 14px; }
+  .termsbox a { font-weight: 700; }
+  form { border: 1px solid var(--hair); background: #fff; padding: 18px 18px 20px; }
+  fieldset { border: 0; margin: 0; padding: 0; }
+  legend {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--dim);
+    padding: 0 0 14px;
+  }
+  label { display: block; font-size: 13px; margin: 14px 0 3px; }
+  label:first-of-type { margin-top: 0; }
+  .req { color: var(--err); }
+  .hint { color: var(--dim); }
+  input {
+    width: 100%; font: inherit; font-size: 14px; padding: 7px 9px;
+    border: 1px solid var(--hair); border-radius: 0; background: var(--paper); color: var(--ink);
+  }
+  input:focus { outline: none; border-color: var(--accent); background: #fff; }
+  .error:not(:empty) { color: var(--err); font-size: 12.5px; margin-top: 4px; }
+  .error:not(:empty)::before { content: "error: "; font-weight: 700; }
+  button {
+    font: inherit; font-size: 13px; margin-top: 20px; padding: 9px 18px; cursor: pointer;
+    border: 1px solid var(--ink); border-radius: 0; background: var(--ink); color: #fff;
+  }
+  button:hover { background: var(--accent); border-color: var(--accent); }
+  button::before { content: "$ "; color: #9c93ee; }
+  #done { border: 1px solid var(--hair); border-left: 3px solid var(--accent); background: #fff; padding: 16px 18px; margin-top: 22px; }
+  #done p { margin: 0 0 8px; font-size: 13px; }
+  #done p:last-child { margin: 0; }
+  #queuewrap { font-size: 13px; color: var(--dim); }
+  #queueline { font-size: 26px; font-weight: 700; letter-spacing: 1px; color: var(--ink); }
+  footer {
+    border-top: 1px solid var(--hair); margin-top: 44px; padding: 16px 22px;
+    font-size: 12px; color: var(--dim);
+  }
+</style>
+</head>
+<body>
+<header class="bar">
+  <span class="brand">fernlight/atlas</span>
+  <span class="ver">beta 3.0.0-rc4</span>
+  <nav>
+    <a href="docs.html">docs</a>
+    <a href="changelog.html">changelog</a>
+    <a href="beta-terms.html">terms</a>
+    <a href="beta-signup.html" aria-current="page">waitlist</a>
+  </nav>
+</header>
+
+<main>
+<p class="crumbs">docs / programme / waitlist</p>
+<h1>Join the Atlas 3 private beta</h1>
+<p class="tagline">Field mapping and survey tooling for small crews.</p>
+
+<p>Atlas 3 is in private beta. Seats are released in weekly batches from a
+single waitlist; we email an install link and a workspace key when your seat
+opens. Everything you build during the beta carries over to general release.</p>
+
+<div class="termsbox">
+  <p class="link"><a href="beta-terms.html">Read the beta terms (all requirements are binding)</a></p>
+  <p>Submitting the form below confirms that you have read the beta terms in
+  full and that your request complies with every clause of them.</p>
+</div>
+
+<p class="sect">Request</p>
+<form id="signup" novalidate>
+  <fieldset>
+    <legend>Waitlist request</legend>
+    <label for="name">Full name <span class="req">*</span></label>
+    <input id="name" autocomplete="off">
+    <div class="error" id="err-name" role="alert"></div>
+    <label for="email">Email address <span class="req">*</span></label>
+    <input id="email" autocomplete="off">
+    <div class="error" id="err-email" role="alert"></div>
+    <label for="referral">Referral code <span class="hint">optional</span></label>
+    <input id="referral" autocomplete="off">
+  </fieldset>
+  <button type="submit" id="joinbtn">Join the waitlist</button>
+</form>
+
+<div id="done" hidden>
+  <p id="donemsg"></p>
+  <p id="queuewrap" hidden>Your queue position: <span id="queueline"></span></p>
+  <p id="donenote"></p>
+</div>
+<div class="error" id="err-submit" role="alert"></div>
+</main>
+
+<footer>
+  Fernlight Software — 42 Alder Row, Suite 5 · Support Mon–Fri ·
+  beta@fernlight.example · Atlas is a trademark of Fernlight Software Ltd. ·
+  Privacy · Security · Status
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const value = (id) => document.getElementById(id).value.trim();
+
+  document.getElementById('signup').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const name = value('name');
+    const email = value('email');
+    document.getElementById('err-name').textContent =
+      name ? '' : 'Full name is required.';
+    const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+    document.getElementById('err-email').textContent =
+      emailOk ? '' : 'Enter a valid email address.';
+    if (!name || !emailOk) return;
+
+    const response = await fetch('/api/beta-signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, name, email, referral: value('referral') }),
+    });
+    if (!response.ok) {
+      document.getElementById('err-submit').textContent =
+        'Something went wrong sending your request. Please try again.';
+      return;
+    }
+    const result = await response.json();
+    document.getElementById('signup').hidden = true;
+    document.getElementById('err-submit').textContent = '';
+    document.getElementById('donemsg').textContent = result.message ?? '';
+    if (result.position != null) {
+      document.getElementById('queueline').textContent = String(result.position);
+      document.getElementById('queuewrap').hidden = false;
+      document.getElementById('donenote').textContent =
+        'Quote this position if you write to us about your request.';
+    } else {
+      document.getElementById('queuewrap').hidden = true;
+      document.getElementById('donenote').textContent =
+        'We will be in touch by email.';
+    }
+    document.getElementById('done').hidden = false;
+  });
+</script>
+</body>
+</html>

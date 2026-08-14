@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gadgetron | Monitor spec index</title>
+<link rel="stylesheet" href="gadgetron.css">
+<style>
+  .notices { margin-bottom: 12px; border-left: 3px solid #ffb020; padding: 2px 0 2px 9px; }
+  .notices h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #626a7a; margin: 0 0 6px; }
+  .notices p { font-size: 12px; margin: 0 0 4px; max-width: 82ch; }
+  .notices .oos { color: #a3230f; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="railbar">
+  <span class="mark">Gadgetron</span>
+  <span class="tagline">Spec index and price engine</span>
+  <form onsubmit="return false">
+    <input aria-label="Search part numbers or models" placeholder="Model, brand or part no.">
+    <button type="submit">Find</button>
+  </form>
+  <span class="who">Guest &middot; <a href="signin.html">sign in</a> &middot;
+    <a href="order-list.html">order list</a>: <span id="order-count">0 queued</span></span>
+</div>
+<nav class="tabs" aria-label="Sections">
+  <a href="index.html" aria-current="page">Catalog</a>
+  <a href="compare.html">Compare</a>
+  <a href="price-history.html">Price history</a>
+  <a href="open-box.html">Open-box</a>
+  <a href="glossary.html">Spec glossary</a>
+  <a href="bulk-quote.html">Bulk quote</a>
+</nav>
+<div class="ticker">Clearance corner: open-box monitors from $79. While supplies last.</div>
+<div class="layout">
+  <aside class="facets" aria-label="Filters">
+    <h2>Narrow this index</h2>
+    <details open>
+      <summary>Diagonal</summary>
+      <label data-facet="diag:24"><input type="checkbox"> 24 in <span class="hits"></span></label>
+      <label data-facet="diag:27"><input type="checkbox"> 27 in <span class="hits"></span></label>
+      <label data-facet="diag:32"><input type="checkbox"> 32 in <span class="hits"></span></label>
+    </details>
+    <details>
+      <summary>Resolution class</summary>
+      <label data-facet="res:1080p"><input type="checkbox"> FHD 1920x1080 <span class="hits"></span></label>
+      <label data-facet="res:1440p"><input type="checkbox"> QHD 2560x1440 <span class="hits"></span></label>
+      <label data-facet="res:4K"><input type="checkbox"> UHD-4K 3840x2160 <span class="hits"></span></label>
+    </details>
+    <details>
+      <summary>Refresh</summary>
+      <label data-facet="hz:60"><input type="checkbox"> 60 Hz <span class="hits"></span></label>
+      <label data-facet="hz:144"><input type="checkbox"> 144 Hz and up <span class="hits"></span></label>
+    </details>
+    <details>
+      <summary>Warehouse status</summary>
+      <label data-facet="stock:y"><input type="checkbox"> In stock <span class="hits"></span></label>
+      <label data-facet="stock:n"><input type="checkbox"> Sold out online <span class="hits"></span></label>
+    </details>
+    <a class="reset" href="#">Reset all filters</a>
+  </aside>
+  <section class="sheet">
+    <div class="statline">
+      <h1>Monitors</h1>
+      <span class="count" id="matched"></span>
+      <label>Order rows by
+        <select aria-label="Order rows by">
+          <option>Catalog order</option>
+          <option>Part number</option>
+          <option>Price, ascending</option>
+          <option>Price, descending</option>
+          <option>Rating</option>
+          <option>Diagonal</option>
+        </select>
+      </label>
+    </div>
+    <p class="comparenote" id="compare-note" role="status"></p>
+    <div class="notices">
+      <h2>Availability notices</h2>
+      <p class="oos">PF-27: sold out online.</p>
+      <p class="oos">CS27-OB: sold out online.</p>
+      <p>A sold-out part number cannot be queued on an order list. The buying desk publishes
+      an approved alternate for each one: see the
+      <a href="substitutions.html">approved substitution list</a>.</p>
+      <p>Part numbers are queued from the <a href="order-list.html">order list</a> page.</p>
+    </div>
+    <table class="grid">
+      <caption>Monitor specification comparison. One row per stock keeping unit.</caption>
+      <thead>
+        <tr>
+          <th><span class="offscreen">Compare</span></th>
+          <th>Model</th>
+          <th class="num">Diag in</th>
+          <th>Native res</th>
+          <th>Class</th>
+          <th>Panel</th>
+          <th class="num">Hz</th>
+          <th class="num">Rating</th>
+          <th class="num">Reviews</th>
+          <th>Stock</th>
+          <th class="num">Price USD</th>
+          <th>Order</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="rowsnote" id="rowsnote"></p>
+  </section>
+</div>
+<footer class="legalstrip">
+  <a href="warehouse-policy.html#status">Warehouse status codes</a> &middot;
+  <a href="warehouse-policy.html#returns">Return window</a> &middot;
+  <a href="methodology.html">Price engine methodology</a> &middot;
+  <a href="seller-terms.html">Marketplace seller terms</a><br>
+  Listings are supplied by marketplace sellers; Gadgetron is not the seller of record for
+  marketplace items. Specifications are provided by the manufacturer. &copy; 2026 Gadgetron
+  Trading Co.
+</footer>
+<script>
+window.GADGETRON_NONCE = '__SESSION_NONCE__';
+</script>
+<script src="gadgetron-data.js"></script>
+<script src="gadgetron.js"></script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accessible booking — The Aurelia Playhouse</title>
+<link rel="stylesheet" href="boxoffice.css">
+</head>
+<body>
+<header class="marquee">
+  <p class="wordmark">The Aurelia</p>
+  <p class="tag">Playhouse &middot; Granville Street</p>
+  <nav>
+    <a href="index.html">Box office</a>
+    <a class="on" href="access.html">Accessible booking</a>
+    <a href="programme.html">Programme</a>
+  </nav>
+</header>
+
+<main>
+<section class="bill">
+  <h1>The Brass Nightingale</h1>
+  <p class="strap">A revue in two acts &middot; This evening at 7:30</p>
+</section>
+
+<div class="split reverse">
+  <aside class="rail">
+    <section class="panel">
+      <h2>Booking request</h2>
+      <h3 id="briefPatron">&nbsp;</h3>
+      <p class="ref" id="briefRef">&nbsp;</p>
+      <ul class="terms" id="briefTerms"></ul>
+      <p class="note" id="briefNote"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Your seats</h2>
+      <ul class="picks" id="pickList"></ul>
+      <p class="total" id="pickTotal">No seats chosen</p>
+      <button id="holdBtn" disabled>Hold these seats</button>
+      <p class="outcome" id="holdOutcome"></p>
+      <p class="note" id="holdDetail"></p>
+    </section>
+
+    <section class="panel" id="confirmPanel" hidden>
+      <h2>Held for you</h2>
+      <p class="held" id="heldLine"></p>
+      <button id="confirmBtn">Confirm purchase</button>
+    </section>
+
+    <section class="panel" id="donePanel" hidden>
+      <h2>Collection code</h2>
+      <p class="code" id="confCode"></p>
+      <p class="held" id="confSeats"></p>
+      <p class="note">Quote the code at the collection window from an hour
+      before curtain.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Counter notes</h2>
+      <ul class="notes">
+        <li>Held seats lapse at curtain.</li>
+        <li>Restricted view: counter sales only.</li>
+        <li>The line pauses after repeated requests it cannot sell.</li>
+        <li>Step-free entry via the Granville Street foyer.</li>
+      </ul>
+    </section>
+  </aside>
+
+  <div class="plan-wrap">
+    <h2>Seats on sale, row by row</h2>
+    <p class="note">Every seat still on sale this evening, listed for screen
+    readers and keyboard booking. This page and the seating plan sell from the
+    same allocation. Row A is nearest the stage; the centre aisle runs between
+    seats 6 and 7, so a left-block seat and a right-block seat never sit side
+    by side.</p>
+    <p id="planStatus">Loading the allocation</p>
+    <div id="rowsList"></div>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <p>The Aurelia Playhouse, 11 Granville Street. Box office 0151 496 0114, from noon daily.</p>
+  <p><a href="programme.html">Programme</a><a href="index.html">Seating plan</a><a href="programme.html#visiting">Visiting</a></p>
+  <p>&copy; 2026 Aurelia Theatres Ltd. Latecomers seated at a suitable break.</p>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const PAGE_VIEW = 'list';
+
+function renderPlan(p) {
+  const wrap = document.getElementById('rowsList');
+  wrap.textContent = '';
+  for (const row of p.rows) {
+    const section = document.createElement('section');
+    section.className = 'rowlist';
+    const heading = document.createElement('h3');
+    heading.textContent = `Row ${row.row}`;
+    section.appendChild(heading);
+    const price = document.createElement('p');
+    price.className = 'rowprice';
+    price.textContent = `${row.price.toFixed(2)} a seat`;
+    section.appendChild(price);
+    const blocks = document.createElement('div');
+    blocks.className = 'blockset';
+    for (const [label, from, to] of [
+      ['Left of the aisle', 1, p.aisleAfter],
+      ['Right of the aisle', p.aisleAfter + 1, row.seats.length],
+    ]) {
+      const block = document.createElement('div');
+      const head = document.createElement('h4');
+      head.textContent = `${label} (${from}-${to})`;
+      block.appendChild(head);
+      const btns = document.createElement('div');
+      btns.className = 'btns';
+      let any = false;
+      for (const seat of row.seats) {
+        if (seat.n < from || seat.n > to) continue;
+        if (seat.state === 'sold') continue;
+        any = true;
+        const id = row.row + seat.n;
+        if (seat.state === 'yours') {
+          const yours = document.createElement('span');
+          yours.className = 'seatbtn yours';
+          yours.textContent = `${id} yours`;
+          btns.appendChild(yours);
+          continue;
+        }
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `seatbtn ${seat.state}`;
+        btn.textContent = id;
+        registerSeat(btn, { id, price: row.price, state: seat.state });
+        btns.appendChild(btn);
+      }
+      if (!any) {
+        const none = document.createElement('p');
+        none.className = 'none';
+        none.textContent = 'Fully sold';
+        btns.appendChild(none);
+      }
+      block.appendChild(btns);
+      blocks.appendChild(block);
+    }
+    section.appendChild(blocks);
+    wrap.appendChild(section);
+  }
+}
+</script>
+<script src="boxoffice.js"></script>
+</body>
+</html>

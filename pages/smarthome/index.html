@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home — Hearthline Hub</title>
+<link rel="stylesheet" href="hearthline.css">
+</head>
+<body>
+<header>
+  <div class="mark">Hearth<b>line</b><span class="sub">Hub console</span></div>
+  <nav class="pills">
+    <a class="on" href="index.html">Home</a>
+    <a href="devices.html">Devices</a>
+    <a href="energy.html">Energy</a>
+  </nav>
+  <div class="home-state">14 Alder Croft<br>Hub online &middot; firmware 9.4.2</div>
+</header>
+
+<main>
+  <h1>Good evening</h1>
+  <p class="lede">Everything is quiet. One scene on this hub is waiting for
+  calibration; the rest of the home is running on its usual schedules.</p>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">Living room</div><div class="v">21.5&deg;C</div><div class="d">Heating idle</div></div>
+    <div class="tile"><div class="k">Front door</div><div class="v">Locked</div><div class="d">Since 18:42</div></div>
+    <div class="tile"><div class="k">Lights on</div><div class="v">4 of 11</div><div class="d">Ground floor</div></div>
+    <div class="tile"><div class="k">Hot water</div><div class="v">54&deg;C</div><div class="d">Next boost 06:30</div></div>
+  </div>
+
+  <div class="card" id="calibration">
+    <h2>Scene calibration &mdash; Evening Wind-down</h2>
+    <p class="note">The scene planner issued fresh targets for this room after the
+    new pendant fitting was added. Move each dial to its target, then apply the
+    scene. The hub only stores a calibration that matches all three targets.</p>
+
+    <div class="targets" id="targets">
+      <div class="target"><span class="t-name">Brightness</span><span class="t-val" id="t-brightness">&ndash;</span></div>
+      <div class="target"><span class="t-name">Color temperature</span><span class="t-val" id="t-colortemp">&ndash;</span></div>
+      <div class="target"><span class="t-name">Fade time</span><span class="t-val" id="t-fade">&ndash;</span></div>
+    </div>
+
+    <div class="dial">
+      <div class="dial-head"><span class="dial-name">Brightness</span><span class="readout" id="ro-brightness">80%</span></div>
+      <input type="range" id="sl-brightness" min="0" max="100" step="1" value="80" aria-label="Brightness">
+    </div>
+    <div class="dial">
+      <div class="dial-head"><span class="dial-name">Color temperature</span><span class="readout" id="ro-colortemp">4000 K</span></div>
+      <input type="range" id="sl-colortemp" min="2700" max="6500" step="50" value="4000" aria-label="Color temperature">
+    </div>
+    <div class="dial">
+      <div class="dial-head"><span class="dial-name">Fade time</span><span class="readout" id="ro-fade">3 s</span></div>
+      <input type="range" id="sl-fade" min="0" max="30" step="1" value="3" aria-label="Fade time">
+    </div>
+
+    <div class="apply-row">
+      <button class="btn" id="apply">Apply scene</button>
+      <button class="btn ghost" id="reset">Back to defaults</button>
+      <div class="result" id="result" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Tonight</h2>
+    <p class="note">Landing light dims to 20% at 22:30. Heating drops to the night
+    set-point at 23:00. The porch camera arms itself when the last phone leaves
+    the geofence.</p>
+  </div>
+</main>
+
+<footer>
+  <a href="privacy.html">Privacy</a>
+  <a href="devices.html">Manage devices</a>
+  <a href="energy.html">Energy report</a>
+  <p>Hearthline Systems BV &middot; Windgat 11, 2611 KE Delft</p>
+  <p>Support: care@hearthline.example &middot; +44 20 7946 0141</p>
+  <p>&copy; 2021-2026 Hearthline Systems BV. All rights reserved.</p>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+
+const DIALS = [
+  { key: 'brightness', slider: 'sl-brightness', readout: 'ro-brightness', target: 't-brightness', fmt: (v) => v + '%' },
+  { key: 'colorTemp', slider: 'sl-colortemp', readout: 'ro-colortemp', target: 't-colortemp', fmt: (v) => v + ' K' },
+  { key: 'fadeSeconds', slider: 'sl-fade', readout: 'ro-fade', target: 't-fade', fmt: (v) => v + ' s' },
+];
+
+const OFF_NAMES = { brightness: 'brightness', colorTemp: 'color', fadeSeconds: 'fade' };
+
+let defaults = { brightness: 80, colorTemp: 4000, fadeSeconds: 3 };
+
+function refresh() {
+  for (const d of DIALS) {
+    const v = Number(document.getElementById(d.slider).value);
+    document.getElementById(d.readout).textContent = d.fmt(v);
+  }
+}
+
+for (const d of DIALS) {
+  document.getElementById(d.slider).addEventListener('input', refresh);
+}
+
+document.getElementById('reset').addEventListener('click', () => {
+  for (const d of DIALS) {
+    document.getElementById(d.slider).value = String(defaults[d.key]);
+  }
+  refresh();
+  document.getElementById('result').textContent = '';
+});
+
+async function loadScene() {
+  const result = document.getElementById('result');
+  try {
+    const res = await fetch('/api/smarthome/scene', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) throw new Error('scene fetch failed');
+    const data = await res.json();
+    defaults = data.defaults;
+    for (const d of DIALS) {
+      document.getElementById(d.target).textContent = d.fmt(data.targets[d.key]);
+    }
+  } catch {
+    result.innerHTML = '<span class="miss">Hub session expired. Reload the page.</span>';
+  }
+}
+
+document.getElementById('apply').addEventListener('click', async () => {
+  const result = document.getElementById('result');
+  const body = { nonce: NONCE };
+  for (const d of DIALS) {
+    body[d.key] = Number(document.getElementById(d.slider).value);
+  }
+  result.textContent = 'Applying scene';
+  try {
+    const res = await fetch('/api/smarthome/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      result.innerHTML = '<span class="ok">Scene applied. Code:</span><span class="code" id="code"></span>';
+      document.getElementById('code').textContent = data.code;
+    } else if (data.off) {
+      const off = DIALS.filter((d) => data.off[d.key]).map((d) => OFF_NAMES[d.key]).join(', ');
+      result.innerHTML = '<span class="miss">Off target:</span> <span id="off"></span>';
+      document.getElementById('off').textContent = off;
+    } else {
+      result.innerHTML = '<span class="miss">The hub rejected the request.</span>';
+    }
+  } catch {
+    result.innerHTML = '<span class="miss">The hub did not respond.</span>';
+  }
+});
+
+loadScene();
+refresh();
+</script>
+</body>
+</html>

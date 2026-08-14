@@ -1,0 +1,41 @@
+{
+  "rank": 24,
+  "comments": [
+    {
+      "author": "pagetable",
+      "age": "21 hours ago",
+      "text": "The scan quality on the log-log duplex models is remarkable. I zoomed into the cursor hairline on the 1947 unit and you can actually see the wear groove where somebody did decades of multiplication in the 2-4 range. That's a usage histogram etched in celluloid.",
+      "replies": [
+        {
+          "author": "mantissa",
+          "age": "19 hours ago",
+          "text": "OP here — that wear pattern is exactly why I started this project. My grandfather was a structural engineer and the 2-4 range groove lines up with the safety factors he used his whole career. I photographed each rule at 4800 dpi under raking light specifically to capture the wear, not just the markings.",
+          "replies": [
+            {
+              "author": "bitrotting",
+              "age": "17 hours ago",
+              "text": "Please put the raw scans somewhere durable, not just the pretty web viewer. Web viewers die; TIFFs survive."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "circularc",
+      "age": "18 hours ago",
+      "text": "Pedantic correction: the article calls the circular one a \"pocket slide rule\" but circular rules are properly called slide charts or, if the disc rotates, calculating discs. The distinction mattered for patent fights in the era.",
+      "replies": [
+        {
+          "author": "offbyfun",
+          "age": "15 hours ago",
+          "text": "This is the most slide-rule-community sentence I've ever read, and I say that with love."
+        }
+      ]
+    },
+    {
+      "author": "warmstart",
+      "age": "9 hours ago",
+      "text": "I built a browser toy that simulates a virtual slide rule with correct parallax if anyone wants to actually learn how to use one: sliderule-trainer.example.com. Reading this collection made me realize my cursor rendering is wrong — the hairline should sit above both scales, not between them."
+    }
+  ]
+}

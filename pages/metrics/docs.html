@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docs &middot; Halbeck</title>
+<link rel="stylesheet" href="halbeck.css">
+</head>
+<body>
+<div class="bar">
+  <span class="logo">Hal<i>beck</i></span>
+  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <span class="spacer"></span>
+  <a class="lnk" href="sources.html">Data sources</a>
+  <a class="lnk" href="alerts.html">Alerts</a>
+  <a class="lnk" href="docs.html">Docs</a>
+  <span class="who">NM</span>
+</div>
+
+<div class="shell">
+  <nav class="rail">
+    <h3>Workspace</h3>
+    <a href="overview.html">Overview</a>
+    <a href="index.html">Seat usage</a>
+    <a href="retention.html">Retention</a>
+    <a href="expansion.html">Expansion</a>
+    <a href="events.html">Product events</a>
+    <h3>Saved views</h3>
+    <a href="views.html#seats-by-plan-tier">Seats by plan tier</a>
+    <a href="views.html#weekly-actives">Weekly actives</a>
+    <a href="views.html#trial-conversions">Trial conversions</a>
+    <a href="views.html#support-touched-accounts">Support-touched accounts</a>
+    <h3>Admin</h3>
+    <a href="sources.html">Data sources</a>
+    <a href="members.html">Members</a>
+    <a href="billing.html">Billing</a>
+  </nav>
+
+  <main>
+    <p class="crumbs">Halbeck / Docs</p>
+    <h1>Docs</h1>
+    <p class="sub">The short guide to reading a Halbeck workspace. Product-wide documentation;
+    nothing here is specific to Northgate Media.</p>
+
+    <section class="panel">
+      <header><h2>Reading a dashboard</h2></header>
+      <div class="pad">
+        <dl class="defn">
+          <dt>Views</dt>
+          <dd>Every series panel offers a chart and a table of the same data; the toggle is in
+          the panel header. The table is the citable form &mdash; figures in it match exports
+          exactly.</dd>
+          <dt>Exports</dt>
+          <dd>Export CSV in a panel header downloads the series behind that panel. Scheduled
+          exports are configured per saved view.</dd>
+          <dt>Freshness</dt>
+          <dd>A panel whose source has not landed a batch inside its window is held back rather
+          than shown stale; see <a href="sources.html">Data sources</a> for connector health.</dd>
+        </dl>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header><h2>Conventions</h2></header>
+      <div class="pad">
+        <dl class="defn">
+          <dt>Closed periods</dt>
+          <dd>Monthly figures settle three days after month end and are never restated.
+          Late-arriving events land in the period they were received.</dd>
+          <dt>Timezone</dt>
+          <dd>All periods close in the workspace timezone, set by an admin.</dd>
+          <dt>Deduplication</dt>
+          <dd>Member-based metrics count a person once across all connected workspaces.</dd>
+        </dl>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header><h2>More help</h2></header>
+      <div class="pad">
+        <dl class="defn">
+          <dt>Support</dt>
+          <dd><a href="support.html">Contact support</a> with the workspace name and the panel
+          you are looking at.</dd>
+          <dt>Service health</dt>
+          <dd>Platform incidents and maintenance windows are posted on the
+          <a href="status.html">status page</a>.</dd>
+        </dl>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer class="foot">
+  <span>Halbeck Analytics Ltd</span>
+  <a href="status.html">Status</a>
+  <a href="privacy.html">Privacy notice</a>
+  <a href="terms.html">Terms of service</a>
+  <a href="support.html">Support</a>
+  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+</footer>
+</body>
+</html>

@@ -1,0 +1,17 @@
+node_modules/
+eval/results/*
+staging/*
+.env
+.env.*
+*.log
+*.tmp
+profile.json
+*.tasks.json
+.DS_Store
+.vscode/
+.idea/
+.claude/settings.local.json
+.playwright-mcp/
+dist/
+docker-compose.override.yml
+HANDOFF.md

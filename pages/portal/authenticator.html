@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overlane Authenticator</title>
+<link rel="stylesheet" href="portal.css">
+</head>
+<body class="signin">
+<div class="signin-head">
+  <span class="logo">
+    <svg class="logo-mark" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+      <rect width="30" height="30" rx="8" fill="#ffffff"></rect>
+      <path d="M7 20h11M7 15h15M7 10h8" stroke="#2f4bb5" stroke-width="2.2" stroke-linecap="round"></path>
+      <circle cx="22.5" cy="20" r="2.6" fill="#0d8d80"></circle>
+    </svg>
+    <span class="logo-word">Overlane</span>
+    <span class="logo-sub">Authenticator</span>
+  </span>
+</div>
+
+<div class="card">
+  <h1>Your verification code</h1>
+  <p class="lede">Soft token for the current window.</p>
+  <div id="code" class="token token-code" hidden></div>
+  <div id="status" role="status">Fetching your current code…</div>
+  <div class="token-meta">
+    <div><span class="k">Algorithm</span><span class="v">TOTP-6</span></div>
+    <div><span class="k">Issuer</span><span class="v">Overlane ID</span></div>
+    <div><span class="k">Binding</span><span class="v">Session</span></div>
+  </div>
+</div>
+
+<div class="help">
+  <h2>Keeping your token safe</h2>
+  <ul>
+    <li>Codes are issued per signed-in session and are never stored on this device.</li>
+    <li>Overlane staff will never ask you to read a code aloud or forward it.</li>
+    <li>Report a code you did not request to the service desk immediately.</li>
+  </ul>
+</div>
+
+<footer class="sitefoot">
+  <nav>
+    <a href="support.html">Support centre</a>
+    <a href="status.html">Network status</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+  </nav>
+  <p>Overlane Logistics Group, 1400 Harbor Way, Suite 620, Tacoma WA 98402</p>
+  <p>Copyright 2026 Overlane Logistics Group. All rights reserved.</p>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const status = document.getElementById('status');
+
+  (async () => {
+    try {
+      const res = await fetch('/api/portal/code', {
+        headers: { 'X-Session-Nonce': NONCE },
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        status.innerHTML =
+          '<a href="index.html">Sign in with your password</a> before ' +
+          'requesting a code.';
+        return;
+      }
+      const slot = document.getElementById('code');
+      slot.textContent = body.code;
+      slot.hidden = false;
+      status.textContent = 'Enter this code on the verification screen.';
+    } catch {
+      status.textContent = 'Network error — reload the page.';
+    }
+  })();
+</script>
+</body>
+</html>

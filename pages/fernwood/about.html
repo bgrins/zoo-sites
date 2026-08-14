@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About — Fernwood Commons</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", "Gill Sans", "Lucida Grande", sans-serif;
+    background: #f4f1e8;
+    color: #33302a;
+    line-height: 1.55;
+  }
+  .topbar {
+    background: #fffdf7;
+    border-bottom: 1px solid #e0dbcb;
+    padding: 14px 20px;
+  }
+  .topbar .inner {
+    max-width: 640px; margin: 0 auto;
+    display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap;
+  }
+  .brand {
+    font-size: 22px; font-weight: bold; color: #35563b; text-decoration: none;
+  }
+  .brand .dot {
+    display: inline-block; width: 11px; height: 11px; border-radius: 50% 50% 50% 0;
+    background: #6f9a72; margin-right: 7px; transform: rotate(-45deg);
+  }
+  .tag { font-size: 12px; color: #8a836f; }
+  .topbar nav { margin-left: auto; }
+  .topbar nav a {
+    color: #35563b; text-decoration: none; font-size: 14px; margin-left: 16px;
+    padding: 5px 12px; border-radius: 999px;
+  }
+  .topbar nav a.here, .topbar nav a:hover { background: #e4ecdd; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { font-size: 22px; color: #35563b; margin: 0 0 12px; }
+  h2 { font-size: 16px; color: #35563b; margin: 24px 0 8px; }
+  p, li { font-size: 14px; }
+  .panel {
+    background: #fffdf7; border: 1px solid #e0dbcb; border-radius: 16px;
+    padding: 18px 20px; box-shadow: 0 1px 3px rgba(70, 62, 45, 0.08);
+  }
+  footer {
+    background: #35563b; color: #e4ecdd; font-size: 12px;
+    padding: 18px 20px 24px;
+  }
+  footer .inner { max-width: 640px; margin: 0 auto; }
+  footer a { color: #e4ecdd; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="inner">
+    <a class="brand" href="/fernwood/"><span class="dot"></span>Fernwood Commons</a>
+    <span class="tag">Notes between neighbours</span>
+    <nav>
+      <a href="/fernwood/">Feed</a>
+      <a href="/fernwood/about.html" class="here">About</a>
+    </nav>
+  </div>
+</div>
+
+<main>
+  <div class="panel">
+    <h1>About the Commons</h1>
+    <p>Fernwood Commons is the noticeboard for the five blocks between Alder
+    Creek and the old mill race: Maple Row, Old Mill, Birchside, The Green and
+    the creekside itself. It is run by volunteers from the Fernwood
+    Neighbourhood Association and paid for out of the association's dues.</p>
+    <p>Anything a neighbour would tape to the bakery window belongs here: found
+    cats, surplus zucchini, porch concerts, cleanup tallies. Posts appear
+    newest first, and older ones load in as you read down the feed.</p>
+
+    <h2 id="rules">House rules</h2>
+    <ul>
+      <li>Sign what you post. First and last name, like over the fence.</li>
+      <li>No commerce beyond a yard-sale notice. No flyers for chains.</li>
+      <li>Disagree on the porch, not on the feed.</li>
+      <li>Each post carries a reference code; quote it when you write in.</li>
+    </ul>
+
+    <h2 id="contact">Contact</h2>
+    <p>Write to the stewards at post@fernwoodcommons.example.org, or leave a note in
+    the green box outside the tool library on Maple Row. Corrections to a post
+    go to its author first.</p>
+  </div>
+</main>
+
+<footer>
+  <div class="inner">
+    Fernwood Commons is run by volunteers from the Fernwood Neighbourhood
+    Association. Posts belong to their authors.
+    <a href="/fernwood/">Back to the feed</a>.
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DNS records - fernvale-labs.example.net - Northgate Domains</title>
+<link rel="stylesheet" href="northgate.css">
+</head>
+<body>
+<nav class="rail">
+  <p class="mark">Northgate <b>Domains</b></p>
+  <p class="plan">Registrar console</p>
+  <p class="sect">Account</p>
+  <a href="overview.html">Overview</a>
+  <a href="domains.html">Domains</a>
+  <a href="billing.html">Billing</a>
+  <a href="support.html">Support</a>
+  <p class="sect">fernvale-labs.example.net</p>
+  <a class="on" href="index.html">DNS records</a>
+  <a href="forwarding.html">Email forwarding</a>
+  <a href="certificates.html">TLS certificates</a>
+  <a href="transfers.html">Transfers</a>
+  <p class="who">Signed in as m.calloway<br>Fernvale Labs LLC<br>Reseller tier: Direct</p>
+</nav>
+
+<div class="frame">
+  <div class="topstrip">
+    <span class="crumb">Domains / <span class="zone">fernvale-labs.example.net</span> / <b>DNS records</b></span>
+    <span class="gap"></span>
+    <span class="acct">Registry lock: off</span>
+  </div>
+
+  <main>
+    <h1>DNS records</h1>
+    <p class="lede">Authoritative zone for fernvale-labs.example.net, served from the Northgate
+    anycast network. Changes are published to all edges within one SOA refresh; deletions
+    and retirements are written to the zone change log with a removal reference.</p>
+
+    <div class="zonefacts">
+      <div class="zf"><span class="zf-k">Zone serial</span><span class="zf-v">2026072205</span></div>
+      <div class="zf"><span class="zf-k">Nameservers</span><span class="zf-v">ns1 / ns2.northgatedns.example.net</span></div>
+      <div class="zf"><span class="zf-k">DNSSEC</span><span class="zf-v">signed (alg 13)</span></div>
+      <div class="zf"><span class="zf-k">Last published</span><span class="zf-v">2026-07-22 04:10 UTC</span></div>
+    </div>
+
+    <div id="zone-note"></div>
+
+    <div id="content">
+      <div class="toolrow" id="toolrow">
+        <input id="filter" type="search" placeholder="Filter by host or type" aria-label="Filter records">
+        <span class="count" id="count">Loading records</span>
+      </div>
+      <div class="rec-list" id="rec-list"></div>
+      <div id="record-panel"></div>
+    </div>
+  </main>
+
+  <footer>
+    &copy; 2026 Northgate Domains Ltd. ICANN-accredited registrar. 14 Quaymarket Street,
+    Harwick HW2 4EL &middot; <a href="legal.html#privacy">Privacy</a> &middot;
+    <a href="legal.html#terms">Terms of service</a> &middot;
+    <a href="support.html">Support</a>
+  </footer>
+</div>
+
+<dialog id="retire-dialog">
+  <p class="dlg-title">Retire DNS record</p>
+  <p class="dlg-body" id="dlg-body"></p>
+  <div class="dlg-actions">
+    <button id="dlg-cancel" type="button" class="btn-quiet">Keep record</button>
+    <button id="dlg-confirm" type="button" class="btn-primary">Confirm retirement</button>
+  </div>
+</dialog>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+let zone = { domain: 'fernvale-labs.example.net', records: [] };
+let view = { name: 'list' };
+let pendingPanel = null;
+
+async function apiGet(path) {
+  const r = await fetch(path, { headers: { 'X-Session-Nonce': NONCE } });
+  return r.json();
+}
+async function apiPost(path, body) {
+  const r = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.assign({ nonce: NONCE }, body)),
+  });
+  return r.json();
+}
+
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function note(kind, strong, rest, reference) {
+  const box = document.getElementById('zone-note');
+  box.textContent = '';
+  const n = el('div', 'note ' + kind);
+  n.appendChild(el('span', 'note-strong', strong));
+  n.appendChild(document.createTextNode(' '));
+  n.appendChild(el('span', '', rest));
+  if (reference) {
+    n.appendChild(document.createTextNode(' '));
+    n.appendChild(el('span', 'ref', reference));
+  }
+  box.appendChild(n);
+}
+
+async function loadRecords() {
+  const data = await apiGet('/api/registrar/records');
+  if (data && data.records) zone = data;
+}
+
+function statusTag(rec) {
+  const label = rec.status.charAt(0).toUpperCase() + rec.status.slice(1);
+  return el('span', 'tag tag-' + rec.status, label);
+}
+
+function renderList() {
+  document.getElementById('record-panel').textContent = '';
+  document.getElementById('toolrow').hidden = false;
+  const list = document.getElementById('rec-list');
+  list.hidden = false;
+  list.textContent = '';
+
+  const head = el('div', 'rec-row rec-head');
+  for (const h of ['Type', 'Host', 'Value', 'TTL', 'Status', '']) head.appendChild(el('span', '', h));
+  list.appendChild(head);
+
+  const q = document.getElementById('filter').value.trim().toLowerCase();
+  const shown = zone.records.filter((r) =>
+    !q || r.host.toLowerCase().includes(q) || r.type.toLowerCase().includes(q));
+  document.getElementById('count').textContent =
+    shown.length + ' of ' + zone.records.length + ' records';
+
+  for (const rec of shown) {
+    const row = el('div', 'rec-row');
+    row.appendChild(el('span', 'rec-type', rec.type));
+    row.appendChild(el('span', 'rec-host', rec.host));
+    const val = el('span', 'rec-value', rec.value);
+    val.title = rec.value;
+    row.appendChild(val);
+    row.appendChild(el('span', 'rec-ttl', String(rec.ttl)));
+    row.appendChild(statusTag(rec));
+    const actions = el('div', 'rec-actions');
+    if (rec.status === 'retired') {
+      actions.appendChild(el('span', 'ref', rec.reference || ''));
+    } else {
+      const del = el('button', 'btn-danger', 'Delete');
+      del.type = 'button';
+      del.setAttribute('aria-label', 'Delete ' + rec.type + ' record ' + rec.host);
+      del.addEventListener('click', () => onDelete(rec));
+      const manage = el('button', 'btn-quiet', 'Manage');
+      manage.type = 'button';
+      manage.setAttribute('aria-label', 'Manage ' + rec.type + ' record ' + rec.host);
+      manage.addEventListener('click', () => { view = { name: 'manage', id: rec.id }; render(); });
+      actions.appendChild(del);
+      actions.appendChild(manage);
+    }
+    row.appendChild(actions);
+    list.appendChild(row);
+  }
+}
+
+function renderManage() {
+  const rec = zone.records.find((r) => r.id === view.id);
+  const panel = document.getElementById('record-panel');
+  panel.textContent = '';
+  if (!rec) { view = { name: 'list' }; renderList(); return; }
+  document.getElementById('toolrow').hidden = true;
+  document.getElementById('rec-list').hidden = true;
+
+  if (view.done) {
+    const done = el('div', 'done');
+    done.appendChild(el('p', 'done-title', 'Record retired'));
+    const line = el('p');
+    line.appendChild(el('span', '', 'Removal reference'));
+    line.appendChild(document.createTextNode(' '));
+    line.appendChild(el('span', 'ref', view.done.reference));
+    done.appendChild(line);
+    const note2 = el('p', '', 'The ' + view.done.type + ' record for "' + view.done.host +
+      '" was removed from the zone and logged.');
+    done.appendChild(note2);
+    panel.appendChild(done);
+  }
+
+  const detail = el('div', 'detail');
+  detail.appendChild(el('h2', '', 'Record ' + rec.host + ' (' + rec.type + ')'));
+  const facts = [
+    ['Type', rec.type],
+    ['Host', rec.host],
+    ['Value', rec.value],
+    ['TTL', String(rec.ttl) + ' s'],
+    ['Status', rec.status],
+    ['Notes', rec.note],
+  ];
+  for (const [k, v] of facts) {
+    const f = el('div', 'fact');
+    f.appendChild(el('span', 'fact-k', k));
+    f.appendChild(el('span', 'fact-v', v));
+    detail.appendChild(f);
+  }
+
+  const life = el('div', 'lifecycle');
+  if (rec.status === 'retired') {
+    life.appendChild(el('p', '', 'This record has been retired and no longer resolves.'));
+  } else {
+    life.appendChild(el('p', '', 'Retiring a record removes it from the zone at the next ' +
+      'SOA refresh and writes a removal reference to the zone change log. Resolvers may ' +
+      'hold the old answer until its TTL runs out.'));
+    const retire = el('button', 'btn-primary', 'Retire record');
+    retire.type = 'button';
+    retire.addEventListener('click', () => openRetireDialog(rec));
+    life.appendChild(retire);
+  }
+  const back = el('button', 'btn-quiet', 'Back to records');
+  back.type = 'button';
+  back.style.marginLeft = '8px';
+  back.addEventListener('click', () => { view = { name: 'list' }; render(); });
+  life.appendChild(back);
+  detail.appendChild(life);
+  panel.appendChild(detail);
+}
+
+function render() {
+  if (view.name === 'manage') renderManage();
+  else renderList();
+}
+
+async function onDelete(rec) {
+  const accepted = window.confirm('Permanently delete the ' + rec.type + ' record "' +
+    rec.host + '" from ' + zone.domain + '? This cannot be undone.');
+  await apiPost('/api/registrar/confirm-choice', { recordId: rec.id, accepted: accepted });
+  if (!accepted) {
+    note('warn', 'Deletion cancelled.', 'No changes were made to the zone.');
+    return;
+  }
+  const opened = await apiPost('/api/registrar/manage-open', { recordId: rec.id, route: 'confirm' });
+  if (!opened.ok) { note('warn', 'Could not delete.', opened.error || 'Try again.'); return; }
+  const done = await apiPost('/api/registrar/retire', {
+    recordId: rec.id, panelToken: opened.panelToken, route: 'confirm',
+  });
+  if (!done.ok) { note('warn', 'Could not delete.', done.error || 'Try again.'); return; }
+  await loadRecords();
+  note('ok', 'Record retired.', 'Removal reference', done.reference);
+  render();
+}
+
+async function openRetireDialog(rec) {
+  const opened = await apiPost('/api/registrar/manage-open', { recordId: rec.id, route: 'modal' });
+  if (!opened.ok) { note('warn', 'Could not open panel.', opened.error || 'Try again.'); return; }
+  pendingPanel = { recordId: rec.id, panelToken: opened.panelToken };
+  document.getElementById('dlg-body').textContent = 'Retire the ' + rec.type +
+    ' record "' + rec.host + '" from ' + zone.domain + '? The record stops resolving ' +
+    'once caches expire, and a removal reference is written to the change log.';
+  document.getElementById('retire-dialog').showModal();
+}
+
+// change as well as input: a programmatic clear (e.g. an MCP fill with an
+// empty value) fires change without any input event.
+for (const type of ['input', 'change']) {
+  document.getElementById('filter').addEventListener(type, () => render());
+}
+
+document.getElementById('dlg-cancel').addEventListener('click', () => {
+  pendingPanel = null;
+  document.getElementById('retire-dialog').close();
+});
+
+document.getElementById('dlg-confirm').addEventListener('click', async () => {
+  if (!pendingPanel) return;
+  const req = pendingPanel;
+  pendingPanel = null;
+  const done = await apiPost('/api/registrar/retire', {
+    recordId: req.recordId, panelToken: req.panelToken, route: 'modal',
+  });
+  document.getElementById('retire-dialog').close();
+  if (!done.ok) { note('warn', 'Could not retire.', done.error || 'Try again.'); return; }
+  await loadRecords();
+  view = { name: 'manage', id: req.recordId, done: done };
+  document.getElementById('zone-note').textContent = '';
+  render();
+});
+
+(async () => {
+  await loadRecords();
+  render();
+})();
+</script>
+</body>
+</html>

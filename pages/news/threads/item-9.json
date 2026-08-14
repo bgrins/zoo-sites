@@ -1,0 +1,65 @@
+{
+  "rank": 9,
+  "comments": [
+    {
+      "author": "buspirate",
+      "age": "8 hours ago",
+      "text": "The checksum reversing section is the best part of this. For anyone skimming: OP dumped frames, noticed the last byte changed unpredictably, and instead of brute-forcing assumptions, collected frames differing in exactly one byte and looked at how the check byte changed. XOR-family checksums fall apart instantly under that lens. It's a great worked example of \"vary one thing and stare at the diff\" as a reversing methodology.",
+      "replies": [
+        {
+          "author": "rinseaid",
+          "age": "7 hours ago",
+          "text": "OP here — credit where due, the differential approach came from a fantastic old forum post about reversing UPS battery protocols that I couldn't find again to link. The checksum turned out to be XOR-with-rotate, which resisted the first naive attempt just long enough to make me feel clever when it fell."
+        }
+      ]
+    },
+    {
+      "author": "groundloop",
+      "age": "7 hours ago",
+      "text": "PSA for anyone inspired to try this on their own appliances: dishwashers are mains-powered and the control board is not guaranteed to be isolated. OP did this properly (opto-isolated adapter, mentioned in part 2 — the board's \"5V\" rail was referenced to something that was definitely not earth ground), but \"I'll just clip my USB serial dongle onto these test points\" is how you turn a laptop into e-waste and possibly yourself into a statistic. Isolation first, curiosity second.",
+      "replies": [
+        {
+          "author": "kernelpanda",
+          "age": "5 hours ago",
+          "text": "The number of hobbyist teardown posts that casually skip this is genuinely alarming. Appreciate both the article and this comment putting it up front."
+        }
+      ]
+    },
+    {
+      "author": "offbyfun",
+      "age": "5 hours ago",
+      "text": "My favorite detail: the protocol has an undocumented \"factory test\" mode that runs every actuator in sequence, and OP found it because the message ID space had a suspicious gap. Finding features via gaps in the enum is the reverse engineer's equivalent of finding planets via wobble."
+    },
+    {
+      "author": "warrantyvoid",
+      "age": "4 hours ago",
+      "text": "Serious question buried in the fun: why do we accept that a machine we own communicates on a bus we're not allowed to see? The service technicians get a diagnostic dongle and a lookup table; owners get a blinking light. Everything OP did here should be a printed page in the manual.",
+      "replies": [
+        {
+          "author": "liabilityshield",
+          "age": "3 hours ago",
+          "text": "The boring answer is liability and support costs, not malice. The moment the protocol is documented, some fraction of owners will command the drain pump dry or bypass an interlock, and the manufacturer eats the warranty claims and the occasional lawsuit. I'd still prefer documentation plus a \"you're on your own\" mode, but the incentive structure isn't mysterious.",
+          "replies": [
+            {
+              "author": "warrantyvoid",
+              "age": "2 hours ago",
+              "text": "Cars solved this decades ago with standardized diagnostic ports mandated by regulation, and the sky didn't fall. The incentive structure isn't mysterious, it's just not immovable — it moved for cars because someone made it move."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "staticdrift",
+      "age": "1 hour ago",
+      "text": "OP, what's the end state here — are you going to bridge it to home automation? Half the value of these projects is the writeup, but the other half is the moment your dishwasher's remaining-time actually shows up somewhere useful instead of behind a closed kitchen door.",
+      "replies": [
+        {
+          "author": "rinseaid",
+          "age": "34 minutes ago",
+          "text": "Part 3 (drafted): a small ESP-based bridge publishing cycle state, remaining time, and rinse aid level (naturally) over MQTT. Read-only deliberately — after the factory-mode discovery I decided command injection into a machine full of water heaters and pumps is where the project stops for me."
+        }
+      ]
+    }
+  ]
+}

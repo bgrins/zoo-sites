@@ -1,0 +1,259 @@
+body {
+  margin: 0;
+  background: #efe9dd;
+  color: #1e211c;
+  font: 14px/1.5 Optima, "Gill Sans MT", "Gill Sans", Candara, "URW Gothic",
+    sans-serif;
+}
+header {
+  background: #14170f;
+  color: #f2eee2;
+  padding: 16px 34px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 3px solid #a8471f;
+}
+header img {
+  display: block;
+}
+header .brand {
+  font-family: Futura, "Century Gothic", "URW Gothic", Optima, sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+header .tag {
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9aa189;
+  margin-left: auto;
+  text-align: right;
+  max-width: 280px;
+  line-height: 1.5;
+}
+nav {
+  background: #14170f;
+  padding: 0 34px 12px;
+  font-family: Futura, "Century Gothic", "URW Gothic", Optima, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+nav a {
+  color: #cfd3c1;
+  text-decoration: none;
+  margin-right: 26px;
+  padding-bottom: 4px;
+}
+nav a:hover {
+  color: #fff;
+}
+nav a.here {
+  color: #e8a05f;
+  border-bottom: 1px solid #a8471f;
+}
+.crumbs {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #7c8070;
+  padding: 14px 34px 0;
+  margin: 0;
+}
+main {
+  display: block;
+  padding: 0 34px 10px;
+}
+aside {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 16px 36px;
+  border-top: 1px solid #d3ccba;
+  border-bottom: 1px solid #d3ccba;
+  padding: 12px 0 14px;
+  margin: 18px 0 0;
+  font-size: 13px;
+  color: #3f4438;
+}
+.fgroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  max-width: 520px;
+}
+.fgroup h4 {
+  width: 100%;
+}
+aside h4 {
+  margin: 0;
+  font-family: Futura, "Century Gothic", "URW Gothic", Optima, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #8a8f7c;
+}
+aside label {
+  display: inline-block;
+  margin: 0;
+  white-space: nowrap;
+}
+aside p {
+  margin: 0;
+  font-style: italic;
+  color: #6b7060;
+}
+.results {
+  padding: 0;
+}
+.results h1 {
+  font-family: Futura, "Century Gothic", "URW Gothic", Optima, sans-serif;
+  font-size: 34px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 26px 0 4px;
+}
+.results .count {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7c8070;
+  margin: 0 0 26px;
+}
+#grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 42px 34px;
+}
+.card {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 13px;
+}
+.card .thumb {
+  display: block;
+  width: 100%;
+  height: 230px;
+  object-fit: cover;
+  background: #e2dbc9;
+  border: 0;
+  font-size: 12px;
+  color: #8a8f7c;
+}
+.card h3 {
+  font-family: Futura, "Century Gothic", "URW Gothic", Optima, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 16px 0 4px;
+}
+.card .sku {
+  margin: 0;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  color: #8a8f7c;
+}
+.card .price {
+  font-size: 20px;
+  color: #a8471f;
+  margin: 10px 0 8px;
+  letter-spacing: 0.02em;
+}
+.card .price::before {
+  content: "GBP ";
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: #8a8f7c;
+  vertical-align: 3px;
+}
+.card .blurb {
+  margin: 0 0 10px;
+  line-height: 1.55;
+  color: #3f4438;
+}
+.card .rating {
+  margin: 0;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: #6b7060;
+}
+.card .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 2px 8px 2px 4px;
+  border: 1px solid #c3b99f;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b7060;
+}
+.card button {
+  margin-top: 14px;
+  width: 100%;
+  background: transparent;
+  border: 1px solid #14170f;
+  border-radius: 0;
+  padding: 10px 0;
+  font-family: Futura, "Century Gothic", "URW Gothic", Optima, sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #14170f;
+  cursor: pointer;
+}
+.card button:hover {
+  background: #14170f;
+  color: #f2eee2;
+}
+#pager {
+  margin: 34px 0 0;
+  padding: 14px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #7c8070;
+  border-top: 1px solid #d3ccba;
+}
+footer {
+  margin-top: 40px;
+  padding: 26px 34px 34px;
+  background: #14170f;
+  color: #8d9280;
+  font-size: 12px;
+  line-height: 1.7;
+  border-top: 3px solid #a8471f;
+}
+footer p {
+  margin: 0 0 8px;
+  max-width: 720px;
+}
+footer a {
+  color: #cfd3c1;
+}
+
+header .basket {
+  margin-left: auto;
+  align-self: center;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 5px 11px;
+}
+header .basket:hover {
+  background: rgba(255, 255, 255, 0.12);
+}

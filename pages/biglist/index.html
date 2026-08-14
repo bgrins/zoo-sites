@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>People Hub — Directory — Quennell Group</title>
+<link rel="stylesheet" href="directory.css">
+</head>
+<body class="shell">
+<aside class="rail">
+  <div class="mark">Quennell</div>
+  <div class="group">People Hub 4.2</div>
+  <nav>
+    <a href="/biglist/overview.html">Overview</a>
+    <a href="/biglist/" class="on">Directory</a>
+    <a href="/biglist/teams.html">Teams</a>
+    <a href="/biglist/onboarding.html">Onboarding</a>
+    <a href="/biglist/badge-records.html">Badge records</a>
+  </nav>
+  <p class="rail-foot">Directory service: connected</p>
+</aside>
+<div class="pane">
+  <div class="topbar">
+    <span class="crumbs">Workspace / People / Directory</span>
+    <span class="who">S. Okonkwo, HR Operations</span>
+  </div>
+  <h1>Directory</h1>
+  <p class="lede">Every one of the 5,000 people on the Quennell Group roster, ordered by hire
+  record. The directory service streams rows in batches of 250 as you scroll, so the list
+  stays light no matter how far down you go.</p>
+  <section class="card">
+    <div class="searchbar">
+      <input id="filter" type="search" placeholder="Search name, badge, or department" autocomplete="off">
+      <span id="status" role="status"></span>
+    </div>
+    <p class="scope">Search covers only the batches already streamed to this browser. Keep
+    scrolling to pull in more of the roster, then search again.</p>
+    <div id="filter-results" hidden></div>
+    <div class="listhead"><span>Person</span><span>Badge</span><span>Department</span><span>Floor</span></div>
+    <div id="viewport">
+      <div id="spacer"></div>
+      <div id="rows"></div>
+    </div>
+  </section>
+  <p class="fine">Quennell Group internal directory &middot; sourced from the HR record
+  and refreshed nightly. Badge numbers are not access credentials and floor assignments
+  change without notice. Report an incorrect entry to the people team.</p>
+</div>
+<script>window.NONCE = '__SESSION_NONCE__';</script>
+<script src="app.js"></script>
+</body>
+</html>

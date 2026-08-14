@@ -1,0 +1,91 @@
+body {
+  margin: 0;
+  background: #fbfbfc;
+  color: #1f2430;
+  font-family: "Arial Narrow", "Helvetica Neue Condensed", Arial, sans-serif;
+  font-size: 13px;
+}
+a { color: #0d5c8a; }
+.railbar {
+  background: #1f2430; color: #f2f3f5; padding: 7px 14px;
+  display: flex; align-items: center; gap: 14px;
+}
+.railbar .mark {
+  font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: .16em;
+  color: #ffb020;
+}
+.railbar .tagline { font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: #9aa2b1; }
+.railbar form { margin-left: auto; display: flex; gap: 0; }
+.railbar input { font: inherit; border: 1px solid #3a4152; background: #12151d; color: #e8eaef; padding: 4px 7px; width: 210px; }
+.railbar button { font: inherit; border: 1px solid #ffb020; background: #ffb020; color: #1f2430; font-weight: bold; padding: 4px 12px; cursor: pointer; }
+.railbar .who { font-size: 11px; color: #9aa2b1; }
+.tabs {
+  background: #2c3242; padding: 0 14px; display: flex; gap: 2px;
+  border-bottom: 2px solid #ffb020;
+}
+.tabs a {
+  color: #c8cdd8; text-decoration: none; font-size: 11px; text-transform: uppercase;
+  letter-spacing: .1em; padding: 7px 12px;
+}
+.tabs a[aria-current] { background: #ffb020; color: #1f2430; font-weight: bold; }
+.ticker {
+  background: #fff5e0; border-bottom: 1px solid #e8d49c; padding: 5px 14px; font-size: 12px;
+}
+.layout { display: flex; align-items: flex-start; }
+.facets { width: 196px; flex: none; border-right: 1px solid #dcdfe6; padding: 10px 12px 30px; }
+.facets h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #626a7a; margin: 0 0 8px; }
+.facets details { border-top: 1px solid #e6e8ee; padding: 5px 0; }
+.facets summary { cursor: pointer; font-weight: bold; font-size: 12px; padding: 3px 0; }
+.facets label { display: block; font-size: 12px; padding: 1px 0 1px 4px; color: #333a49; }
+.facets .hits { color: #8b93a3; }
+.facets .reset { display: inline-block; margin-top: 12px; font-size: 11px; }
+.sheet { flex: 1; padding: 10px 14px 26px; min-width: 0; }
+.statline {
+  display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  border-bottom: 1px solid #dcdfe6; padding-bottom: 7px; margin-bottom: 8px;
+}
+.statline h1 { font-size: 17px; margin: 0; text-transform: uppercase; letter-spacing: .04em; }
+.statline .count { font-size: 12px; color: #626a7a; }
+.statline label { font-size: 12px; margin-left: auto; }
+.statline select { font: inherit; font-size: 12px; padding: 2px 4px; border: 1px solid #b9bfcc; }
+table.grid { border-collapse: collapse; width: 100%; font-size: 12px; }
+table.grid caption { text-align: left; font-size: 11px; color: #626a7a; padding-bottom: 5px; }
+table.grid th, table.grid td { border: 1px solid #d7dae2; padding: 3px 6px; vertical-align: middle; }
+table.grid thead th {
+  background: #2c3242; color: #f2f3f5; font-size: 11px; text-transform: uppercase;
+  letter-spacing: .06em; text-align: left; white-space: nowrap;
+}
+table.grid tbody tr:nth-child(even) { background: #f1f2f6; }
+table.grid tbody tr:hover { background: #fff3d9; }
+td.model { font-weight: bold; white-space: nowrap; }
+td.num, th.num { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; text-align: right; white-space: nowrap; }
+td.mono { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; white-space: nowrap; }
+td.price { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; text-align: right; font-weight: bold; }
+td.stock { text-align: center; }
+td.stock svg { width: 13px; height: 13px; vertical-align: -2px; }
+.offscreen {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px); white-space: nowrap;
+}
+td.order { white-space: nowrap; }
+.stepper { display: inline-flex; border: 1px solid #b9bfcc; background: #fff; margin-right: 5px; }
+.stepper button {
+  font: inherit; width: 19px; border: 0; background: #eceef3; color: #1f2430; cursor: pointer; padding: 0;
+}
+.stepper input {
+  font: inherit; width: 26px; border: 0; border-left: 1px solid #d7dae2;
+  border-right: 1px solid #d7dae2; text-align: center; padding: 2px 0;
+}
+button.buy {
+  font: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+  font-weight: bold; background: #ffb020; border: 1px solid #d18f10; color: #1f2430;
+  padding: 3px 9px; cursor: pointer;
+}
+button.buy[disabled] { background: #e7e9ee; border-color: #cdd1da; color: #8b93a3; cursor: default; }
+.rowsnote { margin-top: 10px; font-size: 11px; color: #626a7a; }
+.comparenote { font-size: 12px; color: #626a7a; margin: 0 0 8px; min-height: 15px; }
+.legalstrip {
+  border-top: 3px solid #ffb020; background: #1f2430; color: #9aa2b1;
+  font-size: 11px; padding: 14px; line-height: 1.6;
+}
+.legalstrip a { color: #cfd4de; }

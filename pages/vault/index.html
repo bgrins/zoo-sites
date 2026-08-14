@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Secrets — Stavelock</title>
+<link rel="stylesheet" href="stavelock.css">
+</head>
+<body>
+<div class="rail">
+  <p class="mark">Stave<span>lock</span></p>
+  <p class="tag">Credential vault</p>
+  <nav>
+    <a class="on" href="index.html">Secrets</a>
+    <a href="rotate.html">Rotation</a>
+    <a href="audit.html">Audit log</a>
+    <a href="policy.html">Access policy</a>
+  </nav>
+  <p class="who">Signed in as d.pellworth<br>Platform Delivery<br>Vault region: eu-north</p>
+</div>
+
+<main>
+  <p class="crumb">Vault / Platform Delivery</p>
+  <h1>Secrets</h1>
+  <p class="lede">Five secrets are held for this team. Values are stored sealed and are
+  never shown in full in the console; use Copy to place a value on your clipboard, or
+  request a break-glass reveal from Security Engineering.</p>
+
+  <div class="panel">
+    <div class="rows" id="rows">
+      <div class="row"><div class="name">Loading</div></div>
+    </div>
+  </div>
+
+  <h2>Rotation due</h2>
+  <p class="lede">At the 26 July policy review, two secrets stood past their rotation
+  policy: sluicegate-api/deploy, which holders may rotate from this console, and
+  ledgerwright/webhook, whose rotation is handled by Security Engineering. Rotating a
+  deploy token invalidates the previous value immediately; running builds pick the new
+  value up on their next lease renewal.</p>
+
+  <footer>
+    <a href="policy.html">Access policy</a>
+    <a href="policy.html#handling">Key handling</a>
+    <a href="policy.html#privacy">Privacy</a>
+    <p>Stavelock Systems Ltd, Fettergate House, 3 Marl Row, Barrowfield</p>
+    <p>Vault support: vaultdesk@stavelock.example &middot; (555) 017-2204</p>
+    <p>&copy; 2019-2026 Stavelock Systems Ltd. Registered no. 000000.</p>
+  </footer>
+</main>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+
+async function load() {
+  const res = await fetch('/api/vault/secrets', { headers: { 'X-Session-Nonce': NONCE } });
+  const rows = document.getElementById('rows');
+  if (!res.ok) {
+    rows.innerHTML = '<div class="row"><div class="name">Vault session expired</div></div>';
+    return;
+  }
+  const data = await res.json();
+  rows.innerHTML = '';
+  for (const s of data.secrets) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    const name = document.createElement('div');
+    name.className = 'name';
+    const a = document.createElement('a');
+    a.href = 'secret.html?id=' + encodeURIComponent(s.id);
+    a.textContent = s.name;
+    name.appendChild(a);
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const env = document.createElement('span');
+    env.className = 'env' + (s.environment === 'production' ? ' prod' : '');
+    env.textContent = s.environment;
+    meta.appendChild(env);
+    meta.appendChild(document.createTextNode(' ' + s.purpose));
+    const when = document.createElement('div');
+    when.className = 'when';
+    when.textContent = 'Rotated ' + s.lastRotated;
+    row.append(name, meta, when);
+    rows.appendChild(row);
+  }
+}
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data sources &middot; Northgate Media &middot; Halbeck</title>
+<link rel="stylesheet" href="halbeck.css">
+</head>
+<body>
+<div class="bar">
+  <span class="logo">Hal<i>beck</i></span>
+  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <span class="spacer"></span>
+  <a class="lnk" href="sources.html">Data sources</a>
+  <a class="lnk" href="alerts.html">Alerts</a>
+  <a class="lnk" href="docs.html">Docs</a>
+  <span class="who">NM</span>
+</div>
+
+<div class="shell">
+  <nav class="rail">
+    <h3>Workspace</h3>
+    <a href="overview.html">Overview</a>
+    <a href="index.html">Seat usage</a>
+    <a href="retention.html">Retention</a>
+    <a href="expansion.html">Expansion</a>
+    <a href="events.html">Product events</a>
+    <h3>Saved views</h3>
+    <a href="views.html#seats-by-plan-tier">Seats by plan tier</a>
+    <a href="views.html#weekly-actives">Weekly actives</a>
+    <a href="views.html#trial-conversions">Trial conversions</a>
+    <a href="views.html#support-touched-accounts">Support-touched accounts</a>
+    <h3>Admin</h3>
+    <a href="sources.html" class="on">Data sources</a>
+    <a href="members.html">Members</a>
+    <a href="billing.html">Billing</a>
+  </nav>
+
+  <main>
+    <p class="crumbs"><a href="overview.html">Northgate Media</a> / Admin / Data sources</p>
+    <h1>Data sources</h1>
+    <p class="sub">Connectors feeding this workspace. A source that has not landed a batch
+    within its freshness window is held back from dashboards until it catches up, so a
+    stale connector shows as a gap rather than a false zero.</p>
+
+    <section class="panel">
+      <header><h2>Connected</h2><span class="meta">4 active, 1 paused</span></header>
+      <div class="pad">
+        <ul class="events">
+          <li><span class="when">identity</span><span class="what">Fernway SSO directory, nightly at 04:15</span><span class="tag">healthy</span></li>
+          <li><span class="when">product</span><span class="what">Sign-in event stream, continuous</span><span class="tag">healthy</span></li>
+          <li><span class="when">billing</span><span class="what">Seat pool and plan tier, hourly</span><span class="tag">healthy</span></li>
+          <li><span class="when">support</span><span class="what">Case and contact history, every 6 hours</span><span class="tag">healthy</span></li>
+          <li><span class="when">web</span><span class="what">Marketing site sessions, daily</span><span class="tag">paused</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header><h2>Retention and restatement</h2></header>
+      <div class="pad">
+        <dl class="defn">
+          <dt>Event retention</dt>
+          <dd>Raw sign-in events are kept 400 days, rollups indefinitely.</dd>
+          <dt>Restatement</dt>
+          <dd>A closed month is never restated. Late-arriving events land in the
+          month they were received.</dd>
+          <dt>Export</dt>
+          <dd>Every dashboard series can be exported from the panel it appears in.
+          Scheduled exports are configured per saved view.</dd>
+          <dt>Contact</dt>
+          <dd>Platform Analytics, analytics@halbeck.example</dd>
+        </dl>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer class="foot">
+  <span>Halbeck Analytics Ltd</span>
+  <a href="status.html">Status</a>
+  <a href="privacy.html">Privacy notice</a>
+  <a href="terms.html">Terms of service</a>
+  <a href="support.html">Support</a>
+  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+</footer>
+</body>
+</html>

@@ -1,0 +1,70 @@
+* { box-sizing: border-box; }
+.card-template { position: absolute; left: -9999px; top: 0; width: 340px; }
+body {
+  margin: 0;
+  font-family: "Trebuchet MS", "Segoe UI Semibold", Tahoma, sans-serif;
+  font-size: 16px; line-height: 1.55;
+  color: #29241d; background: #f6f1e7;
+}
+.topbar {
+  background: #fffdf8; border-bottom: 3px solid #0f7872;
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 16px 28px; flex-wrap: wrap; gap: 8px;
+}
+.brand { font-size: 21px; letter-spacing: 2.5px; color: #29241d; text-decoration: none; }
+.brand small { display: block; font-size: 11px; letter-spacing: 4px; color: #0f7872; }
+.topnav a {
+  color: #4d463b; text-decoration: none; font-size: 14px;
+  margin-left: 22px; padding-bottom: 3px;
+}
+.topnav a.here { color: #0f7872; border-bottom: 2px solid #0f7872; }
+.topnav a:hover { color: #0f7872; }
+main { max-width: 860px; margin: 0 auto; padding: 34px 24px 50px; }
+h1 { font-size: 30px; margin: 0 0 8px; font-weight: normal; }
+.lead { color: #5b5346; max-width: 62ch; margin: 0 0 24px; }
+.btn {
+  display: inline-block; background: #0f7872; color: #fffdf8; text-decoration: none;
+  padding: 11px 26px; border-radius: 24px; font-size: 14.5px; letter-spacing: 0.5px;
+}
+.btn:hover { background: #0b5c57; }
+.stats {
+  display: flex; gap: 20px; margin: 34px 0 8px; flex-wrap: wrap;
+}
+.stat {
+  background: #fffdf8; border: 1px solid #e4dbc8; border-radius: 10px;
+  padding: 16px 22px; flex: 1 1 140px; text-align: center;
+}
+.stat .fig { font-size: 30px; color: #0f7872; }
+.stat .cap { font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; color: #8a8071; }
+.band {
+  border-top: 1px solid #e4dbc8; margin-top: 36px; padding-top: 26px;
+}
+.band h2 { font-size: 20px; font-weight: normal; margin: 0 0 12px; color: #0b5c57; }
+.steps { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.step { background: #fffdf8; border: 1px solid #e4dbc8; border-radius: 10px; padding: 14px 16px; }
+.step h3 { font-size: 15px; margin: 0 0 6px; color: #29241d; }
+.step p { font-size: 14px; color: #5b5346; margin: 0; }
+.card {
+  background: #fffdf8; border: 1px solid #e4dbc8; border-radius: 12px;
+  padding: 16px 20px; margin: 0 0 14px;
+}
+.card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.role-title { font-size: 18px; font-weight: normal; margin: 0; color: #29241d; }
+.salary {
+  background: #e2f0ee; color: #0b5c57; border-radius: 14px;
+  padding: 3px 13px; font-size: 13.5px; white-space: nowrap;
+}
+.tags { margin: 8px 0 2px; }
+.tag {
+  display: inline-block; background: #f1ead9; color: #6b6252; border-radius: 12px;
+  padding: 2px 11px; font-size: 12.5px; margin: 0 6px 6px 0;
+}
+.blurb { font-size: 14px; color: #5b5346; margin: 6px 0 8px; }
+.ref { font-size: 12px; letter-spacing: 1px; color: #a09681; }
+#load-status { color: #8a8071; font-size: 14px; }
+footer {
+  background: #29241d; color: #cfc6b4; font-size: 13px;
+  padding: 22px 28px; text-align: center; line-height: 1.9;
+}
+footer a { color: #9fd6d0; text-decoration: none; }
+@media (max-width: 640px) { .steps { grid-template-columns: 1fr; } }

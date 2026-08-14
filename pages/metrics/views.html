@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saved views &middot; Northgate Media &middot; Halbeck</title>
+<link rel="stylesheet" href="halbeck.css">
+</head>
+<body>
+<div class="bar">
+  <span class="logo">Hal<i>beck</i></span>
+  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <span class="spacer"></span>
+  <a class="lnk" href="sources.html">Data sources</a>
+  <a class="lnk" href="alerts.html">Alerts</a>
+  <a class="lnk" href="docs.html">Docs</a>
+  <span class="who">NM</span>
+</div>
+
+<div class="shell">
+  <nav class="rail">
+    <h3>Workspace</h3>
+    <a href="overview.html">Overview</a>
+    <a href="index.html">Seat usage</a>
+    <a href="retention.html">Retention</a>
+    <a href="expansion.html">Expansion</a>
+    <a href="events.html">Product events</a>
+    <h3>Saved views</h3>
+    <a href="views.html#seats-by-plan-tier">Seats by plan tier</a>
+    <a href="views.html#weekly-actives">Weekly actives</a>
+    <a href="views.html#trial-conversions">Trial conversions</a>
+    <a href="views.html#support-touched-accounts">Support-touched accounts</a>
+    <h3>Admin</h3>
+    <a href="sources.html">Data sources</a>
+    <a href="members.html">Members</a>
+    <a href="billing.html">Billing</a>
+  </nav>
+
+  <main>
+    <p class="crumbs"><a href="overview.html">Northgate Media</a> / Saved views</p>
+    <h1>Saved views</h1>
+    <p class="sub">Views saved from the analysis editor by workspace members. A saved view keeps
+    its query, filters and schedule; anyone with viewer access can open it, only its owner can
+    change it.</p>
+
+    <section class="panel" id="seats-by-plan-tier">
+      <header><h2>Seats by plan tier</h2><span class="meta">saved by r.calloway</span></header>
+      <div class="pad">
+        <dl class="defn">
+          <dt>Definition</dt>
+          <dd>Active seats split by the plan tier of the owning team, as a share of the total.</dd>
+          <dt>Grain</dt>
+          <dd>Calendar month, most recent closed month.</dd>
+          <dt>Schedule</dt>
+          <dd>Refreshed with the monthly seat rollup; emailed to the commercial list on close.</dd>
+          <dt>Last refreshed</dt>
+          <dd>03 Jul 2026, 04:31</dd>
+        </dl>
+      </div>
+    </section>
+
+    <section class="panel" id="weekly-actives">
+      <header><h2>Weekly actives</h2><span class="meta">saved by j.penhale</span></header>
+      <div class="pad">
+        <dl class="defn">
+          <dt>Definition</dt>
+          <dd>Distinct members with a sign-in per ISO week &mdash; the fast-moving companion to
+          the monthly seat series.</dd>
+          <dt>Grain</dt>
+          <dd>ISO week, trailing 26 weeks.</dd>
+          <dt>Schedule</dt>
+          <dd>Refreshed Monday 05:00 after the week closes.</dd>
+          <dt>Last refreshed</dt>
+          <dd>22 Jun 2026, 05:02</dd>
+        </dl>
+      </div>
+    </section>
+
+    <section class="panel" id="trial-conversions">
+      <header><h2>Trial conversions</h2><span class="meta">saved by r.calloway</span></header>
+      <div class="pad">
+        <dl class="defn">
+          <dt>Definition</dt>
+          <dd>Teams whose trial converted to a paid tier within 30 days of trial end.</dd>
+          <dt>Grain</dt>
+          <dd>Calendar month of trial end.</dd>
+          <dt>Schedule</dt>
+          <dd>Refreshed hourly with the billing connector.</dd>
+          <dt>Last refreshed</dt>
+          <dd>today, on the hour</dd>
+        </dl>
+      </div>
+    </section>
+
+    <section class="panel" id="support-touched-accounts">
+      <header><h2>Support-touched accounts</h2><span class="meta">saved by a.merrow</span></header>
+      <div class="pad">
+        <dl class="defn">
+          <dt>Definition</dt>
+          <dd>Accounts with an open or recently closed support case, joined to their seat and
+          plan activity for churn review.</dd>
+          <dt>Grain</dt>
+          <dd>Account, refreshed with the 6-hourly support connector.</dd>
+          <dt>Schedule</dt>
+          <dd>Reviewed in the Monday churn meeting.</dd>
+          <dt>Last refreshed</dt>
+          <dd>today, 06:14</dd>
+        </dl>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer class="foot">
+  <span>Halbeck Analytics Ltd</span>
+  <a href="status.html">Status</a>
+  <a href="privacy.html">Privacy notice</a>
+  <a href="terms.html">Terms of service</a>
+  <a href="support.html">Support</a>
+  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+</footer>
+</body>
+</html>

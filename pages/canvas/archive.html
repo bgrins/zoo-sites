@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proof Archive — TintForge Studio</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: rgb(247, 246, 243); color: rgb(20, 19, 15);
+    font-family: Optima, "Gill Sans", Candara, "Segoe UI", sans-serif;
+    font-size: 15px; line-height: 1.55;
+  }
+  .masthead {
+    border-bottom: 1px solid rgb(20, 19, 15); padding: 26px 40px 18px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+  }
+  .masthead h1 {
+    margin: 0; font-family: Didot, "Hoefler Text", Baskerville, Garamond, serif;
+    font-size: 34px; font-weight: normal; letter-spacing: 0.01em;
+  }
+  .masthead h1 em { font-style: italic; }
+  .masthead .who {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.3em; color: rgb(111, 108, 98);
+  }
+  nav {
+    border-bottom: 1px solid rgb(221, 217, 207); padding: 0 40px;
+    display: flex; gap: 30px;
+  }
+  nav a {
+    display: block; padding: 11px 0; color: rgb(111, 108, 98); text-decoration: none;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  nav a:hover { color: rgb(20, 19, 15); }
+  nav a.here { color: rgb(20, 19, 15); border-bottom-color: rgb(20, 19, 15); }
+  .work { padding: 40px; max-width: 1000px; }
+  h2 {
+    margin: 0 0 4px; font-family: Didot, "Hoefler Text", Baskerville, serif;
+    font-size: 24px; font-weight: normal;
+  }
+  .deck { margin: 0 0 26px; color: rgb(76, 73, 65); max-width: 52ch; }
+  .ledger { background: rgb(255, 255, 255); border: 1px solid rgb(221, 217, 207); padding: 20px; }
+  table { border-collapse: collapse; width: 100%; }
+  th {
+    text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: 0.24em;
+    color: rgb(139, 135, 124); font-weight: normal; padding: 0 18px 8px 0;
+    border-bottom: 1px solid rgb(20, 19, 15);
+  }
+  td {
+    font-family: "SFMono-Regular", Menlo, "DejaVu Sans Mono", monospace; font-size: 12px;
+    padding: 9px 18px 9px 0; border-bottom: 1px solid rgb(230, 226, 216);
+  }
+  td.status { font-family: inherit; font-size: 12px; color: rgb(76, 73, 65); }
+  .fine {
+    padding: 0 40px 44px; max-width: 62ch; color: rgb(139, 135, 124); font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+<div class="masthead">
+  <h1>TintForge <em>Studio</em></h1>
+  <span class="who">Print calibration desk</span>
+</div>
+<nav>
+  <a href="libraries.html">Libraries</a>
+  <a href="swatch.html">Calibration</a>
+  <a href="ink-recipes.html">Ink recipes</a>
+  <a href="press-profiles.html">Press profiles</a>
+  <a href="archive.html" class="here">Archive</a>
+</nav>
+<div class="work">
+  <h2>Proof archive</h2>
+  <p class="deck">Recent proof runs, most recent first. Each work order is pulled up to
+  three times; a pull is either approved or sent back for reproof, and the order closes
+  on its first approval.</p>
+  <div class="ledger">
+    <table>
+      <thead>
+        <tr><th>Order</th><th>Pull</th><th>Pulled</th><th>Result</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>WO-4471</td><td>3</td><td>30 Apr 2026</td><td class="status">current</td></tr>
+        <tr><td>WO-4468</td><td>1</td><td>27 Apr 2026</td><td class="status">approved</td></tr>
+        <tr><td>WO-4463</td><td>2</td><td>24 Apr 2026</td><td class="status">approved</td></tr>
+        <tr><td>WO-4463</td><td>1</td><td>22 Apr 2026</td><td class="status">reproof</td></tr>
+        <tr><td>WO-4459</td><td>3</td><td>20 Apr 2026</td><td class="status">approved</td></tr>
+        <tr><td>WO-4459</td><td>2</td><td>17 Apr 2026</td><td class="status">reproof</td></tr>
+        <tr><td>WO-4459</td><td>1</td><td>15 Apr 2026</td><td class="status">reproof</td></tr>
+        <tr><td>WO-4452</td><td>1</td><td>10 Apr 2026</td><td class="status">approved</td></tr>
+        <tr><td>WO-4446</td><td>2</td><td>7 Apr 2026</td><td class="status">approved</td></tr>
+        <tr><td>WO-4446</td><td>1</td><td>3 Apr 2026</td><td class="status">reproof</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="fine">TintForge Studio &middot; Unit 6, Dyehouse Yard &middot; archived sheets
+are kept flat-filed for two years and released only against the originating order.</p>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Drennhill Dental — Accessibility</title>
+<style>
+  :root {
+    --ink: #10312f;
+    --muted: #5d7a78;
+    --teal: #0d6d70;
+    --teal-dark: #08484b;
+    --line: #d3e2e2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Avenir Next", Avenir, "Nimbus Sans", "DejaVu Sans", sans-serif;
+    margin: 0;
+    background: #eef5f5;
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .topbar {
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .mark { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.2px; }
+  .mark .glyph {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--teal); color: #fff;
+    display: grid; place-items: center;
+    font-size: 14px; font-weight: 700;
+  }
+  .topbar nav { display: flex; gap: 20px; font-size: 14px; }
+  .topbar nav a { color: var(--muted); text-decoration: none; }
+  .topbar nav a[aria-current] { color: var(--teal-dark); font-weight: 600; }
+  .topbar .phone { margin-left: auto; font-size: 14px; color: var(--muted); }
+  main { max-width: 780px; margin: 0 auto; padding: 30px 20px 60px; }
+  .lede h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.5px; margin: 0 0 6px; }
+  .lede p { margin: 0 0 24px; color: var(--muted); font-size: 15px; max-width: 62ch; }
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 24px 26px; margin-bottom: 18px;
+    box-shadow: 0 1px 2px rgba(16, 49, 47, 0.05), 0 8px 20px rgba(16, 49, 47, 0.04);
+  }
+  .card h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--teal-dark); font-weight: 700; margin: 0 0 12px;
+  }
+  .card p { margin: 0 0 10px; font-size: 14.5px; }
+  .card p:last-child { margin-bottom: 0; }
+  .card ul { margin: 0 0 10px; padding-left: 20px; font-size: 14.5px; }
+  .card a { color: var(--teal-dark); }
+  footer {
+    border-top: 1px solid var(--line); background: #fff;
+    padding: 22px 28px; font-size: 12.5px; color: var(--muted);
+  }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <span class="mark"><span class="glyph">DD</span> Drennhill Dental</span>
+  <nav>
+    <a href="services.html">Services</a>
+    <a href="team.html">Our team</a>
+    <a href="insurance.html">Insurance</a>
+    <a href="../">Appointments</a>
+  </nav>
+  <span class="phone">Scheduling: 312-555-0188</span>
+</header>
+
+<main>
+<div class="lede">
+  <h1>Accessibility</h1>
+  <p>Every patient should be able to reach us, move through the practice,
+  and take part in decisions about their care.</p>
+</div>
+
+<div class="card">
+  <h2>Getting to the practice</h2>
+  <ul>
+    <li>Step-free access from the street to Suite 210 via the building elevator.</li>
+    <li>An accessible restroom on our floor and a wheelchair-transfer treatment room.</li>
+    <li>Two accessible parking bays beside the Harborview Ave entrance.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>During your visit</h2>
+  <p>The reception desk is fitted with a hearing loop; ask any coordinator
+  to switch it on. Treatment plans and consent forms are available in large
+  print, and we can slow the pace of any appointment on request.</p>
+</div>
+
+<div class="card">
+  <h2>Requesting accommodations</h2>
+  <p>Call 312-555-0188 or email
+  <a href="mailto:access@drennhilldental.example">access@drennhilldental.example</a>
+  before your visit and tell us what would help — an interpreter, extra
+  time, or anything else. Two business days of notice lets us arrange most
+  accommodations, but we will always do what we can on the day.</p>
+</div>
+</main>
+
+<footer>
+  Drennhill Dental — 428 Harborview Ave, Suite 210 · Mon–Fri 8am–5pm ·
+  Call us: 312-555-0188 · <a href="privacy.html">Privacy</a> ·
+  <a href="accessibility.html" aria-current="page">Accessibility</a> ·
+  <a href="privacy-practices.html">Notice of Privacy Practices</a> ·
+  © 2026 Drennhill Dental Group PLLC.
+</footer>
+</body>
+</html>

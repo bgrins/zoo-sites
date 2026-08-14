@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plans — Lumeva Mobile</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Century Gothic", "URW Gothic", Futura, "Trebuchet MS", Verdana, sans-serif;
+    font-size: 16px; line-height: 1.5; color: #241b28; background: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  .topbar {
+    display: flex; align-items: center; gap: 34px; padding: 14px 32px;
+    border-bottom: 2px solid #d0006f;
+  }
+  .wordmark { font-size: 24px; font-weight: bold; letter-spacing: 0.5px; color: #d0006f; text-decoration: none; }
+  .topbar nav { display: flex; gap: 22px; }
+  .topbar nav a { color: #241b28; text-decoration: none; font-size: 14px; letter-spacing: 0.6px; text-transform: uppercase; padding: 4px 0; }
+  .topbar nav a.here { color: #d0006f; border-bottom: 2px solid #d0006f; }
+  .topbar nav a:hover { color: #d0006f; }
+  .hero { background: #d0006f; color: #fff; padding: 52px 32px 56px; }
+  .hero .inner { max-width: 980px; margin: 0 auto; }
+  .hero h1 { font-size: 40px; margin: 0 0 10px; line-height: 1.15; }
+  .hero p { font-size: 18px; margin: 0 0 26px; color: #ffd9ec; }
+  .hero a.cta {
+    display: inline-block; background: #fff; color: #d0006f; text-decoration: none;
+    font-weight: bold; font-size: 14px; letter-spacing: 1.4px; text-transform: uppercase;
+    padding: 13px 30px;
+  }
+  .hero a.cta:hover { background: #ffe6f3; }
+  section { padding: 46px 32px; }
+  .inner { max-width: 980px; margin: 0 auto; }
+  h2 { font-size: 28px; margin: 0 0 6px; }
+  .lede { color: #6b6470; margin: 0 0 28px; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .plan-card { border: 2px solid #e6dfe4; border-top: 6px solid #d0006f; padding: 22px 22px 18px; background: #fff; }
+  .plan-card h3 { margin: 0 0 2px; font-size: 20px; }
+  .plan-card .tag { font-size: 12.5px; letter-spacing: 1.2px; text-transform: uppercase; color: #d0006f; margin: 0 0 16px; }
+  .plan-card .gb { font-size: 44px; font-weight: bold; margin: 0; line-height: 1; }
+  .plan-card .gb-cap { font-size: 12.5px; letter-spacing: 1.2px; text-transform: uppercase; color: #6b6470; margin: 4px 0 16px; }
+  .plan-card ul { margin: 0; padding: 0 0 0 18px; color: #453c4a; font-size: 14.5px; }
+  .plan-card li { margin: 0 0 7px; }
+  .cards-note { color: #6b6470; font-size: 14px; margin: 20px 0 0; }
+  .builder-wrap { background: #faf6f8; border-top: 1px solid #eee2ea; border-bottom: 1px solid #eee2ea; }
+  .builder { display: grid; grid-template-columns: 1fr 340px; gap: 34px; align-items: start; }
+  .field { margin: 0 0 26px; }
+  .field .cap { display: block; font-size: 12.5px; letter-spacing: 1.4px; text-transform: uppercase; color: #6b6470; margin: 0 0 8px; }
+  select {
+    font: inherit; font-size: 16px; padding: 11px 12px; width: 100%; max-width: 420px;
+    border: 2px solid #241b28; background: #fff; color: #241b28;
+  }
+  select:focus { outline: 2px solid #d0006f; outline-offset: 1px; }
+  .pills { display: flex; gap: 10px; }
+  .pill {
+    font: inherit; font-size: 16px; width: 46px; height: 46px; border-radius: 50%;
+    border: 2px solid #241b28; background: #fff; color: #241b28; cursor: pointer;
+  }
+  .pill[aria-pressed="true"] { background: #d0006f; border-color: #d0006f; color: #fff; }
+  .pill:hover { border-color: #d0006f; }
+  .builder-note { color: #6b6470; font-size: 14px; margin: 4px 0 0; }
+  .summary { background: #fff; border: 2px solid #241b28; padding: 22px; }
+  .summary h3 { margin: 0 0 14px; font-size: 17px; letter-spacing: 1.2px; text-transform: uppercase; }
+  .sumrow { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #eee2ea; font-size: 15px; }
+  .sumrow .k { color: #6b6470; }
+  .sumrow .v { text-align: right; }
+  .sumrow.total { border-bottom: 0; padding-top: 14px; font-size: 18px; font-weight: bold; }
+  .sumrow.total .v { color: #d0006f; font-size: 24px; }
+  #quoteNote { font-size: 13px; color: #6b6470; margin: 10px 0 0; min-height: 18px; }
+  footer { background: #241b28; color: #b9aec0; font-size: 13.5px; padding: 26px 32px; line-height: 1.9; }
+  footer .inner { max-width: 980px; margin: 0 auto; }
+  footer a { color: #ecd9e6; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="wordmark" href="/telco/">lumeva</a>
+  <nav>
+    <a href="/telco/" class="here">Plans</a>
+    <a href="/telco/network.html">Network</a>
+    <a href="/telco/help.html">Help</a>
+  </nav>
+</div>
+
+<div class="hero">
+  <div class="inner">
+    <h1>Three plans. One signal that keeps up.</h1>
+    <p>Unlimited talk and text nationwide, on every plan. Plans from $26.30 a line.</p>
+    <a class="cta" href="#builder">Build your plan</a>
+  </div>
+</div>
+
+<section>
+  <div class="inner">
+    <h2>Pick your lane</h2>
+    <p class="lede">Every plan rides the same nationwide 5G network. The difference is how much high-speed data comes with it.</p>
+    <div class="cards">
+      <div class="plan-card">
+        <h3>Signal</h3>
+        <p class="tag">Everyday essentials</p>
+        <p class="gb">10 GB</p>
+        <p class="gb-cap">High-speed data a month</p>
+        <ul>
+          <li>Unlimited talk and text</li>
+          <li>SD streaming</li>
+          <li>5 GB mobile hotspot</li>
+        </ul>
+      </div>
+      <div class="plan-card">
+        <h3>Signal Plus</h3>
+        <p class="tag">Room to stream</p>
+        <p class="gb">30 GB</p>
+        <p class="gb-cap">High-speed data a month</p>
+        <ul>
+          <li>Unlimited talk and text</li>
+          <li>HD streaming</li>
+          <li>15 GB mobile hotspot</li>
+          <li>Roam Lite in 12 countries</li>
+        </ul>
+      </div>
+      <div class="plan-card">
+        <h3>Signal Plus Ultra</h3>
+        <p class="tag">All in, all the time</p>
+        <p class="gb">80 GB</p>
+        <p class="gb-cap">High-speed data a month</p>
+        <ul>
+          <li>Unlimited talk and text</li>
+          <li>4K streaming</li>
+          <li>40 GB mobile hotspot</li>
+          <li>Roam Global in 90 countries</li>
+        </ul>
+      </div>
+    </div>
+    <p class="cards-note">Monthly totals depend on how many lines you bring, so they are quoted live in the plan builder below. Multi-line credits apply automatically.</p>
+  </div>
+</section>
+
+<div class="builder-wrap">
+  <section id="builder">
+    <div class="inner builder">
+      <div>
+        <h2>Build your plan</h2>
+        <p class="lede">Choose a plan and a line count. Your draft order is saved with every change.</p>
+        <div class="field">
+          <label class="cap" for="plan">Plan</label>
+          <select id="plan" aria-label="Plan">
+            <option value="">Choose a plan</option>
+            <option value="sig">Signal</option>
+            <option value="sig-plus">Signal Plus</option>
+            <option value="sig-plus-ultra">Signal Plus Ultra</option>
+          </select>
+        </div>
+        <div class="field">
+          <span class="cap" id="linesCap">Lines</span>
+          <div class="pills" role="group" aria-labelledby="linesCap">
+            <button type="button" class="pill" data-lines="1" aria-pressed="true">1</button>
+            <button type="button" class="pill" data-lines="2" aria-pressed="false">2</button>
+            <button type="button" class="pill" data-lines="3" aria-pressed="false">3</button>
+            <button type="button" class="pill" data-lines="4" aria-pressed="false">4</button>
+            <button type="button" class="pill" data-lines="5" aria-pressed="false">5</button>
+          </div>
+        </div>
+        <p class="builder-note">Totals include taxes, fees and multi-line credits.</p>
+      </div>
+      <div class="summary">
+        <h3>Order summary</h3>
+        <div class="sumrow"><span class="k">Plan</span><span class="v" id="planOut">None selected</span></div>
+        <div class="sumrow"><span class="k">Lines</span><span class="v" id="linesOut">1</span></div>
+        <div class="sumrow total"><span class="k">Monthly total</span><span class="v" id="quoteOut">&mdash;</span></div>
+        <p id="quoteNote" role="status"></p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="inner">
+    Lumeva Mobile · 55 Kestrel Way, Duneport · care@lumeva.example · 1-888-555-0142<br>
+    <a href="/telco/network.html">Network coverage</a> ·
+    <a href="/telco/help.html">Help center</a> ·
+    <a href="/telco/legal.html">Terms and privacy</a><br>
+    Coverage and speeds vary by location and load. &copy; Lumeva Mobile.
+  </div>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const sel = document.getElementById('plan');
+  const pills = [...document.querySelectorAll('.pill')];
+  const planOut = document.getElementById('planOut');
+  const linesOut = document.getElementById('linesOut');
+  const quoteOut = document.getElementById('quoteOut');
+  const quoteNote = document.getElementById('quoteNote');
+  let lines = 1;
+  // Seeded per page load so a reload's drafts always outrank drafts posted
+  // by an earlier load of this session.
+  let seq = Date.now();
+  let touched = false;
+
+  function renderLocal() {
+    planOut.textContent = sel.value ? sel.options[sel.selectedIndex].textContent : 'None selected';
+    linesOut.textContent = String(lines);
+    if (!sel.value) {
+      quoteOut.textContent = '—';
+      quoteNote.textContent = '';
+    }
+  }
+
+  async function postDraft() {
+    if (!sel.value) return;
+    const mySeq = ++seq;
+    quoteOut.textContent = '…';
+    try {
+      const res = await fetch('/api/telco/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, seq: mySeq, plan: sel.value, lines }),
+      });
+      const body = await res.json();
+      // Draft posts race during rapid changes; only the latest one renders.
+      if (mySeq < seq) return;
+      if (!res.ok) {
+        quoteNote.textContent = body.error || 'The builder could not quote that configuration.';
+        return;
+      }
+      planOut.textContent = body.plan;
+      linesOut.textContent = String(body.lines);
+      quoteOut.textContent = '$' + body.monthlyQuote.toFixed(2);
+      quoteNote.textContent = 'Draft order saved.';
+    } catch {
+      if (mySeq === seq) quoteNote.textContent = 'The builder is offline. Try again shortly.';
+    }
+  }
+
+  function setLines(n) {
+    lines = n;
+    for (const q of pills) q.setAttribute('aria-pressed', Number(q.dataset.lines) === n ? 'true' : 'false');
+  }
+
+  async function rehydrate() {
+    try {
+      const res = await fetch('/api/telco/draft', { headers: { 'x-session-nonce': NONCE } });
+      if (!res.ok) return;
+      const body = await res.json();
+      if (!body.current || touched) return;
+      for (const o of sel.options) {
+        if (o.textContent === body.current.plan) sel.value = o.value;
+      }
+      setLines(body.current.lines);
+      planOut.textContent = body.current.plan;
+      linesOut.textContent = String(body.current.lines);
+      quoteOut.textContent = '$' + body.current.quote.toFixed(2);
+      quoteNote.textContent = 'Saved draft restored.';
+    } catch {}
+  }
+
+  sel.addEventListener('change', () => { touched = true; renderLocal(); postDraft(); });
+  for (const p of pills) {
+    p.addEventListener('click', () => {
+      touched = true;
+      setLines(Number(p.dataset.lines));
+      renderLocal();
+      postDraft();
+    });
+  }
+  rehydrate();
+</script>
+</body>
+</html>

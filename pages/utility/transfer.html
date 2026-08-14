@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Transfer of Service — Grelsby Water &amp; Sewer Authority</title>
+<link rel="stylesheet" href="grelsby.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="seal">GW</div>
+  <h1>Grelsby Water &amp; Sewer Authority</h1>
+  <p class="est">Serving the Borough of Grelsby since 1911</p>
+</header>
+<nav class="navband">
+  <a href="index.html">Home</a>
+  <a href="rates.html">Rates &amp; Charges</a>
+  <a href="transfer.html" class="here">Transfer of Service</a>
+</nav>
+<main>
+  <div class="printnotice">
+    <p class="nt">Transfer of Service</p>
+    <p>Use this desk to move a metered account to a new occupant. A final
+    reading is scheduled automatically on acceptance and the departing
+    holder's closing bill is issued from that reading.</p>
+    <p>Transfers are processed within two business days. There is no charge
+    for a scheduled transfer.</p>
+  </div>
+
+  <div class="sheet">
+    <h2>Account Being Transferred</h2>
+    <div class="kvrow"><span class="k">Service account</span><span class="v" id="acctNo">44-58291-03</span></div>
+    <div class="kvrow"><span class="k">Premises</span><span class="v">118 Corvus Lane, Grelsby</span></div>
+    <div class="kvrow"><span class="k">Account holder of record</span><span class="v">R. Maldonado</span></div>
+    <div class="kvrow"><span class="k">Reading cycle</span><span class="v">Route 7, bimonthly</span></div>
+  </div>
+
+  <div class="sheet" id="formSheet">
+    <h2>New Occupant Details</h2>
+    <form id="transferForm" novalidate>
+      <div class="field">
+        <span class="cap" id="capOccupant">New account holder</span>
+        <input id="occupant" aria-label="New account holder" autocomplete="off">
+      </div>
+      <div class="field">
+        <span class="cap" id="capPhone">Daytime telephone (optional)</span>
+        <input id="phone" aria-label="Daytime telephone" autocomplete="off">
+      </div>
+      <div class="field">
+        <span class="cap" id="capMeter">Meter number</span>
+        <input id="meter" aria-label="Meter number" autocomplete="off">
+      </div>
+      <p class="fieldnote"><span class="code">GW-0000000-X</span> <span>is the recorded
+      meter number form. Entries taken from a meter face or an inspection report
+      are standardised to it when the field is verified.</span></p>
+      <div id="recordSlot"></div>
+      <div id="refuseSlot"></div>
+      <button type="submit" class="action" id="submitBtn">Submit transfer request</button>
+    </form>
+  </div>
+
+  <div id="doneSlot"></div>
+</main>
+<footer>
+  <p>Grelsby Water &amp; Sewer Authority &middot; Works Yard, 4 Aqueduct Road, Grelsby</p>
+  <p>Customer service (555) 014-2200 &middot; Counter hours Mon&ndash;Fri 8:30&ndash;16:00</p>
+  <p>&copy; Grelsby Water &amp; Sewer Authority. Established by borough ordinance 1911-6.</p>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const meter = document.getElementById('meter');
+  const recordSlot = document.getElementById('recordSlot');
+  const refuseSlot = document.getElementById('refuseSlot');
+
+  function line(slot, className, label, valueId, value) {
+    slot.textContent = '';
+    const box = document.createElement('div');
+    box.className = className;
+    const rl = document.createElement('span');
+    rl.className = 'rl';
+    rl.textContent = label;
+    const rv = document.createElement('span');
+    rv.className = 'rv';
+    rv.id = valueId;
+    rv.textContent = value;
+    box.append(rl, rv);
+    slot.append(box);
+  }
+
+  function standardiseMeter(raw) {
+    const flat = String(raw).toUpperCase().replace(/[^A-Z0-9]+/g, '');
+    const m = flat.match(/^([A-Z]{2})(\d{1,7})([A-Z])$/);
+    return m ? m[1] + '-' + m[2].padStart(7, '0') + '-' + m[3] : null;
+  }
+
+  meter.addEventListener('blur', () => {
+    const std = standardiseMeter(meter.value);
+    if (std) {
+      meter.value = std;
+      line(recordSlot, 'recordline', 'Recorded as', 'normValue', std);
+    }
+  });
+  meter.addEventListener('input', () => {
+    recordSlot.textContent = '';
+  });
+
+  const submitBtn = document.getElementById('submitBtn');
+  // Keep the caret where the clerk left it: acting on the request must not
+  // move focus out of a half-corrected entry.
+  submitBtn.addEventListener('mousedown', (event) => event.preventDefault());
+
+  function showRefusal(message) {
+    const box = document.createElement('div');
+    box.className = 'refuseline';
+    const rl = document.createElement('span');
+    rl.className = 'rl';
+    rl.textContent = 'Not accepted.';
+    const err = document.createElement('span');
+    err.id = 'errText';
+    err.textContent = message;
+    box.append(rl, err);
+    refuseSlot.textContent = '';
+    refuseSlot.append(box);
+  }
+
+  function showAccepted(body) {
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet';
+    const h2 = document.createElement('h2');
+    h2.textContent = 'Transfer Request Accepted';
+    sheet.append(h2);
+    const rows = [
+      ['Transfer reference', 'refValue', body.reference, 'v rv'],
+      ['Meter recorded as', 'meterValue', body.meterId, 'v rv'],
+      ['New account holder', 'occValue', body.occupant, 'v'],
+    ];
+    for (const [label, id, value, cls] of rows) {
+      const row = document.createElement('div');
+      row.className = 'kvrow';
+      const k = document.createElement('span');
+      k.className = 'k';
+      k.textContent = label;
+      const v = document.createElement('span');
+      v.className = cls;
+      v.id = id;
+      v.textContent = value;
+      row.append(k, v);
+      sheet.append(row);
+    }
+    const note = document.createElement('p');
+    note.style.marginTop = '12px';
+    note.textContent =
+      'Quote the transfer reference in any correspondence about this request. ' +
+      'A new service account number is assigned when the first bill is issued; ' +
+      'the departing account number is retired with the closing bill.';
+    sheet.append(note);
+    document.getElementById('doneSlot').append(sheet);
+    document.getElementById('formSheet').style.display = 'none';
+  }
+
+  document.getElementById('transferForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    refuseSlot.textContent = '';
+    try {
+      const res = await fetch('/api/utility/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nonce: NONCE,
+          meterId: meter.value.trim(),
+          occupant: document.getElementById('occupant').value.trim(),
+          phone: document.getElementById('phone').value.trim(),
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        showRefusal(body.error ?? 'The request was not accepted.');
+        return;
+      }
+      showAccepted(body);
+    } catch {
+      showRefusal('The desk could not be reached. Try again.');
+    }
+  });
+</script>
+</body>
+</html>

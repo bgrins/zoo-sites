@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coastal forecast 0535 UTC - Skerrow Coastal Radio</title>
+<link rel="stylesheet" href="station.css">
+</head>
+<body>
+<header class="masthead">
+  <p class="callsign">SKERROW</p>
+  <p class="strap">Coastal Radio &middot; Station SKW &middot; Marine safety broadcast service</p>
+</header>
+<nav class="bar">
+  <a href="index.html">Recorded bulletins</a>
+  <a href="areas.html">Sea areas</a>
+  <a href="schedule.html">Transmission times</a>
+</nav>
+
+<div class="frame">
+  <aside class="rail">
+    <h2>Chapters</h2>
+    <div id="chapters"></div>
+    <h2>Playhead</h2>
+    <p class="playhead" id="playhead" role="status">00:00 / 00:48</p>
+  </aside>
+
+  <main>
+    <h1>Coastal forecast, 0535 UTC</h1>
+    <p class="sub">26 July &middot; all sea areas &middot; recorded off air</p>
+
+    <div class="card">
+      <h2>Transmission</h2>
+      <div class="facts">
+        <p><span class="k">Station</span>SKW, Skerrow</p>
+        <p><span class="k">Issued</span>0535 UTC, 26 July</p>
+        <p><span class="k">Valid until</span>1735 UTC, 26 July</p>
+        <p><span class="k">Running time</span>48 seconds</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Recording</h2>
+      <audio id="tape" controls muted preload="auto" aria-label="Coastal forecast 0535 UTC recording"></audio>
+      <div class="transport">
+        <button id="play" type="button" disabled>Play</button>
+        <button id="pause" type="button" disabled>Pause</button>
+        <span class="tc" id="status">Loading the recording</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Transcript</h2>
+      <p class="notice" id="transcript-note">The transcript is written out as the recording runs.
+        Use a chapter to skip to the part you need.</p>
+      <div id="transcript" role="log" aria-live="polite" aria-label="Bulletin transcript"></div>
+    </div>
+  </main>
+</div>
+
+<footer>
+  <p>Skerrow Coastal Radio, Harbour Station, Cape Ardnoy Road, Skerrow ARD 2LX.</p>
+  <p>Duty desk 0117 496 0261 &middot; <a href="mailto:duty@skerrowcoastal.example">duty@skerrowcoastal.example</a></p>
+  <p><a href="index.html">Privacy notice</a> &middot; <a href="index.html">Terms of use</a> &middot; <a href="index.html">Accessibility</a></p>
+  <p>Copyright 2026 Skerrow Coastal Radio. Forecast material reproduced under marine safety licence MS-114.</p>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const tape = document.getElementById('tape');
+tape.muted = true;
+tape.volume = 0;
+const transcript = document.getElementById('transcript');
+const chaptersBox = document.getElementById('chapters');
+const playhead = document.getElementById('playhead');
+const statusLine = document.getElementById('status');
+const playButton = document.getElementById('play');
+const pauseButton = document.getElementById('pause');
+
+let cues = [];
+let chapters = [];
+let duration = 0;
+// The playhead position the transcript has already been written up to. Skipping
+// ahead moves it with the seek, so a chapter jump writes out that chapter rather
+// than back-filling everything the listener skipped past.
+let writtenTo = -1;
+let pendingSeek = null;
+let seekTarget = null;
+let lastJumpAt = 0;
+const rows = new Map();
+// A cue whose line has not come back yet, either because the request is still
+// in flight or because it failed. Those rows stay retryable, so one bad response
+// does not lose the line for the rest of the page's life.
+const inFlight = new Set();
+const triedAt = new Map();
+
+const clock = (s) => {
+  const whole = Math.max(0, Math.floor(s));
+  return String(Math.floor(whole / 60)).padStart(2, '0') + ':' + String(whole % 60).padStart(2, '0');
+};
+
+function chapterHeading(n) {
+  const id = 'ch-head-' + n;
+  if (document.getElementById(id)) return;
+  const chapter = chapters.find((c) => c.n === n);
+  const head = document.createElement('p');
+  head.id = id;
+  head.className = 'chapter-head';
+  head.textContent = String(n).padStart(2, '0') + ' ' + (chapter ? chapter.title : '');
+  transcript.appendChild(head);
+}
+
+function writeCue(cue, text, pending) {
+  chapterHeading(cue.chapter);
+  let row = rows.get(cue.index);
+  if (!row) {
+    row = document.createElement('div');
+    row.className = 'cue';
+    const tc = document.createElement('p');
+    tc.className = 'tc';
+    tc.textContent = clock(cue.start);
+    const line = document.createElement('p');
+    line.className = 'line';
+    row.append(tc, line);
+    transcript.appendChild(row);
+    rows.set(cue.index, row);
+  }
+  row.querySelector('.line').textContent = text;
+  row.classList.toggle('pending', Boolean(pending));
+}
+
+function unresolved(index) {
+  const row = rows.get(index);
+  return Boolean(row) && row.classList.contains('pending');
+}
+
+async function passCue(cue) {
+  if (rows.has(cue.index) && !unresolved(cue.index)) return;
+  if (inFlight.has(cue.index)) return;
+  if (Date.now() - (triedAt.get(cue.index) ?? 0) < 600) return;
+  inFlight.add(cue.index);
+  triedAt.set(cue.index, Date.now());
+  const via = Date.now() - lastJumpAt < 2000 ? 'chapter' : 'play';
+  writeCue(cue, cue.text || 'Reading off the log', !cue.text);
+  let payload;
+  try {
+    const response = await fetch('/api/media/heard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, cue: cue.index, t: tape.currentTime, via }),
+    });
+    payload = response.ok ? await response.json() : null;
+  } catch {
+    payload = null;
+  }
+  inFlight.delete(cue.index);
+  const text = payload && typeof payload.text === 'string' ? payload.text : cue.text;
+  writeCue(cue, text || 'Waiting on the log', !text);
+}
+
+function sweep() {
+  const at = tape.currentTime;
+  playhead.textContent = clock(at) + ' / ' + clock(duration);
+  for (const cue of cues) {
+    if (cue.start <= at + 0.2 && (cue.start > writtenTo || unresolved(cue.index))) passCue(cue);
+  }
+  if (at > writtenTo) writtenTo = at;
+}
+
+function onSeek() {
+  const at = tape.currentTime;
+  const chasing = seekTarget !== null && at < seekTarget - 0.05;
+  // Landing inside a chapter writes that chapter out from its start rather than
+  // back-filling everything the listener skipped, so a seek that overshoots the
+  // first cue of the chapter by a few tenths does not lose it. A jump that is
+  // still short of its target has not landed anywhere yet.
+  const chapter = chasing ? null : chapters.find((c) => at >= c.start && at < c.end);
+  writtenTo = (chapter ? Math.min(at, chapter.start) : at) - (chasing ? 0.05 : 0.75);
+  sweep();
+}
+
+function seekTo(seconds) {
+  if (tape.readyState === 0) {
+    pendingSeek = seconds;
+    return;
+  }
+  // A playhead can only move into the part of a recording that has arrived, so
+  // a jump taken moments after the page loads can land short of where it was
+  // aimed. Remember the target and finish the jump as the buffer catches up.
+  seekTarget = seconds;
+  tape.currentTime = seconds;
+}
+
+function chaseSeek() {
+  if (seekTarget === null) return;
+  if (tape.currentTime >= seekTarget - 0.05) {
+    seekTarget = null;
+    return;
+  }
+  const ranges = tape.buffered;
+  const buffered = ranges.length ? ranges.end(ranges.length - 1) : 0;
+  if (buffered >= seekTarget) tape.currentTime = seekTarget;
+}
+
+function drawChapters() {
+  chaptersBox.textContent = '';
+  for (const chapter of chapters) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'chapter';
+    const title = document.createElement('span');
+    title.textContent = String(chapter.n).padStart(2, '0') + ' ' + chapter.title;
+    const tc = document.createElement('span');
+    tc.className = 'tc';
+    tc.textContent = ' ' + clock(chapter.start);
+    button.append(title, tc);
+    button.addEventListener('click', () => {
+      lastJumpAt = Date.now();
+      statusLine.textContent = 'Chapter ' + chapter.n + ', ' + chapter.title;
+      seekTo(chapter.start + 0.4);
+      tape.play().catch(() => {});
+    });
+    chaptersBox.appendChild(button);
+  }
+}
+
+tape.addEventListener('timeupdate', sweep);
+tape.addEventListener('progress', chaseSeek);
+// `timeupdate` only fires while the recording is running, so a cue that the
+// playhead has passed while paused — a seek that stopped short of it, or a line
+// whose request failed — would otherwise never be written. Working on a timer as
+// well keeps every row retryable and finishes an interrupted jump.
+setInterval(() => {
+  chaseSeek();
+  sweep();
+}, 500);
+tape.addEventListener('seeking', onSeek);
+tape.addEventListener('seeked', onSeek);
+tape.addEventListener('ended', () => {
+  statusLine.textContent = 'End of transmission';
+});
+tape.addEventListener('loadedmetadata', () => {
+  duration = tape.duration;
+  playButton.disabled = false;
+  pauseButton.disabled = false;
+  statusLine.textContent = 'Ready, ' + clock(duration);
+  if (pendingSeek !== null) {
+    const seconds = pendingSeek;
+    pendingSeek = null;
+    seekTo(seconds);
+    return;
+  }
+  sweep();
+});
+tape.addEventListener('error', () => {
+  statusLine.textContent = 'The recording could not be loaded';
+});
+
+playButton.addEventListener('click', () => {
+  tape.play().catch(() => {
+    statusLine.textContent = 'Use the player controls to start the recording';
+  });
+});
+pauseButton.addEventListener('click', () => tape.pause());
+
+(async () => {
+  const response = await fetch('/api/media/cues', { headers: { 'X-Session-Nonce': NONCE } });
+  if (!response.ok) {
+    statusLine.textContent = 'The bulletin could not be opened';
+    return;
+  }
+  const data = await response.json();
+  cues = data.cues;
+  chapters = data.chapters;
+  duration = data.duration;
+  drawChapters();
+  playhead.textContent = '00:00 / ' + clock(duration);
+  tape.src = '/api/media/bulletin.wav?k=' + encodeURIComponent(NONCE);
+  tape.load();
+})();
+</script>
+</body>
+</html>

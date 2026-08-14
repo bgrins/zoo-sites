@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voltro — Deals of the Day</title>
+<link rel="stylesheet" href="voltro.css">
+<style>
+  .crumbs { padding: 10px 16px; font-size: 12px; color: #565959; }
+  .crumbs a { color: #007185; text-decoration: none; }
+  #sheet { display: block; padding: 4px 16px 0; }
+  #banner { display: block; width: 100%; max-width: 1120px; height: auto;
+    border-radius: 4px; margin: 8px 0 14px; }
+  #deal { border: 1px solid #d5d9d9; border-radius: 8px; padding: 14px; max-width: 560px; }
+  #deal h1 { font-size: 20px; margin: 0 0 4px; }
+  #deal .lede { color: #565959; font-size: 13px; margin-bottom: 12px; }
+  #code { font-family: "Courier New", Courier, monospace; font-size: 24px; font-weight: 700;
+    letter-spacing: 1px; background: #ffd814; display: inline-block; padding: 6px 12px;
+    border-radius: 4px; }
+  #locked { border-left: 4px solid #ff9900; padding-left: 12px; font-size: 14px; color: #3f4145; }
+  .after { color: #565959; font-size: 13px; margin-top: 10px; }
+  #refresh { margin-top: 12px; background: #ffd814; border: 1px solid #fcd200;
+    border-radius: 20px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
+  .lineup { max-width: 560px; margin-top: 16px; font-size: 13px; }
+  .lineup li { margin-bottom: 6px; }
+  .terms { max-width: 560px; margin: 18px 0 0; font-size: 12px; color: #565959; }
+  .terms p { margin: 6px 0; }
+</style>
+</head>
+<body>
+<header>
+  <b>Voltro</b>
+  <input placeholder="Search Voltro" aria-label="Search">
+  <span>Hello, sign in</span>
+  <span>Orders</span>
+  <a href="cart.html" style="color:#ffd814;font-weight:700;text-decoration:none">View cart</a>
+</header>
+<nav>
+  <span>All</span><span>Today's Deals</span><span>Electronics</span>
+  <span>Computers</span><span>Monitors</span><span>Gift Cards</span><span>Customer Service</span>
+</nav>
+<div class="promo">Deals of the Day refresh at 6:00 each morning. One code per customer per day.</div>
+<div class="crumbs"><a href="index.html">Voltro</a> &rsaquo; Today's Deals &rsaquo; Deals of the Day</div>
+<main id="sheet">
+  <picture>
+    <source media="(max-width: 600px)" srcset="banner-phone.svg?s=__SESSION_NONCE__">
+    <img id="banner" src="banner-wide.svg?s=__SESSION_NONCE__" width="1120" height="132"
+      alt="Deals of the Day: extra savings on monitors and desk gear">
+  </picture>
+  <section id="deal">
+    <h1>Deals of the Day</h1>
+    <div class="lede">Mobile shoppers take an extra discount at checkout with today's code.</div>
+    <div id="out">Loading today's code</div>
+    <button id="refresh">Refresh offer</button>
+  </section>
+  <ul class="lineup">
+    <li>Monitors: extra savings on 27-inch and 32-inch panels while stock lasts.</li>
+    <li>Desk Setup: monitor arms, light bars and cable kits included in the daily code.</li>
+    <li>Accessories: keyboards, hubs and webcams from participating sellers.</li>
+  </ul>
+  <div class="terms">
+    <p>The daily code applies to items sold and shipped by Voltro Retail. Marketplace
+    sellers, gift cards, digital downloads, warranties and delivery charges are excluded.
+    The code is redeemed in the promotion box on the payment step and cannot be combined
+    with clearance pricing.</p>
+    <p>One redemption per customer per calendar day. Voltro may withdraw a daily code
+    without notice if stock runs out. Prices and availability are subject to change.</p>
+  </div>
+</main>
+<footer>
+  &copy; 2026 Voltro Marketplace, Inc. Prices and availability are subject to change.
+  · <a href="conditions.html">Conditions of Use</a> · <a href="privacy.html">Privacy Notice</a>
+  · <a href="privacy.html#ads">Interest-Based Ads</a> · <a href="sell.html">Sell on Voltro</a>
+  · <a href="careers.html">Careers</a> · <a href="help.html">Customer Service</a>
+</footer>
+<script src="voltro-nav.js"></script>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const MOBILE = window.matchMedia('(max-width: 600px)');
+const out = document.getElementById('out');
+const banner = document.getElementById('banner');
+let revealed = false;
+let pending = false;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// The banner is a <picture> whose phone candidate sits behind the same media
+// query as the layout, so the resource the layout engine actually chose is the
+// one honest signal about the viewport. Wait until the loaded candidate agrees
+// with the query before reporting, otherwise a resize reports the stale one.
+async function bannerSettled() {
+  for (let i = 0; i < 25; i++) {
+    const src = banner.currentSrc || '';
+    if (src && banner.complete && /banner-phone\.svg/.test(src) === MOBILE.matches) return;
+    await sleep(100);
+  }
+}
+
+function layoutFacts() {
+  const bar = document.querySelector('nav:not(#mobilemenu)');
+  const head = document.querySelector('header');
+  return {
+    navDisplay: bar ? getComputedStyle(bar).display : null,
+    headerWrap: head ? getComputedStyle(head).flexWrap : null,
+    clientWidth: document.documentElement.clientWidth,
+    banner: new URL(banner.currentSrc || banner.src, location.href).pathname.split('/').pop(),
+  };
+}
+
+let timer = null;
+function scheduleLoad() {
+  if (revealed) return;
+  clearTimeout(timer);
+  timer = setTimeout(() => loadDeal(), 150);
+}
+
+async function loadDeal(attempt = 0) {
+  if (pending) {
+    scheduleLoad();
+    return;
+  }
+  pending = true;
+  let body;
+  try {
+    await bannerSettled();
+    const res = await fetch('/api/shop/deal-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nonce: NONCE,
+        innerWidth: window.innerWidth,
+        mobileLayout: MOBILE.matches,
+        layout: layoutFacts(),
+      }),
+    });
+    body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? 'request failed');
+  } catch {
+    out.textContent = "Today's code could not be loaded. Use Refresh offer to try again.";
+    return;
+  } finally {
+    pending = false;
+  }
+  if (!body.code && MOBILE.matches && attempt < 2) {
+    await sleep(400);
+    return loadDeal(attempt + 1);
+  }
+  if (body.code) {
+    revealed = true;
+    out.innerHTML =
+      '<div id="code"></div>' +
+      '<div class="after">Enter it in the promotion box on the payment step. Valid today only.</div>';
+    document.getElementById('code').textContent = body.code;
+  } else {
+    out.innerHTML =
+      '<div id="locked">Mobile exclusive. This code is served to the Voltro mobile ' +
+      'site only, so open the store on a phone-width screen to reveal it.</div>';
+  }
+}
+
+document.getElementById('refresh').addEventListener('click', () => loadDeal());
+MOBILE.addEventListener('change', scheduleLoad);
+window.addEventListener('resize', scheduleLoad);
+loadDeal();
+</script>
+</body>
+</html>

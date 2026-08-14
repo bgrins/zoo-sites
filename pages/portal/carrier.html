@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carrier home — Overlane Carrier Access</title>
+<link rel="stylesheet" href="portal.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="logo" href="carrier.html">
+    <svg class="logo-mark" width="28" height="28" viewBox="0 0 30 30" aria-hidden="true">
+      <rect width="30" height="30" rx="8" fill="#2f4bb5"></rect>
+      <path d="M7 20h11M7 15h15M7 10h8" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"></path>
+      <circle cx="22.5" cy="20" r="2.6" fill="#5fd8c8"></circle>
+    </svg>
+    <span class="logo-word">Overlane</span>
+    <span class="logo-sub">Carrier Access</span>
+  </a>
+  <div class="account">
+    <span id="who">Carrier contact</span>
+    <span class="avatar">CT</span>
+  </div>
+</header>
+<div class="shell">
+  <nav class="side">
+    <div class="side-title">Carrier</div>
+    <a href="carrier.html" aria-current="page">Carrier home</a>
+    <a href="carrier.html#collections">Collections</a>
+    <a href="carrier.html#documents">Documents</a>
+    <div class="side-note">The operations console is issued to Overlane staff accounts only.</div>
+  </nav>
+  <main class="main">
+    <div class="crumb">Carrier / Home</div>
+    <h1>Carrier home</h1>
+    <p class="sub">Everything Overlane holds for your carrier record.</p>
+    <div id="welcome" class="welcome" role="status"></div>
+    <div id="gate" class="notice" hidden>
+      You are not signed in. <a href="index.html">Go to sign-in</a>.
+    </div>
+    <div id="body" hidden>
+      <div class="panel">
+        <h2>Carrier record</h2>
+        <div class="stats">
+          <div class="stat"><span class="k">Carrier</span><span class="v" id="carrier"></span></div>
+          <div class="stat"><span class="k">Contact</span><span class="v" id="contact"></span></div>
+          <div class="stat"><span class="k">Lanes</span><span class="v">4</span></div>
+        </div>
+        <p>Quote the dashboard code above when you call the service desk. It is
+        tied to this session.</p>
+      </div>
+      <div class="panel" id="collections">
+        <h2>Next collections</h2>
+        <p>Week 31 is provisional until the wharf confirms the berth allocation.</p>
+        <div class="stats">
+          <div class="stat"><span class="k">Tue 28 Jul</span><span class="v">06:30</span></div>
+          <div class="stat"><span class="k">Thu 30 Jul</span><span class="v">19:30</span></div>
+          <div class="stat"><span class="k">Sat 01 Aug</span><span class="v">05:00</span></div>
+        </div>
+      </div>
+      <div class="panel" id="documents">
+        <h2>Documents</h2>
+        <p>Insurance certificate on file expires 14 November. Operating licence
+        and W-9 are current. Upload replacements through your account manager.</p>
+      </div>
+    </div>
+  </main>
+</div>
+<footer class="appfoot">
+  Overlane Logistics Group &middot; carrier build 7.4.2 &middot;
+  <a href="support.html">Support centre</a> &middot;
+  <a href="status.html">Network status</a> &middot;
+  service desk ext 2200 or support@overlane.example
+</footer>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+
+  (async () => {
+    try {
+      const res = await fetch('/api/portal/carrier-home', {
+        headers: { 'X-Session-Nonce': NONCE },
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        document.getElementById('gate').hidden = false;
+        return;
+      }
+      document.getElementById('welcome').textContent = body.message;
+      document.getElementById('who').textContent = body.account;
+      document.getElementById('contact').textContent = body.contact;
+      document.getElementById('carrier').textContent = body.carrier;
+      document.getElementById('body').hidden = false;
+    } catch {
+      document.getElementById('welcome').textContent =
+        'Network error — reload the page.';
+    }
+  })();
+</script>
+</body>
+</html>

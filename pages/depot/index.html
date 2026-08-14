@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operator sign-in - Marlowe Depot Systems</title>
+<link rel="stylesheet" href="depot.css">
+</head>
+<body>
+<header class="mast">
+  <img class="mark" src="assets/mark.svg" alt="" width="26" height="26">
+  <span class="brand">Marlowe Depot Systems</span>
+  <span class="site">Yard 4 &middot; Grenford</span>
+  <span class="grow"></span>
+  <span class="meta">Ops console 6.2.4</span>
+</header>
+<nav class="tabs">
+  <a href="shifts.html" data-tab="shifts">Shifts</a>
+  <a href="manifests.html" data-tab="manifests">Manifests</a>
+  <a href="intake.html" data-tab="intake">Intake</a>
+  <a href="incidents.html" data-tab="incidents">Incidents</a>
+  <span class="grow"></span>
+  <a href="index.html" class="signout" data-tab="signin">Sign in</a>
+</nav>
+
+<div class="wrap">
+  <div class="signin-grid">
+    <section class="panel">
+      <h2>Operator sign-in</h2>
+      <div class="bd">
+        <p class="muted">This terminal is bound to the day-shift lead. Confirm the
+        details below and sign in to load the shift dashboard.</p>
+        <form id="signin">
+          <label for="op">Operator ID</label>
+          <input type="text" id="op" name="op" value="m.osei" autocomplete="off">
+          <label for="pin">Terminal PIN</label>
+          <input type="text" id="pin" name="pin" value="4417" autocomplete="off">
+          <div class="btnrow">
+            <button type="submit" class="primary">Sign in</button>
+          </div>
+          <p class="status" id="signin-note"></p>
+        </form>
+        <p class="stamp">Bound operator: M. Osei &middot; days &middot; badge 2117</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Yard notices</h2>
+      <div class="bd tight">
+        <table>
+          <tr><th>Posted</th><th>Notice</th></tr>
+          <tr><td class="muted">28 Jul</td><td>Gate 2 weighbridge recalibration between 10:00 and 11:30. Use gate 3 for outbound axles over 9 t.</td></tr>
+          <tr><td class="muted">27 Jul</td><td>Aisle F racking inspection complete. Bays F12 to F18 released for putaway.</td></tr>
+          <tr><td class="muted">27 Jul</td><td>Charging bay 2 is out of service. Reach trucks charge on bay 1 or bay 4 until further notice.</td></tr>
+          <tr><td class="muted">26 Jul</td><td>Carrier Ferrant &amp; Blythe collections move to the 14:20 window from Monday.</td></tr>
+          <tr><td class="muted">25 Jul</td><td>High-visibility policy reminder: class 2 vests are mandatory past the amber line, including contractors.</td></tr>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<footer class="foot">
+  <span>&copy; 2026 Marlowe Depot Systems Ltd. Registered office: Unit 9, Grenford Trade Park, Grenford GR2 4LX.</span>
+  <a href="legal.html#privacy">Privacy</a>
+  <a href="legal.html#terms">Terms</a>
+  <a href="incidents.html">Report an incident</a>
+  <span>Ops desk: 01632 960 210</span>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+document.getElementById('signin').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const note = document.getElementById('signin-note');
+  note.textContent = 'Signing in...';
+  let shard = null;
+  try {
+    const r = await fetch('/api/depot/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nonce: NONCE,
+        operator: document.getElementById('op').value.trim(),
+        pin: document.getElementById('pin').value.trim(),
+      }),
+    });
+    const out = await r.json();
+    if (!r.ok) {
+      note.textContent = out.error === 'bad_credentials'
+        ? 'Operator ID or PIN not recognised.'
+        : 'Sign-in is unavailable. Try again.';
+      return;
+    }
+    shard = out.shard;
+  } catch {
+    note.textContent = 'Sign-in is unavailable. Try again.';
+    return;
+  }
+  let roster = null;
+  try {
+    const r = await fetch('/api/depot/roster?shard=' + shard);
+    if (r.ok) roster = await r.json();
+  } catch {}
+  if (!roster) {
+    try {
+      const r = await fetch('data/roster-cache.json');
+      if (r.ok) roster = await r.json();
+    } catch {}
+  }
+  if (roster) sessionStorage.setItem('depot-roster', JSON.stringify(roster));
+  location.href = 'shifts.html';
+});
+</script>
+<script src="depot.js"></script>
+</body>
+</html>

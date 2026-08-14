@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy | Millrace</title>
+<link rel="stylesheet" href="millrace.css">
+</head>
+<body>
+<header id="masthead">
+  <div class="masthead-in">
+    <a class="wordmark" href="/news/">millrace</a>
+    <span class="tagline">a working stream for people who build things</span>
+    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+  </div>
+</header>
+<nav id="tabs" aria-label="Sections">
+  <div class="tabs-in">
+    <a class="tab" href="/news/">Stream</a>
+    <a class="tab" href="/news/?sort=fresh">Fresh</a>
+    <a class="tab" href="/news/?view=threads">Threads</a>
+    <a class="tab" href="/news/?tag=asks">Asks</a>
+    <a class="tab" href="/news/?tag=build">Build logs</a>
+    <a class="tab" href="/news/?tag=jobs">Hiring</a>
+    <a class="tab" href="/news/submit.html">Submit a link</a>
+    <form class="seek" action="/news/" method="get" role="search">
+      <input type="search" name="q" aria-label="Search the stream" placeholder="Search the stream">
+      <button type="submit">Go</button>
+    </form>
+  </div>
+</nav>
+<div id="wrap">
+  <main id="main">
+    <p class="crumbs"><a href="/news/">stream</a> &rsaquo; privacy</p>
+    <div class="doc">
+      <h1>Privacy</h1>
+      <p>This page describes what Millrace collects, why, and how long it keeps
+        it. It is written by the people who run the site, not adapted from a
+        template, so it is short and it means what it says.</p>
+
+      <h2>What we collect</h2>
+      <ul>
+        <li><strong>Account basics.</strong> A username, an email address for
+          resets and steward contact, and a password hash. No real name required,
+          no phone number ever.</li>
+        <li><strong>What you post.</strong> Submissions, replies, votes and flags,
+          attributed to your username. Votes and flags are only visible in
+          aggregate; nobody, including sponsors, sees who voted for what.</li>
+        <li><strong>Server logs.</strong> Address, path and user agent, kept 30
+          days for abuse and debugging, then deleted. Vote-ring detection runs on
+          these before they age out.</li>
+      </ul>
+
+      <h2>Cookies</h2>
+      <p>Signed out, you get one session cookie that keeps the site working, and
+        where consent applies, nothing optional runs until you have chosen. Signed
+        in, one more cookie remembers who you are. The measurement and advertising
+        purposes described in the cookie dialog are each individually refusable
+        there, and refusing them changes nothing about how the stream reads.</p>
+
+      <h2>What we do not do</h2>
+      <ul>
+        <li>No sale of data, no sharing with data brokers, no lookalike audiences.</li>
+        <li>No tracking pixels in the Friday digest; we count only deliveries and
+          unsubscribes.</li>
+        <li>No advertising profile follows you off the site. Sponsored listings
+          are the same for every reader.</li>
+      </ul>
+
+      <h2>Deletion</h2>
+      <p>Delete your account from its settings page, or by writing to
+        help@millrace.example from the account's address. The account and email
+        are erased within a week. Submissions and replies stay, attributed to a
+        retired name, because threads are conversations other people are also
+        part of; a steward will unattribute specific posts on request where there
+        is a good reason.</p>
+
+      <p class="fine">Questions about this policy go to help@millrace.example.
+        Changes are announced in the footer for two weeks before they take
+        effect. This version has applied since March 2026.</p>
+    </div>
+  </main>
+  <aside id="rail">
+    <div class="card">
+      <h2>The short version</h2>
+      <p>We keep as little as we can, we sell none of it, and the cookie choices
+        you make are respected as made.</p>
+    </div>
+    <div class="card">
+      <h2>Related</h2>
+      <ul>
+        <li><a href="/news/terms.html">Terms of use</a></li>
+        <li><a href="/news/guidelines.html">Community guidelines</a></li>
+        <li><a href="/news/moderation.html">Moderation log</a></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+<footer id="footer">
+  <div class="footer-in">
+    <p class="footer-nav">
+      <a href="/news/about.html">About</a> &middot;
+      <a href="/news/guidelines.html">Guidelines</a> &middot;
+      <a href="/news/moderation.html">Moderation log</a> &middot;
+      <a href="/news/feeds.html">Feeds</a> &middot;
+      <a href="/news/status.html">Status</a> &middot;
+      <a href="/news/advertise.html">Sponsor a day</a> &middot;
+      <a href="/news/privacy.html">Privacy</a> &middot;
+      <a href="/news/terms.html">Terms</a> &middot;
+      <a href="/news/contact.html">Contact</a>
+    </p>
+    <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
+      Ashvale, VT 05412. Moderation questions go to
+      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      help@millrace.example.</p>
+    <p>Submissions and replies remain the work of their authors. Copyright 2026
+      Weirgate Collective LLC.</p>
+  </div>
+</footer>
+</body>
+</html>

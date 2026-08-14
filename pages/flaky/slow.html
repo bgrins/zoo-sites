@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Archive retrieval — Zellick Analytics</title>
+<style>
+  :root {
+    --rail: #141830;
+    --rail-2: #1e2444;
+    --ink: #1b1f2a;
+    --muted: #6a7285;
+    --line: #d9dde8;
+    --accent: #4636c9;
+    --pos: #0f7a5a;
+    --neg: #b03434;
+    --page: #eef0f6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font-family: Tahoma, "Lucida Grande", "DejaVu Sans", sans-serif;
+    font-size: 13px; line-height: 1.45;
+    display: grid; grid-template-columns: 216px 1fr; min-height: 100vh;
+  }
+  .rail { background: var(--rail); color: #b9c0d6; padding: 0 0 24px; }
+  .brand { padding: 16px 18px 14px; border-bottom: 1px solid #262c4e; }
+  .brand b { display: block; color: #fff; font-size: 14px; letter-spacing: 0.02em; }
+  .brand span { font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: #6f78a0; }
+  .rail nav { padding: 12px 0; }
+  .rail h3 {
+    margin: 14px 18px 6px; font-size: 9px; font-weight: normal; text-transform: uppercase;
+    letter-spacing: 0.18em; color: #5d6690;
+  }
+  .rail a {
+    display: block; padding: 6px 18px; color: #b9c0d6; text-decoration: none;
+    border-left: 3px solid transparent;
+  }
+  .rail a:hover { background: var(--rail-2); color: #fff; }
+  .rail a.on { background: var(--rail-2); color: #fff; border-left-color: #6f5cf0; }
+  .rail .warehouse {
+    margin: 18px 18px 0; padding: 10px 12px; background: #191f3b; border: 1px solid #2a3159;
+    font-size: 11px; color: #8f97b8;
+  }
+  .rail .warehouse b { color: #e8b63d; display: block; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .topbar {
+    background: #fff; border-bottom: 1px solid var(--line); padding: 0 26px;
+    display: flex; align-items: center; justify-content: space-between; height: 46px;
+  }
+  .crumbs { color: var(--muted); font-size: 11px; }
+  .crumbs b { color: var(--ink); font-weight: normal; }
+  .chip {
+    border: 1px solid var(--line); padding: 3px 9px; font-size: 11px; color: var(--muted);
+    background: #f7f8fc;
+  }
+  main { padding: 22px 26px 40px; }
+  h1 { margin: 0 0 2px; font-size: 19px; font-weight: normal; letter-spacing: -0.01em; }
+  .sub { margin: 0 0 20px; color: var(--muted); font-size: 12px; }
+
+  .panel { background: #fff; border: 1px solid var(--line); margin-top: 18px; }
+  .panel > header {
+    padding: 10px 16px; border-bottom: 1px solid var(--line); display: flex;
+    align-items: baseline; justify-content: space-between;
+  }
+  .panel > header h2 { margin: 0; font-size: 13px; font-weight: bold; letter-spacing: 0.01em; }
+  .panel > header .meta { font-size: 11px; color: var(--muted); }
+  .panel .body { padding: 16px; }
+  .panel p { margin: 0 0 14px; max-width: 62ch; color: #414958; }
+
+  .notice {
+    border-left: 3px solid var(--accent); background: #f4f3fd; padding: 10px 14px;
+    margin: 0 0 16px; max-width: 62ch;
+  }
+  .notice p { margin: 0; color: #33384a; }
+  .notice p + p { margin-top: 8px; }
+
+  button {
+    font-family: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+    padding: 8px 16px; background: var(--accent); color: #fff; border: 1px solid #3628a8;
+    cursor: pointer;
+  }
+  button:hover { background: #3a2cb0; }
+  button:disabled { background: #9a94cf; border-color: #9a94cf; cursor: default; }
+
+  .progress { margin-top: 14px; min-height: 34px; }
+  .progress p { margin: 0; font-size: 12px; color: var(--muted); }
+  .progress .elapsed { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .track { margin-top: 7px; height: 4px; width: 260px; background: #e4e7f0; display: none; }
+  .track i { display: block; height: 4px; background: var(--accent); width: 0; }
+  .progress.error p { color: var(--neg); }
+
+  #result { display: none; margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
+  #result .cap {
+    margin: 0 0 4px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.16em;
+    color: var(--muted);
+  }
+  #result .ref {
+    margin: 0 0 12px; font-size: 24px; letter-spacing: 0.04em; color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  #result .facts { margin: 0; font-size: 12px; color: #414958; }
+  #result .facts span { display: block; }
+
+  .aux { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+  .aux ul { margin: 0; padding: 0 0 0 16px; font-size: 12px; color: #414958; }
+  .aux li { margin-bottom: 6px; }
+  .aux dl { margin: 0; font-size: 12px; }
+  .aux dt { color: var(--muted); font-size: 11px; }
+  .aux dd { margin: 0 0 9px; font-variant-numeric: tabular-nums; }
+  .fine { margin-top: 26px; font-size: 11px; color: #8b91a2; max-width: 70ch; }
+  .fine a { color: #6a7285; }
+</style>
+</head>
+<body>
+<div class="rail">
+  <div class="brand">
+    <b>Zellick Analytics</b>
+    <span>Reporting warehouse</span>
+  </div>
+  <nav>
+    <h3>Workspace</h3>
+    <a href="/flaky/">Quarterly close</a>
+    <a href="cohorts.html">Cohort retention</a>
+    <a href="margins.html">Margin explorer</a>
+    <h3>Administration</h3>
+    <a href="sources.html">Data sources</a>
+    <a href="extracts.html">Scheduled extracts</a>
+    <a href="slow.html" class="on">Archive retrieval</a>
+    <a href="access.html">Access log</a>
+  </nav>
+  <div class="warehouse">
+    <b>Bulletin</b>
+    Cold-storage media are mounted on demand. A restore takes about 8 seconds; queued jobs
+    cannot be cancelled.
+  </div>
+</div>
+
+<div>
+  <div class="topbar">
+    <div class="crumbs">Administration / Archive retrieval / <b>Sealed archives</b></div>
+    <div class="chip">Tier 3 cold storage &middot; offline media</div>
+  </div>
+  <main>
+    <h1>Archive retrieval</h1>
+    <p class="sub">Restore a sealed archive from tier 3 cold storage and read back its reference.</p>
+
+    <section class="panel">
+      <header>
+        <h2>Restore sealed archive</h2>
+        <div class="meta">Volume ZA-CS3 &middot; one job per session</div>
+      </header>
+      <div class="body">
+        <div class="notice">
+          <p>A restore mounts offline media and normally completes in about 8 seconds.
+          The wait is expected, not an error.</p>
+          <p>One request is enough. Reloading this page or asking again abandons the
+          running job and re-queues the media behind it, so the next restore takes
+          longer than 8 seconds, not less. Leave the page open until the reference
+          appears.</p>
+        </div>
+        <button id="restore">Restore Archive</button>
+        <div class="progress" id="progress">
+          <p id="status">Idle. No restore job has been submitted.</p>
+          <p class="elapsed" id="elapsed"></p>
+          <div class="track" id="track"><i id="bar"></i></div>
+        </div>
+        <div id="result">
+          <p class="cap">Archive reference</p>
+          <p class="ref" id="archiveId"></p>
+          <p class="facts">
+            <span id="volume"></span>
+            <span id="took"></span>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <div class="aux">
+      <section class="panel">
+        <header><h2>Retention schedule</h2><div class="meta">Tier 3</div></header>
+        <div class="body">
+          <ul>
+            <li>Quarterly close packs: sealed after 90 days, retained 7 years.</li>
+            <li>Cohort extracts: sealed after 30 days, retained 3 years.</li>
+            <li>Access logs: retained 18 months, never sealed.</li>
+            <li>Draft workbooks: purged at 30 days.</li>
+          </ul>
+        </div>
+      </section>
+      <section class="panel">
+        <header><h2>Volume status</h2><div class="meta">Last poll</div></header>
+        <div class="body">
+          <dl>
+            <dt>Mount latency</dt>
+            <dd>7.9 s median</dd>
+            <dt>Queue depth</dt>
+            <dd>0 jobs</dd>
+            <dt>Jobs completed today</dt>
+            <dd>Job 41207, Job 41206, Job 41198</dd>
+          </dl>
+        </div>
+      </section>
+    </div>
+
+    <p class="fine">Zellick Analytics Ltd &middot; Suite 3, Marlowe Wharf &middot;
+    retrieval jobs are logged against your workspace for 18 months.
+    <a href="#">Privacy notice</a> &middot; <a href="#">Terms of service</a> &middot;
+    Support: help@zellickanalytics.example</p>
+  </main>
+</div>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const EXPECTED_S = 8;
+  const button = document.getElementById('restore');
+  const progress = document.getElementById('progress');
+  const status = document.getElementById('status');
+  const elapsedEl = document.getElementById('elapsed');
+  const track = document.getElementById('track');
+  const bar = document.getElementById('bar');
+
+  let ticker = null;
+
+  function startTicker(startedAt) {
+    track.style.display = 'block';
+    ticker = setInterval(() => {
+      const s = Math.round((Date.now() - startedAt) / 1000);
+      elapsedEl.textContent = s + 's of about ' + EXPECTED_S + 's';
+      bar.style.width = Math.min(100, (s / EXPECTED_S) * 100) + '%';
+    }, 500);
+  }
+
+  function stopTicker() {
+    if (ticker) clearInterval(ticker);
+    ticker = null;
+  }
+
+  button.addEventListener('click', async () => {
+    button.disabled = true;
+    progress.className = 'progress';
+    status.textContent = 'Mounting ZA-CS3. Restore running.';
+    elapsedEl.textContent = '0s of about ' + EXPECTED_S + 's';
+    const startedAt = Date.now();
+    startTicker(startedAt);
+    try {
+      const res = await fetch('/api/flaky/archive', { headers: { 'X-Session-Nonce': NONCE } });
+      const body = await res.json();
+      stopTicker();
+      if (!res.ok) {
+        progress.className = 'progress error';
+        status.textContent = 'Restore refused: ' + (body.error || 'unknown');
+        elapsedEl.textContent = '';
+        track.style.display = 'none';
+        button.disabled = false;
+        return;
+      }
+      bar.style.width = '100%';
+      document.getElementById('archiveId').textContent = body.archiveId;
+      document.getElementById('volume').textContent = 'Volume ' + body.volume;
+      document.getElementById('took').textContent =
+        'Restored in ' + ((Date.now() - startedAt) / 1000).toFixed(1) + ' s';
+      document.getElementById('result').style.display = 'block';
+      status.textContent = 'Restore complete.';
+      elapsedEl.textContent = '';
+      track.style.display = 'none';
+      button.style.display = 'none';
+    } catch {
+      stopTicker();
+      progress.className = 'progress error';
+      status.textContent = 'Connection to ZA-CS3 dropped before the restore finished.';
+      elapsedEl.textContent = '';
+      track.style.display = 'none';
+      button.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

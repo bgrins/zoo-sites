@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hollowmill/brine-gateway &middot; Kettleforge</title>
+<link rel="stylesheet" href="forge.css">
+</head>
+<body>
+<header class="masthead">
+  <span class="mark">Kettle<em>forge</em></span>
+  <nav>
+    <a href="/forge/">Repositories</a>
+    <a href="/forge/pulls/">Pull requests</a>
+    <a href="/forge/">Anvil</a>
+    <a href="/forge/">Registry</a>
+  </nav>
+  <span class="who">signed in as <b>r.vandermolen</b></span>
+</header>
+
+<div class="crumbbar">
+  <div class="crumb"><a href="/forge/">hollowmill</a><span class="sep">/</span><b>brine-gateway</b><span class="vis">internal</span></div>
+  <div class="tabs">
+    <span class="here">Code</span>
+    <a href="/forge/">Issues<span class="n">12</span></a>
+    <a href="/forge/pulls/">Pull requests<span class="n">3</span></a>
+    <a href="/forge/">Anvil</a>
+    <a href="/forge/">Insights</a>
+    <a href="/forge/">Settings</a>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="cols">
+    <div class="main">
+      <div class="card">
+        <div class="cardhead">trunk &middot; latest commit c41f9ad by m.calderwood, 16 July</div>
+        <table class="filelist">
+          <tbody>
+            <tr><td class="n">.anvil/</td><td class="msg">pipeline: cache the replay fixtures</td><td class="when">11 July</td></tr>
+            <tr><td class="n">docs/</td><td class="msg">docs: lane onboarding runbook</td><td class="when">08 July</td></tr>
+            <tr><td class="n">src/gateway/</td><td class="msg">gateway: retry the tariff table once</td><td class="when">02 July</td></tr>
+            <tr><td class="n">src/tariff/</td><td class="msg">tariff: split window maths out of quote</td><td class="when">16 July</td></tr>
+            <tr><td class="n">src/telemetry/</td><td class="msg">telemetry: counter naming pass</td><td class="when">24 June</td></tr>
+            <tr><td class="n">test/</td><td class="msg">test: replay set for window rollover</td><td class="when">15 July</td></tr>
+            <tr><td class="n">package.json</td><td class="msg">deps: drop the unused csv reader</td><td class="when">19 June</td></tr>
+            <tr><td class="n">README.md</td><td class="msg">docs: describe the rate window contract</td><td class="when">04 May</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>README.md</h2>
+        <div class="body">
+          <p><b>brine-gateway</b> prices freight lanes for the Hollowmill network. A quote is
+          always priced inside a rate window: windows are 900 seconds long and aligned to
+          absolute boundaries, so two gateways pricing the same lane in the same window
+          must agree on the price they charged.</p>
+          <p>Everything in <code>src/tariff/</code> works in epoch <b>seconds</b>. Milliseconds
+          appear only where a cache TTL is compared against <code>Date.now()</code>. Mixing
+          the two is the most common defect in this area of the codebase.</p>
+          <p>Run the unit suite with <code>npm test</code>. The Anvil pipeline runs the same
+          suite plus the staging replay set on every push.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <div class="cardhead">Open pull requests</div>
+        <div class="body">
+          <p><a href="/forge/pulls/482/">#482 tariff: cache lane quotes and align rate windows</a>
+          <span class="chip fail">1 failing</span></p>
+          <p><a href="/forge/pulls/">#481 ops: bump the replay harness to node 20</a></p>
+          <p><a href="/forge/pulls/">#478 docs: rewrite the lane onboarding runbook</a></p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="cardhead">Repository</div>
+        <div class="body">
+          <dl>
+            <dt>Default branch</dt>
+            <dd>trunk</dd>
+            <dt>Language</dt>
+            <dd>JavaScript</dd>
+            <dt>Code owners</dt>
+            <dd>r.vandermolen</dd>
+            <dt>Releases</dt>
+            <dd>4.6.2</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="sitefoot">
+  <div class="links">
+    <a href="/forge/">Status</a>
+    <a href="/forge/">Docs</a>
+    <a href="/forge/">Keyboard shortcuts</a>
+    <a href="/forge/">Privacy</a>
+    <a href="/forge/">Terms</a>
+    <a href="/forge/">Contact support</a>
+  </div>
+  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Ashcombe AS4 2QN. &copy; 2026 Bellhollow Systems Ltd.</div>
+</footer>
+</body>
+</html>

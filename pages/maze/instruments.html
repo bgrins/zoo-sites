@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instruments — Kestrel 4 — Ostara Surface Systems</title>
+<link rel="stylesheet" href="maze.css">
+</head>
+<body>
+<div class="mast">
+  <span class="org">Ostara Surface Systems</span>
+  <span class="div">Surface fleet operations</span>
+  <span class="who">drive team 2 &middot; k.oyelaran@ostara-surface.example</span>
+</div>
+<div class="chips">
+  <span class="chip">Sol 214</span>
+  <span class="chip">Site Vantor Basin</span>
+  <span class="chip">Rover Kestrel 4</span>
+  <span class="chip">Panel instruments</span>
+</div>
+<div class="shell">
+  <nav class="rail">
+    <h2>Kestrel 4</h2>
+    <a href="index.html">Traverse</a>
+    <a href="survey.html">Survey record</a>
+    <a href="power.html">Power and thermal</a>
+    <a href="instruments.html" class="on">Instruments</a>
+    <a href="uplink.html">Uplink windows</a>
+    <a href="hazard.html">Hazard review</a>
+    <a href="archive.html">Sol archive</a>
+    <a href="handbook.html" class="sep">Drive handbook</a>
+  </nav>
+  <main class="content">
+    <h1>Instruments</h1>
+    <p class="lede">Payload and engineering instrument status for Kestrel 4. Health flags are
+    set by the onboard fault monitor and cleared only by the instrument lead after review.</p>
+
+    <div class="decks">
+      <section class="deck deck-map">
+        <h2>Instrument status</h2>
+        <p class="tel">NAVCAM GO</p>
+        <p class="tel">MASTCAM GO</p>
+        <p class="tel">IMU GO</p>
+        <p class="tel">WHEEL ODOM GO</p>
+        <p class="tel">MET STATION GO</p>
+        <p class="tel">SPECTROMETER STANDBY</p>
+        <p class="legend">The navigation camera is the sensing element behind the hazard
+        interlock: it resolves obstructions only for the cell the rover currently occupies,
+        one cell in each heading. There is no orbital or long-range supplement at this site.</p>
+      </section>
+
+      <section class="deck deck-log">
+        <h2>Calibration</h2>
+        <ul class="logbook">
+          <li>SOL 210 navcam flat field</li>
+          <li>SOL 206 IMU bias trim</li>
+          <li>SOL 199 odometer scale check</li>
+          <li>SOL 190 mastcam focus sweep</li>
+          <li>SOL 182 met station zero</li>
+        </ul>
+        <p class="legend">Calibration products are archived with the sol they were taken on
+        and are downlinked in the maintenance queue, behind traverse telemetry.</p>
+      </section>
+
+      <section class="deck deck-log">
+        <h2>Notes</h2>
+        <p class="legend">The spectrometer stays in standby during blind-drive sols to hold
+        the power margin described on the <a href="power.html">power and thermal</a> sheet.
+        Requests for additional imaging go through the drive desk, not directly to the
+        instrument lead.</p>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="foot">
+  <p class="links">
+    <a href="data-policy.html">Data policy</a>
+    <a href="terms.html">Operating terms</a>
+    <a href="contact.html">Contact the drive desk</a>
+  </p>
+  <p>&copy; 2026 Ostara Surface Systems Ltd. Registered office: 14 Bellamy Wharf,
+  Tarnbridge TR4 2QN. Flight operations support: ops-desk@ostara-surface.example,
+  +44 20 7946 0812.</p>
+</div>
+</body>
+</html>

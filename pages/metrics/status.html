@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status &middot; Halbeck</title>
+<link rel="stylesheet" href="halbeck.css">
+</head>
+<body>
+<div class="bar">
+  <span class="logo">Hal<i>beck</i></span>
+  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <span class="spacer"></span>
+  <a class="lnk" href="sources.html">Data sources</a>
+  <a class="lnk" href="alerts.html">Alerts</a>
+  <a class="lnk" href="docs.html">Docs</a>
+  <span class="who">NM</span>
+</div>
+
+<div class="shell">
+  <nav class="rail">
+    <h3>Workspace</h3>
+    <a href="overview.html">Overview</a>
+    <a href="index.html">Seat usage</a>
+    <a href="retention.html">Retention</a>
+    <a href="expansion.html">Expansion</a>
+    <a href="events.html">Product events</a>
+    <h3>Saved views</h3>
+    <a href="views.html#seats-by-plan-tier">Seats by plan tier</a>
+    <a href="views.html#weekly-actives">Weekly actives</a>
+    <a href="views.html#trial-conversions">Trial conversions</a>
+    <a href="views.html#support-touched-accounts">Support-touched accounts</a>
+    <h3>Admin</h3>
+    <a href="sources.html">Data sources</a>
+    <a href="members.html">Members</a>
+    <a href="billing.html">Billing</a>
+  </nav>
+
+  <main>
+    <p class="crumbs">Halbeck / Status</p>
+    <h1>Status</h1>
+    <p class="sub">Platform health across all Halbeck regions, updated every minute. Workspace
+    connector health is separate and lives on <a href="sources.html">Data sources</a>.</p>
+
+    <section class="panel">
+      <header><h2>Components</h2><span class="meta">all operational</span></header>
+      <div class="pad">
+        <ul class="events">
+          <li><span class="when">ingest</span><span class="what">Event and connector ingest</span><span class="tag">operational</span></li>
+          <li><span class="when">query</span><span class="what">Dashboards and the analysis editor</span><span class="tag">operational</span></li>
+          <li><span class="when">exports</span><span class="what">CSV downloads and scheduled exports</span><span class="tag">operational</span></li>
+          <li><span class="when">alerts</span><span class="what">Alert evaluation and delivery</span><span class="tag">operational</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header><h2>Recent incidents</h2><span class="meta">last 90 days</span></header>
+      <div class="pad">
+        <ul class="events">
+          <li><span class="when">28 May</span><span class="what">Scheduled exports delayed up to 40 minutes during a storage migration; all delivered</span><span class="tag">resolved</span></li>
+          <li><span class="when">03 Apr</span><span class="what">Dashboard queries slow in the EU region for 25 minutes after a cache node failure</span><span class="tag">resolved</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header><h2>Maintenance</h2></header>
+      <div class="pad">
+        <dl class="defn">
+          <dt>Next window</dt>
+          <dd>Sunday 12 Jul 2026, 02:00-04:00 UTC. Ingest queues during the window and drains
+          afterwards; no data is lost.</dd>
+        </dl>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer class="foot">
+  <span>Halbeck Analytics Ltd</span>
+  <a href="status.html">Status</a>
+  <a href="privacy.html">Privacy notice</a>
+  <a href="terms.html">Terms of service</a>
+  <a href="support.html">Support</a>
+  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+</footer>
+</body>
+</html>

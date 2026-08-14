@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choose a new password — Overlane Carrier Access</title>
+<link rel="stylesheet" href="portal.css">
+<style>
+  .sent {
+    border: 1px solid #cfe6e2;
+    border-left: 4px solid var(--teal);
+    background: var(--teal-tint);
+    color: #0a5f57;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+  .sent a { color: #0a5f57; }
+  .rules { margin: -4px 0 18px; padding-left: 18px; font-size: 13px; color: var(--muted); }
+  .rules li { margin-bottom: 2px; }
+  .forwhom { font-size: 13px; color: var(--muted); margin: -14px 0 20px; }
+</style>
+</head>
+<body class="signin">
+<div class="signin-head">
+  <span class="logo">
+    <svg class="logo-mark" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+      <rect width="30" height="30" rx="8" fill="#ffffff"></rect>
+      <path d="M7 20h11M7 15h15M7 10h8" stroke="#2f4bb5" stroke-width="2.2" stroke-linecap="round"></path>
+      <circle cx="22.5" cy="20" r="2.6" fill="#0d8d80"></circle>
+    </svg>
+    <span class="logo-word">Overlane</span>
+    <span class="logo-sub">Carrier Access</span>
+  </span>
+</div>
+
+<div class="card">
+  <div id="banner" class="notice" role="alert" hidden></div>
+  <h1>Choose a new password</h1>
+  <p class="lede">This link works once. Your other sessions stay signed in.</p>
+  <div id="forwhom" class="forwhom" hidden></div>
+  <form id="reset" novalidate hidden>
+    <div class="field">
+      <label for="password">New password</label>
+      <input id="password" type="password" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="confirm">Confirm new password</label>
+      <input id="confirm" type="password" autocomplete="off">
+    </div>
+    <ul class="rules">
+      <li>At least 12 characters.</li>
+      <li>At least one letter and one number.</li>
+      <li>Not one of your last five passwords.</li>
+    </ul>
+    <button type="submit" id="submitBtn" class="btn btn-primary">Save new password</button>
+    <div id="status" role="alert"></div>
+  </form>
+  <div id="done" class="sent" role="status" hidden></div>
+  <div class="card-foot">
+    <a href="forgot.html">Request a new link</a> &middot;
+    <a href="index.html">Back to sign-in</a>
+  </div>
+</div>
+
+<div class="help">
+  <h2>Password guidance</h2>
+  <ul>
+    <li>Pick a passphrase you do not use on any other carrier system.</li>
+    <li>Overlane never asks for your password by phone or email.</li>
+    <li>Passwords expire every 90 days; you will be prompted before that.</li>
+    <li>Service desk: +1 206 555 0148, option 2.</li>
+  </ul>
+</div>
+
+<footer class="sitefoot">
+  <nav>
+    <a href="support.html">Support centre</a>
+    <a href="status.html">Network status</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+  </nav>
+  <p>Overlane Logistics Group, 1400 Harbor Way, Suite 620, Tacoma WA 98402</p>
+  <p>Copyright 2026 Overlane Logistics Group. All rights reserved.</p>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const token = new URLSearchParams(location.search).get('token') ?? '';
+  const status = document.getElementById('status');
+  const banner = document.getElementById('banner');
+  const form = document.getElementById('reset');
+
+  function fail(message) {
+    banner.hidden = false;
+    banner.textContent = message;
+    form.hidden = true;
+  }
+
+  (async () => {
+    if (!token) {
+      fail('This reset link is missing its token. Request a new link.');
+      return;
+    }
+    try {
+      const res = await fetch(
+        '/api/portal/reset-token?token=' + encodeURIComponent(token),
+        { headers: { 'X-Session-Nonce': NONCE } }
+      );
+      const body = await res.json();
+      if (!res.ok) {
+        fail(
+          res.status === 403
+            ? 'This page has been open too long. Reload it to continue.'
+            : body.error ?? 'This reset link is not valid.'
+        );
+        return;
+      }
+      form.hidden = false;
+      const who = document.getElementById('forwhom');
+      who.hidden = false;
+      who.textContent = 'Account: ' + body.email;
+    } catch {
+      fail('Network error — reload the page.');
+    }
+  })();
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = document.getElementById('submitBtn');
+    button.disabled = true;
+    status.className = '';
+    status.textContent = 'Saving…';
+    try {
+      const res = await fetch('/api/portal/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nonce: NONCE,
+          token,
+          password: document.getElementById('password').value,
+          confirm: document.getElementById('confirm').value,
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        status.className = 'err';
+        status.textContent =
+          res.status === 403
+            ? 'This page has been open too long. Reload it to continue.'
+            : body.error ?? 'Could not save the password.';
+        return;
+      }
+      status.textContent = '';
+      form.hidden = true;
+      document.getElementById('forwhom').hidden = true;
+      const done = document.getElementById('done');
+      done.hidden = false;
+      done.textContent = 'Password updated. ';
+      const link = document.createElement('a');
+      link.href = body.next ?? 'index.html';
+      link.textContent = 'Sign in now';
+      done.append(link);
+    } catch {
+      status.className = 'err';
+      status.textContent = 'Network error — try again.';
+    } finally {
+      button.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+{
+  "rank": 8,
+  "comments": [
+    {
+      "author": "marginwalker",
+      "age": "19 hours ago",
+      "text": "Ran a small vending route for three years, and the article gets the big thing right: it's not a machine business, it's a location business. The exact same machine does 8x the revenue at a good site versus a mediocre one, and everything else — product mix, pricing, restocking cadence — is optimization at the margins. What the article underplays is that good locations know their value. The site owner captures most of the surplus through commissions, and the operator keeps the labor.",
+      "replies": [
+        {
+          "author": "coinop",
+          "age": "18 hours ago",
+          "text": "OP here — completely agree, and the location-rent dynamic is the piece I'd expand if I revise this. Multiple operators told me the same thing in different words: \"the machine is a commodity, the doorway is the asset.\" One described bidding for a hospital lobby spot in terms indistinguishable from commercial real estate.",
+          "replies": [
+            {
+              "author": "marginwalker",
+              "age": "17 hours ago",
+              "text": "The hospital lobby example is perfect because it also has the captive-audience premium — visitors at odd hours, nothing else open, low price sensitivity. Those spots basically never come up for grabs, they pass between operators through relationships."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "warmstart",
+      "age": "17 hours ago",
+      "text": "The section on spoilage economics surprised me most. I'd assumed the game was maximizing sales; it's actually minimizing waste on perishables while keeping the machine looking full. An empty-looking machine kills sales across all products, so operators stock display-stable items in visible rows and manage the fresh stuff like a tiny supply chain. It's inventory theory in a metal box.",
+      "replies": [
+        {
+          "author": "newsvendor",
+          "age": "16 hours ago",
+          "text": "It's literally the newsvendor problem, which is somewhat delightful. Single-period stochastic demand, overage cost = spoilage, underage cost = lost margin plus the empty-machine externality you mention. The externality term is the interesting wrinkle — classic formulations don't have \"understocking one product suppresses demand for the others.\"",
+          "replies": [
+            {
+              "author": "warmstart",
+              "age": "15 hours ago",
+              "text": "The cross-product demand suppression term would make a genuinely fun paper. Someone's telemetry dataset from a few thousand smart machines is sitting on the answer."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "cashlessness",
+      "age": "14 hours ago",
+      "text": "One thing the article touches only briefly: cashless readers changed the psychology more than the logistics. Card payments lifted average transaction sizes meaningfully because the friction of exact change was quietly rationing purchases. But readers take a per-transaction cut with a fixed component, which is brutal on a $1.50 sale, so operators raised prices, and the machines got noticeably more expensive for everyone. A little natural experiment in payment-rail economics running in every break room."
+    },
+    {
+      "author": "tokenring",
+      "age": "12 hours ago",
+      "text": "Anecdote: my first exposure to \"real\" engineering economics was maintaining the coin mechanisms in my university's machines as a student job. The coin path is a marvel of adversarial design — every sensor exists because someone, somewhere, defeated the previous sensor with a washer, a frozen coin, or a coin on a string. Reading the mech's service manual was like reading a war memoir.",
+      "replies": [
+        {
+          "author": "coinop",
+          "age": "11 hours ago",
+          "text": "Several operators I interviewed said the coin-on-a-string era ended less because of better sensors and more because coins themselves became a minority of payments. The arms race didn't get won, it got abandoned."
+        }
+      ]
+    },
+    {
+      "author": "bitrotting",
+      "age": "8 hours ago",
+      "text": "This is one of those businesses that looks passive from the outside and is absolutely not. The article's day-in-the-life section — 40 machine visits, van logistics, product rotation, jam clearing — should be mandatory reading for everyone who's ever said \"vending machines, now THAT'S passive income\" in a group chat.",
+      "replies": [
+        {
+          "author": "sidehustled",
+          "age": "6 hours ago",
+          "text": "Speaking as the guy from the group chat: bought two machines in 2023 after watching exactly the videos you're imagining. Sold them eight months later. The money was fine per hour; the problem was the hours were mandatory and immovable. The machine doesn't care that you're on vacation when the card reader goes down. Real business, real respect for operators, deeply unpassive."
+        }
+      ]
+    }
+  ]
+}

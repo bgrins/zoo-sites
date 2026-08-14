@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gadgetron | Order list</title>
+<link rel="stylesheet" href="gadgetron.css">
+<style>
+  .desk { flex: 1; padding: 10px 14px 26px; min-width: 0; }
+  .desk h1 { font-size: 17px; margin: 0; text-transform: uppercase; letter-spacing: .04em; }
+  .quick { border: 1px solid #d7dae2; background: #fff; padding: 10px 12px; margin-bottom: 12px; }
+  .quick h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #626a7a; margin: 0 0 8px; }
+  .quick .fields { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; }
+  .quick .cap { text-transform: uppercase; letter-spacing: .06em; color: #626a7a; font-size: 11px; }
+  .quick input.part { font: inherit; border: 1px solid #b9bfcc; padding: 4px 7px; width: 210px; }
+  .quick input.qty { font: inherit; border: 1px solid #b9bfcc; padding: 4px 7px; width: 52px; text-align: center; }
+  .quick button.push {
+    font: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    font-weight: bold; background: #ffb020; border: 1px solid #d18f10; color: #1f2430;
+    padding: 5px 12px; cursor: pointer;
+  }
+  .quick .hint { font-size: 11px; color: #626a7a; margin: 7px 0 0; }
+  .banner { margin: 8px 0 0; font-size: 12px; min-height: 16px; padding: 5px 8px; }
+  .banner.bad { background: #fdeceb; border-left: 3px solid #a3230f; color: #7d1a0b; font-weight: bold; }
+  .banner.good { background: #eef7ee; border-left: 3px solid #1d7a3c; color: #14562a; font-weight: bold; }
+  .banner .sub { display: block; font-weight: normal; color: #454c5c; margin-top: 2px; }
+  .totrow { display: flex; gap: 18px; font-size: 12px; margin-top: 9px; }
+  .totrow span { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; }
+  .crumbline { background: #fff5e0; border-bottom: 1px solid #e8d49c; padding: 5px 14px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="railbar">
+  <span class="mark">Gadgetron</span>
+  <span class="tagline">Spec index and price engine</span>
+  <form onsubmit="return false">
+    <input aria-label="Search part numbers or models" placeholder="Model, brand or part no.">
+    <button type="submit">Find</button>
+  </form>
+  <span class="who">Guest &middot; <a href="signin.html">sign in</a> &middot; order list:
+    <span id="order-count">0 queued</span></span>
+</div>
+<nav class="tabs" aria-label="Sections">
+  <a href="index.html">Catalog</a>
+  <a href="compare.html">Compare</a>
+  <a href="price-history.html">Price history</a>
+  <a href="open-box.html">Open-box</a>
+  <a href="glossary.html">Spec glossary</a>
+  <a href="order-list.html" aria-current="page">Order list</a>
+</nav>
+<div class="crumbline">Catalog &rsaquo; Order list &middot;
+  <a href="substitutions.html">Approved substitution list</a></div>
+<div class="layout">
+  <aside class="facets" aria-label="Desk tools">
+    <h2>Buying desk</h2>
+    <details open>
+      <summary>Ordering</summary>
+      <p style="font-size:12px;margin:4px 0 0 4px"><a href="index.html">Catalog index</a></p>
+      <p style="font-size:12px;margin:4px 0 0 4px"><a href="substitutions.html">Substitutions</a></p>
+      <p style="font-size:12px;margin:4px 0 0 4px"><a href="bulk-quote.html">Bulk quote</a></p>
+    </details>
+    <details>
+      <summary>Account</summary>
+      <p style="font-size:12px;margin:4px 0 0 4px"><a href="warehouse-policy.html#net-terms">Net terms</a></p>
+      <p style="font-size:12px;margin:4px 0 0 4px"><a href="warehouse-policy.html#tax-exemption">Tax exemption</a></p>
+    </details>
+    <a class="reset" href="#" id="clear">Clear the order list</a>
+  </aside>
+  <section class="desk">
+    <div class="statline">
+      <h1>Order list</h1>
+      <span class="count" id="linecount">0 lines</span>
+    </div>
+    <div class="quick">
+      <h2>Quick order by part number</h2>
+      <div class="fields">
+        <span class="cap">Part no.</span>
+        <input class="part" id="part" aria-label="Part number" placeholder="e.g. CS27-Q">
+        <span class="cap">Qty</span>
+        <input class="qty" id="qty" value="1" aria-label="Quantity">
+        <button class="push" type="button" id="push">Add to order list</button>
+      </div>
+      <p class="hint">Part numbers are shown in the Model column of the catalog index. A
+      sold-out part number is refused; see the approved substitution list.</p>
+      <div class="banner" id="banner" role="status"></div>
+    </div>
+    <table class="grid">
+      <caption>Lines queued on this order list. Prices are per unit in USD, excluding tax.</caption>
+      <thead>
+        <tr>
+          <th>Part no.</th>
+          <th>Model</th>
+          <th class="num">Qty</th>
+          <th class="num">Unit USD</th>
+          <th class="num">Line USD</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="lines"></tbody>
+    </table>
+    <p class="rowsnote" id="rowsnote">No lines queued.</p>
+    <div class="totrow">
+      <span id="sub">Subtotal 0.00</span>
+      <span id="tax">Tax at 8% 0.00</span>
+      <span id="grand">Order total 0.00</span>
+    </div>
+  </section>
+</div>
+<footer class="legalstrip">
+  <a href="warehouse-policy.html#status">Warehouse status codes</a> &middot;
+  <a href="warehouse-policy.html#returns">Return window</a> &middot;
+  <a href="methodology.html">Price engine methodology</a> &middot;
+  <a href="seller-terms.html">Marketplace seller terms</a><br>
+  Listings are supplied by marketplace sellers; Gadgetron is not the seller of record for
+  marketplace items. Specifications are provided by the manufacturer. &copy; 2026 Gadgetron
+  Trading Co.
+</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const banner = document.getElementById('banner');
+const lines = document.getElementById('lines');
+let queued = [];
+
+async function removeLine(sku) {
+  await fetch('/api/shop/cart/remove', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nonce: NONCE, store: 'gadgetron', sku }),
+  });
+}
+
+function paint(body) {
+  lines.innerHTML = '';
+  queued = body.lines.map((line) => line.sku);
+  for (const line of body.lines) {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="mono">' + line.sku + '</td>' +
+      '<td class="model">' + line.name + '</td>' +
+      '<td class="num">' + line.qty + '</td>' +
+      '<td class="num">' + line.unitPrice.toFixed(2) + '</td>' +
+      '<td class="num">' + line.lineTotal.toFixed(2) + '</td>' +
+      '<td class="order"></td>';
+    const drop = document.createElement('button');
+    drop.type = 'button';
+    drop.className = 'buy';
+    drop.textContent = 'Remove';
+    drop.setAttribute('aria-label', 'Remove ' + line.sku);
+    drop.addEventListener('click', async () => {
+      drop.disabled = true;
+      await removeLine(line.sku);
+      await load();
+    });
+    tr.querySelector('td.order').appendChild(drop);
+    lines.appendChild(tr);
+  }
+  document.getElementById('linecount').textContent =
+    body.lines.length + (body.lines.length === 1 ? ' line' : ' lines');
+  document.getElementById('rowsnote').textContent = body.lines.length
+    ? 'Rows 1-' + body.lines.length + ' of ' + body.lines.length + '.'
+    : 'No lines queued.';
+  document.getElementById('order-count').textContent = body.count + ' queued';
+  document.getElementById('sub').textContent = 'Subtotal ' + body.subtotal.toFixed(2);
+  document.getElementById('tax').textContent = 'Tax at 8% ' + body.tax.toFixed(2);
+  document.getElementById('grand').textContent = 'Order total ' + body.total.toFixed(2);
+}
+
+async function load() {
+  const res = await fetch('/api/shop/cart?store=gadgetron', {
+    headers: { 'X-Session-Nonce': NONCE },
+  });
+  if (!res.ok) {
+    banner.className = 'banner bad';
+    banner.textContent = 'Sign in to load this order list.';
+    return;
+  }
+  paint(await res.json());
+}
+
+const push = document.getElementById('push');
+
+push.addEventListener('click', async () => {
+  const part = document.getElementById('part').value.trim();
+  banner.className = 'banner';
+  banner.textContent = '';
+  if (!part) {
+    banner.className = 'banner bad';
+    banner.textContent = 'Enter a part number.';
+    return;
+  }
+  push.disabled = true;
+  try {
+    const res = await fetch('/api/shop/cart/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nonce: NONCE,
+        store: 'gadgetron',
+        sku: part,
+        qty: Number(document.getElementById('qty').value),
+      }),
+    });
+    const body = await res.json();
+    if (res.ok) {
+      banner.className = 'banner good';
+      banner.textContent = 'Added ' + body.added.sku + ' x' + body.added.qty;
+      paint(body);
+    } else {
+      banner.className = 'banner bad';
+      banner.textContent = body.error;
+      if (body.hint) {
+        const sub = document.createElement('span');
+        sub.className = 'sub';
+        sub.textContent = body.hint;
+        banner.appendChild(sub);
+      }
+    }
+  } finally {
+    push.disabled = false;
+  }
+});
+
+document.getElementById('clear').addEventListener('click', async (event) => {
+  event.preventDefault();
+  banner.className = 'banner';
+  banner.textContent = '';
+  for (const sku of queued.slice()) {
+    await removeLine(sku);
+  }
+  await load();
+  banner.className = 'banner good';
+  banner.textContent = 'Order list cleared.';
+});
+
+const carried = new URLSearchParams(window.location.search);
+if (carried.get('part')) {
+  document.getElementById('part').value = carried.get('part');
+  const qty = Math.trunc(Number(carried.get('qty')));
+  if (Number.isFinite(qty) && qty >= 1) document.getElementById('qty').value = String(qty);
+  banner.className = 'banner';
+  banner.textContent = 'Carried over from the catalog. Press Add to order list to queue it.';
+}
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overview — Overlane Carrier Access</title>
+<link rel="stylesheet" href="portal.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="logo" href="dashboard.html">
+    <svg class="logo-mark" width="28" height="28" viewBox="0 0 30 30" aria-hidden="true">
+      <rect width="30" height="30" rx="8" fill="#2f4bb5"></rect>
+      <path d="M7 20h11M7 15h15M7 10h8" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"></path>
+      <circle cx="22.5" cy="20" r="2.6" fill="#5fd8c8"></circle>
+    </svg>
+    <span class="logo-word">Overlane</span>
+    <span class="logo-sub">Carrier Access</span>
+  </a>
+  <div class="account">
+    <span id="desk">Checking session&hellip;</span>
+    <span class="avatar" id="avatar" hidden></span>
+    <button type="button" id="logoutBtn" class="btn btn-quiet" hidden>Log out</button>
+  </div>
+</header>
+<div class="shell">
+  <nav class="side">
+    <div class="side-title">Console</div>
+    <a href="dashboard.html" aria-current="page">Overview</a>
+    <a href="dashboard.html#feeds">District feeds</a>
+    <a href="dashboard.html#alerts">Alert queue</a>
+    <div class="side-note">The reports area needs a separate reports sign-in.</div>
+  </nav>
+  <main class="main">
+    <div class="crumb">Console / Overview</div>
+    <h1>Operations overview</h1>
+    <p class="sub">Live view of the districts assigned to your account.</p>
+    <div id="welcome" class="welcome" role="status"></div>
+    <div id="gate" class="notice" hidden>
+      You are not signed in. <a href="index.html">Go to sign-in</a>.
+    </div>
+    <div id="body" hidden>
+      <div class="panel" id="accountPanel">
+        <h2>Account</h2>
+        <div class="stats">
+          <div class="stat"><span class="k">Account tier</span><span class="v" id="tier"></span></div>
+          <div class="stat"><span class="k">Current balance</span><span class="v" id="balance"></span></div>
+          <div class="stat"><span class="k">Access role</span><span class="v" id="role"></span></div>
+        </div>
+      </div>
+      <div id="rolePanels"></div>
+      <div class="panel">
+        <h2>Feed health</h2>
+        <p>All district feeds are reporting normally. Shipment totals live in
+        the reports area.</p>
+        <div class="stats">
+          <div class="stat"><span class="k">Feeds up</span><span class="v ok">14 / 14</span></div>
+          <div class="stat"><span class="k">Queue depth</span><span class="v">0</span></div>
+          <div class="stat"><span class="k">Last sync</span><span class="v">00:04 ago</span></div>
+        </div>
+      </div>
+      <div class="panel" id="feeds">
+        <h2>District feeds</h2>
+        <table class="feeds">
+          <tr><th>District</th><th>Poller</th><th>State</th></tr>
+          <tr><td>North depot</td><td>p-411</td><td><span class="pill">Nominal</span></td></tr>
+          <tr><td>South depot</td><td>p-412</td><td><span class="pill">Nominal</span></td></tr>
+          <tr><td>Harbor terminal</td><td>p-418</td><td><span class="pill">Nominal</span></td></tr>
+          <tr><td>Rail interchange</td><td>p-421</td><td><span class="pill">Nominal</span></td></tr>
+          <tr><td>Airfreight hub</td><td>p-430</td><td><span class="pill">Nominal</span></td></tr>
+        </table>
+      </div>
+      <div class="panel" id="alerts">
+        <h2>Alert queue</h2>
+        <p>No open alerts are assigned to this operator.</p>
+      </div>
+    </div>
+  </main>
+</div>
+<footer class="appfoot">
+  Overlane Logistics Group &middot; console build 7.4.2 &middot;
+  <a href="support.html">Support centre</a> &middot;
+  <a href="status.html">Network status</a> &middot;
+  service desk ext 2200 or support@overlane.example
+</footer>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+
+  (async () => {
+    try {
+      const res = await fetch('/api/portal/dashboard', {
+        headers: { 'X-Session-Nonce': NONCE },
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        document.getElementById('desk').textContent = 'Signed out';
+        document.getElementById('gate').hidden = false;
+        return;
+      }
+      document.getElementById('welcome').textContent = body.message;
+      // Fields the payload omits keep the markup default rather than
+      // rendering "undefined".
+      if (body.tier) {
+        document.getElementById('tier').textContent = body.tier;
+        document.getElementById('balance').textContent = body.balance ?? '';
+        document.getElementById('role').textContent = body.role ?? '';
+      } else {
+        document.getElementById('accountPanel').hidden = true;
+      }
+      document.getElementById('desk').textContent = body.desk ?? 'Signed in';
+      if (body.initials) {
+        const avatar = document.getElementById('avatar');
+        avatar.textContent = body.initials;
+        avatar.hidden = false;
+      }
+      const holder = document.getElementById('rolePanels');
+      for (const panel of body.panels ?? []) {
+        const box = document.createElement('div');
+        box.className = 'panel';
+        const title = document.createElement('h2');
+        title.textContent = panel.title;
+        box.append(title);
+        if (panel.note) {
+          const note = document.createElement('p');
+          note.textContent = panel.note;
+          box.append(note);
+        }
+        if (Array.isArray(panel.stats) && panel.stats.length) {
+          const stats = document.createElement('div');
+          stats.className = 'stats';
+          for (const item of panel.stats) {
+            const stat = document.createElement('div');
+            stat.className = 'stat';
+            const k = document.createElement('span');
+            k.className = 'k';
+            k.textContent = item.k;
+            const v = document.createElement('span');
+            v.className = 'v';
+            v.textContent = item.v;
+            stat.append(k, v);
+            stats.append(stat);
+          }
+          box.append(stats);
+        }
+        if (panel.table) {
+          const table = document.createElement('table');
+          table.className = 'feeds';
+          const headRow = document.createElement('tr');
+          for (const label of panel.table.head ?? []) {
+            const th = document.createElement('th');
+            th.textContent = label;
+            headRow.append(th);
+          }
+          table.append(headRow);
+          for (const cells of panel.table.rows ?? []) {
+            const tr = document.createElement('tr');
+            for (const cell of cells) {
+              const td = document.createElement('td');
+              td.textContent = cell;
+              tr.append(td);
+            }
+            table.append(tr);
+          }
+          box.append(table);
+        }
+        holder.append(box);
+      }
+      document.getElementById('logoutBtn').hidden = false;
+      document.getElementById('body').hidden = false;
+    } catch {
+      document.getElementById('welcome').textContent =
+        'Network error — reload the page.';
+    }
+  })();
+
+  document.getElementById('logoutBtn').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      const res = await fetch('/api/portal/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        button.disabled = false;
+        document.getElementById('welcome').textContent =
+          res.status === 403
+            ? 'Your session has already ended. Reload the page and sign in again.'
+            : body.error ?? 'Sign-out failed — reload the page.';
+        return;
+      }
+      location.href = body.next ?? 'index.html?signedout=1';
+    } catch {
+      button.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

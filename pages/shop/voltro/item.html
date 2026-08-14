@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voltro — Desk Setup item</title>
+<link rel="stylesheet" href="voltro.css">
+<style>
+  header a.cart { color: #ffd814; font-weight: 700; text-decoration: none; }
+  .crumbs { padding: 10px 16px; font-size: 12px; color: #565959; }
+  .crumbs a { color: #007185; text-decoration: none; }
+  .pdp { display: flex; gap: 26px; padding: 8px 16px 24px; align-items: flex-start; flex-wrap: wrap; }
+  .pdp .photo { width: 340px; flex: none; }
+  .pdp .photo svg { width: 100%; height: auto; border: 1px solid #eee; border-radius: 6px; }
+  .pdp .facts { flex: 1; min-width: 260px; max-width: 520px; }
+  .pdp h1 { font-size: 22px; margin: 0 0 4px; }
+  .pdp .part { color: #565959; font-size: 12px; margin-bottom: 8px; }
+  .pdp .price { color: #b12704; font-size: 24px; font-weight: 700; }
+  .pdp .blurb { font-size: 13px; margin-top: 8px; max-width: 60ch; }
+  .limitnote { color: #7d5a00; font-size: 12px; margin-top: 6px; }
+  .buycol { width: 240px; flex: none; border: 1px solid #d5d9d9; border-radius: 8px; padding: 14px; font-size: 13px; }
+  .qtyrow { margin: 8px 0; display: flex; gap: 8px; align-items: center; }
+  .qtyrow input { width: 52px; padding: 4px; border: 1px solid #888; border-radius: 3px; }
+  .buycol button { width: 100%; margin-top: 4px; background: #ffd814; border: 1px solid #fcd200;
+    border-radius: 20px; padding: 8px 12px; cursor: pointer; font-size: 13px; }
+  .buycol button[disabled] { background: #eee; border-color: #ddd; color: #888; cursor: default; }
+  .msg { margin-top: 8px; min-height: 16px; font-size: 12px; }
+  .msg.good { color: #007600; font-weight: 700; }
+  .msg.bad { color: #b12704; font-weight: 700; }
+  #missing { padding: 24px 16px; font-size: 14px; }
+  #missing a { color: #007185; }
+</style>
+</head>
+<body>
+<header>
+  <b>Voltro</b>
+  <input placeholder="Search Voltro" aria-label="Search">
+  <span>Hello, sign in</span>
+  <span>Orders</span>
+  <a class="cart" id="cartlink" href="basket.html">Basket</a>
+</header>
+<nav>
+  <span>All</span><span>Today's Deals</span><span>Electronics</span>
+  <span>Computers</span><span>Monitors</span><span>Desk Setup</span><span>Customer Service</span>
+</nav>
+<div class="crumbs"><a href="index.html">Voltro</a> &rsaquo;
+  <a href="desk-setup.html">Desk Setup</a> &rsaquo; <span id="crumbname"></span></div>
+<div class="pdp" id="pdp" hidden>
+  <div class="photo" id="photo"></div>
+  <div class="facts">
+    <h1 id="pname"></h1>
+    <div class="part" id="ppart"></div>
+    <div class="price" id="pprice"></div>
+    <div class="blurb" id="pblurb"></div>
+    <div class="limitnote" id="pnote"></div>
+  </div>
+  <div class="buycol">
+    <div id="pstock"></div>
+    <div>Prices exclude sales tax. Tax is calculated in your
+      <a href="basket.html" style="color:#007185">basket</a>.</div>
+    <div class="qtyrow">
+      <span>Qty</span>
+      <input type="number" id="qty" min="1" max="99" value="1" aria-label="Quantity">
+    </div>
+    <button id="add" type="button">Add to Cart</button>
+    <div class="msg" id="msg" role="status"></div>
+  </div>
+</div>
+<div id="missing" hidden>
+  <p>That part number is not in the Desk Setup range.</p>
+  <p><a href="desk-setup.html">Browse Desk Setup</a></p>
+</div>
+<footer>
+  &copy; 2026 Voltro Marketplace, Inc. Prices and availability are subject to change.
+  · <a href="conditions.html">Conditions of Use</a> · <a href="privacy.html">Privacy Notice</a>
+  · <a href="privacy.html#ads">Interest-Based Ads</a> · <a href="sell.html">Sell on Voltro</a>
+  · <a href="careers.html">Careers</a> · <a href="help.html">Customer Service</a>
+</footer>
+<script src="voltro-nav.js"></script>
+<script>
+const NONCE = '__SESSION_NONCE__';
+
+function thumb(name) {
+  const hue = (name.length * 37 + name.charCodeAt(0) * 11) % 360;
+  return '<svg viewBox="0 0 160 90" role="img" aria-label="' + name + ' product photo">' +
+    '<rect width="160" height="90" fill="hsl(' + hue + ',18%,90%)"/>' +
+    '<rect x="26" y="10" width="108" height="58" rx="3" fill="#1b1f27"/>' +
+    '<rect x="72" y="70" width="16" height="8" fill="#444"/>' +
+    '<rect x="54" y="78" width="52" height="4" fill="#666"/></svg>';
+}
+
+(async () => {
+  const sku = new URLSearchParams(location.search).get('sku') ?? '';
+  let item = null;
+  try {
+    const res = await fetch('/api/shop/catalog?store=voltro', {
+      headers: { 'X-Session-Nonce': NONCE },
+    });
+    if (res.ok) {
+      const body = await res.json();
+      item = body.items.find((it) => it.sku === sku) ?? null;
+    }
+  } catch {
+    item = null;
+  }
+  if (!item) {
+    document.getElementById('missing').hidden = false;
+    document.getElementById('crumbname').textContent = 'Item unavailable';
+    return;
+  }
+  document.title = 'Voltro — ' + item.name;
+  document.getElementById('crumbname').textContent = item.name;
+  document.getElementById('photo').innerHTML = thumb(item.name);
+  document.getElementById('pname').textContent = item.name;
+  document.getElementById('ppart').textContent = 'Part no. ' + item.sku;
+  document.getElementById('pprice').textContent = '$' + item.price.toFixed(2);
+  document.getElementById('pblurb').textContent = item.blurb;
+  document.getElementById('pnote').textContent = item.note || '';
+  const stockEl = document.getElementById('pstock');
+  stockEl.className = item.inStock ? 'stock-in' : 'stock-out';
+  stockEl.textContent = item.inStock ? 'In stock. FREE shipping.' : 'Out of stock.';
+  const add = document.getElementById('add');
+  const msg = document.getElementById('msg');
+  add.disabled = !item.inStock;
+  add.addEventListener('click', async () => {
+    add.disabled = true;
+    msg.className = 'msg';
+    msg.textContent = '';
+    try {
+      const res = await fetch('/api/shop/cart/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nonce: NONCE,
+          store: 'voltro',
+          sku: item.sku,
+          qty: Number(document.getElementById('qty').value),
+        }),
+      });
+      const body = await res.json();
+      if (res.ok) {
+        msg.className = 'msg good';
+        msg.textContent = 'Added ' + body.added.qty + ' to basket.';
+        document.getElementById('cartlink').textContent = 'Basket (' + body.count + ')';
+      } else {
+        msg.className = 'msg bad';
+        msg.textContent = body.error;
+      }
+    } catch {
+      msg.className = 'msg bad';
+      msg.textContent = 'Network error. Try again.';
+    } finally {
+      add.disabled = false;
+    }
+  });
+  document.getElementById('pdp').hidden = false;
+})();
+</script>
+</body>
+</html>

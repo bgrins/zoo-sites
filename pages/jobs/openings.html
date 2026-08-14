@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Current openings - Harrowgate Works</title>
+<link rel="stylesheet" href="/jobs/careers.css">
+</head>
+<body>
+<div class="topbar">
+  <a class="brand" href="/jobs/">HARROWGATE WORKS<small>Careers</small></a>
+  <nav class="topnav">
+    <a href="/jobs/">Careers home</a>
+    <a href="/jobs/openings.html" class="here">Current openings</a>
+    <a href="/jobs/#hiring">How we hire</a>
+  </nav>
+</div>
+
+<main>
+  <h1>Current openings</h1>
+  <p class="lead">Listings come straight from the hiring office and are taken down the
+  day a role is filled. Salaries shown are the figures offers are made at.</p>
+
+  <section id="cards">
+    <article class="card card-template" id="role-template" aria-hidden="true">
+      <div class="card-top">
+        <h3 class="role-title">Senior Process Engineer</h3>
+        <span class="salary">$139,500 a year</span>
+      </div>
+      <div class="tags">
+        <span class="tag">Engineering</span>
+        <span class="tag">Harrowgate</span>
+        <span class="tag">Full time</span>
+      </div>
+      <p class="blurb">One of 15 openings across our three sites.</p>
+      <div class="ref">Ref HW-0000</div>
+    </article>
+    <p id="load-status">Loading current openings from the hiring office...</p>
+  </section>
+
+  <div class="band" id="apply">
+    <h2>How to apply</h2>
+    <p class="lead">Write to careers@harrowgateworks.example quoting the reference on
+    the listing. The hiring office acknowledges every application within two working
+    days. There is no portal and no account to create.</p>
+  </div>
+</main>
+
+<footer>
+  Harrowgate Works Ltd - Foundry Road, Harrowgate - hiring office:
+  careers@harrowgateworks.example<br>
+  <a href="/jobs/">Careers home</a> -
+  <a href="/jobs/openings.html">Current openings</a><br>
+  Registered in the county register no. 4471. &copy; Harrowgate Works Ltd.
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+async function loadOpenings() {
+  const cards = document.getElementById('cards');
+  const status = document.getElementById('load-status');
+  const template = document.getElementById('role-template');
+  try {
+    const res = await fetch('/api/jobs/listings', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) throw new Error('listings unavailable');
+    const data = await res.json();
+    for (const role of data.roles) {
+      const card = template.cloneNode(true);
+      card.removeAttribute('id');
+      card.removeAttribute('aria-hidden');
+      card.classList.remove('card-template');
+      card.querySelector('.role-title').textContent = role.title;
+      card.querySelector('.salary').textContent =
+        '$' + role.salary.toLocaleString('en-US') + ' a year';
+      const tags = card.querySelectorAll('.tag');
+      tags[0].textContent = role.team;
+      tags[1].textContent = role.location;
+      tags[2].textContent = role.type;
+      card.querySelector('.blurb').textContent = role.blurb;
+      card.querySelector('.ref').textContent = 'Ref ' + role.ref;
+      cards.appendChild(card);
+    }
+    status.remove();
+  } catch {
+    status.textContent = 'The openings list could not be loaded. Refresh to try again.';
+  }
+}
+loadOpenings();
+</script>
+</body>
+</html>

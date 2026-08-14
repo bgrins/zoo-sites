@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Summit Group Registration — Solstice Conference Services</title>
+<style>
+  :root {
+    --violet: #4c1d95;
+    --pink: #db2777;
+    --ink: #1b1033;
+    --soft: #6b5f86;
+    --line: #e7e1f2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Futura, "Century Gothic", "URW Gothic", "Trebuchet MS", sans-serif;
+    color: var(--ink);
+    background: #fff;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .tabs {
+    position: sticky; top: 0; z-index: 5;
+    background: #fff; border-bottom: 2px solid var(--line);
+    display: flex; align-items: center; gap: 26px; padding: 12px 32px;
+  }
+  .tabs .logo {
+    font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--violet);
+  }
+  .tabs a {
+    text-decoration: none; color: var(--soft); font-size: 13px;
+    text-transform: uppercase; letter-spacing: 1.4px; padding: 4px 0;
+  }
+  .tabs a.here { color: var(--pink); border-bottom: 3px solid var(--pink); font-weight: 700; }
+  .hero {
+    background: linear-gradient(115deg, #4c1d95 0%, #7c2d8f 48%, #db2777 100%);
+    color: #fff; padding: 46px 32px 40px;
+  }
+  .hero .kicker {
+    text-transform: uppercase; letter-spacing: 3px; font-size: 12px;
+    color: #ffd6ec; margin: 0 0 10px;
+  }
+  .hero h1 {
+    margin: 0 0 12px; font-size: 46px; line-height: 1.02;
+    text-transform: uppercase; letter-spacing: -1px; font-weight: 700;
+  }
+  .hero .facts { display: flex; flex-wrap: wrap; gap: 10px 26px; font-size: 14px; }
+  .hero .facts span { display: flex; align-items: center; gap: 8px; }
+  .hero .facts b { font-weight: 700; letter-spacing: 1px; text-transform: uppercase; font-size: 12px; color: #ffd6ec; }
+  main { max-width: 720px; margin: 0 auto; padding: 34px 24px 70px; }
+  .intro { font-size: 17px; margin: 0 0 26px; }
+  .intro strong { color: var(--pink); }
+  .req { color: var(--pink); }
+  h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 2.2px;
+    color: var(--violet); margin: 0 0 14px;
+  }
+  fieldset { border: 0; margin: 0 0 8px; padding: 0; }
+  legend {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 2.2px;
+    color: var(--violet); font-weight: 700; padding: 0 0 12px;
+  }
+  .attendee {
+    position: relative; background: #fdfbff; border: 2px solid var(--line);
+    border-radius: 18px; padding: 20px 22px 18px 66px; margin: 0 0 16px;
+  }
+  .attendee h3 {
+    margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 1.6px;
+    display: flex; justify-content: space-between; align-items: baseline; color: var(--soft);
+  }
+  .attendee .num {
+    position: absolute; left: 18px; top: 18px;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--pink); color: #fff;
+    display: grid; place-items: center; font-size: 16px; font-weight: 700;
+  }
+  .attendee a.remove {
+    font-size: 11px; letter-spacing: 1.2px; color: var(--soft);
+    text-transform: uppercase; text-decoration: none; border-bottom: 1px dotted var(--soft);
+  }
+  .attendee a.remove:hover { color: var(--pink); border-color: var(--pink); }
+  label {
+    display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--soft); margin: 14px 0 0; font-weight: 700;
+  }
+  input {
+    width: 100%; font: inherit; font-size: 16px; padding: 2px 2px 5px;
+    border: 0; border-bottom: 2px solid #cfc4e6; background: transparent; color: var(--ink);
+  }
+  input:focus { outline: none; border-bottom-color: var(--pink); }
+  .error:not(:empty) { color: #c2185b; font-size: 12.5px; margin-top: 6px; font-weight: 700; }
+  #add {
+    width: 100%; background: #fff; color: var(--violet);
+    border: 2px dashed #c3b4e2; border-radius: 999px; padding: 12px;
+    font: inherit; font-size: 13px; text-transform: uppercase; letter-spacing: 2px;
+    font-weight: 700; cursor: pointer;
+  }
+  #add:hover { border-color: var(--pink); color: var(--pink); }
+  #submit {
+    background: linear-gradient(100deg, var(--violet), var(--pink));
+    color: #fff; border: 0; border-radius: 999px; padding: 16px 40px;
+    font: inherit; font-size: 15px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin-top: 24px;
+  }
+  #submit:hover { filter: brightness(1.08); }
+  #confirm {
+    margin-top: 28px; border: 3px solid var(--pink); border-radius: 18px;
+    padding: 24px; background: #fff6fb; text-align: center;
+  }
+  #confirm p { margin: 0 0 10px; font-size: 15px; }
+  #groupcode {
+    display: inline-block; font-size: 30px; font-weight: 700; letter-spacing: 3px;
+    color: var(--violet); background: #fff; border: 2px dashed var(--pink);
+    border-radius: 12px; padding: 10px 22px;
+  }
+  footer {
+    background: var(--ink); color: #b9a9d6; padding: 26px 32px; font-size: 12.5px;
+  }
+  footer .cols { display: flex; flex-wrap: wrap; gap: 8px 40px; margin-bottom: 12px; }
+  footer b { color: #fff; text-transform: uppercase; letter-spacing: 1.4px; font-size: 11px; }
+</style>
+</head>
+<body>
+<nav class="tabs">
+  <span class="logo">Solstice Summit</span>
+  <a href="programme.html">Programme</a>
+  <a href="speakers.html">Speakers</a>
+  <a href="venue.html">Venue</a>
+  <a href="roster.html" class="here">Group registration</a>
+</nav>
+
+<header class="hero">
+  <p class="kicker">Solstice Conference Services presents</p>
+  <h1>Solstice Leadership Summit</h1>
+  <div class="facts">
+    <span><b>Dates</b> 14–16 October 2026</span>
+    <span><b>Venue</b> Harborview Exhibition Halls</span>
+    <span><b>Track</b> Group / delegation intake</span>
+  </div>
+</header>
+
+<main>
+<p class="intro">Register your delegation below. Add <strong>one entry per attendee</strong> —
+badges are printed from exactly what you type here. Fields marked
+<span class="req">*</span> are required.</p>
+
+<form id="roster" novalidate>
+  <fieldset>
+    <legend>Attendees</legend>
+    <div id="rows"></div>
+    <button type="button" id="add">Add attendee</button>
+  </fieldset>
+  <button type="submit" id="submit">Submit registration</button>
+</form>
+
+<div id="confirm" hidden>
+  <p>Registration received. Your group code (bring this to check-in):</p>
+  <span id="groupcode"></span>
+</div>
+</main>
+
+<footer>
+  <div class="cols">
+    <span><b>Organiser</b> Solstice Conference Services</span>
+    <span><b>Delegation desk</b> groups@solstice-events.example</span>
+    <span><b>Badge collection</b> Hall C, from 08:00</span>
+  </div>
+  © 2026 Solstice Conference Services. Group codes are issued once the delegation is
+  submitted and cannot be reissued; keep yours for the badge desk.
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const rows = document.getElementById('rows');
+  let seq = 0;
+  let added = 0;
+
+  function addRow() {
+    seq += 1;
+    const row = document.createElement('div');
+    row.className = 'attendee';
+    row.innerHTML = `
+      <h3>Attendee <span class="num"></span> <a href="#" class="remove">Remove</a></h3>
+      <label>Full name <span class="req">*</span></label>
+      <input class="name" autocomplete="off">
+      <div class="error err-name" role="alert"></div>
+      <label>Email <span class="req">*</span></label>
+      <input class="email" autocomplete="off">
+      <div class="error err-email" role="alert"></div>`;
+    row.querySelector('.remove').addEventListener('click', (event) => {
+      event.preventDefault();
+      row.remove();
+      renumber();
+    });
+    rows.append(row);
+    renumber();
+  }
+
+  function renumber() {
+    let n = 0;
+    for (const row of rows.querySelectorAll('.attendee')) {
+      n += 1;
+      row.querySelector('.num').textContent = n;
+      row.querySelector('.remove').hidden = rows.children.length === 1;
+    }
+  }
+
+  document.getElementById('add').addEventListener('click', () => {
+    added += 1;
+    addRow();
+  });
+  addRow();
+
+  document.getElementById('roster').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const attendees = [];
+    let ok = true;
+    for (const row of rows.querySelectorAll('.attendee')) {
+      const name = row.querySelector('.name').value.trim();
+      const email = row.querySelector('.email').value.trim();
+      row.querySelector('.err-name').textContent = name ? '' : 'Name is required.';
+      const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+      row.querySelector('.err-email').textContent = emailOk ? '' : 'Enter a valid email address.';
+      ok = ok && !!name && emailOk;
+      attendees.push({ name, email });
+    }
+    if (!ok) return;
+    const res = await fetch('/api/roster-submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, attendees, added }),
+    });
+    if (!res.ok) {
+      alert('Submission failed — try again.');
+      return;
+    }
+    const body = await res.json();
+    document.getElementById('roster').hidden = true;
+    document.getElementById('confirm').hidden = false;
+    document.getElementById('groupcode').textContent = body.groupCode;
+  });
+</script>
+</body>
+</html>

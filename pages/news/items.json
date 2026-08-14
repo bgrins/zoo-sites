@@ -1,0 +1,328 @@
+[
+ {
+  "rank": 1,
+  "title": "I built a spreadsheet that compiles to WebAssembly",
+  "site": "gridlock.example",
+  "points": 487,
+  "author": "mlemvik",
+  "comments": 14,
+  "age": "10 hours ago",
+  "tag": "build"
+ },
+ {
+  "rank": 2,
+  "title": "Postgres 19 released",
+  "site": "postgresql.example.org",
+  "points": 452,
+  "author": "tuplewrangler",
+  "comments": 14,
+  "age": "10 hours ago",
+  "tag": "releases"
+ },
+ {
+  "rank": 3,
+  "title": "The forgotten history of the trackball",
+  "site": "inputdevices.example.com",
+  "points": 389,
+  "author": "quietcursor",
+  "comments": 14,
+  "age": "10 hours ago",
+  "tag": "history"
+ },
+ {
+  "rank": 4,
+  "title": "Why our startup moved back to bare metal",
+  "site": "ferrostack.example",
+  "points": 356,
+  "author": "rackmounted",
+  "comments": 14,
+  "age": "11 hours ago",
+  "tag": "infra"
+ },
+ {
+  "rank": 5,
+  "title": "A deep dive into how sleep pressure works",
+  "site": "somnolog.example.net",
+  "points": 341,
+  "author": "circadian",
+  "comments": 13,
+  "age": "11 hours ago",
+  "tag": "science"
+ },
+ {
+  "rank": 6,
+  "title": "Rust in the kernel: a status report",
+  "site": "kernelnotes.example.org",
+  "points": 335,
+  "author": "ringzero",
+  "comments": 12,
+  "age": "11 hours ago",
+  "tag": "systems"
+ },
+ {
+  "rank": 7,
+  "title": "Terminal hex editor with structure templates",
+  "site": "hexactly.example",
+  "points": 298,
+  "author": "nybblenibble",
+  "comments": 10,
+  "age": "12 hours ago",
+  "tag": "build"
+ },
+ {
+  "rank": 8,
+  "title": "The economics of vending machines",
+  "site": "sidehustlemath.example.com",
+  "points": 286,
+  "author": "coinop",
+  "comments": 11,
+  "age": "12 hours ago",
+  "tag": "business"
+ },
+ {
+  "rank": 9,
+  "title": "Reverse engineering my dishwasher's serial protocol",
+  "site": "suds.example",
+  "points": 271,
+  "author": "rinseaid",
+  "comments": 10,
+  "age": "12 hours ago",
+  "tag": "hardware"
+ },
+ {
+  "rank": 10,
+  "title": "What's your favorite underrated paper?",
+  "site": "",
+  "points": 264,
+  "author": "bibliophage",
+  "comments": 10,
+  "age": "13 hours ago",
+  "tag": "asks"
+ },
+ {
+  "rank": 11,
+  "title": "Making maps with only math: procedural cartography",
+  "site": "isoline.example",
+  "points": 243,
+  "author": "contourist",
+  "comments": 10,
+  "age": "13 hours ago",
+  "tag": "graphics"
+ },
+ {
+  "rank": 12,
+  "title": "SQLite as an application file format, revisited",
+  "site": "flatfile.example",
+  "points": 238,
+  "author": "vacuumfull",
+  "comments": 9,
+  "age": "13 hours ago",
+  "tag": "data"
+ },
+ {
+  "rank": 13,
+  "title": "The slow death of the corporate intranet",
+  "site": "workplacetech.example.com",
+  "points": 226,
+  "author": "sharepointsurvivor",
+  "comments": 10,
+  "age": "14 hours ago",
+  "tag": "workplace"
+ },
+ {
+  "rank": 14,
+  "title": "A font that renders its own kerning table",
+  "site": "typograph.example",
+  "points": 214,
+  "author": "sidebearing",
+  "comments": 10,
+  "age": "14 hours ago",
+  "tag": "build"
+ },
+ {
+  "rank": 15,
+  "title": "Why birdsong is louder in cities",
+  "site": "urbanecology.example.org",
+  "points": 203,
+  "author": "decibelle",
+  "comments": 9,
+  "age": "14 hours ago",
+  "tag": "science"
+ },
+ {
+  "rank": 16,
+  "title": "Zig's new async: a postmortem of the redesign",
+  "site": "comptime.example",
+  "points": 197,
+  "author": "allocfree",
+  "comments": 8,
+  "age": "16 hours ago",
+  "tag": "languages"
+ },
+ {
+  "rank": 17,
+  "title": "How we cut our CI bill by 90% with one weird scheduler",
+  "site": "pipelinepenny.example.com",
+  "points": 189,
+  "author": "yamlwhisperer",
+  "comments": 7,
+  "age": "16 hours ago",
+  "tag": "infra"
+ },
+ {
+  "rank": 18,
+  "title": "An oral history of the winmodem",
+  "site": "dialup.example",
+  "points": 184,
+  "author": "hayescompatible",
+  "comments": 7,
+  "age": "16 hours ago",
+  "tag": "history"
+ },
+ {
+  "rank": 19,
+  "title": "Self-hosted read-it-later with local OCR",
+  "site": "shelfspace.example",
+  "points": 176,
+  "author": "tabhoarder",
+  "comments": 8,
+  "age": "18 hours ago",
+  "tag": "build"
+ },
+ {
+  "rank": 20,
+  "title": "Formal verification for the rest of us",
+  "site": "provable.example",
+  "points": 171,
+  "author": "hoarelogic",
+  "comments": 7,
+  "age": "18 hours ago",
+  "tag": "systems"
+ },
+ {
+  "rank": 21,
+  "title": "The mystery of the Antikythera gear ratios",
+  "site": "clockwork.example.org",
+  "points": 164,
+  "author": "epicyclic",
+  "comments": 1,
+  "age": "18 hours ago",
+  "tag": "history"
+ },
+ {
+  "rank": 22,
+  "title": "Debugging a race condition that only happened on Tuesdays",
+  "site": "heisenbug.example",
+  "points": 158,
+  "author": "mutexkid",
+  "comments": 0,
+  "age": "20 hours ago",
+  "tag": "debugging"
+ },
+ {
+  "type": "job",
+  "title": "Ferrostack (S24) is hiring a staff platform engineer",
+  "site": "ferrostack.example",
+  "age": "20 hours ago",
+  "rank": 23,
+  "tag": "jobs"
+ },
+ {
+  "rank": 24,
+  "title": "My grandfather's slide rule collection, digitized",
+  "site": "logscale.example.net",
+  "points": 147,
+  "author": "mantissa",
+  "comments": 6,
+  "age": "20 hours ago",
+  "tag": "history"
+ },
+ {
+  "rank": 25,
+  "title": "Notes on running a tiny ISP for my street",
+  "site": "lastmile.example.net",
+  "points": 139,
+  "author": "fiberneighbor",
+  "comments": 6,
+  "age": "23 hours ago",
+  "tag": "networking"
+ },
+ {
+  "rank": 26,
+  "title": "The typography of transit maps",
+  "site": "waylines.example",
+  "points": 131,
+  "author": "helveticat",
+  "comments": 6,
+  "age": "23 hours ago",
+  "tag": "design"
+ },
+ {
+  "type": "job",
+  "title": "Hexactly is hiring: senior Rust engineer, tooling team (remote)",
+  "site": "hexactly.example",
+  "age": "23 hours ago",
+  "rank": 27,
+  "tag": "jobs"
+ },
+ {
+  "rank": 28,
+  "title": "Compiling C to spreadsheet formulas",
+  "site": "cellc.example",
+  "points": 124,
+  "author": "iferror",
+  "comments": 6,
+  "age": "1 day ago",
+  "tag": "languages"
+ },
+ {
+  "rank": 29,
+  "title": "A field guide to abandoned protocols",
+  "site": "rfc-graveyard.example.org",
+  "points": 117,
+  "author": "gopherhole",
+  "comments": 5,
+  "age": "1 day ago",
+  "tag": "networking"
+ },
+ {
+  "rank": 30,
+  "title": "Weather station powered by a bicycle dynamo",
+  "site": "hubwatts.example",
+  "points": 109,
+  "author": "spokesperson",
+  "comments": 6,
+  "age": "1 day ago",
+  "tag": "build"
+ },
+ {
+  "rank": 31,
+  "title": "Estimating pi with a pendulum and a webcam",
+  "site": "kitchenphysics.example",
+  "points": 102,
+  "author": "smallangle",
+  "comments": 6,
+  "age": "1 day ago",
+  "tag": "science"
+ },
+ {
+  "rank": 32,
+  "title": "Why manhole covers sing in the rain",
+  "site": "resonantcity.example.com",
+  "points": 95,
+  "author": "stormdrain",
+  "comments": 5,
+  "age": "1 day ago",
+  "tag": "science"
+ },
+ {
+  "title": "The 500 points of failure in a typical checkout flow",
+  "site": "cartography.example",
+  "points": 88,
+  "author": "abandonedcart",
+  "comments": 6,
+  "age": "1 day ago",
+  "rank": 33,
+  "tag": "design"
+ }
+]

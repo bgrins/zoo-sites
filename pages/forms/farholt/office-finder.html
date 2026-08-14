@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farholt Freight Union — Branch Directory</title>
+<style>
+  :root {
+    --bone: #efe9dd;
+    --paper: #f8f5ee;
+    --ink: #1b1714;
+    --rule: #c9bda6;
+    --oxblood: #7d2118;
+    --dim: #59504a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bone);
+    color: var(--ink);
+    font-family: "Lucida Sans", "Lucida Sans Unicode", "Lucida Grande", "DejaVu Sans", sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  h1, h2, h3, .wordmark, .tabs a, button {
+    font-family: Rockwell, "Roboto Slab", Serifa, "Bitstream Charter", Georgia, serif;
+  }
+  .masthead {
+    background: var(--ink); color: var(--bone);
+    padding: 14px 28px; display: flex; align-items: center; gap: 18px;
+  }
+  .wordmark {
+    border: 2px solid var(--bone); padding: 5px 12px;
+    text-transform: uppercase; letter-spacing: 3px; font-size: 15px;
+  }
+  .masthead .est { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #a99e8c; }
+  .masthead .tel { margin-left: auto; font-size: 12px; letter-spacing: 1px; color: #cfc4b0; }
+  .tabs { background: var(--paper); border-bottom: 3px solid var(--ink); padding: 0 28px; }
+  .tabs a {
+    display: inline-block; padding: 11px 16px 8px; text-decoration: none;
+    color: var(--dim); text-transform: uppercase; letter-spacing: 2px; font-size: 11px;
+    border-bottom: 3px solid transparent; margin-bottom: -3px;
+  }
+  .tabs a:hover { color: var(--ink); }
+  .tabs a.here { color: var(--oxblood); border-bottom-color: var(--oxblood); }
+  .sheet { max-width: 980px; margin: 0 auto; padding: 26px 28px 44px; }
+  .path { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); margin-bottom: 14px; }
+  .path a { color: var(--oxblood); text-decoration: none; }
+  h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.2px; }
+  .lede { margin: 0 0 22px; max-width: 66ch; color: var(--dim); }
+  .cols { display: flex; gap: 26px; align-items: flex-start; }
+  .cols > main { flex: 1 1 auto; min-width: 0; }
+  .cols > aside { flex: 0 0 250px; }
+  .slab { background: var(--paper); border: 2px solid var(--ink); }
+  .slab > h2 {
+    margin: 0; background: var(--ink); color: var(--bone);
+    font-size: 12px; letter-spacing: 3px; text-transform: uppercase; padding: 8px 16px;
+  }
+  .slab .inner { padding: 18px 16px; }
+  .field { display: flex; gap: 16px; padding: 12px 0; border-bottom: 1px dashed var(--rule); }
+  .field:last-of-type { border-bottom: 0; }
+  .field > label { flex: 0 0 168px; padding-top: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 1.4px; }
+  .field > div { flex: 1 1 auto; min-width: 0; }
+  @media (max-width: 720px) {
+    .cols { flex-wrap: wrap; }
+    .cols > aside { flex: 1 1 100%; }
+    .field { flex-wrap: wrap; }
+    .field > label { flex: 1 1 100%; padding-top: 0; }
+  }
+  select {
+    width: 100%; max-width: 380px; font: inherit; font-size: 14px;
+    padding: 7px 8px; border: 2px solid var(--ink); border-radius: 0;
+    background: #fff; color: var(--ink);
+  }
+  select:disabled { background: #e5ded1; color: #8d8479; border-color: var(--rule); }
+  .help { margin: 5px 0 0; font-size: 12px; color: var(--dim); }
+  .picked {
+    margin: 16px 0 0; padding: 10px 12px; background: #fff;
+    border-left: 6px solid var(--oxblood); font-size: 15px; letter-spacing: 0.4px;
+    font-family: Rockwell, "Roboto Slab", Serifa, "Bitstream Charter", Georgia, serif;
+  }
+  .actions { margin-top: 18px; display: flex; align-items: center; gap: 14px; }
+  button {
+    font-size: 12px; letter-spacing: 2.5px; text-transform: uppercase;
+    padding: 10px 22px; border: 2px solid var(--oxblood); border-radius: 0;
+    background: var(--oxblood); color: #fff; cursor: pointer;
+  }
+  button:hover { background: #5f1810; border-color: #5f1810; }
+  .msg { font-size: 13px; color: var(--oxblood); min-height: 18px; }
+  #receipt { display: none; margin-top: 22px; }
+  #receipt .code {
+    font-size: 26px; letter-spacing: 3px; font-family: Rockwell, "Roboto Slab", Georgia, serif;
+  }
+  .terms { margin: 12px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--dim); }
+  .terms li { padding: 6px 0; border-top: 1px dashed var(--rule); }
+  aside .slab .inner { font-size: 13px; color: var(--dim); }
+  aside h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink); }
+  aside p { margin: 0 0 14px; }
+  footer {
+    border-top: 3px solid var(--ink); margin-top: 40px; padding: 18px 28px 34px;
+    font-size: 12px; color: var(--dim);
+  }
+  footer a { color: var(--oxblood); text-decoration: none; }
+  footer .legal { margin-top: 8px; letter-spacing: 0.4px; }
+</style>
+</head>
+<body>
+<div class="masthead">
+  <span class="wordmark">Farholt</span>
+  <span class="est">Freight Union · Customs and cartage since 1934</span>
+  <span class="tel">Traffic desk 0808 157 0662</span>
+</div>
+<nav class="tabs">
+  <a href="services.html">Services</a>
+  <a href="tariffs.html">Tariffs</a>
+  <a href="office-finder.html" class="here">Branch directory</a>
+  <a href="claims.html">Claims</a>
+  <a href="account.html">Account</a>
+</nav>
+
+<div class="sheet">
+  <p class="path"><a href="index.html">Home</a> / <a href="network.html">Network</a> / Branch directory</p>
+  <h1>Branch directory</h1>
+  <p class="lede">Every consignment is cleared through the branch that holds the
+  cartage licence for its destination district. Work down the three lists below to
+  identify the correct branch, then confirm it so the traffic desk can attach the
+  branch code to your booking.</p>
+
+  <div class="cols">
+    <main>
+      <form id="finder" class="slab" novalidate>
+        <h2>Locate a branch</h2>
+        <div class="inner">
+          <div class="field">
+            <label for="country">Country</label>
+            <div>
+              <select id="country" name="country" disabled>
+                <option value="">Loading countries</option>
+              </select>
+              <p class="help">Country of the receiving depot, not the shipper.</p>
+            </div>
+          </div>
+          <div class="field">
+            <label for="province">Province</label>
+            <div>
+              <select id="province" name="province" disabled>
+                <option value="">Choose a country first</option>
+              </select>
+              <p class="help">Provinces are listed once a country is chosen.</p>
+            </div>
+          </div>
+          <div class="field">
+            <label for="office">Branch office</label>
+            <div>
+              <select id="office" name="office" disabled>
+                <option value="">Choose a province first</option>
+              </select>
+              <p class="help">Each branch is listed with its directory code.</p>
+            </div>
+          </div>
+
+          <p class="picked" id="picked">No branch selected.</p>
+
+          <div class="actions">
+            <button type="submit" id="confirm">Confirm branch</button>
+            <span class="msg" id="msg" role="status"></span>
+          </div>
+        </div>
+      </form>
+
+      <div class="slab" id="receipt">
+        <h2>Branch confirmed</h2>
+        <div class="inner">
+          <p class="code" id="conf-code"></p>
+          <p id="conf-where"></p>
+          <ul class="terms">
+            <li>Directory reference <span id="conf-ref"></span></li>
+            <li>Quote the branch code on the consignment note and on any customs entry.</li>
+            <li>Cartage bookings close at 16:30 local time at every branch.</li>
+          </ul>
+        </div>
+      </div>
+    </main>
+
+    <aside>
+      <div class="slab">
+        <h2>Notes</h2>
+        <div class="inner">
+          <h3>Codes</h3>
+          <p>Branch codes are issued by the union registry and change when a
+          licence is transferred. Always re-check the directory before quoting a
+          code from an older booking.</p>
+          <h3>Bonded work</h3>
+          <p>Bonded storage is available at harbour and rail branches only.
+          Inland branches hand off to the nearest harbour office.</p>
+          <h3>Corrections</h3>
+          <p>Report a missing or closed branch to the registry at
+          registry@halveck-freight.example.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<footer>
+  Farholt Freight Union · Registry House, 4 Ordnance Wharf, Korrin ·
+  <a href="privacy.html">Privacy notice</a> · <a href="terms-of-carriage.html">Terms of carriage</a> ·
+  <a href="traffic-desk.html">Traffic desk</a> · support@halveck-freight.example
+  <div class="legal">Copyright 2026 Farholt Freight Union. Cartage licence 1934/HFU.</div>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const country = document.getElementById('country');
+  const province = document.getElementById('province');
+  const office = document.getElementById('office');
+  const picked = document.getElementById('picked');
+  const msg = document.getElementById('msg');
+
+  function setOptions(select, options, placeholder) {
+    select.replaceChildren();
+    const head = document.createElement('option');
+    head.value = '';
+    head.textContent = placeholder;
+    select.append(head);
+    for (const item of options) {
+      const opt = document.createElement('option');
+      opt.value = item.value;
+      opt.textContent = item.label;
+      select.append(opt);
+    }
+    select.disabled = false;
+  }
+
+  function clearSelect(select, placeholder) {
+    select.replaceChildren();
+    const head = document.createElement('option');
+    head.value = '';
+    head.textContent = placeholder;
+    select.append(head);
+    select.disabled = true;
+  }
+
+  async function load(level, parent) {
+    const query = new URLSearchParams({ level });
+    if (parent) query.set('parent', parent);
+    const res = await fetch('/api/offices?' + query.toString(), {
+      headers: { 'X-Session-Nonce': NONCE },
+    });
+    if (!res.ok) throw new Error('directory unavailable');
+    return (await res.json()).options;
+  }
+
+  function codeOf(label) {
+    const match = /\(([^)]+)\)\s*$/.exec(label ?? '');
+    return match ? match[1] : '';
+  }
+
+  function refreshPicked() {
+    const label = office.selectedOptions[0]?.textContent ?? '';
+    const code = office.value ? codeOf(label) : '';
+    if (!code) {
+      picked.textContent = 'No branch selected.';
+      return;
+    }
+    const name = label.replace(/\s*\([^)]*\)\s*$/, '');
+    picked.textContent =
+      code + ' — ' + name + ', ' +
+      (province.selectedOptions[0]?.textContent ?? '') + ', ' +
+      (country.selectedOptions[0]?.textContent ?? '');
+  }
+
+  country.addEventListener('change', async () => {
+    clearSelect(province, 'Loading provinces');
+    clearSelect(office, 'Choose a province first');
+    refreshPicked();
+    if (!country.value) {
+      clearSelect(province, 'Choose a country first');
+      return;
+    }
+    msg.textContent = '';
+    try {
+      setOptions(province, await load('province', country.value), 'Select a province');
+    } catch {
+      clearSelect(province, 'Choose a country first');
+      msg.textContent = 'The registry did not answer. Reload the page and try again.';
+    }
+  });
+
+  province.addEventListener('change', async () => {
+    clearSelect(office, 'Loading branches');
+    refreshPicked();
+    if (!province.value) {
+      clearSelect(office, 'Choose a province first');
+      return;
+    }
+    msg.textContent = '';
+    try {
+      setOptions(office, await load('office', province.value), 'Select a branch office');
+    } catch {
+      clearSelect(office, 'Choose a province first');
+      msg.textContent = 'The registry did not answer. Reload the page and try again.';
+    }
+  });
+
+  office.addEventListener('change', refreshPicked);
+
+  document.getElementById('finder').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!country.value || !province.value || !office.value) {
+      msg.textContent = 'Choose a country, a province and a branch office.';
+      return;
+    }
+    msg.textContent = 'Confirming with the registry…';
+    const payload = {
+      nonce: NONCE,
+      country: country.value,
+      province: province.value,
+      office: office.value,
+      code: codeOf(office.selectedOptions[0]?.textContent),
+    };
+    try {
+      const res = await fetch('/api/office-finder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        msg.textContent = body.error ?? 'The registry rejected this selection.';
+        return;
+      }
+      msg.textContent = '';
+      document.getElementById('conf-code').textContent = body.code;
+      document.getElementById('conf-where').textContent =
+        body.office + ', ' + body.province + ', ' + body.country;
+      document.getElementById('conf-ref').textContent = body.reference;
+      document.getElementById('receipt').style.display = 'block';
+    } catch {
+      msg.textContent = 'The registry did not answer. Try again.';
+    }
+  });
+
+  (async () => {
+    try {
+      setOptions(country, await load('country'), 'Select a country');
+    } catch {
+      clearSelect(country, 'Directory unavailable');
+      msg.textContent = 'The registry did not answer. Reload the page and try again.';
+    }
+  })();
+</script>
+</body>
+</html>

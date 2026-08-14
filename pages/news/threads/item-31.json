@@ -1,0 +1,41 @@
+{
+  "rank": 31,
+  "comments": [
+    {
+      "author": "pendantulum",
+      "age": "22 hours ago",
+      "text": "The small-angle approximation is doing a lot of unacknowledged work here. At the 12 degree swing shown in the video, the period correction term is about 0.3%, which is larger than the claimed final error. Either the author got lucky with cancellation or the webcam timing errors happen to lean the other way.",
+      "replies": [
+        {
+          "author": "smallangle",
+          "age": "20 hours ago",
+          "text": "OP here — not luck, and the handle should have been a hint. I fit the full elliptic-integral period expansion to the decaying amplitude, so the correction is applied per-swing as the pendulum settles. The webcam's rolling shutter was the actual villain; there's a whole appendix on it.",
+          "replies": [
+            {
+              "author": "pendantulum",
+              "age": "18 hours ago",
+              "text": "I stand corrected, and I clearly stopped reading before the appendix. The rolling shutter analysis is nicer than the pi estimate."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "lambdacurious",
+      "age": "14 hours ago",
+      "text": "There's a lovely genre of \"measure a constant with junk-drawer equipment\" projects and this is a strong entry. My contribution: estimating the speed of sound with two phones and a hallway. Got within 1.5% and a noise complaint."
+    },
+    {
+      "author": "bitrotting",
+      "age": "10 hours ago",
+      "text": "Honest question: since g appears in the period formula, aren't you really measuring g and assuming pi, or measuring pi and assuming g? You can't extract both from one pendulum. The article hand-waves this by using the published local gravity value, which feels like smuggling in most of the answer.",
+      "replies": [
+        {
+          "author": "warmstart",
+          "age": "8 hours ago",
+          "text": "It's stated up front though — the point is the measurement pipeline, not metrological independence. By that standard no classroom experiment ever measures anything."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lakefront Vendor Network — Console Help</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Tahoma, Verdana, "DejaVu Sans", sans-serif;
+    font-size: 12px; line-height: 1.45; color: #22262d; background: #eceef1;
+  }
+  .shell { display: flex; min-height: 100vh; }
+  .side {
+    width: 196px; flex: 0 0 196px; background: #1b2330; color: #93a0b4;
+    padding: 0 0 14px; border-right: 1px solid #131924;
+  }
+  .side .brand {
+    padding: 12px 14px; color: #fff; font-size: 13px; font-weight: bold;
+    border-bottom: 1px solid #2a3444; letter-spacing: 0.2px;
+  }
+  .side .brand small { display: block; font-weight: normal; color: #7d8ca3; font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase; }
+  .side .grp { padding: 12px 14px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.9px; color: #66748c; }
+  .side a { display: block; padding: 5px 14px; color: #b9c4d3; text-decoration: none; }
+  .side a:hover { background: #232d3d; color: #fff; }
+  .side a.on { background: #2c69c9; color: #fff; }
+  .main { flex: 1; min-width: 0; }
+  .bar {
+    background: #fff; border-bottom: 1px solid #ccd2da; padding: 6px 16px;
+    display: flex; align-items: center; gap: 12px; font-size: 11px; color: #5a6474;
+  }
+  .bar .env { border: 1px solid #c8a415; background: #fdf6d8; color: #6b5504; padding: 1px 6px; }
+  .bar .who { margin-left: auto; }
+  .crumb { padding: 8px 16px; font-size: 11px; color: #5a6474; }
+  .crumb a { color: #2c69c9; text-decoration: none; }
+  .wrap { padding: 0 16px 30px; max-width: 880px; }
+  h1 { font-size: 17px; margin: 4px 0 2px; font-weight: bold; }
+  .tagline { color: #5a6474; margin: 0 0 10px; }
+  .panel { background: #fff; border: 1px solid #ccd2da; border-radius: 2px; margin-bottom: 12px; }
+  .panel > h2 {
+    margin: 0; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    color: #444d5c; background: #f4f6f8; border-bottom: 1px solid #dde1e7;
+    padding: 6px 12px; font-weight: bold;
+  }
+  .panel .body { padding: 12px; }
+  .note { color: #4d5665; margin: 0 0 12px; max-width: 82ch; }
+  .kv { color: #5a6474; font-size: 11px; }
+  .body ol { margin: 0 0 12px; padding-left: 20px; color: #4d5665; }
+  .body li { margin-bottom: 4px; }
+  .body a { color: #2c69c9; }
+  footer { border-top: 1px solid #ccd2da; padding: 10px 16px; font-size: 11px; color: #6b7482; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand">Lakefront VN<small>Partner Console</small></div>
+    <div class="grp">Procurement</div>
+    <a href="signin.html">Dashboard</a>
+    <a href="solicitations.html">Solicitations</a>
+    <a href="awards.html">Awards</a>
+    <div class="grp">Partner records</div>
+    <a href="register.html">Registration</a>
+    <a href="signin.html">Certifications</a>
+    <a href="signin.html">Remittance</a>
+    <div class="grp">Support</div>
+    <a href="records-office.html">Records office</a>
+    <a href="help.html" class="on">Console help</a>
+  </aside>
+
+  <div class="main">
+    <div class="bar">
+      <span class="env">2026 SEASON</span>
+      <span>Records validation: online</span>
+      <span class="who">Unauthenticated applicant session</span>
+    </div>
+    <div class="crumb"><a href="index.html">Home</a> / Console help</div>
+
+    <div class="wrap">
+      <h1>Console help</h1>
+      <p class="tagline">Guidance for applicants and registered partners</p>
+
+      <div class="panel">
+        <h2>Registration walkthrough</h2>
+        <div class="body">
+          <ol>
+            <li>Open <a href="register.html">Partner registration</a> (Form PR-2).</li>
+            <li>Enter your company contact details. Fields marked as required must be completed.</li>
+            <li>Submit. Validation is synchronous; if a field is flagged, correct it and submit again from the same form.</li>
+            <li>When the submission is accepted, note the confirmation code shown on screen and keep it for correspondence.</li>
+          </ol>
+          <p class="kv">Do not open a second registration record for the same
+          company — duplicate records are purged nightly. If you are unsure
+          whether a record already exists, ask the records office before
+          submitting again.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Who to contact</h2>
+        <div class="body">
+          <p class="note">Registration, certification and remittance questions:
+          the <a href="records-office.html">records office</a>
+          (vendors@lakefront-vn.example, Mon–Thu 9:00–16:00).</p>
+          <p class="note">Solicitation content questions: use the contact listed
+          in the solicitation document itself, available from the
+          <a href="solicitations.html">solicitations</a> page.</p>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Lakefront Vendor Network — Records Office, 1200 Canal Row ·
+      vendors@lakefront-vn.example · Office hours Mon–Thu, 9:00–16:00 ·
+      Terms of participation · Records retention policy
+    </footer>
+  </div>
+</div>
+</body>
+</html>

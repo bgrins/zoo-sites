@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Site Search - Bureau of Civic Revenue</title></head>
+<body bgcolor="#FFFFFF" text="#000000" link="#0000CC" vlink="#551A8B">
+<table width="760" border="0" cellpadding="4" cellspacing="0" align="center">
+<tr bgcolor="#003366"><td><font color="#FFFFFF" size="4" face="Times New Roman"><b>SITE SEARCH</b></font><br>
+<font color="#CCCCCC" size="1">BUREAU OF CIVIC REVENUE DOCUMENT INDEX</font></td></tr>
+</table>
+<table width="760" border="0" cellpadding="4" cellspacing="0" align="center">
+<tr><td>
+<font size="2">[ <a href="index.html">Main Page</a> ] [ <a href="forms.html">Forms &amp; Publications</a> ]
+[ <a href="sitemap.html">Site Map</a> ]</font>
+<hr>
+<form action="search.html" method="get">
+<font size="2">Search the document index:
+<input type="text" name="q" size="34" id="q">
+<input type="submit" value="GO"></font>
+</form>
+<hr>
+<div id="results">
+<font size="2"><p>Enter one or more words above to search the index.</p></font>
+</div>
+<hr>
+<font size="1">The index is rebuilt overnight. Documents added during the current
+business day may not appear until the following morning. Ranking is by relevance
+score; where a form has been superseded or amended, the more recently revised
+document is weighted higher.<br>
+You are visitor number 0048214 since June 1998. Questions? Contact the
+<a href="contact.html">webmaster</a>.<br>
+&copy; Bureau of Civic Revenue. An agency of the Commonwealth. Revenue Building,
+Statehouse Plaza. Privacy Statement and Records Request forms available on request.</font>
+</td></tr>
+</table>
+<script type="text/javascript">
+var NONCE = '__SESSION_NONCE__';
+
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function show(html) {
+  document.getElementById('results').innerHTML = '<font size="2">' + html + '</font>';
+}
+
+function render(data) {
+  var hits = data.results || [];
+  if (!hits.length) {
+    show('<p>No documents in the index matched: ' + esc(data.q) + '</p>');
+    return;
+  }
+  var out = '<p>Documents 1 - ' + hits.length + ' of ' + hits.length +
+    ' for query: ' + esc(data.q) + '</p>';
+  for (var i = 0; i < hits.length; i++) {
+    var r = hits[i];
+    out += '<p>' + (i + 1) + '. <a href="' + esc(r.path) + '">' + esc(r.title) + '</a><br>' +
+      esc(r.snippet) + '<br><font size="1">' + esc(r.path) + ' &middot; relevance ' +
+      r.score + '%</font></p>';
+  }
+  show(out);
+}
+
+function run() {
+  var match = /[?&]q=([^&]*)/.exec(location.search);
+  var q = match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '';
+  if (!q) return;
+  document.getElementById('q').value = q;
+  show('<p>Searching the index for ' + esc(q) + ' ...</p>');
+  fetch('/api/gov/search?q=' + encodeURIComponent(q), {
+    headers: { 'X-Session-Nonce': NONCE },
+  })
+    .then(function (r) {
+      if (!r.ok) throw new Error('index unavailable (' + r.status + ')');
+      return r.json();
+    })
+    .then(render)
+    .catch(function (e) {
+      show('<p>The document index is temporarily unavailable: ' + esc(e.message) +
+        '. Please try again, or browse <a href="forms.html">Forms &amp; Publications</a>.</p>');
+    });
+}
+
+run();
+</script>
+</body>
+</html>

@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Q3 Freight Recovery - Abaca</title>
+<link rel="stylesheet" href="calc.css">
+</head>
+<body>
+<div class="app">
+
+  <div class="titlebar">
+    <div class="wordmark">Abaca<span>Sheets 4.2</span></div>
+    <div class="docname" id="docname">Q3 Freight Recovery <em>&mdash; Marchmont Haulage</em></div>
+    <div class="spacer"></div>
+    <div class="whoami">d.ivorsen@marchmonthaulage.example</div>
+  </div>
+
+  <div class="ribbon">
+    <div class="rgroup">
+      <div class="rbuttons">
+        <button type="button" class="rbtn" id="btn-recalc">Recalculate</button>
+      </div>
+      <div class="rlabel">Sheet</div>
+    </div>
+    <div class="rgroup">
+      <div class="rbuttons">
+        <button type="button" class="rbtn" id="btn-showformulas" aria-pressed="false">Show formulas</button>
+        <button type="button" class="rbtn" id="btn-audit">Formula audit</button>
+      </div>
+      <div class="rlabel">Formulas</div>
+    </div>
+    <div class="rgroup">
+      <div class="rbuttons">
+        <button type="button" class="rbtn primary" id="btn-reconcile">Reconcile</button>
+      </div>
+      <div class="rlabel">Ledger</div>
+    </div>
+  </div>
+
+  <div class="fbar">
+    <form class="gotoform" id="gotoform">
+      <input class="namebox" id="namebox" value="A1" aria-label="Cell reference" autocomplete="off">
+    </form>
+    <button type="submit" form="gotoform" class="fbtn" id="btn-goto">Go to</button>
+    <div class="fx">fx</div>
+    <input class="formula" id="formula" aria-label="Formula bar" autocomplete="off" spellcheck="false">
+    <button type="button" class="fbtn" id="btn-revert">Revert cell</button>
+    <button type="button" class="fbtn" id="btn-cancel">Cancel</button>
+    <button type="button" class="fbtn commit" id="btn-enter">Enter</button>
+  </div>
+
+  <div class="body">
+    <main class="sheetwrap">
+      <table class="grid" id="grid">
+        <thead id="grid-head"></thead>
+        <tbody id="grid-body"></tbody>
+      </table>
+    </main>
+
+    <section class="notes">
+      <h2>Q3 close - freight recovery</h2>
+      <p class="meta">D. Ivorsen, Group Reporting. Circulated to depot controllers.</p>
+      <ol>
+        <li>The ledger control total shown on the reconciliation panel is taken from the posted
+          recovery journal. It is the authority for the quarter; the workbook has to agree with it
+          before the close pack goes out.</li>
+        <li>Monthly depot amounts are posted from the ledger and are not ours to retype. Only the
+          quarter column and the all-depots row are maintained in this workbook.</li>
+        <li>The formula audit flags any cell whose formula differs from the cells around it. Most
+          of those flags are historic and perfectly correct, so open each one in the formula bar
+          before changing anything.</li>
+        <li>When the sheet reconciles, quote the reconciliation checksum on the close pack cover
+          sheet so Group Reporting can tie the version back to this workbook.</li>
+      </ol>
+    </section>
+
+    <aside class="rail">
+      <div class="panel">
+        <h2>Reconciliation</h2>
+        <div class="inner">
+          <div class="kv"><span class="k">Ledger control total</span><span class="v" id="control">-</span></div>
+          <div class="kv"><span class="k">Workbook total</span><span class="v" id="grand">-</span></div>
+          <div class="kv"><span class="k">Variance</span><span class="v" id="variance">-</span></div>
+          <div class="kv"><span class="k">Cell checks agreeing</span><span class="v" id="agreeing">-</span></div>
+          <div class="kv"><span class="k">Posted amounts</span><span class="v" id="postedcheck">-</span></div>
+          <div class="verdict" id="verdict">Checking</div>
+          <div class="checksum" id="checksum-box" hidden>
+            <div class="kv"><span class="k">Reconciliation checksum</span></div>
+            <div class="v" id="checksum">-</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Formula audit</h2>
+        <div class="inner">
+          <p class="kv"><span class="k" id="audit-count">-</span></p>
+          <ul class="flaglist" id="flaglist"></ul>
+        </div>
+        <p class="hint">Inconsistent formula. A flagged cell is not necessarily wrong.</p>
+      </div>
+    </aside>
+  </div>
+
+  <div class="statusbar">
+    <div class="tabs">
+      <button type="button" class="tab" id="tab-sheet" aria-selected="true">Q3 Recovery</button>
+      <button type="button" class="tab" id="tab-notes" aria-selected="false">Notes</button>
+    </div>
+    <div class="status"><span class="k">Cell</span><span class="v" id="statuscell">A1</span></div>
+    <div class="status"><span class="k">Value</span><span class="v" id="statusvalue">-</span></div>
+    <div class="spacer"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <div class="appfoot">
+    <span>Abaca Software Ltd, 4 Pellam Wharf, Lowfield</span>
+    <span class="spacer"></span>
+    <a href="shortcuts.html">Keyboard shortcuts</a>
+    <a href="support.html">Support</a>
+    <a href="privacy.html">Privacy</a>
+    <span>Copyright 2026 Abaca Software Ltd</span>
+  </div>
+</div>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const COLS = ['A', 'B', 'C', 'D', 'E'];
+// Unused columns drawn beyond the sheet's data, like any spreadsheet canvas.
+const BEYOND = ['F', 'G', 'H'];
+
+let sheet = null;
+let selected = 'A1';
+let showFormulas = false;
+// The formula bar is filled asynchronously, so a slow cell read must never
+// overwrite text the user has since typed: `selectSeq` drops a stale read and
+// `barIssued` is the last text the page itself put in the bar, so anything else
+// in there is the user's and is left alone unless the write is forced (Cancel,
+// Revert, and the refresh after a commit).
+let selectSeq = 0;
+let barIssued = '';
+let cellIssued = null;
+
+const el = (id) => document.getElementById(id);
+
+function toast(message, ok) {
+  const box = el('toast');
+  box.textContent = message || '';
+  box.className = 'toast' + (ok ? ' ok' : '');
+}
+
+async function getJson(path) {
+  const res = await fetch(path, { headers: { 'X-Session-Nonce': NONCE } });
+  return { status: res.status, body: await res.json() };
+}
+
+async function loadSheet() {
+  const query = showFormulas ? '?formulas=1' : '';
+  const { status, body } = await getJson('/api/calc/sheet' + query);
+  if (status !== 200) {
+    toast('This workbook could not be opened in this session.');
+    return;
+  }
+  sheet = body;
+  render();
+}
+
+function render() {
+  if (!sheet) return;
+  const head = el('grid-head');
+  head.textContent = '';
+  const hrow = document.createElement('tr');
+  hrow.appendChild(document.createElement('th'));
+  for (const col of COLS) {
+    const th = document.createElement('th');
+    th.textContent = col;
+    hrow.appendChild(th);
+  }
+  for (const col of BEYOND) {
+    const th = document.createElement('th');
+    th.className = 'beyond';
+    th.textContent = col;
+    hrow.appendChild(th);
+  }
+  head.appendChild(hrow);
+
+  const body = el('grid-body');
+  body.textContent = '';
+  for (let row = 1; row <= sheet.totalRow; row += 1) {
+    const tr = document.createElement('tr');
+    if (row === 1) tr.className = 'headrow';
+    if (row === sheet.totalRow) tr.className = 'totalrow';
+    const rh = document.createElement('th');
+    rh.textContent = String(row);
+    tr.appendChild(rh);
+    for (const col of COLS) {
+      const ref = col + row;
+      const td = document.createElement('td');
+      td.dataset.ref = ref;
+      td.tabIndex = 0;
+      const classes = [];
+      if (col === 'A') classes.push('text');
+      if (row === 1 || col === 'A') classes.push('protected');
+      if (sheet.audit.indexOf(ref) !== -1) classes.push('flagged');
+      if (ref === selected) classes.push('selected');
+      td.className = classes.join(' ');
+      td.textContent = showFormulas && sheet.formulas ? sheet.formulas[ref] : sheet.display[ref];
+      tr.appendChild(td);
+    }
+    for (const col of BEYOND) {
+      const td = document.createElement('td');
+      td.className = 'beyond';
+      td.setAttribute('aria-hidden', 'true');
+      tr.appendChild(td);
+    }
+    body.appendChild(tr);
+  }
+
+  el('control').textContent = sheet.control;
+  el('grand').textContent = sheet.grand;
+  el('variance').textContent = sheet.variance;
+  el('agreeing').textContent = sheet.agreeing;
+  el('postedcheck').textContent = sheet.postedIntact ? 'As posted' : 'Edited';
+  const verdict = el('verdict');
+  if (sheet.reconciled) {
+    verdict.textContent = 'Reconciled';
+    verdict.className = 'verdict ok';
+  } else {
+    verdict.textContent = sheet.failing + ' checks failing';
+    verdict.className = 'verdict';
+  }
+  el('checksum-box').hidden = !sheet.checksum;
+  el('checksum').textContent = sheet.checksum || '-';
+
+  el('audit-count').textContent = sheet.audit.length + ' cells flagged';
+  const list = el('flaglist');
+  list.textContent = '';
+  for (const ref of sheet.audit) {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'flagbtn';
+    btn.dataset.ref = ref;
+    btn.textContent = ref;
+    li.appendChild(btn);
+    const note = document.createElement('span');
+    note.className = 'flagnote';
+    note.textContent = 'Inconsistent formula';
+    li.appendChild(note);
+    list.appendChild(li);
+  }
+}
+
+async function select(ref, force) {
+  const wanted = String(ref || '').trim().toUpperCase().replace(/\$/g, '');
+  const parts = /^([A-E])([0-9]{1,2})$/.exec(wanted);
+  const lastRow = sheet ? sheet.totalRow : 14;
+  if (!parts || Number(parts[2]) < 1 || Number(parts[2]) > lastRow) {
+    toast('There is no cell ' + (ref || '') + ' on this sheet.');
+    return;
+  }
+  const seq = (selectSeq += 1);
+  selected = wanted;
+  el('namebox').value = wanted;
+  el('statuscell').textContent = wanted;
+  for (const td of document.querySelectorAll('#grid-body td')) {
+    td.classList.toggle('selected', td.dataset.ref === wanted);
+  }
+  const { status, body } = await getJson('/api/calc/cell?ref=' + encodeURIComponent(wanted));
+  if (seq !== selectSeq) return;
+  if (status !== 200) {
+    toast('That cell could not be read.');
+    return;
+  }
+  cellIssued = { ref: wanted, issued: body.issued, posted: body.posted };
+  el('statusvalue').textContent = body.display;
+  const bar = el('formula');
+  if (force || bar.value === barIssued) {
+    bar.value = body.input;
+    barIssued = body.input;
+    toast(body.editable ? '' : wanted + ' is protected.', false);
+  } else {
+    // Kept short on purpose: a snapshot truncates node text at 30 characters.
+    toast('Formula bar has unsaved text');
+  }
+}
+
+async function commit() {
+  const ref = selected;
+  const input = el('formula').value;
+  const res = await fetch('/api/calc/cell', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nonce: NONCE, ref, input }),
+  });
+  const body = await res.json();
+  if (!res.ok) {
+    toast(body.error || 'That entry was not accepted.');
+    return;
+  }
+  sheet = body;
+  if (showFormulas) {
+    await loadSheet();
+  } else {
+    render();
+  }
+  await select(ref, true);
+  toast(body.postedWas ? ref + ' was posted as ' + body.postedWas : ref + ' updated.', true);
+}
+
+async function revert() {
+  const ref = selected;
+  if (!cellIssued || cellIssued.ref !== ref || cellIssued.issued === null) {
+    toast('Nothing to restore for ' + ref);
+    return;
+  }
+  el('formula').value = cellIssued.issued;
+  barIssued = cellIssued.issued;
+  await commit();
+}
+
+el('grid-body').addEventListener('click', (event) => {
+  const td = event.target.closest('td');
+  if (td && td.dataset.ref) select(td.dataset.ref);
+});
+el('grid-body').addEventListener('dblclick', () => el('formula').focus());
+el('flaglist').addEventListener('click', (event) => {
+  const btn = event.target.closest('.flagbtn');
+  if (btn) select(btn.dataset.ref);
+});
+el('gotoform').addEventListener('submit', (event) => {
+  event.preventDefault();
+  select(el('namebox').value);
+});
+el('namebox').addEventListener('change', () => select(el('namebox').value));
+el('formula').addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    commit();
+  }
+});
+el('btn-enter').addEventListener('click', commit);
+el('btn-revert').addEventListener('click', revert);
+el('btn-cancel').addEventListener('click', () => select(selected, true));
+el('btn-recalc').addEventListener('click', () => loadSheet());
+el('btn-reconcile').addEventListener('click', () => loadSheet());
+el('btn-audit').addEventListener('click', () => {
+  const first = document.querySelector('.flagbtn');
+  if (first) first.focus();
+});
+el('btn-showformulas').addEventListener('click', async () => {
+  showFormulas = !showFormulas;
+  el('btn-showformulas').setAttribute('aria-pressed', String(showFormulas));
+  document.body.classList.toggle('showformulas', showFormulas);
+  await loadSheet();
+});
+el('tab-sheet').addEventListener('click', () => {
+  document.body.classList.remove('notes-open');
+  el('tab-sheet').setAttribute('aria-selected', 'true');
+  el('tab-notes').setAttribute('aria-selected', 'false');
+});
+el('tab-notes').addEventListener('click', () => {
+  document.body.classList.add('notes-open');
+  el('tab-sheet').setAttribute('aria-selected', 'false');
+  el('tab-notes').setAttribute('aria-selected', 'true');
+});
+
+loadSheet().then(() => select('A1'));
+</script>
+</body>
+</html>

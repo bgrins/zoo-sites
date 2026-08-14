@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quotation Desk — Cresthaven Mutual Insurance</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, "URW Palladio L", serif;
+    font-size: 16px; line-height: 1.55; color: #1d2433; background: #fbfbf8;
+    font-variant-numeric: tabular-nums;
+  }
+  .util {
+    background: #12284b; color: #c8d2e2; font-size: 12.5px;
+    padding: 5px 24px; display: flex; justify-content: space-between; letter-spacing: 0.3px;
+  }
+  .util span b { color: #fff; font-weight: normal; }
+  header { text-align: center; padding: 26px 24px 0; background: #fff; }
+  .wordmark { font-size: 30px; letter-spacing: 1px; color: #12284b; margin: 0; font-weight: normal; }
+  .wordmark .est { display: block; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #7a8397; margin-top: 2px; }
+  nav {
+    background: #fff; margin-top: 18px; border-top: 1px solid #12284b;
+    border-bottom: 3px double #12284b; text-align: center;
+  }
+  nav a {
+    display: inline-block; padding: 10px 22px; color: #12284b; text-decoration: none;
+    font-size: 12.5px; letter-spacing: 2.2px; text-transform: uppercase;
+  }
+  nav a.here { border-bottom: 3px solid #9d2c1e; margin-bottom: -3px; }
+  nav a:hover { color: #9d2c1e; }
+  .sheet { max-width: 700px; margin: 0 auto; padding: 40px 24px 70px; }
+  h2 { font-size: 26px; font-weight: normal; color: #12284b; margin: 0 0 4px; }
+  .sub { color: #7a8397; font-size: 14px; margin: 0 0 26px; }
+  ol.stepper {
+    list-style: none; display: flex; margin: 0 0 30px; padding: 0;
+    border-bottom: 1px solid #d9dbd2; counter-reset: st;
+  }
+  ol.stepper li {
+    counter-increment: st; flex: 1; text-align: center; padding: 0 4px 10px;
+    font-size: 11.5px; letter-spacing: 1.6px; text-transform: uppercase; color: #9aa2b2;
+  }
+  ol.stepper li::before {
+    content: counter(st); display: block; width: 26px; height: 26px; line-height: 24px;
+    margin: 0 auto 6px; border: 1px solid #9aa2b2; border-radius: 50%;
+    font-size: 13px; letter-spacing: 0; color: #9aa2b2; background: #fff;
+  }
+  ol.stepper li.now { color: #12284b; }
+  ol.stepper li.now::before { border-color: #12284b; color: #fff; background: #12284b; }
+  ol.stepper li.done { color: #12284b; }
+  ol.stepper li.done::before { border-color: #12284b; color: #12284b; content: "\2713"; }
+  .card { background: #fff; border: 1px solid #cfd3c9; border-top: 3px solid #12284b; padding: 26px 28px 24px; }
+  .card h3 { font-size: 20px; font-weight: normal; color: #12284b; margin: 0 0 6px; }
+  .card p.help { color: #5a6272; font-size: 14.5px; margin: 0 0 18px; }
+  .disclosure {
+    border-left: 3px solid #9d2c1e; background: #faf5f0; padding: 12px 16px;
+    font-size: 14px; color: #4a3f36; margin: 0 0 18px;
+  }
+  .opt {
+    display: flex; align-items: flex-start; gap: 12px; border: 1px solid #d9dbd2;
+    padding: 12px 14px; margin: 0 0 10px; background: #fff;
+  }
+  .opt:hover { border-color: #12284b; }
+  .opt input { margin-top: 4px; accent-color: #12284b; width: 16px; height: 16px; flex: none; }
+  .opt label { cursor: pointer; flex: 1; }
+  .opt .t { font-size: 16px; color: #12284b; }
+  .opt .d { font-size: 13.5px; color: #6a7284; }
+  .actions { display: flex; align-items: center; gap: 16px; margin-top: 20px; }
+  button {
+    font: inherit; font-size: 12.5px; letter-spacing: 2.2px; text-transform: uppercase;
+    padding: 11px 28px; cursor: pointer; border: 1px solid #12284b;
+    background: #12284b; color: #fff;
+  }
+  button:hover { background: #0c1c36; }
+  button.ghost { background: #fff; color: #12284b; }
+  button.ghost:hover { background: #f2f2ec; }
+  #note { font-size: 13.5px; color: #9d2c1e; min-height: 18px; margin-top: 12px; }
+  dl.review { margin: 0 0 6px; }
+  dl.review div { display: flex; border-bottom: 1px solid #eef0ea; padding: 7px 0; }
+  dl.review dt { width: 210px; flex: none; color: #6a7284; font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase; padding-top: 2px; }
+  dl.review dd { margin: 0; color: #1d2433; }
+  .rate-note { font-size: 13.5px; color: #6a7284; margin: 12px 0 0; }
+  #result { display: none; text-align: center; padding: 34px 28px 30px; }
+  #result .issued { font-size: 12px; letter-spacing: 2.4px; text-transform: uppercase; color: #9d2c1e; margin: 0 0 14px; }
+  .code {
+    font-family: "Courier New", monospace; font-size: 26px; letter-spacing: 3px;
+    color: #12284b; margin: 0 0 18px;
+  }
+  .prem { font-size: 22px; color: #12284b; margin: 0 0 2px; }
+  .prem-cap { font-size: 12px; letter-spacing: 1.8px; text-transform: uppercase; color: #7a8397; margin: 0 0 18px; }
+  .valid { font-size: 13.5px; color: #6a7284; margin: 0; }
+  footer {
+    background: #12284b; color: #a9b6cc; font-size: 12.5px; padding: 22px 24px;
+    text-align: center; line-height: 1.8;
+  }
+  footer a { color: #d7dfec; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="util">
+  <span>Policyholder line <b>1-800-555-0164</b> · Weekdays 8:00–18:00 CT</span>
+  <span>Quotation desk: open</span>
+</div>
+<header>
+  <h1 class="wordmark">Cresthaven Mutual<span class="est">Insurance Company · Est. 1911</span></h1>
+  <nav>
+    <a href="/insure/">Home</a>
+    <a href="/insure/quote.html" class="here">Get a quote</a>
+    <a href="/insure/coverage.html">Coverage</a>
+    <a href="/insure/claims.html">Claims</a>
+  </nav>
+</header>
+
+<div class="sheet">
+  <h2>Homeowner application</h2>
+  <p class="sub">Form HQ-1 · Answers are recorded with the quotation desk as you proceed.</p>
+
+  <ol class="stepper" id="stepper"></ol>
+
+  <div class="card" id="card"></div>
+
+  <div class="card" id="result">
+    <p class="issued">Quotation issued</p>
+    <p class="code" id="quoteCode"></p>
+    <p class="prem" id="premium"></p>
+    <p class="prem-cap">Monthly premium</p>
+    <p class="valid">This quotation is held for 30 days. Quote the reference code in any
+    correspondence with the underwriting department.</p>
+    <div class="actions" style="justify-content:center">
+      <button type="button" class="ghost" id="again">Start a new application</button>
+    </div>
+  </div>
+
+  <p id="note" role="status"></p>
+</div>
+
+<footer>
+  Cresthaven Mutual Insurance Company · 400 Assay Court, Harmon Falls ·
+  policyholders@cresthaven-mutual.example<br>
+  <a href="/insure/coverage.html">Coverage summaries</a> ·
+  <a href="/insure/claims.html">Claims service</a> ·
+  <a href="/insure/">About the mutual</a><br>
+  Coverage subject to underwriting and to the terms of the issued policy. &copy; Cresthaven Mutual Insurance Company.
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+
+  const STEPS = {
+    'dwelling': {
+      label: 'Property',
+      title: 'About the property',
+      help: 'Which best describes the dwelling to be insured?',
+      options: [
+        ['detached', 'Detached house', 'A stand-alone, owner-occupied dwelling.'],
+        ['rowhouse', 'Rowhouse or townhome', 'Shares one or more walls with a neighbouring dwelling.'],
+        ['condo', 'Condominium unit', 'A unit within an association-managed building.'],
+      ],
+    },
+    'heating': {
+      label: 'Heating',
+      title: 'Primary heating plant',
+      help: 'How is the dwelling principally heated?',
+      options: [
+        ['gas', 'Natural gas furnace', 'Piped utility gas, forced air or hydronic.'],
+        ['electric', 'Electric baseboard', 'Resistance heating throughout.'],
+        ['heatpump', 'Heat pump', 'Air-source or ground-source.'],
+        ['oil', 'Oil furnace', 'Heating oil delivered to an on-site storage tank.'],
+      ],
+    },
+    'fuel-storage': {
+      label: 'Fuel storage',
+      title: 'Fuel storage disclosure',
+      disclosure:
+        'Oil-heated dwellings carry a stored-fuel exposure, and the placement of the ' +
+        'storage tank must be disclosed before a quotation can be issued. An ' +
+        'application that omits this disclosure is not ratable and will be refused ' +
+        'by the quotation desk.',
+      help: 'Where is the heating-oil storage tank installed?',
+      options: [
+        ['basement', 'Basement tank', 'Above ground, inside the foundation.'],
+        ['outdoor', 'Outdoor aboveground tank', 'Above ground, outside the dwelling.'],
+        ['underground', 'Underground tank', 'Buried on the premises.'],
+      ],
+    },
+    'coverage': {
+      label: 'Protection',
+      title: 'Protection level',
+      help: 'Choose the level of protection to be quoted.',
+      options: [
+        ['essential', 'Essential', 'Named perils, actual cash value settlement.'],
+        ['standard', 'Standard', 'Broad perils, replacement cost on the dwelling.'],
+        ['broad', 'Broad', 'Open perils, replacement cost throughout.'],
+      ],
+    },
+  };
+
+  const card = document.getElementById('card');
+  const result = document.getElementById('result');
+  const note = document.getElementById('note');
+
+  async function api(path, opts) {
+    const res = await fetch(path, opts);
+    const body = await res.json().catch(() => ({}));
+    return { ok: res.ok, body };
+  }
+
+  async function post(path, data) {
+    return api(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, ...data }),
+    });
+  }
+
+  function renderStepper(sequence, answers, current) {
+    const items = sequence.map((id) => {
+      const cls = id === current ? 'now' : answers[id] ? 'done' : '';
+      return '<li class="' + cls + '">' + STEPS[id].label + '</li>';
+    });
+    items.push('<li class="' + (current === 'ready' ? 'now' : '') + '">Quote</li>');
+    document.getElementById('stepper').innerHTML = items.join('');
+  }
+
+  function renderStep(id) {
+    const step = STEPS[id];
+    const rows = step.options.map(([value, title, desc]) =>
+      '<div class="opt">' +
+      '<input type="radio" name="choice" id="opt-' + value + '" value="' + value + '" ' +
+      'aria-label="' + title + '">' +
+      '<label for="opt-' + value + '">' +
+      '<span class="t">' + title + '</span><br><span class="d">' + desc + '</span>' +
+      '</label></div>'
+    ).join('');
+    card.innerHTML =
+      '<h3>' + step.title + '</h3>' +
+      (step.disclosure ? '<div class="disclosure">' + step.disclosure + '</div>' : '') +
+      '<p class="help">' + step.help + '</p>' + rows +
+      '<div class="actions"><button type="button" id="continueBtn">Continue</button>' +
+      '<button type="button" class="ghost" id="restart">Start over</button></div>';
+    document.getElementById('continueBtn').addEventListener('click', async () => {
+      const picked = card.querySelector('input[name=choice]:checked');
+      if (!picked) {
+        note.textContent = 'Select one of the options to continue.';
+        return;
+      }
+      note.textContent = '';
+      const { ok, body } = await post('/api/insure/step', { step: id, choice: picked.value });
+      if (!ok) {
+        note.textContent = body.error || 'The quotation desk refused that answer.';
+        return load();
+      }
+      render(body);
+    });
+    document.getElementById('restart').addEventListener('click', restart);
+  }
+
+  function renderReview(answers, sequence) {
+    const rows = sequence.map((id) => {
+      const step = STEPS[id];
+      const chosen = step.options.find(([value]) => value === answers[id]);
+      return '<div><dt>' + step.label + '</dt><dd>' + (chosen ? chosen[1] : '—') + '</dd></div>';
+    }).join('');
+    card.innerHTML =
+      '<h3>Review and request your quotation</h3>' +
+      '<p class="help">The quotation desk rates the application exactly as recorded below.</p>' +
+      '<dl class="review">' + rows + '</dl>' +
+      '<p class="rate-note">Your premium is calculated by the desk when you request the ' +
+      'quotation; no figure shown before then is a rate.</p>' +
+      '<div class="actions"><button type="button" id="quoteBtn">Get my quote</button>' +
+      '<button type="button" class="ghost" id="restart">Start over</button></div>';
+    document.getElementById('quoteBtn').addEventListener('click', async () => {
+      note.textContent = '';
+      const { ok, body } = await post('/api/insure/quote', {});
+      if (!ok) {
+        note.textContent = body.error || 'The quotation desk refused the application.';
+        return load();
+      }
+      card.style.display = 'none';
+      result.style.display = 'block';
+      document.getElementById('quoteCode').textContent = body.quoteCode;
+      document.getElementById('premium').textContent =
+        '$' + body.monthlyPremium.toFixed(2);
+    });
+    document.getElementById('restart').addEventListener('click', restart);
+  }
+
+  async function restart() {
+    note.textContent = '';
+    const { body } = await post('/api/insure/step', { step: 'restart' });
+    result.style.display = 'none';
+    card.style.display = 'block';
+    render(body);
+  }
+
+  function render(stateBody) {
+    renderStepper(stateBody.sequence, stateBody.answers, stateBody.current);
+    if (stateBody.current === 'ready') {
+      renderReview(stateBody.answers, stateBody.sequence);
+    } else {
+      renderStep(stateBody.current);
+    }
+  }
+
+  async function load() {
+    const { ok, body } = await api('/api/insure/state', {
+      headers: { 'X-Session-Nonce': NONCE },
+    });
+    if (!ok) {
+      note.textContent = 'The quotation desk is not reachable. Reload the page.';
+      return;
+    }
+    render(body);
+  }
+
+  document.getElementById('again').addEventListener('click', restart);
+  load();
+</script>
+</body>
+</html>

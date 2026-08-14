@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kestrel Peak Trailers — Models</title>
+<style>
+  :root {
+    --char: #17140f;
+    --cream: #f6f1e7;
+    --sand: #cfc3ae;
+    --rust: #9c4a2f;
+    --stone: #7a7266;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--cream); color: var(--char);
+    font-family: Optima, Candara, "Noto Sans", "Segoe UI", sans-serif;
+    font-size: 16px; line-height: 1.55;
+  }
+  h1, h2, h3, .kicker, nav a {
+    font-family: "Avenir Next Condensed", "Arial Narrow", "Liberation Sans Narrow", sans-serif;
+  }
+  nav.top {
+    position: sticky; top: 0; z-index: 6;
+    background: rgba(23, 20, 15, 0.94); color: var(--cream);
+    display: flex; align-items: center; gap: 24px; padding: 12px 34px;
+  }
+  nav.top .word {
+    font-family: "Avenir Next Condensed", "Arial Narrow", sans-serif;
+    text-transform: uppercase; letter-spacing: 4px; font-size: 17px; font-weight: 600;
+  }
+  nav.top a {
+    color: var(--sand); text-decoration: none; text-transform: uppercase;
+    letter-spacing: 2px; font-size: 12px;
+  }
+  nav.top a:hover, nav.top a.on { color: #fff; }
+  nav.top .tel { margin-left: auto; font-size: 12px; letter-spacing: 1.5px; color: var(--sand); }
+  .hero {
+    position: relative; min-height: 240px; display: flex; align-items: flex-end;
+    padding: 0 34px 36px; color: #fff; overflow: hidden;
+    background: linear-gradient(180deg, #2c3a4a 0%, #5b6472 42%, #8a7a68 74%, #b09a80 100%);
+  }
+  .hero .ridge {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 130px; background: #22271f;
+    clip-path: polygon(0 70%, 10% 52%, 22% 68%, 34% 44%, 48% 62%, 60% 46%, 74% 66%, 86% 50%, 100% 68%, 100% 100%, 0 100%);
+  }
+  .hero .copy { position: relative; }
+  .kicker { text-transform: uppercase; letter-spacing: 4px; font-size: 11px; color: var(--sand); margin: 0 0 8px; }
+  .hero h1 { margin: 0; font-size: 44px; line-height: 0.96; font-weight: 600; text-transform: uppercase; }
+  .strip {
+    background: var(--char); color: var(--sand);
+    display: flex; flex-wrap: wrap; gap: 6px 44px; padding: 14px 34px;
+    text-transform: uppercase; letter-spacing: 2px; font-size: 11px;
+  }
+  .layout { max-width: 1040px; margin: 0 auto; padding: 46px 34px 70px; }
+  .layout > p.lede { max-width: 62ch; margin: 0 0 34px; }
+  .model { background: #fff; border-top: 4px solid var(--rust); padding: 26px; margin: 0 0 30px; }
+  .model h2 { margin: 0 0 4px; font-size: 28px; text-transform: uppercase; letter-spacing: -0.3px; }
+  .model p.sub { margin: 0 0 16px; font-size: 14px; color: var(--stone); }
+  .specs { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--sand); }
+  .specs li {
+    display: flex; justify-content: space-between; gap: 20px;
+    padding: 9px 0; border-bottom: 1px solid var(--sand); font-size: 14px;
+  }
+  .specs li span:first-child { text-transform: uppercase; letter-spacing: 1.6px; font-size: 11px; color: var(--stone); }
+  footer { background: var(--char); color: var(--sand); padding: 30px 34px; font-size: 12.5px; }
+  footer .cols { display: flex; flex-wrap: wrap; gap: 6px 40px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; }
+</style>
+</head>
+<body>
+<nav class="top">
+  <span class="word">Kestrel Peak</span>
+  <a href="models.html" class="on">Models</a>
+  <a href="build.html">Build yours</a>
+  <a href="owners.html">Owners</a>
+  <a href="dealers.html">Dealers</a>
+  <a href="brochure.html">Brochure</a>
+  <span class="tel">541-555-0142</span>
+</nav>
+
+<header class="hero">
+  <div class="ridge"></div>
+  <div class="copy">
+    <p class="kicker">2026 model year</p>
+    <h1>Three chassis, one jig</h1>
+  </div>
+</header>
+
+<div class="strip">
+  <span>Aluminium monocoque</span>
+  <span>Three chassis lengths</span>
+  <span>Six-year frame warranty</span>
+  <span>Made in Oregon</span>
+</div>
+
+<div class="layout">
+  <p class="lede">Every Kestrel Peak trailer starts on the same jig. Pick a length,
+  then work through the option groups on the build page. All three chassis carry
+  200 W of solar as standard, with a 400 W upgrade available.</p>
+
+  <section class="model">
+    <h2>Scree 10</h2>
+    <p class="sub">The ten-foot teardrop. Light enough for a small crossover, tall enough to sit up in.</p>
+    <ul class="specs">
+      <li><span>Dry weight</span><span>1,180 lb</span></li>
+      <li><span>Sleeps</span><span>Two adults</span></li>
+      <li><span>Solar</span><span>200 W standard, 400 W optional</span></li>
+      <li><span>Lead time</span><span>14 – 16 weeks from deposit</span></li>
+    </ul>
+  </section>
+
+  <section class="model">
+    <h2>Col 12</h2>
+    <p class="sub">The twelve-foot middle of the range, with the full-width galley and the deepest storage.</p>
+    <ul class="specs">
+      <li><span>Dry weight</span><span>1,520 lb</span></li>
+      <li><span>Sleeps</span><span>Two adults</span></li>
+      <li><span>Solar</span><span>200 W standard, 400 W optional</span></li>
+      <li><span>Lead time</span><span>16 – 19 weeks from deposit</span></li>
+    </ul>
+  </section>
+
+  <section class="model">
+    <h2>Cirque 14</h2>
+    <p class="sub">The fourteen-foot flagship. A fold-down bunk over the footwell sleeps a third traveller.</p>
+    <ul class="specs">
+      <li><span>Dry weight</span><span>1,940 lb</span></li>
+      <li><span>Sleeps</span><span>Two adults plus a bunk</span></li>
+      <li><span>Solar</span><span>200 W standard, 400 W optional</span></li>
+      <li><span>Lead time</span><span>18 – 22 weeks from deposit</span></li>
+    </ul>
+  </section>
+</div>
+
+<footer>
+  <div class="cols">
+    <span>Showroom open Tue–Sat</span>
+    <span>1180 Switchback Rd, Bldg C</span>
+    <span>541-555-0142</span>
+  </div>
+  © 2026 Kestrel Peak Trailers, Inc.
+</footer>
+</body>
+</html>

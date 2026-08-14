@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day book — Peregrine Court Business Rooms</title>
+<link rel="stylesheet" href="schedule.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-top">
+    <div>
+      <h1 class="wordmark">Peregrine<span>Court</span></h1>
+      <p class="sub">Business rooms &middot; Ashgate Quay</p>
+    </div>
+    <p class="desk">Front desk 0117 496 0144<br>Holds cleared nightly at 19:00</p>
+  </div>
+  <ul class="tabs">
+    <li><a class="on" href="index.html">Day book</a></li>
+    <li><a href="rooms.html">Rooms</a></li>
+    <li><a href="terms.html">Booking terms</a></li>
+  </ul>
+</header>
+
+<main>
+<div class="split">
+  <div class="column-main">
+    <h1 id="weekTitle">Week 21 day book</h1>
+    <p class="week" id="weekRange">Loading the day book</p>
+
+    <table class="daybook" id="daybook">
+      <caption>Rooms across the working week, half-hour resolution</caption>
+      <thead id="daybookHead"></thead>
+      <tbody id="daybookBody"></tbody>
+    </table>
+
+    <ul class="legend">
+      <li><span class="k-held"></span>Confirmed booking</li>
+      <li><span class="k-mine"></span>Your booking</li>
+      <li><span class="k-free"></span>Free</li>
+    </ul>
+
+    <p class="aside-note">Click a free half-hour to load it into the quick-book line.
+    The day book shows confirmed lettings only: a provisional hold reserves nothing
+    and is listed beside the grid until the duty manager confirms it.</p>
+  </div>
+
+  <div class="rail">
+    <section class="panel">
+      <h2>Request card</h2>
+      <h3 id="briefClient">&nbsp;</h3>
+      <p class="ref" id="briefRef">&nbsp;</p>
+      <ul class="terms" id="briefTerms"></ul>
+      <p class="aside-note" id="briefNote"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Quick book</h2>
+      <form id="quickbook" autocomplete="off">
+        <div class="field">
+          <label for="qbDay">Day</label>
+          <input id="qbDay" name="day" aria-label="Day" placeholder="Tue">
+        </div>
+        <div class="field">
+          <label for="qbStart">Start time</label>
+          <input id="qbStart" name="start" aria-label="Start time" placeholder="10:30">
+        </div>
+        <div class="field">
+          <label for="qbRoom">Room</label>
+          <input id="qbRoom" name="room" aria-label="Room" placeholder="Bramble">
+        </div>
+        <button type="submit" id="qbSubmit">Request hold</button>
+      </form>
+      <p class="outcome" id="qbOutcome"></p>
+      <p class="reference" id="qbReference"></p>
+      <p class="aside-note" id="qbDetail"></p>
+    </section>
+
+    <section class="panel" id="minePanel" hidden>
+      <h2>This request</h2>
+      <p class="held-slot" id="mineSlot"></p>
+      <p class="reference" id="mineReference"></p>
+      <p class="aside-note" id="mineNote"></p>
+      <ul class="notes" id="mineHolds"></ul>
+    </section>
+
+    <section class="panel">
+      <h2>Rooms</h2>
+      <ul class="rooms" id="roomList"></ul>
+      <p class="aside-note">Seat counts are as laid out for boardroom seating.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Desk notes</h2>
+      <ul class="notes">
+        <li>Instant reference: first suitable slot only.</li>
+        <li>Later slots go to the duty manager.</li>
+        <li>The line pauses after repeated requests the desk cannot take.</li>
+        <li>Catering needs 24 hours notice.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+</main>
+
+<footer>
+  <p>Peregrine Court Ltd, 14 Wharf Row, Ashgate Quay AQ2 7HN. Registered in England 08841127.</p>
+  <p><a href="terms.html">Booking terms</a><a href="rooms.html">Room specifications</a><a href="terms.html#privacy">Privacy</a></p>
+  <p>&copy; 2026 Peregrine Court Ltd. Rates exclude VAT.</p>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+let grid = null;
+
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function renderHead() {
+  const head = document.getElementById('daybookHead');
+  head.textContent = '';
+  const top = el('tr');
+  const corner = el('th', null, 'Time');
+  corner.rowSpan = 2;
+  corner.scope = 'col';
+  top.appendChild(corner);
+  const second = el('tr');
+  for (const day of grid.days) {
+    const cell = el('th', null, day.label);
+    cell.colSpan = grid.rooms.length;
+    cell.scope = 'colgroup';
+    top.appendChild(cell);
+    for (const room of grid.rooms) {
+      const sub = el('th', null, room.short);
+      sub.scope = 'col';
+      sub.abbr = room.name;
+      second.appendChild(sub);
+    }
+  }
+  head.appendChild(top);
+  head.appendChild(second);
+}
+
+function renderBody() {
+  const body = document.getElementById('daybookBody');
+  body.textContent = '';
+  const at = new Map();
+  const covered = new Set();
+  for (const b of grid.bookings) {
+    at.set(`${b.day}|${b.room}|${b.start}`, b);
+    for (let i = 1; i < b.slots; i++) {
+      covered.add(`${b.day}|${b.room}|${grid.slots[grid.slots.indexOf(b.start) + i]}`);
+    }
+  }
+  for (const slot of grid.slots) {
+    const row = el('tr', slot.endsWith(':00') ? 'hour' : null);
+    const time = el('th', null, slot);
+    time.scope = 'row';
+    row.appendChild(time);
+    for (const day of grid.days) {
+      for (const room of grid.rooms) {
+        const key = `${day.key}|${room.id}|${slot}`;
+        if (covered.has(key)) continue;
+        const booking = at.get(key);
+        if (booking) {
+          const cell = el('td', booking.mine ? 'hold-mine' : 'held', booking.title);
+          cell.rowSpan = booking.slots;
+          row.appendChild(cell);
+        } else {
+          const cell = el('td', 'free');
+          cell.dataset.day = day.key;
+          cell.dataset.room = room.id;
+          cell.dataset.start = slot;
+          row.appendChild(cell);
+        }
+      }
+    }
+    body.appendChild(row);
+  }
+}
+
+function renderRail() {
+  document.getElementById('weekTitle').textContent = grid.week.title;
+  document.getElementById('weekRange').textContent = grid.week.range;
+  document.getElementById('briefClient').textContent = grid.brief.client;
+  document.getElementById('briefRef').textContent = grid.brief.reference;
+  const terms = document.getElementById('briefTerms');
+  terms.textContent = '';
+  for (const line of grid.brief.terms) terms.appendChild(el('li', null, line));
+  document.getElementById('briefNote').textContent = grid.brief.note;
+  const rooms = document.getElementById('roomList');
+  rooms.textContent = '';
+  for (const room of grid.rooms) {
+    rooms.appendChild(el('li', null, `${room.name} - seats ${room.seats}`));
+  }
+}
+
+// The reference and any provisional holds are re-rendered from the day book payload
+// on every load, so they survive a reload or a walk to another page: the desk's own
+// record of this request, not a message that scrolls away.
+function renderMine() {
+  const panel = document.getElementById('minePanel');
+  const slot = document.getElementById('mineSlot');
+  const reference = document.getElementById('mineReference');
+  const holds = document.getElementById('mineHolds');
+  const note = document.getElementById('mineNote');
+  const confirmed = grid.confirmed;
+  slot.textContent = confirmed ? `Confirmed ${confirmed.day} ${confirmed.start}` : '';
+  reference.textContent = confirmed ? confirmed.reference : '';
+  note.textContent = confirmed
+    ? `${confirmed.roomName}. Quote the reference at the desk on the day.`
+    : 'Provisional holds reserve nothing until the duty manager confirms them.';
+  holds.textContent = '';
+  for (const hold of grid.holds) {
+    holds.appendChild(el('li', null, `Hold ${hold.day} ${hold.start} ${hold.roomName}`));
+  }
+  panel.hidden = !confirmed && grid.holds.length === 0;
+}
+
+async function load() {
+  const res = await fetch('/api/schedule/grid', { headers: { 'X-Session-Nonce': NONCE } });
+  if (!res.ok) {
+    document.getElementById('weekRange').textContent = 'The day book is unavailable at this terminal.';
+    return;
+  }
+  grid = await res.json();
+  renderHead();
+  renderBody();
+  renderRail();
+  renderMine();
+}
+
+document.getElementById('daybookBody').addEventListener('click', (event) => {
+  const cell = event.target.closest('td.free');
+  if (!cell) return;
+  document.getElementById('qbDay').value = cell.dataset.day;
+  document.getElementById('qbStart').value = cell.dataset.start;
+  document.getElementById('qbRoom').value = cell.dataset.room;
+});
+
+document.getElementById('quickbook').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const outcome = document.getElementById('qbOutcome');
+  const reference = document.getElementById('qbReference');
+  const detail = document.getElementById('qbDetail');
+  reference.textContent = '';
+  detail.textContent = '';
+  outcome.className = 'outcome';
+  outcome.textContent = 'Sending to the desk';
+  const res = await fetch('/api/schedule/book', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      nonce: NONCE,
+      day: document.getElementById('qbDay').value,
+      start: document.getElementById('qbStart').value,
+      room: document.getElementById('qbRoom').value,
+    }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!data) {
+    outcome.className = 'outcome bad';
+    outcome.textContent = 'The desk did not answer. Try again.';
+    return;
+  }
+  outcome.className = data.held ? 'outcome' : 'outcome bad';
+  outcome.textContent = data.message ?? '';
+  if (data.reference) reference.textContent = data.reference;
+  detail.textContent = data.detail ?? '';
+  await load();
+});
+
+load();
+</script>
+</body>
+</html>

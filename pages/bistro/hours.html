@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Brindle Fig — Hours &amp; Directions</title>
+<link rel="stylesheet" href="bistro.css">
+<style>
+  .hrow { display: flex; align-items: baseline; gap: 8px; margin: 8px 0 0; }
+  .hday { white-space: nowrap; }
+  .leader { flex: 1; border-bottom: 1px dotted var(--gold); transform: translateY(-4px); }
+  .htime { white-space: nowrap; }
+  .block { margin-top: 22px; }
+  .block h3 {
+    margin: 0 0 6px; font-weight: normal; font-variant: small-caps;
+    letter-spacing: 2px; color: var(--wine); font-size: 18px;
+  }
+  .block p { margin: 4px 0; }
+  .quiet { color: var(--faded); font-size: 14px; }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="est">Kitchen &amp; Counter · Est. 2011</div>
+  <h1>The Brindle Fig</h1>
+  <div class="rulewrap"></div>
+  <nav>
+    <a href="index.html">Menu</a><span class="dot">·</span>
+    <a href="order.html">Order ahead</a><span class="dot">·</span>
+    <a href="hours.html" class="on">Hours &amp; directions</a>
+  </nav>
+</header>
+
+<main class="sheet">
+  <p class="lede">We keep short hours and cook everything the same day.
+  The counter closes half an hour before the kitchen.</p>
+
+  <div class="card">
+    <h2>Hours</h2>
+    <div class="hrow"><span class="hday">Tuesday to Friday</span><span class="leader"></span><span class="htime">11:30 – 21:00</span></div>
+    <div class="hrow"><span class="hday">Saturday</span><span class="leader"></span><span class="htime">10:00 – 21:30</span></div>
+    <div class="hrow"><span class="hday">Sunday</span><span class="leader"></span><span class="htime">10:00 – 15:00</span></div>
+    <div class="hrow"><span class="hday">Monday</span><span class="leader"></span><span class="htime">Closed</span></div>
+
+    <div class="block">
+      <h3>Finding us</h3>
+      <p>14 Waldron Lane, at the corner of Herrick Street — two minutes on foot
+      from the Old Mill tram stop, under the green awning.</p>
+      <p class="quiet">Bicycle racks by the side door. Street parking on Herrick
+      after 18:00; the Waldron Lane garage is a three-minute walk.</p>
+    </div>
+
+    <div class="block">
+      <h3>Order-ahead pick-up</h3>
+      <p>Tickets placed through the <a href="order.html">order-ahead counter</a>
+      are ready in about fifteen minutes. Quote your order code at the counter
+      when you collect.</p>
+      <p class="quiet">Large-party tickets (six dishes or more) are best phoned
+      through: (555) 014-0180.</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  The Brindle Fig · 14 Waldron Lane · (555) 014-0180 · hello@brindlefig.example<br>
+  <a href="index.html">Menu</a> · Walk-ins welcome · No service charge<br>
+  &copy; The Brindle Fig. All rights reserved.
+</footer>
+</body>
+</html>

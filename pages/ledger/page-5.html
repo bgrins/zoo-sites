@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transaction Ledger - Page 5 - Trelowen Land Trust</title>
+<style>
+  html { background: #d9d3c4; }
+  body { font-family: "Palatino Linotype", Palatino, "Book Antiqua", "URW Palladio L", serif;
+    color: #241f1a; margin: 0; font-size: 15px; line-height: 1.45; }
+  .strip { background: #4d1f27; color: #e8d9cf; font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; padding: 5px 0; }
+  .strip .inner, .sheet { max-width: 720px; margin: 0 auto; }
+  .strip .inner { display: flex; justify-content: space-between; padding: 0 40px; }
+  .sheet { background: #fdfbf5; border: 1px solid #c9c0ac; border-top: 0;
+    box-shadow: 0 2px 6px rgba(60, 48, 36, 0.18); padding: 30px 40px 34px; }
+  .masthead { display: flex; align-items: baseline; justify-content: space-between; }
+  .masthead .org { font-size: 21px; letter-spacing: 0.09em; text-transform: uppercase; }
+  .masthead .folio { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #6b5f52; }
+  .rule { border-bottom: 3px solid #4d1f27; margin-top: 7px; }
+  .rule-thin { border-bottom: 1px solid #4d1f27; margin-top: 2px; margin-bottom: 18px; }
+  h1 { font-size: 17px; font-weight: normal; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 10px; }
+  dl.facts { display: grid; grid-template-columns: 8em 1fr; gap: 2px 14px; margin: 0 0 16px;
+    font-size: 13px; }
+  dl.facts dt { color: #6b5f52; font-size: 11px; letter-spacing: 0.11em; text-transform: uppercase;
+    padding-top: 2px; }
+  dl.facts dd { margin: 0; }
+  .note { font-size: 13px; font-style: italic; color: #55483c; margin: 0 0 16px; }
+  .toolbar { display: flex; align-items: baseline; gap: 14px; border-top: 1px solid #ddd3bf;
+    border-bottom: 1px solid #ddd3bf; padding: 9px 0; margin-bottom: 20px; }
+  button { font-family: inherit; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 6px 13px; background: #fdfbf5; color: #4d1f27; border: 1px solid #4d1f27;
+    border-radius: 0; cursor: pointer; }
+  button:hover { background: #4d1f27; color: #fdfbf5; }
+  .toolbar .hint { font-size: 12px; font-style: italic; color: #6b5f52; }
+  #export-status { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #4d1f27; margin-left: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  caption { text-align: left; font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase;
+    color: #6b5f52; padding: 0 0 6px; }
+  th, td { padding: 3px 8px; border-bottom: 1px solid #e7dfcd; text-align: left; }
+  td + td, th + th { border-left: 1px solid #e7dfcd; }
+  thead th { font-size: 10px; font-weight: normal; letter-spacing: 0.15em; text-transform: uppercase;
+    color: #4d1f27; border-bottom: 1px solid #8a7b6a; padding-bottom: 5px; }
+  td.amount, th.amount { text-align: right; font-family: "Courier New", Courier, monospace;
+    font-size: 13px; white-space: nowrap; }
+  th.amount { font-family: inherit; font-size: 10px; letter-spacing: 0.15em; }
+  td.date { white-space: nowrap; font-family: "Courier New", Courier, monospace; font-size: 12px;
+    color: #4b4034; }
+  td.tag { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: #6b5f52; }
+  tfoot td { border-top: 3px double #8a7b6a; border-bottom: 0; padding-top: 6px;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
+  tfoot td.amount { letter-spacing: 0; font-size: 13px; }
+  .pager { text-align: center; margin: 22px 0 4px; font-size: 12px; letter-spacing: 0.06em; }
+  .pager a { color: #4d1f27; text-decoration: none; border-bottom: 1px solid #c4a8ac; }
+  .pager a:hover { border-bottom-color: #4d1f27; }
+  .pager .nums { margin: 0 10px; }
+  .pager .nums a, .pager .current { padding: 2px 6px; }
+  .pager .current { color: #4d1f27; font-weight: 700; border: 1px solid #4d1f27; }
+  .pager .off { color: #a89b8b; }
+  .pageline { text-align: center; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #6b5f52; margin: 0; }
+  footer { border-top: 1px solid #ddd3bf; margin-top: 24px; padding-top: 10px; font-size: 11px;
+    line-height: 1.5; color: #74695c; }
+  @media print {
+    html, .sheet { background: #fff; }
+    .strip, .toolbar, .pager { display: none; }
+    .sheet { border: 0; box-shadow: none; max-width: none; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="strip"><div class="inner"><span>Bookkeeping &middot; Operating fund</span><span>Fiscal 2026 &middot; unaudited</span></div></div>
+<main class="sheet">
+  <div class="masthead">
+    <span class="org">Trelowen Land Trust</span>
+    <span class="folio">Folio 5</span>
+  </div>
+  <div class="rule"></div>
+  <div class="rule-thin"></div>
+  <h1>Transaction Ledger</h1>
+  <dl class="facts">
+    <dt>Fund</dt><dd>Operating</dd>
+    <dt>Period</dt><dd>Fiscal year 2026, postings entered oldest first</dd>
+    <dt>Basis</dt><dd>Cash; every posting carries one tag: hardware, travel, software, or misc</dd>
+    <dt>Prepared by</dt><dd>K. Ostergaard, bookkeeper</dd>
+  </dl>
+  <p class="note">Amounts are entered as posted. Subtotals shown at the foot of each
+  folio cover that folio only and are not carried forward.</p>
+  <div class="toolbar">
+    <button id="export" type="button">Export CSV</button>
+    <span class="hint">Exports every posting in the ledger, not just this folio.</span>
+    <span id="export-status" role="status"></span>
+  </div>
+  <nav class="pager" aria-label="Ledger pages">
+    <a href="page-4.html">Previous</a>
+    <span class="nums"><a href="index.html">1</a>
+    <a href="page-2.html">2</a>
+    <a href="page-3.html">3</a>
+    <a href="page-4.html">4</a>
+    <span class="current" aria-current="page">5</span>
+    <a href="page-6.html">6</a>
+    <a href="page-7.html">7</a></span>
+    <a href="page-6.html">Next</a>
+  </nav>
+  <p class="pageline">Page 5 of 7</p>
+  <table>
+    <caption>Ledger postings &middot; folio 5</caption>
+    <thead>
+      <tr><th>Date</th><th>Description</th><th>Tag</th><th class="amount">Amount</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="date">2026-04-23</td>
+        <td>Sign printing - trailhead</td>
+        <td class="tag">misc</td>
+        <td class="amount">$110.43</td>
+      </tr>
+      <tr>
+        <td class="date">2026-04-23</td>
+        <td>Airfare - land trust forum</td>
+        <td class="tag">travel</td>
+        <td class="amount">$36.45</td>
+      </tr>
+      <tr>
+        <td class="date">2026-04-24</td>
+        <td>Legal notice publication</td>
+        <td class="tag">misc</td>
+        <td class="amount">$36.10</td>
+      </tr>
+      <tr>
+        <td class="date">2026-04-27</td>
+        <td>Bench grinder for shop</td>
+        <td class="tag">hardware</td>
+        <td class="amount">$469.98</td>
+      </tr>
+      <tr>
+        <td class="date">2026-04-27</td>
+        <td>Lodging - regional summit</td>
+        <td class="tag">travel</td>
+        <td class="amount">$121.72</td>
+      </tr>
+      <tr>
+        <td class="date">2026-04-28</td>
+        <td>Water pump rebuild kit</td>
+        <td class="tag">hardware</td>
+        <td class="amount">$831.29</td>
+      </tr>
+      <tr>
+        <td class="date">2026-04-29</td>
+        <td>Chainsaw and safety gear</td>
+        <td class="tag">hardware</td>
+        <td class="amount">$1,227.38</td>
+      </tr>
+      <tr>
+        <td class="date">2026-04-30</td>
+        <td>First aid restock</td>
+        <td class="tag">misc</td>
+        <td class="amount">$38.26</td>
+      </tr>
+      <tr>
+        <td class="date">2026-05-04</td>
+        <td>Legal notice publication</td>
+        <td class="tag">misc</td>
+        <td class="amount">$325.67</td>
+      </tr>
+      <tr>
+        <td class="date">2026-05-04</td>
+        <td>Website hosting renewal</td>
+        <td class="tag">software</td>
+        <td class="amount">$930.72</td>
+      </tr>
+      <tr>
+        <td class="date">2026-05-04</td>
+        <td>Mapping plugin license</td>
+        <td class="tag">software</td>
+        <td class="amount">$649.16</td>
+      </tr>
+      <tr>
+        <td class="date">2026-05-05</td>
+        <td>Parking - permit office</td>
+        <td class="tag">travel</td>
+        <td class="amount">$92.58</td>
+      </tr>
+      <tr>
+        <td class="date">2026-05-05</td>
+        <td>Per diem - field crew</td>
+        <td class="tag">travel</td>
+        <td class="amount">$100.96</td>
+      </tr>
+      <tr>
+        <td class="date">2026-05-06</td>
+        <td>First aid restock</td>
+        <td class="tag">misc</td>
+        <td class="amount">$44.10</td>
+      </tr>
+      <tr>
+        <td class="date">2026-05-07</td>
+        <td>Accounting seat license</td>
+        <td class="tag">software</td>
+        <td class="amount">$1,045.56</td>
+      </tr>
+      <tr>
+        <td class="date">2026-05-11</td>
+        <td>Mileage - north parcel</td>
+        <td class="tag">travel</td>
+        <td class="amount">$738.71</td>
+      </tr>
+      <tr>
+        <td class="date">2026-05-12</td>
+        <td>Utility trailer purchase</td>
+        <td class="tag">hardware</td>
+        <td class="amount">$3,783.63</td>
+      </tr>
+      <tr>
+        <td class="date">2026-05-12</td>
+        <td>Mapping plugin license</td>
+        <td class="tag">software</td>
+        <td class="amount">$806.20</td>
+      </tr>
+      <tr>
+        <td class="date">2026-05-13</td>
+        <td>Website hosting renewal</td>
+        <td class="tag">software</td>
+        <td class="amount">$735.19</td>
+      </tr>
+      <tr>
+        <td class="date">2026-05-15</td>
+        <td>Gate hardware and locks</td>
+        <td class="tag">hardware</td>
+        <td class="amount">$1,211.63</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr><td colspan="3">Folio subtotal</td><td class="amount">$13,335.72</td></tr>
+    </tfoot>
+  </table>
+  <nav class="pager" aria-label="Ledger pages">
+    <a href="page-4.html">Previous</a>
+    <span class="nums"><a href="index.html">1</a>
+    <a href="page-2.html">2</a>
+    <a href="page-3.html">3</a>
+    <a href="page-4.html">4</a>
+    <span class="current" aria-current="page">5</span>
+    <a href="page-6.html">6</a>
+    <a href="page-7.html">7</a></span>
+    <a href="page-6.html">Next</a>
+  </nav>
+  <p class="pageline">Page 5 of 7</p>
+  <footer>Trelowen Land Trust &middot; Old Creamery Road, Trelowen &middot; registered
+  charity no. 08-2247. Postings are reviewed annually by Harrow &amp; Pike, chartered
+  accountants. Queries about an entry: bookkeeping@trelowentrust.example</footer>
+</main>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const status = document.getElementById('export-status');
+  fetch('/api/beacon', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nonce: NONCE, kind: 'ledger-folio', data: { page: 5 } }),
+  }).catch(() => {});
+  document.getElementById('export').addEventListener('click', async () => {
+    status.textContent = 'Preparing export...';
+    try {
+      const res = await fetch('/api/ledger/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, page: 5 }),
+      });
+      if (!res.ok) {
+        status.textContent = 'Export failed - reload the page and try again.';
+        return;
+      }
+      const data = await res.json();
+      status.textContent = 'Export ready - opening CSV.';
+      window.location.assign(data.url);
+    } catch {
+      status.textContent = 'Export failed - reload the page and try again.';
+    }
+  });
+</script>
+</body>
+</html>

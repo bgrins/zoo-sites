@@ -1,0 +1,89 @@
+{
+  "rank": 4,
+  "comments": [
+    {
+      "author": "opexoptimist",
+      "age": "13 hours ago",
+      "text": "These posts always compare peak cloud spend against steady-state colo spend and declare victory. The honest comparison includes: the two engineers who now own hardware lifecycle, the capacity you over-provisioned because you can't autoscale, the failed-disk runbook at 3am, and the opportunity cost of all of it. Sometimes bare metal still wins! But I've never seen one of these writeups do the accounting properly.",
+      "replies": [
+        {
+          "author": "rackmounted",
+          "age": "12 hours ago",
+          "text": "OP here. We tried to do exactly that accounting in section 4 — the TCO table includes 0.6 FTE of ongoing ops (measured over a year, not estimated), 40% capacity headroom, and remote-hands contracts at both facilities. Our workload is the boring-favorable case: steady traffic, predictable growth, storage-heavy. We still run burst workloads and CI in the cloud.\n\nThe real headline isn't \"cloud bad,\" it's that our egress-heavy product had a cost structure where bandwidth alone paid for the entire migration in 7 months.",
+          "replies": [
+            {
+              "author": "opexoptimist",
+              "age": "11 hours ago",
+              "text": "I'll admit section 4 is better than most, and I should have finished the article before commenting — the 0.6 FTE being measured rather than projected is the detail that usually gets fudged. Egress-heavy really is the killer case. Withdrawn, mostly.",
+              "replies": [
+                {
+                  "author": "warmstart",
+                  "age": "10 hours ago",
+                  "text": "A commenter reading the article and updating their position? On this site? Screenshot taken."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "author": "cloudnative_carl",
+          "age": "11 hours ago",
+          "text": "The FTE cost people cite always assumes cloud ops is free, though. My last company had four engineers whose entire job was wrangling managed-service quotas, IAM policies, and cost anomaly dashboards. You don't escape ops by going to the cloud; you exchange one ops discipline for another."
+        }
+      ]
+    },
+    {
+      "author": "kernelpanda",
+      "age": "11 hours ago",
+      "text": "The part everyone skips over in the article: they didn't just lift-and-shift, they re-architected around fewer, bigger boxes. A single modern 2U server with a couple hundred cores and multiple TB of RAM replaces a truly absurd number of the mid-size instances people architect around. Half the distributed-systems complexity in modern stacks exists to compensate for artificially small machines.",
+      "replies": [
+        {
+          "author": "shardbearer",
+          "age": "10 hours ago",
+          "text": "Until that one big box dies and takes everything with it. There's a reason we spread things out, and it isn't instance pricing.",
+          "replies": [
+            {
+              "author": "kernelpanda",
+              "age": "9 hours ago",
+              "text": "Two big boxes with failover, then — still an order of magnitude fewer moving parts than forty small ones with a coordination layer. Redundancy and sharding are different tools; the industry default of solving redundancy *via* sharding is the thing worth questioning."
+            },
+            {
+              "author": "rackmounted",
+              "age": "9 hours ago",
+              "text": "OP — this is exactly what we did. Primary/standby pairs per service, three chassis of headroom total. Our failure math is in the appendix: annualized, we expect ~2 hardware events a year and each one is a 4-minute automated failover. We've had one real one so far and it matched."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "lambdacurious",
+      "age": "9 hours ago",
+      "text": "Genuine question for people who've done this: what did you do about databases? Managed databases are the stickiest cloud service — backups, PITR, failover, upgrades all handled. Self-hosting the stateless tier is easy mode; self-hosting the stateful tier is where I'd expect the pain to live.",
+      "replies": [
+        {
+          "author": "pgbouncer_pilot",
+          "age": "8 hours ago",
+          "text": "Did it two years ago. The tooling for self-managed replication and PITR is genuinely good now — the hard part isn't the software, it's building organizational confidence in your restore path. We ran quarterly restore drills into a scratch environment until it was boring. That's the actual price of leaving managed databases: you have to *earn* boredom instead of buying it."
+        }
+      ]
+    },
+    {
+      "author": "tokenring",
+      "age": "7 hours ago",
+      "text": "Datapoint from the other direction: we went bare metal in 2021 and moved back to cloud in 2024. Not because of cost — bare metal was cheaper the whole time — but because we entered a market that required a regional presence we couldn't build fast enough with colo contracts. Signing a data center agreement takes months; the cloud region was an afternoon of terraform. The option value is real even when the unit economics aren't.",
+      "replies": [
+        {
+          "author": "staticdrift",
+          "age": "6 hours ago",
+          "text": "This is the strongest pro-cloud argument and it's telling that it's about speed of change, not cost or reliability. Cloud is a real-options premium: you pay monthly for the right to pivot instantly. Whether that premium is worth it depends entirely on how likely the pivot is — which is a business question, not an infrastructure one."
+        }
+      ]
+    },
+    {
+      "author": "depreciator",
+      "age": "3 hours ago",
+      "text": "Nobody's mentioned the accounting angle: hardware is capex you depreciate over years, cloud is opex that hits every month. Depending on your funding situation and how your board reads burn, identical total costs can look very different on the financials. I've seen this drive the decision more than any engineering argument, in both directions."
+    }
+  ]
+}

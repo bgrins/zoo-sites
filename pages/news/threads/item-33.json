@@ -1,0 +1,41 @@
+{
+  "rank": 33,
+  "comments": [
+    {
+      "author": "staticdrift",
+      "age": "20 hours ago",
+      "text": "The \"500\" is obviously a rhetorical number but the taxonomy is solid: input validation, address normalization, payment tokenization, tax calculation, inventory race conditions, and then the long tail of third-party scripts that can each independently take the whole flow down.\n\nWhat the article gets right that most postmortems miss: the failures compound. A 0.5% failure rate at each of 40 steps is not 40 small problems, it's an 18% checkout abandonment machine.",
+      "replies": [
+        {
+          "author": "abandonedcart",
+          "age": "18 hours ago",
+          "text": "OP here — the compounding math was the whole reason I wrote it. Teams celebrate fixing one step from 99% to 99.5% and never multiply the chain out. The number 500 came from an actual audit spreadsheet; I stopped counting at 500 because the meeting ended.",
+          "replies": [
+            {
+              "author": "staticdrift",
+              "age": "15 hours ago",
+              "text": "\"I stopped counting because the meeting ended\" belongs on the cover of every reliability book."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "kernelpanda",
+      "age": "12 hours ago",
+      "text": "Missing from the list: the failure where everything technically works. Order goes through, payment clears, confirmation email lands — and the customer still calls support because the confirmation page redirected to the homepage before they could read the order number. Success states can fail too.",
+      "replies": [
+        {
+          "author": "offbyfun",
+          "age": "9 hours ago",
+          "text": "The checkout equivalent of a function that returns the right value and also deletes a file."
+        }
+      ]
+    },
+    {
+      "author": "formfollows",
+      "age": "4 hours ago",
+      "text": "Shameless plug since it's on topic: I maintain checkoutprobe.example.com, a synthetic-transaction tool that walks a real checkout hourly with a test card and diffs every step against a recorded baseline. Built it after an address-validation vendor silently broke us for six days. The article's point 214 (vendor changes response schema without versioning) is my origin story."
+    }
+  ]
+}

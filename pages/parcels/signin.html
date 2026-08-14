@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — Corvane Parcel Network</title>
+<link rel="stylesheet" href="corvane.css">
+</head>
+<body>
+<div class="topstrip">
+  <span>Customer service 0808 157 0420</span>
+  <span>Claims desk open 08:00-18:00</span>
+  <span class="sep"><a href="signin.html">Sign in</a></span>
+  <span><a href="business.html">Open a business account</a></span>
+</div>
+
+<header class="chrome">
+  <div class="bar">
+    <div class="wordmark"><b>Corvane</b><span>Parcel Network</span></div>
+    <div class="acct">Guest session &middot; rates shown ex VAT</div>
+  </div>
+  <nav class="main">
+    <a href="./">Track</a>
+    <a href="send.html">Send</a>
+    <a href="rates.html">Rates and zones</a>
+    <a href="drop-points.html">Drop points</a>
+    <a href="claims.html">Claims</a>
+    <a href="support.html">Support</a>
+  </nav>
+</header>
+
+<div class="crumb"><a href="./">Home</a> / Sign in</div>
+
+<div class="wrap">
+  <main>
+    <section class="panel">
+      <div class="head"><h1>Sign in</h1></div>
+      <div class="body">
+        <p class="lede">Sign in to book collections, print labels against your account
+        rates and download invoices. Business accounts and personal senders use the
+        same sign-in.</p>
+        <form class="stack" id="signin" autocomplete="off" novalidate>
+          <div class="field">
+            <label for="email">Email address</label>
+            <input id="email" name="email" type="email" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password">
+          </div>
+          <button type="submit">Sign in</button>
+        </form>
+        <div class="note" id="signinNote" role="status"></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="rail">
+    <section class="panel">
+      <div class="head"><h2>No account yet?</h2></div>
+      <div class="body">
+        <ul>
+          <li>Tracking works without an account from the <a href="./">home page</a>.</li>
+          <li>Regular senders can <a href="business.html">open a business account</a> for discounted rates and weekly invoicing.</li>
+          <li>Forgotten passwords are reset by the service team on 0808 157 0420 after identity checks.</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</div>
+
+<footer>
+  <div class="cols">
+    <div>
+      <h4>Shipping</h4>
+      <a href="collections.html">Book a collection</a>
+      <a href="prohibited.html">Prohibited items</a>
+      <a href="packaging.html">Packaging guide</a>
+    </div>
+    <div>
+      <h4>Accounts</h4>
+      <a href="business.html#pricing">Business pricing</a>
+      <a href="business.html#invoices">Invoices</a>
+      <a href="business.html#api">API access</a>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <a href="about.html">About Corvane</a>
+      <a href="network.html">Network map</a>
+      <a href="careers.html">Careers</a>
+    </div>
+    <div>
+      <h4>Legal</h4>
+      <a href="privacy.html">Privacy notice</a>
+      <a href="terms.html">Terms of carriage</a>
+      <a href="cookies.html">Cookie settings</a>
+    </div>
+  </div>
+  <div class="fine">
+    Corvane Parcel Network Ltd, Registered office: Unit 9, Marbeck Distribution Park,
+    Halston HL4 2QR. Registered number 00000000. Support: help@corvane-parcel.example
+    &middot; &copy; 2026 Corvane Parcel Network Ltd. All rights reserved.
+  </div>
+</footer>
+
+<script>
+  const form = document.getElementById('signin');
+  const email = document.getElementById('email');
+  const password = document.getElementById('password');
+  const note = document.getElementById('signinNote');
+
+  function setNote(kind, message) {
+    note.className = 'note ' + kind;
+    note.textContent = message;
+  }
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const addr = email.value.trim();
+    if (!addr) {
+      setNote('warn', 'Enter your email address.');
+      email.focus();
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) {
+      setNote('warn', 'That does not look like a valid email address.');
+      email.focus();
+      return;
+    }
+    if (!password.value) {
+      setNote('warn', 'Enter your password.');
+      password.focus();
+      return;
+    }
+    setNote('bad', 'We could not match those details to an account. Check the address and password, or call 0808 157 0420 if you believe the account exists.');
+  });
+</script>
+</body>
+</html>

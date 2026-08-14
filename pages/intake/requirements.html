@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Document Requirements — Orsino Consulting</title>
+<link rel="stylesheet" href="intake.css">
+</head>
+<body>
+<div class="masthead">
+  <div class="mast-top">
+    <span class="org">Orsino Consulting &mdash; People Operations</span>
+    <span class="mast-links"><a href="intranet.html">Staff intranet</a><a href="contact.html">Contact HR</a></span>
+  </div>
+  <h1>Day-one onboarding intake</h1>
+</div>
+<nav class="sitenav" aria-label="People Operations">
+  <a href="index.html" aria-current="page">Onboarding intake</a>
+  <a href="new-starters.html">New starters</a>
+  <a href="pay-benefits.html">Pay and benefits</a>
+  <a href="policies.html">Policies</a>
+  <a href="forms-library.html">Forms library</a>
+</nav>
+<div class="wrap">
+  <p class="crumbs"><a href="intranet.html">People Operations</a> / <a href="new-starters.html">New starters</a> /
+  <a href="index.html">Onboarding intake</a> / Document requirements</p>
+
+  <div class="sheet">
+    <h2>Bring these on your first day &mdash; <span id="path-label">loading</span> path</h2>
+    <p class="lead">This checklist is built from the path stored in your intake
+    session. Originals only, please: we scan them at the front desk and hand
+    them straight back.</p>
+    <div id="status" role="status"></div>
+    <ul id="docs"></ul>
+    <div class="callout">Missing something? You can still check in, but People
+    Operations will place a hold on your first pay run until every item above is
+    scanned.</div>
+    <p><a href="index.html">Change your engagement path</a></p>
+  </div>
+
+  <div class="helpline">Questions about a specific form? People Operations,
+  extension 4120, weekdays 8am to 4pm.</div>
+</div>
+<footer>
+  <div class="footgrid">
+    <div>
+      <h2>People Operations</h2>
+      <ul>
+        <li><a href="index.html">Onboarding intake</a></li>
+        <li><a href="new-starters.html#first-day">First-day checklist</a></li>
+        <li><a href="policies.html#right-to-work">Right to work checks</a></li>
+        <li><a href="forms-library.html">Forms library</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Working here</h2>
+      <ul>
+        <li><a href="pay-benefits.html">Pay and benefits</a></li>
+        <li><a href="policies.html#leave">Leave and absence</a></li>
+        <li><a href="policies.html#expenses">Expenses policy</a></li>
+        <li><a href="policies.html#contractors">Contractor engagement</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Get in touch</h2>
+      <ul>
+        <li>People Operations, extension 4120</li>
+        <li>peopleops@orsino-consulting.example</li>
+        <li>Weekdays 8am to 4pm</li>
+        <li><a href="contact.html">Raise a support ticket</a></li>
+      </ul>
+    </div>
+  </div>
+  <p class="footlegal">Orsino Consulting LLP, registered office 15 Weatherby Court,
+  Harrogate HG1 5DN. Registered in England and Wales, partnership number OC000000.
+  Document scans are retained for the duration of your engagement plus six years.<br>
+  Copyright 2026 Orsino Consulting LLP. <a href="legal.html#privacy">Privacy notice</a> &middot;
+  <a href="legal.html#terms">Terms of use</a> &middot; <a href="legal.html#accessibility">Accessibility</a> &middot;
+  <a href="legal.html#cookies">Cookies</a></p>
+</footer>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  (async () => {
+    const status = document.getElementById('status');
+    try {
+      const res = await fetch('/api/intake/requirements', {
+        headers: { 'X-Session-Nonce': NONCE },
+      });
+      if (!res.ok) {
+        status.textContent = 'Could not load your requirements. Start from the intake page.';
+        return;
+      }
+      const body = await res.json();
+      document.getElementById('path-label').textContent = body.path;
+      const list = document.getElementById('docs');
+      for (const doc of body.documents) {
+        const li = document.createElement('li');
+        li.textContent = doc;
+        list.appendChild(li);
+      }
+    } catch {
+      status.textContent = 'Network error loading requirements.';
+    }
+  })();
+</script>
+</body>
+</html>

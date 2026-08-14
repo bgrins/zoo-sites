@@ -1,0 +1,67 @@
+{
+  "rank": 11,
+  "comments": [
+    {
+      "author": "isolinear",
+      "age": "4 hours ago",
+      "text": "The coastline generation section is the best practical explanation of domain warping I've read. Everyone's first procedural map has that telltale \"blobby noise\" look, and the article correctly identifies why: raw gradient noise has uniform feature scale everywhere, and real coastlines don't. Warping the sampling domain with a second noise field breaks the uniformity, and suddenly you get fjords and peninsulas instead of amoebas.",
+      "replies": [
+        {
+          "author": "contourist",
+          "age": "3 hours ago",
+          "text": "OP here — domain warping was the single biggest \"quality per line of code\" trick in the whole project, and it took embarrassingly long to find because most noise tutorials stop at octave stacking. The other one, which almost made the article longer: doing erosion *before* placing rivers rather than after. Rivers that follow eroded valleys look inevitable; rivers placed first look like someone drew them on.",
+          "replies": [
+            {
+              "author": "isolinear",
+              "age": "3 hours ago",
+              "text": "The erosion-first ordering is exactly the kind of thing that separates \"generated a map\" from \"generated a place with a history.\" Would happily read the longer article."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "staticdrift",
+      "age": "3 hours ago",
+      "text": "Mild pushback on the title: \"only math\" undersells how many aesthetic judgment calls are hiding in the constants. Why that warp amplitude, that sea-level threshold, that erosion iteration count? The math generates candidates; a human taste function selected them. Which is fine and normal — but the \"pure procedure, no artist\" framing is a genre convention that deserves occasional puncturing.",
+      "replies": [
+        {
+          "author": "proceduralist",
+          "age": "2 hours ago",
+          "text": "To be fair the author owns this in the process section — there's a line about spending more hours tuning constants while staring at outputs than writing algorithms. In generative art circles we'd say the constants ARE the art: the interesting authorship question isn't human vs. machine, it's that the medium became the parameter space.",
+          "replies": [
+            {
+              "author": "staticdrift",
+              "age": "2 hours ago",
+              "text": "That's a fair read, and \"the medium became the parameter space\" is a better articulation of my complaint than my complaint was. My gripe is really with the genre's titles, not this article's substance."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "kernelpanda",
+      "age": "2 hours ago",
+      "text": "Implementation question: the article generates on a regular grid and then vectorizes contours. Did you consider working directly on an irregular mesh (relaxed points + triangulation)? The mesh approach makes drainage and erosion much more natural since water flows along edges, and it kills the grid-axis artifacts you're fighting in section 5.",
+      "replies": [
+        {
+          "author": "contourist",
+          "age": "1 hour ago",
+          "text": "Considered and prototyped, actually — the mesh version produced better drainage exactly as you say, but everything downstream (biome assignment, label placement, the renderer) got harder, and I was optimizing for an article people could implement in a weekend. Grid-plus-vectorize is the 80/20. If I do a part two, the mesh version is it."
+        }
+      ]
+    },
+    {
+      "author": "tokenring",
+      "age": "1 hour ago",
+      "text": "For anyone who enjoyed this: the natural next rabbit hole is settlement and road placement, which is where procedural cartography stops being terrain math and becomes economics simulation. Roads that minimize cost over the terrain you generated, towns where the roads cross rivers — a map with plausible infrastructure reads as *inhabited* even with no other storytelling. I lost a summer to this (demo at hexhinterlands.example.com) and regret nothing.",
+      "replies": [
+        {
+          "author": "offbyfun",
+          "age": "38 minutes ago",
+          "text": "Can confirm the rabbit hole has no bottom: cost-based road routing leads to bridges, bridges lead to toll towns, toll towns lead to reading actual medieval economic history at 2am to figure out plausible market spacing. The map was for a board game. The board game does not exist. The map is beautiful."
+        }
+      ]
+    }
+  ]
+}

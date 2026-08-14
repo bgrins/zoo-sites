@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Survey record — Kestrel 4 — Ostara Surface Systems</title>
+<link rel="stylesheet" href="maze.css">
+</head>
+<body>
+<div class="mast">
+  <span class="org">Ostara Surface Systems</span>
+  <span class="div">Surface fleet operations</span>
+  <span class="who">drive team 2 &middot; k.oyelaran@ostara-surface.example</span>
+</div>
+<div class="chips">
+  <span class="chip">Sol 214</span>
+  <span class="chip">Site Vantor Basin</span>
+  <span class="chip">Rover Kestrel 4</span>
+  <span class="chip">Record hazard survey</span>
+</div>
+<div class="shell">
+  <nav class="rail">
+    <h2>Kestrel 4</h2>
+    <a href="index.html">Traverse</a>
+    <a href="survey.html" class="on">Survey record</a>
+    <a href="power.html">Power and thermal</a>
+    <a href="instruments.html">Instruments</a>
+    <a href="uplink.html">Uplink windows</a>
+    <a href="hazard.html">Hazard review</a>
+    <a href="handbook.html" class="sep">Drive handbook</a>
+  </nav>
+  <main class="content">
+    <h1>Survey record</h1>
+    <p class="lede">Every cell Kestrel 4 has entered on sol 214, with the headings the
+    navigation camera resolved as clear from that cell. The record is held on the rover, so
+    it is complete regardless of how long the console has been open.</p>
+    <p class="tel" id="recPos">POS --</p>
+    <p class="tel" id="recCount">MAPPED --</p>
+    <ul class="recordlist" id="recordlist"></ul>
+    <p class="legend"><a href="index.html">Back to the traverse console</a> to issue drives.</p>
+  </main>
+</div>
+<div class="foot">
+  <p class="links">
+    <a href="data-policy.html">Data policy</a>
+    <a href="terms.html">Operating terms</a>
+    <a href="contact.html">Contact the drive desk</a>
+  </p>
+  <p>&copy; 2026 Ostara Surface Systems Ltd. Registered office: 14 Bellamy Wharf,
+  Tarnbridge TR4 2QN. Flight operations support: ops-desk@ostara-surface.example,
+  +44 20 7946 0812.</p>
+</div>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const list = document.getElementById('recordlist');
+
+(async () => {
+  let view;
+  try {
+    const res = await fetch('/api/maze/state', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) throw new Error('link');
+    view = await res.json();
+  } catch {
+    document.getElementById('recPos').textContent = 'POS uplink lost';
+    return;
+  }
+  document.getElementById('recPos').textContent = 'POS ' + view.at + ' PAD ' + view.exit;
+  document.getElementById('recCount').textContent =
+    'MAPPED ' + view.surveyed.length + ' DRIVES ' + view.drives;
+  for (const seen of view.surveyed) {
+    const li = document.createElement('li');
+    li.textContent = seen.ref + ' CLEAR ' + (seen.clear.join(',') || 'none');
+    list.append(li);
+  }
+})();
+</script>
+</body>
+</html>

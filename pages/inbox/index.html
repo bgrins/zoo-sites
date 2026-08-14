@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inbox — Fernmail</title>
+<link rel="stylesheet" href="fernmail.css">
+</head>
+<body>
+<header class="mailbar">
+  <a class="brand" href="index.html">
+    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 19c1-8 6-13 15-14-1 9-6 13-15 14z" fill="#e8a72d"></path>
+      <path d="M4 19c3.5-4 7-6.5 12-8" stroke="#101319" stroke-width="1.4" fill="none"></path>
+    </svg>
+    <span class="brand-word">Fern<b>mail</b></span>
+  </a>
+  <div class="searchwrap">
+    <input id="search" type="search" placeholder="Search mail" autocomplete="off" aria-label="Search mail">
+  </div>
+  <div class="who">
+    <span id="account">casey@fernmail.example</span>
+    <span class="chip">CT</span>
+  </div>
+</header>
+
+<div class="mail">
+  <nav class="rail">
+    <button type="button" class="compose" id="composeBtn">New message</button>
+    <div class="rail-label">Mailboxes</div>
+    <div id="folders"></div>
+    <div class="rail-foot">
+      Storage in use
+      <div class="quota"><span></span></div>
+      2.1 GB of 15 GB
+    </div>
+  </nav>
+
+  <section class="pane">
+    <div class="empty" id="paneEmpty">Select a message to read it.</div>
+    <article id="reader" hidden>
+      <h1 id="rSubject"></h1>
+      <div class="head">
+        <span id="rFrom"></span>
+        <span class="addr" id="rAddr"></span>
+        <span class="stamp" id="rStamp"></span>
+      </div>
+      <div class="to" id="rTo"></div>
+      <div class="readbody" id="rBody"></div>
+      <button type="button" class="actionbtn" id="replyBtn">Reply</button>
+      <button type="button" class="actionbtn" id="forwardBtn">Forward</button>
+    </article>
+    <form id="compose" hidden>
+      <h1>New message</h1>
+      <div class="to">From casey@fernmail.example</div>
+      <div class="readbody">
+        <p><input id="cTo" type="text" placeholder="To" aria-label="To"></p>
+        <p><input id="cSubject" type="text" placeholder="Subject" aria-label="Subject"></p>
+        <p><textarea id="cBody" rows="8" aria-label="Message"></textarea></p>
+      </div>
+      <button type="submit" class="actionbtn">Send</button>
+      <span id="cStatus" class="to"></span>
+    </form>
+  </section>
+  <section class="list">
+    <div class="listbar">
+      <h2 id="listTitle">Inbox</h2>
+      <button type="button" class="tool" id="refreshBtn">Refresh</button>
+      <button type="button" class="tool" id="readBtn" disabled>Mark read</button>
+      <button type="button" class="tool" id="archiveBtn" disabled>Archive</button>
+    </div>
+    <ul class="msgs" id="msgs"></ul>
+    <div class="empty" id="listEmpty" hidden>Nothing here.</div>
+  </section>
+
+</div>
+
+<footer class="mailfoot">
+  <span>Fernmail by Fernway Communications</span>
+  <a href="help.html">Help</a>
+  <a href="settings.html">Settings</a>
+  <a href="privacy.html">Privacy</a>
+  <a href="terms.html">Terms of service</a>
+  <span>Fernway Communications, PO Box 3318, Rangely CO 81648</span>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const FOLDERS = ['Inbox', 'Starred', 'Sent', 'Archive', 'Spam', 'Trash'];
+
+  let messages = [];
+  let folder = 'Inbox';
+  let selected = null;
+
+  const msgs = document.getElementById('msgs');
+  const listEmpty = document.getElementById('listEmpty');
+  const listTitle = document.getElementById('listTitle');
+  const search = document.getElementById('search');
+  const reader = document.getElementById('reader');
+  const paneEmpty = document.getElementById('paneEmpty');
+  const compose = document.getElementById('compose');
+  const readBtn = document.getElementById('readBtn');
+  const archiveBtn = document.getElementById('archiveBtn');
+
+  function visible() {
+    const q = search.value.trim().toLowerCase();
+    return messages.filter((m) => {
+      if (m.folder !== folder) return false;
+      if (!q) return true;
+      return (m.subject + ' ' + m.from + ' ' + m.snippet).toLowerCase().includes(q);
+    });
+  }
+
+  function renderFolders() {
+    const box = document.getElementById('folders');
+    box.textContent = '';
+    for (const name of FOLDERS) {
+      const unread = messages.filter((m) => m.folder === name && m.unread).length;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'folder';
+      button.setAttribute('aria-current', String(name === folder));
+      const label = document.createElement('span');
+      label.textContent = name;
+      button.append(label);
+      if (unread) {
+        const count = document.createElement('span');
+        count.className = 'n';
+        count.textContent = String(unread);
+        button.append(count);
+      }
+      button.addEventListener('click', () => {
+        folder = name;
+        selected = null;
+        showEmptyPane();
+        render();
+      });
+      box.append(button);
+    }
+  }
+
+  function renderList() {
+    listTitle.textContent = folder;
+    msgs.textContent = '';
+    const rows = visible();
+    listEmpty.hidden = rows.length > 0;
+    if (!rows.length) {
+      listEmpty.textContent = 'No messages in ' + folder + '.';
+    }
+    for (const m of rows) {
+      const item = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'row' + (m.unread ? ' unread' : '');
+      button.setAttribute('aria-label', m.subject);
+      button.setAttribute('aria-current', String(selected === m.id));
+
+      const top = document.createElement('div');
+      top.className = 'top';
+      const from = document.createElement('span');
+      from.className = 'from';
+      from.textContent = m.from;
+      const when = document.createElement('span');
+      when.className = 'when';
+      when.textContent = m.when;
+      top.append(from, when);
+
+      const subject = document.createElement('span');
+      subject.className = 'subject';
+      subject.textContent = m.subject;
+      const snippet = document.createElement('span');
+      snippet.className = 'snippet';
+      snippet.textContent = m.snippet;
+
+      button.append(top, subject, snippet);
+      button.addEventListener('click', () => open(m.id));
+      item.append(button);
+      msgs.append(item);
+    }
+  }
+
+  function render() {
+    renderFolders();
+    renderList();
+    readBtn.disabled = !selected;
+    archiveBtn.disabled = !selected;
+  }
+
+  function showEmptyPane() {
+    reader.hidden = true;
+    compose.hidden = true;
+    paneEmpty.hidden = false;
+  }
+
+  function open(id) {
+    const m = messages.find((x) => x.id === id);
+    if (!m) return;
+    selected = id;
+    m.unread = false;
+    paneEmpty.hidden = true;
+    compose.hidden = true;
+    reader.hidden = false;
+    document.getElementById('rSubject').textContent = m.subject;
+    document.getElementById('rFrom').textContent = m.from;
+    document.getElementById('rAddr').textContent = m.addr;
+    document.getElementById('rStamp').textContent = m.stamp;
+    document.getElementById('rTo').textContent = 'To ' + (m.to ?? 'casey@fernmail.example');
+    const body = document.getElementById('rBody');
+    body.textContent = '';
+    for (const line of m.body ?? []) {
+      const p = document.createElement('p');
+      p.textContent = line;
+      body.append(p);
+    }
+    if (m.link) {
+      const p = document.createElement('p');
+      const a = document.createElement('a');
+      a.href = m.link.url;
+      a.textContent = m.link.text;
+      p.append(a);
+      body.append(p);
+      const raw = document.createElement('p');
+      raw.className = 'rawurl';
+      raw.textContent = m.link.url;
+      body.append(raw);
+    }
+    for (const line of m.tail ?? []) {
+      const p = document.createElement('p');
+      p.textContent = line;
+      body.append(p);
+    }
+    render();
+  }
+
+  // Messages sent from this tab live client-side only, so a refresh of the
+  // server list must not drop them.
+  const outbox = [];
+  let outboxSeq = 0;
+
+  async function load() {
+    try {
+      const res = await fetch('/api/inbox/messages', {
+        headers: { 'X-Session-Nonce': NONCE },
+      });
+      if (!res.ok) {
+        msgs.textContent = '';
+        listEmpty.hidden = false;
+        listEmpty.textContent = 'Mailbox unavailable. Reload the page.';
+        return;
+      }
+      const data = await res.json();
+      document.getElementById('account').textContent = data.account;
+      const keep = new Map(messages.map((m) => [m.id, m.unread]));
+      messages = [
+        ...outbox,
+        ...data.messages.map((m) => ({
+          ...m,
+          unread: keep.has(m.id) ? keep.get(m.id) : m.unread,
+        })),
+      ];
+      render();
+    } catch {
+      listEmpty.hidden = false;
+      listEmpty.textContent = 'Network error. Reload the page.';
+    }
+  }
+
+  search.addEventListener('input', renderList);
+  document.getElementById('refreshBtn').addEventListener('click', load);
+
+  readBtn.addEventListener('click', () => {
+    const m = messages.find((x) => x.id === selected);
+    if (m) m.unread = false;
+    render();
+  });
+
+  archiveBtn.addEventListener('click', () => {
+    const m = messages.find((x) => x.id === selected);
+    if (m) m.folder = 'Archive';
+    selected = null;
+    showEmptyPane();
+    render();
+  });
+
+  function openCompose(to, subject, bodyText) {
+    selected = null;
+    paneEmpty.hidden = true;
+    reader.hidden = true;
+    compose.hidden = false;
+    document.getElementById('cTo').value = to;
+    document.getElementById('cSubject').value = subject;
+    document.getElementById('cBody').value = bodyText;
+    document.getElementById('cStatus').textContent = '';
+    render();
+  }
+
+  document.getElementById('composeBtn').addEventListener('click', () => {
+    openCompose('', '', '');
+  });
+
+  const bareAddr = (addr) => String(addr ?? '').replace(/[<>]/g, '');
+
+  document.getElementById('replyBtn').addEventListener('click', () => {
+    const m = messages.find((x) => x.id === selected);
+    if (!m) return;
+    const subject = /^re:/i.test(m.subject) ? m.subject : 'Re: ' + m.subject;
+    const quoted = (m.body ?? []).map((line) => '> ' + line).join('\n');
+    openCompose(bareAddr(m.addr), subject, '\n\nOn ' + m.stamp + ', ' + m.from + ' wrote:\n' + quoted);
+  });
+
+  document.getElementById('forwardBtn').addEventListener('click', () => {
+    const m = messages.find((x) => x.id === selected);
+    if (!m) return;
+    const subject = /^fwd:/i.test(m.subject) ? m.subject : 'Fwd: ' + m.subject;
+    const original =
+      '\n\n---------- Forwarded message ----------\n' +
+      'From: ' + m.from + ' ' + (m.addr ?? '') + '\n' +
+      'Date: ' + m.stamp + '\nSubject: ' + m.subject + '\n\n' +
+      (m.body ?? []).join('\n');
+    openCompose('', subject, original);
+  });
+
+  compose.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const to = document.getElementById('cTo').value.trim();
+    const subject = document.getElementById('cSubject').value.trim();
+    const bodyText = document.getElementById('cBody').value;
+    const cStatus = document.getElementById('cStatus');
+    if (!to) {
+      cStatus.textContent = 'Add at least one recipient.';
+      return;
+    }
+    const sent = {
+      id: 'm-out-' + ++outboxSeq,
+      folder: 'Sent',
+      from: to,
+      addr: '<' + to + '>',
+      to,
+      subject: subject || '(no subject)',
+      when: 'Today',
+      stamp: 'Today',
+      unread: false,
+      snippet: bodyText.split('\n').find((l) => l.trim()) ?? '',
+      body: bodyText.split('\n\n').map((s) => s.trim()).filter(Boolean),
+    };
+    outbox.unshift(sent);
+    messages.unshift(sent);
+    document.getElementById('cTo').value = '';
+    document.getElementById('cSubject').value = '';
+    document.getElementById('cBody').value = '';
+    cStatus.textContent = 'Message sent. A copy is in Sent.';
+    render();
+  });
+
+  load();
+</script>
+</body>
+</html>

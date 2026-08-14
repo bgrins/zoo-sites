@@ -1,0 +1,50 @@
+{
+  "rank": 18,
+  "comments": [
+    {
+      "author": "tokenring",
+      "age": "21 hours ago",
+      "text": "I was a teenager trying to get one of these working on Linux in the late 90s, and the winmodem taught me more about computers than any class ever did. Not because I succeeded — I didn't — but because failing forced me to learn what a UART was, what an interrupt was, and why 'the modem is actually your CPU pretending' was such a cursed sentence.\n\nThere's a whole generation of systems programmers who exist because a $12 cost reduction moved signal processing into a proprietary Windows driver and made a million kids furious.",
+      "replies": [
+        {
+          "author": "hayescompatible",
+          "age": "20 hours ago",
+          "text": "OP here — 'a million furious kids' is almost word for word how one of my interviewees described the origin of his career. The rage-driven-development pipeline was real.",
+          "replies": [
+            {
+              "author": "irqconflict",
+              "age": "19 hours ago",
+              "text": "Same story here except my villain was a soundcard on a shared interrupt. Different peripheral, identical radicalization.",
+              "replies": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "dspgraybeard",
+      "age": "18 hours ago",
+      "text": "Engineer's perspective, since these threads are always user-side: softmodems were an economically rational bet that CPUs were getting fast enough to eat the DSP's lunch, and that bet was correct — the same logic later gave us software-defined radio. The sin wasn't the architecture, it was shipping the signal processing as an undocumented binary blob for exactly one operating system.\n\nWe argued about this internally at the time. The blob won because nobody believed hobbyist OS users were a market. Ten years later that 'non-market' was running every server on earth. Cheap lesson in retrospect, expensive at the time.",
+      "replies": [
+        {
+          "author": "kernelpanda",
+          "age": "16 hours ago",
+          "text": "This is the best defense of the architecture I've read, and it also perfectly indicts the business decision. Openness wasn't a cost, it was an option they declined to buy.",
+          "replies": []
+        },
+        {
+          "author": "baudrate",
+          "age": "15 hours ago",
+          "text": "Minor correction: some of the blobs did eventually get semi-official Linux ports, maintained by one heroic engineer on his own time. The oral history apparently interviews him, which alone justifies the piece.",
+          "replies": []
+        }
+      ]
+    },
+    {
+      "author": "offbyfun",
+      "age": "12 hours ago",
+      "text": "Kids today will never know the specific dread of hearing the handshake tones stop one note early.",
+      "replies": []
+    }
+  ]
+}

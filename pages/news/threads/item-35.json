@@ -1,0 +1,27 @@
+{
+  "rank": 35,
+  "comments": [
+    {
+      "author": "legacylena",
+      "age": "1 day ago",
+      "text": "TODO: remove this before launch. Dated March 2011. The product launched in April 2011, was acquired twice, and the comment is still there. At this point removing it feels like disturbing a historic site.",
+      "replies": [
+        {
+          "author": "fixmelater",
+          "age": "1 day ago",
+          "text": "That one belongs in a museum. Mine is a 2014 TODO that says ask Dave about this. Dave left in 2015. Nobody knows what to ask, or which Dave."
+        }
+      ]
+    },
+    {
+      "author": "shipitanyway",
+      "age": "1 day ago",
+      "text": "TODO: temporary workaround, fix properly next sprint. The commit is from 2016. The workaround now has its own test suite, which I maintain."
+    },
+    {
+      "author": "cobolyn",
+      "age": "22 hours ago",
+      "text": "Ours predates version control. There is a comment block in a batch settlement job that says FIX BEFORE Y2K, and the fix it refers to was made, but nobody dared delete the comment in case it was load-bearing."
+    }
+  ]
+}

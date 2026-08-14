@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confirm and pay — Ollister &amp; Crane</title>
+<link rel="stylesheet" href="ollister.css">
+</head>
+<body>
+<div class="masthead">
+  <p class="wordmark">Ollister <span>&amp;</span> Crane</p>
+  <p class="estd">Letterpress and bindery supply since 1979</p>
+  <nav class="shopnav">
+    <a href="papers.html">Papers</a>
+    <a href="inks.html">Inks</a>
+    <a href="presses.html">Presses</a>
+    <a href="bindery.html">Bindery</a>
+    <a href="trade.html">Trade accounts</a>
+    <a href="checkout.html">Basket</a>
+  </nav>
+</div>
+
+<main>
+  <h1>Confirm and pay</h1>
+  <p class="crumb">Basket / Delivery / Payment</p>
+
+  <div class="split">
+    <div class="col">
+      <h2>Your basket</h2>
+      <div class="line">
+        <div>
+          <div>Somerset mould-made sheets</div>
+          <div class="qty">300 gsm, 22 x 30 in, pack of 25 &middot; qty 3</div>
+        </div>
+        <div class="amt">$138.00</div>
+      </div>
+      <div class="line">
+        <div>
+          <div>Brass type-high rule set</div>
+          <div class="qty">Twelve rules in a fitted case &middot; qty 1</div>
+        </div>
+        <div class="amt">$84.50</div>
+      </div>
+      <div class="line">
+        <div>
+          <div>Oil-based ink, cobalt</div>
+          <div class="qty">250 g tin &middot; qty 2</div>
+        </div>
+        <div class="amt">$39.60</div>
+      </div>
+      <div class="line">
+        <div>
+          <div>Bindery linen thread</div>
+          <div class="qty">Waxed 18/3, 50 m spool &middot; qty 4</div>
+        </div>
+        <div class="amt">$29.00</div>
+      </div>
+
+      <h2>Delivery</h2>
+      <div class="plate">
+        <p>Kell Brannan, Cutting Room 2, Ravensmoor Bindery, 3 Hobb Street, Ravensmoor.
+        Flat carton, board-backed. Leaves Tolbridge Yard the next working day.</p>
+      </div>
+
+      <h2>Payment</h2>
+      <div class="paybox">
+        <p class="cap">Payment method</p>
+        <p class="rowvalue" id="method">Alderline card ending 4417</p>
+        <p class="cap">Authorisation status</p>
+        <p class="state" id="payState">Preparing payment</p>
+
+        <p class="notice" id="priorNote" hidden>An earlier authorisation ended with the
+        previous checkout session. Authorise again to place the order.</p>
+
+        <div id="wordBlock" hidden>
+          <p class="cap">Verification word</p>
+          <p class="vword" id="vword"></p>
+          <p class="hint">Type it in the Anverra Pay window, then come back to this page.</p>
+        </div>
+
+        <div id="confirmBlock" hidden>
+          <p class="cap">Order confirmation code</p>
+          <p class="ordercode" id="orderCode"></p>
+          <p class="hint">Keep this code. It is your proof of order with us.</p>
+        </div>
+
+        <div id="startBlock" hidden>
+          <p class="hint">Card details are entered in the Anverra Pay window, not here.</p>
+          <a class="paylink" id="authLink" href="authorize.html" target="_blank" rel="noopener">Authorise with Anverra Pay</a>
+        </div>
+
+        <p class="cap" style="margin-top:14px">Payment intent</p>
+        <p class="reference" id="payRef" style="font-family:'Courier New',monospace;font-size:13px;margin:0"></p>
+      </div>
+    </div>
+
+    <div class="rail">
+      <p class="cap">Order summary</p>
+      <div class="totals">
+        <div><span>Goods</span><span>$291.10</span></div>
+        <div><span>Carriage</span><span>$14.75</span></div>
+        <div><span>Tax at 8%</span><span>$23.29</span></div>
+        <div class="grand"><span>Total due</span><span id="total">$329.14</span></div>
+      </div>
+      <p class="hint" style="margin-top:14px">Anverra Pay opens in its own window to take the
+      card. We never see the number.</p>
+      <p class="cap">Need the counter?</p>
+      <p class="hint">(555) 018-4420, Monday to Thursday.</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <a href="policies.html#shipping">Shipping</a>
+  <a href="policies.html#returns">Returns</a>
+  <a href="policies.html#privacy">Privacy</a>
+  <a href="policies.html">Trade terms</a>
+  <p class="addr">Ollister &amp; Crane Ltd, Tolbridge Yard, 14 Gullet Lane, Ravensmoor</p>
+  <p>Counter enquiries: counter@ollistercrane.example &middot; (555) 018-4420</p>
+  <p>&copy; 1979-2026 Ollister &amp; Crane Ltd. Registered in the county of Ravensmoor, no. 884120.</p>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const $ = (id) => document.getElementById(id);
+const ref = '__PAYLINK_REF__';
+const viewToken = '__PAYLINK_VIEW_TOKEN__';
+let timer = null;
+let settled = false;
+
+async function post(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nonce: NONCE, ...body }),
+  });
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {}
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function poll() {
+  if (!ref || settled) return;
+  const r = await post('/api/paylink/status', { ref, viewToken });
+  if (!r.ok) {
+    $('payState').textContent = 'Checkout session stale';
+    $('startBlock').hidden = true;
+    return;
+  }
+  const d = r.data;
+  if (d.superseded) $('priorNote').hidden = false;
+  if (d.state === 'awaiting-open') {
+    $('payState').textContent = 'Awaiting authorisation';
+  } else if (d.state === 'awaiting-word') {
+    $('payState').textContent = 'Anverra Pay is open';
+    $('vword').textContent = d.word;
+    $('wordBlock').hidden = false;
+  } else if (d.state === 'approved') {
+    settled = true;
+    if (timer) clearInterval(timer);
+    timer = null;
+    $('wordBlock').hidden = true;
+    $('startBlock').hidden = true;
+    $('payState').textContent = 'Payment authorised';
+    $('orderCode').textContent = d.code;
+    $('confirmBlock').hidden = false;
+    await post('/api/paylink/settle', { ref, viewToken, code: d.code });
+  }
+}
+
+function begin() {
+  if (!ref || !viewToken) {
+    $('payState').textContent = 'Payment unavailable';
+    return;
+  }
+  $('payRef').textContent = ref;
+  $('authLink').href = 'authorize.html?ref=' + encodeURIComponent(ref);
+  $('startBlock').hidden = false;
+  $('payState').textContent = 'Awaiting authorisation';
+  timer = setInterval(poll, 1200);
+  poll();
+}
+
+// A checkout restored from the back/forward cache would keep the payment intent
+// of a page load that is over, so reload it into a fresh one instead.
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) location.reload();
+});
+window.addEventListener('focus', poll);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) poll();
+});
+begin();
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform status - Cindergrid</title>
+<link rel="stylesheet" href="console.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html">CINDERGRID</a>
+  <span class="crumb">gridworks-eu / orchid-api</span>
+  <span class="env">production</span>
+  <span class="spacer"></span>
+  <span class="who">t.ashgrove</span>
+</header>
+
+<div class="shell">
+  <nav class="rail">
+    <span class="rail-label">Project</span>
+    <a href="index.html">Deployments</a>
+    <a href="runs.html">Run history</a>
+    <a href="secrets.html">Secrets</a>
+    <a href="settings.html">Settings</a>
+    <a href="support.html">Support</a>
+  </nav>
+
+  <main>
+    <div class="runhead">
+      <h1>Platform status</h1>
+      <span class="chip">All components operational</span>
+    </div>
+    <p class="subhead">Component health for the eu-west-2 grid, updated each minute.</p>
+
+    <h2>Components</h2>
+    <div class="runs">
+      <div class="run-row status-row">
+        <span class="run-id">Runners</span>
+        <span class="run-state ok">Operational</span>
+        <span class="run-when">pool standard-4x</span>
+        <span class="run-msg">queue wait under 30s</span>
+      </div>
+      <div class="run-row status-row">
+        <span class="run-id">Registry</span>
+        <span class="run-state ok">Operational</span>
+        <span class="run-when">registry.cindergrid.example.net</span>
+        <span class="run-msg">push latency p99 2.3s</span>
+      </div>
+      <div class="run-row status-row">
+        <span class="run-id">Attestation</span>
+        <span class="run-state ok">Operational</span>
+        <span class="run-when">attest.cindergrid.example.net</span>
+        <span class="run-msg">query latency p99 210ms</span>
+      </div>
+      <div class="run-row status-row">
+        <span class="run-id">Log ingest</span>
+        <span class="run-state ok">Operational</span>
+        <span class="run-when">gridterm pipeline</span>
+        <span class="run-msg">no backlog</span>
+      </div>
+      <div class="run-row status-row">
+        <span class="run-id">Webhooks</span>
+        <span class="run-state ok">Operational</span>
+        <span class="run-when">notify dispatch</span>
+        <span class="run-msg">delivery under 5s</span>
+      </div>
+    </div>
+
+    <h2>Recent incidents</h2>
+    <div class="runs">
+      <div class="run-row">
+        <span class="run-id">2026-03-11</span>
+        <span class="run-state bad">Resolved</span>
+        <span class="run-when">09:41-10:12 UTC</span>
+        <span class="run-msg">attestation records for images built 09:20-09:45 ingested late; affected promotions were denied by provenance rules and succeed on re-run</span>
+      </div>
+      <div class="run-row">
+        <span class="run-id">2026-03-10</span>
+        <span class="run-state bad">Resolved</span>
+        <span class="run-when">15:38-16:04 UTC</span>
+        <span class="run-msg">registry returned elevated 503 rates during a storage rebalance; pushes retried automatically</span>
+      </div>
+      <div class="run-row">
+        <span class="run-id">2026-02-22</span>
+        <span class="run-state bad">Resolved</span>
+        <span class="run-when">03:10-03:55 UTC</span>
+        <span class="run-msg">advisory feed refresh stalled; dependency scans used the cached index within policy</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer>
+  Cindergrid Systems Ltd, 4 Alder Wharf, Bristol BS1 4RN, United Kingdom<br>
+  <a href="status.html">Status</a> &middot; <a href="docs.html">Documentation</a> &middot;
+  <a href="terms.html">Terms of service</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  support@cindergrid.example.net<br>
+  &copy; 2026 Cindergrid Systems Ltd
+</footer>
+</body>
+</html>

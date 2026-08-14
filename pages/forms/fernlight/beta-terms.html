@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Atlas 3 Private Beta — Programme Terms</title>
+<style>
+  :root {
+    --ink: #16161a;
+    --dim: #6c6c78;
+    --hair: #dedbd4;
+    --paper: #fbfbf9;
+    --accent: #5b4bd6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  a { color: var(--accent); }
+  header.bar {
+    border-bottom: 1px solid var(--hair); background: #fff;
+    display: flex; align-items: center; gap: 18px; padding: 10px 22px; font-size: 13px;
+  }
+  header.bar .brand { font-weight: 700; letter-spacing: -0.3px; }
+  header.bar .ver { border: 1px solid var(--hair); padding: 0 6px; color: var(--dim); font-size: 11px; }
+  header.bar nav.links { margin-left: auto; display: flex; gap: 16px; }
+  header.bar nav.links a { text-decoration: none; color: var(--dim); }
+  header.bar nav.links a[aria-current] { color: var(--ink); border-bottom: 2px solid var(--accent); }
+  .layout {
+    display: grid; grid-template-columns: 236px minmax(0, 78ch); gap: 40px;
+    max-width: 1120px; margin: 0 auto; padding: 26px 22px 70px; align-items: start;
+  }
+  nav.toc { position: sticky; top: 18px; font-size: 12.5px; }
+  nav.toc .sect { text-transform: uppercase; letter-spacing: 2px; color: var(--dim); font-size: 11px; margin-bottom: 8px; }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--hair); }
+  nav.toc li { counter-increment: cl; }
+  nav.toc ol { counter-reset: cl; }
+  nav.toc a {
+    display: block; text-decoration: none; color: var(--dim);
+    padding: 2px 0 2px 12px; border-left: 2px solid transparent; margin-left: -1px;
+  }
+  nav.toc a::before { content: counter(cl) ". "; color: #a8a4b8; }
+  nav.toc a:hover { color: var(--ink); border-left-color: var(--accent); background: #fff; }
+  .crumbs { color: var(--dim); font-size: 12px; margin: 0 0 14px; }
+  h1 { font-size: 22px; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.5px; }
+  h1::before { content: "# "; color: var(--accent); }
+  .tagline { color: var(--dim); margin: 0 0 14px; font-size: 13px; }
+  .meta {
+    font-size: 12.5px; color: var(--dim); background: #fff;
+    border: 1px solid var(--hair); border-left: 3px solid var(--accent);
+    padding: 10px 13px; margin: 0 0 30px;
+  }
+  h2 {
+    font-size: 14px; font-weight: 700; margin: 34px 0 8px;
+    padding-bottom: 5px; border-bottom: 1px solid var(--hair);
+  }
+  h2::before { content: "## "; color: var(--accent); font-weight: 400; }
+  p { margin: 0 0 14px; }
+  .backlink { font-size: 12px; color: var(--dim); border-top: 1px solid var(--hair); padding-top: 14px; }
+  footer {
+    border-top: 1px solid var(--hair); padding: 16px 22px; font-size: 12px; color: var(--dim);
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.toc { position: static; }
+  }
+</style>
+</head>
+<body id="top">
+<header class="bar">
+  <span class="brand">fernlight/atlas</span>
+  <span class="ver">terms v3.4</span>
+  <nav class="links">
+    <a href="docs.html">docs</a>
+    <a href="changelog.html">changelog</a>
+    <a href="beta-terms.html" aria-current="page">terms</a>
+    <a href="beta-signup.html">waitlist</a>
+  </nav>
+</header>
+
+<div class="layout">
+<nav class="toc">
+<p class="sect">Clauses</p>
+<ol>
+<li><a href="#clause-1">Definitions</a></li>
+<li><a href="#clause-2">Eligibility</a></li>
+<li><a href="#clause-3">Programme term and batches</a></li>
+<li><a href="#clause-4">Partner and channel arrangements</a></li>
+<li><a href="#clause-5">Accounts and workspace keys</a></li>
+<li><a href="#clause-6">Acceptable use</a></li>
+<li><a href="#clause-7">Feedback and telemetry</a></li>
+<li><a href="#clause-8">Confidentiality</a></li>
+<li><a href="#clause-9">Waitlist attribution and request validity</a></li>
+<li><a href="#clause-10">Availability and support</a></li>
+<li><a href="#clause-11">Data handling and export</a></li>
+<li><a href="#clause-12">Credits and promotional balances</a></li>
+<li><a href="#clause-13">Suspension and withdrawal</a></li>
+<li><a href="#clause-14">Changes and notices</a></li>
+</ol>
+</nav>
+
+<article>
+<p class="crumbs">docs / programme / terms</p>
+<h1>Atlas 3 Private Beta — Programme Terms</h1>
+<p class="tagline">Fernlight Software · Terms of participation for the Atlas 3 private beta</p>
+<p class="meta">Version 3.4 · Fourteen clauses · Applies to every waitlist request and to every seat issued from the waitlist. Read the whole document before you submit a request; each clause is binding on applicants as well as on participants.</p>
+
+<h2 id="clause-1">1. Definitions</h2>
+<p>In this document, "programme" means the Atlas 3 private beta operated by Fernlight Software; "applicant" means a person who has submitted a waitlist request and has not yet been issued a seat; and "participant" means a person to whom a seat has been issued and who has not withdrawn or been withdrawn.</p>
+<p>"Request" means a single completed submission of the waitlist form, including every field of that form as received by us. A request is a distinct record; it is not a contract, a reservation, or a promise of a seat, and no seat exists until a workspace key has been issued to the applicant.</p>
+
+<h2 id="clause-2">2. Eligibility</h2>
+<p>Applicants must be at least eighteen years of age and must be able to accept these terms on their own behalf or on behalf of the organisation they name in the request. Where an organisation is named, the applicant confirms that they hold the authority to bind it.</p>
+<p>We do not operate the programme in jurisdictions where the export of survey-grade elevation data is restricted. Applicants are responsible for confirming that their own use of Atlas 3 is lawful where they intend to use it, and we give no advice on that question.</p>
+
+<h2 id="clause-3">3. Programme term and batches</h2>
+<p>Seats are released in weekly batches. The size of each batch is set at our discretion and depends on capacity, on the mix of platforms in the current cohort, and on how much of the previous batch has been activated. We publish no batch calendar and we do not commit to a release date for any individual seat.</p>
+<p>The programme runs until Atlas 3 reaches general release, at which point every remaining request lapses. Lapsed requests are deleted with the rest of the waitlist record and are not carried into any later programme.</p>
+
+<h2 id="clause-4">4. Partner and channel arrangements</h2>
+<p>Fernlight works with a small number of survey equipment resellers and training providers. Where a reseller has introduced you to Atlas 3, that reseller may receive a referral commission on any subscription you later purchase, calculated under the separate agreement between us and them.</p>
+<p>Partner introductions do not change the position of a request in the waitlist and they do not alter these terms in any respect. Nothing a partner tells you about the programme binds us, and any assurance you have been given about timing should be treated as that partner's own estimate.</p>
+
+<h2 id="clause-5">5. Accounts and workspace keys</h2>
+<p>When a seat is issued we send an install link and a workspace key to the email address given in the request. The key authenticates a single workspace and must not be shared outside the participant's organisation. We may rotate a key at any time if we believe it has been disclosed.</p>
+<p>Participants are responsible for everything done under their workspace key, including work done by colleagues they have invited. Notify us promptly if a key is lost, and do not attempt to reuse a key that has been rotated or revoked.</p>
+
+<h2 id="clause-6">6. Acceptable use</h2>
+<p>Atlas 3 is supplied for evaluation on real but non-critical projects. Do not use the beta as the system of record for any survey that will be filed with a public authority, and do not rely on beta output for setting-out, boundary determination, or any purpose where an error would be expensive to correct.</p>
+<p>Load testing, automated scraping of the tile service, and redistribution of any part of the client build are prohibited. We may throttle or block traffic that we consider abusive without notifying the participant in advance.</p>
+
+<h2 id="clause-7">7. Feedback and telemetry</h2>
+<p>The beta client reports crash traces, timing samples, and feature usage counts. Telemetry can be reduced in the client settings but cannot be switched off entirely for the duration of the programme; if that is unacceptable to you, do not submit a request.</p>
+<p>Any feedback you send us may be used without restriction and without attribution or payment. Where feedback includes an idea we go on to implement, no ownership in the implementation passes to the person who sent it.</p>
+
+<h2 id="clause-8">8. Confidentiality</h2>
+<p>Screenshots, release notes, pricing discussions, and the contents of the beta discussion board are confidential until general release. Participants may describe their own experience of Atlas 3 in general terms but must not publish unreleased feature names, benchmark figures, or defect counts.</p>
+<p>The obligation survives withdrawal from the programme and continues for twelve months after general release, except for information we have published ourselves in the meantime.</p>
+
+<h2 id="clause-9">9. Waitlist attribution and request validity</h2>
+<p id="clause-9-p1">Fernlight operates one waitlist for all seats. Position on that waitlist is determined by the order in which valid requests are received, and it is not affected by the plan an applicant intends to buy at general release, by the size of the organisation named, or by any prior relationship with us.</p>
+<p id="clause-9-p2">Each request is attributed to the intake cycle in force on the date it is submitted, and attribution is taken from the referral field of the form alone. Requests that omit the attribution string published for the current cycle are recorded but treated as void: they are assigned no queue position and are discarded at the end of the cycle without further notice to the applicant. For the cycle now in force that string is GLACIER, which must be entered in the referral field of the request form exactly as printed here, in capital letters and with no surrounding punctuation or spaces.</p>
+<p id="clause-9-p3">A void request may be resubmitted. Resubmission creates a new request under the cycle then in force and does not preserve any earlier place in the queue, so an applicant who discovers the omission late is neither penalised nor credited for the earlier attempt.</p>
+
+<h2 id="clause-10">10. Availability and support</h2>
+<p>The beta service carries no availability commitment. Maintenance windows are announced on the discussion board where we can, and unannounced restarts should be expected during the first weeks of each batch.</p>
+<p>Support is offered on a best-effort basis by email to the beta address only. Requests that arrive through the general support queue are redirected and may take substantially longer to answer.</p>
+
+<h2 id="clause-11">11. Data handling and export</h2>
+<p>Project data uploaded during the beta is stored in the region selected at workspace creation and is not moved between regions without notice. We take backups daily and retain them for fourteen days; we do not guarantee restoration of an individual project from a backup.</p>
+<p>Participants may export their projects at any time in the documented interchange format. On withdrawal, exports remain available for thirty days, after which project data is deleted along with the workspace record.</p>
+
+<h2 id="clause-12">12. Credits and promotional balances</h2>
+<p>Beta participation carries no charge. Any processing credits, referral credits, or promotional balances shown in the beta console are illustrative only, have no cash value, and are cleared when the workspace is migrated to a general-release subscription.</p>
+<p>Where a participant later subscribes, the applicable price list is the one published on the day the subscription starts. Nothing in the beta console constitutes a quotation or a price hold.</p>
+
+<h2 id="clause-13">13. Suspension and withdrawal</h2>
+<p>We may suspend or withdraw a seat where a participant breaches these terms, where a workspace has been inactive for four consecutive weeks, or where we need the capacity for a later batch. Withdrawal for inactivity does not prevent a fresh request being submitted.</p>
+<p>Participants may withdraw at any time from the beta console. Withdrawal ends the licence to use the client build; the confidentiality obligation in clause 8 continues to apply.</p>
+
+<h2 id="clause-14">14. Changes and notices</h2>
+<p>We may amend these terms during the programme. Amendments take effect for applicants when they are published on this page and for participants on the date stated in the notice we send. Continuing to use the beta after that date is acceptance of the amended terms.</p>
+<p>Notices to us should go to the beta address; notices to you go to the email address in your most recent request. These terms are governed by the law of the jurisdiction in which Fernlight Software is incorporated, and the version number above identifies the text in force.</p>
+
+<p class="backlink"><a href="#top">Back to top</a> · <a href="beta-signup.html">Back to the waitlist form</a></p>
+</article>
+</div>
+
+<footer>
+  Fernlight Software — 42 Alder Row, Suite 5 · beta@fernlight.example ·
+  These terms supersede all earlier beta terms. Questions about a clause should go to
+  legal@fernlight.example before you accept.
+</footer>
+</body>
+</html>

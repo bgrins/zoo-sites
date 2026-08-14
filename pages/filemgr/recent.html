@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boxelder Workspace &#8212; Recent</title>
+<link rel="stylesheet" href="boxelder.css">
+</head>
+<body data-static-list="true">
+<header class="appbar">
+  <span class="brand"><span class="mark">bx</span><span class="name">Boxelder</span></span>
+  <button class="workspace" type="button">Marketing team <span class="caret">&#9662;</span></button>
+  <span class="searchwrap">
+    <input id="search" type="search" autocomplete="off" placeholder="Search Recent" aria-label="Search Recent">
+  </span>
+  <span class="right">
+    <span class="plan">Team plan &middot; 12 seats</span>
+    <button class="invite" type="button">Invite people</button>
+    <span class="avatar" title="Signed in as Ada Reinholt">AR</span>
+  </span>
+</header>
+<nav class="menubar" aria-label="Application menu">
+  <button type="button">File</button>
+  <button type="button">Edit</button>
+  <button type="button">View</button>
+  <button type="button">Go</button>
+  <button type="button">Share</button>
+  <button type="button">Help</button>
+  <span class="synced">All changes synced</span>
+</nav>
+<div class="shell">
+  <div class="toolbar">
+    <button class="tbtn" type="button" disabled title="Your workspace role cannot create folders here">New folder</button>
+    <button class="tbtn" type="button" disabled title="Your workspace role cannot upload here">Upload</button>
+    <button class="tbtn" type="button" disabled title="Select a file to see details">Get info</button>
+    <span class="seg">
+      <button type="button" aria-pressed="true">List</button>
+      <button type="button" aria-pressed="false" disabled title="Grid view is unavailable on shared drives">Grid</button>
+    </span>
+  </div>
+  <div class="crumbbar">
+    <b>Recent</b>
+  </div>
+  <div class="frame">
+    <div class="sidebar">
+      <div class="group">Places</div>
+      <a class="place" href="my-files.html">My files</a>
+      <span class="place">Shared drive</span>
+      <a class="place sub" href="/filemgr/">Working files</a>
+      <a class="place sub" href="brand-assets.html">Brand assets</a>
+      <a class="place sub" href="campaign-26.html">Campaign 26</a>
+      <a class="place sub" href="archive.html">Archive</a>
+      <a class="place" href="recent.html" aria-current="true">Recent</a>
+      <a class="place" href="trash.html">Trash</a>
+      <div class="group">Tags</div>
+      <span class="place">Campaign 26</span>
+      <span class="place">Needs review</span>
+      <div class="storage">
+        <div class="label">Shared drive storage</div>
+        <div class="meter"><span></span></div>
+        <div>62.4 GB of 100 GB used</div>
+        <a href="storage.html">Manage storage</a>
+      </div>
+    </div>
+    <div class="pane">
+      <table id="files">
+        <thead>
+          <tr><th class="sorted">Name</th><th>Kind</th><th>Size</th><th>Modified</th></tr>
+        </thead>
+        <tbody id="rows">
+          <tr><td class="name">landing-copy.txt</td><td class="kind">Plain text</td><td class="size">18 KB</td><td class="mod">23 Jul 2026</td></tr>
+          <tr><td class="name">meeting-notes-jul.txt</td><td class="kind">Plain text</td><td class="size">9 KB</td><td class="mod">22 Jul 2026</td></tr>
+          <tr><td class="name">budget-tracker.xlsx</td><td class="kind">Spreadsheet</td><td class="size">212 KB</td><td class="mod">21 Jul 2026</td></tr>
+          <tr><td class="name">media-plan-q3.xlsx</td><td class="kind">Spreadsheet</td><td class="size">340 KB</td><td class="mod">17 Jul 2026</td></tr>
+        </tbody>
+      </table>
+      <div id="empty">No files in this folder match your search.</div>
+    </div>
+  </div>
+  <div class="statusbar">
+    <span id="count">4 items in Recent</span>
+    <span>Recent shows items you opened in the last 30 days.</span>
+  </div>
+</div>
+<div class="sitefoot">
+  <ul>
+    <li><a href="help.html">Help centre</a></li>
+    <li><a href="shortcuts.html">Keyboard shortcuts</a></li>
+    <li><a href="status.html">Status</a></li>
+    <li><a href="privacy.html">Privacy</a></li>
+    <li><a href="terms.html">Terms</a></li>
+    <li><a href="contact.html">Contact support</a></li>
+  </ul>
+  <p>Changes sync to every collaborator on this link. Deleted items stay recoverable for 30 days.</p>
+  <p>Boxelder Software Ltd, 7 Calder Wharf, Leeds LS10 1QP &middot; support@boxelder.example</p>
+</div>
+<script src="chrome.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 132" width="1120" height="132" role="img">
+  <rect width="1120" height="132" fill="#131921"/>
+  <rect x="0" y="0" width="10" height="132" fill="#ff9900"/>
+  <rect x="740" y="0" width="380" height="132" fill="#1b2735"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#ffffff">
+    <text x="40" y="52" font-size="26" font-weight="bold">Deals of the Day</text>
+    <text x="40" y="82" font-size="15" fill="#d9dcdf">Extra savings on monitors, arms and desk gear</text>
+    <text x="40" y="106" font-size="13" fill="#9aa3ab">Refreshed every morning at 6:00</text>
+    <text x="772" y="58" font-size="14" fill="#ffd814" font-weight="bold">Today only</text>
+    <text x="772" y="82" font-size="13" fill="#d9dcdf">Shipped by Voltro Retail</text>
+  </g>
+  <g fill="#232f3e" stroke="#3a4657">
+    <rect x="960" y="30" width="120" height="72" rx="4"/>
+    <rect x="1002" y="102" width="36" height="8" rx="2"/>
+  </g>
+</svg>

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nimbrel Edge status</title>
+<link rel="stylesheet" href="status.css">
+</head>
+<body>
+<header class="mast">
+  <div class="mast-inner">
+    <span class="mark">Nimbrel <b>Edge</b></span>
+    <nav>
+      <a href="index.html" class="on">Status</a>
+      <a href="history.html">Incident history</a>
+    </nav>
+    <span class="tz">All times UTC</span>
+  </div>
+</header>
+
+<div class="banner banner-degraded">
+  <span class="banner-dot"></span>
+  <div>
+    <p class="banner-title">Degraded performance</p>
+    <p class="banner-sub">Log streaming is delivering with delay while we rebalance the EU-West
+    point of presence. All other systems are operating normally.</p>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="panel" id="probe">
+    <div class="panel-head">
+      <h1>Relay path check</h1>
+      <button type="button" class="btn" id="run-check">Run relay check</button>
+    </div>
+    <p class="panel-sub">Tests the route between your network and the nearest Nimbrel relay.
+    Each check is assigned a probe code and logged under Recent checks for this session.</p>
+    <div id="flash" class="flash" aria-live="assertive"></div>
+    <p class="check-error" id="check-error" hidden>The check service did not respond. Try again.</p>
+    <div class="recent">
+      <h2>Recent checks</h2>
+      <p class="recent-empty" id="recent-empty">No checks yet this session.</p>
+      <ul class="recent-list" id="recent-list"></ul>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Systems</h2>
+    <div class="sysrow">
+      <span class="sys-name">Edge delivery</span>
+      <div class="sys-bar"></div>
+      <span class="sys-pct">99.99%</span>
+      <span class="chip chip-operational">Operational</span>
+    </div>
+    <div class="sysrow">
+      <span class="sys-name">Relay mesh</span>
+      <div class="sys-bar bar-dip"></div>
+      <span class="sys-pct">99.97%</span>
+      <span class="chip chip-operational">Operational</span>
+    </div>
+    <div class="sysrow">
+      <span class="sys-name">API gateway</span>
+      <div class="sys-bar"></div>
+      <span class="sys-pct">100.00%</span>
+      <span class="chip chip-operational">Operational</span>
+    </div>
+    <div class="sysrow">
+      <span class="sys-name">Control panel</span>
+      <div class="sys-bar bar-dip"></div>
+      <span class="sys-pct">99.95%</span>
+      <span class="chip chip-operational">Operational</span>
+    </div>
+    <div class="sysrow">
+      <span class="sys-name">Log streaming</span>
+      <div class="sys-bar bar-cut"></div>
+      <span class="sys-pct">99.62%</span>
+      <span class="chip chip-degraded">Degraded</span>
+    </div>
+    <p class="sys-legend">Uptime over the trailing 90 days. Relay path checks run against the
+    relay mesh serving your route and do not affect the figures above.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Past incidents</h2>
+    <div class="inc">
+      <h3>Log streaming delivering with delay</h3>
+      <div class="inc-meta">
+        <span class="inc-ref">NE-2D08F</span>
+        <span class="inc-ts">opened 2026-07-28 06:12</span>
+        <span class="chip chip-degraded">Monitoring</span>
+      </div>
+      <p>Ingest for the EU-West point of presence is being rebalanced onto standby capacity.
+      Delivery continues with a delay of up to four minutes.</p>
+    </div>
+    <div class="inc">
+      <h3>Elevated relay latency on trans-Atlantic routes</h3>
+      <div class="inc-meta">
+        <span class="inc-ref">NE-C214A</span>
+        <span class="inc-ts">2026-07-21 09:14 to 11:47</span>
+        <span class="chip chip-operational">Resolved</span>
+      </div>
+      <p>A carrier fault added 80 to 120 ms on routes terminating at the Halden relay. Traffic
+      was steered to the Vireo ring until the carrier restored the segment.</p>
+    </div>
+    <div class="inc">
+      <h3>Control panel sign-in errors</h3>
+      <div class="inc-meta">
+        <span class="inc-ref">NE-77D02</span>
+        <span class="inc-ts">2026-07-14 15:03 to 15:26</span>
+        <span class="chip chip-operational">Resolved</span>
+      </div>
+      <p>A configuration push briefly rejected a share of sign-in attempts with a 502. The push
+      was rolled back and sign-in recovered without action needed from customers.</p>
+    </div>
+    <p class="more"><a href="history.html">Full incident history</a></p>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <div class="flinks">
+      <a href="index.html">Status</a>
+      <a href="history.html">Incident history</a>
+    </div>
+    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay.</p>
+    <p>Network operations centre: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
+  </div>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const STATE_LABEL = { operational: 'Operational', degraded: 'Degraded', congested: 'Congested' };
+const flash = document.getElementById('flash');
+const runBtn = document.getElementById('run-check');
+const errLine = document.getElementById('check-error');
+const list = document.getElementById('recent-list');
+const emptyLine = document.getElementById('recent-empty');
+let flashTimer = null;
+
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function stampUTC(at) {
+  const d = new Date(at);
+  const p = (n) => String(n).padStart(2, '0');
+  return p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds());
+}
+
+function showFlash(data) {
+  clearTimeout(flashTimer);
+  flash.replaceChildren(
+    el('span', 'flash-code', 'Probe ' + data.probeCode),
+    el('span', 'flash-state s-' + data.state, 'relay ' + data.state)
+  );
+  flash.classList.add('on');
+  flashTimer = setTimeout(() => {
+    flash.replaceChildren();
+    flash.classList.remove('on');
+  }, 4200);
+}
+
+function appendRow(data) {
+  const row = el('li', 'rc-row');
+  row.append(
+    el('span', 'rc-ts', stampUTC(data.at)),
+    el('span', 'rc-code', data.probeCode),
+    el('span', 'chip chip-' + data.state, STATE_LABEL[data.state] || data.state),
+    el('span', 'rc-note', data.component)
+  );
+  list.prepend(row);
+  while (list.children.length > 8) list.lastChild.remove();
+  emptyLine.hidden = true;
+}
+
+runBtn.addEventListener('click', async () => {
+  runBtn.disabled = true;
+  errLine.hidden = true;
+  try {
+    const res = await fetch('/api/status/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE }),
+    });
+    if (!res.ok) throw new Error('check failed');
+    const data = await res.json();
+    showFlash(data);
+    appendRow(data);
+  } catch {
+    errLine.hidden = false;
+  } finally {
+    runBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vacancy record — Alderpost</title>
+<link rel="stylesheet" href="roles.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-in">
+    <div class="brandline">
+      <p class="brand">Alderpost</p>
+      <span class="brandsub">Built environment recruitment</span>
+      <span class="deskbar">Northern desk &middot; consultant view</span>
+    </div>
+    <nav class="mainnav">
+      <a href="./">Vacancy search</a>
+      <a href="clients.html">Clients</a>
+      <a href="notes.html">Desk notes</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <article class="record" id="record">
+    <p class="crumb"><a href="./">Back to vacancy search</a></p>
+    <h1 id="v-title">Opening the record</h1>
+    <p class="employer" id="v-employer"></p>
+    <ul class="vmeta" id="v-meta"></ul>
+    <p class="ref" id="v-ref"></p>
+    <h2>The role</h2>
+    <div id="v-detail"></div>
+    <h2>What the client needs</h2>
+    <ul id="v-req"></ul>
+    <h2>Handled by</h2>
+    <p id="v-consultant"></p>
+    <button type="button" class="putforward" id="put-forward">Put a candidate forward</button>
+    <p class="stamp" id="v-status"></p>
+  </article>
+</main>
+
+<footer class="sitefoot">
+  <div class="wrap">
+    <p>Alderpost Recruitment Ltd, 4 Wharfeside Row, Leeds LS1 4QT. Registered in England 00000000.</p>
+    <p>desk@alderpost.example &middot; 0113 496 0180 &middot; <a href="notes.html">Desk notes</a> &middot; <a href="clients.html">Clients</a></p>
+  </div>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const id = new URLSearchParams(location.search).get('id') || '';
+
+async function load() {
+  const response = await fetch('/api/roles/posting?id=' + encodeURIComponent(id), {
+    headers: { 'X-Session-Nonce': NONCE },
+  });
+  if (!response.ok) {
+    document.getElementById('v-title').textContent = 'Record not available';
+    document.getElementById('v-employer').textContent =
+      'This vacancy is not on the desk. Go back to the vacancy search.';
+    return;
+  }
+  const data = await response.json();
+  document.title = data.title + ' — Alderpost';
+  document.getElementById('v-title').textContent = data.title;
+  document.getElementById('v-employer').textContent = data.employer;
+  const meta = document.getElementById('v-meta');
+  for (const cell of [data.location, data.contract, data.salary, data.discipline]) {
+    const bit = document.createElement('li');
+    bit.textContent = cell;
+    meta.append(bit);
+  }
+  document.getElementById('v-ref').textContent = 'Reference ' + data.reference;
+  const detail = document.getElementById('v-detail');
+  for (const paragraph of data.detail) {
+    const line = document.createElement('p');
+    line.textContent = paragraph;
+    detail.append(line);
+  }
+  const req = document.getElementById('v-req');
+  for (const line of data.requirements) {
+    const item = document.createElement('li');
+    item.textContent = line;
+    req.append(item);
+  }
+  document.getElementById('v-consultant').textContent = data.consultant;
+}
+
+document.getElementById('put-forward').addEventListener('click', () => {
+  document.getElementById('v-status').textContent =
+    'Candidate submission opens once a CV is attached to this record.';
+});
+
+load();
+</script>
+</body>
+</html>

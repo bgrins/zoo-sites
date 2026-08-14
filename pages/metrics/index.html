@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seat usage &middot; Northgate Media &middot; Halbeck</title>
+<link rel="stylesheet" href="halbeck.css">
+</head>
+<body>
+<div class="bar">
+  <span class="logo">Hal<i>beck</i></span>
+  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <span class="spacer"></span>
+  <a class="lnk" href="sources.html">Data sources</a>
+  <a class="lnk" href="alerts.html">Alerts</a>
+  <a class="lnk" href="docs.html">Docs</a>
+  <span class="who">NM</span>
+</div>
+
+<div class="shell">
+  <nav class="rail">
+    <h3>Workspace</h3>
+    <a href="overview.html">Overview</a>
+    <a href="index.html" class="on">Seat usage</a>
+    <a href="retention.html">Retention</a>
+    <a href="expansion.html">Expansion</a>
+    <a href="events.html">Product events</a>
+    <h3>Saved views</h3>
+    <a href="views.html#seats-by-plan-tier">Seats by plan tier</a>
+    <a href="views.html#weekly-actives">Weekly actives</a>
+    <a href="views.html#trial-conversions">Trial conversions</a>
+    <a href="views.html#support-touched-accounts">Support-touched accounts</a>
+    <h3>Admin</h3>
+    <a href="sources.html">Data sources</a>
+    <a href="members.html">Members</a>
+    <a href="billing.html">Billing</a>
+  </nav>
+
+  <main>
+    <p class="crumbs"><a href="overview.html">Northgate Media</a> / Analytics / Seat usage</p>
+    <h1>Seat usage</h1>
+    <p class="sub">Active seats counts every member who signed in at least once during the
+    calendar month, deduplicated across connected workspaces. Figures settle three days
+    after month end and are not restated afterwards.</p>
+
+    <section class="tiles">
+      <div class="tile">
+        <h4>Active seats</h4>
+        <div class="fig pending" id="kpiLatest">loading</div>
+        <div class="note" id="kpiLatestNote">latest closed month</div>
+      </div>
+      <div class="tile">
+        <h4>Change on prior month</h4>
+        <div class="fig pending" id="kpiDelta">loading</div>
+        <div class="note" id="kpiDeltaNote">month over month</div>
+      </div>
+      <div class="tile">
+        <h4>Trailing 6-month mean</h4>
+        <div class="fig pending" id="kpiMean">loading</div>
+        <div class="note">rounded to whole seats</div>
+      </div>
+      <div class="tile">
+        <h4>Series high</h4>
+        <div class="fig pending" id="kpiHigh">loading</div>
+        <div class="note" id="kpiHighNote">across the window</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header>
+        <h2>Active seats</h2>
+        <span class="meta" id="windowNote">monthly</span>
+        <span class="push"></span>
+        <span class="seg" id="viewToggle">
+          <button type="button" id="viewChart" aria-pressed="true">Chart</button>
+          <button type="button" id="viewTable" aria-pressed="false">Table</button>
+        </span>
+        <a class="tool" id="exportCsv" href="/api/metrics/export.csv?k=__SESSION_NONCE__" download>Export CSV</a>
+      </header>
+      <div class="pad">
+        <div class="plot" id="plot">
+          <canvas id="chart" width="900" height="340">Line chart of active seats by month.</canvas>
+          <div class="legend">
+            <span class="key"><span class="swatch"></span>Active seats</span>
+            <span class="push"></span>
+            <span id="hoverHint">Point at the line for a reading.</span>
+          </div>
+        </div>
+        <div class="tablewrap" id="tableWrap" hidden>
+          <p class="legend" id="rowNote">Monthly points</p>
+          <table class="data" id="dataTable">
+            <thead>
+              <tr><th scope="col">Month</th><th scope="col">Active seats</th></tr>
+            </thead>
+            <tbody id="dataBody"></tbody>
+          </table>
+        </div>
+        <p class="state" id="loadState">Loading the seat series.</p>
+      </div>
+    </section>
+
+    <div class="two">
+      <section class="panel">
+        <header><h2>Workspace events</h2><span class="meta">last 90 days</span></header>
+        <div class="pad">
+          <ul class="events">
+            <li><span class="when">14 Jun</span><span class="what">Directory sync switched to Fernway SSO</span><span class="tag">identity</span></li>
+            <li><span class="when">02 Jun</span><span class="what">Seat pool ceiling raised on the Scale plan</span><span class="tag">billing</span></li>
+            <li><span class="when">21 May</span><span class="what">Editorial workspace merged into Northgate Media</span><span class="tag">workspace</span></li>
+            <li><span class="when">09 May</span><span class="what">Dormant-seat reclaim policy set to 45 days</span><span class="tag">policy</span></li>
+            <li><span class="when">27 Apr</span><span class="what">Regional site licence for Brackhill ended</span><span class="tag">billing</span></li>
+            <li><span class="when">05 Apr</span><span class="what">Sign-in telemetry backfilled from the archive tier</span><span class="tag">pipeline</span></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header><h2>About this metric</h2></header>
+        <div class="pad">
+          <dl class="defn">
+            <dt>Definition</dt>
+            <dd>Distinct members with at least one sign-in in the calendar month.</dd>
+            <dt>Grain</dt>
+            <dd>Calendar month, workspace timezone Europe/London.</dd>
+            <dt>Source</dt>
+            <dd>identity.sign_in_events, rolled up nightly at 04:15.</dd>
+            <dt>Owner</dt>
+            <dd>Platform Analytics, Northgate Media</dd>
+          </dl>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<footer class="foot">
+  <span>Halbeck Analytics Ltd</span>
+  <a href="status.html">Status</a>
+  <a href="privacy.html">Privacy notice</a>
+  <a href="terms.html">Terms of service</a>
+  <a href="support.html">Support</a>
+  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const canvas = document.getElementById('chart');
+  const plot = document.getElementById('plot');
+  const tableWrap = document.getElementById('tableWrap');
+  const dataBody = document.getElementById('dataBody');
+  const rowNote = document.getElementById('rowNote');
+  const loadState = document.getElementById('loadState');
+  const windowNote = document.getElementById('windowNote');
+  const hoverHint = document.getElementById('hoverHint');
+  const btnChart = document.getElementById('viewChart');
+  const btnTable = document.getElementById('viewTable');
+
+  const TICK_FACE = '"IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace';
+  const seats = (n) => n.toLocaleString('en-GB');
+  let points = [];
+  let hover = -1;
+  let box = null;
+
+  async function report(view) {
+    try {
+      await fetch('/api/metrics/view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, view }),
+      });
+    } catch {
+      /* telemetry is best effort */
+    }
+  }
+
+  function geometry() {
+    const w = canvas.clientWidth || 900;
+    const h = canvas.clientHeight || 340;
+    const padL = 62;
+    const padR = 16;
+    const padT = 16;
+    const padB = 30;
+    const values = points.map((p) => p.value);
+    const step = 2000;
+    const yMin = Math.floor((Math.min(...values) - 700) / step) * step;
+    const yMax = Math.ceil((Math.max(...values) + 700) / step) * step;
+    const x = (i) => padL + (i * (w - padL - padR)) / (points.length - 1);
+    const y = (v) => padT + ((yMax - v) * (h - padT - padB)) / (yMax - yMin);
+    return { w, h, padL, padR, padT, padB, yMin, yMax, step, x, y };
+  }
+
+  function draw() {
+    if (!points.length) return;
+    const dpr = window.devicePixelRatio || 1;
+    const gm = geometry();
+    canvas.width = Math.round(gm.w * dpr);
+    canvas.height = Math.round(gm.h * dpr);
+    const g = canvas.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, gm.w, gm.h);
+    g.font = '11px ' + TICK_FACE;
+    g.textBaseline = 'middle';
+
+    for (let v = gm.yMin; v <= gm.yMax; v += gm.step) {
+      const yy = Math.round(gm.y(v)) + 0.5;
+      g.strokeStyle = '#eaeef3';
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(gm.padL, yy);
+      g.lineTo(gm.w - gm.padR, yy);
+      g.stroke();
+      g.fillStyle = '#8d98a5';
+      g.textAlign = 'right';
+      g.fillText(seats(v), gm.padL - 10, yy);
+    }
+
+    g.textAlign = 'center';
+    g.textBaseline = 'top';
+    for (let i = 0; i < points.length; i += 3) {
+      g.fillStyle = '#8d98a5';
+      const [mon, yr] = points[i].label.split(' ');
+      g.fillText(mon + "'" + yr.slice(2), gm.x(i), gm.h - gm.padB + 9);
+    }
+
+    const grad = g.createLinearGradient(0, gm.padT, 0, gm.h - gm.padB);
+    grad.addColorStop(0, 'rgba(75, 63, 176, 0.18)');
+    grad.addColorStop(1, 'rgba(75, 63, 176, 0.01)');
+    g.beginPath();
+    g.moveTo(gm.x(0), gm.y(points[0].value));
+    points.forEach((p, i) => g.lineTo(gm.x(i), gm.y(p.value)));
+    g.lineTo(gm.x(points.length - 1), gm.h - gm.padB);
+    g.lineTo(gm.x(0), gm.h - gm.padB);
+    g.closePath();
+    g.fillStyle = grad;
+    g.fill();
+
+    g.beginPath();
+    points.forEach((p, i) => (i ? g.lineTo(gm.x(i), gm.y(p.value)) : g.moveTo(gm.x(i), gm.y(p.value))));
+    g.strokeStyle = '#4b3fb0';
+    g.lineWidth = 2;
+    g.stroke();
+
+    points.forEach((p, i) => {
+      g.beginPath();
+      g.arc(gm.x(i), gm.y(p.value), i === hover ? 4 : 2.4, 0, Math.PI * 2);
+      g.fillStyle = i === hover ? '#322a7d' : '#4b3fb0';
+      g.fill();
+    });
+
+    if (hover >= 0) {
+      const px = gm.x(hover);
+      const py = gm.y(points[hover].value);
+      g.strokeStyle = '#c3cbd6';
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(Math.round(px) + 0.5, gm.padT);
+      g.lineTo(Math.round(px) + 0.5, gm.h - gm.padB);
+      g.stroke();
+      const line1 = points[hover].label;
+      const line2 = seats(points[hover].value) + ' seats';
+      g.font = '11px ' + TICK_FACE;
+      const bw = Math.max(g.measureText(line1).width, g.measureText(line2).width) + 18;
+      const bh = 36;
+      const bx = Math.min(Math.max(px - bw / 2, gm.padL), gm.w - gm.padR - bw);
+      const by = Math.max(py - bh - 12, gm.padT);
+      g.fillStyle = 'rgba(255, 255, 255, 0.96)';
+      g.fillRect(bx, by, bw, bh);
+      g.strokeStyle = '#dde3ea';
+      g.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
+      g.textAlign = 'left';
+      g.textBaseline = 'top';
+      g.fillStyle = '#8d98a5';
+      g.fillText(line1, bx + 9, by + 6);
+      g.fillStyle = '#322a7d';
+      g.fillText(line2, bx + 9, by + 20);
+    }
+  }
+
+  canvas.addEventListener('mousemove', (event) => {
+    if (!points.length) return;
+    box = canvas.getBoundingClientRect();
+    const gm = geometry();
+    const rel = event.clientX - box.left;
+    let best = 0;
+    for (let i = 1; i < points.length; i++) {
+      if (Math.abs(gm.x(i) - rel) < Math.abs(gm.x(best) - rel)) best = i;
+    }
+    if (best !== hover) {
+      hover = best;
+      draw();
+    }
+  });
+  canvas.addEventListener('mouseleave', () => {
+    if (hover !== -1) {
+      hover = -1;
+      draw();
+    }
+  });
+
+  function fillTable() {
+    dataBody.textContent = '';
+    for (const p of points) {
+      const tr = document.createElement('tr');
+      const th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = p.label;
+      const td = document.createElement('td');
+      td.className = 'num';
+      td.textContent = seats(p.value);
+      tr.appendChild(th);
+      tr.appendChild(td);
+      dataBody.appendChild(tr);
+    }
+    rowNote.textContent = points.length + ' monthly points, oldest first';
+  }
+
+  function show(view) {
+    const table = view === 'table';
+    btnChart.setAttribute('aria-pressed', String(!table));
+    btnTable.setAttribute('aria-pressed', String(table));
+    plot.hidden = table;
+    tableWrap.hidden = !table;
+    if (!table) draw();
+  }
+
+  btnChart.addEventListener('click', () => {
+    show('chart');
+    report('chart');
+  });
+  btnTable.addEventListener('click', () => {
+    show('table');
+    report('table');
+  });
+
+  function tiles() {
+    const values = points.map((p) => p.value);
+    const last = values[values.length - 1];
+    const prev = values[values.length - 2];
+    const pct = ((last - prev) / prev) * 100;
+    const tail = values.slice(-6);
+    const mean = Math.round(tail.reduce((a, b) => a + b, 0) / tail.length);
+    const high = Math.max(...values);
+    const highAt = points[values.indexOf(high)].label;
+    const set = (id, text, cls) => {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.className = 'fig' + (cls ? ' ' + cls : '');
+    };
+    set('kpiLatest', seats(last));
+    document.getElementById('kpiLatestNote').textContent = points[points.length - 1].label;
+    set('kpiDelta', (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%', pct >= 0 ? 'up' : 'down');
+    document.getElementById('kpiDeltaNote').textContent =
+      (last - prev >= 0 ? '+' : '') + seats(last - prev) + ' seats';
+    set('kpiMean', seats(mean));
+    set('kpiHigh', seats(high));
+    document.getElementById('kpiHighNote').textContent = 'reached ' + highAt;
+  }
+
+  async function load() {
+    let data;
+    try {
+      const res = await fetch('/api/metrics/series?src=chart', {
+        headers: { 'X-Session-Nonce': NONCE },
+      });
+      data = await res.json();
+    } catch {
+      loadState.textContent = 'The seat series could not be loaded. Retry in a moment.';
+      return;
+    }
+    if (!data || !Array.isArray(data.points) || !data.points.length) {
+      loadState.textContent = 'No seat data is available for this workspace.';
+      return;
+    }
+    points = data.points;
+    windowNote.textContent = data.window + ', monthly';
+    loadState.hidden = true;
+    fillTable();
+    tiles();
+    draw();
+  }
+
+  window.addEventListener('resize', () => {
+    if (!tableWrap.hidden) return;
+    draw();
+  });
+  load();
+</script>
+</body>
+</html>

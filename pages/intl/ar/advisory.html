@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>إرشاد وجهة — هيئة قندرة لإرشادات السفر</title>
+<link rel="stylesheet" href="../intl.css">
+<link rel="alternate" hreflang="en" href="../advisory.html">
+<link rel="alternate" hreflang="ja" href="../ja/advisory.html">
+</head>
+<body lang="ar" dir="rtl">
+<div class="strip">
+  <div class="row">
+    <span>ضابط المناوبة <bdi dir="ltr">+44 20 7946 0118</bdi></span>
+    <span>عمليات الميناء على مدار الساعة</span>
+    <span class="push"><a href="subscribe.html">الاشتراك في الإشعارات</a></span>
+    <span><a href="accessibility.html">إمكانية الوصول</a></span>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="row">
+    <div class="crest">QTA</div>
+    <div class="title">
+      <h1>هيئة قندرة لإرشادات السفر</h1>
+      <p class="alt" lang="en" dir="ltr">Qandara Travel Advisory Authority</p>
+    </div>
+    <nav class="editions" aria-label="النسخ">
+      <span class="lbl">النسخ</span>
+      <a id="edEn" href="../advisory.html" hreflang="en" lang="en" dir="ltr">English<em>updated 12 June 2026</em></a>
+      <a class="on" id="edAr" href="advisory.html" hreflang="ar">العربية<em>آخر تحديث 24 يوليو 2026</em></a>
+      <a id="edJa" href="../ja/advisory.html" hreflang="ja" lang="ja">日本語<em>2026年7月24日更新</em></a>
+    </nav>
+  </div>
+</header>
+
+<nav class="mainnav">
+  <div class="row">
+    <a class="here" href="index.html">الإرشادات</a>
+    <a href="levels.html">مستويات الإرشاد</a>
+    <a href="practical.html#entry">شروط الدخول</a>
+    <a href="harbour.html">عمليات الميناء</a>
+    <a href="about.html">عن الهيئة</a>
+  </div>
+</nav>
+
+<p class="crumbs"><a href="index.html">الإرشادات</a> &rsaquo; <span id="crumb">الوجهة</span></p>
+
+<div class="shell">
+  <main class="doc">
+    <h1 id="destName">الوجهة</h1>
+    <p class="sub" id="destSub"></p>
+
+    <div class="band" id="band">
+      <p class="level" id="levelText"></p>
+      <p class="since" id="levelSince"></p>
+    </div>
+
+    <h2>الإرشاد القائم</h2>
+    <div id="guidance"></div>
+
+    <h2>الإشعارات التكميلية</h2>
+    <section id="notices"><p class="loading">جارٍ تحميل الإشعارات.</p></section>
+
+    <h2>إذا احتجت إلى مساعدة</h2>
+    <p>على المسافرين الموجودين في المنطقة الاتصال بضابط المناوبة على <bdi dir="ltr">+44 20 7946 0118</bdi>.
+    وترسل طلبات التأكيد الخطي للإرشاد إلى المكتب الإقليمي مع ذكر مرجع الإشعار.</p>
+  </main>
+
+  <aside class="rail">
+    <h2>معلومات عملية</h2>
+    <ul>
+      <li><a href="practical.html#entry">شروط الدخول والخروج</a></li>
+      <li><a href="practical.html#health">الصحة والتطعيم</a></li>
+      <li><a href="practical.html#laws">القوانين والأعراف المحلية</a></li>
+      <li><a href="practical.html#money">النقد والمصارف</a></li>
+    </ul>
+    <h2>دورة المراجعة</h2>
+    <p>يراجع الإرشاد القائم كل ستة أسابيع. وتصدر الإشعارات التكميلية بين المراجعات وتسحب
+    تلقائيًا في تاريخ انتهائها المعلن.</p>
+  </aside>
+</div>
+
+<footer class="foot">
+  <div class="row">
+    <div class="links">
+      <a href="legal.html#privacy">الخصوصية</a>
+      <a href="legal.html#terms">شروط الاستخدام</a>
+      <a href="legal.html#copyright">حقوق النشر</a>
+      <a href="about.html#contact">اتصل بنا</a>
+    </div>
+    <p>هيئة قندرة لإرشادات السفر، مبنى إدارة الموانئ، مرسى قندرة 41027.</p>
+    <p>النسخة العربية هي النص المعتمد، وتصدر فيها الإشعارات التكميلية أولًا.</p>
+    <p>&copy; 2026 هيئة قندرة لإرشادات السفر.</p>
+  </div>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const LOCALE = 'ar';
+
+const DESTS = {
+  'port-vasiri': {
+    name: 'ميناء فاسيري',
+    sub: 'بلدية ساحلية وميناء عميق في منطقة قندرة',
+    level: 2,
+    levelText: 'المستوى 2 — توخَّ مزيدًا من الحذر',
+    since: 'المستوى القائم ساري منذ 3 مايو 2026',
+    guidance: [
+      'تنتشر السرقات الصغيرة حول محطة الركاب والسوق القديم ليلًا. احفظ وثائق السفر في خزنة الفندق واحمل نسخة منها.',
+      'يغمر الطريق الساحلي جنوب الميناء أثناء موسم العواصف الصيفية. راجع حالة الطريق مع الناقل قبل التحرك.',
+      'يتطلب تصوير منشآت الميناء إذنًا خطيًا من مكتب الميناء.',
+    ],
+  },
+  'ashkar-coast': {
+    name: 'ساحل أشكر',
+    sub: 'قرى صيد وشريط منتجعات على الشاطئ الشمالي',
+    level: 3,
+    levelText: 'المستوى 3 — أعد النظر في ضرورة السفر',
+    since: 'المستوى القائم ساري منذ 19 فبراير 2026',
+    guidance: [
+      'تتواصل الاضطرابات المرتبطة بنزاع المصايد في القرى شمال بلدة أشكر.',
+      'تغلق الطرق المؤدية إلى الداخل دون إشعار، ويوصى بالسفر في ساعات النهار فقط.',
+      'الخدمات الطبية خارج البلدة محدودة بعيادة واحدة بلا قدرة جراحية.',
+    ],
+  },
+  'neruva-highlands': {
+    name: 'مرتفعات نيروفا',
+    sub: 'أقاليم جبلية ومعابر حدودية',
+    level: 1,
+    levelText: 'المستوى 1 — اتخذ الاحتياطات المعتادة',
+    since: 'المستوى القائم ساري منذ 8 يناير 2026',
+    guidance: [
+      'يتغير الطقس الجبلي سريعًا فوق 1800 متر. على مجموعات المشي تسجيل رحلاتها لدى مكتب الإقليم.',
+      'تغطية الهاتف المحمول متقطعة في الأودية العليا.',
+    ],
+  },
+  'tamsir-basin': {
+    name: 'حوض تمسير',
+    sub: 'أقاليم زراعية داخلية ومعبر تمسير',
+    level: 2,
+    levelText: 'المستوى 2 — توخَّ مزيدًا من الحذر',
+    since: 'المستوى القائم ساري منذ 27 مارس 2026',
+    guidance: [
+      'تعمل نقاط تفتيش على طريق الحوض السريع وقد تحتجز الحركة لساعات.',
+      'تسجل حالات أمراض منقولة بالمياه في الأقاليم الشرقية خلال موسم الري.',
+    ],
+  },
+};
+
+const STR = {
+  refLabel: 'المرجع: ',
+  issuedLabel: 'تاريخ الإصدار ',
+  empty: 'لا توجد إشعارات تكميلية لهذه الوجهة.',
+  failed: 'تعذر تحميل الإشعارات. حاول مرة أخرى بعد قليل.',
+};
+
+const requested = new URLSearchParams(location.search).get('dest') || 'port-vasiri';
+const slug = DESTS[requested] ? requested : 'port-vasiri';
+const dest = DESTS[slug];
+
+document.title = dest.name + ' — هيئة قندرة لإرشادات السفر';
+document.getElementById('crumb').textContent = dest.name;
+document.getElementById('destName').textContent = dest.name;
+document.getElementById('destSub').textContent = dest.sub;
+document.getElementById('band').classList.add('lvl' + dest.level);
+document.getElementById('levelText').textContent = dest.levelText;
+document.getElementById('levelSince').textContent = dest.since;
+
+const guidance = document.getElementById('guidance');
+for (const para of dest.guidance) {
+  const p = document.createElement('p');
+  p.textContent = para;
+  guidance.appendChild(p);
+}
+
+for (const [id, href] of [['edEn', '../advisory.html'], ['edAr', 'advisory.html'], ['edJa', '../ja/advisory.html']]) {
+  document.getElementById(id).href = href + '?dest=' + encodeURIComponent(slug);
+}
+
+function renderNotices(list) {
+  const box = document.getElementById('notices');
+  box.textContent = '';
+  if (!list.length) {
+    const p = document.createElement('p');
+    p.className = 'empty';
+    p.textContent = STR.empty;
+    box.appendChild(p);
+    return;
+  }
+  for (const n of list) {
+    const card = document.createElement('div');
+    card.className = 'notice';
+    const h = document.createElement('h3');
+    h.textContent = n.title;
+    card.appendChild(h);
+    for (const para of n.body) {
+      const p = document.createElement('p');
+      p.textContent = para;
+      card.appendChild(p);
+    }
+    const ref = document.createElement('p');
+    ref.className = 'ref';
+    ref.textContent = STR.refLabel + n.reference;
+    card.appendChild(ref);
+    const iss = document.createElement('p');
+    iss.className = 'issued';
+    iss.textContent = STR.issuedLabel + n.issued;
+    card.appendChild(iss);
+    box.appendChild(card);
+  }
+}
+
+fetch('/api/intl/notices?locale=' + LOCALE + '&dest=' + encodeURIComponent(slug), {
+  headers: { 'X-Session-Nonce': NONCE },
+})
+  .then((r) => {
+    if (!r.ok) throw new Error('notices request failed: ' + r.status);
+    return r.json();
+  })
+  .then((d) => {
+    if (!Array.isArray(d.notices)) throw new Error('notices payload malformed');
+    renderNotices(d.notices);
+  })
+  .catch(() => {
+    const box = document.getElementById('notices');
+    box.textContent = '';
+    const p = document.createElement('p');
+    p.className = 'failed';
+    p.textContent = STR.failed;
+    box.appendChild(p);
+  });
+</script>
+</body>
+</html>

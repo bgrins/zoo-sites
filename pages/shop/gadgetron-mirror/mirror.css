@@ -1,0 +1,103 @@
+body {
+  margin: 0;
+  background: #fbfbfc;
+  color: #1f2430;
+  font-family: "Arial Narrow", "Helvetica Neue Condensed", Arial, sans-serif;
+  font-size: 13px;
+}
+a { color: #0d5c8a; }
+.railbar {
+  background: #1f2430; color: #f2f3f5; padding: 7px 14px;
+  display: flex; align-items: center; gap: 14px;
+}
+.railbar .mark {
+  font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: .16em;
+  color: #ffb020;
+}
+.railbar .node {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: #9aa2b1;
+  border: 1px solid #4a5162; padding: 1px 6px;
+}
+.railbar .who { margin-left: auto; font-size: 11px; color: #9aa2b1; }
+.tabs {
+  background: #2c3242; padding: 0 14px; display: flex; gap: 2px;
+  border-bottom: 2px solid #ffb020;
+}
+.tabs a {
+  color: #c8cdd8; text-decoration: none; font-size: 11px; text-transform: uppercase;
+  letter-spacing: .1em; padding: 7px 12px;
+}
+.tabs a[aria-current] { background: #ffb020; color: #1f2430; font-weight: bold; }
+.syncstrip {
+  background: #eef0f4; border-bottom: 1px solid #d7dae2; padding: 5px 14px;
+  font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 11px;
+  color: #4a5162;
+}
+.crumbs { padding: 7px 14px 0; font-size: 11px; color: #626a7a; }
+.crumbs a { text-decoration: none; }
+.sheet { padding: 8px 14px 26px; }
+.statline {
+  display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  border-bottom: 1px solid #dcdfe6; padding-bottom: 7px; margin-bottom: 10px;
+}
+.statline h1 { font-size: 17px; margin: 0; text-transform: uppercase; letter-spacing: .04em; }
+.statline .count { font-size: 12px; color: #626a7a; }
+.notices { margin-bottom: 12px; border-left: 3px solid #ffb020; padding: 2px 0 2px 9px; }
+.notices h2 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #626a7a;
+  margin: 0 0 6px;
+}
+.notices p { font-size: 12px; margin: 0 0 4px; max-width: 82ch; }
+.depts { list-style: none; margin: 0 0 16px; padding: 0; max-width: 62ch; }
+.depts li {
+  border-bottom: 1px solid #e6e8ee; padding: 5px 2px; display: flex;
+  align-items: baseline; gap: 10px;
+}
+.depts .state {
+  margin-left: auto; font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+  color: #8b93a3;
+}
+.depts .state.synced { color: #1d7a3c; font-weight: bold; }
+table.grid { border-collapse: collapse; width: 100%; font-size: 12px; }
+table.grid caption { text-align: left; font-size: 11px; color: #626a7a; padding-bottom: 5px; }
+table.grid th, table.grid td { border: 1px solid #d7dae2; padding: 3px 6px; vertical-align: middle; }
+table.grid thead th {
+  background: #2c3242; color: #f2f3f5; font-size: 11px; text-transform: uppercase;
+  letter-spacing: .06em; text-align: left; white-space: nowrap;
+}
+table.grid tbody tr:nth-child(even) { background: #f1f2f6; }
+td.model { font-weight: bold; white-space: nowrap; }
+td.num, th.num { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; text-align: right; white-space: nowrap; }
+td.mono { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; white-space: nowrap; }
+td.price { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; text-align: right; font-weight: bold; }
+td.stock { text-align: center; }
+.rowsnote { margin-top: 10px; font-size: 11px; color: #626a7a; }
+.detail { display: flex; align-items: flex-start; gap: 22px; flex-wrap: wrap; }
+.detail .specs { flex: 1; min-width: 340px; }
+.buybox {
+  width: 232px; flex: none; border: 1px solid #d7dae2; border-top: 3px solid #ffb020;
+  background: #fff; padding: 10px 12px 14px;
+}
+.buybox h2 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #626a7a;
+  margin: 0 0 6px;
+}
+.buybox .nowprice {
+  font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 26px;
+  font-weight: bold; margin: 0;
+}
+.buybox .unit { font-size: 11px; color: #626a7a; margin: 2px 0 10px; }
+.buybox .avail { font-size: 12px; color: #1d7a3c; font-weight: bold; margin: 0 0 8px; }
+.buybox button {
+  font: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+  font-weight: bold; background: #e7e9ee; border: 1px solid #cdd1da; color: #8b93a3;
+  padding: 4px 10px; width: 100%; cursor: default;
+}
+.buybox .why { font-size: 11px; color: #626a7a; margin: 8px 0 0; }
+.pending { max-width: 70ch; }
+.pending p { line-height: 1.55; }
+.legalstrip {
+  border-top: 3px solid #ffb020; background: #1f2430; color: #9aa2b1;
+  font-size: 11px; padding: 14px; line-height: 1.6;
+}
+.legalstrip a { color: #cfd4de; }

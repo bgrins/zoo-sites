@@ -1,0 +1,34 @@
+{
+  "rank": 32,
+  "comments": [
+    {
+      "author": "helmholtzhum",
+      "age": "21 hours ago",
+      "text": "The acoustics explanation is mostly right but conflates two mechanisms. The cover-as-bell ringing (impact excitation from tires) and the cavity resonance (the shaft acting as a Helmholtz resonator when rain changes the effective neck geometry) are different phenomena with different pitches. The article's spectrogram actually shows both — two distinct bands — and labels them as one.",
+      "replies": [
+        {
+          "author": "stormdrain",
+          "age": "19 hours ago",
+          "text": "OP here — fair hit. I noticed the two bands and mentioned it in a footnote but should have promoted it to the main text. A follow-up with a proper two-mechanism model is in the works; a civil engineer reader has offered access to a test shaft, which is the most niche perk I've ever been offered.",
+          "replies": [
+            {
+              "author": "helmholtzhum",
+              "age": "16 hours ago",
+              "text": "Looking forward to it. Measure with the cover seated and unseated if you can — the bell mode should shift, the cavity mode shouldn't."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "pagetable",
+      "age": "13 hours ago",
+      "text": "Anecdote: there was a cover on my old commute that sang a clean minor third above the road noise in the rain, dead reliable. Then a utility crew replaced it and the new one was silent. I was unreasonably sad about it. Streets have voices; maintenance changes the choir."
+    },
+    {
+      "author": "tokenring",
+      "age": "6 hours ago",
+      "text": "Municipal trivia: some cities spec covers with anti-rock inserts specifically to kill the ringing, because residents log it as noise complaints. The singing described here is, from the city's perspective, a defect. One person's found sound is another person's ticket queue."
+    }
+  ]
+}

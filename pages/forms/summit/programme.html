@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Programme — Solstice Leadership Summit</title>
+<style>
+  :root {
+    --violet: #4c1d95; --pink: #db2777; --ink: #1b1033;
+    --soft: #6b5f86; --line: #e7e1f2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Futura, "Century Gothic", "URW Gothic", "Trebuchet MS", sans-serif;
+    color: var(--ink); background: #fff; font-size: 16px; line-height: 1.5;
+  }
+  .tabs {
+    position: sticky; top: 0; z-index: 5;
+    background: #fff; border-bottom: 2px solid var(--line);
+    display: flex; align-items: center; gap: 26px; padding: 12px 32px;
+  }
+  .tabs .logo {
+    font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--violet);
+  }
+  .tabs a {
+    text-decoration: none; color: var(--soft); font-size: 13px;
+    text-transform: uppercase; letter-spacing: 1.4px; padding: 4px 0;
+  }
+  .tabs a.here { color: var(--pink); border-bottom: 3px solid var(--pink); font-weight: 700; }
+  .hero {
+    background: linear-gradient(115deg, #4c1d95 0%, #7c2d8f 48%, #db2777 100%);
+    color: #fff; padding: 46px 32px 40px;
+  }
+  .hero .kicker { text-transform: uppercase; letter-spacing: 3px; font-size: 12px; color: #ffd6ec; margin: 0 0 10px; }
+  .hero h1 {
+    margin: 0 0 12px; font-size: 46px; line-height: 1.02;
+    text-transform: uppercase; letter-spacing: -1px; font-weight: 700;
+  }
+  .hero .facts { display: flex; flex-wrap: wrap; gap: 10px 26px; font-size: 14px; }
+  .hero .facts b { font-weight: 700; letter-spacing: 1px; text-transform: uppercase; font-size: 12px; color: #ffd6ec; }
+  main { max-width: 720px; margin: 0 auto; padding: 34px 24px 70px; }
+  .intro { font-size: 17px; margin: 0 0 26px; }
+  .intro strong { color: var(--pink); }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 2.2px; color: var(--violet); margin: 34px 0 14px; }
+  .day {
+    background: #fdfbff; border: 2px solid var(--line); border-radius: 18px;
+    padding: 18px 22px; margin: 0 0 16px;
+  }
+  .slot { display: flex; gap: 18px; padding: 9px 0; border-bottom: 1px dashed var(--line); }
+  .slot:last-child { border-bottom: 0; }
+  .slot .time { flex: 0 0 96px; font-weight: 700; color: var(--pink); font-size: 14px; }
+  .slot .what b { display: block; letter-spacing: 0.4px; }
+  .slot .what span { color: var(--soft); font-size: 14px; }
+  footer { background: var(--ink); color: #b9a9d6; padding: 26px 32px; font-size: 12.5px; }
+  footer .cols { display: flex; flex-wrap: wrap; gap: 8px 40px; margin-bottom: 12px; }
+  footer b { color: #fff; text-transform: uppercase; letter-spacing: 1.4px; font-size: 11px; }
+</style>
+</head>
+<body>
+<nav class="tabs">
+  <span class="logo">Solstice Summit</span>
+  <a href="programme.html" class="here">Programme</a>
+  <a href="speakers.html">Speakers</a>
+  <a href="venue.html">Venue</a>
+  <a href="roster.html">Group registration</a>
+</nav>
+
+<header class="hero">
+  <p class="kicker">Solstice Conference Services presents</p>
+  <h1>Programme</h1>
+  <div class="facts">
+    <span><b>Dates</b> 14–16 October 2026</span>
+    <span><b>Venue</b> Harborview Exhibition Halls</span>
+  </div>
+</header>
+
+<main>
+<p class="intro">Three days across two tracks — <strong>Leading Teams</strong> in Hall A
+and <strong>Leading Change</strong> in Hall B. Keynotes bring both tracks together
+in the Main Auditorium.</p>
+
+<h2>Day one — Wednesday 14 October</h2>
+<div class="day">
+  <div class="slot"><div class="time">08:00</div><div class="what"><b>Badge collection opens</b><span>Hall C</span></div></div>
+  <div class="slot"><div class="time">09:30</div><div class="what"><b>Opening keynote: The Long View</b><span>Amara Feld — Main Auditorium</span></div></div>
+  <div class="slot"><div class="time">11:00</div><div class="what"><b>Hiring for resilience</b><span>Tobias Renn — Hall A, Leading Teams</span></div></div>
+  <div class="slot"><div class="time">11:00</div><div class="what"><b>Change without churn</b><span>Ingrid Solano — Hall B, Leading Change</span></div></div>
+  <div class="slot"><div class="time">14:00</div><div class="what"><b>Workshop: Feedback that lands</b><span>Celeste Marrow — Hall A</span></div></div>
+  <div class="slot"><div class="time">16:30</div><div class="what"><b>Welcome reception</b><span>Harborview Terrace</span></div></div>
+</div>
+
+<h2>Day two — Thursday 15 October</h2>
+<div class="day">
+  <div class="slot"><div class="time">09:30</div><div class="what"><b>Keynote: Decisions at Scale</b><span>Marcus Whitlock — Main Auditorium</span></div></div>
+  <div class="slot"><div class="time">11:00</div><div class="what"><b>Delegation as a discipline</b><span>Amara Feld — Hall A, Leading Teams</span></div></div>
+  <div class="slot"><div class="time">11:00</div><div class="what"><b>Reading the room: stakeholder maps</b><span>Yuki Andersen — Hall B, Leading Change</span></div></div>
+  <div class="slot"><div class="time">14:00</div><div class="what"><b>Panel: When the plan breaks</b><span>Renn, Solano, Whitlock — Main Auditorium</span></div></div>
+  <div class="slot"><div class="time">16:00</div><div class="what"><b>Roundtables by sector</b><span>Hall B breakout rooms</span></div></div>
+</div>
+
+<h2>Day three — Friday 16 October</h2>
+<div class="day">
+  <div class="slot"><div class="time">09:30</div><div class="what"><b>Workshop: The first ninety days</b><span>Ingrid Solano — Hall A</span></div></div>
+  <div class="slot"><div class="time">11:00</div><div class="what"><b>Succession without drama</b><span>Celeste Marrow — Hall B, Leading Change</span></div></div>
+  <div class="slot"><div class="time">13:30</div><div class="what"><b>Closing keynote: What Endures</b><span>Yuki Andersen — Main Auditorium</span></div></div>
+  <div class="slot"><div class="time">15:00</div><div class="what"><b>Summit close</b><span>Main Auditorium</span></div></div>
+</div>
+</main>
+
+<footer>
+  <div class="cols">
+    <span><b>Organiser</b> Solstice Conference Services</span>
+    <span><b>Delegation desk</b> groups@solstice-events.example</span>
+    <span><b>Badge collection</b> Hall C, from 08:00</span>
+  </div>
+  © 2026 Solstice Conference Services.
+</footer>
+</body>
+</html>

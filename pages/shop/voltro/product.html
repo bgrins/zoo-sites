@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voltro — Product</title>
+<link rel="stylesheet" href="voltro.css">
+<style>
+  .crumbs { padding: 10px 16px; font-size: 12px; color: #565959; }
+  .crumbs a { color: #007185; text-decoration: none; }
+  .pdp { display: flex; gap: 26px; padding: 8px 16px 24px; align-items: flex-start; flex-wrap: wrap; }
+  .pdp .photo { width: 380px; flex: none; }
+  .pdp .photo svg { width: 100%; height: auto; border: 1px solid #eee; border-radius: 6px; }
+  .pdp .facts { flex: 1; min-width: 280px; max-width: 560px; }
+  .pdp h1 { font-size: 22px; margin: 0 0 4px; }
+  .pdp .rating { color: #de7921; font-size: 14px; margin-bottom: 8px; }
+  .pdp .price { color: #b12704; font-size: 26px; font-weight: 700; }
+  .pdp .price s { color: #565959; font-size: 14px; font-weight: 400; }
+  .pdp .permo { color: #565959; font-size: 13px; margin: 2px 0 10px; }
+  .pdp ul { font-size: 13px; margin: 10px 0 0 18px; padding: 0; }
+  .pdp ul li { margin: 3px 0; }
+  .buycol { width: 240px; flex: none; border: 1px solid #d5d9d9; border-radius: 8px; padding: 14px; font-size: 13px; }
+  .buycol .stock-in { margin: 6px 0; }
+  .buycol .stock-out { margin: 6px 0; }
+  .buycol button { width: 100%; margin-top: 8px; background: #ffd814; border: 1px solid #fcd200;
+    border-radius: 20px; padding: 8px 12px; cursor: pointer; font-size: 13px; }
+  .buycol button[disabled] { background: #eee; border-color: #ddd; color: #888; cursor: default; }
+  .buycol .after { margin-top: 8px; min-height: 16px; font-size: 12px; }
+  .buycol .after.good { color: #007600; font-weight: 700; }
+  .buycol .after.bad { color: #b12704; font-weight: 700; }
+  #missing { padding: 24px 16px; font-size: 14px; }
+  #missing a { color: #007185; }
+</style>
+</head>
+<body>
+<header>
+  <b>Voltro</b>
+  <input placeholder="Search Voltro" aria-label="Search">
+  <span>Hello, sign in</span>
+  <span>Orders</span>
+  <a id="cartlink" class="cartlink" href="cart.html">View cart</a>
+</header>
+<nav>
+  <span>All</span><span>Today's Deals</span><span>Electronics</span>
+  <span>Computers</span><span>Monitors</span><span>Gift Cards</span><span>Customer Service</span>
+</nav>
+<div class="crumbs"><a href="index.html">Voltro</a> &rsaquo; Monitors &rsaquo; <span id="crumbname"></span></div>
+<div class="pdp" id="pdp" hidden>
+  <div class="photo" id="photo"></div>
+  <div class="facts">
+    <h1 id="pname"></h1>
+    <div class="rating" id="prating"></div>
+    <div class="price" id="pprice"></div>
+    <div class="permo" id="ppermo"></div>
+    <ul id="pspecs"></ul>
+  </div>
+  <div class="buycol">
+    <div class="price" id="bprice" style="font-size:20px"></div>
+    <div id="pstock"></div>
+    <div>FREE shipping on this item.</div>
+    <button id="add" type="button">Add to Cart</button>
+    <div class="after" id="after" role="status"></div>
+    <div style="margin-top:10px;color:#565959">Sold and shipped by Voltro Retail.
+      30-day returns: see <a href="returns.html" style="color:#007185">Delivery &amp; Returns</a>.</div>
+  </div>
+</div>
+<div id="missing" hidden>
+  <p>This listing is no longer available. It may have sold out or been withdrawn by
+  the seller.</p>
+  <p><a href="index.html">Browse all computer monitors</a></p>
+</div>
+<footer>
+  &copy; 2026 Voltro Marketplace, Inc. Prices and availability are subject to change.
+  · <a href="conditions.html">Conditions of Use</a> · <a href="privacy.html">Privacy Notice</a>
+  · <a href="privacy.html#ads">Interest-Based Ads</a> · <a href="sell.html">Sell on Voltro</a>
+  · <a href="careers.html">Careers</a> · <a href="help.html">Customer Service</a>
+</footer>
+<script src="voltro-data.js"></script>
+<script src="voltro-nav.js"></script>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const RES_LABEL = {
+  '1080p': 'FHD 1920x1080',
+  '1440p': 'QHD 2560x1440',
+  '4K': '4K UHD 3840x2160',
+};
+
+const wanted = new URLSearchParams(location.search).get('name') ?? '';
+const product = VOLTRO.products.find((p) => p[0] === wanted);
+if (!product) {
+  document.getElementById('missing').hidden = false;
+  document.getElementById('crumbname').textContent = 'Listing unavailable';
+} else {
+  const [name, size, res, price, rating, reviews, inStock] = product;
+  document.title = 'Voltro — ' + name;
+  document.getElementById('crumbname').textContent = name;
+  document.getElementById('pname').textContent = name;
+  const hue = (name.length * 37 + name.charCodeAt(0) * 11) % 360;
+  document.getElementById('photo').innerHTML =
+    '<svg viewBox="0 0 160 90" role="img" aria-label="' + name + ' product photo">' +
+    '<rect width="160" height="90" fill="hsl(' + hue + ',18%,90%)"/>' +
+    '<rect x="22" y="8" width="116" height="62" rx="3" fill="#1b1f27"/>' +
+    '<rect x="72" y="72" width="16" height="8" fill="#444"/>' +
+    '<rect x="56" y="80" width="48" height="4" fill="#666"/></svg>';
+  document.getElementById('prating').textContent =
+    rating + ' out of 5 (' + reviews.toLocaleString() + ' ratings)';
+  document.getElementById('pprice').textContent = '$' + price.toFixed(2);
+  document.getElementById('bprice').textContent = '$' + price.toFixed(2);
+  document.getElementById('ppermo').textContent =
+    'or $' + (price / 12).toFixed(2) + '/mo for 12 mo';
+  const specs = [
+    size + ' inch diagonal, ' + RES_LABEL[res],
+    'IPS panel, ' + (res === '4K' ? '60 Hz' : '144 Hz') + ' refresh',
+    'HDMI and DisplayPort inputs',
+    'Tilt stand, 100 x 100 VESA',
+  ];
+  document.getElementById('pspecs').innerHTML = specs
+    .map((s) => '<li>' + s + '</li>')
+    .join('');
+  const stockEl = document.getElementById('pstock');
+  stockEl.className = inStock ? 'stock-in' : 'stock-out';
+  stockEl.textContent = inStock
+    ? 'In stock — ships within 24 hours.'
+    : 'Temporarily out of stock. No restock date available.';
+  const add = document.getElementById('add');
+  const after = document.getElementById('after');
+  add.disabled = !inStock;
+  add.addEventListener('click', async () => {
+    add.disabled = true;
+    after.className = 'after';
+    after.textContent = '';
+    try {
+      const res2 = await fetch('/api/voltro/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, product: name, price }),
+      });
+      const body = await res2.json();
+      if (res2.ok) {
+        after.className = 'after good';
+        after.textContent = 'Added to cart.';
+        document.getElementById('cartlink').textContent = 'View cart (' + body.count + ')';
+      } else {
+        after.className = 'after bad';
+        after.textContent = body.error ?? 'Could not add this item.';
+      }
+    } catch {
+      after.className = 'after bad';
+      after.textContent = 'Network error. Try again.';
+    } finally {
+      add.disabled = false;
+    }
+  });
+  document.getElementById('pdp').hidden = false;
+}
+</script>
+</body>
+</html>

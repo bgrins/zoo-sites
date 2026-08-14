@@ -1,0 +1,89 @@
+{
+  "rank": 2,
+  "comments": [
+    {
+      "author": "walwrangler",
+      "age": "11 hours ago",
+      "text": "The headline feature for me is incremental logical replication of DDL. We've been carrying a pile of trigger-based hacks to replicate schema changes for years, and every major upgrade I open the release notes hoping this is the one. Finally.",
+      "replies": [
+        {
+          "author": "tuplewrangler",
+          "age": "10 hours ago",
+          "text": "Submitter here (not a core dev, just posted it) — same. Worth noting DDL replication ships with a fairly conservative allowlist of statement types in this release; ALTER TABLE with table rewrites still isn't replicated. The docs are honest about it, which I appreciate.",
+          "replies": [
+            {
+              "author": "walwrangler",
+              "age": "10 hours ago",
+              "text": "Ha, of course the one I need most is the one that's excluded. Still, allowlist-and-expand is the right way to ship this. The trigger hacks live another year."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "kernelpanda",
+      "age": "10 hours ago",
+      "text": "Buried in the release notes: the planner now uses extended statistics automatically for join selectivity estimation in more cases. I tested the beta against a warehouse workload where a 5-way join was catastrophically misplanned due to correlated columns, and it went from a nested loop disaster (11 minutes) to a hash join plan (9 seconds) with zero query changes.\n\nThat one line in the notes is going to quietly fix more production incidents than any headline feature.",
+      "replies": [
+        {
+          "author": "planshape",
+          "age": "9 hours ago",
+          "text": "Counterpoint from someone who's been burned: every planner improvement is also a plan-stability roulette spin. \"Zero query changes\" cuts both ways — some fraction of workloads out there have queries that only perform acceptably because of a mis-estimate that happened to pick a good plan. Those flip too, silently, on upgrade day.",
+          "replies": [
+            {
+              "author": "kernelpanda",
+              "age": "9 hours ago",
+              "text": "No argument. The mitigation is the same as always: replay your workload against the new version before flipping traffic. But yes, \"the planner got smarter\" is a spicy changelog line if you're running a large fleet."
+            },
+            {
+              "author": "staticdrift",
+              "age": "8 hours ago",
+              "text": "This exchange is the whole database upgrade experience in miniature. Excitement, then dread, then a test plan."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "bpluscurious",
+      "age": "8 hours ago",
+      "text": "Can someone who follows development explain the async I/O changes? The notes mention direct I/O support graduating from developer-only status for data files. Does this mean the double-buffering problem (page cache + shared_buffers holding the same page twice) is finally addressed in a supported configuration?",
+      "replies": [
+        {
+          "author": "tuplewrangler",
+          "age": "7 hours ago",
+          "text": "Mostly yes, with caveats. Direct I/O is supported now but the guidance is that it only wins if you size shared_buffers much larger than the traditional 25% rule, since you lose the kernel page cache as a second tier. For read-heavy workloads that fit in RAM it's a real win. Mixed workloads on smaller boxes should probably leave it off. It's a tuning knob now, not a default."
+        }
+      ]
+    },
+    {
+      "author": "ormskeptic",
+      "age": "7 hours ago",
+      "text": "Every release thread has one of these comments so it may as well be mine: I've been running this database for fifteen years across four jobs, and the upgrade that took down production wasn't the database's fault a single time. It was always our extensions, our connection pooler config, or someone's clever query hint workaround. This project's engineering discipline is criminally underappreciated."
+    },
+    {
+      "author": "lambdacurious",
+      "age": "6 hours ago",
+      "text": "The new temporal table support (PERIOD columns with system-time versioning) is the sleeper feature. Application-level audit tables are one of those things everyone builds badly — triggers that miss edge cases, history tables that drift from the source schema. Having it in the engine with FOR SYSTEM_TIME queries is a big deal for anyone in a compliance-adjacent field.",
+      "replies": [
+        {
+          "author": "audituar",
+          "age": "5 hours ago",
+          "text": "Agreed, though I read the fine print and versioning doesn't survive a table rewrite (e.g. ALTER COLUMN TYPE) without a documented migration dance. For an audit feature that's a meaningful footgun — the moments you change a schema are exactly the moments auditors ask about.",
+          "replies": [
+            {
+              "author": "lambdacurious",
+              "age": "4 hours ago",
+              "text": "Good catch, I'd missed that. Still beats hand-rolled triggers, which have the same failure mode except undocumented."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "vacuumtruck",
+      "age": "3 hours ago",
+      "text": "Small quality-of-life note: pg_upgrade now preserves optimizer statistics across major versions. If you've ever done a major upgrade and then watched your first hour of production traffic hit tables with no stats, you know. The number of people this saves from a bad Saturday is enormous."
+    }
+  ]
+}

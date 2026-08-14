@@ -1,0 +1,34 @@
+{
+  "name": "zoo-sites",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Simulated websites and the browser-agent eval harness that grades against them",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bgrins/zoo-sites.git"
+  },
+  "homepage": "https://github.com/bgrins/zoo-sites#readme",
+  "bugs": "https://github.com/bgrins/zoo-sites/issues",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "verify": "node eval/verify.mjs",
+    "run": "node eval/run.mjs",
+    "devtools-both-backends": "node eval/run.mjs --suite basic --compare backends --parallel --parallel-tasks 3",
+    "playwright-both-backends": "node eval/run.mjs --suite basic --conditions playwright  --compare backends --parallel --parallel-tasks 3",
+    "smoke": "node eval/run.mjs --suite basic --backend all --parallel --parallel-tasks 3",
+    "serve": "node server.mjs --port 8907",
+    "serve:origins": "node serve.mjs"
+  },
+  "devDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.219",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@mozilla/firefox-devtools-mcp": "0.9.15",
+    "@openai/codex-sdk": "^0.145.0",
+    "@playwright/mcp": "0.0.78",
+    "@pydantic/genai-prices": "0.0.72"
+  }
+}

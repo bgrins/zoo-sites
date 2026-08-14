@@ -1,0 +1,56 @@
+body { font-family: Arial, Helvetica, sans-serif; margin: 0; color: #0f1111; }
+header { background: #131921; color: #fff; padding: 10px 16px; display: flex; gap: 16px; align-items: center; }
+header input { flex: 1; padding: 8px; max-width: 480px; }
+header b { border-left: 3px solid #ff9900; padding-left: 6px; }
+nav { background: #232f3e; color: #ddd; padding: 6px 16px; font-size: 13px; border-left: 3px solid #ff9900; }
+nav span { margin-right: 14px; }
+.promo { background: #ffd814; padding: 8px 16px; font-size: 13px; }
+main { display: flex; }
+aside { width: 180px; padding: 12px 16px; font-size: 13px; border-right: 1px solid #eee; }
+aside h4 { margin: 10px 0 4px; }
+aside label { display: block; margin: 2px 0; }
+#toolbar { display: flex; align-items: center; gap: 16px; padding: 10px 16px 0; font-size: 13px; }
+#toolbar h1 { font-size: 18px; margin: 0; margin-right: auto; }
+#grid { list-style: none; margin: 0; flex: 1; display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; padding: 16px; }
+.card { border: 1px solid #ddd; border-radius: 6px; padding: 12px; font-size: 13px; }
+.card .thumb { width: 100%; height: auto; margin-bottom: 6px; }
+.card .sponsored { color: #767676; font-size: 11px; }
+.card .name { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.card .name a { color: #0f1111; text-decoration: none; }
+.card .rating { color: #de7921; }
+.card .price { color: #b12704; font-size: 18px; font-weight: 700; }
+.card .price s { color: #565959; font-size: 12px; font-weight: 400; }
+.card .save { color: #cc0c39; font-size: 12px; }
+.card .permo, .card .fulfill { color: #565959; font-size: 12px; }
+.card .stock-in { color: #007600; }
+.card .stock-out { color: #b12704; font-weight: 700; }
+.card button { margin-top: 6px; background: #ffd814; border: 1px solid #fcd200;
+  border-radius: 20px; padding: 5px 12px; cursor: pointer; }
+header a.cartlink { color: #ffd814; font-weight: 700; text-decoration: none; }
+footer { padding: 24px 16px; background: #131921; color: #999; font-size: 12px; margin-top: 24px; }
+footer a { color: #ddd; }
+.crossnote { font-size: 12px; color: #565959; }
+.crossnote a { color: #007185; }
+#cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; background: #232f3e; color: #fff;
+  padding: 18px; display: flex; gap: 16px; align-items: center; justify-content: center; z-index: 10;
+  box-shadow: 0 -2px 12px rgba(0,0,0,.4); }
+#cookie-banner button { padding: 8px 20px; }
+#menubtn { background: #232f3e; color: #fff; border: 1px solid #4a5568; border-radius: 3px;
+  padding: 6px 10px; font-size: 13px; cursor: pointer; }
+#mobilemenu { background: #232f3e; padding: 4px 0 8px; border-left: 0; }
+#mobilemenu a { display: block; color: #fff; text-decoration: none; font-size: 14px;
+  padding: 9px 16px; border-bottom: 1px solid #37475a; }
+@media (max-width: 600px) {
+  header { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  header input { order: 9; flex: 1 1 100%; max-width: none; }
+  header span { font-size: 13px; }
+  nav:not(#mobilemenu) { display: none; }
+  main { display: block; }
+  aside { width: auto; border-right: 0; border-bottom: 1px solid #eee; }
+  #toolbar { flex-wrap: wrap; padding: 10px 12px 0; }
+  #grid { grid-template-columns: 1fr; padding: 12px; }
+  .promo, footer { padding-left: 12px; padding-right: 12px; }
+  #cookie-banner { display: block; padding: 12px; }
+  #cookie-banner button { margin-top: 8px; }
+}

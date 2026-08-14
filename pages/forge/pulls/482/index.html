@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#482 tariff: cache lane quotes and align rate windows &middot; hollowmill/brine-gateway &middot; Kettleforge</title>
+<link rel="stylesheet" href="../../forge.css">
+</head>
+<body>
+<header class="masthead">
+  <span class="mark">Kettle<em>forge</em></span>
+  <nav>
+    <a href="/forge/">Repositories</a>
+    <a href="/forge/pulls/">Pull requests</a>
+    <a href="/forge/">Anvil</a>
+    <a href="/forge/">Registry</a>
+  </nav>
+  <span class="who">signed in as <b>r.vandermolen</b></span>
+</header>
+
+<div class="crumbbar">
+  <div class="crumb"><a href="/forge/">hollowmill</a><span class="sep">/</span><b>brine-gateway</b><span class="vis">internal</span></div>
+  <div class="tabs">
+    <a href="/forge/">Code</a>
+    <a href="/forge/">Issues<span class="n">12</span></a>
+    <span class="here">Pull requests<span class="n">3</span></span>
+    <a href="/forge/">Anvil</a>
+    <a href="/forge/">Insights</a>
+    <a href="/forge/">Settings</a>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="prhead">
+    <h1>tariff: cache lane quotes and align rate windows <span class="num">#482</span></h1>
+    <div class="prmeta">
+      <span class="state">Open</span>
+      <span><b>t.ashgrove</b> wants to merge 6 commits into <span class="branch">trunk</span> from <span class="branch">tariff-cache-window</span></span>
+    </div>
+  </div>
+
+  <nav class="subtabs">
+    <span class="here">Conversation<span class="n">4</span></span>
+    <a href="./commits.html">Commits<span class="n">6</span></a>
+    <a href="./checks.html">Checks<span class="n">5</span></a>
+    <a href="./files.html">Files changed<span class="n">3</span></a>
+  </nav>
+
+  <div class="cols">
+    <div class="main">
+      <div class="card">
+        <div class="cardhead">t.ashgrove opened this pull request on 14 July</div>
+        <div class="body">
+          <p>Lane quotes are priced far more often than the tariff table changes, so the
+          gateway was hitting the rate table once per request. This adds an in-memory
+          cache keyed by lane, tariff class and rate window, and moves window maths into
+          a module of its own so the pricing path and the reconciliation job agree on
+          where a window starts and ends.</p>
+          <ul>
+            <li><code>src/tariff/cache.js</code> gains a real TTL, eviction and hit/miss counters.</li>
+            <li><code>src/tariff/window.js</code> exports boundary helpers instead of one function.</li>
+            <li><code>src/tariff/quote.js</code> reads through the cache and writes prices back to it.</li>
+          </ul>
+          <p>Measured on the staging replay set: 41,900 quote requests dropped from 41,900
+          tariff table reads to 2,140. I have not touched the reconciliation job in this
+          branch; that follows in a separate change once the helpers land.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">anvil-bot commented on 14 July</div>
+        <div class="body">
+          <p>Coverage for this branch is 91.2% (-0.4% against trunk). Bundle size unchanged.
+          One job is failing on the head commit; open the Checks tab for the job output.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">p.okonkwo commented on 15 July</div>
+        <div class="body">
+          <p>Shape of this looks right to me and the eviction path is a good addition. Two
+          things that are not blocking: I would rather see <code>digest()</code> live in a
+          util module than in the cache, and <code>nextBoundary()</code> deserves a test of
+          its own before the reconciliation change lands on top of it.</p>
+          <p>I have not had a chance to look at the failing job.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">t.ashgrove commented on 16 July</div>
+        <div class="body">
+          <p>Rebased onto trunk and pushed a sixth commit that only renames a local. The
+          failing job was already failing before the rebase, so it is not the rebase.
+          I have read the assertion twice and I cannot see which of these lines it is
+          pointing at, so a second pair of eyes on the diff would help.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">Merge status</div>
+        <div class="body">
+          <p><span class="chip fail">1 failing</span> <span class="chip pass">3 passed</span>
+          <span class="chip skip">1 skipped</span> &mdash; <a href="./checks.html">Anvil pipeline for c41f9ad</a></p>
+          <p class="byline">Forge merge is blocked while a required job is failing. Review from a
+          code owner is also required on this repository.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <div class="cardhead">Details</div>
+        <div class="body">
+          <dl>
+            <dt>Reviewers</dt>
+            <dd>r.vandermolen (you)</dd>
+            <dd>p.okonkwo</dd>
+            <dt>Labels</dt>
+            <dd>tariff, performance</dd>
+            <dt>Milestone</dt>
+            <dd>Gateway 4.7</dd>
+            <dt>Head commit</dt>
+            <dd>c41f9ad</dd>
+            <dt>Changed files</dt>
+            <dd>3</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="card">
+        <div class="cardhead">Linked issues</div>
+        <div class="body">
+          <p><a href="/forge/">#1188</a> Quote latency spikes at window rollover</p>
+          <p><a href="/forge/">#1201</a> Reconciliation disagrees with pricing on window edges</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="sitefoot">
+  <div class="links">
+    <a href="/forge/">Status</a>
+    <a href="/forge/">Docs</a>
+    <a href="/forge/">Keyboard shortcuts</a>
+    <a href="/forge/">Privacy</a>
+    <a href="/forge/">Terms</a>
+    <a href="/forge/">Contact support</a>
+  </div>
+  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Ashcombe AS4 2QN. &copy; 2026 Bellhollow Systems Ltd.</div>
+</footer>
+</body>
+</html>

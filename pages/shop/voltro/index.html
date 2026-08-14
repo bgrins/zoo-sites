@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Voltro — Computer Monitors</title>
+<link rel="stylesheet" href="voltro.css">
+</head>
+<body>
+<script src="voltro-data.js"></script>
+<script src="voltro.js"></script>
+<script src="voltro-nav.js"></script>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const cartLink = document.getElementById('cartlink');
+cartLink.textContent = 'View cart';
+document.querySelectorAll('#grid .card').forEach((card, i) => {
+  const button = card.querySelector('button');
+  button.addEventListener('click', async () => {
+    const [product, , , price] = VOLTRO.products[i];
+    button.disabled = true;
+    try {
+      const res = await fetch('/api/voltro/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, product, price }),
+      });
+      const body = await res.json();
+      if (res.ok) {
+        button.textContent = 'Added to cart';
+        cartLink.textContent = 'View cart (' + body.count + ')';
+      } else {
+        button.textContent = 'Error — try again';
+      }
+    } catch {
+      button.textContent = 'Error — try again';
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
+</script>
+</body>
+</html>

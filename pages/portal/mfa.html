@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two-step verification — Overlane Carrier Access</title>
+<link rel="stylesheet" href="portal.css">
+</head>
+<body class="signin">
+<div class="signin-head">
+  <span class="logo">
+    <svg class="logo-mark" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+      <rect width="30" height="30" rx="8" fill="#ffffff"></rect>
+      <path d="M7 20h11M7 15h15M7 10h8" stroke="#2f4bb5" stroke-width="2.2" stroke-linecap="round"></path>
+      <circle cx="22.5" cy="20" r="2.6" fill="#0d8d80"></circle>
+    </svg>
+    <span class="logo-word">Overlane</span>
+    <span class="logo-sub">Carrier Access</span>
+  </span>
+</div>
+
+<div class="card">
+  <h1>Two-step verification</h1>
+  <p class="lede">Step 2 of 2. Your password was accepted.</p>
+  <p>Enter the current 6-digit code from your Overlane Authenticator. If you do
+  not have it handy, <a href="authenticator.html" target="_blank">open the Overlane Authenticator</a> to view your current code.</p>
+  <form id="mfa" novalidate>
+    <div class="field">
+      <label for="code">6-digit code</label>
+      <input id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
+    </div>
+    <button type="submit" id="submitBtn" class="btn btn-primary">Verify code</button>
+    <div id="status" role="alert"></div>
+  </form>
+  <div class="card-foot">
+    <a href="index.html">Cancel and return to sign-in</a>
+  </div>
+</div>
+
+<div class="help">
+  <h2>About verification codes</h2>
+  <ul>
+    <li>Codes rotate on a fixed window and are tied to the session you started.</li>
+    <li>If the authenticator shows no code, sign in with your password again.</li>
+    <li>Lost your device? The service desk can re-enrol you on +1 206 555 0148.</li>
+  </ul>
+</div>
+
+<footer class="sitefoot">
+  <nav>
+    <a href="support.html">Support centre</a>
+    <a href="status.html">Network status</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+  </nav>
+  <p>Overlane Logistics Group, 1400 Harbor Way, Suite 620, Tacoma WA 98402</p>
+  <p>Copyright 2026 Overlane Logistics Group. All rights reserved.</p>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const status = document.getElementById('status');
+
+  document.getElementById('mfa').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = document.getElementById('submitBtn');
+    button.disabled = true;
+    status.className = '';
+    status.textContent = 'Verifying…';
+    try {
+      const res = await fetch('/api/portal/mfa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nonce: NONCE,
+          code: document.getElementById('code').value.trim(),
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        status.className = 'err';
+        status.textContent =
+          res.status === 403
+            ? 'Your sign-in session has ended. Return to the sign-in page and start again.'
+            : body.error ?? 'Verification failed.';
+        return;
+      }
+      location.href = body.next;
+    } catch {
+      status.className = 'err';
+      status.textContent = 'Network error — try again.';
+    } finally {
+      button.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

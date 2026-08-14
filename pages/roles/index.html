@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vacancy search — Alderpost</title>
+<link rel="stylesheet" href="roles.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-in">
+    <div class="brandline">
+      <p class="brand">Alderpost</p>
+      <span class="brandsub">Built environment recruitment</span>
+      <span class="deskbar">Northern desk &middot; consultant view</span>
+    </div>
+    <nav class="mainnav">
+      <a class="here" href="./">Vacancy search</a>
+      <a href="clients.html">Clients</a>
+      <a href="notes.html">Desk notes</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="layout">
+    <form class="filters" id="filters">
+      <div class="filters-head">
+        <h2>Refine</h2>
+        <button type="button" class="linkish" id="clear-all">Clear all</button>
+      </div>
+      <div id="facet-slots"></div>
+    </form>
+
+    <section class="results">
+      <section class="brief" aria-label="Live brief">
+        <h2>Live brief</h2>
+        <p class="brief-client" id="brief-client">Loading the desk</p>
+        <ul class="brief-list" id="brief-list"></ul>
+        <p class="brief-note">One vacancy on the desk meets every line. Quote its reference back to the client.</p>
+      </section>
+
+      <ul class="chips" id="chips"></ul>
+
+      <div class="resulthead">
+        <h2>Vacancies</h2>
+        <p class="count-line" id="count-line">Loading</p>
+        <p class="range-line" id="range-line"></p>
+      </div>
+
+      <div class="empty" id="empty" hidden>
+        <h3>Nothing matches</h3>
+        <p id="empty-note">No vacancy meets every filter you have applied.</p>
+        <p>Take one filter off the row above, or clear the panel and start again.</p>
+      </div>
+
+      <ul class="vacancies" id="vacancies"></ul>
+
+      <nav class="pager" id="pager" hidden>
+        <button type="button" id="prev">Previous</button>
+        <span id="page-of"></span>
+        <button type="button" id="next">Next</button>
+      </nav>
+    </section>
+  </div>
+</main>
+
+<footer class="sitefoot">
+  <div class="wrap">
+    <p>Alderpost Recruitment Ltd, 4 Wharfeside Row, Leeds LS1 4QT. Registered in England 00000000.</p>
+    <p>desk@alderpost.example &middot; 0113 496 0180 &middot; <a href="notes.html">Desk notes</a> &middot; <a href="clients.html">Clients</a></p>
+  </div>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const KEYS = { discipline: 'd', location: 'l', contract: 'c', band: 's' };
+const GROUPS = {
+  discipline: 'Discipline',
+  location: 'Location',
+  contract: 'Contract type',
+  band: 'Salary band',
+};
+const HINTS = { band: 'Band follows the advertised minimum.' };
+
+let filters = { discipline: [], location: [], contract: [], band: [] };
+let page = 1;
+let built = false;
+
+function readUrl() {
+  const params = new URLSearchParams(location.search);
+  for (const [key, short] of Object.entries(KEYS)) {
+    const raw = params.get(short) || '';
+    filters[key] = raw ? raw.split(',').filter(Boolean) : [];
+  }
+  page = Math.max(1, parseInt(params.get('p') || '1', 10) || 1);
+  return [...params.keys()].length > 0;
+}
+
+function writeUrl() {
+  const params = new URLSearchParams();
+  for (const [key, short] of Object.entries(KEYS)) {
+    if (filters[key].length) params.set(short, filters[key].join(','));
+  }
+  if (page > 1) params.set('p', String(page));
+  const query = params.toString();
+  history.pushState(null, '', query ? '?' + query : location.pathname);
+}
+
+// Searches are answered out of order often enough to matter when two facets are
+// ticked in quick succession, so only the newest one is allowed to paint.
+let pending = 0;
+
+async function search(via) {
+  const seq = ++pending;
+  const response = await fetch('/api/roles/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nonce: NONCE, filters, page, via }),
+  });
+  if (seq !== pending) return;
+  if (!response.ok) {
+    document.getElementById('count-line').textContent = 'The desk did not answer.';
+    return;
+  }
+  const data = await response.json();
+  if (seq !== pending) return;
+  render(data);
+}
+
+function buildFacets(facets) {
+  const slots = document.getElementById('facet-slots');
+  for (const key of Object.keys(GROUPS)) {
+    const set = document.createElement('fieldset');
+    set.className = 'facet';
+    const legend = document.createElement('legend');
+    legend.textContent = GROUPS[key];
+    set.append(legend);
+    const list = document.createElement('ul');
+    for (const value of facets[key]) {
+      const item = document.createElement('li');
+      item.className = 'fv';
+      item.id = 'fv-' + key + '-' + value.value;
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.id = 'f-' + key + '-' + value.value;
+      box.name = key;
+      box.value = value.value;
+      box.addEventListener('change', () => {
+        filters[key] = box.checked
+          ? [...filters[key], value.value]
+          : filters[key].filter((v) => v !== value.value);
+        page = 1;
+        writeUrl();
+        search('facet');
+      });
+      const label = document.createElement('label');
+      label.setAttribute('for', box.id);
+      label.textContent = value.label;
+      const tally = document.createElement('span');
+      tally.className = 'tally';
+      tally.id = 'n-' + key + '-' + value.value;
+      item.append(box, label, tally);
+      list.append(item);
+    }
+    set.append(list);
+    if (HINTS[key]) {
+      const hint = document.createElement('p');
+      hint.className = 'stamp';
+      hint.textContent = HINTS[key];
+      set.append(hint);
+    }
+    slots.append(set);
+  }
+  built = true;
+}
+
+function renderBrief(brief) {
+  document.getElementById('brief-client').textContent = brief.client;
+  const list = document.getElementById('brief-list');
+  list.textContent = '';
+  const lines = [
+    ['Discipline', brief.disciplineLabel],
+    ['Base', brief.locationLabel],
+    ['Contract', brief.contractLabel],
+    ['Salary', brief.salaryLabel],
+    ['Also open to', brief.secondaryLabel],
+    ['Start', 'Within 8 weeks'],
+  ];
+  for (const [key, value] of lines) {
+    const item = document.createElement('li');
+    const tag = document.createElement('span');
+    tag.className = 'k';
+    tag.textContent = key;
+    item.append(tag, document.createTextNode(' ' + value));
+    list.append(item);
+  }
+}
+
+function renderChips(facets) {
+  const chips = document.getElementById('chips');
+  chips.textContent = '';
+  for (const key of Object.keys(GROUPS)) {
+    for (const value of filters[key]) {
+      const label = (facets[key].find((v) => v.value === value) || {}).label || value;
+      const item = document.createElement('li');
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip';
+      chip.setAttribute('aria-label', 'Remove ' + label);
+      chip.textContent = label + ' ×';
+      chip.addEventListener('click', () => {
+        filters[key] = filters[key].filter((v) => v !== value);
+        page = 1;
+        writeUrl();
+        search('facet');
+      });
+      item.append(chip);
+      chips.append(item);
+    }
+  }
+}
+
+function renderResults(data) {
+  const list = document.getElementById('vacancies');
+  list.textContent = '';
+  for (const row of data.results) {
+    const item = document.createElement('li');
+    item.className = 'vacancy';
+    const head = document.createElement('h3');
+    const link = document.createElement('a');
+    link.href = 'posting.html?id=' + row.id;
+    link.textContent = row.title;
+    head.append(link);
+    const employer = document.createElement('p');
+    employer.className = 'employer';
+    employer.textContent = row.employer;
+    const meta = document.createElement('ul');
+    meta.className = 'vmeta';
+    for (const cell of [row.location, row.contract, row.salary, row.discipline]) {
+      const bit = document.createElement('li');
+      bit.textContent = cell;
+      meta.append(bit);
+    }
+    const teaser = document.createElement('p');
+    teaser.className = 'teaser';
+    teaser.textContent = row.summary;
+    const stamp = document.createElement('p');
+    stamp.className = 'stamp';
+    stamp.textContent = 'Posted ' + row.posted + (row.posted === 1 ? ' day ago' : ' days ago');
+    item.append(head, employer, meta, teaser, stamp);
+    list.append(item);
+  }
+}
+
+function render(data) {
+  // The desk answers with the filter set it actually applied, so a value it
+  // does not recognise — a hand-edited address bar, say — never gets drawn as a
+  // chip claiming a narrowing that is not happening.
+  if (data.filters) filters = data.filters;
+  if (!built) buildFacets(data.facets);
+  renderBrief(data.brief);
+  for (const key of Object.keys(GROUPS)) {
+    for (const value of data.facets[key]) {
+      const tally = document.getElementById('n-' + key + '-' + value.value);
+      if (tally) tally.textContent = String(value.count);
+      const item = document.getElementById('fv-' + key + '-' + value.value);
+      if (item) item.classList.toggle('none', value.count === 0);
+      const box = document.getElementById('f-' + key + '-' + value.value);
+      if (box) box.checked = filters[key].includes(value.value);
+    }
+  }
+  renderChips(data.facets);
+  page = data.page;
+  document.getElementById('count-line').textContent =
+    data.total === 1 ? '1 vacancy' : data.total + ' vacancies';
+  const first = (data.page - 1) * data.pageSize + 1;
+  const last = Math.min(data.page * data.pageSize, data.total);
+  document.getElementById('range-line').textContent = data.total
+    ? 'Showing ' + first + ' to ' + last
+    : '';
+  const applied = Object.values(filters).reduce((n, values) => n + values.length, 0);
+  const empty = document.getElementById('empty');
+  empty.hidden = data.total !== 0;
+  document.getElementById('empty-note').textContent =
+    applied === 1
+      ? 'One filter is applied and no vacancy meets it.'
+      : applied + ' filters are applied and no vacancy meets all of them.';
+  renderResults(data);
+  const pager = document.getElementById('pager');
+  pager.hidden = data.pages < 2;
+  document.getElementById('page-of').textContent = 'Page ' + data.page + ' of ' + data.pages;
+  document.getElementById('prev').disabled = data.page <= 1;
+  document.getElementById('next').disabled = data.page >= data.pages;
+  document.getElementById('prev').dataset.page = String(Math.max(1, data.page - 1));
+  document.getElementById('next').dataset.page = String(Math.min(data.pages, data.page + 1));
+}
+
+document.getElementById('clear-all').addEventListener('click', () => {
+  filters = { discipline: [], location: [], contract: [], band: [] };
+  page = 1;
+  writeUrl();
+  search('clear');
+});
+
+for (const id of ['prev', 'next']) {
+  document.getElementById(id).addEventListener('click', (event) => {
+    page = parseInt(event.currentTarget.dataset.page || '1', 10) || 1;
+    writeUrl();
+    search('page');
+  });
+}
+
+window.addEventListener('popstate', () => {
+  readUrl();
+  search('history');
+});
+
+const hadQuery = readUrl();
+search(hadQuery ? 'url' : 'initial');
+</script>
+</body>
+</html>

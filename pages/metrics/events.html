@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product events &middot; Northgate Media &middot; Halbeck</title>
+<link rel="stylesheet" href="halbeck.css">
+</head>
+<body>
+<div class="bar">
+  <span class="logo">Hal<i>beck</i></span>
+  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <span class="spacer"></span>
+  <a class="lnk" href="sources.html">Data sources</a>
+  <a class="lnk" href="alerts.html">Alerts</a>
+  <a class="lnk" href="docs.html">Docs</a>
+  <span class="who">NM</span>
+</div>
+
+<div class="shell">
+  <nav class="rail">
+    <h3>Workspace</h3>
+    <a href="overview.html">Overview</a>
+    <a href="index.html">Seat usage</a>
+    <a href="retention.html">Retention</a>
+    <a href="expansion.html">Expansion</a>
+    <a href="events.html" class="on">Product events</a>
+    <h3>Saved views</h3>
+    <a href="views.html#seats-by-plan-tier">Seats by plan tier</a>
+    <a href="views.html#weekly-actives">Weekly actives</a>
+    <a href="views.html#trial-conversions">Trial conversions</a>
+    <a href="views.html#support-touched-accounts">Support-touched accounts</a>
+    <h3>Admin</h3>
+    <a href="sources.html">Data sources</a>
+    <a href="members.html">Members</a>
+    <a href="billing.html">Billing</a>
+  </nav>
+
+  <main>
+    <p class="crumbs"><a href="overview.html">Northgate Media</a> / Analytics / Product events</p>
+    <h1>Product events</h1>
+    <p class="sub">Volumes from the continuous sign-in and product event stream, aggregated by
+    event name. Weekly figures close on Sunday night; the current week is excluded until it
+    closes.</p>
+
+    <section class="panel">
+      <header><h2>Event volumes</h2><span class="meta">week closing 21 Jun 2026</span></header>
+      <div class="pad">
+        <div class="tablewrap">
+          <table class="data">
+            <thead>
+              <tr><th scope="col">Event</th><th scope="col">Volume</th><th scope="col">Change on prior week</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">session.start</th><td class="num">402,318</td><td class="num">+1.9%</td></tr>
+              <tr><th scope="row">document.open</th><td class="num">1,184,552</td><td class="num">+0.4%</td></tr>
+              <tr><th scope="row">document.edit</th><td class="num">356,209</td><td class="num">-2.1%</td></tr>
+              <tr><th scope="row">share.link_created</th><td class="num">48,771</td><td class="num">+6.3%</td></tr>
+              <tr><th scope="row">export.download</th><td class="num">21,436</td><td class="num">-0.8%</td></tr>
+              <tr><th scope="row">comment.posted</th><td class="num">97,882</td><td class="num">+3.5%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="legend">Volumes are raw event counts, not distinct members; the deduplicated
+        member view is the <a href="index.html">Seat usage</a> dashboard.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header><h2>About this metric</h2></header>
+      <div class="pad">
+        <dl class="defn">
+          <dt>Definition</dt>
+          <dd>Events received from the product stream, grouped by canonical event name.</dd>
+          <dt>Grain</dt>
+          <dd>ISO week, closing Sunday 23:59 Europe/London.</dd>
+          <dt>Source</dt>
+          <dd>product.event_stream, continuous ingest.</dd>
+          <dt>Owner</dt>
+          <dd>Platform Analytics, Northgate Media</dd>
+        </dl>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer class="foot">
+  <span>Halbeck Analytics Ltd</span>
+  <a href="status.html">Status</a>
+  <a href="privacy.html">Privacy notice</a>
+  <a href="terms.html">Terms of service</a>
+  <a href="support.html">Support</a>
+  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+</footer>
+</body>
+</html>

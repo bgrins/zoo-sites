@@ -1,0 +1,57 @@
+{
+  "rank": 19,
+  "comments": [
+    {
+      "author": "selfhostmaxxer",
+      "age": "9 hours ago",
+      "text": "Tried it this morning. Setup was genuinely one compose file, and the OCR-on-screenshots feature is the sleeper hit — I archive a lot of pages that are basically images of text (menus, event posters, old scanned PDFs) and being able to full-text search those locally is something none of the hosted services give me. Two rough edges: memory spikes during OCR of large PDFs, and the archive list gets slow around a few thousand items.",
+      "replies": [
+        {
+          "author": "tabhoarder",
+          "age": "8 hours ago",
+          "text": "OP here — thanks for the real numbers. The PDF memory spike is known (I'm rasterizing whole pages at too high a DPI before OCR, fix in progress) and the list slowdown is a missing index that ships this week. Issue tracker is at bugs.tabstash.example.com if you hit anything else.",
+          "replies": [
+            {
+              "author": "selfhostmaxxer",
+              "age": "7 hours ago",
+              "text": "Filed both with repro steps. Also: the keyboard shortcuts are excellent and undocumented, which is a very developer thing to do.",
+              "replies": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "author": "lambdacurious",
+      "age": "8 hours ago",
+      "text": "What's the OCR engine situation? Local models for this vary wildly between 'flawless on clean scans' and 'hallucinates entire sentences on anything with columns'.",
+      "replies": [
+        {
+          "author": "tabhoarder",
+          "age": "7 hours ago",
+          "text": "OP — I run a two-pass setup: a fast classical engine first, and only if its confidence is low do I fall back to a heavier local model. Columns are handled by a layout-detection step before either. It's the fallback path that eats the RAM mentioned above.",
+          "replies": []
+        }
+      ]
+    },
+    {
+      "author": "graveyardofapps",
+      "age": "6 hours ago",
+      "text": "I have been burned by read-it-later services shutting down THREE times, taking years of annotations with them each time. At this point self-hosted isn't a preference, it's trauma response. Bookmarked (locally).",
+      "replies": [
+        {
+          "author": "staticdrift",
+          "age": "5 hours ago",
+          "text": "The annotations are the real hostage, always. Losing the article list stings; losing five years of marginalia is why I keep everything in plain files now.",
+          "replies": []
+        }
+      ]
+    },
+    {
+      "author": "devilsproxy",
+      "age": "3 hours ago",
+      "text": "Honest question: at what point does a read-it-later app become a personal web archive with extra steps? Because the OCR feature suggests this wants to be the latter, and that's a much harder (and more interesting) product.",
+      "replies": []
+    }
+  ]
+}

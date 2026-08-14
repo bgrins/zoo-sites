@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin - Kelsmere CRM</title>
+<link rel="stylesheet" href="crm.css">
+</head>
+<body>
+<header class="topbar">
+  <span class="brand">Kelsmere CRM</span>
+  <span class="ws">wkspc northfield-supply &middot; fiscal 2026 &middot; role: analyst</span>
+  <span class="who">dana.kessler@northfield.example</span>
+</header>
+<nav class="tabs">
+  <a href="index.html">Dashboard</a>
+  <a href="orders.html">Orders</a>
+  <a href="customers.html">Customers</a>
+  <a href="pipeline.html">Pipeline</a>
+  <a href="reports.html">Reports</a>
+  <a href="tasks.html">Tasks</a>
+  <a href="admin.html" class="on">Admin</a>
+</nav>
+<div class="pathbar">
+  <span>northfield-supply / admin</span>
+  <span class="build">grid engine v3 &middot; build 3.14.2</span>
+</div>
+<main class="main">
+  <h1>Admin</h1>
+  <p class="sub">Workspace settings, read-only. Your role is analyst; editing is reserved for workspace owners.</p>
+  <div class="cards">
+    <section class="card">
+      <h2>Workspace</h2>
+      <table class="mini">
+        <tr><th>Setting</th><th>Value</th></tr>
+        <tr><td>Workspace id</td><td>northfield-supply</td></tr>
+        <tr><td>Fiscal year</td><td>2026 (Jan-Dec)</td></tr>
+        <tr><td>Grid engine</td><td>v3, build 3.14.2</td></tr>
+        <tr><td>Warehouse rebuild</td><td>nightly at 02:00</td></tr>
+        <tr><td>Data retention</td><td>7 fiscal years</td></tr>
+      </table>
+      <p class="muted">Changes require an owner session.</p>
+    </section>
+    <section class="card">
+      <h2>Members</h2>
+      <table class="mini">
+        <tr><th>Member</th><th>Role</th></tr>
+        <tr><td>p.marchetti@northfield.example</td><td>owner</td></tr>
+        <tr><td>dana.kessler@northfield.example</td><td>analyst</td></tr>
+        <tr><td>m.okonkwo@northfield.example</td><td>analyst</td></tr>
+        <tr><td>r.lindgren@northfield.example</td><td>analyst</td></tr>
+        <tr><td>s.vale@northfield.example</td><td>analyst</td></tr>
+      </table>
+      <p class="muted">Invites and role changes are owner-only.</p>
+    </section>
+    <section class="card">
+      <h2>Shared workspace links</h2>
+      <p>This session was opened from a shared workspace link. Shared links are
+      read-only: saved views cannot be written, CSV export is unavailable, and
+      report delivery is disabled.</p>
+      <p class="muted">Link policy is set by the workspace owner.</p>
+    </section>
+    <section class="card">
+      <h2>Territory administration</h2>
+      <p>Territory reassignments are frozen until the rollup report returns.
+      Region assignments on account records remain visible under Customers.</p>
+      <p class="muted">Contact an owner to request an exception.</p>
+    </section>
+  </div>
+</main>
+<footer class="siteftr">
+  Kelsmere CRM &middot; workspace data is confidential to northfield-supply.
+  Support: help.kelsmerecrm.example &middot; Status &middot; Keyboard shortcuts &middot;
+  Terms &middot; Privacy
+</footer>
+</body>
+</html>

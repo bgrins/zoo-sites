@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Traverse console — Kestrel 4 — Ostara Surface Systems</title>
+<link rel="stylesheet" href="maze.css">
+</head>
+<body>
+<div class="mast">
+  <span class="org">Ostara Surface Systems</span>
+  <span class="div">Surface fleet operations</span>
+  <span class="who">drive team 2 &middot; k.oyelaran@ostara-surface.example</span>
+</div>
+<div class="chips">
+  <span class="chip">Sol 214</span>
+  <span class="chip">Site Vantor Basin</span>
+  <span class="chip">Rover Kestrel 4</span>
+  <span class="chip">Mode blind drive</span>
+  <span class="chip">Odom 1.94 km</span>
+</div>
+<div class="shell">
+  <nav class="rail">
+    <h2>Kestrel 4</h2>
+    <a href="index.html" class="on">Traverse</a>
+    <a href="power.html">Power and thermal</a>
+    <a href="instruments.html">Instruments</a>
+    <a href="uplink.html">Uplink windows</a>
+    <a href="hazard.html">Hazard review</a>
+    <a href="archive.html">Sol archive</a>
+    <a href="handbook.html" class="sep">Drive handbook</a>
+  </nav>
+  <main class="content">
+    <h1>Traverse console</h1>
+    <p class="lede">Kestrel 4 is parked at the basin entry cell A1. Sol plan 214 calls for a
+    transit to the extraction pad at F6, the far corner of the survey grid. Hazard mapping is
+    line of sight: the navigation camera resolves obstructions only for cells the rover has
+    entered, so the rest of the grid stays unsurveyed. Drives are issued one cell at a time,
+    a drive into an obstruction is refused by the hazard interlock, and a queued sequence
+    stops at the first refusal.</p>
+
+    <div class="alert" id="alert" hidden>
+      <p id="alertHead"></p>
+      <p id="alertBody"></p>
+    </div>
+
+    <section class="extract" id="extract" hidden>
+      <h2>Extraction code</h2>
+      <p class="code" id="code"></p>
+      <p>Kestrel 4 is on the extraction pad and sol plan 214 is closed. Read the code back
+      to mission control to release the recovery window.</p>
+    </section>
+
+    <div class="decks">
+      <section class="deck deck-drive">
+        <h2>Drive controls</h2>
+        <p class="tel" id="telPos">POS A1</p>
+        <p class="tel" id="telClear">CLEAR --</p>
+        <p class="tel" id="telWall">WALL --</p>
+        <p class="tel" id="telDrives">DRIVES 0</p>
+        <p class="tel" id="telBlocked">BLOCKED 0</p>
+        <p class="tel" id="telQueue">QUEUE 0</p>
+        <p class="tel" id="telLast">LAST none</p>
+        <div class="pad">
+          <button class="n" id="btnN" type="button">Drive north</button>
+          <button class="w" id="btnW" type="button">Drive west</button>
+          <div class="rose">N up</div>
+          <button class="e" id="btnE" type="button">Drive east</button>
+          <button class="s" id="btnS" type="button">Drive south</button>
+        </div>
+        <form class="seq" id="seqForm">
+          <label for="seqInput">Drive sequence</label>
+          <input id="seqInput" name="seq" type="text" autocomplete="off" placeholder="S S E E N">
+          <button id="btnSeq" type="submit">Queue sequence</button>
+        </form>
+      </section>
+
+      <section class="deck deck-map">
+        <h2>Survey grid</h2>
+        <div class="mapwrap">
+          <div class="rowlabs" id="rowlabs"></div>
+          <div class="mapcol">
+            <div class="axis" id="axis"></div>
+            <div class="grid" id="grid"></div>
+          </div>
+        </div>
+        <p class="legend">Hatched cells are unsurveyed. Heavy edges are confirmed
+        obstructions. Orange marker is the rover, striped square is the pad.
+        <a href="survey.html">Survey record</a> lists every cell mapped so far.</p>
+      </section>
+
+      <section class="deck deck-log">
+        <h2>Telemetry log</h2>
+        <ul class="logbook" id="logbook"></ul>
+        <p class="legend">Buffer holds the twenty most recent entries. The full survey
+        record is held on the rover and is listed on the survey record sheet.</p>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="foot">
+  <p class="links">
+    <a href="data-policy.html">Data policy</a>
+    <a href="terms.html">Operating terms</a>
+    <a href="contact.html">Contact the drive desk</a>
+  </p>
+  <p>&copy; 2026 Ostara Surface Systems Ltd. Registered office: 14 Bellamy Wharf,
+  Tarnbridge TR4 2QN. Flight operations support: ops-desk@ostara-surface.example,
+  +44 20 7946 0812.</p>
+</div>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const COLS = 'ABCDEF';
+const ORDER = ['N', 'E', 'S', 'W'];
+const BUTTONS = { N: 'btnN', E: 'btnE', S: 'btnS', W: 'btnW' };
+const LOG_CAP = 20;
+const SEQ_CAP = 24;
+
+const rowlabs = document.getElementById('rowlabs');
+const axis = document.getElementById('axis');
+const grid = document.getElementById('grid');
+const logbook = document.getElementById('logbook');
+const cells = {};
+
+// Grid refs and axis labels are drawn from data attributes by the stylesheet:
+// keeping them out of the DOM as text keeps the 36-cell map from swamping
+// assistive views of the console.
+for (let r = 0; r < COLS.length; r++) {
+  const lab = document.createElement('div');
+  lab.setAttribute('data-l', String(r + 1));
+  rowlabs.append(lab);
+}
+for (let c = 0; c < COLS.length; c++) {
+  const lab = document.createElement('div');
+  lab.setAttribute('data-l', COLS[c]);
+  axis.append(lab);
+}
+for (let r = 0; r < COLS.length; r++) {
+  for (let c = 0; c < COLS.length; c++) {
+    const cell = document.createElement('div');
+    cells[COLS[c] + (r + 1)] = cell;
+    grid.append(cell);
+  }
+}
+
+function addLog(line, bad) {
+  const li = document.createElement('li');
+  li.textContent = line;
+  if (bad) li.className = 'bad';
+  logbook.prepend(li);
+  while (logbook.children.length > LOG_CAP) logbook.lastChild.remove();
+}
+
+function stamp(n) {
+  return 'D' + String(n).padStart(2, '0');
+}
+
+function paint(view) {
+  document.getElementById('telPos').textContent = 'POS ' + view.at;
+  document.getElementById('telClear').textContent = 'CLEAR ' + (view.clear.join(',') || 'none');
+  const walls = ORDER.filter((d) => !view.clear.includes(d));
+  document.getElementById('telWall').textContent = 'WALL ' + (walls.join(',') || 'none');
+  document.getElementById('telDrives').textContent = 'DRIVES ' + view.drives;
+  document.getElementById('telBlocked').textContent = 'BLOCKED ' + view.blockedAttempts;
+
+  for (const ref of Object.keys(cells)) {
+    const cell = cells[ref];
+    cell.replaceChildren();
+    cell.removeAttribute('data-ref');
+    for (const d of ORDER) cell.removeAttribute('data-w' + d.toLowerCase());
+  }
+  for (const seen of view.surveyed) {
+    const cell = cells[seen.ref];
+    if (!cell) continue;
+    cell.setAttribute('data-ref', seen.ref);
+    for (const d of ORDER) {
+      if (!seen.clear.includes(d)) cell.setAttribute('data-w' + d.toLowerCase(), '1');
+    }
+  }
+  const pad = cells[view.exit];
+  if (pad) {
+    const mark = document.createElement('span');
+    mark.className = 'exit';
+    mark.setAttribute('aria-label', 'Extraction pad ' + view.exit);
+    pad.append(mark);
+  }
+  const here = cells[view.at];
+  if (here) {
+    const mark = document.createElement('span');
+    mark.className = 'rover';
+    mark.setAttribute('aria-label', 'Rover at ' + view.at);
+    here.append(mark);
+  }
+
+  if (view.reachedExit && view.code) {
+    document.getElementById('code').textContent = view.code;
+    document.getElementById('extract').hidden = false;
+  }
+  // Any successful telemetry means the uplink is alive, so the deck comes back:
+  // the controls are only retired once the rover is parked on the pad.
+  document.getElementById('alert').hidden = true;
+  document.getElementById('telLast').classList.remove('tel-alert');
+  lock(!!(view.reachedExit && view.code));
+}
+
+function lock(on) {
+  for (const d of ORDER) document.getElementById(BUTTONS[d]).disabled = on;
+  document.getElementById('btnSeq').disabled = on;
+  document.getElementById('seqInput').disabled = on;
+}
+
+function down(message) {
+  const last = document.getElementById('telLast');
+  last.textContent = 'LAST ' + message;
+  last.classList.add('tel-alert');
+  document.getElementById('alertHead').textContent = 'Reload to reconnect';
+  document.getElementById('alertBody').textContent =
+    'The uplink to Kestrel 4 dropped, so the deck is inhibited. Reloading the console '
+    + 'reconnects it; the rover holds its position and its survey record.';
+  document.getElementById('alert').hidden = false;
+  lock(true);
+}
+
+const queue = [];
+let uplinking = false;
+
+function showQueue() {
+  document.getElementById('telQueue').textContent = 'QUEUE ' + queue.length;
+}
+
+async function drive(dir) {
+  const from = document.getElementById('telPos').textContent.slice(4);
+  const res = await fetch('/api/maze/move', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nonce: NONCE, dir }),
+  });
+  if (!res.ok) throw new Error('link');
+  const view = await res.json();
+  paint(view);
+  const last = document.getElementById('telLast');
+  if (view.obstructed) {
+    last.textContent = 'LAST ' + dir + ' refused';
+    last.classList.add('tel-alert');
+    addLog(stamp(view.drives) + ' ' + from + ' OBSTRUCTED ' + dir, true);
+  } else {
+    last.textContent = 'LAST ' + dir + ' complete';
+    addLog(stamp(view.drives) + ' ' + from + '>' + view.at + ' CLEAR ' + view.clear.join(','));
+  }
+  return view;
+}
+
+// Commands queue and uplink one at a time so a burst of clicks is never
+// dropped; the interlock cancels the rest of a sequence after a refusal.
+async function pump() {
+  if (uplinking) return;
+  uplinking = true;
+  while (queue.length) {
+    const dir = queue.shift();
+    showQueue();
+    let view;
+    try {
+      view = await drive(dir);
+    } catch {
+      queue.length = 0;
+      showQueue();
+      down('link down');
+      uplinking = false;
+      return;
+    }
+    if (view.obstructed && queue.length) {
+      queue.length = 0;
+      addLog('SEQUENCE HALTED', true);
+    }
+    if (view.reachedExit) queue.length = 0;
+    showQueue();
+  }
+  uplinking = false;
+}
+
+// Queued clicks wait for the first telemetry fetch so the opening paint can
+// never land on top of an already-completed drive.
+const ready = (async () => {
+  let view;
+  try {
+    const res = await fetch('/api/maze/state', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) throw new Error('link');
+    view = await res.json();
+  } catch {
+    down('no telemetry');
+    addLog('LINK DOWN no telemetry', true);
+    return;
+  }
+  addLog('LINK OK sol 214 pad ' + view.exit);
+  // The survey record lives on the rover, so a reloaded console replays every
+  // cell already mapped into the rolling log as well as the record list.
+  view.surveyed.forEach((seen, i) => {
+    addLog('S' + String(i).padStart(2, '0') + ' ' + seen.ref + ' CLEAR ' + seen.clear.join(','));
+  });
+  paint(view);
+})();
+
+for (const d of ORDER) {
+  document.getElementById(BUTTONS[d]).addEventListener('click', () => {
+    queue.push(d);
+    showQueue();
+    ready.then(pump);
+  });
+}
+
+document.getElementById('seqForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const raw = document.getElementById('seqInput').value.toUpperCase();
+  const headings = raw.match(/[NESW]/g) ?? [];
+  const last = document.getElementById('telLast');
+  if (!headings.length || /[^NESW\s,>-]/.test(raw) || headings.length > SEQ_CAP) {
+    last.textContent = 'LAST sequence rejected';
+    last.classList.add('tel-alert');
+    addLog('SEQUENCE REJECTED up to ' + SEQ_CAP + ' of N E S W', true);
+    return;
+  }
+  document.getElementById('seqInput').value = '';
+  last.classList.remove('tel-alert');
+  last.textContent = 'LAST sequence of ' + headings.length + ' queued';
+  queue.push(...headings);
+  showQueue();
+  ready.then(pump);
+});
+</script>
+</body>
+</html>
