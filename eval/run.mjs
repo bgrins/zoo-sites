@@ -41,7 +41,7 @@
 // deliberately no turn limit, and turns should not be compared across
 // conditions or backends (see markdownReport's note).
 
-import { spawn, spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
 import { createWriteStream, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -54,6 +54,7 @@ import { webTasks } from './tasks/web.mjs';
 import { devtoolsTasks } from './tasks/devtools.mjs';
 import { extractFields, isSentinel } from './extract.mjs';
 import { devtoolsMcpEntry } from './mcp-stdio.mjs';
+import { detectScreen, windowGrid } from './window-grid.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -782,47 +783,11 @@ async function buildTasks(base) {
 }
 
 // --- headed window grid ---------------------------------------------------
-// Every positionable headed env (cli instances and stdio firefox-devtools-mcp;
-// playwright has no window-position knob) claims a grid cell sized from the
-// screen. Slots beyond capacity wrap with a cascade offset so stacked windows
-// stay distinguishable.
-
-// Conditions whose windows we can position via a seeded profile.
+// Conditions whose windows we can position via a seeded profile (see
+// window-grid.mjs; playwright has no window-position knob).
 const POSITIONABLE = CONDITIONS.filter((c) => c === 'mcp');
 const TOTAL_SLOTS = BACKEND_NAMES.length * POSITIONABLE.length * PARALLEL_TASKS;
-
-// Usable desktop area in top-left-origin coordinates.
-let SCREEN = { w: 1920, h: 1040, top: 40, left: 0 };
-function detectScreen() {
-  const arg = flag('screen', null);
-  if (arg) {
-    const m = arg.match(/^(\d+)x(\d+)$/);
-    if (!m) {
-      throw new Error(`--screen must look like 1920x1080, got "${arg}"`);
-    }
-    SCREEN = { w: Number(m[1]), h: Number(m[2]) - 40, top: 40, left: 0 };
-    return;
-  }
-  if (process.platform === 'darwin') {
-    // NSScreen.visibleFrame excludes the menu bar and Dock, and (unlike
-    // AppleScript app automation) needs no TCC permission. AppKit frames are
-    // bottom-left-origin; convert the top offset.
-    const out = spawnSync('osascript', [
-      '-l',
-      'JavaScript',
-      '-e',
-      'ObjC.import("AppKit"); const s = $.NSScreen.mainScreen; const v = s.visibleFrame; ' +
-        'JSON.stringify({w: v.size.width, h: v.size.height, left: v.origin.x, ' +
-        'top: s.frame.size.height - v.origin.y - v.size.height})',
-    ]);
-    try {
-      const v = JSON.parse(String(out.stdout ?? ''));
-      SCREEN = { w: v.w, h: v.h, top: v.top, left: v.left };
-    } catch {
-      // keep the default
-    }
-  }
-}
+let GRID = null;
 
 // Deterministic slot per (backend, condition, worker) keeps a condition's
 // workers adjacent in the grid.
@@ -831,31 +796,6 @@ function slotFor(backendName, condition, workerIndex) {
     BACKEND_NAMES.indexOf(backendName) * POSITIONABLE.length +
     POSITIONABLE.indexOf(condition);
   return runIdx * PARALLEL_TASKS + workerIndex;
-}
-
-function seedWindowGeometry(stateDir, slot) {
-  const profileDir = join(stateDir, 'profile');
-  mkdirSync(profileDir, { recursive: true });
-  const cols = Math.ceil(Math.sqrt(TOTAL_SLOTS));
-  const rows = Math.ceil(TOTAL_SLOTS / cols);
-  const capacity = cols * rows;
-  const cell = slot % capacity;
-  const cascade = Math.floor(slot / capacity) * 30;
-  const width = Math.floor(SCREEN.w / cols);
-  const height = Math.floor(SCREEN.h / rows);
-  const geometry = {
-    'chrome://browser/content/browser.xhtml': {
-      'main-window': {
-        screenX: String(SCREEN.left + (cell % cols) * width + cascade),
-        screenY: String(SCREEN.top + Math.floor(cell / cols) * height + cascade),
-        width: String(width),
-        height: String(height),
-        sizemode: 'normal',
-      },
-    },
-  };
-  writeFileSync(join(profileDir, 'xulstore.json'), JSON.stringify(geometry));
-  return profileDir;
 }
 
 // One isolated execution environment: pages server + state dir. Sequential
@@ -881,8 +821,8 @@ async function makeEnv(backendName, condition, label, workerIndex = 0) {
   // Seed window geometry so headed windows tile into their grid cell
   // (stdio MCP servers launch their own Firefox and get it via --profile-path).
   const stdioProfile =
-    HEADED && POSITIONABLE.includes(condition)
-      ? seedWindowGeometry(stateDir, slotFor(backendName, condition, workerIndex))
+    GRID && POSITIONABLE.includes(condition)
+      ? GRID.seed(stateDir, slotFor(backendName, condition, workerIndex))
       : null;
   const env = {
     pages,
@@ -1076,7 +1016,7 @@ async function main() {
     await ensurePlaywrightFirefox();
   }
   if (HEADED) {
-    detectScreen();
+    GRID = windowGrid(TOTAL_SLOTS, detectScreen(flag('screen', null)));
   }
 
   const runs = BACKEND_NAMES.flatMap((backendName) =>

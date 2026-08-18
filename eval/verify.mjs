@@ -27,11 +27,12 @@
 // canned — those are marked `canned: true` and prove the validator accepts a
 // correct answer, not that composing one is possible.
 
-import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { availableParallelism } from 'node:os';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { availableParallelism, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { devtoolsMcpEntry, startMcpServer } from './mcp-stdio.mjs';
+import { detectScreen, windowGrid } from './window-grid.mjs';
 import { startPagesServer } from '../server.mjs';
 import { conforms, extractFields } from './extract.mjs';
 import { DRIVERS } from './verify-drivers/index.mjs';
@@ -118,7 +119,10 @@ Usage: node eval/verify.mjs [options]
   --task <ids>            comma list; * wildcards, e.g. --task 'ledger-*'
   --list                  every task and whether it has a driver
   --jobs <n>              parallel workers (default: cores - 2, capped at 4)
-  --headed                visible Firefox
+  --headed                visible Firefox, one window per worker, tiled into a
+                          screen-sized grid
+  --screen <WxH>          screen size for the headed grid (default: detected
+                          on macOS, else 1920x1080)
   --seed <string>         pin per-session difficulty draws, so a rerun faces
                           the same shapes as the run it is compared against
   --extract               PAID: also run the real extraction model over the
@@ -184,10 +188,18 @@ assertFixtureMediaMuted();
 // over stdio. The server is a child process (see mcp-stdio.mjs), so a worker
 // that dies takes its Firefox with it, and FIREFOX_DEVTOOLS_MCP points the
 // whole gate at a local tool checkout.
-async function makeWorker() {
+async function makeWorker(grid, slot) {
   const pages = await startPagesServer({ seed: SEED });
+  // Headed workers each launch into a seeded profile so their windows tile
+  // instead of stacking; the browser owns the dir, so it outlives no run.
+  const stateDir = grid ? mkdtempSync(join(tmpdir(), 'zoo-verify-')) : null;
   const server = await startMcpServer({
-    args: [devtoolsMcpEntry(), '--enable-script', ...(HEADED ? [] : ['--headless'])],
+    args: [
+      devtoolsMcpEntry(),
+      '--enable-script',
+      ...(HEADED ? [] : ['--headless']),
+      ...(grid ? ['--profile-path', grid.seed(stateDir, slot)] : []),
+    ],
     env: PROFILE_ENV,
   });
   const mcp = (name, toolArgs = {}) => server.call(name, toolArgs);
@@ -234,6 +246,7 @@ async function makeWorker() {
   const close = async () => {
     await server.close();
     await pages.close();
+    if (stateDir) rmSync(stateDir, { recursive: true, force: true });
   };
   return { pages, helpers, tasks, close };
 }
@@ -476,7 +489,10 @@ if (patterns && !queue.length) {
 const workers = [];
 try {
   const count = Math.min(JOBS, Math.max(1, queue.length));
-  for (let i = 0; i < count; i++) workers.push(await makeWorker());
+  // Grid sized to the workers that will actually exist, not to --jobs: a
+  // two-task run asked for eight ways still tiles into two cells.
+  const grid = HEADED ? windowGrid(count, detectScreen(flag('screen', null))) : null;
+  for (let i = 0; i < count; i++) workers.push(await makeWorker(grid, i));
   let next = 0;
   await Promise.all(
     workers.map(async (worker) => {
