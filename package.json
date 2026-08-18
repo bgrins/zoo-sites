@@ -18,7 +18,7 @@
     "verify": "node eval/verify.mjs",
     "run": "node eval/run.mjs",
     "devtools-both-backends": "node eval/run.mjs --suite basic --compare backends --parallel --parallel-tasks 3",
-    "playwright-both-backends": "node eval/run.mjs --suite basic --conditions playwright  --compare backends --parallel --parallel-tasks 3",
+    "playwright-both-backends": "node eval/run.mjs --suite basic --conditions playwright-mcp  --compare backends --parallel --parallel-tasks 3",
     "smoke": "node eval/run.mjs --suite basic --backend all --parallel --parallel-tasks 3",
     "serve": "node server.mjs --port 8907",
     "serve:origins": "node serve.mjs"

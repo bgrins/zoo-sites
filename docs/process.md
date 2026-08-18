@@ -60,7 +60,7 @@ node eval/verify.mjs
 ```
 
 Node 20 or newer; CI pins 22. `npm install` fetches harness dependencies only; the
-site server itself uses node builtins. The `mcp` condition and the gate resolve
+site server itself uses node builtins. The `firefox-devtools-mcp` condition and the gate resolve
 `firefox-devtools-mcp` in this order:
 
 1. `--mcp-command "<cmd>"` (`eval/run.mjs` only)

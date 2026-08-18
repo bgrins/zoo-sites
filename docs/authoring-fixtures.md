@@ -6,8 +6,8 @@ A fixture is a simulated site under `pages/`. A validator is the function in
 Every path below is relative to the repo root.
 
 The eval measures how the browser tool surface shapes a run, not how capable the
-agent is, across two conditions: `mcp` (`firefox-devtools-mcp` over stdio) and
-`playwright` (the vendored `@playwright/mcp`). Design a task for the band where the
+agent is, across two conditions: `firefox-devtools-mcp` (over stdio) and
+`playwright-mcp` (the vendored `@playwright/mcp`). Design a task for the band where the
 surface decides the outcome: winnable through every shipped surface, yet not so easy
 that every surface wins it identically. For scale: 94 tasks (86 web, 5 devtools, 3
 basic smoke) run against 66 origins served from 53 fixture trees under `pages/`, and
@@ -222,7 +222,7 @@ constraints, never to turn on one:
 
 A fixture is finished once a real headless browser has driven it end to end through
 the MCP surface. Each driver in `eval/verify-drivers/` navigates, snapshots, and clicks
-by uid through the same `firefox-devtools-mcp` server the `mcp` condition uses, and
+by uid through the same `firefox-devtools-mcp` server that condition uses, and
 returns the answer text a correct agent would produce. Read
 `eval/verify-drivers/probes.mjs` (the driver contract), `eval/verify-drivers/lib.mjs`
 (`until`, `clickToPath`, `uidOf`, `snapText`, `bumpCode`) and

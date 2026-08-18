@@ -209,7 +209,7 @@ populate `winnerStore` from a table the agent scraped mid-run but never claimed 
 false-pass class field grading removes, reintroduced one layer up. Resumption is also
 condition-asymmetric, replaying the condition-specific transcript, so extraction cost
 and, worse, extraction accuracy scale with transcript size and shape — exactly what
-differs between `mcp` and `playwright`. Grading correctness would become a function of
+differs between `firefox-devtools-mcp` and `playwright-mcp`. Grading correctness would become a function of
 the variable under test. Codex offers no symmetric counterpart, so the two backends
 would be graded by different machinery.
 

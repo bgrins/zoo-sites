@@ -7,7 +7,7 @@
 //
 // Suites: 'basic' = tiny smoke pages, 'web' = simulated sites; both are
 // served locally from pages/ (no live web). --headed shows Firefox.
-// Two conditions ship by default: 'mcp' (firefox-devtools-mcp) and 'playwright'
+// Two conditions ship by default: 'firefox-devtools-mcp' and 'playwright-mcp'
 // (the vendored @playwright/mcp). --mcp-command replaces the former with any
 // stdio MCP server, and --conditions selects which run.
 // Results land in results/ (gitignored) as JSON plus a shareable
@@ -18,7 +18,7 @@
 //     quick smoke: basic suite, both conditions, sequential
 //   node run.mjs --suite web --parallel --parallel-tasks 2
 //     the default sweep: both conditions (headless)
-//   node run.mjs --suite web --backend all --conditions mcp,playwright --parallel --parallel-tasks 4 --headed
+//   node run.mjs --suite web --backend all --conditions firefox-devtools-mcp,playwright-mcp --parallel --parallel-tasks 4 --headed
 //     full demo matrix, both backends, tiled windows
 //   node run.mjs --suite web --task <ids> --repeat 3 --parallel --parallel-tasks 4
 //     repeats give medians and an instability flag, and parallelism keeps it to
@@ -188,7 +188,7 @@ function taskSelected(id) {
 if (args.includes('--help') || args.includes('help')) {
   console.log(`eval harness — run agents against local simulated websites through
 different browser tool surfaces and compare them. Default comparison is
-firefox-devtools-mcp ('mcp') vs the vendored @playwright/mcp ('playwright').
+firefox-devtools-mcp vs the vendored @playwright/mcp ('playwright-mcp').
 
 Usage: node run.mjs [options]
 
@@ -240,11 +240,12 @@ Conditions and models:
                           pin one axis so results are attributable.
                           'surfaces' (default): one agent harness, every
                           condition — how the browser tool surface affects the
-                          run. 'backends': one tool surface (mcp), every
-                          harness — how the agent harness affects it.
+                          run. 'backends': one tool surface
+                          (firefox-devtools-mcp), every harness — how the agent
+                          harness affects it.
                           Warns if you vary both axes at once.
-  --conditions <list>     comma list of mcp, playwright
-                          (default: mcp,playwright — firefox-devtools-mcp and
+  --conditions <list>     comma list of firefox-devtools-mcp, playwright-mcp
+                          (default: both — @mozilla/firefox-devtools-mcp and
                           the vendored @playwright/mcp, both over stdio driving
                           their own Firefox. --mcp-command replaces the former)
   --mode <key=value>      pin a server mode for every task in the run
@@ -254,7 +255,8 @@ Conditions and models:
                           variant and pads, schedule week): paired conditions
                           and repeats face the same shapes. Codes and refs
                           stay random - seeded runs are never forgeable
-  --mcp-command "<cmd>"   custom stdio MCP server for the mcp condition, e.g.
+  --mcp-command "<cmd>"   custom stdio MCP server for the firefox-devtools-mcp
+                          condition, e.g.
                           "npx @playwright/mcp@latest --browser firefox";
                           replaces the built-in firefox-devtools-mcp server
 
@@ -285,12 +287,13 @@ const PARALLEL_TASKS = Number(flag('parallel-tasks', '1'));
 if (!Number.isInteger(PARALLEL_TASKS) || PARALLEL_TASKS < 1) {
   throw new Error(`--parallel-tasks must be a positive integer`);
 }
-// Swap in any stdio MCP server (e.g. a different build) as the mcp condition.
+// Swap in any stdio MCP server (e.g. a different build) as the
+// firefox-devtools-mcp condition.
 // Naive whitespace split; quote-free commands only.
 const MCP_COMMAND = flag('mcp-command', null);
 const CUSTOM_MCP = MCP_COMMAND ? MCP_COMMAND.trim().split(/\s+/) : null;
 
-// Named conditions. 'playwright' spawns the vendored @playwright/mcp over
+// Named conditions. 'playwright-mcp' spawns the vendored @playwright/mcp over
 // stdio (registered under the same 'firefox' server name) driving Playwright's
 // own Firefox build.
 // --compare pins one axis so a run is attributable. Varying the browser tool
@@ -301,8 +304,11 @@ if (COMPARE && !['surfaces', 'backends'].includes(COMPARE)) {
   throw new Error(`--compare must be surfaces or backends, got "${COMPARE}"`);
 }
 
-const KNOWN_CONDITIONS = ['mcp', 'playwright'];
-const CONDITIONS = flag('conditions', COMPARE === 'backends' ? 'mcp' : 'mcp,playwright')
+const KNOWN_CONDITIONS = ['firefox-devtools-mcp', 'playwright-mcp'];
+const CONDITIONS = flag(
+  'conditions',
+  COMPARE === 'backends' ? 'firefox-devtools-mcp' : 'firefox-devtools-mcp,playwright-mcp'
+)
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
@@ -360,7 +366,7 @@ function ensurePlaywrightFirefox() {
 }
 
 function mcpStdioFor(condition, ctx) {
-  if (condition === 'playwright') {
+  if (condition === 'playwright-mcp') {
     return {
       command: process.execPath,
       args: [
@@ -372,7 +378,7 @@ function mcpStdioFor(condition, ctx) {
       ],
     };
   }
-  if (condition === 'mcp') {
+  if (condition === 'firefox-devtools-mcp') {
     return CUSTOM_MCP
       ? { command: CUSTOM_MCP[0], args: CUSTOM_MCP.slice(1) }
       : {
@@ -784,8 +790,8 @@ async function buildTasks(base) {
 
 // --- headed window grid ---------------------------------------------------
 // Conditions whose windows we can position via a seeded profile (see
-// window-grid.mjs; playwright has no window-position knob).
-const POSITIONABLE = CONDITIONS.filter((c) => c === 'mcp');
+// window-grid.mjs; playwright-mcp has no window-position knob).
+const POSITIONABLE = CONDITIONS.filter((c) => c === 'firefox-devtools-mcp');
 const TOTAL_SLOTS = BACKEND_NAMES.length * POSITIONABLE.length * PARALLEL_TASKS;
 let GRID = null;
 
@@ -1012,7 +1018,7 @@ async function main() {
   const scratchDir = mkdtempSync(join(tmpdir(), 'zoo-eval-scratch-'));
   const shared = { scratchDir, transcriptsDir };
 
-  if (CONDITIONS.includes('playwright')) {
+  if (CONDITIONS.includes('playwright-mcp')) {
     await ensurePlaywrightFirefox();
   }
   if (HEADED) {

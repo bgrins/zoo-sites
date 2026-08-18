@@ -158,8 +158,9 @@ function normalize(lines) {
   return steps;
 }
 
-// transcripts are named <label>--<task>[--rN].jsonl where label is 'cli'/'mcp'
-// or '<backend>--<condition>'; task ids never contain '--'.
+// transcripts are named <label>--<task>[--rN].jsonl where label is a condition
+// ('firefox-devtools-mcp') or '<backend>--<condition>'; neither a task id nor a
+// condition name ever contains '--'.
 function parseName(file) {
   const parts = file.replace(/\.jsonl$/, '').split('--');
   let rep = null;
