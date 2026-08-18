@@ -99,11 +99,51 @@ const BACKENDS = Object.fromEntries(
     BACKEND_NAMES.map(async (name) => [name, await import(`./backends/${name}.mjs`)])
   )
 );
-const MODEL_FLAG = flag('model', null);
-if (MODEL_FLAG && BACKEND_NAMES.length > 1) {
-  throw new Error('--model cannot be combined with multiple backends; each uses its default');
+// --model takes either a bare id, which pins the run's single backend, or
+// <backend>=<id> (repeatable) to pin one model per backend, e.g.
+//   --model codex=gpt-5.6-luna --model anthropic=claude-sonnet-5
+// Mixing the forms, or naming a backend the run does not include, is rejected:
+// a typo that silently left a backend on its default would misattribute every
+// number in the report to a model that never ran.
+const MODEL_BY_BACKEND = {};
+let MODEL_ALL = null;
+for (let i = 0; i < args.length; i++) {
+  if (args[i] !== '--model') continue;
+  const value = args[i + 1];
+  if (value === undefined || value.startsWith('--')) {
+    throw new Error('--model requires a value');
+  }
+  const eq = value.indexOf('=');
+  if (eq <= 0) {
+    if (MODEL_ALL) throw new Error('--model was given twice without a backend prefix');
+    MODEL_ALL = value;
+    continue;
+  }
+  const name = value.slice(0, eq);
+  const id = value.slice(eq + 1);
+  if (!id) throw new Error(`--model ${value} names no model`);
+  if (!BACKEND_NAMES.includes(name)) {
+    throw new Error(
+      `--model ${value}: "${name}" is not a backend in this run (${BACKEND_NAMES.join(', ')})`
+    );
+  }
+  if (MODEL_BY_BACKEND[name]) {
+    throw new Error(`--model set twice for backend "${name}"`);
+  }
+  MODEL_BY_BACKEND[name] = id;
 }
-const modelFor = (name) => MODEL_FLAG ?? BACKENDS[name].DEFAULT_MODEL;
+if (MODEL_ALL && Object.keys(MODEL_BY_BACKEND).length) {
+  throw new Error(
+    '--model takes either one id or <backend>=<id> per backend, not both forms in one run'
+  );
+}
+if (MODEL_ALL && BACKEND_NAMES.length > 1) {
+  throw new Error(
+    'a bare --model cannot be combined with multiple backends; pin each one with ' +
+      `--model <backend>=<id> (${BACKEND_NAMES.join(', ')})`
+  );
+}
+const modelFor = (name) => MODEL_BY_BACKEND[name] ?? MODEL_ALL ?? BACKENDS[name].DEFAULT_MODEL;
 // Pin reasoning effort symmetrically across backends (Agent SDK `effort`,
 // codex `model_reasoning_effort`); 'default' leaves each backend's own default.
 const EFFORT = flag('effort', 'medium');
@@ -227,7 +267,11 @@ Limits and reliability:
                           tokens vary by more than 2x between repeats
 
 Conditions and models:
-  --model <id>            model for the agent backend
+  --model <id>            model for the run's backend; with several backends
+                          use <backend>=<id> instead, repeatable, e.g.
+                            --model codex=gpt-5.6-luna
+                            --model codex=gpt-5.6-luna --model anthropic=claude-sonnet-5
+                          A backend left unnamed keeps its own default.
   --effort <level>        reasoning effort for both backends (default: medium;
                           'default' = leave backend defaults)
   --backend <names>       anthropic (default), codex, comma list, or 'all'
