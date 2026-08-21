@@ -309,9 +309,12 @@ export const DRIVERS = {
         { postTitle: info.title, topLevelCommentCount: 14 },
         { postTitle: second, topLevelCommentCount: info.roots },
       ];
-      this.alsoCorrectFields = [
-        fields,
-        // The clipped title the snapshot shows is all a correct agent may have.
+      this.alsoCorrectFields = [fields];
+      // A clipped title is now a FAILURE, not an accepted variant. If a surface
+      // can only show 27 characters of the headline it loses this task, and that
+      // is the result being measured rather than something to forgive.
+      this.wrongFields = [
+        ...this.wrongFields,
         { postTitle: info.title.slice(0, 27) + '...', topLevelCommentCount: info.roots },
       ];
       this.wrong = [
@@ -599,11 +602,14 @@ export const DRIVERS = {
       );
       const [title, second] = titles;
       const fields = { topPostTitle: title };
-      this.wrongFields = [{ topPostTitle: second }];
-      this.alsoCorrectFields = [
-        fields,
+      // A clipped title is a FAILURE now: if a surface can only show 27
+      // characters of the headline it loses this task, and that is the result
+      // being measured rather than something to forgive.
+      this.wrongFields = [
+        { topPostTitle: second },
         { topPostTitle: title.slice(0, 27) + '...' },
       ];
+      this.alsoCorrectFields = [fields];
       this.wrong = [
         `I dismissed the newsletter prompt. The #1 top post is "${second}".`,
         `I pressed Escape to clear the digest prompt; the top post on the front ` +
@@ -613,8 +619,6 @@ export const DRIVERS = {
         `The digest prompt is gone — closed with its own x control, no DOM surgery — ` +
           `and the #1 post reads: ${title}`,
         `Top post title: ${title}`,
-        `I closed the prompt with the close button. #1 is "${title.slice(0, 27)}..." ` +
-          `(the snapshot clips the tail).`,
       ];
       return {
         text:
