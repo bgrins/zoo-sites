@@ -61,7 +61,12 @@ const digits = (s) => String(s).replace(/[^\d.]/g, '');
 // that separates them - the value's own opening, in the snapshot, with the
 // truncator's ellipsis where the rest should be. Finding it proves the page
 // rendered the value and the surface dropped the tail.
-const ELLIPSIS = /^\s*(\.{3}|…)/;
+// The ellipsis need not follow the shared prefix immediately. The cut can land
+// mid-word, leaving a character or two of the real value that a wrong answer does
+// not share: the snapshot said "vault t..." where the truth was "vault fennel".
+// So allow a few characters of slack, and require a long prefix so the slack
+// cannot manufacture a match.
+const ELLIPSIS = /^.{0,3}?(\.{3}|…)/;
 function looksTruncated(needle, hay) {
   for (let cut = Math.min(needle.length - 1, 27); cut >= 12; cut--) {
     const head = needle.slice(0, cut);
@@ -114,6 +119,33 @@ export function gradedValues(fields) {
   };
   walk(fields);
   return [...new Set(out)];
+}
+
+// Ground truth, found without wiring anything per task: the codes a site minted
+// into session state for this run. Testing these answers "was the value the
+// server issued ever shown to the agent", which the agent's own answer cannot.
+// The nonce is skipped - every page carries it, and nothing grades it.
+const CODE = /^[A-Za-z]{2,6}-[A-Za-z0-9][A-Za-z0-9-]{2,14}$/;
+export function mintedValues(state, limit = 40) {
+  const found = new Set();
+  const seenObjects = new WeakSet();
+  const walk = (node, key) => {
+    if (found.size >= limit || node == null) return;
+    if (typeof node === 'string') {
+      if (key !== 'nonce' && CODE.test(node)) found.add(node);
+      return;
+    }
+    if (typeof node !== 'object') return;
+    if (seenObjects.has(node)) return;
+    seenObjects.add(node);
+    for (const [k, v] of Object.entries(node)) walk(v, k);
+  };
+  try {
+    for (const session of state.sessions.values()) walk(session, null);
+  } catch {
+    return [];
+  }
+  return [...found];
 }
 
 // Accumulates across a task's message stream so run.mjs can hand messages in as

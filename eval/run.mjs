@@ -54,6 +54,7 @@ import { webTasks } from './tasks/web.mjs';
 import { devtoolsTasks } from './tasks/devtools.mjs';
 import { extractFields, isSentinel } from './extract.mjs';
 import { devtoolsMcpEntry } from './mcp-stdio.mjs';
+import { createReachRecorder, gradedValues, mintedValues } from './surface-reach.mjs';
 import { detectScreen, windowGrid } from './window-grid.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -465,9 +466,14 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     transcriptStream.on('error', (error) =>
       console.error(`transcript write failed: ${error.message}`)
     );
-    spec.onMessage = (message) =>
-      transcriptStream.write(JSON.stringify(message) + '\n');
   }
+  // Which graded values actually reached the agent. Runs whether or not
+  // transcripts are being written, because the answer belongs in the result row.
+  const reach = createReachRecorder();
+  spec.onMessage = (message) => {
+    reach.observe(message);
+    if (transcriptStream) transcriptStream.write(JSON.stringify(message) + '\n');
+  };
   // Runaway guards. There is deliberately no turn limit: a "turn" means
   // different things per backend (codex only approximates one), so turns are
   // neither a fair metric nor a usable safety net. Wall time and output
@@ -555,6 +561,25 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   const verdict = task.validate
     ? task.validate(r.text, ctx, fields)
     : { pass: task.expect.test(r.text.replace(/[*_~`]+/g, '')) };
+  // What the surface actually delivered. Two sources, because neither alone is
+  // enough: the values the agent reported say whether its answer came off the
+  // page, and the codes the server minted say whether the truth was ever shown
+  // at all. Only the shortfalls are recorded - a row listing everything the
+  // agent could see would dwarf the row itself.
+  const surface = (() => {
+    const states = reach.reach([
+      ...gradedValues(fields ?? {}),
+      ...mintedValues(ctx.pages?.state ?? {}),
+    ]);
+    const truncated = Object.keys(states).filter((v) => states[v] === 'truncated');
+    const absent = Object.keys(states).filter((v) => states[v] === 'absent');
+    if (!truncated.length && !absent.length) return null;
+    const clip = (list) => list.slice(0, 8).map((v) => v.slice(0, 80));
+    return {
+      ...(truncated.length ? { truncated: clip(truncated) } : {}),
+      ...(absent.length ? { absent: clip(absent) } : {}),
+    };
+  })();
   const tenth = (ms) => (ms == null ? null : Math.round(ms / 100) / 10);
   return {
     backend: backendName,
@@ -564,6 +589,9 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     model: modelFor(backendName) || '(backend default)',
     success: verdict.pass,
     detail: verdict.detail,
+    // Absent alone is ambiguous (a derived total was never printed either), but
+    // truncated is not: it means the page rendered the value and the surface cut it.
+    ...(surface ? { surface } : {}),
     answer: r.text.slice(0, 160).replace(/\n/g, ' '),
     turns: r.turns,
     input_tokens: r.input_tokens,
