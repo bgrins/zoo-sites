@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Using the triage board - Coppermast Dispatch</title>
+<link rel="stylesheet" href="coppermast.css">
+</head>
+<body>
+<div class="topbar">
+  <span class="mark"><b>Coppermast</b> Dispatch</span>
+  <nav class="topnav">
+    <a href="index.html">Board</a>
+    <a href="berths.html">Berths</a>
+    <a href="crews.html">Crews</a>
+    <a href="handover.html">Handover</a>
+  </nav>
+  <span class="who">Terminal 3 &middot; R. Aldwyn</span>
+</div>
+
+<p class="crumbs">Operations / Dispatch console / Using the triage board</p>
+
+<main class="sheet">
+  <h1>Using the triage board</h1>
+  <p class="blurb">Console guide for supervisors and controllers, issued with revision 7 of the
+  triage rule. Read this before your first shift on the board.</p>
+
+  <div class="toolstrip">
+    <span class="hint">Guide DC-02. Written by the dispatch systems group; queries to the duty
+    controller on extension 2214.</span>
+  </div>
+
+  <section class="lane" style="max-width:760px">
+    <div class="lane-head"><h2>Working the board</h2><span class="chip">6 steps</span></div>
+    <div class="lane-body">
+      <article class="card">
+        <div class="card-head"><span class="ref">Step 1</span><span class="tag">Open</span></div>
+        <p class="ttl">Load the board and let it settle</p>
+        <p class="meta">The lanes are drawn from the work order service, not from the page. Wait
+        for the lane counts to appear before you touch a card; a lane that still reads zero has
+        not been filled yet.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="ref">Step 2</span><span class="tag">Read</span></div>
+        <p class="ttl">Read each card before deciding</p>
+        <p class="meta">A card carries the work order reference, the tag it was raised with, the
+        berth or gate it belongs to, and the time it was raised. All four matter: the tag says how
+        urgently it needs a decision, the berth says who has to agree to it.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="ref">Step 3</span><span class="tag">Decide</span></div>
+        <p class="ttl">Apply the triage rule, not your own order</p>
+        <p class="meta">The triage rule is posted on the board itself and is reissued when it
+        changes. Where a card looks like an exception, leave it where it is and raise it with the
+        duty controller rather than inventing a placement.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="ref">Step 4</span><span class="tag">Move</span></div>
+        <p class="ttl">Move the card by whichever handle suits you</p>
+        <p class="meta">Two handles do the same thing. Drag a card into the lane you want, or use
+        the lane buttons at the foot of the card. Both record the same change, and neither is
+        preferred. Within a lane, order carries no meaning.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="ref">Step 5</span><span class="tag">Save</span></div>
+        <p class="ttl">Save the board before you leave it</p>
+        <p class="meta">Nothing is triaged until the board is saved. Save board sends every lane
+        as a whole, so a save either takes the entire layout or is refused; there is no partial
+        save. A refusal leaves the screen exactly as it was, so you can correct and save again.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="ref">Step 6</span><span class="tag">Confirm</span></div>
+        <p class="ttl">Check the revision line</p>
+        <p class="meta">An accepted save prints a board revision. Quote that revision in the
+        handover entry and in any query about the board. Saving again is not a mistake: each save
+        gets its own revision and the latest one is the layout the handover report reads.</p>
+      </article>
+    </div>
+  </section>
+
+  <div class="notes">
+    <h3>Discard changes</h3>
+    <p>Discard changes throws away everything on screen and reloads the board from the service.
+    It does not undo a save. If you have already saved and want the earlier layout back, put the
+    cards where they belong and save again, then note both revisions in the handover entry so the
+    incoming supervisor knows which one to read.</p>
+    <h3>If the board will not load</h3>
+    <p>The board is tied to the console session you signed in with. If the session lapses, the
+    lanes stay on screen and a message appears above them asking you to sign in again from the
+    dispatch portal; Discard changes then reloads the board. Nothing you had on screen at that
+    point was saved, so expect to triage again.</p>
+    <h3>What the incoming shift sees</h3>
+    <p>The handover report is generated from the last saved layout. An unsaved board is invisible
+    to it. That is the single most common query the duty controller takes at 16:00, and it is
+    always the same fix: save the board.</p>
+  </div>
+</main>
+
+<footer>
+  <div class="flinks">
+    <a href="index.html">Shift triage</a>
+    <a href="berths.html">Berth register</a>
+    <a href="crews.html">Crew roster</a>
+    <a href="statuses.html">Status reference</a>
+    <a href="escalation.html">Escalation</a>
+    <a href="handover.html">Handover log</a>
+  </div>
+  <p>&copy; 2026 Coppermast Terminals Limited. Registered in England, company 00000000.</p>
+  <address>Coppermast Terminals, Ravensgate Quay, Hollingport HP4 2LN &middot; dispatch@coppermast-terminals.example</address>
+</footer>
+</body>
+</html>

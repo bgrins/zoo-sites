@@ -15,6 +15,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "check-fixtures": "node scripts/check-fixtures.mjs",
     "verify": "node eval/verify.mjs",
     "run": "node eval/run.mjs",
     "devtools-both-backends": "node eval/run.mjs --suite basic --compare backends --parallel --parallel-tasks 3",

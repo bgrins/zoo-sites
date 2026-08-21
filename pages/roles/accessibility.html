@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accessibility — Alderpost</title>
+<link rel="stylesheet" href="roles.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-in">
+    <div class="brandline">
+      <p class="brand">Alderpost</p>
+      <span class="brandsub">Built environment recruitment</span>
+      <span class="deskbar">Northern desk &middot; consultant view</span>
+    </div>
+    <nav class="mainnav">
+      <a href="./">Vacancy search</a>
+      <a href="clients.html">Clients</a>
+      <a href="notes.html">Desk notes</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="prose">
+    <p class="crumb"><a href="./">Vacancy search</a> &middot; Accessibility</p>
+    <h1>Accessibility</h1>
+    <p>This statement covers the vacancy search and the pages around it. It was last reviewed
+    in April 2026 and is revised whenever the search changes.</p>
+
+    <h2>How the pages are built</h2>
+    <p>The vacancy search is ordinary HTML with a stylesheet and a small amount of script. Text
+    resizes with the browser's own controls up to twice its size without anything being clipped
+    or overlapping, and the page reflows to a single column on a narrow screen. Nothing moves,
+    flashes or plays on its own, and there is no audio anywhere on the site.</p>
+
+    <h2>Using the refine panel without a mouse</h2>
+    <p>Every filter is a real checkbox with a real label, so the tab key moves between them and
+    the space bar ticks them. Ticking a box updates the vacancy list in place and adds the
+    filter to the row above the results; each entry in that row is a button, reachable by tab,
+    that takes its filter back off. The number beside a filter is read out as part of the
+    label, so a screen reader user hears what a filter would leave before applying it. When a
+    combination of filters leaves nothing, the list is replaced by a heading and an explanation
+    rather than by an empty space.</p>
+
+    <h2>Where we know we fall short</h2>
+    <p>Three things are on the list to fix. The applied-filter row announces its own changes
+    only on some screen reader and browser pairings, so a keyboard user may need to move back
+    up to the row to confirm a filter has come off. The filter groups are marked up as
+    fieldsets with legends, and a few older screen readers do not announce the legend, which
+    makes two similarly named filters harder to tell apart. Pagination controls at the foot of
+    a long result list are a long way from the results themselves for anyone using
+    magnification at high levels.</p>
+
+    <h2>Another way to do it</h2>
+    <p>If any of that gets in the way, telephone the candidate line on 0808 157 0142 and a
+    consultant will run the search with you and read out what is on the list. The desk will
+    send a vacancy record as plain text, as large print, or on paper if you would rather have
+    it that way, normally the same working day. Interviews arranged through the desk carry
+    whatever adjustments you ask for, and the desk tells the client only what you agree it may
+    tell them.</p>
+
+    <h2>Telling us about a problem</h2>
+    <p>Write to desk@alderpost.example with the address of the page and what happened, or
+    telephone 0113 496 0180. Every report is answered within five working days, and anything
+    that stops a candidate applying is treated as urgent rather than as a change request. If
+    the answer you get is unsatisfactory, write to the desk principal at the registered office
+    below.</p>
+  </div>
+</main>
+
+<footer class="sitefoot">
+  <div class="wrap">
+    <p>Alderpost Recruitment Ltd, 4 Wharfeside Row, Leeds LS1 4QT. Registered in England 00000000.</p>
+    <p>desk@alderpost.example &middot; 0113 496 0180 &middot; <a href="notes.html">Desk notes</a> &middot; <a href="clients.html">Clients</a> &middot; <a href="about.html">About Alderpost</a> &middot; <a href="apply.html">How to apply</a></p>
+  </div>
+</footer>
+</body>
+</html>

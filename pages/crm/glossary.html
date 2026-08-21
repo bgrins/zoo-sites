@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glossary - Kelsmere CRM</title>
+<link rel="stylesheet" href="crm.css">
+</head>
+<body>
+<header class="topbar">
+  <span class="brand">Kelsmere CRM</span>
+  <span class="ws">wkspc northfield-supply &middot; fiscal 2026 &middot; role: analyst</span>
+  <span class="who">dana.kessler@northfield.example</span>
+</header>
+<nav class="tabs">
+  <a href="index.html">Dashboard</a>
+  <a href="orders.html">Orders</a>
+  <a href="customers.html">Customers</a>
+  <a href="pipeline.html">Pipeline</a>
+  <a href="reports.html">Reports</a>
+  <a href="tasks.html">Tasks</a>
+  <a href="admin.html">Admin</a>
+</nav>
+<div class="pathbar">
+  <span>northfield-supply / glossary</span>
+  <span class="build">grid engine v3 &middot; build 3.14.2</span>
+</div>
+<main class="main">
+  <h1>Glossary</h1>
+  <p class="sub">Terms as this workspace uses them. Where an operator and a report seem to disagree, the difference is usually one of these definitions.</p>
+  <div class="cards">
+    <section class="card">
+      <h2>Records</h2>
+      <table class="mini">
+        <tr><th>Term</th><th>Meaning</th></tr>
+        <tr><td>Account</td><td>A trading customer of the workspace, carrying one account id for its whole life.</td></tr>
+        <tr><td>Account id</td><td>The permanent key on an account record. It is never reissued, even after an account closes.</td></tr>
+        <tr><td>Order</td><td>A confirmed sale against one account, carried at its recorded order value.</td></tr>
+        <tr><td>Opportunity</td><td>An open deal that has not become an order. Opportunities never carry an order value.</td></tr>
+      </table>
+    </section>
+    <section class="card">
+      <h2>Territory and region</h2>
+      <table class="mini">
+        <tr><th>Term</th><th>Meaning</th></tr>
+        <tr><td>Territory</td><td>The sales patch an account is assigned to, set when the account is opened.</td></tr>
+        <tr><td>Region</td><td>The name the territory rolls up to. It follows the territory, not the billing address.</td></tr>
+        <tr><td>Owner</td><td>The named analyst accountable for an account and its open opportunities.</td></tr>
+        <tr><td>Reassignment</td><td>A change of territory or owner. Currently frozen workspace-wide.</td></tr>
+      </table>
+    </section>
+    <section class="card">
+      <h2>Warehouse</h2>
+      <table class="mini">
+        <tr><th>Term</th><th>Meaning</th></tr>
+        <tr><td>Snapshot</td><td>The nightly copy of the records that every grid reads from.</td></tr>
+        <tr><td>Rebuild</td><td>The 02:00 job that produces the snapshot.</td></tr>
+        <tr><td>Retired report</td><td>A catalogue entry no longer built. Its last run date stands; nothing refreshes it.</td></tr>
+        <tr><td>Source</td><td>The grids a report is compiled from, named on its catalogue row.</td></tr>
+      </table>
+    </section>
+    <section class="card">
+      <h2>Console</h2>
+      <table class="mini">
+        <tr><th>Term</th><th>Meaning</th></tr>
+        <tr><td>Workspace</td><td>One customer's data, settings and members, identified by workspace id.</td></tr>
+        <tr><td>Grid engine</td><td>The component that renders and sorts every table. This workspace runs v3.</td></tr>
+        <tr><td>Saved view</td><td>A stored filter and column arrangement. Read-only on a shared link.</td></tr>
+        <tr><td>Shared workspace link</td><td>A read-only session on the workspace, with export and delivery disabled.</td></tr>
+        <tr><td>Role</td><td>Owner or analyst. Owners administer the workspace; analysts read it.</td></tr>
+      </table>
+    </section>
+    <section class="card">
+      <h2>Period</h2>
+      <table class="mini">
+        <tr><th>Term</th><th>Meaning</th></tr>
+        <tr><td>Fiscal year</td><td>January to December for this workspace.</td></tr>
+        <tr><td>Close</td><td>The 9th of the month following a quarter end.</td></tr>
+        <tr><td>Rolled</td><td>Recorded after close, and therefore counted in the next period.</td></tr>
+        <tr><td>Retention</td><td>Seven fiscal years, after which records leave the workspace.</td></tr>
+      </table>
+    </section>
+    <section class="card">
+      <h2>Usage notes</h2>
+      <p>Region and territory are not interchangeable in writing: a territory is the
+      patch, a region is what it rolls up to. An order value is a property of an order and
+      of nothing else, so an account, an opportunity or a task never carries one.</p>
+      <p class="muted">Suggest a term through the support address in the footer.</p>
+    </section>
+  </div>
+</main>
+<footer class="siteftr">
+  Kelsmere CRM &middot; workspace data is confidential to northfield-supply.
+  Support: help.kelsmerecrm.example &middot; Status &middot; Keyboard shortcuts &middot;
+  Terms &middot; Privacy &middot; <a href="guide.html">Operator guide</a> &middot;
+  <a href="glossary.html">Glossary</a> &middot; <a href="notices.html">Service notices</a>
+</footer>
+</body>
+</html>

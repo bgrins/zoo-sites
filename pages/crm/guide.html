@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operator guide - Kelsmere CRM</title>
+<link rel="stylesheet" href="crm.css">
+</head>
+<body>
+<header class="topbar">
+  <span class="brand">Kelsmere CRM</span>
+  <span class="ws">wkspc northfield-supply &middot; fiscal 2026 &middot; role: analyst</span>
+  <span class="who">dana.kessler@northfield.example</span>
+</header>
+<nav class="tabs">
+  <a href="index.html">Dashboard</a>
+  <a href="orders.html">Orders</a>
+  <a href="customers.html">Customers</a>
+  <a href="pipeline.html">Pipeline</a>
+  <a href="reports.html">Reports</a>
+  <a href="tasks.html">Tasks</a>
+  <a href="admin.html">Admin</a>
+</nav>
+<div class="pathbar">
+  <span>northfield-supply / operator guide</span>
+  <span class="build">grid engine v3 &middot; build 3.14.2</span>
+</div>
+<main class="main">
+  <h1>Operator guide</h1>
+  <p class="sub">How to work the v3 grids, what the workspace holds authoritative, and where a request goes when the console will not do it.</p>
+  <div class="cards">
+    <section class="card">
+      <h2>Reading a grid</h2>
+      <p>Every grid page states its row count under the table, in the form
+      rows shown over rows held. Where those two numbers agree you are looking at
+      the whole set for the period; the console does not page a grid silently.</p>
+      <p class="muted">A grid never aggregates a column it does not own. Totals appear
+      only in a table footer, and only where the source holds the figure.</p>
+    </section>
+    <section class="card">
+      <h2>Sort and column state</h2>
+      <p>The v3 grid engine keeps column widths and sort order per operator, so a
+      colleague opening the same page sees their own arrangement rather than yours.
+      State is written when you leave the page.</p>
+      <p class="muted">On a shared workspace link there is nowhere to write it, so the
+      arrangement lasts the session only.</p>
+    </section>
+    <section class="card">
+      <h2>What the snapshot means</h2>
+      <p>Grids read the warehouse snapshot, rebuilt nightly at 02:00. An edit made
+      during the day reaches the snapshot that night, which is why a stage change or a
+      territory correction is not visible on a grid until the following morning.</p>
+      <p class="muted">The record itself is authoritative; the snapshot is what the
+      console can see of it.</p>
+    </section>
+    <section class="card">
+      <h2>Shared workspace links</h2>
+      <p>A shared link opens the workspace read-only. Saved views cannot be written,
+      CSV export is unavailable, report delivery is disabled, and workflow tasks cannot
+      be completed. Filter controls on a grid will accept input and then tell you the
+      view is read-only rather than pretending to run.</p>
+      <p class="muted">There is no operator-side setting that lifts this. Link policy
+      belongs to the workspace owner.</p>
+    </section>
+    <section class="card">
+      <h2>Getting figures out</h2>
+      <p>Ask an owner to run the report you need from the catalogue under
+      <a href="reports.html">Reports</a>. Where the report has been retired, the
+      figures have to be compiled from the grids that still publish them, and the
+      compiled working should be attached to whatever it was needed for.</p>
+      <p class="muted">Do not circulate a screenshot of a grid as a figure of record.</p>
+    </section>
+    <section class="card">
+      <h2>Period discipline</h2>
+      <p>Quarter-end close is the 9th. An order recorded after close rolls into the
+      next period and will not appear against the quarter you expected, so check the
+      order date rather than the day you keyed it.</p>
+      <p class="muted">Fiscal 2026 runs January to December.</p>
+    </section>
+  </div>
+  <p class="muted" style="margin-top: 14px;">Terminology used above is defined in the
+  <a href="glossary.html">glossary</a>. Maintenance windows and known issues are on
+  <a href="notices.html">service notices</a>.</p>
+</main>
+<footer class="siteftr">
+  Kelsmere CRM &middot; workspace data is confidential to northfield-supply.
+  Support: help.kelsmerecrm.example &middot; Status &middot; Keyboard shortcuts &middot;
+  Terms &middot; Privacy &middot; <a href="guide.html">Operator guide</a> &middot;
+  <a href="glossary.html">Glossary</a> &middot; <a href="notices.html">Service notices</a>
+</footer>
+</body>
+</html>

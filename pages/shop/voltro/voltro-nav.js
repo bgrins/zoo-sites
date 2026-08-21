@@ -5,9 +5,17 @@ const MOBILE_LINKS = [
   ['All Departments', 'index.html'],
   ['Deals of the Day', 'deals.html'],
   ['Desk Setup', 'desk-setup.html'],
-  ['Your Basket', 'basket.html'],
+  ['Your Basket', null],
   ['Customer Service', 'help.html'],
 ];
+
+// The department pages and the desk-setup pages keep separate baskets, so a
+// hardcoded target sent a phone user to whichever one the page they were on does
+// not fill. Mirror the cart the page's own header points at instead.
+function basketHref() {
+  const own = document.querySelector('#cartlink, a[href="basket.html"], a[href="cart.html"]');
+  return own ? own.getAttribute('href') : 'basket.html';
+}
 
 function applyMobileNav() {
   const header = document.querySelector('header');
@@ -30,7 +38,7 @@ function applyMobileNav() {
   panel.hidden = true;
   panel.setAttribute('aria-label', 'Departments');
   panel.innerHTML = MOBILE_LINKS.map(
-    ([label, href]) => `<a href="${href}">${label}</a>`
+    ([label, href]) => `<a href="${href ?? basketHref()}">${label}</a>`
   ).join('');
   header.insertAdjacentElement('afterend', panel);
   toggle.addEventListener('click', () => {

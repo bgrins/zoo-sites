@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About Kettleforge &middot; Kettleforge</title>
+<link rel="stylesheet" href="forge.css">
+</head>
+<body>
+<header class="masthead">
+  <span class="mark">Kettle<em>forge</em></span>
+  <nav>
+    <a href="/forge/">Repositories</a>
+    <a href="/forge/pulls/">Pull requests</a>
+    <a href="/forge/">Anvil</a>
+    <a href="/forge/">Registry</a>
+  </nav>
+  <span class="who">signed in as <b>r.vandermolen</b></span>
+</header>
+
+<main class="wrap">
+  <div class="prhead">
+    <h1>About Kettleforge</h1>
+    <div class="prmeta">
+      <span>Source hosting, code review and build pipelines, operated by Bellhollow Systems Ltd</span>
+    </div>
+  </div>
+
+  <nav class="subtabs">
+    <span class="here">About</span>
+    <a href="/forge/plans.html">Plans</a>
+    <a href="/forge/security.html">Security</a>
+  </nav>
+
+  <div class="cols">
+    <div class="main">
+      <div class="card">
+        <div class="cardhead">What we build</div>
+        <div class="body">
+          <p>Kettleforge hosts source repositories for engineering teams that want review and
+          build in one place and would rather not assemble them from four vendors. A repository
+          on Kettleforge carries its issues, its pull requests, its Anvil pipelines and its
+          package registry entries under the same permissions model, so a reviewer who can read
+          the diff can read the job log that failed on it without asking anyone for a second
+          account.</p>
+          <p>We started in 2017 with a single product decision that we have not revisited: review
+          is the part of the workflow worth being slow and exact about. Everything else on the
+          platform serves it. Pipelines exist so a reviewer knows whether the branch builds.
+          The registry exists so the artefact a pipeline produced can be traced back to the
+          commit that produced it. When those two disagree, we would rather block a merge than
+          guess.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">How review works here</div>
+        <div class="body">
+          <p>A pull request on Kettleforge is a conversation with a gate on it. Line comments are
+          staged rather than published one at a time, so an author is not paged six times while a
+          reviewer reads down a diff; the reviewer submits them together with a summary and a
+          verdict, and the author sees one coherent piece of feedback. A repository can require a
+          verdict from a code owner, a passing set of required jobs, or both, and Forge merge
+          stays blocked until the requirements the repository declared are actually met.</p>
+          <p>Branch protection, required jobs and code owners are configured per repository and
+          are visible to everyone who can read it. We do not offer a way to override a gate
+          quietly. An administrator can lift a requirement, and lifting it is recorded in the
+          repository audit log with the account that did it and the reason they gave.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">The company</div>
+        <div class="body">
+          <p>Bellhollow Systems is a private company of forty-one people, funded by revenue since
+          2021, with no outside investors to answer to. Engineering, support and infrastructure
+          all sit in the Ashcombe office. We run the platform on hardware we lease in two
+          facilities and we publish our own uptime record rather than describing it.</p>
+          <p>Support is answered by engineers who work on the platform, on weekdays between 08:00
+          and 19:00, and continuously for customers on a plan with escalation. Write to
+          support@kettleforge.example, or call 0808 157 0198 if the platform is down and mail is
+          not reaching us.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <div class="cardhead">At a glance</div>
+        <div class="body">
+          <dl>
+            <dt>Founded</dt>
+            <dd>2017</dd>
+            <dt>People</dt>
+            <dd>41</dd>
+            <dt>Head office</dt>
+            <dd>Ashcombe</dd>
+            <dt>Registered</dt>
+            <dd>company no. 00000000</dd>
+            <dt>Ownership</dt>
+            <dd>employee held</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="card">
+        <div class="cardhead">Elsewhere</div>
+        <div class="body">
+          <p><a href="/forge/plans.html">Plans and limits</a></p>
+          <p><a href="/forge/security.html">Security and data handling</a></p>
+          <p><a href="/forge/pulls/">Open pull requests</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="sitefoot">
+  <div class="links">
+    <a href="/forge/">Status</a>
+    <a href="/forge/">Docs</a>
+    <a href="/forge/">Keyboard shortcuts</a>
+    <a href="/forge/">Privacy</a>
+    <a href="/forge/">Terms</a>
+    <a href="/forge/">Contact support</a>
+    <a href="/forge/about.html">About</a>
+    <a href="/forge/plans.html">Plans</a>
+    <a href="/forge/security.html">Security</a>
+  </div>
+  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Ashcombe AS4 2QN. &copy; 2026 Bellhollow Systems Ltd.</div>
+</footer>
+</body>
+</html>

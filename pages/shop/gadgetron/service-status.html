@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gadgetron | Service status history</title>
+<link rel="stylesheet" href="gadgetron.css">
+<style>
+  .policy { flex: 1; padding: 10px 14px 26px; min-width: 0; max-width: 100ch; }
+  .policy h1 { font-size: 17px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .policy .lede { font-size: 12px; color: #454c5c; margin: 0 0 10px; max-width: 82ch; }
+  .policy h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #626a7a; margin: 16px 0 6px; }
+  .policy p, .policy li { font-size: 12px; margin: 0 0 6px; max-width: 82ch; }
+  .policy ul { margin: 0 0 6px 18px; padding: 0; }
+  .policy .rule { border-left: 3px solid #ffb020; padding-left: 9px; }
+  .crumbline { background: #fff5e0; border-bottom: 1px solid #e8d49c; padding: 5px 14px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="railbar">
+  <span class="mark">Gadgetron</span>
+  <span class="tagline">Spec index and price engine</span>
+  <form action="search.html" method="get">
+    <input name="q" aria-label="Search part numbers or models" placeholder="Model, brand or part no.">
+    <button type="submit">Find</button>
+  </form>
+  <span class="who">Guest &middot; <a href="signin.html">sign in</a> &middot;
+    <a href="order-list.html">order list</a></span>
+</div>
+<nav class="tabs" aria-label="Sections">
+  <a href="index.html">Catalog</a>
+  <a href="compare.html">Compare</a>
+  <a href="price-history.html">Price history</a>
+  <a href="open-box.html">Open-box</a>
+  <a href="glossary.html">Spec glossary</a>
+  <a href="bulk-quote.html">Bulk quote</a>
+</nav>
+<div class="crumbline">Catalog &rsaquo; Service status history</div>
+<div class="layout">
+  <section class="policy">
+<h1>Service status history</h1>
+<p class="lede">Every planned window and unplanned interruption to the spec index, the
+price engine, the order queue and marketplace seller messaging, most recent first.</p>
+<h2 id="history">Recorded incidents</h2>
+<table class="grid">
+  <caption>Incidents are logged by the warehouse operations team. One row per incident.</caption>
+  <thead>
+    <tr><th>Incident</th><th>Systems affected</th><th>Kind</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="mono">MB-3-1174</td><td>Spec index, price engine, order queue</td><td>Planned</td><td>Open</td></tr>
+    <tr><td class="mono">MB-3-1121</td><td>Price engine</td><td>Unplanned</td><td>Closed 2026-07-14</td></tr>
+    <tr><td class="mono">MB-3-1087</td><td>Order confirmation mail</td><td>Unplanned</td><td>Closed 2026-06-02</td></tr>
+    <tr><td class="mono">MB-3-1042</td><td>Marketplace seller messaging</td><td>Unplanned</td><td>Closed 2026-04-19</td></tr>
+    <tr><td class="mono">MB-3-1015</td><td>Spec index</td><td>Planned</td><td>Closed 2026-02-27</td></tr>
+  </tbody>
+</table>
+<p class="rowsnote">Rows 1-5 of 5. Incidents closed more than a year ago are moved to the
+operations archive and are available from the <a href="support.html">support desk</a>.</p>
+<h2 id="open">Open incident</h2>
+<p class="rule">MB-3-1174 is a planned migration of the warehouse database onto the new
+pricing cluster, scheduled 04:00 to 09:30 (UTC-05). While it runs, every catalog path on
+the primary store answers with a maintenance notice, and read-only pricing is served from
+mirror node MB-3 built from the 06:40 snapshot. The mirror accepts no orders; the support
+desk takes them by phone against the live warehouse figure.</p>
+<h2 id="closed">What the closed incidents were</h2>
+<ul>
+  <li>MB-3-1121: a feed lag left the price engine quoting figures the warehouse had already
+  superseded. Quotes issued during the lag were honoured at the lower of the two figures.
+  The mirror node was not engaged.</li>
+  <li>MB-3-1087: a carrier interface fault delayed order confirmation mail by up to nine
+  hours. Shipments themselves were unaffected and no cut-off was missed.</li>
+  <li>MB-3-1042: seller messaging stopped delivering for part of a day. Return windows that
+  fell inside the outage were extended by the same number of days for every affected
+  listing.</li>
+  <li>MB-3-1015: a planned rebuild of the spec index. Filters and sorting were unavailable;
+  the catalog rows themselves stayed readable throughout.</li>
+</ul>
+<h2 id="how">How a window is announced</h2>
+<p>Planned windows are posted here at least five business days ahead and repeated on the
+catalog ticker for the two days before they open. Trade accounts with net terms are
+notified by their account manager as well, because a window that crosses a cut-off moves
+that day's shipping.</p>
+<p>An unplanned interruption is logged here once operations has confirmed it, which is
+usually inside the hour. The row is updated rather than replaced as the picture changes,
+so the history reads as what was known at the time rather than as a tidy retelling.</p>
+<h2 id="credits">Service credits</h2>
+<p>A planned window inside the announced hours carries no credit. An unplanned
+interruption that stops a trade account from confirming a list before the 15:00 cut-off
+carries one, applied to the next invoice; ask the account manager to raise it. Credits are
+not paid on marketplace listings, since the seller of record is not Gadgetron.</p>
+  </section>
+</div>
+<footer class="legalstrip">
+  <a href="warehouse-policy.html#status">Warehouse status codes</a> &middot;
+  <a href="warehouse-policy.html#returns">Return window</a> &middot;
+  <a href="methodology.html">Price engine methodology</a> &middot;
+  <a href="seller-terms.html">Marketplace seller terms</a> &middot;
+  <a href="service-status.html">Service status history</a> &middot;
+  <a href="privacy.html">Privacy notice</a> &middot;
+  <a href="support.html">Support desk</a><br>
+  Listings are supplied by marketplace sellers; Gadgetron is not the seller of record for
+  marketplace items. Specifications are provided by the manufacturer. &copy; 2026 Gadgetron
+  Trading Co.
+</footer>
+</body>
+</html>

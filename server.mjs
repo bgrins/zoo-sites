@@ -358,6 +358,26 @@ export async function startPagesServer({
     return cookies;
   }
 
+  // A session is minted for any HTML response arriving without a cookie, and
+  // reset() is called only by the eval between tasks. serve.mjs is a standing
+  // habitat that never calls it, so without a cap the map grows by one entry per
+  // cookie-less page load for the life of the process. The cap is oldest-first on
+  // Map insertion order, and it sits far above what a graded run creates (a task
+  // makes a handful of sessions), so eviction can never reach a session a
+  // validator is about to read.
+  const MAX_SESSIONS = 5000;
+
+  function mintSession(headers) {
+    const sid = randomUUID();
+    const session = { nonce: randomBytes(12).toString('hex'), createdAt: Date.now() };
+    state.sessions.set(sid, session);
+    while (state.sessions.size > MAX_SESSIONS) {
+      state.sessions.delete(state.sessions.keys().next().value);
+    }
+    headers['Set-Cookie'] = `sid=${sid}; Path=/; HttpOnly; SameSite=Lax`;
+    return { sid, session };
+  }
+
   function getSession(req) {
     const sid = parseCookies(req).sid;
     const session = sid ? state.sessions.get(sid) : null;
@@ -657,13 +677,7 @@ export async function startPagesServer({
     ) {
       let found = getSession(req);
       const headers = {};
-      if (!found) {
-        const sid = randomUUID();
-        const session = { nonce: randomBytes(12).toString('hex'), createdAt: Date.now() };
-        state.sessions.set(sid, session);
-        found = { sid, session };
-        headers['Set-Cookie'] = `sid=${sid}; Path=/; HttpOnly; SameSite=Lax`;
-      }
+      if (!found) found = mintSession(headers);
       const legacy = (found.session.rv3 ??= {
         bounces: 0,
         hits: 0,
@@ -738,13 +752,7 @@ export async function startPagesServer({
       };
       if (extname(file) === '.html') {
         let found = getSession(req);
-        if (!found) {
-          const sid = randomUUID();
-          const session = { nonce: randomBytes(12).toString('hex'), createdAt: Date.now() };
-          state.sessions.set(sid, session);
-          found = { sid, session };
-          headers['Set-Cookie'] = `sid=${sid}; Path=/; HttpOnly; SameSite=Lax`;
-        }
+        if (!found) found = mintSession(headers);
         // Every HTML GET this session makes, counted by path. A beacon says a
         // page was RENDERED; this says its markup was FETCHED, which a scripted
         // fetch does too. Route telemetry needs both, because an agent that

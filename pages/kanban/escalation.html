@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escalation and callout - Coppermast Dispatch</title>
+<link rel="stylesheet" href="coppermast.css">
+</head>
+<body>
+<div class="topbar">
+  <span class="mark"><b>Coppermast</b> Dispatch</span>
+  <nav class="topnav">
+    <a href="index.html">Board</a>
+    <a href="berths.html">Berths</a>
+    <a href="crews.html">Crews</a>
+    <a href="handover.html">Handover</a>
+  </nav>
+  <span class="who">Terminal 3 &middot; R. Aldwyn</span>
+</div>
+
+<p class="crumbs">Operations / Dispatch console / Escalation and callout</p>
+
+<main class="sheet">
+  <h1>Escalation and callout</h1>
+  <p class="blurb">Who to reach, in what order, and what they need from you. Print a copy for
+  the control cabin; the console copy is the one that gets corrected.</p>
+
+  <section class="lane" style="max-width:760px">
+    <div class="lane-head"><h2>Contacts</h2><span class="chip">6</span></div>
+    <div class="lane-body">
+      <article class="card">
+        <div class="card-head"><span class="ref">Duty controller</span><span class="tag">First call</span></div>
+        <p class="ttl">Extension 2214, radio channel 2</p>
+        <p class="meta">Continuous cover. Callouts, crew recalls, board queries, anything that
+        changes what a crew is working on.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="ref">Berth supervisor</span><span class="tag">First call</span></div>
+        <p class="ttl">Extension 2231, radio channel 5</p>
+        <p class="meta">Work on plant serving an occupied berth, and any request to hold or
+        release a berth. Approves a callout raised against a single work order.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="ref">Terminal manager</span><span class="tag">Second call</span></div>
+        <p class="ttl">Extension 2200</p>
+        <p class="meta">Weekdays 07:00 to 18:00. Anything that will delay a departure, close a
+        berth, or commit contractor spend.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="ref">Harbour master</span><span class="tag">Second call</span></div>
+        <p class="ttl">01632 960214</p>
+        <p class="meta">Navigation, tide window changes, and any movement of a closed berth's
+        reopening date. Called by the terminal manager, not from the cabin.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="ref">Out of hours desk</span><span class="tag">Night</span></div>
+        <p class="ttl">0808 157 0217</p>
+        <p class="meta">Between 22:00 and 06:00 when the duty controller is on the quay. Takes a
+        message and pages; it does not make operational decisions.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="ref">Dispatch systems</span><span class="tag">Console</span></div>
+        <p class="ttl">systems@coppermast-terminals.example</p>
+        <p class="meta">Faults in this console, a board that will not save, a status word that no
+        longer matches the operating instructions. Not an operational route, and not monitored
+        overnight.</p>
+      </article>
+    </div>
+  </section>
+
+  <div class="notes">
+    <h3>When to escalate</h3>
+    <p>Escalate as soon as a decision is above your authority, not once the delay has already
+    happened. Four situations always escalate: a fault that will hold a vessel past its departure
+    time, plant that cannot be isolated safely, a crew request that would leave a berth without
+    cover, and a work order nobody will accept.</p>
+    <h3>What to have ready</h3>
+    <p>Give the work order reference, the berth or gate, the tag it was raised with, and what you
+    have already tried. If the query is about the board, give the board revision from the last
+    save; without it the duty controller cannot tell which layout you are describing. Say plainly
+    whether the board has been saved since the change you are asking about.</p>
+    <h3>Callout</h3>
+    <p>A callout brings a fitter or electrician onto the terminal outside their roster. It is
+    arranged by the duty controller and needs the berth supervisor's approval when it is raised
+    against a single work order. Shared crews lent to another terminal are recalled for urgent
+    work only, at thirty minutes' notice, and the terminal they are leaving is told before the
+    crew is.</p>
+    <h3>After the shift</h3>
+    <p>Every escalation goes in the handover entry, with the time and the name of the person you
+    reached. An escalation that produced no answer is still recorded; the incoming supervisor
+    needs to know a call is outstanding.</p>
+  </div>
+</main>
+
+<footer>
+  <div class="flinks">
+    <a href="index.html">Shift triage</a>
+    <a href="berths.html">Berth register</a>
+    <a href="crews.html">Crew roster</a>
+    <a href="guide.html">Board guide</a>
+    <a href="statuses.html">Status reference</a>
+    <a href="handover.html">Handover log</a>
+  </div>
+  <p>&copy; 2026 Coppermast Terminals Limited. Registered in England, company 00000000.</p>
+  <address>Coppermast Terminals, Ravensgate Quay, Hollingport HP4 2LN &middot; dispatch@coppermast-terminals.example</address>
+</footer>
+</body>
+</html>

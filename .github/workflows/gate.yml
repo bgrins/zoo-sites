@@ -18,6 +18,13 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      # Runs before the browser install because it needs neither, and it fails in
+      # about a second on a dead link or a missing origin root. The gate's 91
+      # drivers only ever exercise single-origin mode, so nothing downstream of
+      # here would catch a link that resolves under site prefixes and 404s under
+      # the container's one-origin-per-port mounts.
+      - name: Fixture link and origin check
+        run: node scripts/check-fixtures.mjs
       - name: Install Firefox for the drivers
         run: npx playwright install --with-deps firefox
       # --jobs is pinned rather than left to default, which derives from the

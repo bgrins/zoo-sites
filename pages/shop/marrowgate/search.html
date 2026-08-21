@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Search results - Marrowgate</title>
+<link rel="stylesheet" href="marrowgate.css">
+<style>
+  .findnote { margin: 12px 22px 0; background: #fff; border: 1px solid var(--nb-rule); padding: 16px 18px; max-width: 860px; }
+  .findnote p { font-size: 13px; margin: 0 0 7px; }
+  .findnote p:last-child { margin: 0; }
+</style>
+</head>
+<body>
+<div class="locstrip">
+  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <a href="stores.html">Change store</a>
+  <a href="orderstatus.html">Order status</a>
+  <a href="recycling.html">Trade-in and recycling</a>
+</div>
+<header class="masthead">
+  <a class="wordmark" href="index.html">marrowgate</a>
+  <form class="finder" action="search.html" method="get">
+    <input id="finder" name="q" aria-label="Search Marrowgate" placeholder="What can we help you find today?">
+    <button type="submit">Search</button>
+  </form>
+  <div class="acct">
+    <a href="account.html">My Marrowgate</a>
+    <a href="promos.html">Offers</a>
+    <a href="basket.html">Basket</a>
+  </div>
+</header>
+<nav class="deptbar" aria-label="Departments">
+  <a href="departments.html#tv">TV &amp; Home Theater</a>
+  <a href="departments.html#computers">Computers &amp; Tablets</a>
+  <a href="index.html">Monitors</a>
+  <a href="departments.html#audio">Audio</a>
+  <a href="departments.html#smarthome">Smart Home</a>
+  <a href="departments.html#cameras">Cameras</a>
+  <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
+  <a href="departments.html#services">Services</a>
+</nav>
+<p class="crumbs">Home / Search results</p>
+<div class="pagehead"><h1>Search results</h1></div>
+<p class="tally" id="tally" role="status"></p>
+<div class="findnote" id="notice" hidden>
+  <p id="notice-text"></p>
+  <p><a href="index.html">Browse all monitors</a> or
+  <a href="departments.html">see every department</a>.</p>
+</div>
+<ol class="results" id="results"></ol>
+<div class="more"><p id="endnote"></p></div>
+<footer class="legal">
+  <ul>
+    <li><a href="basket-help.html">Basket help</a></li>
+    <li><a href="returns.html">Return policy</a></li>
+    <li><a href="price-match.html">Price match</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="stores.html">Store directory</a></li>
+  </ul>
+  Prices shown exclude tax. Online prices may differ from prices in store. Marrowgate
+  matches any advertised price from a qualifying local retailer within seven days of
+  purchase. &copy; 2026 Marrowgate Retail Group.
+</footer>
+<script src="marrowgate-feed.js"></script>
+<script>
+const MIN_TERM = 3;
+const RESOLUTION = {
+  '1080p': 'Full HD 1920 x 1080',
+  '1440p': 'Quad HD 2560 x 1440',
+  '4K': '4K Ultra HD 3840 x 2160',
+};
+
+const raw = new URLSearchParams(location.search).get('q') ?? '';
+const term = raw.trim();
+const results = document.getElementById('results');
+const tally = document.getElementById('tally');
+const notice = document.getElementById('notice');
+const endnote = document.getElementById('endnote');
+
+// setAttribute writes the value attribute without parsing markup, so the typed
+// term comes back into the box escaped.
+document.getElementById('finder').setAttribute('value', raw);
+
+function priceMarkup(price) {
+  const [whole, frac] = price.toFixed(2).split('.');
+  return (
+    '<span class="cur">$</span><span class="whole">' + whole +
+    '</span><span class="frac">' + frac + '</span>'
+  );
+}
+
+function productHref(item) {
+  return item.sku === '6428193' ? 'cs27-4k.html' : 'product.html?sku=' + item.sku;
+}
+
+function rowMarkup(item) {
+  const ready = item.availability === 'ships';
+  const hue = (item.title.length * 29 + item.title.charCodeAt(0) * 7) % 360;
+  return (
+    `<div class="shot">
+      <svg viewBox="0 0 132 74" role="img" aria-label="Product image, ${item.title}">
+        <rect width="132" height="74" fill="hsl(${hue},22%,93%)"/>
+        <rect x="14" y="6" width="104" height="54" rx="2" fill="#20242c"/>
+        <rect x="58" y="60" width="16" height="6" fill="#8a8f99"/>
+        <rect x="44" y="66" width="44" height="4" fill="#b3b8c2"/>
+      </svg>
+    </div>
+    <div class="info">
+      <h2 class="title"><a href="${productHref(item)}">${item.title}</a></h2>
+      <p class="attrs">SKU ${item.sku} &middot; ${item.screen}" diagonal &middot; ${
+        RESOLUTION[item.res]
+      } &middot; IPS</p>
+      <p class="stars"><span class="score">${item.rating} out of 5</span> (${item.reviews.toLocaleString()} customer reviews)</p>
+      <p class="fulfil${ready ? '' : ' none'}">${
+        ready
+          ? 'Ships free to your address &middot; Store pickup: check nearby stores'
+          : 'Not eligible for shipping or pickup'
+      }</p>
+    </div>
+    <div class="buybox">
+      <div class="pricetag">${priceMarkup(item.price)}</div>
+      <span class="sr">Price $${item.price.toFixed(2)} each</span>
+      <p class="avail ${ready ? 'ready' : 'gone'}">${ready ? 'Available to ship' : 'Sold out'}</p>
+      <a class="basket${ready ? '' : ' off'}" href="${productHref(item)}">View item</a>
+    </div>`
+  );
+}
+
+function showNotice(text) {
+  document.getElementById('notice-text').textContent = text;
+  notice.hidden = false;
+}
+
+if (term.length < MIN_TERM) {
+  tally.textContent = term ? 'Search term too short.' : 'No search term entered.';
+  showNotice(
+    'Type at least ' + MIN_TERM + ' characters into the search box above and choose ' +
+    'Search. Product names and SKU numbers both work.'
+  );
+} else {
+  const needle = term.toLowerCase();
+  const matches = MARROWGATE_FEED.filter(
+    (item) =>
+      item.title.toLowerCase().includes(needle) || item.sku.toLowerCase().includes(needle)
+  );
+  document.title = 'Search results for ' + term + ' - Marrowgate';
+  tally.textContent =
+    matches.length + ' result' + (matches.length === 1 ? '' : 's') + ' for "' + term + '"' +
+    (matches.length ? '. Prices and availability are for the Riverside store.' : '');
+  if (!matches.length) {
+    showNotice(
+      'Nothing in Monitors matches that term. Check the spelling, try a shorter ' +
+      'product name, or search by SKU number.'
+    );
+  } else {
+    for (const item of matches) {
+      const li = document.createElement('li');
+      li.className = 'row';
+      li.dataset.sku = item.sku;
+      li.innerHTML = rowMarkup(item);
+      results.appendChild(li);
+    }
+    endnote.textContent = 'End of results for "' + term + '".';
+  }
+}
+</script>
+</body>
+</html>

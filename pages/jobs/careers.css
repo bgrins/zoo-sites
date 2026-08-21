@@ -62,6 +62,23 @@ h1 { font-size: 30px; margin: 0 0 8px; font-weight: normal; }
 .blurb { font-size: 14px; color: #5b5346; margin: 6px 0 8px; }
 .ref { font-size: 12px; letter-spacing: 1px; color: #a09681; }
 #load-status { color: #8a8071; font-size: 14px; }
+.apply-form {
+  background: #fffdf8; border: 1px solid #e4dbc8; border-radius: 12px;
+  padding: 18px 20px; max-width: 520px;
+}
+.apply-form label {
+  display: block; font-size: 13px; letter-spacing: 0.6px; color: #6b6252;
+  margin: 14px 0 4px;
+}
+.apply-form label:first-child { margin-top: 0; }
+.apply-form input, .apply-form textarea {
+  width: 100%; font-family: inherit; font-size: 15px; color: #29241d;
+  background: #fbf7ee; border: 1px solid #d8cfb9; border-radius: 6px;
+  padding: 8px 10px;
+}
+.apply-form textarea { resize: vertical; }
+.apply-form input:focus, .apply-form textarea:focus { outline: 2px solid #0f7872; }
+.apply-form .btn { margin-top: 20px; border: 0; cursor: pointer; font-family: inherit; }
 footer {
   background: #29241d; color: #cfc6b4; font-size: 13px;
   padding: 22px 28px; text-align: center; line-height: 1.9;

@@ -140,9 +140,18 @@ export const ORIGINS = [
   { key: 'zellick', dir: 'flaky', domain: 'zellick.zoo', port: 8165 },
 ];
 
-// The compose label for the_zoo's proxy: every origin, comma-separated.
+// Origins that exist for the harness rather than as simulated sites. They stay
+// in ORIGINS because the suites address them through originUrls, but the_zoo
+// never routes to them: 'basic' is three widget pages the smoke suite drives, so
+// advertising it as a habitat domain would put a site with no fiction, and no
+// front door, in front of anything living in the zoo.
+export const NOT_ZOO_SITES = new Set(['basic']);
+
+// The compose label for the_zoo's proxy: every habitat origin, comma-separated.
 export function zooDomainsLabel() {
-  return ORIGINS.map((o) => `${o.domain}:${o.port}`).join(',');
+  return ORIGINS.filter((o) => !NOT_ZOO_SITES.has(o.key))
+    .map((o) => `${o.domain}:${o.port}`)
+    .join(',');
 }
 
 // The per-origin base URLs task asks interpolate. Single-origin mode (the

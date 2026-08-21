@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gadgetron | Search results</title>
+<link rel="stylesheet" href="gadgetron.css">
+<style>
+  .crumbline { background: #fff5e0; border-bottom: 1px solid #e8d49c; padding: 5px 14px; font-size: 12px; }
+  .findnote { border-left: 3px solid #ffb020; padding: 2px 0 2px 9px; margin: 0 0 12px; }
+  .findnote h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #626a7a; margin: 0 0 6px; }
+  .findnote p { font-size: 12px; margin: 0 0 4px; max-width: 82ch; }
+</style>
+</head>
+<body>
+<div class="railbar">
+  <span class="mark">Gadgetron</span>
+  <span class="tagline">Spec index and price engine</span>
+  <form action="search.html" method="get">
+    <input id="finder" name="q" aria-label="Search part numbers or models" placeholder="Model, brand or part no.">
+    <button type="submit">Find</button>
+  </form>
+  <span class="who">Guest &middot; <a href="signin.html">sign in</a> &middot;
+    <a href="order-list.html">order list</a></span>
+</div>
+<nav class="tabs" aria-label="Sections">
+  <a href="index.html">Catalog</a>
+  <a href="compare.html">Compare</a>
+  <a href="price-history.html">Price history</a>
+  <a href="open-box.html">Open-box</a>
+  <a href="glossary.html">Spec glossary</a>
+  <a href="bulk-quote.html">Bulk quote</a>
+</nav>
+<div class="crumbline">Catalog &rsaquo; Search results</div>
+<div class="layout">
+  <section class="sheet">
+    <div class="statline">
+      <h1>Search results</h1>
+      <span class="count" id="matched" role="status"></span>
+    </div>
+    <div class="findnote" id="notice" hidden>
+      <h2 id="notice-head"></h2>
+      <p id="notice-text"></p>
+      <p>The full index is on the <a href="index.html">catalog</a> page, where the
+      facets narrow by diagonal, resolution class, refresh and warehouse status.</p>
+    </div>
+    <table class="grid" id="grid" hidden>
+      <caption>Part numbers matching the search term. One row per stock keeping unit.</caption>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th class="num">Diag in</th>
+          <th>Native res</th>
+          <th>Class</th>
+          <th class="num">Rating</th>
+          <th>Stock</th>
+          <th class="num">Price USD</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="rowsnote" id="rowsnote"></p>
+  </section>
+</div>
+<footer class="legalstrip">
+  <a href="warehouse-policy.html#status">Warehouse status codes</a> &middot;
+  <a href="warehouse-policy.html#returns">Return window</a> &middot;
+  <a href="methodology.html">Price engine methodology</a> &middot;
+  <a href="seller-terms.html">Marketplace seller terms</a> &middot;
+  <a href="service-status.html">Service status history</a> &middot;
+  <a href="privacy.html">Privacy notice</a> &middot;
+  <a href="support.html">Support desk</a><br>
+  Listings are supplied by marketplace sellers; Gadgetron is not the seller of record for
+  marketplace items. Specifications are provided by the manufacturer. &copy; 2026 Gadgetron
+  Trading Co.
+</footer>
+<script src="gadgetron-data.js"></script>
+<script>
+const MIN_TERM = 3;
+const NATIVE = { '1080p': '1920x1080', '1440p': '2560x1440', '4K': '3840x2160' };
+const CLASS_LABEL = { '1080p': 'FHD', '1440p': 'QHD', '4K': 'UHD-4K' };
+const OK_ICON =
+  '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">' +
+  '<circle cx="8" cy="8" r="7" fill="#1d7a3c"/>' +
+  '<path d="M4.5 8.4 l2.2 2.2 l4.8 -5.2" fill="none" stroke="#fff" stroke-width="1.8"/></svg>';
+const NO_ICON =
+  '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">' +
+  '<circle cx="8" cy="8" r="7" fill="#b3202c"/>' +
+  '<path d="M5 5 l6 6 M11 5 l-6 6" fill="none" stroke="#fff" stroke-width="1.8"/></svg>';
+
+const esc = (s) =>
+  String(s).replace(/[&<>"]/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+const raw = new URLSearchParams(location.search).get('q') ?? '';
+const term = raw.trim();
+const matched = document.getElementById('matched');
+const notice = document.getElementById('notice');
+const rowsnote = document.getElementById('rowsnote');
+
+// setAttribute writes the value attribute without parsing markup, so the typed
+// term comes back into the box escaped.
+document.getElementById('finder').setAttribute('value', raw);
+
+function showNotice(head, text) {
+  document.getElementById('notice-head').textContent = head;
+  document.getElementById('notice-text').textContent = text;
+  notice.hidden = false;
+}
+
+if (term.length < MIN_TERM) {
+  matched.textContent = term ? 'term too short to search' : 'no term submitted';
+  showNotice(
+    term ? 'Search term too short' : 'No search term submitted',
+    'Enter at least ' + MIN_TERM + ' characters of a model or part number in the Find ' +
+    'box above, then submit it.'
+  );
+} else {
+  const needle = term.toLowerCase();
+  const hits = GADGETRON_ROWS.filter((row) => row.model.toLowerCase().includes(needle));
+  document.title = 'Gadgetron | Search results for ' + term;
+  matched.textContent =
+    hits.length + ' result' + (hits.length === 1 ? '' : 's') + ' for "' + term + '"';
+  if (!hits.length) {
+    showNotice(
+      'No part number matches',
+      'No model in the monitor spec index contains that text. Check the spelling, or ' +
+      'search on a shorter fragment of the part number.'
+    );
+  } else {
+    document.getElementById('rows').innerHTML = hits
+      .map(
+        (row) =>
+          '<tr>' +
+          '<td class="model">' + esc(row.model) + '</td>' +
+          '<td class="num">' + row.diag + '</td>' +
+          '<td class="mono">' + NATIVE[row.res] + '</td>' +
+          '<td>' + CLASS_LABEL[row.res] + '</td>' +
+          '<td class="num">' + row.rating.toFixed(1) + '</td>' +
+          '<td class="stock">' + (row.stock === 'y' ? OK_ICON : NO_ICON) +
+          '<span class="offscreen">' +
+          (row.stock === 'y' ? 'In stock' : 'Sold out online') + '</span></td>' +
+          '<td class="price">' + row.price.toFixed(2) + '</td>' +
+          '</tr>'
+      )
+      .join('');
+    document.getElementById('grid').hidden = false;
+    rowsnote.textContent =
+      'Rows 1-' + hits.length + ' of ' + GADGETRON_ROWS.length + ' indexed SKUs. Prices ' +
+      'are per unit in USD, excluding tax and recycling levy.';
+  }
+}
+</script>
+</body>
+</html>

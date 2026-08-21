@@ -79,8 +79,8 @@ Each of these binds every fixture and every validator, without exception.
    wording, table vs card vs list presentation, and the terminology of common
    actions. A municipal site, a 2004 intranet, a SaaS console and a discount retailer
    should look nothing alike.
-   ALREADY CLAIMED — pick something different: Georgia/serif + sage green
-   (`pages/forms/kestrel/brochure.html`), Helvetica/Arial + slate blue (`biglist`,
+   ALREADY CLAIMED — pick something different: Optima + Avenir Next Condensed
+   caps, cream and rust (`pages/forms/kestrel/`), Helvetica/Arial + slate blue (`biglist`,
    `ledger`), Segoe UI + cool grey (`filemgr`, `shadow`, `bank`), Verdana + orange
    (`news/`), legacy HTML 4.01 tables + `<font>` (`gov/`), marketplace yellow
    (`shop/voltro`).

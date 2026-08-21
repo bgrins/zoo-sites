@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security and data handling &middot; Kettleforge</title>
+<link rel="stylesheet" href="forge.css">
+</head>
+<body>
+<header class="masthead">
+  <span class="mark">Kettle<em>forge</em></span>
+  <nav>
+    <a href="/forge/">Repositories</a>
+    <a href="/forge/pulls/">Pull requests</a>
+    <a href="/forge/">Anvil</a>
+    <a href="/forge/">Registry</a>
+  </nav>
+  <span class="who">signed in as <b>r.vandermolen</b></span>
+</header>
+
+<main class="wrap">
+  <div class="prhead">
+    <h1>Security and data handling</h1>
+    <div class="prmeta">
+      <span>How your code is stored, who inside Bellhollow can reach it, and how to report a
+      weakness</span>
+    </div>
+  </div>
+
+  <nav class="subtabs">
+    <a href="/forge/about.html">About</a>
+    <a href="/forge/plans.html">Plans</a>
+    <span class="here">Security</span>
+  </nav>
+
+  <div class="cols">
+    <div class="main">
+      <div class="card">
+        <div class="cardhead">Where your repositories live</div>
+        <div class="body">
+          <p>Repository data is held in two leased facilities in the same country, one primary and
+          one standby, and never leaves that country. Volumes are encrypted at rest, transport is
+          TLS only, and plain HTTP is refused rather than redirected. Backups are taken hourly,
+          kept for thirty-five days, and restored into an isolated environment once a quarter so
+          that a restore is something we have practised rather than something we believe in.</p>
+          <p>Pipeline runners are the exception worth knowing about. A hosted runner is a fresh
+          container that is destroyed when the job ends, and the workspace it built in is
+          destroyed with it, but a job you wrote can send anything it can read to anywhere it can
+          reach. Treat a pipeline definition as production access, and prefer a self-hosted runner
+          for work that must stay on your own network.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">Who can reach your code</div>
+        <div class="body">
+          <p>Inside your organisation, access follows the repository's own permissions. A private
+          repository is invisible to accounts that have not been granted it, an internal
+          repository is readable by every member of the organisation, and a public repository is
+          readable by anyone. A pull request inherits the visibility of the repository it targets,
+          and so does its job log, which is why we advise against printing secrets into build
+          output.</p>
+          <p>Inside Bellhollow, no engineer has standing access to customer repository contents.
+          Access is granted per incident, against a support conversation you opened, for a
+          maximum of eight hours, and it is recorded in your organisation's audit log where you
+          can read it. Nobody at Bellhollow can grant themselves that access silently, and we do
+          not use customer code to train anything.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">Account security</div>
+        <div class="body">
+          <p>Two-factor authentication is available on every plan and can be required across an
+          organisation from its settings. Passwords are hashed with a memory-hard function and
+          checked against a list of known-breached credentials at the moment they are set. Access
+          tokens are scoped, expire on a date you choose, and are shown once; a token seen in a
+          public repository is revoked automatically and the owner is told which repository it
+          appeared in.</p>
+          <p>Sessions can be listed and ended individually. Changing a password ends every other
+          session, and directory sync on Foundry removes access within minutes of an account
+          being disabled upstream.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">Reporting a weakness</div>
+        <div class="body">
+          <p>Send anything you find to security@kettleforge.example. We acknowledge a report
+          within one working day, tell you what we have reproduced within five, and keep you
+          informed until it is fixed. We will credit you when we publish the fix unless you ask us
+          not to. We do not run a paid bounty, and we will not pursue anyone who reports in good
+          faith, stays within their own organisation's data, and gives us time to fix the problem
+          before describing it publicly.</p>
+          <p>Automated scanning of the platform is fine against an organisation you own. Denial of
+          service testing, social engineering of our staff, and anything that touches another
+          customer's data are not.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <div class="cardhead">Summary</div>
+        <div class="body">
+          <dl>
+            <dt>Data residency</dt>
+            <dd>single country</dd>
+            <dt>Encryption</dt>
+            <dd>at rest and in transit</dd>
+            <dt>Backup retention</dt>
+            <dd>35 days</dd>
+            <dt>Restore drill</dt>
+            <dd>quarterly</dd>
+            <dt>Staff access</dt>
+            <dd>per incident, 8 hours</dd>
+            <dt>Audit log</dt>
+            <dd>Workshop and above</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="card">
+        <div class="cardhead">Contact</div>
+        <div class="body">
+          <p>security@kettleforge.example</p>
+          <p>0808 157 0198</p>
+          <p>14 Cranmoor Wharf, Ashcombe AS4 2QN</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="sitefoot">
+  <div class="links">
+    <a href="/forge/">Status</a>
+    <a href="/forge/">Docs</a>
+    <a href="/forge/">Keyboard shortcuts</a>
+    <a href="/forge/">Privacy</a>
+    <a href="/forge/">Terms</a>
+    <a href="/forge/">Contact support</a>
+    <a href="/forge/about.html">About</a>
+    <a href="/forge/plans.html">Plans</a>
+    <a href="/forge/security.html">Security</a>
+  </div>
+  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Ashcombe AS4 2QN. &copy; 2026 Bellhollow Systems Ltd.</div>
+</footer>
+</body>
+</html>

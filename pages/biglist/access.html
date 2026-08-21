@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>People Hub — Access and roles — Quennell Group</title>
+<link rel="stylesheet" href="directory.css">
+<style>
+.roles {
+  margin: 0 34px 22px;
+  max-width: 900px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(58, 34, 69, 0.05);
+}
+.role {
+  padding: 15px 20px;
+  border-bottom: 1px solid #f1eaf4;
+}
+.role:last-child { border-bottom: 0; }
+.role h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: var(--plum);
+}
+.role p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 70ch;
+}
+.role .granted {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--plum-soft);
+  background: #f7f1fa;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.prose {
+  margin: 0 34px 22px;
+  max-width: 900px;
+}
+.prose h2 {
+  margin: 22px 0 6px;
+  font-size: 16px;
+  color: var(--plum);
+}
+.prose p, .prose li {
+  font-size: 13px;
+  color: var(--ink);
+  max-width: 72ch;
+}
+.prose p { margin: 0 0 10px; }
+.prose ul { margin: 0 0 10px; padding-left: 22px; }
+.prose li { margin-bottom: 5px; }
+.callout {
+  margin: 0 34px 20px;
+  max-width: 900px;
+  background: #f7f1fa;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--amber);
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 13px;
+}
+</style>
+</head>
+<body class="shell">
+<aside class="rail">
+  <div class="mark">Quennell</div>
+  <div class="group">People Hub 4.2</div>
+  <nav>
+    <a href="/biglist/overview.html">Overview</a>
+    <a href="/biglist/">Directory</a>
+    <a href="/biglist/teams.html">Teams</a>
+    <a href="/biglist/onboarding.html">Onboarding</a>
+    <a href="/biglist/badge-records.html">Badge records</a>
+  </nav>
+  <div class="group">Reference</div>
+  <nav>
+    <a href="/biglist/data-standards.html">Data standards</a>
+    <a href="/biglist/access.html" class="on">Access and roles</a>
+    <a href="/biglist/release-notes.html">Release notes</a>
+  </nav>
+  <p class="rail-foot">Directory service: connected</p>
+</aside>
+<div class="pane">
+  <div class="topbar">
+    <span class="crumbs">Workspace / People / Access and roles</span>
+    <span class="who">S. Okonkwo, HR Operations</span>
+  </div>
+  <h1>Access and roles</h1>
+  <p class="lede">Everyone at the group can read the directory. Everything beyond reading
+  it depends on the role you hold in People Hub, and roles are granted for a job of work
+  rather than by seniority.</p>
+  <div class="callout">A role never widens what a directory entry shows. The four fields
+  described under <a href="/biglist/data-standards.html">data standards</a> are the whole
+  of what any role can see there.</div>
+  <div class="roles">
+    <div class="role">
+      <h2>Colleague</h2>
+      <p>Every employee, from day one. Reads the directory, the teams page and the
+      published policies, and raises corrections to their own entry.</p>
+      <span class="granted">Automatic on joining</span>
+    </div>
+    <div class="role">
+      <h2>Manager</h2>
+      <p>Adds the onboarding checklist for their own reports, and may ask for a copy of a
+      report's badge record where there is a documented reason.</p>
+      <span class="granted">Set by the reporting line</span>
+    </div>
+    <div class="role">
+      <h2>Badge office</h2>
+      <p>Issues, reissues and deactivates badges, and amends the badge field on a record.
+      Holds no view of employment terms.</p>
+      <span class="granted">Facilities</span>
+    </div>
+    <div class="role">
+      <h2>People Operations</h2>
+      <p>Amends name and department on the record, administers onboarding across the
+      group, and runs the quarterly quality sample.</p>
+      <span class="granted">HR Operations</span>
+    </div>
+    <div class="role">
+      <h2>Hub administrator</h2>
+      <p>Configures People Hub itself: the modules on the overview, the request queue
+      categories, and the schedule of the overnight refresh.</p>
+      <span class="granted">Technology, on request from HR</span>
+    </div>
+  </div>
+  <div class="prose">
+    <h2>Asking for a role</h2>
+    <p>Raise a request in the workspace queue under "People / Hub access", naming the role
+    and the work it is for. Your manager confirms the need and the granting team decides.
+    Manager access follows the reporting line automatically and does not need requesting;
+    if it is missing, the reporting line on the record is wrong and that is the thing to
+    fix.</p>
+    <h2>Looking at someone else's record</h2>
+    <ul>
+      <li>A manager may see the badge record of a direct report, with a reason recorded.</li>
+      <li>Facilities may see any badge record where physical security requires it.</li>
+      <li>Nobody may see another person's record out of curiosity, and every such view is
+        logged against the account that made it.</li>
+    </ul>
+    <h2>Review</h2>
+    <p>Granted roles are reviewed twice a year alongside the departmental structure
+    review. A role that has not been used in six months is withdrawn and can be requested
+    again. Leavers lose every role on their final working day through the joiners and
+    leavers process, which runs ahead of the overnight refresh so that a leaver never
+    appears in the directory the morning after.</p>
+    <h2>Where to raise a problem</h2>
+    <p>Access questions go to HR Operations through the request queue. Where the queue
+    itself is unavailable, the people team can be reached on 01632 960118, and the badge
+    office on 01632 960142.</p>
+  </div>
+  <p class="fine">Quennell Group internal directory &middot; role definitions maintained by
+  HR Operations with Technology. See also
+  <a href="/biglist/data-standards.html">data standards</a> and
+  <a href="/biglist/release-notes.html">release notes</a>.</p>
+</div>
+</body>
+</html>

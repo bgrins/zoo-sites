@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>People Hub — Data standards — Quennell Group</title>
+<link rel="stylesheet" href="directory.css">
+<style>
+.fields {
+  margin: 0 34px 22px;
+  max-width: 900px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(58, 34, 69, 0.05);
+}
+.field {
+  padding: 15px 20px;
+  border-bottom: 1px solid #f1eaf4;
+}
+.field:last-child { border-bottom: 0; }
+.field h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: var(--plum);
+}
+.field p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 70ch;
+}
+.field .owner {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--plum-soft);
+  background: #f7f1fa;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.prose {
+  margin: 0 34px 22px;
+  max-width: 900px;
+}
+.prose h2 {
+  margin: 22px 0 6px;
+  font-size: 16px;
+  color: var(--plum);
+}
+.prose p, .prose li {
+  font-size: 13px;
+  color: var(--ink);
+  max-width: 72ch;
+}
+.prose p { margin: 0 0 10px; }
+.prose ol { margin: 0 0 10px; padding-left: 22px; }
+.prose li { margin-bottom: 5px; }
+.callout {
+  margin: 0 34px 20px;
+  max-width: 900px;
+  background: #f7f1fa;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--amber);
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 13px;
+}
+</style>
+</head>
+<body class="shell">
+<aside class="rail">
+  <div class="mark">Quennell</div>
+  <div class="group">People Hub 4.2</div>
+  <nav>
+    <a href="/biglist/overview.html">Overview</a>
+    <a href="/biglist/">Directory</a>
+    <a href="/biglist/teams.html">Teams</a>
+    <a href="/biglist/onboarding.html">Onboarding</a>
+    <a href="/biglist/badge-records.html">Badge records</a>
+  </nav>
+  <div class="group">Reference</div>
+  <nav>
+    <a href="/biglist/data-standards.html" class="on">Data standards</a>
+    <a href="/biglist/access.html">Access and roles</a>
+    <a href="/biglist/release-notes.html">Release notes</a>
+  </nav>
+  <p class="rail-foot">Directory service: connected</p>
+</aside>
+<div class="pane">
+  <div class="topbar">
+    <span class="crumbs">Workspace / People / Data standards</span>
+    <span class="who">S. Okonkwo, HR Operations</span>
+  </div>
+  <h1>Data standards</h1>
+  <p class="lede">What each field on a directory entry means, who owns it, and how a
+  correction gets made. These standards are what the nightly HR sync writes against, so a
+  value that does not meet them is what an operator sees the next morning.</p>
+  <div class="callout">One rule governs the rest: the HR record is authoritative and
+  People Hub is a view of it. Correcting the view without correcting the record lasts
+  until the next overnight refresh and no longer.</div>
+  <div class="fields">
+    <div class="field">
+      <h2>Name</h2>
+      <p>The name the person is known by at work, written as given name then family name,
+      in the case they use themselves. No titles, no qualifications, no nicknames in
+      brackets. A change of name needs a record change, not a directory edit.</p>
+      <span class="owner">People Operations</span>
+    </div>
+    <div class="field">
+      <h2>Badge</h2>
+      <p>A two-letter prefix set by the issuing badge office, a hyphen, then the serial.
+      One badge number belongs to one person for the whole of their employment; a reissue
+      keeps the number and adds a line to the reissue history.</p>
+      <span class="owner">Facilities, badge office</span>
+    </div>
+    <div class="field">
+      <h2>Department</h2>
+      <p>The department on the employment record, which is not always the team a person
+      sits with day to day. Secondments keep the home department until the secondment is
+      made permanent.</p>
+      <span class="owner">People Operations</span>
+    </div>
+    <div class="field">
+      <h2>Floor</h2>
+      <p>The floor of the person's home site, allocated with their desk or locker. Field
+      staff and permanently remote colleagues carry the floor of the site that holds their
+      post and their equipment.</p>
+      <span class="owner">Facilities</span>
+    </div>
+  </div>
+  <div class="prose">
+    <h2>Order of the directory</h2>
+    <p>The directory is ordered by hire record and by nothing else. That order is stable,
+    which is what lets the service stream the roster in batches rather than assembling all
+    of it before showing anything. It is not alphabetical and it is not grouped by
+    department, so position in the list carries no meaning beyond seniority of joining.</p>
+    <h2>Making a correction</h2>
+    <ol>
+      <li>Check the field's owner above. A correction goes to the owner, not to HR
+        Operations by default.</li>
+      <li>Raise it in the workspace request queue under "People / Directory correction",
+        quoting the badge number of the entry.</li>
+      <li>The owner amends the record. The change appears in People Hub after the next
+        overnight refresh, not immediately.</li>
+      <li>Where the correction affects a badge, the badge office reissues before the
+        record is amended, so that the two never disagree.</li>
+    </ol>
+    <h2>What the directory does not hold</h2>
+    <p>No salary, no contract terms, no home address, no emergency contact, no
+    door-access history. Those live in systems with their own access rules, and a request
+    for any of them through the directory queue is closed with a pointer rather than
+    answered.</p>
+    <h2>Quality reporting</h2>
+    <p>People Operations samples the roster each quarter and reports the count of entries
+    failing any standard above, by field and by owning department, to the group people
+    committee. The report names departments, never individuals.</p>
+  </div>
+  <p class="fine">Quennell Group internal directory &middot; standards maintained by HR
+  Operations and reviewed each January. See also
+  <a href="/biglist/access.html">access and roles</a> and
+  <a href="/biglist/release-notes.html">release notes</a>.</p>
+</div>
+</body>
+</html>

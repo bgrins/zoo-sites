@@ -1,0 +1,47 @@
+html { background: #d9d3c4; }
+body { font-family: "Palatino Linotype", Palatino, "Book Antiqua", "URW Palladio L", serif;
+  color: #241f1a; margin: 0; font-size: 15px; line-height: 1.45; }
+.strip { background: #4d1f27; color: #e8d9cf; font-size: 10px; letter-spacing: 0.2em;
+  text-transform: uppercase; padding: 5px 0; }
+.strip .inner, .sheet { max-width: 720px; margin: 0 auto; }
+.strip .inner { display: flex; justify-content: space-between; padding: 0 40px; }
+.sheet { background: #fdfbf5; border: 1px solid #c9c0ac; border-top: 0;
+  box-shadow: 0 2px 6px rgba(60, 48, 36, 0.18); padding: 30px 40px 34px; }
+.masthead { display: flex; align-items: baseline; justify-content: space-between; }
+.masthead .org { font-size: 21px; letter-spacing: 0.09em; text-transform: uppercase; }
+.masthead .folio { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #6b5f52; }
+.rule { border-bottom: 3px solid #4d1f27; margin-top: 7px; }
+.rule-thin { border-bottom: 1px solid #4d1f27; margin-top: 2px; margin-bottom: 18px; }
+h1 { font-size: 17px; font-weight: normal; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 10px; }
+h2 { font-size: 12px; font-weight: normal; letter-spacing: 0.15em; text-transform: uppercase;
+  color: #4d1f27; margin: 22px 0 6px; border-bottom: 1px solid #ddd3bf; padding-bottom: 3px; }
+p { margin: 0 0 11px; }
+dl.facts { display: grid; grid-template-columns: 8em 1fr; gap: 2px 14px; margin: 0 0 16px;
+  font-size: 13px; }
+dl.facts dt { color: #6b5f52; font-size: 11px; letter-spacing: 0.11em; text-transform: uppercase;
+  padding-top: 2px; }
+dl.facts dd { margin: 0; }
+.note { font-size: 13px; font-style: italic; color: #55483c; margin: 0 0 16px; }
+.deck { display: flex; gap: 18px; border-top: 1px solid #ddd3bf; border-bottom: 1px solid #ddd3bf;
+  padding: 9px 0; margin-bottom: 20px; font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; }
+.deck a { color: #4d1f27; text-decoration: none; border-bottom: 1px solid #c4a8ac; }
+.deck a:hover { border-bottom-color: #4d1f27; }
+.deck .here { color: #6b5f52; }
+dl.gloss { margin: 0 0 14px; font-size: 14px; }
+dl.gloss dt { font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; color: #4d1f27;
+  margin-top: 10px; }
+dl.gloss dd { margin: 1px 0 0; }
+ol.steps, ul.plain { margin: 0 0 12px; padding-left: 22px; font-size: 14px; }
+ol.steps li, ul.plain li { margin-bottom: 5px; }
+a { color: #4d1f27; }
+.seealso { text-align: center; margin: 24px 0 4px; font-size: 12px; letter-spacing: 0.06em; }
+.seealso a { text-decoration: none; border-bottom: 1px solid #c4a8ac; padding: 2px 6px; }
+.seealso a:hover { border-bottom-color: #4d1f27; }
+footer { border-top: 1px solid #ddd3bf; margin-top: 24px; padding-top: 10px; font-size: 11px;
+  line-height: 1.5; color: #74695c; }
+@media print {
+  html, .sheet { background: #fff; }
+  .strip, .deck, .seealso { display: none; }
+  .sheet { border: 0; box-shadow: none; max-width: none; padding: 0; }
+}

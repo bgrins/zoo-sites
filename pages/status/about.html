@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About this page - Nimbrel Edge status</title>
+<link rel="stylesheet" href="status.css">
+</head>
+<body>
+<header class="mast">
+  <div class="mast-inner">
+    <span class="mark">Nimbrel <b>Edge</b></span>
+    <nav>
+      <a href="index.html">Status</a>
+      <a href="history.html">Incident history</a>
+    </nav>
+    <span class="tz">All times UTC</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel">
+    <h1>About this page</h1>
+    <p class="panel-sub">What this page covers, where its numbers come from, and who updates it
+    during an incident.</p>
+  </section>
+
+  <section class="panel">
+    <h2>What this page reports</h2>
+    <p>This page reports the health of the five Nimbrel Edge components a customer can observe
+    directly: edge delivery, the relay mesh, the API gateway, the control panel, and log
+    streaming. Each component is scored by the synthetic probes that run against it from
+    twenty-two vantage points, once a minute, over the same public routes customer traffic
+    takes. A component moves off Operational when probes from at least three vantage points
+    agree that its service objective is being missed, which keeps a single unhappy vantage
+    point from raising a platform-wide alarm.</p>
+    <p>Anything outside those five components is out of scope here. Billing, the partner
+    portal, and the marketing site have their own owners and are not scored on this page, so a
+    fault in one of them can leave every component here green. Individual customer accounts are
+    also out of scope: a limit reached on your own account is not a platform incident, and the
+    control panel is the place to see it.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Who updates it</h2>
+    <p>The network operations centre owns this page and staffs it continuously. The engineer
+    holding the incident opens the record, writes every update on it, and closes it; nothing on
+    this page is written by an automated summariser, which is why an update can lag detection by
+    a few minutes and why the wording changes between updates as understanding improves.</p>
+    <p>Our commitment during an incident is an opening note within fifteen minutes of the
+    component changing state, and an update at least every thirty minutes after that until the
+    incident is resolved. A resolved incident stays on the page. We do not delete incident
+    records, and we do not edit an earlier update once it has been published; a correction
+    arrives as a new update that says what the earlier one got wrong.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Relay path checks</h2>
+    <p>The relay path check on the status page is a different instrument from the component
+    scores. It runs from your network rather than from our vantage points, so it can report a
+    congested path while the mesh is scored Operational everywhere else. Each check is assigned
+    a probe code that identifies it in our logs for seven days. Quoting that code to support
+    saves an engineer from asking you to reproduce the problem.</p>
+    <p>The check is read-only and adds no measurable load. It does not feed the trailing uptime
+    figures, and running it repeatedly will not change them.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Reaching a person</h2>
+    <p>If what you are seeing does not match this page, tell us rather than waiting for it to
+    catch up. Write to the network operations centre with the affected component, the region you
+    are served from, and a probe code if you have one. Customers on a support plan with
+    telephone escalation can reach the centre on (555) 0148 at any hour.</p>
+    <p class="more"><a href="subscribe.html">Subscribe to updates</a> to be told when a
+    component changes state, or read the <a href="definitions.html">status definitions</a> for
+    what each state commits us to.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <div class="flinks">
+      <a href="index.html">Status</a>
+      <a href="history.html">Incident history</a>
+      <a href="about.html">About this page</a>
+      <a href="subscribe.html">Subscribe to updates</a>
+      <a href="definitions.html">Status definitions</a>
+    </div>
+    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay.</p>
+    <p>Network operations centre: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
+  </div>
+</footer>
+</body>
+</html>

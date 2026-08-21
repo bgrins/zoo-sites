@@ -36,6 +36,7 @@ import { detectScreen, windowGrid } from './window-grid.mjs';
 import { startPagesServer } from '../server.mjs';
 import { conforms, extractFields } from './extract.mjs';
 import { DRIVERS } from './verify-drivers/index.mjs';
+import { checkFixtures } from '../scripts/check-fixtures.mjs';
 
 const args = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -183,6 +184,20 @@ function assertFixtureMediaMuted() {
 }
 
 assertFixtureMediaMuted();
+
+// The 91 drivers below only ever drive single-origin mode, so a link that
+// resolves under site prefixes and 404s under the container's one-origin-per-port
+// mounts passes every one of them. This is the only check that sees both.
+function assertFixturesResolve() {
+  const problems = checkFixtures();
+  if (problems.length) {
+    console.error('fixture check failed (see scripts/check-fixtures.mjs):');
+    for (const p of problems) console.error(`  ${p}`);
+    process.exit(1);
+  }
+}
+
+assertFixturesResolve();
 
 // One isolated worker env: pages server + one firefox-devtools-mcp server
 // over stdio. The server is a child process (see mcp-stdio.mjs), so a worker

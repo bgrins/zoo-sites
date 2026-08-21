@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kestrel Peak Trailers — Accessibility</title>
+<style>
+  :root {
+    --char: #17140f;
+    --cream: #f6f1e7;
+    --sand: #cfc3ae;
+    --rust: #9c4a2f;
+    --stone: #7a7266;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--cream); color: var(--char);
+    font-family: Optima, Candara, "Noto Sans", "Segoe UI", sans-serif;
+    font-size: 16px; line-height: 1.55;
+  }
+  h1, h2, h3, .kicker, nav a {
+    font-family: "Avenir Next Condensed", "Arial Narrow", "Liberation Sans Narrow", sans-serif;
+  }
+  nav.top {
+    position: sticky; top: 0; z-index: 6;
+    background: rgba(23, 20, 15, 0.94); color: var(--cream);
+    display: flex; align-items: center; gap: 24px; padding: 12px 34px;
+  }
+  nav.top .word {
+    font-family: "Avenir Next Condensed", "Arial Narrow", sans-serif;
+    text-transform: uppercase; letter-spacing: 4px; font-size: 17px; font-weight: 600;
+  }
+  nav.top a {
+    color: var(--sand); text-decoration: none; text-transform: uppercase;
+    letter-spacing: 2px; font-size: 12px;
+  }
+  nav.top a:hover, nav.top a.on { color: #fff; }
+  nav.top .tel { margin-left: auto; font-size: 12px; letter-spacing: 1.5px; color: var(--sand); }
+  .hero {
+    position: relative; min-height: 240px; display: flex; align-items: flex-end;
+    padding: 0 34px 36px; color: #fff; overflow: hidden;
+    background: linear-gradient(180deg, #2c3a4a 0%, #5b6472 42%, #8a7a68 74%, #b09a80 100%);
+  }
+  .hero .ridge {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 130px; background: #22271f;
+    clip-path: polygon(0 70%, 10% 52%, 22% 68%, 34% 44%, 48% 62%, 60% 46%, 74% 66%, 86% 50%, 100% 68%, 100% 100%, 0 100%);
+  }
+  .hero .copy { position: relative; }
+  .kicker { text-transform: uppercase; letter-spacing: 4px; font-size: 11px; color: var(--sand); margin: 0 0 8px; }
+  .hero h1 { margin: 0; font-size: 44px; line-height: 0.96; font-weight: 600; text-transform: uppercase; }
+  .strip {
+    background: var(--char); color: var(--sand);
+    display: flex; flex-wrap: wrap; gap: 6px 44px; padding: 14px 34px;
+    text-transform: uppercase; letter-spacing: 2px; font-size: 11px;
+  }
+  .layout { max-width: 1040px; margin: 0 auto; padding: 46px 34px 70px; }
+  .layout > p.lede { max-width: 62ch; margin: 0 0 34px; font-size: 17px; }
+  .card { background: #fff; border-top: 4px solid var(--rust); padding: 22px 26px; margin: 0 0 22px; }
+  .card h2 { margin: 0 0 10px; font-size: 24px; text-transform: uppercase; letter-spacing: -0.3px; }
+  .card p { margin: 0 0 10px; font-size: 15px; }
+  .card p:last-child { margin-bottom: 0; }
+  .card ul { margin: 0; padding-left: 20px; font-size: 15px; }
+  .card li { margin: 0 0 6px; }
+  .card a { color: var(--rust); }
+  .specs { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--sand); }
+  .specs li {
+    display: flex; justify-content: space-between; gap: 20px;
+    padding: 9px 0; border-bottom: 1px solid var(--sand); font-size: 14px;
+  }
+  .specs li span:first-child { text-transform: uppercase; letter-spacing: 1.6px; font-size: 11px; color: var(--stone); }
+  footer { background: var(--char); color: var(--sand); padding: 30px 34px; font-size: 12.5px; }
+  footer .cols { display: flex; flex-wrap: wrap; gap: 6px 40px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; }
+</style>
+</head>
+<body>
+<nav class="top">
+  <span class="word">Kestrel Peak</span>
+  <a href="models.html">Models</a>
+  <a href="build.html">Build yours</a>
+  <a href="owners.html">Owners</a>
+  <a href="dealers.html">Dealers</a>
+  <a href="brochure.html">Brochure</a>
+  <span class="tel">541-555-0142</span>
+</nav>
+
+<header class="hero">
+  <div class="ridge"></div>
+  <div class="copy">
+    <p class="kicker">The showroom, the trailers and this site</p>
+    <h1>Accessibility</h1>
+  </div>
+</header>
+
+<div class="strip">
+  <span>Aluminium monocoque</span>
+  <span>Three chassis lengths</span>
+  <span>Six-year frame warranty</span>
+  <span>Made in Oregon</span>
+</div>
+
+<div class="layout">
+  <p class="lede">A small shop can change more than a large one. Tell us what you need
+  before a visit or before a build, and we will work out how to do it rather than
+  explaining why we cannot.</p>
+
+  <section class="card">
+    <h2>Visiting the showroom</h2>
+    <p>Building C sits on one level. The visitor entrance off Switchback Road has a
+    ramped approach with a handrail on the right, a level threshold, and a door that a
+    staff member will hold open on request. Two marked accessible spaces sit nearest that
+    door, and the gravel apron is compacted rather than loose.</p>
+    <p>The washroom is on the ground floor with a turning circle and grab rails. Seating
+    is available in the showroom and in the yard, and there is no step between the two.</p>
+    <p>The service bay is a working floor with air lines, cables and open trenches. Come
+    in with a staff member rather than alone, and ask for a bay walk-through to be
+    scheduled outside the busiest hours.</p>
+  </section>
+
+  <section class="card">
+    <h2>Getting into a trailer</h2>
+    <p>All three chassis are compact by design, and the standard step-in height is high
+    enough to matter to some owners. These are the numbers we are asked for most often.</p>
+    <ul class="specs">
+      <li><span>Cabin door width</span><span>24 in on all three chassis</span></li>
+      <li><span>Step-in height, standard</span><span>21 in from level ground</span></li>
+      <li><span>Step-in height, lowered axle</span><span>17 in from level ground</span></li>
+      <li><span>Galley counter height</span><span>34 in, or 30 in on request</span></li>
+      <li><span>Cabin sitting headroom</span><span>Full sitting height on all three</span></li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>What a build can change</h2>
+    <ul>
+      <li>A lowered axle and a wider fold-out step, ordered together, drop the step-in
+      height and give it a handhold.</li>
+      <li>Grab handles inside the cabin door and beside the galley hatch, positioned on
+      the side you actually use.</li>
+      <li>A galley counter cut lower than standard, with the burner slide set back so it
+      can be reached seated.</li>
+      <li>Latches and catches specified for one-handed operation throughout, in place of
+      the standard twin-catch hatch hardware.</li>
+      <li>Panel switches with raised markings, and a cabin light circuit that can be
+      switched from the bed rather than the door.</li>
+      <li>Hand-control hitch handles that need no downward push to lock.</li>
+    </ul>
+    <p>None of these carry a charge on a new build, because they are specification choices
+    rather than additions. Some can be retrofitted; call the shop with your VIN and we will
+    say which.</p>
+  </section>
+
+  <section class="card">
+    <h2>This site and our paperwork</h2>
+    <p>Pages here are built to work at any text size, from the keyboard alone, and with a
+    screen reader. Colour is never the only way a status or a required field is marked, and
+    nothing on the site moves or plays on its own.</p>
+    <p>The brochure, price sheet and owner's manual are all available as large-print or
+    plain-text copies, and a specialist will read a spec sheet through over the phone if
+    that is easier than reading it on a screen. If something here gets in your way, write
+    to <a href="contact.html">the shop</a> and describe what happened; we would rather fix
+    the page than send a workaround.</p>
+  </section>
+</div>
+
+<footer>
+  <div class="cols">
+    <span>Showroom open Tue–Sat</span>
+    <span>1180 Switchback Rd, Bldg C</span>
+    <span>541-555-0142</span>
+  </div>
+  © 2026 Kestrel Peak Trailers, Inc. ·
+  <a href="parts.html" style="color:var(--sand)">Service and parts</a> ·
+  <a href="accessibility.html" style="color:var(--sand)">Accessibility</a> ·
+  <a href="contact.html" style="color:var(--sand)">Contact</a>
+</footer>
+</body>
+</html>

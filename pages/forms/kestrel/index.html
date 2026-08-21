@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kestrel Peak Trailers — Handbuilt Teardrop and Off-Road Trailers</title>
+<style>
+  :root {
+    --char: #17140f;
+    --cream: #f6f1e7;
+    --sand: #cfc3ae;
+    --rust: #9c4a2f;
+    --stone: #7a7266;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--cream); color: var(--char);
+    font-family: Optima, Candara, "Noto Sans", "Segoe UI", sans-serif;
+    font-size: 16px; line-height: 1.55;
+  }
+  h1, h2, h3, .kicker, nav a, .cta {
+    font-family: "Avenir Next Condensed", "Arial Narrow", "Liberation Sans Narrow", sans-serif;
+  }
+  nav.top {
+    position: sticky; top: 0; z-index: 6;
+    background: rgba(23, 20, 15, 0.94); color: var(--cream);
+    display: flex; align-items: center; gap: 24px; padding: 12px 34px;
+  }
+  nav.top .word {
+    font-family: "Avenir Next Condensed", "Arial Narrow", sans-serif;
+    text-transform: uppercase; letter-spacing: 4px; font-size: 17px; font-weight: 600;
+  }
+  nav.top a {
+    color: var(--sand); text-decoration: none; text-transform: uppercase;
+    letter-spacing: 2px; font-size: 12px;
+  }
+  nav.top a:hover, nav.top a.on { color: #fff; }
+  nav.top .tel { margin-left: auto; font-size: 12px; letter-spacing: 1.5px; color: var(--sand); }
+  .hero {
+    position: relative; min-height: 380px; display: flex; align-items: flex-end;
+    padding: 0 34px 40px; color: #fff; overflow: hidden;
+    background:
+      radial-gradient(120% 90% at 76% 12%, #f0c9a0 0%, rgba(240, 201, 160, 0) 48%),
+      linear-gradient(180deg, #2c3a4a 0%, #5b6472 42%, #8a7a68 74%, #b09a80 100%);
+  }
+  .hero .ridge, .hero .ridge2 {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 220px;
+  }
+  .hero .ridge {
+    background: #3d4a44;
+    clip-path: polygon(0 62%, 12% 40%, 24% 55%, 38% 26%, 52% 48%, 66% 30%, 80% 52%, 92% 38%, 100% 56%, 100% 100%, 0 100%);
+    opacity: 0.85;
+  }
+  .hero .ridge2 {
+    background: #22271f; height: 150px;
+    clip-path: polygon(0 70%, 10% 52%, 22% 68%, 34% 44%, 48% 62%, 60% 46%, 74% 66%, 86% 50%, 100% 68%, 100% 100%, 0 100%);
+  }
+  .hero .copy { position: relative; max-width: 32ch; }
+  .kicker { text-transform: uppercase; letter-spacing: 4px; font-size: 11px; color: var(--sand); margin: 0 0 8px; }
+  .hero h1 {
+    margin: 0 0 10px; font-size: 58px; line-height: 0.94; font-weight: 600;
+    text-transform: uppercase; letter-spacing: -0.5px;
+  }
+  .hero p.tagline { margin: 0; font-size: 17px; color: #f0e9dc; }
+  .strip {
+    background: var(--char); color: var(--sand);
+    display: flex; flex-wrap: wrap; gap: 6px 44px; padding: 14px 34px;
+    text-transform: uppercase; letter-spacing: 2px; font-size: 11px;
+  }
+  .layout { max-width: 1040px; margin: 0 auto; padding: 46px 34px 70px; }
+  .layout > p.lede { max-width: 62ch; margin: 0 0 34px; font-size: 17px; }
+  h2 { font-size: 28px; text-transform: uppercase; letter-spacing: -0.3px; margin: 38px 0 12px; }
+  h2:first-of-type { margin-top: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 22px; }
+  .card { background: #fff; border-top: 4px solid var(--rust); padding: 22px 26px; }
+  .card h3 { margin: 0 0 6px; font-size: 21px; text-transform: uppercase; letter-spacing: -0.2px; }
+  .card p { margin: 0 0 12px; font-size: 14.5px; }
+  .card a.cta {
+    text-transform: uppercase; letter-spacing: 2px; font-size: 11px;
+    color: var(--rust); text-decoration: none; border-bottom: 1px solid var(--sand);
+  }
+  .card a.cta:hover { color: var(--char); border-bottom-color: var(--char); }
+  .story { display: grid; grid-template-columns: 1fr 340px; gap: 44px; align-items: start; }
+  .story p { max-width: 62ch; margin: 0 0 16px; }
+  .specs { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--sand); }
+  .specs li {
+    display: flex; justify-content: space-between; gap: 20px;
+    padding: 9px 0; border-bottom: 1px solid var(--sand); font-size: 14px;
+  }
+  .specs li span:first-child { text-transform: uppercase; letter-spacing: 1.6px; font-size: 11px; color: var(--stone); }
+  footer { background: var(--char); color: var(--sand); padding: 30px 34px; font-size: 12.5px; }
+  footer .cols { display: flex; flex-wrap: wrap; gap: 6px 40px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; }
+  @media (max-width: 880px) { .story { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav class="top">
+  <span class="word">Kestrel Peak</span>
+  <a href="models.html">Models</a>
+  <a href="build.html">Build yours</a>
+  <a href="owners.html">Owners</a>
+  <a href="dealers.html">Dealers</a>
+  <a href="brochure.html">Brochure</a>
+  <span class="tel">541-555-0142</span>
+</nav>
+
+<header class="hero">
+  <div class="ridge"></div>
+  <div class="ridge2"></div>
+  <div class="copy">
+    <p class="kicker">2026 model year</p>
+    <h1>Small trailers, long roads</h1>
+    <p class="tagline">Handbuilt teardrop and off-road trailers since 2011.</p>
+  </div>
+</header>
+
+<div class="strip">
+  <span>Aluminium monocoque</span>
+  <span>Three chassis lengths</span>
+  <span>Six-year frame warranty</span>
+  <span>Made in Oregon</span>
+</div>
+
+<div class="layout">
+  <p class="lede">Kestrel Peak builds towable trailers light enough to sit behind an
+  ordinary vehicle and stiff enough to be trusted on a gravel road at the far end of
+  a forest map. Every one of them is welded, wired and finished by hand at the
+  Switchback Road shop.</p>
+
+  <h2>Start here</h2>
+  <div class="grid">
+    <section class="card">
+      <h3>Three chassis</h3>
+      <p>The Scree 10, the Col 12 and the Cirque 14 share one jig and one cabin
+      language, and differ in length, galley depth and sleeping layout.</p>
+      <a class="cta" href="models.html">Compare the models</a>
+    </section>
+    <section class="card">
+      <h3>Spec your own</h3>
+      <p>Four option groups cover the galley, the running gear, the solar package
+      and the awnings. A build specialist walks the whole list with you.</p>
+      <a class="cta" href="build.html">Build yours</a>
+    </section>
+    <section class="card">
+      <h3>See one in person</h3>
+      <p>Our factory showroom and five western dealers keep demonstrators of all
+      three chassis, and handle warranty inspections close to home.</p>
+      <a class="cta" href="dealers.html">Find a dealer</a>
+    </section>
+    <section class="card">
+      <h3>Already towing one</h3>
+      <p>Warranty terms, service intervals, replacement manuals and the owner
+      meetup calendar live on one page.</p>
+      <a class="cta" href="owners.html">Owner resources</a>
+    </section>
+  </div>
+
+  <h2>How we build</h2>
+  <div class="story">
+    <div>
+      <p>A Kestrel Peak trailer begins as a folded aluminium monocoque, cut on a jig
+      we made ourselves and welded in one piece. Nothing structural is bolted on
+      afterwards, which is why the frame carries a six-year warranty and why a
+      fifteen-year-old shell still closes squarely on its hinges.</p>
+      <p>The cabins are finished in birch, sealed rather than laminated, so a scuff
+      sands out instead of peeling. Wiring runs in labelled looms behind removable
+      panels, and the diagram that matches your build sheet ships with the trailer.
+      Owners who service their own trailers tell us that this is the part they
+      notice second, after the tow manners.</p>
+      <p>We build to order rather than to a lot, so a spec stays open until the
+      frame is cut. That keeps the shop small and the lead time honest: fourteen to
+      twenty-two weeks depending on chassis, with a build week confirmed about a
+      month ahead.</p>
+    </div>
+    <ul class="specs">
+      <li><span>Dry weight</span><span>1,180 – 1,940 lb</span></li>
+      <li><span>Sleeps</span><span>Two adults, or two plus a bunk</span></li>
+      <li><span>Solar</span><span>200 W standard, 400 W optional</span></li>
+      <li><span>Lead time</span><span>14 – 22 weeks from deposit</span></li>
+      <li><span>Built</span><span>Switchback Rd, Oregon</span></li>
+    </ul>
+  </div>
+
+  <h2>The printed book</h2>
+  <div class="grid">
+    <section class="card">
+      <h3>Brochure and price sheet</h3>
+      <p>The 2026 brochure covers all three chassis, both sleeping layouts and every
+      option group, with the current price sheet folded in. We mail printed copies
+      and send a PDF within one business day.</p>
+      <a class="cta" href="brochure.html">Request a brochure</a>
+    </section>
+    <section class="card">
+      <h3>Visit the shop</h3>
+      <p>The showroom at 1180 Switchback Rd, Bldg C is open Tuesday to Saturday.
+      Call ahead and we will have a trailer hitched and open when you arrive.</p>
+      <a class="cta" href="dealers.html">Showroom details</a>
+    </section>
+  </div>
+</div>
+
+<footer>
+  <div class="cols">
+    <span>Showroom open Tue–Sat</span>
+    <span>1180 Switchback Rd, Bldg C</span>
+    <span>541-555-0142</span>
+  </div>
+  © 2026 Kestrel Peak Trailers, Inc. · Warranty · Privacy · Dealer locator ·
+  <a href="parts.html" style="color:var(--sand)">Service and parts</a> ·
+  <a href="accessibility.html" style="color:var(--sand)">Accessibility</a> ·
+  <a href="contact.html" style="color:var(--sand)">Contact</a>
+</footer>
+</body>
+</html>

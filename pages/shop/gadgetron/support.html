@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gadgetron | Support desk</title>
+<link rel="stylesheet" href="gadgetron.css">
+<style>
+  .policy { flex: 1; padding: 10px 14px 26px; min-width: 0; max-width: 100ch; }
+  .policy h1 { font-size: 17px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .policy .lede { font-size: 12px; color: #454c5c; margin: 0 0 10px; max-width: 82ch; }
+  .policy h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #626a7a; margin: 16px 0 6px; }
+  .policy p, .policy li { font-size: 12px; margin: 0 0 6px; max-width: 82ch; }
+  .policy ul { margin: 0 0 6px 18px; padding: 0; }
+  .policy .rule { border-left: 3px solid #ffb020; padding-left: 9px; }
+  .policy dl { margin: 0 0 6px; display: grid; grid-template-columns: 150px 1fr; gap: 3px 10px; font-size: 12px; }
+  .policy dt { text-transform: uppercase; letter-spacing: .08em; color: #626a7a; font-size: 11px; }
+  .policy dd { margin: 0; }
+  .crumbline { background: #fff5e0; border-bottom: 1px solid #e8d49c; padding: 5px 14px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="railbar">
+  <span class="mark">Gadgetron</span>
+  <span class="tagline">Spec index and price engine</span>
+  <form action="search.html" method="get">
+    <input name="q" aria-label="Search part numbers or models" placeholder="Model, brand or part no.">
+    <button type="submit">Find</button>
+  </form>
+  <span class="who">Guest &middot; <a href="signin.html">sign in</a> &middot;
+    <a href="order-list.html">order list</a></span>
+</div>
+<nav class="tabs" aria-label="Sections">
+  <a href="index.html">Catalog</a>
+  <a href="compare.html">Compare</a>
+  <a href="price-history.html">Price history</a>
+  <a href="open-box.html">Open-box</a>
+  <a href="glossary.html">Spec glossary</a>
+  <a href="bulk-quote.html">Bulk quote</a>
+</nav>
+<div class="crumbline">Catalog &rsaquo; Support desk</div>
+<div class="layout">
+  <section class="policy">
+<h1>Support desk</h1>
+<p class="lede">One desk answers the catalog, the price engine, the warehouse and the
+marketplace. It reads live warehouse figures, so it can settle a question the catalog
+cannot.</p>
+<h2 id="reaching">Reaching the desk</h2>
+<dl>
+  <dt>Phone</dt><dd>1-800-555-0142, 7:00 to 19:00, seven days</dd>
+  <dt>Email</dt><dd>desk@gadgetron.example, answered within one business day</dd>
+  <dt>Trade accounts</dt><dd>accounts@gadgetron.example, weekdays only</dd>
+  <dt>Privacy requests</dt><dd>privacy@gadgetron.example</dd>
+  <dt>Post</dt><dd>Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Brantwell</dd>
+</dl>
+<p class="rule">Have the part number to hand for a catalog question, or the order
+reference from your confirmation for anything already queued. The desk cannot look an
+order up by name alone, because a trading name often covers several buyers.</p>
+<h2 id="what-the-desk-does">What the desk can settle</h2>
+<ul>
+  <li>Live stock for a part number the catalog shows as sold out online, including whether
+  an approved alternate is in the warehouse today.</li>
+  <li>Whether a freight-class item makes the next scheduled carrier run.</li>
+  <li>A price the engine and a marketplace listing disagree on, which is nearly always a
+  listing the seller has not republished yet.</li>
+  <li>A return started inside the window on the
+  <a href="warehouse-policy.html#returns">warehouse policy</a>, including the restocking
+  fee that will appear on the credit note.</li>
+  <li>Splitting a confirmed list into more than one shipment, where the carrier has not
+  collected it yet.</li>
+</ul>
+<h2 id="what-it-cannot">What it cannot do</h2>
+<ul>
+  <li>Take a backorder. The warehouse refuses a sold-out part number at the order list
+  rather than holding it open.</li>
+  <li>Honour a price from a stale page or from an older mirror snapshot.</li>
+  <li>Change the terms a marketplace seller publishes on their own listing. The desk will
+  open the dispute and stay on it, but the seller's window governs.</li>
+</ul>
+<h2 id="escalating">Escalating</h2>
+<p>Ask the agent to raise the call to a desk supervisor if a question has been open for
+more than two business days. Supervisors work the same hours as the desk and can commit
+the warehouse to a date, which a first-line agent cannot. A trade account can escalate
+through its account manager instead, which is usually quicker during an accounting close.</p>
+<h2 id="outages">During a service incident</h2>
+<p>When the primary store is offline the desk stays open on the same number and extends
+to seven days a week for the duration. Read-only catalog pages are served from the mirror
+node, which takes no orders; the desk takes orders by phone against the live warehouse
+figure instead. Open and recent incidents are listed on the
+<a href="service-status.html">service status history</a>.</p>
+  </section>
+</div>
+<footer class="legalstrip">
+  <a href="warehouse-policy.html#status">Warehouse status codes</a> &middot;
+  <a href="warehouse-policy.html#returns">Return window</a> &middot;
+  <a href="methodology.html">Price engine methodology</a> &middot;
+  <a href="seller-terms.html">Marketplace seller terms</a> &middot;
+  <a href="service-status.html">Service status history</a> &middot;
+  <a href="privacy.html">Privacy notice</a> &middot;
+  <a href="support.html">Support desk</a><br>
+  Listings are supplied by marketplace sellers; Gadgetron is not the seller of record for
+  marketplace items. Specifications are provided by the manufacturer. &copy; 2026 Gadgetron
+  Trading Co.
+</footer>
+</body>
+</html>

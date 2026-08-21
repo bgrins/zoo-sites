@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Indicator and Event Reference — Metronome Systems</title>
+<style>
+  body {
+    margin: 0; background: #23262a;
+    background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 4px);
+    color: #cdd3cf;
+    font-family: Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: 13px;
+  }
+  .hazard {
+    height: 10px;
+    background: repeating-linear-gradient(135deg, #d9a406 0 14px, #1c1d1f 14px 28px);
+    border-bottom: 2px solid #101113;
+  }
+  header {
+    background: linear-gradient(#4a4f55, #33373c 55%, #2a2e32);
+    border-bottom: 3px solid #14161a;
+    padding: 12px 26px; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: inset 0 1px 0 #6d747c;
+  }
+  header .plate { display: flex; align-items: center; gap: 14px; }
+  header h1 {
+    margin: 0; font-size: 15px; font-weight: bold; text-transform: uppercase;
+    letter-spacing: 0.16em; color: #e6ebe6; text-shadow: 0 1px 0 #16181b;
+  }
+  header .unit {
+    border: 1px solid #6d747c; padding: 2px 7px; font-size: 10px; letter-spacing: 0.12em;
+    color: #a9b1ab; background: #262a2e;
+  }
+  .strip {
+    display: flex; gap: 0; background: #1b1e21; border-bottom: 2px solid #101113;
+    padding: 0 20px;
+  }
+  .strip a {
+    padding: 9px 18px 9px 0; border-right: 1px solid #2c3034; margin-right: 18px;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #7f8783; text-decoration: none;
+  }
+  .strip a:last-child { border-right: 0; }
+  .strip a:hover { color: #d9a406; }
+  .strip a.on { color: #e6ebe6; }
+  main { max-width: 760px; margin: 26px auto 0; padding: 0 22px 34px; }
+  .instr {
+    border-left: 3px solid #d9a406; background: #1e2124; padding: 12px 16px;
+    color: #9aa29d; font-size: 12px; line-height: 1.7;
+  }
+  .instr b { color: #d9a406; letter-spacing: 0.1em; }
+  h2 {
+    margin: 30px 0 10px; font-size: 11px; font-weight: bold; letter-spacing: 0.22em;
+    text-transform: uppercase; color: #e6ebe6;
+    border-bottom: 1px solid #2b2f33; padding-bottom: 6px;
+  }
+  p { margin: 0 0 12px; font-size: 12px; line-height: 1.75; color: #9aa29d; }
+  .led {
+    width: 11px; height: 11px; border-radius: 50%; background: #3c4043;
+    display: inline-block; flex: 0 0 11px;
+    box-shadow: inset 0 0 3px #000, 0 0 0 1px #14161a;
+  }
+  .led.green { background: radial-gradient(circle at 35% 30%, #b7ffcd, #14b34a 60%, #0a5d27);
+                box-shadow: 0 0 7px rgba(30,220,110,0.55), 0 0 0 1px #14161a; }
+  .led.amber { background: radial-gradient(circle at 35% 30%, #ffe6a8, #e2a109 60%, #7a5504);
+                box-shadow: 0 0 7px rgba(240,180,30,0.5), 0 0 0 1px #14161a; }
+  .led.red { background: radial-gradient(circle at 35% 30%, #ffc3bb, #c62b1c 60%, #6d1109);
+                box-shadow: 0 0 7px rgba(220,60,40,0.45), 0 0 0 1px #14161a; }
+  .refs { border: 1px solid #14161a; background: #14171a; box-shadow: inset 0 0 0 1px #2b2f33; }
+  .refs .row { display: flex; gap: 14px; align-items: flex-start; padding: 11px 15px;
+    border-bottom: 1px solid #1f2226; }
+  .refs .row:last-child { border-bottom: 0; }
+  .refs .name {
+    flex: 0 0 132px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: #a8b0ab; padding-top: 1px;
+  }
+  .refs .body { flex: 1; font-size: 12px; line-height: 1.7; color: #79817c; }
+  .refs .body em { font-style: normal; color: #a8b0ab; }
+  .tags { margin: 0; font-size: 12px; line-height: 1.75; }
+  .tags dt {
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: #d9a406; margin-top: 12px;
+  }
+  .tags dd { margin: 4px 0 0; color: #9aa29d; }
+  footer {
+    margin-top: 30px; border-top: 2px solid #14161a; background: #1b1e21;
+    padding: 14px 26px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #5c6360; display: flex; justify-content: space-between; gap: 18px;
+  }
+  footer a { color: #7f8783; text-decoration: none; }
+  footer a:hover { color: #d9a406; }
+  footer .flinks { display: flex; gap: 16px; }
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<header>
+  <div class="plate">
+    <h1>Metronome Systems</h1>
+    <span class="unit">FAC-CONSOLE / 07</span>
+  </div>
+  <span class="unit">REFERENCE CARD RC-04</span>
+</header>
+<div class="strip">
+  <a href="index.html">Console</a>
+  <a href="clearance.html">Clearance procedure</a>
+  <a href="indicators.html" class="on">Indicator reference</a>
+  <a href="escalation.html">Escalation</a>
+</div>
+<main>
+  <p class="instr"><b>RC-04 / WHAT THE CONSOLE IS TELLING YOU</b><br>
+  Lamp meanings and event log tags for the clearance module. Print side is laminated and
+  lives on the console frame; this copy is the one that gets corrected.</p>
+
+  <h2>Lamp strip</h2>
+  <p>The strip under the title bar reads left to right in the order the plant is wired, not
+  in order of severity. A dark lamp is a real state, not a fault: the module drives every
+  lamp on self-test, so a lamp that never lights during a shift is worth a call.</p>
+
+  <div class="refs">
+    <div class="row">
+      <div class="name"><i class="led green"></i> bus 24v</div>
+      <div class="body"><em>Green.</em> Control bus supply is present and within tolerance.
+      Amber means the supply is running from the standby rectifier; the console still works,
+      and the plant room wants to know. Dark means no bus, and nothing on this console is
+      live.</div>
+    </div>
+    <div class="row">
+      <div class="name"><i class="led green"></i> interlock</div>
+      <div class="body"><em>Green.</em> The interlock chain is proved and a clearance may be
+      keyed. Dark means a link in the chain is open, most often a door leaf; the keypad will
+      take a code and then refuse it.</div>
+    </div>
+    <div class="row">
+      <div class="name"><i class="led amber"></i> stage two armed</div>
+      <div class="body"><em>Amber.</em> Stage two is armed and waiting on a clearance entry.
+      Green means clearance is already in force for the current shift. Dark means the stage
+      is down for maintenance and no entry will be accepted.</div>
+    </div>
+    <div class="row">
+      <div class="name"><i class="led red"></i> door held</div>
+      <div class="body"><em>Red.</em> The numbered door has a leaf open past its dwell time.
+      The lamp clears itself when the leaf closes. Held doors are logged, and a door held
+      for more than five minutes raises a call to the operations desk without an operator
+      doing anything.</div>
+    </div>
+    <div class="row">
+      <div class="name"><i class="led"></i> maint bypass</div>
+      <div class="body"><em>Dark in normal running.</em> Amber means a duty engineer has
+      bypassed part of the chain under a permit. Nothing may be keyed while bypass is up,
+      and the permit number belongs on the shift sheet.</div>
+    </div>
+  </div>
+
+  <h2>Event log tags</h2>
+  <dl class="tags">
+    <dt>shift rotation</dt>
+    <dd>The operations desk has reissued clearance codes. Anything issued before this
+    entry has rolled off.</dd>
+    <dt>selftest</dt>
+    <dd>The module exercised its lamps, its keypad and the interlock chain. One is expected
+    per shift, shortly after rotation.</dd>
+    <dt>door</dt>
+    <dd>A door state change worth recording, with the numbered door and the duration it was
+    held. Routine closures are not logged.</dd>
+    <dt>stage two</dt>
+    <dd>The stage armed, cleared or dropped. A drop always carries a reason.</dd>
+    <dt>latch</dt>
+    <dd>Three rejections in a shift. The entry names the shift line that latched the module
+    and stays until a duty engineer releases it.</dd>
+  </dl>
+</main>
+<footer>
+  <span>Metronome Systems facility terminal &middot; build 7.2.19 &middot; reference RC-04</span>
+  <span class="flinks">
+    <a href="clearance.html">Clearance procedure</a>
+    <a href="escalation.html">Escalation</a>
+    <a href="index.html">Console</a>
+  </span>
+</footer>
+</body>
+</html>

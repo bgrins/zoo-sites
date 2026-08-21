@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Service notices - Kelsmere CRM</title>
+<link rel="stylesheet" href="crm.css">
+</head>
+<body>
+<header class="topbar">
+  <span class="brand">Kelsmere CRM</span>
+  <span class="ws">wkspc northfield-supply &middot; fiscal 2026 &middot; role: analyst</span>
+  <span class="who">dana.kessler@northfield.example</span>
+</header>
+<nav class="tabs">
+  <a href="index.html">Dashboard</a>
+  <a href="orders.html">Orders</a>
+  <a href="customers.html">Customers</a>
+  <a href="pipeline.html">Pipeline</a>
+  <a href="reports.html">Reports</a>
+  <a href="tasks.html">Tasks</a>
+  <a href="admin.html">Admin</a>
+</nav>
+<div class="pathbar">
+  <span>northfield-supply / service notices</span>
+  <span class="build">grid engine v3 &middot; build 3.14.2</span>
+</div>
+<main class="main">
+  <h1>Service notices</h1>
+  <p class="sub">Maintenance windows, known issues, and what the v3 migration left outstanding. Posted by workspace operations; not editable by analysts.</p>
+  <div class="tiles">
+    <div class="tile"><span class="tk">Console</span><span class="tv">Available</span></div>
+    <div class="tile"><span class="tk">Nightly rebuild</span><span class="tv">On schedule</span></div>
+    <div class="tile"><span class="tk">Open issues</span><span class="tv">3</span></div>
+    <div class="tile"><span class="tk">Next window</span><span class="tv">2026-08-29</span></div>
+  </div>
+  <h2 style="max-width: 690px;">Known issues</h2>
+  <table class="grid">
+    <thead>
+      <tr><th>Ref</th><th>Area</th><th>Summary</th><th>State</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Saved views</td><td>Grids</td><td>Pre-migration views did not carry across</td><td>Open</td></tr>
+      <tr><td>Region rollup</td><td>Reports</td><td>Retired, no replacement scheduled</td><td>Open</td></tr>
+      <tr><td>Territory freeze</td><td>Admin</td><td>Reassignments held pending the rollup</td><td>Open</td></tr>
+      <tr><td>Column widths</td><td>Grids</td><td>Widths reset on narrow displays</td><td>Fixed 3.14.1</td></tr>
+      <tr><td>Task reminders</td><td>Tasks</td><td>Sent twice on the migration weekend</td><td>Fixed 3.14.0</td></tr>
+    </tbody>
+  </table>
+  <div class="cards" style="margin-top: 14px;">
+    <section class="card">
+      <h2>Maintenance windows</h2>
+      <p>Windows run 22:00 to 02:00 on the last Saturday of the month and end with the
+      nightly rebuild. Grids stay readable throughout; writes are held.</p>
+      <p class="muted">Next window 2026-08-29. Following window 2026-09-26.</p>
+    </section>
+    <section class="card">
+      <h2>Saved views after v3</h2>
+      <p class="warn">Open</p>
+      <p>Views saved against the v2 grid engine did not survive the migration, because v3
+      stores a filter and a column arrangement as one object rather than two. Rebuilding
+      them is tracked as a workspace task.</p>
+      <p class="muted">Saved views are read-only on shared workspace links, so a shared
+      session cannot rebuild them.</p>
+    </section>
+    <section class="card">
+      <h2>Region rollup</h2>
+      <p class="warn">Open</p>
+      <p>The rollup report was retired with the migration and no replacement date has
+      been announced. Territory reassignments stay frozen while it is missing, so that
+      the eventual report is not built over a moving assignment.</p>
+      <p class="muted">Owners may request an exception; analysts cannot.</p>
+    </section>
+    <section class="card">
+      <h2>Reporting a problem</h2>
+      <p>Send the page name, the workspace id, the build shown in the path bar, and what
+      you expected to see, to the support address in the footer. Include the row count
+      line from under the grid where a grid is involved.</p>
+      <p class="muted">Notices are updated on working days by workspace operations.</p>
+    </section>
+    <section class="card">
+      <h2>Change log</h2>
+      <p>3.14.2 corrected the path bar build label. 3.14.1 fixed column widths on narrow
+      displays. 3.14.0 moved Orders and Customers onto the v3 grid engine and introduced
+      per-operator sort and column state.</p>
+      <p class="muted">Engine changes are listed on the dashboard as they ship.</p>
+    </section>
+  </div>
+</main>
+<footer class="siteftr">
+  Kelsmere CRM &middot; workspace data is confidential to northfield-supply.
+  Support: help.kelsmerecrm.example &middot; Status &middot; Keyboard shortcuts &middot;
+  Terms &middot; Privacy &middot; <a href="guide.html">Operator guide</a> &middot;
+  <a href="glossary.html">Glossary</a> &middot; <a href="notices.html">Service notices</a>
+</footer>
+</body>
+</html>

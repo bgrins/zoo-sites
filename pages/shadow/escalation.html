@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escalation and Duty Contacts — Metronome Systems</title>
+<style>
+  body {
+    margin: 0; background: #23262a;
+    background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 4px);
+    color: #cdd3cf;
+    font-family: Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: 13px;
+  }
+  .hazard {
+    height: 10px;
+    background: repeating-linear-gradient(135deg, #d9a406 0 14px, #1c1d1f 14px 28px);
+    border-bottom: 2px solid #101113;
+  }
+  header {
+    background: linear-gradient(#4a4f55, #33373c 55%, #2a2e32);
+    border-bottom: 3px solid #14161a;
+    padding: 12px 26px; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: inset 0 1px 0 #6d747c;
+  }
+  header .plate { display: flex; align-items: center; gap: 14px; }
+  header h1 {
+    margin: 0; font-size: 15px; font-weight: bold; text-transform: uppercase;
+    letter-spacing: 0.16em; color: #e6ebe6; text-shadow: 0 1px 0 #16181b;
+  }
+  header .unit {
+    border: 1px solid #6d747c; padding: 2px 7px; font-size: 10px; letter-spacing: 0.12em;
+    color: #a9b1ab; background: #262a2e;
+  }
+  .strip {
+    display: flex; gap: 0; background: #1b1e21; border-bottom: 2px solid #101113;
+    padding: 0 20px;
+  }
+  .strip a {
+    padding: 9px 18px 9px 0; border-right: 1px solid #2c3034; margin-right: 18px;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #7f8783; text-decoration: none;
+  }
+  .strip a:last-child { border-right: 0; }
+  .strip a:hover { color: #d9a406; }
+  .strip a.on { color: #e6ebe6; }
+  main { max-width: 760px; margin: 26px auto 0; padding: 0 22px 34px; }
+  .instr {
+    border-left: 3px solid #d9a406; background: #1e2124; padding: 12px 16px;
+    color: #9aa29d; font-size: 12px; line-height: 1.7;
+  }
+  .instr b { color: #d9a406; letter-spacing: 0.1em; }
+  h2 {
+    margin: 30px 0 10px; font-size: 11px; font-weight: bold; letter-spacing: 0.22em;
+    text-transform: uppercase; color: #e6ebe6;
+    border-bottom: 1px solid #2b2f33; padding-bottom: 6px;
+  }
+  p { margin: 0 0 12px; font-size: 12px; line-height: 1.75; color: #9aa29d; }
+  .desks { border: 1px solid #14161a; background: #14171a; box-shadow: inset 0 0 0 1px #2b2f33; }
+  .desks .row { display: flex; gap: 14px; padding: 11px 15px; border-bottom: 1px solid #1f2226; }
+  .desks .row:last-child { border-bottom: 0; }
+  .desks .who {
+    flex: 0 0 168px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: #a8b0ab;
+  }
+  .desks .how { flex: 1; font-size: 12px; line-height: 1.7; color: #79817c; }
+  .desks .how em { font-style: normal; color: #d9a406; letter-spacing: 0.06em; }
+  ol.tiers { margin: 0 0 12px; padding-left: 26px; font-size: 12px; line-height: 1.75; color: #9aa29d; }
+  ol.tiers li { margin-bottom: 7px; }
+  ol.tiers b { color: #cdd3cf; font-weight: normal; }
+  .rule {
+    margin: 18px 0 0; border: 1px solid #14161a; background: #14171a;
+    box-shadow: inset 0 0 0 1px #2b2f33; padding: 12px 16px;
+    font-size: 12px; line-height: 1.75; color: #a8b0ab;
+  }
+  .rule span { display: block; font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: #8b938e; margin-bottom: 6px; }
+  footer {
+    margin-top: 30px; border-top: 2px solid #14161a; background: #1b1e21;
+    padding: 14px 26px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #5c6360; display: flex; justify-content: space-between; gap: 18px;
+  }
+  footer a { color: #7f8783; text-decoration: none; }
+  footer a:hover { color: #d9a406; }
+  footer .flinks { display: flex; gap: 16px; }
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<header>
+  <div class="plate">
+    <h1>Metronome Systems</h1>
+    <span class="unit">FAC-CONSOLE / 07</span>
+  </div>
+  <span class="unit">CONTACT SHEET CS-02</span>
+</header>
+<div class="strip">
+  <a href="index.html">Console</a>
+  <a href="clearance.html">Clearance procedure</a>
+  <a href="indicators.html">Indicator reference</a>
+  <a href="escalation.html" class="on">Escalation</a>
+</div>
+<main>
+  <p class="instr"><b>CS-02 / WHO TO CALL</b><br>
+  Escalation order for the facility access console. Work down the list; do not skip a tier
+  unless the plant is unsafe, in which case the muster procedure takes over from this sheet.</p>
+
+  <h2>Escalation order</h2>
+  <ol class="tiers">
+    <li><b>Operations desk.</b> Codes not issued, a code that will not take, a visitor
+    waiting, a door held by a crew you cannot reach on the radio. The desk is staffed
+    whenever the stage is armed.</li>
+    <li><b>Duty engineer.</b> A latched module, a lamp that fails self-test, an interlock
+    that will not prove, anything under a maintenance bypass permit. The duty engineer is
+    the only person who releases a latch.</li>
+    <li><b>Site engineering.</b> Console faults that survive a duty engineer visit,
+    reference sheets that no longer match the plant, and requests to change a procedure.
+    Weekdays only, and never in the middle of a shift problem.</li>
+    <li><b>Facilities duty manager.</b> Anything that stops the stage for more than an hour,
+    or any access decision that has to be made against the standing procedure.</li>
+  </ol>
+
+  <h2>Contacts</h2>
+  <div class="desks">
+    <div class="row">
+      <div class="who">Operations desk</div>
+      <div class="how"><em>ext 4402</em> &middot; radio channel 3. Continuous while the stage
+      is armed.</div>
+    </div>
+    <div class="row">
+      <div class="who">Duty engineer</div>
+      <div class="how"><em>ext 4415</em> &middot; pager through the desk. On call at all
+      hours; expect twenty minutes to the console.</div>
+    </div>
+    <div class="row">
+      <div class="who">Site engineering</div>
+      <div class="how"><em>ext 4410</em> &middot; 07:30 to 17:30, weekdays.</div>
+    </div>
+    <div class="row">
+      <div class="who">Facilities duty manager</div>
+      <div class="how"><em>01632 960118</em> &middot; out of hours only.</div>
+    </div>
+    <div class="row">
+      <div class="who">Access records office</div>
+      <div class="how"><em>0808 157 0442</em> &middot; log extracts and record queries, not
+      shift problems.</div>
+    </div>
+  </div>
+
+  <h2>What to have ready</h2>
+  <p>Give the console identifier from the title bar, the module revision, the time of the
+  event, and the last three lines of the event log. If a clearance was rejected, say how
+  many attempts were made and by which shift line. Do not read a code out over an open
+  channel; the desk will call back on a direct line if it needs one confirmed.</p>
+
+  <div class="rule">
+    <span>Records office</span>
+    Metronome Systems, Kelbrand Works, Ardenhithe AH9 4TR. Written record requests go to
+    access.records@metronome-systems.example and are answered within five working days.
+    Extracts covering another operator's entries need the facilities duty manager's
+    authority.
+  </div>
+</main>
+<footer>
+  <span>Metronome Systems facility terminal &middot; build 7.2.19 &middot; contacts CS-02</span>
+  <span class="flinks">
+    <a href="clearance.html">Clearance procedure</a>
+    <a href="indicators.html">Indicator reference</a>
+    <a href="index.html">Console</a>
+  </span>
+</footer>
+</body>
+</html>

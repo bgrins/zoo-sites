@@ -217,6 +217,9 @@ aside p {
   background: #14170f;
   color: #f2eee2;
 }
+.results a {
+  color: #a8471f;
+}
 #pager {
   margin: 34px 0 0;
   padding: 14px 0 0;

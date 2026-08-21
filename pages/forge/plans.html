@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plans and limits &middot; Kettleforge</title>
+<link rel="stylesheet" href="forge.css">
+<style>
+  table.plans { border-collapse: collapse; width: 100%; font-size: 12px; }
+  table.plans th, table.plans td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--rule-soft); }
+  table.plans thead th { background: #f6f2ef; font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--dim); }
+  table.plans td.rate { font-family: var(--mono); white-space: nowrap; }
+  table.plans tbody th { font-weight: bold; }
+</style>
+</head>
+<body>
+<header class="masthead">
+  <span class="mark">Kettle<em>forge</em></span>
+  <nav>
+    <a href="/forge/">Repositories</a>
+    <a href="/forge/pulls/">Pull requests</a>
+    <a href="/forge/">Anvil</a>
+    <a href="/forge/">Registry</a>
+  </nav>
+  <span class="who">signed in as <b>r.vandermolen</b></span>
+</header>
+
+<main class="wrap">
+  <div class="prhead">
+    <h1>Plans and limits</h1>
+    <div class="prmeta">
+      <span>Priced per seat, per month, billed to the organisation. No charge for accounts with
+      read-only access.</span>
+    </div>
+  </div>
+
+  <nav class="subtabs">
+    <a href="/forge/about.html">About</a>
+    <span class="here">Plans</span>
+    <a href="/forge/security.html">Security</a>
+  </nav>
+
+  <div class="card">
+    <div class="cardhead">Plans</div>
+    <table class="plans">
+      <thead>
+        <tr><th>Plan</th><th>Per seat</th><th>Anvil minutes included</th><th>Suited to</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">Bench</th>
+          <td class="rate">free</td>
+          <td class="rate">400 / month</td>
+          <td>A single team, public and internal repositories, review without required jobs</td>
+        </tr>
+        <tr>
+          <th scope="row">Workshop</th>
+          <td class="rate">11.00</td>
+          <td class="rate">4,000 / month</td>
+          <td>Required jobs, code owners, saved searches, review-requested views, audit log</td>
+        </tr>
+        <tr>
+          <th scope="row">Foundry</th>
+          <td class="rate">23.00</td>
+          <td class="rate">20,000 / month</td>
+          <td>Directory sync, self-hosted runners, registry replication, retention policy</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="body">
+      <p class="byline">Prices are in pounds sterling and exclude VAT. VAT 000 0000 00.</p>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="main">
+      <div class="card">
+        <div class="cardhead">What a seat is</div>
+        <div class="body">
+          <p>A seat is an account that can write to a repository the organisation owns, push a
+          branch, open a pull request or submit a review. An account with read access uses no
+          seat, and neither does a bot account that only reports pipeline results. Seats are
+          counted once a day and charged for the days they existed, so a contractor added for a
+          fortnight costs a fortnight rather than a month.</p>
+          <p>Changing plan takes effect immediately. Moving up is charged pro rata from the day
+          of the change; moving down applies at the end of the billing period, because a
+          repository can be relying on a feature the smaller plan does not carry and we would
+          rather not disable a required job in the middle of someone's release.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">Anvil minutes and storage</div>
+        <div class="body">
+          <p>An Anvil minute is a minute of wall-clock time on a hosted runner of the default
+          size. A larger runner consumes minutes faster, at the multiplier shown when the runner
+          class is selected. Self-hosted runners consume no minutes at all, which is the usual
+          reason a team moves to Foundry. Minutes do not carry over between months.</p>
+          <p>Every plan includes 25 GB of registry and artefact storage per organisation, with
+          further storage charged monthly by the gigabyte. Retention defaults to ninety days for
+          build artefacts and indefinitely for published registry versions; Foundry can set both.
+          When an organisation goes over its storage allowance we write to the billing contacts
+          and keep serving artefacts for thirty days before anything is pruned, oldest first.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">Billing and cancellation</div>
+        <div class="body">
+          <p>Invoices are issued on the first working day of the month for the month that has
+          just ended and are payable within fourteen days. Annual invoicing by bank transfer is
+          available on Foundry. Cancelling stops the next invoice and leaves the organisation on
+          Bench rather than deleting anything; repositories, pipelines and registry versions stay
+          readable, and a repository that needs a paid feature simply stops enforcing it.</p>
+          <p>An education or registered-charity discount of half the seat price is available on
+          Workshop and Foundry. Write to billing@kettleforge.example with evidence of status, or
+          call 0808 157 0198.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <div class="cardhead">Included on every plan</div>
+        <div class="body">
+          <ul>
+            <li>Unlimited repositories</li>
+            <li>Unlimited reviewers per pull request</li>
+            <li>Staged line comments</li>
+            <li>Package registry</li>
+            <li>Two-factor authentication</li>
+            <li>Data export on request</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card">
+        <div class="cardhead">Questions</div>
+        <div class="body">
+          <p>billing@kettleforge.example</p>
+          <p><a href="/forge/security.html">Security and data handling</a></p>
+          <p><a href="/forge/about.html">About Kettleforge</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="sitefoot">
+  <div class="links">
+    <a href="/forge/">Status</a>
+    <a href="/forge/">Docs</a>
+    <a href="/forge/">Keyboard shortcuts</a>
+    <a href="/forge/">Privacy</a>
+    <a href="/forge/">Terms</a>
+    <a href="/forge/">Contact support</a>
+    <a href="/forge/about.html">About</a>
+    <a href="/forge/plans.html">Plans</a>
+    <a href="/forge/security.html">Security</a>
+  </div>
+  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Ashcombe AS4 2QN. &copy; 2026 Bellhollow Systems Ltd.</div>
+</footer>
+</body>
+</html>

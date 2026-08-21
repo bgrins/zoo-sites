@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Subscribe to updates - Nimbrel Edge status</title>
+<link rel="stylesheet" href="status.css">
+<style>
+  .subform { margin-top: 14px; }
+  .field { margin-top: 14px; }
+  .field label { display: block; font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .field input[type="email"], .field select {
+    font: inherit;
+    font-size: 14px;
+    width: 100%;
+    max-width: 340px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fdfffe;
+    color: var(--ink);
+  }
+  .field .hint { color: var(--faint); font-size: 12.5px; margin: 4px 0 0; }
+  .picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px 18px; }
+  .picks span { font-size: 14px; }
+  .picks label { display: inline; font-weight: 400; }
+  .subform .actions { margin-top: 20px; display: flex; align-items: center; gap: 16px; }
+  .subform .actions .note { color: var(--faint); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<header class="mast">
+  <div class="mast-inner">
+    <span class="mark">Nimbrel <b>Edge</b></span>
+    <nav>
+      <a href="index.html">Status</a>
+      <a href="history.html">Incident history</a>
+    </nav>
+    <span class="tz">All times UTC</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel">
+    <h1>Subscribe to updates</h1>
+    <p class="panel-sub">Be told when a component changes state, without watching this page.
+    One message per state change, and a closing message when the incident is resolved.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Email notifications</h2>
+    <form class="subform" method="get" action="subscribe.html">
+      <div class="field">
+        <label for="addr">Email address</label>
+        <input type="email" id="addr" name="addr" placeholder="you@yourcompany.example" required>
+        <p class="hint">We send a confirmation link to this address and add nothing to the list
+        until it is followed.</p>
+      </div>
+      <div class="field">
+        <label>Components to follow</label>
+        <div class="picks">
+          <span><input type="checkbox" id="c-edge" name="component" value="edge" checked>
+          <label for="c-edge">Edge delivery</label></span>
+          <span><input type="checkbox" id="c-relay" name="component" value="relay" checked>
+          <label for="c-relay">Relay mesh</label></span>
+          <span><input type="checkbox" id="c-api" name="component" value="api" checked>
+          <label for="c-api">API gateway</label></span>
+          <span><input type="checkbox" id="c-panel" name="component" value="panel">
+          <label for="c-panel">Control panel</label></span>
+          <span><input type="checkbox" id="c-logs" name="component" value="logs">
+          <label for="c-logs">Log streaming</label></span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="scope">Send me</label>
+        <select id="scope" name="scope">
+          <option value="all">Every state change, including scheduled maintenance</option>
+          <option value="unplanned">Unplanned incidents only</option>
+          <option value="major">Major incidents only</option>
+        </select>
+        <p class="hint">Scheduled maintenance is announced at least five days ahead of the
+        window whichever option you pick.</p>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn">Send confirmation link</button>
+        <span class="note">Unsubscribe from the footer of any message.</span>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Other ways to follow</h2>
+    <p>An RSS feed of the incident history carries the same records as this page and is the
+    lightest way to watch it from a wiki or a chat integration. Teams on the Ridge plan can point
+    a webhook at their own endpoint instead; the payload names the component, the state it moved
+    to, the incident reference, and the update text, and it is retried for six hours before we
+    give up on an endpoint.</p>
+    <p>Subscriptions cover platform state only. Notices that affect one account, such as an
+    approaching quota or an expiring certificate, are sent to the technical contacts on that
+    account and cannot be redirected here.</p>
+  </section>
+
+  <section class="panel">
+    <h2>What we do with the address</h2>
+    <p>An address on this list is used to send status notifications and nothing else. We do not
+    add it to product announcements, we do not pass it to anyone outside Nimbrel Networks, and we
+    delete it within thirty days of an unsubscribe. Asking to be removed does not require an
+    account, and a request to noc@nimbrel.example is honoured the same working day.</p>
+    <p class="more"><a href="definitions.html">Status definitions</a> sets out what each state
+    means, and <a href="about.html">About this page</a> explains how a state is decided.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <div class="flinks">
+      <a href="index.html">Status</a>
+      <a href="history.html">Incident history</a>
+      <a href="about.html">About this page</a>
+      <a href="subscribe.html">Subscribe to updates</a>
+      <a href="definitions.html">Status definitions</a>
+    </div>
+    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay.</p>
+    <p>Network operations centre: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
+  </div>
+</footer>
+</body>
+</html>

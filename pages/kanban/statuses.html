@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status reference - Coppermast Dispatch</title>
+<link rel="stylesheet" href="coppermast.css">
+</head>
+<body>
+<div class="topbar">
+  <span class="mark"><b>Coppermast</b> Dispatch</span>
+  <nav class="topnav">
+    <a href="index.html">Board</a>
+    <a href="berths.html">Berths</a>
+    <a href="crews.html">Crews</a>
+    <a href="handover.html">Handover</a>
+  </nav>
+  <span class="who">Terminal 3 &middot; R. Aldwyn</span>
+</div>
+
+<p class="crumbs">Operations / Dispatch console / Status reference</p>
+
+<main class="sheet">
+  <h1>Status reference</h1>
+  <p class="blurb">The words this console uses, and what each one commits somebody to. Terminal
+  3 uses the same vocabulary as Terminals 1 and 2; local variations are not permitted.</p>
+
+  <div class="board">
+    <section class="lane">
+      <div class="lane-head"><h2>Work order tags</h2><span class="chip">3</span></div>
+      <div class="lane-body">
+        <article class="card">
+          <div class="card-head"><span class="ref">Urgent</span><span class="tag tag-urgent">Tag</span></div>
+          <p class="ttl">Cannot wait for the next planned window</p>
+          <p class="meta">Set by the person raising the order when the fault stops a vessel
+          working, threatens a departure time, or puts a crew at risk. An urgent tag is a claim on
+          a fitter now, so the raiser names themselves on it.</p>
+        </article>
+        <article class="card">
+          <div class="card-head"><span class="ref">Blocked</span><span class="tag tag-blocked">Tag</span></div>
+          <p class="ttl">Work cannot start for a reason outside the crew</p>
+          <p class="meta">A part on order, a permit not yet issued, a contractor not yet on site,
+          or plant that cannot be isolated until a berth clears. The tag is removed by whoever
+          clears the obstruction, not by the crew waiting on it.</p>
+        </article>
+        <article class="card">
+          <div class="card-head"><span class="ref">Routine</span><span class="tag">Tag</span></div>
+          <p class="ttl">Real work, no time pressure</p>
+          <p class="meta">Wear, cosmetic damage, and anything that can wait for a planned
+          window. Routine orders are worked in raised order unless a supervisor says otherwise.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="lane">
+      <div class="lane-head"><h2>Berth states</h2><span class="chip">3</span></div>
+      <div class="lane-body">
+        <article class="card">
+          <div class="card-head"><span class="ref">Occupied</span><span class="tag">State</span></div>
+          <p class="ttl">A vessel is alongside</p>
+          <p class="meta">The register carries the vessel, the cargo and the expected departure.
+          Work on quay plant serving an occupied berth needs the berth supervisor's agreement.</p>
+        </article>
+        <article class="card">
+          <div class="card-head"><span class="ref">Vacant</span><span class="tag">State</span></div>
+          <p class="ttl">No vessel, and available unless held</p>
+          <p class="meta">A vacant berth may still be held, for a survey or for an inbound
+          allocation. A held berth is not free for reallocation until the hold is closed.</p>
+        </article>
+        <article class="card">
+          <div class="card-head"><span class="ref">Closed</span><span class="tag">State</span></div>
+          <p class="ttl">Withdrawn from service</p>
+          <p class="meta">Structural work, a failed inspection, or plant out of use. A closed
+          berth carries a reopening date, and the date moves only with the harbour master's
+          agreement.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="lane">
+      <div class="lane-head"><h2>Crew states</h2><span class="chip">4</span></div>
+      <div class="lane-body">
+        <article class="card">
+          <div class="card-head"><span class="ref">On quay</span><span class="tag">State</span></div>
+          <p class="ttl">Available on the terminal, on radio</p>
+          <p class="meta">Reachable on the crew's radio channel and able to take work without a
+          callout.</p>
+        </article>
+        <article class="card">
+          <div class="card-head"><span class="ref">On water</span><span class="tag">State</span></div>
+          <p class="ttl">Afloat on the launch</p>
+          <p class="meta">Reachable, but not available for quay work until the launch is back
+          alongside.</p>
+        </article>
+        <article class="card">
+          <div class="card-head"><span class="ref">Terminal 2</span><span class="tag">State</span></div>
+          <p class="ttl">Lent to a neighbouring terminal</p>
+          <p class="meta">Recalled through the duty controller at thirty minutes' notice. Shared
+          crews are recalled for urgent work only.</p>
+        </article>
+        <article class="card">
+          <div class="card-head"><span class="ref">Off site</span><span class="tag">State</span></div>
+          <p class="ttl">Leave, training or sickness</p>
+          <p class="meta">Not to be called. The roster carries the expected return; the duty
+          controller arranges cover.</p>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <div class="notes">
+    <h3>Handover entries</h3>
+    <p>A handover entry is either signed off or open. Signed off means the outgoing supervisor
+    has read the saved board and stands behind the summary. An open entry is a shift the
+    incoming supervisor has queried, and it stays open until both supervisors agree the
+    correction.</p>
+    <h3>Changing the vocabulary</h3>
+    <p>These words are set in the terminal operating instructions and are not local to the
+    console. Requests to add a tag or a state go to the dispatch systems group with the harbour
+    master's endorsement, and take effect at a quarter boundary so every terminal changes on the
+    same day.</p>
+  </div>
+</main>
+
+<footer>
+  <div class="flinks">
+    <a href="index.html">Shift triage</a>
+    <a href="berths.html">Berth register</a>
+    <a href="crews.html">Crew roster</a>
+    <a href="guide.html">Board guide</a>
+    <a href="escalation.html">Escalation</a>
+    <a href="handover.html">Handover log</a>
+  </div>
+  <p>&copy; 2026 Coppermast Terminals Limited. Registered in England, company 00000000.</p>
+  <address>Coppermast Terminals, Ravensgate Quay, Hollingport HP4 2LN &middot; dispatch@coppermast-terminals.example</address>
+</footer>
+</body>
+</html>

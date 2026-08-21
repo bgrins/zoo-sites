@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status definitions - Nimbrel Edge status</title>
+<link rel="stylesheet" href="status.css">
+<style>
+  .deftable { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+  .deftable th, .deftable td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid #ecf2ef; vertical-align: top; }
+  .deftable th { font-size: 12px; letter-spacing: .3px; color: var(--muted); font-weight: 700; }
+  .deftable td.term { white-space: nowrap; }
+  .deftable td.num { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+</style>
+</head>
+<body>
+<header class="mast">
+  <div class="mast-inner">
+    <span class="mark">Nimbrel <b>Edge</b></span>
+    <nav>
+      <a href="index.html">Status</a>
+      <a href="history.html">Incident history</a>
+    </nav>
+    <span class="tz">All times UTC</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel">
+    <h1>Status definitions</h1>
+    <p class="panel-sub">The vocabulary this page uses, and the service commitments each term is
+    measured against. Where a customer agreement says something different, the agreement
+    governs.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Component states</h2>
+    <table class="deftable">
+      <thead>
+        <tr><th>State</th><th>What it means</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="term"><span class="chip chip-operational">Operational</span></td>
+          <td>The component is meeting its service objective from every vantage point we probe
+          from. Individual requests can still fail; a component is not scored on single
+          requests.</td>
+        </tr>
+        <tr>
+          <td class="term"><span class="chip chip-degraded">Degraded</span></td>
+          <td>The component is answering, but slower than its objective or with a share of
+          errors above the threshold set out below. Work is in progress and no customer action
+          is required.</td>
+        </tr>
+        <tr>
+          <td class="term"><span class="chip chip-congested">Congested</span></td>
+          <td>Capacity on a path is oversubscribed and requests are queueing behind it. A
+          congested path usually clears when spill capacity comes online, which is why this
+          state is reported on a route rather than on the platform.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="sys-legend">An incident record carries its own state, which tracks the response
+    rather than the component: Investigating, Identified, Monitoring, then Resolved. A record
+    reaches Monitoring when the fix is in place and we are still watching, and Resolved only
+    after a full measurement window has passed clean.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Objectives by component</h2>
+    <table class="deftable">
+      <thead>
+        <tr><th>Component</th><th>Objective</th><th>Measured as</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="term">Edge delivery</td><td class="num">99.99%</td><td>Successful responses over a calendar month, excluding 4xx</td></tr>
+        <tr><td class="term">Relay mesh</td><td class="num">99.95%</td><td>Paths reachable within their latency budget</td></tr>
+        <tr><td class="term">API gateway</td><td class="num">99.95%</td><td>Successful responses over a calendar month, excluding 4xx</td></tr>
+        <tr><td class="term">Control panel</td><td class="num">99.90%</td><td>Sign-in and page loads inside two seconds</td></tr>
+        <tr><td class="term">Log streaming</td><td class="num">99.50%</td><td>Records delivered inside their delivery window</td></tr>
+      </tbody>
+    </table>
+    <p class="sys-legend">The uptime figures beside each component on the status page are a
+    trailing 90-day view and are not the measure a service credit is calculated from. Credits are
+    calculated per calendar month, per component, on the account's own traffic.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Exclusions</h2>
+    <p>Announced maintenance is excluded from the measurement when it was announced at least
+    five days ahead and kept inside its published window. So is unavailability caused by
+    something outside our control: a fault in your own network or a transit provider you chose,
+    traffic beyond a contracted rate limit, a request rejected because a credential expired, or
+    an outage caused by software you deployed to the edge yourself.</p>
+    <p>Beta components are excluded until they are announced as generally available. A beta
+    component is labelled as such in the control panel and does not appear on this page.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Claiming a credit</h2>
+    <p>A credit is not applied automatically. Send a claim to support@nimbrel.example within
+    thirty days of the end of the month it relates to, naming the account, the component, the
+    dates, and the incident reference from the history page if there is one. Where the claim
+    concerns a route rather than a component, a probe code from a relay path check taken during
+    the window will let us find the measurements without asking you to reproduce anything.</p>
+    <p>We answer a claim within ten business days. A credit is applied against future invoices
+    and is not exchanged for a refund.</p>
+    <p class="more"><a href="about.html">About this page</a> &middot;
+    <a href="subscribe.html">Subscribe to updates</a></p>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <div class="flinks">
+      <a href="index.html">Status</a>
+      <a href="history.html">Incident history</a>
+      <a href="about.html">About this page</a>
+      <a href="subscribe.html">Subscribe to updates</a>
+      <a href="definitions.html">Status definitions</a>
+    </div>
+    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay.</p>
+    <p>Network operations centre: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
+  </div>
+</footer>
+</body>
+</html>

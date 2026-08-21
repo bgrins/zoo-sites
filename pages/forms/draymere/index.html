@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shift home — Draymere Depot Console</title>
+<style>
+  :root {
+    --shell: #0e1216; --panel: #161c22; --panel-2: #1d252d;
+    --edge: #2b353f; --ink: #dfe6ec; --dim: #8c9aa6;
+    --amber: #f0a02c; --amber-dim: #b0761f; --green: #56b98a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--shell); color: var(--ink);
+    font-family: "IBM Plex Sans", "Fira Sans", "Noto Sans", "Liberation Sans", sans-serif;
+    font-size: 14px; line-height: 1.5; }
+  a { color: var(--amber); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .mono { font-family: "IBM Plex Mono", "Fira Mono", "DejaVu Sans Mono", monospace; }
+  header.strip { background: #090c0f; border-bottom: 2px solid var(--amber-dim);
+    display: flex; align-items: center; gap: 18px; padding: 10px 20px; }
+  .mark { font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #fff; }
+  .mark span { color: var(--amber); }
+  .unit { font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--dim);
+    border-left: 1px solid var(--edge); padding-left: 18px; }
+  header.strip .who { margin-left: auto; font-size: 12px; color: var(--dim);
+    display: flex; gap: 16px; align-items: center; }
+  nav.tabs { background: var(--panel); border-bottom: 1px solid var(--edge); display: flex; padding: 0 20px; }
+  nav.tabs a { color: var(--dim); font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
+    padding: 11px 16px; border-bottom: 2px solid transparent; }
+  nav.tabs a:hover { color: var(--ink); text-decoration: none; }
+  .crumbs { padding: 10px 20px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #6f7d89; }
+  .crumbs .at { color: var(--dim); }
+  main { max-width: 1080px; margin: 0 auto; padding: 6px 20px 40px; }
+  .card { background: var(--panel); border: 1px solid var(--edge); margin-bottom: 20px; }
+  .card > h1, .card > h2 { margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--edge);
+    background: var(--panel-2); font-size: 14px; font-weight: 600; letter-spacing: 0.4px; }
+  .card .inner { padding: 18px; }
+  .lede { margin: 0 0 16px; color: var(--dim); max-width: 62ch; }
+  .note { font-size: 12px; color: #77848f; margin: 14px 0 0; }
+  .inner h3 { margin: 18px 0 6px; font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--amber); }
+  .inner h3:first-of-type { margin-top: 0; }
+  .inner p, .inner li { font-size: 13px; color: #b9c5cf; max-width: 68ch; }
+  .log { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .log th { text-align: left; color: var(--dim); font-weight: 500; letter-spacing: 1.1px;
+    text-transform: uppercase; font-size: 10px; border-bottom: 1px solid var(--edge); padding: 7px 8px; }
+  .log td { border-bottom: 1px solid #212a32; padding: 7px 8px; color: #b9c5cf; }
+  .log td.st { color: var(--green); }
+  .log td.st.due { color: var(--amber); }
+  ul.sections { list-style: none; margin: 0; padding: 0; }
+  ul.sections li { border-bottom: 1px dotted var(--edge); padding: 12px 0; }
+  ul.sections li:last-child { border-bottom: 0; }
+  ul.sections .sname { font-weight: 600; letter-spacing: 0.3px; }
+  ul.sections p { margin: 4px 0 0; }
+  footer.foot { border-top: 1px solid var(--edge); margin-top: 10px; padding: 18px 20px 30px;
+    color: #66727c; font-size: 11px; }
+  footer.foot .links { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+  footer.foot .links a { color: #8c9aa6; }
+</style>
+</head>
+<body>
+
+<header class="strip">
+  <div class="mark">Dray<span>mere</span></div>
+  <div class="unit">Cold Chain Operations</div>
+  <div class="who">
+    <span>Depot 41 &middot; Kettleworth</span>
+    <span class="mono">op.hedlund</span>
+    <a href="signout.html">Sign out</a>
+  </div>
+</header>
+
+<nav class="tabs">
+  <a href="dispatch.html">Dispatch</a>
+  <a href="receiving.html">Receiving</a>
+  <a href="inventory.html">Inventory</a>
+  <a href="queue.html">Attestations</a>
+  <a href="vehicles.html">Vehicles</a>
+  <a href="reports.html">Reports</a>
+</nav>
+
+<div class="crumbs">Depot 41 &rsaquo; <span class="at">Shift home</span></div>
+
+<main>
+  <section class="card">
+    <h1>Shift home &mdash; depot 41, 26 July 2026</h1>
+    <div class="inner">
+      <p class="lede">Signed in as <span class="mono">op.hedlund</span> on the night shift.
+        This console covers depot 41 only; regional and multi-depot work is done from the
+        regional office.</p>
+      <table class="log">
+        <thead>
+          <tr><th>Open item</th><th>Where</th><th>Owner</th><th>State</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Nightly count attestation, period 07-25</td><td><a href="queue.html">Attestations</a></td><td>Supervisor on shift</td><td class="st due">Due tonight</td></tr>
+          <tr><td>Run <span class="mono">RUN-0726-05</span> held at dock</td><td><a href="dispatch.html">Dispatch</a></td><td>Shift supervisor</td><td class="st due">Awaiting release</td></tr>
+          <tr><td>Quarantined inbound from Depot 30 &middot; Ferris Vale</td><td><a href="receiving.html">Receiving</a></td><td>Regional ops desk</td><td class="st due">Awaiting disposition</td></tr>
+          <tr><td>Trailer <span class="mono">TRL-206</span> fridge unit fault</td><td><a href="vehicles.html">Vehicles</a></td><td>Transport office</td><td class="st due">Under observation</td></tr>
+        </tbody>
+      </table>
+      <p class="note">Clear or hand over every open item before the shift ends. The
+        <a href="handbook.html">operations handbook</a> sets out the handover order.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>What the shift runs through here</h2>
+    <div class="inner">
+      <h3>Before the shift starts</h3>
+      <p>Take the handover from the outgoing supervisor, walk the open items above, and confirm
+        the state of the nightly attestation before you accept the shift. Sign in to your
+        handheld with your own operator code and check that the scanners on the dock are
+        docked and counted.</p>
+
+      <h3>Through the operating day</h3>
+      <p>Loads are probed at the tailgate as they arrive and put away by chamber; failed checks
+        stay on the inbound dock until the regional operations desk rules on disposition.
+        Outbound trailers are pre-cooled and sealed before the depart time on the board, and a
+        held run only moves once the shift supervisor releases it. Record every pallet move on
+        the handheld at the time of the move, because the nightly count reconciles against
+        those movements rather than against memory.</p>
+
+      <h3>Before the count window closes</h3>
+      <p>Export the count from the handheld and transmit it through this console during the
+        window. The console issues a receipt on acceptance, and that receipt is the only proof
+        the count was filed. Anything transmitted after the window is treated as a late filing
+        and is escalated to the regional operations desk.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Console sections</h2>
+    <div class="inner">
+      <ul class="sections">
+        <li>
+          <span class="sname"><a href="dispatch.html">Dispatch</a></span>
+          <p>Outbound runs for the operating day, with trailer, depart time and release state.</p>
+        </li>
+        <li>
+          <span class="sname"><a href="receiving.html">Receiving</a></span>
+          <p>Inbound loads booked into the depot, with the tailgate temperature check result.</p>
+        </li>
+        <li>
+          <span class="sname"><a href="inventory.html">Inventory</a></span>
+          <p>Pallet positions by chamber as at the close of the last accepted count.</p>
+        </li>
+        <li>
+          <span class="sname"><a href="queue.html">Attestations</a></span>
+          <p>Filing state of each period in the open audit window, and the
+            <a href="upload.html">intake form</a> for the period that is due.</p>
+        </li>
+        <li>
+          <span class="sname"><a href="vehicles.html">Vehicles</a></span>
+          <p>Units allocated to the depot, with inspection dates and open defect notes.</p>
+        </li>
+        <li>
+          <span class="sname"><a href="reports.html">Reports</a></span>
+          <p>Period reports available to depot supervisors.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Reference and escalation</h2>
+    <div class="inner">
+      <p>Procedure sits in the <a href="handbook.html">operations handbook</a> and setpoints,
+        excursion limits and quarantine rules in the
+        <a href="cold-chain-policy.html">cold chain policy</a>. Check
+        <a href="status.html">intake service status</a> before reporting a transmission
+        problem, since the console stays readable during a maintenance window while
+        transmissions are refused.</p>
+      <p>The regional operations desk covers 20:00 to 06:00 for every depot. Reach it on
+        <span class="mono">+44 1632 960 415</span> or at
+        <a href="mailto:ops.night@draymere.example">ops.night@draymere.example</a>. During
+        office hours raise it with the depot manager first.</p>
+      <p class="note">Leave the console signed out when you leave the desk.
+        <a href="signout.html">Sign out</a></p>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="links">
+    <a href="handbook.html">Operations handbook</a>
+    <a href="cold-chain-policy.html">Cold chain policy</a>
+    <a href="legal.html#privacy">Privacy notice</a>
+    <a href="legal.html#terms">Terms of service</a>
+    <a href="status.html">Service status</a>
+  </div>
+  <div>Copyright 2026 Draymere Cold Chain Limited. Registered in England and Wales,
+    company 00000000. Registered office: Unit 12, Kettleworth Distribution Park,
+    Kettleworth KW7 3RN. Support: support@draymere.example</div>
+</footer>
+
+</body>
+</html>

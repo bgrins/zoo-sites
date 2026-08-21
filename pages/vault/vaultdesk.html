@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vault desk — Stavelock</title>
+<link rel="stylesheet" href="stavelock.css">
+</head>
+<body>
+<div class="rail">
+  <p class="mark">Stave<span>lock</span></p>
+  <p class="tag">Credential vault</p>
+  <nav>
+    <a href="index.html">Secrets</a>
+    <a href="rotate.html">Rotation</a>
+    <a href="audit.html">Audit log</a>
+    <a href="policy.html">Access policy</a>
+  </nav>
+  <p class="who">Signed in as d.pellworth<br>Platform Delivery<br>Vault region: eu-north</p>
+</div>
+
+<main>
+  <p class="crumb"><a href="index.html">Secrets</a> / Vault desk</p>
+  <h1>Vault desk</h1>
+  <p class="lede">The vault desk is the first line for everything Stavelock. Bring it
+  access questions, refused rotations, sealing requests and anything the console will not
+  do; it escalates to Security Engineering where a countersignature is needed.</p>
+
+  <div class="panel">
+    <div class="facts">
+      <div class="fact"><span class="k">Service desk</span><span>Raise a ticket under Platform / Credential vault</span></div>
+      <div class="fact"><span class="k">Email</span><span>vaultdesk@stavelock.example</span></div>
+      <div class="fact"><span class="k">Desk line</span><span>(555) 017-2204</span></div>
+      <div class="fact"><span class="k">Out of hours</span><span>(555) 017-2288, on-call custodian</span></div>
+      <div class="fact"><span class="k">Staffed hours</span><span>08:00 to 18:30, weekdays</span></div>
+      <div class="fact"><span class="k">Region</span><span>eu-north, from Fettergate House</span></div>
+    </div>
+  </div>
+
+  <h2>What to bring the desk</h2>
+  <p class="lede">The desk resolves role grants and lapses, sealing a new secret,
+  retiring one, correcting an owner or a cadence, and any rotation the vault refused for
+  a reason you cannot place. It also takes reports of a value that has been written
+  somewhere it should not have been.</p>
+
+  <h2>Severities</h2>
+  <div class="panel">
+    <div class="rows">
+      <div class="row">
+        <div class="name">One &mdash; exposure</div>
+        <div class="meta">A live value has left the vault's handling rules. Phone the desk,
+        do not wait for a ticket, and rotate as soon as the desk confirms it is safe.</div>
+        <div class="when">Response 15 minutes</div>
+      </div>
+      <div class="row">
+        <div class="name">Two &mdash; blocked release</div>
+        <div class="meta">A rotation or a copy is failing and a release is held behind it.</div>
+        <div class="when">Response 1 hour</div>
+      </div>
+      <div class="row">
+        <div class="name">Three &mdash; access</div>
+        <div class="meta">A grant is missing, wrong, or about to lapse.</div>
+        <div class="when">Response 1 working day</div>
+      </div>
+      <div class="row">
+        <div class="name">Four &mdash; housekeeping</div>
+        <div class="meta">Metadata corrections, cadence changes, questions about policy.</div>
+        <div class="when">Response 3 working days</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Before you call</h2>
+  <p class="lede">Have the namespace, the secret's name, your account, and the wording of
+  any message the console gave you. Never read a value to the desk and never paste one
+  into a ticket: the desk has no need for it and asking is itself a severity one. If the
+  console refused a rotation, say which secret and what it said, not what you entered.</p>
+
+  <h2>Break-glass out of hours</h2>
+  <p class="lede">A reveal still needs a countersignature at three in the morning. Phone
+  the out-of-hours line; the on-call custodian raises the request and pages an approver.
+  Expect the fifteen-minute window and the forced rotation afterwards exactly as during
+  the day, and expect the desk to ask what the reveal is for before it pages anyone.</p>
+
+  <footer>
+    <a href="policy.html">Access policy</a>
+    <a href="policy.html#handling">Key handling</a>
+    <a href="policy.html#privacy">Privacy</a>
+    <a href="roles.html">Roles</a>
+    <a href="vaultdesk.html">Vault desk</a>
+    <a href="releases.html">Release notes</a>
+    <p>Stavelock Systems Ltd, Fettergate House, 3 Marl Row, Barrowfield</p>
+    <p>Vault support: vaultdesk@stavelock.example &middot; (555) 017-2204</p>
+    <p>&copy; 2019-2026 Stavelock Systems Ltd. Registered no. 000000.</p>
+  </footer>
+</main>
+</body>
+</html>
