@@ -113,10 +113,13 @@ export const DRIVERS = {
       );
 
       snap = await snapshot(h);
-      // The chips are the designed read path (checkbox state never reaches the
-      // snapshot), so the fixture must keep them snapshot-legible.
-      if (!snap.includes('no Red onion') || !snap.includes('add Feta')) {
-        throw new Error('ticket chips for line 1 are not legible in the snapshot');
+      // The chips are read from the DOM. Whether they also survive the snapshot
+      // is the result this eval reports, so the driver must not require it.
+      const chips = String(
+        (await h.evaluate(() => document.body.innerText)) ?? ''
+      );
+      if (!chips.includes('no Red onion') || !chips.includes('add Feta')) {
+        throw new Error(`ticket chips for line 1 are missing from the page`);
       }
       await h.mcp('click_by_uid', {
         uid: uid(snap, 'input "Harvest Grain Bowl"', 'grain bowl radio'),
@@ -179,15 +182,16 @@ export const DRIVERS = {
       if (conf.total !== ticket.total) {
         throw new Error(`confirmation total ${conf.total} != ticket total ${ticket.total}`);
       }
-      // The confirmation must stay snapshot-legible at maxLines: read the code
-      // and total back off a fresh snapshot and require them to agree.
-      const confSnap = await snapshot(h);
-      const snapCode = confSnap.match(/Order code (BF-[0-9A-F]{6})/);
-      if (!snapCode || snapCode[1] !== conf.code) {
-        throw new Error('order code is not legible in the confirmation snapshot');
+      // Read the confirmation back off the page and require it to agree with
+      // what the server recorded. Whether the snapshot also carries it is the
+      // measurement, not a precondition for the fixture being correct.
+      const confText = String((await h.evaluate(() => document.body.innerText)) ?? '');
+      const shownCode = confText.match(/Order code (BF-[0-9A-F]{6})/);
+      if (!shownCode || shownCode[1] !== conf.code) {
+        throw new Error(`order code missing from the confirmation page`);
       }
-      if (!confSnap.includes(`Total charged $${conf.total.toFixed(2)}`)) {
-        throw new Error('total charged is not legible in the confirmation snapshot');
+      if (!confText.includes(`Total charged $${conf.total.toFixed(2)}`)) {
+        throw new Error('total charged missing from the confirmation page');
       }
 
       const fields = { orderCode: conf.code, total: conf.total };

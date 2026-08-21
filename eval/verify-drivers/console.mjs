@@ -39,12 +39,19 @@ export const DRIVERS = {
         );
       }, { tries: 20 });
 
-      // The hits must also land inside the DEFAULT snapshot cap (maxLines 100),
-      // because `find` only searches what the snapshot returned: a layout that
-      // pushes them past the cap makes the page look empty.
+      // Whether the hits also land inside the DEFAULT snapshot cap is a property
+      // of the surface, not of the fixture, so it is recorded and not enforced:
+      // `find` only searches what the snapshot returned, and a page long enough
+      // to push them past the cap looks empty through that surface. That is the
+      // finding this eval exists to report.
       const cappedText = await snapText(mcp);
-      if (!cappedText.includes(hit[1]) || !/release\/gate failed/.test(cappedText)) {
-        throw new Error('search hits fall outside the default 100-line snapshot cap');
+      const withinDefaultCap =
+        cappedText.includes(hit[1]) && /release\/gate failed/.test(cappedText);
+      if (!withinDefaultCap) {
+        console.log(
+          '    canvas-log: the error line falls outside the default 100-line ' +
+            'snapshot cap, so `find` cannot reach it through that surface'
+        );
       }
 
       // The step summary is what disambiguates the four ERROR lines; assert the
