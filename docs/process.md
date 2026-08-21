@@ -36,8 +36,8 @@ Read the failures block, never the exit status of a piped gate: `node eval/verif
 ## Read before you edit
 
 - **Fixtures** (`pages/`): `docs/authoring-fixtures.md` — hard rules, the session
-  and nonce infrastructure already in `server.mjs`, the tool-surface constraints a
-  task must stay winnable within, validator rules.
+  and nonce infrastructure already in `server.mjs`, why tool-surface limits are the
+  measurement rather than a design constraint, validator rules.
 - **Validators** (`eval/tasks/`, `eval/answers.mjs`): "Fixing a defect" below. Work
   test-first; skipping it introduces mis-grades faster than it lands fixes.
 - **Shared files** (`eval/run.mjs`, `eval/answers.mjs`, `server.mjs`): one writer at a time;
