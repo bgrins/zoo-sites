@@ -138,14 +138,11 @@ function scheduleMintBrief(rand) {
     notBeforeIndex: SCHEDULE_SLOTS.indexOf(notBefore),
     avoidDay,
     avoidDayName,
-    // Each line is kept under 28 characters so it survives the snapshot's text
-    // truncation: the request card is the one part of this fixture an agent must
-    // be able to read through the uid surface.
     terms: [
-      `Duration: ${minutes} minutes`,
-      `Start no earlier than ${notBefore}`,
-      `Seats: ${seats} or more`,
-      `Not on ${avoidDayName}`,
+      `The booking runs for ${minutes} minutes without a break`,
+      `Nothing may start earlier than ${notBefore} on the day`,
+      `The room must seat ${seats} people or more`,
+      `${avoidDayName} is not available to this client`,
     ],
     note:
       `${SCHEDULE_CLIENT.client} will not travel on ${avoidDayName}. ` +
