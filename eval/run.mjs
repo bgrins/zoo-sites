@@ -764,6 +764,23 @@ function markdownReport({ meta, results, totals }) {
         `$${spend.toFixed(4)} total (excluded from the per-condition metrics above).`
     );
   }
+  // A failure caused by the surface hiding the value is a finding about the tool,
+  // not about the agent, and the pass count alone conflates them. Truncation is
+  // reported because it is provable: the value's opening reached the agent with
+  // the truncator's ellipsis where the rest should have been.
+  const cutRows = results.filter((r) => r.surface?.truncated?.length);
+  if (cutRows.length) {
+    const lost = cutRows.filter((r) => !r.success);
+    lines.push(
+      '',
+      `Surface truncation: ${cutRows.length} row(s) had a graded value cut before it ` +
+        `reached the agent, ${lost.length} of which failed. Those failures are the ` +
+        `tool surface, not the agent; see the per-task notes.`
+    );
+    for (const r of lost) {
+      lines.push(`  - ${r.condition}/${r.task}: ${JSON.stringify(r.surface.truncated)}`);
+    }
+  }
   // Spend the totals above cannot see: attempts discarded by retries or wall
   // stops still hit the API. Recorded per row, summed here for honesty.
   const discardedRows = results.filter((r) => r.discarded_cost_usd);
@@ -795,9 +812,14 @@ function markdownReport({ meta, results, totals }) {
       r.grading === 'fields'
         ? `fields=${JSON.stringify(r.fields)} — ${trimFieldsEcho(String(r.detail ?? r.error ?? ''))}`
         : (r.detail ?? r.error ?? '');
+    // A failure whose value the surface truncated is not the same result as a
+    // failure the agent owns, so say which in the row rather than only in JSON.
+    const cut = r.surface?.truncated?.length
+      ? `SURFACE TRUNCATED ${JSON.stringify(r.surface.truncated)} — `
+      : '';
     const note = r.extraction_failed
-      ? `EXTRACTION FAILED (${r.extraction_failed}) — ${noteBase}`
-      : noteBase;
+      ? `${cut}EXTRACTION FAILED (${r.extraction_failed}) — ${noteBase}`
+      : cut + noteBase;
     lines.push(
       `| ${r.condition} | ${task} | ${r.success ? 'PASS' : 'FAIL'} | ${r.turns ?? ''} | ` +
         `${r.input_tokens ?? ''} | ${r.cache_creation ?? ''} | ` +
