@@ -81,12 +81,13 @@ export const DRIVERS = {
       if (!desk) throw new Error('no Subsurface Permits Desk link in the Ground Works section');
       await mcp('click_by_uid', { uid: desk });
       await pollPath(evaluate, `${DESK}/subsurface-permits.html`);
-      // 28 characters, so the hours line survives the formatter's 30-char cap
-      // intact and no evaluate() is needed to read the graded fact.
-      const page = await snapshot();
-      const hours = textLine(page, /9:15/);
-      if (!hours) throw new Error('counter hours not visible in the desk page snapshot');
-      if (!/12:45/.test(hours)) throw new Error(`hours line looks truncated: "${hours}"`);
+      // Read the graded hours off the page. Whether the surface also delivers
+      // the line intact is the measurement, so a truncated snapshot is a result
+      // to report rather than a reason to fail the fixture.
+      const body = String((await evaluate(() => document.body.innerText)) ?? '');
+      const hours = body.split('\n').find((line) => /9:15/.test(line));
+      if (!hours) throw new Error('counter hours missing from the desk page');
+      if (!/12:45/.test(hours)) throw new Error(`hours line is incomplete on the page: "${hours}"`);
       const fields = {
         daysOpen: ['Tuesday', 'Thursday'],
         opensAt: '9:15 AM',

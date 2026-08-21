@@ -65,8 +65,10 @@ export const DRIVERS = {
         if (!send) throw new Error('no Transmit attestation button in the snapshot');
         await act(mcp, 'click_by_uid', { uid: send[1] });
 
-        // The receipt is short enough to survive the snapshot's 27-char text
-        // cap, so it is read from the snapshot rather than with evaluate.
+        // Polled through the snapshot deliberately: this receipt is the one the
+        // agent must read back, so the driver exercises the same surface. It does
+        // not assert legibility - a surface that cuts it fails the task, which is
+        // the result.
         const done = await untilSnap(
           snapshot,
           (s) => /RCPT-[0-9A-F]{6}/.test(s),

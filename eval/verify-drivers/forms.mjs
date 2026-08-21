@@ -655,18 +655,24 @@ export const DRIVERS = {
 
   // --- inline grid editing; the server holds the sheet and logs every edit ---
   'grid-edit': {
-    note: 'memo parsed from the snapshot; each cell edited through Edit/Save buttons',
+    note: 'memo read from the DOM; each cell edited through Edit/Save buttons',
     wrong: ['Done — I corrected GR-1104, GR-1109 and GR-1123.'],
-    async run({ goto, snapshot, mcp }) {
+    async run({ goto, snapshot, mcp, evaluate }) {
       await goto('/grid-edit/');
       let snap = await untilSnap(
         snapshot,
         (s) => /button "Edit qty GR-/.test(s) && /li text="GR-/.test(s),
         'the count sheet'
       );
-      // Memo lines read "GR-1104 qty is 18 not 81 - recount 07-24, aisle B." —
-      // the graded half survives the snapshot's 27-character truncation.
-      const memo = [...snap.matchAll(/li text="(GR-\d+) qty is (\d+) not (\d+)/g)].map((m) => ({
+      // Memo lines read "GR-1104 qty is 18 not 81 - recount 07-24, aisle B."
+      // Parsed from the DOM: the snapshot cuts them mid-sentence, and whether an
+      // agent can still read them there is the result, not a driver precondition.
+      const memoText = String(
+        (await evaluate(() =>
+          [...document.querySelectorAll('li')].map((li) => li.textContent).join('\n')
+        )) ?? ''
+      );
+      const memo = [...memoText.matchAll(/(GR-\d+) qty is (\d+) not (\d+)/g)].map((m) => ({
         sku: m[1],
         qty: Number(m[2]),
         was: Number(m[3]),
