@@ -44,17 +44,14 @@ const BOX_SHOW = {
   performance: 'This evening at 7:30',
 };
 
-// Each term line is kept under 28 characters so it survives the snapshot's
-// text truncation: the request card is the one part of this fixture an agent
-// must be able to read through the uid surface.
 const BOX_BRIEF = {
   patron: 'Mrs. Ida Carrow',
   reference: 'Will-call 118',
   terms: [
-    'Two seats, side by side',
-    'Not across the aisle',
-    'Full view only',
-    'At most 60.00 in all',
+    'Two seats together in the same block of one row',
+    'Not split by the centre aisle between seats 6 and 7',
+    'Full view only, no restricted-view seats at any price',
+    'Total of 60.00 or less for the pair',
   ],
   note:
     'Every row breaks at the centre aisle between seats 6 and 7; a pair split ' +
