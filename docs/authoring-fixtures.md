@@ -7,11 +7,12 @@ Every path below is relative to the repo root.
 
 The eval measures how the browser tool surface shapes a run, not how capable the
 agent is, across two conditions: `firefox-devtools-mcp` (over stdio) and
-`playwright-mcp` (the vendored `@playwright/mcp`). Design a task for the band where the
-surface decides the outcome: winnable through every shipped surface, yet not so easy
-that every surface wins it identically. For scale: 94 tasks (86 web, 5 devtools, 3
-basic smoke) run against 66 origins served from 53 fixture trees under `pages/`, and
-`eval/verify.mjs` gates 91 of them with one deterministic driver each.
+`playwright-mcp` (the vendored `@playwright/mcp`). Build each fixture as the real
+site it imitates, and let the surfaces succeed or fail against it on their own: a
+task that one surface loses is a finding, not a bug to author away. See
+"Tool-surface limits are the measurement" below. For scale: 94 tasks (86 web, 5
+devtools, 3 basic smoke) run against 66 origins served from 53 fixture trees under
+`pages/`, and `eval/verify.mjs` gates 91 of them with one deterministic driver each.
 
 ## Where to look first
 
@@ -118,37 +119,57 @@ Each of these binds every fixture and every validator, without exception.
   `index.html`. That static server CANNOT do auth redirects, so gate the DATA behind
   `fetch`, never the page shell.
 
-## Tool-surface constraints a task must stay winnable within
+## Tool-surface limits are the measurement, not a design constraint
 
-A browser agent reads a page through an accessibility snapshot that drops and
-truncates more than you expect. Design a task to stay winnable under these
-constraints, never to turn on one:
+Build the page a competent web developer would build for the business it belongs
+to. If a browser tool cannot cope with it, that is a result the eval exists to
+report, not a fixture defect to engineer around.
 
-- **Only 27 characters of a text node survive.** Text is capped twice on the way
-  out: at 100 characters, then at 30 by a truncator that spends three on the
-  ellipsis (`MAX_ATTR_LENGTH` is 30, `truncate()` takes the other 3). A graded datum
-  must sit inside the first 27 characters of its node, not the first 30: "Your price
-  for this item is $274.50" truncates to "Your price for this item is...", losing
-  the number. `href`, `src`, `value` and `name` take the same 27-character cap, and
-  an `href` is absolutized before it is cut, so a URL never disambiguates anything.
-  An agent may echo a truncated string verbatim, so never require a long contiguous
-  string in an answer.
-- **The walker stops at depth 10** and truncates deep DOMs and iframes.
+This section used to say the opposite: it required every task to stay winnable
+through every shipped surface. That rule quietly destroyed the measurement. Ship
+only tasks that survive both surfaces and you have selected away exactly the cases
+where the surfaces differ, which is the thing being compared. Worse, a corpus
+tuned to fit inside a truncation limit can never report that the limit loses data
+— and every one of the numbers below is a constant in one vendor's bundle
+(`le=10`, `j=1e3`, `ie=100`, `MAX_ATTR_LENGTH=30` in
+`@mozilla/firefox-devtools-mcp`), not a property of browsers or of HTML. Tuning
+736 pages to those constants couples the corpus to a dependency's internals, and
+bumping one of them silently retires whatever it was testing.
+
+So the limits below are documented to help you READ RESULTS, never to shape a
+fixture. When a run fails, they are the first thing to suspect:
+
+- **Roughly 27 characters of a text node survive.** Text is capped at 100 in the
+  page, then at 30 on the way out, and the truncator spends three on the ellipsis.
+  "Your price for this item is $274.50" arrives as "Your price for this item
+  is...". `href`, `src`, `value` and `name` take the same cap, and an `href` is
+  absolutized before it is cut.
+- **The walker stops at depth 10**, and bails entirely past **1000 nodes**. Both
+  set a `truncated` flag that says the tree was cut but not where.
 - **The walker never descends into shadow roots.**
-- **`find` only searches the text the snapshot returned.** It misses text past 100
-  characters in one node, and the snapshot's line cap hides a node past that cap, so
-  never put a task's only affordance at the bottom of a long page.
+- **`find` only searches text the snapshot returned**, so it cannot find what was
+  truncated away.
 - **Table cell content does not reach the snapshot** without an explicit
   `includeAll`, and even then the geometry needed to read a grid does not.
-- **An empty element contributes no snapshot node at all.** Blank layout cells vanish
-  and a positional grid closes up around the gap: a calendar whose first day should
-  be inset by its weekday offset reads as starting on the first column. Name what a
-  cell means rather than leaving it to position — `pages/cabins/index.html` puts the
-  weekday in each day button's accessible name.
-- **A flattened snapshot loses button-to-card grouping**, which is what makes a bare
-  "Add to cart" ambiguous.
-- **Native `window.confirm()` is auto-dismissed instantly**, so use an in-page modal
-  for any dialog task.
+- **An empty element contributes no snapshot node at all**, so a positional grid
+  closes up around a blank cell.
+- **A flattened snapshot loses button-to-card grouping.**
+- **Native `window.confirm()` is auto-dismissed instantly.**
+
+The best tasks are the ones where a limit changes the STRATEGY a surface needs
+rather than deciding the outcome outright: the agent has to scroll, search, open
+the thing, or read the DOM another way. `shadow-unlock` is the model — it puts the
+control inside a shadow root the walker cannot enter and leaves a real route in.
+A task no surface can win is weak evidence, because a floor of zero does not
+distinguish a bad tool from a bad agent; but do not fix that by softening the
+page. Fix it by giving the page an honest second route, the way a real site has
+one.
+
+When a task does fail, record WHY: whether the graded datum reached the snapshot
+the agent was given. The minted value is server-side and the snapshot text is
+captured, so the two can be compared. That is what separates "the surface hid it"
+from "the agent got it wrong", and it turns a truncation limit from something to
+avoid into something measured.
 
 ## Anti-cheat rules
 
@@ -164,8 +185,11 @@ constraints, never to turn on one:
 - **A per-session value derived from the page-exposed nonce is reproducible** by
   anyone who knows the formula. Derive server-issued codes from `randomBytes`, never
   from the nonce.
-- **Anything the validator reads out of the snapshot dies at the 27-character cap**
-  above: design the fixture around the cap, not around what the page renders.
+- **A datum past the snapshot's caps never reaches the agent**, so a run that
+  needed it fails. Do NOT reshape the page to fit the caps; that is the measurement
+  (see "Tool-surface limits are the measurement"). Make the failure legible instead:
+  log in `detail` whether the value the ask demanded was present in the snapshot the
+  agent received, so a surface that hid it is not scored as an agent that missed it.
 - **A client-reported fact is an assertion, not evidence.** Page script can claim any
   viewport width, any computed style, any layout measurement, so a mint that gates on
   the claim gates on nothing. Find the signal the browser produces as a side effect
@@ -218,25 +242,39 @@ constraints, never to turn on one:
   never seen to fail has not been shown to do anything. `docs/process.md` states the
   full fix-pass method.
 
-## Prove the fixture through the MCP surface
+## Prove the fixture works, not that the surface can win it
 
-A fixture is finished once a real headless browser has driven it end to end through
-the MCP surface. Each driver in `eval/verify-drivers/` navigates, snapshots, and clicks
-by uid through the same `firefox-devtools-mcp` server that condition uses, and
-returns the answer text a correct agent would produce. Read
-`eval/verify-drivers/probes.mjs` (the driver contract), `eval/verify-drivers/lib.mjs`
-(`until`, `clickToPath`, `uidOf`, `snapText`, `bumpCode`) and
-`eval/verify-drivers/registrar.mjs` (shadowing probe, confirm dead end, uid clicks,
-snapshot-visibility assertion), write your driver in the same shape, and run
+A fixture is finished once a real headless browser has driven it end to end. Each
+driver in `eval/verify-drivers/` navigates and acts through the same
+`firefox-devtools-mcp` server the condition uses, and returns the answer text a
+correct agent would produce. Read `eval/verify-drivers/probes.mjs` (the driver
+contract), `eval/verify-drivers/lib.mjs` (`until`, `clickToPath`, `uidOf`,
+`snapText`, `bumpCode`) and `eval/verify-drivers/registrar.mjs` (shadowing probe,
+confirm dead end, uid clicks), write your driver in the same shape, and run
 `node eval/verify.mjs --task <your-id>`.
 
-That driver IS the self-test: `eval/mcp-stdio.mjs` is a library with no entrypoint, and
-no shell command drives the browser. Drive the whole solution path, confirming that
-the page works, that server-side state lands, and that the task is winnable through
-the snapshot and `find` surface. Drivers run headless by default (`--headed` for
-debugging). Poll with `until` rather than sleeping, and read the answer out of
-`ctx.pages.state` only when the task is unsolvable without it — say so in the
-driver's `note`.
+What green means: **the site behaves correctly and its server-side state lands**.
+It does NOT mean the task is winnable through the snapshot. That is the result the
+eval reports, so it must not also be the gate's precondition — a fixture that a
+surface cannot read is a finding to publish, and the gate has to stay green while
+you publish it.
+
+So where a snapshot limit blocks the driver, reach past it with `ctx.evaluate`
+(the gate starts the server with `--enable-script`, and most drivers already use
+it) rather than reshaping the page. Two rules on that:
+
+- **Prefer real interaction; use script to observe.** Clicking through script can
+  satisfy a server-side gate without proving the control works. Read truncated or
+  hidden values with `evaluate`; keep real clicks for acting, except where the
+  surface genuinely cannot reach the control.
+- **This licence is the driver's, never the validator's.** A driver is our own
+  harness, so what it reads through script is trustworthy. An agent is not, so
+  grading stays on server-observed state — see "A client-reported fact is an
+  assertion, not evidence" above.
+
+Drivers run headless by default (`--headed` for debugging). Poll with `until`
+rather than sleeping, and read the answer out of `ctx.pages.state` only when the
+task is unsolvable without it — say so in the driver's `note`.
 
 A readiness poll must require something that did not exist before the action it waits
 on. A predicate the previous state already satisfies returns on its first attempt and

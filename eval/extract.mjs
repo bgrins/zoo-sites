@@ -67,6 +67,12 @@ export function normalise(s) {
   return String(s)
     .replace(/[*_~`]+/g, '')
     .replace(/[‐-―−]/g, '-')
+    // Quote style is not content. An answer that renders a title in typographic
+    // quotes and an extractor that echoes it in straight ones are saying the same
+    // thing, but the quote gate compares them literally, so the field was nulled
+    // and the run scored as though the answer never stated it.
+    .replace(/[‘’‚‛′]/g, "'")
+    .replace(/[“”„‟″]/g, '"')
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();

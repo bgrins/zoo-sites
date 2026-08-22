@@ -281,8 +281,7 @@ async function select(ref, force) {
     barIssued = body.input;
     toast(body.editable ? '' : wanted + ' is protected.', false);
   } else {
-    // Kept short on purpose: a snapshot truncates node text at 30 characters.
-    toast('Formula bar has unsaved text');
+    toast('The formula bar still holds unsaved text, so it was left alone.');
   }
 }
 

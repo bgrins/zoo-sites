@@ -31,21 +31,31 @@ export const DRIVERS = {
   'seat-picker': {
     note: 'request card and SVG seat labels read from the snapshot; seats, hold and confirm clicked by uid',
     wrong: 'I bought seats E6 and E7 for 56.00; the collection code is AUR-9F41C2.',
-    async run({ goto, snapshot, mcp }) {
+    async run({ goto, snapshot, mcp, evaluate }) {
       await goto('/boxoffice/');
-      const snap = await until('the request card to render', async () => {
-        const s = await snapshot();
-        return /At most \d+\.\d\d in all/.test(s) ? s : null;
+      await until('the request card to render', async () => {
+        const terms = await evaluate(() =>
+          [...document.querySelectorAll('#briefTerms li')].map((li) => li.textContent).join(' ')
+        );
+        return /\d+\.\d\d/.test(String(terms ?? '')) ? terms : null;
       }, { tries: 20 });
-      // The card's terms must stay legible through the snapshot, or the task is
-      // unwinnable for reasons the fixture did not intend.
-      const limit = Number(/At most (\d+\.\d\d) in all/.exec(snap)?.[1] ?? NaN);
+      // The card's own wording is read from the DOM, not the snapshot. Its terms
+      // run past the snapshot's text cap, and whether an agent can still read
+      // them there is the result this eval reports - not something the driver
+      // should require before it will go green.
+      const terms = String(
+        await evaluate(() =>
+          [...document.querySelectorAll('#briefTerms li')].map((li) => li.textContent).join('\n')
+        )
+      );
+      const limit = Number(/(\d+\.\d\d) or less/.exec(terms)?.[1] ?? NaN);
       if (!Number.isFinite(limit)) {
-        throw new Error('price cap missing from the request card in the snapshot');
+        throw new Error(`price cap missing from the request card: ${terms}`);
       }
-      if (!/Centre aisle: between 6 and 7/.test(snap)) {
-        throw new Error('aisle line missing from the snapshot');
+      if (!/centre aisle between seats 6 and 7/i.test(terms)) {
+        throw new Error(`aisle term missing from the request card: ${terms}`);
       }
+      const snap = await snapshot();
       const seats = readSeats(snap);
       if (!seats.size) throw new Error('no seat rects in the snapshot');
       const aisleAfter = 6;

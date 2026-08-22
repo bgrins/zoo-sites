@@ -5,10 +5,10 @@
 // node at all, and even take_snapshot({includeAll:true}) emits the cells without
 // rowspan/colspan, which leaves the column each cell belongs to unrecoverable
 // (measured: a left-to-right reading of the snapshot misplaces ~112 of ~94 free
-// cells and answers a different slot). Everything else here goes through the uid
-// surface: the request card is READ from the snapshot (its four conditions are
-// minted per session, so they cannot be hard-coded here), and the quick-book line
-// and the reference the desk issues are driven and read through it too.
+// cells and answers a different slot). The request card is read from the DOM too:
+// its four conditions are minted per session, and they are written the way a
+// booking desk writes them rather than trimmed to fit the snapshot's text cap.
+// The quick-book line and the reference the desk issues stay on the uid surface.
 
 import { bumpCode, until } from './lib.mjs';
 
@@ -22,31 +22,34 @@ const DAY_KEYS = {
 
 export const DRIVERS = {
   'room-booking': {
-    note: 'request card read from the snapshot; evaluate_script reads the spanning grid; booking is uid-driven',
+    note: 'request card and spanning grid read with evaluate_script; booking is uid-driven',
     wrong: [
       'I booked the Bramble Suite on Monday at 09:00; the desk gave me reference PCR-4C71A9.',
     ],
     async run({ goto, evaluate, snapshot, mcp, sleep }) {
       await goto('/schedule/');
+      // The card is read from the DOM, not the snapshot. Its conditions are
+      // written the way a booking desk writes them and run past the snapshot's
+      // text cap; whether a surface still delivers them is the result this eval
+      // reports, so the driver must not demand it before going green.
+      const cardText = async () =>
+        String(
+          (await evaluate(() => document.getElementById('briefTerms')?.innerText ?? '')) ?? ''
+        );
       const card = await until('the request card to render', async () => {
-        const s = await snapshot();
-        return /Start no earlier than/.test(s) ? s : null;
+        const t = await cardText();
+        return /may start earlier than/.test(t) ? t : null;
       }, { tries: 20 });
-      // The constraints must still be legible through the snapshot, or the task is
-      // unwinnable for reasons the fixture did not intend.
       const read = (re, what) => {
         const m = re.exec(card);
-        if (!m) throw new Error(`request card line missing from the snapshot: ${what}`);
+        if (!m) throw new Error(`request card line missing: ${what} in ${JSON.stringify(card.slice(0, 300))}`);
         return m[1];
       };
-      const minutes = Number(read(/Duration: (\d+) minutes/, 'duration'));
-      const notBefore = read(/Start no earlier than (\d\d:\d\d)/, 'earliest start');
-      const seats = Number(read(/Seats: (\d+) or more/, 'seats'));
-      const avoidDay = DAY_KEYS[read(/Not on ([A-Za-z]+)/, 'excluded day').toLowerCase()];
+      const minutes = Number(read(/runs for (\d+) minutes/, 'duration'));
+      const notBefore = read(/may start earlier than (\d\d:\d\d)/, 'earliest start');
+      const seats = Number(read(/must seat (\d+) people or more/, 'seats'));
+      const avoidDay = DAY_KEYS[read(/([A-Za-z]+) is not available/, 'excluded day').toLowerCase()];
       if (!avoidDay) throw new Error('excluded day on the request card is not a weekday');
-      if (!/Cormorant Hall - seats 24/.test(card)) {
-        throw new Error('room seat counts missing from the snapshot');
-      }
 
       const week = await evaluate(() => {
         const slots = [...document.querySelectorAll('#daybookBody tr th')].map((th) => th.textContent);
