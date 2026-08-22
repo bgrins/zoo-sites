@@ -309,14 +309,14 @@ export const DRIVERS = {
         { postTitle: info.title, topLevelCommentCount: 14 },
         { postTitle: second, topLevelCommentCount: info.roots },
       ];
+      // A clipped title is a FAILURE, not an accepted variant: if a surface can
+      // only show 27 characters of the headline it loses this task, and that is
+      // the result being measured rather than something to forgive.
+      this.wrongFields.push({
+        postTitle: info.title.slice(0, 27) + '...',
+        topLevelCommentCount: info.roots,
+      });
       this.alsoCorrectFields = [fields];
-      // A clipped title is now a FAILURE, not an accepted variant. If a surface
-      // can only show 27 characters of the headline it loses this task, and that
-      // is the result being measured rather than something to forgive.
-      this.wrongFields = [
-        ...this.wrongFields,
-        { postTitle: info.title.slice(0, 27) + '...', topLevelCommentCount: info.roots },
-      ];
       this.wrong = [
         `The #1 post is "${info.title}" and its thread shows 14 top-level comments.`,
         `The #1 post is "${info.title}" and its thread shows 14 top-level comments. ` +
@@ -330,6 +330,10 @@ export const DRIVERS = {
           `Total including replies: 14`,
         `The thread for "${info.title}" lists 14 comments in total, but only ` +
           `${info.roots} of them are top-level; the rest are replies nested under those.`,
+        // The phrasing a real run answered with, which the extractor read as no
+        // title at all until postTitle carried a description: curly quotes, the
+        // label on its own line, no sentence around it.
+        `Title: “${info.title}”  \nTop-level comments shown: ${info.roots}`,
       ];
       return {
         text:
