@@ -234,10 +234,9 @@ const SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'
 const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const iso = (y, m, d) =>
   y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-// The weekday belongs in the name, not only in the column: a day cell carries no
-// clue which column it sits in unless the row is read as a whole, and the blank
-// lead cells that set the offset are decorative. Naming the weekday is also what
-// a booking calendar does for a screen reader.
+// A booking calendar names the weekday on each day button, because a date alone
+// tells a screen reader nothing about which column it sits in and the blank lead
+// cells that set the month's offset are decorative.
 const shortDate = (s) => {
   const p = s.split('-');
   const dow = DOW[new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]))).getUTCDay()];
