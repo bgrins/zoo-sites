@@ -20,6 +20,7 @@ import {
 import { homedir, tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ORIGINS, originUrls } from '../../manifest.mjs';
 import { latestRun, RESULTS_ROOT as resultsRoot } from '../run-files.mjs';
 import { basicTasks } from '../tasks/basic.mjs';
 import { webTasks } from '../tasks/web.mjs';
@@ -142,11 +143,17 @@ if (existsSync(join(runDir, 'report.md'))) {
 // which describes the grading shape this bundle deliberately excludes. The base
 // is a stand-in for the loopback URL the harness assigns at run time, so a reader
 // sees the shape of the prompt without a port that means nothing outside its run.
+// A per-origin run gave each site a port of its own, stood in for by the
+// manifest's; a run that records no serving mode was single-origin.
 const BASE_PLACEHOLDER = 'http://localhost';
+const origins =
+  run.meta?.serving === 'origins'
+    ? originUrls(BASE_PLACEHOLDER, ORIGINS.map((o) => ({ ...o, url: `${BASE_PLACEHOLDER}:${o.port}` })))
+    : undefined;
 const tasks = [
-  ...basicTasks(BASE_PLACEHOLDER),
-  ...(await webTasks(BASE_PLACEHOLDER)),
-  ...(await devtoolsTasks(BASE_PLACEHOLDER)),
+  ...basicTasks(BASE_PLACEHOLDER, origins),
+  ...(await webTasks(BASE_PLACEHOLDER, origins)),
+  ...(await devtoolsTasks(BASE_PLACEHOLDER, origins)),
 ]
   .filter((t) => tasksSeen.includes(t.id))
   .map((t) => ({
@@ -189,6 +196,12 @@ over what the agent claimed, so a task cannot be passed by asserting success.
 Axes varied in this run: ${manifest.shape.variedAxes.join(' and ') || 'none (single configuration)'}.
 Conditions: ${conditions.join(', ')}. Agent harnesses: ${backends.join(', ') || 'n/a'}.
 Repeats per cell: ${manifest.shape.repeats}.
+Serving: ${run.meta?.serving === 'origins' ? 'one loopback origin per site' : 'single-origin, every site under a path prefix'}.
+Runs served differently are separate measurement epochs.${
+  run.meta?.env
+    ? `\n\`meta.env\` records each condition's browser environment, and report.md\nflags any mismatch between them.`
+    : ''
+}
 
 ## Files
 

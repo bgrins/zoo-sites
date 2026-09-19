@@ -9,7 +9,8 @@
 // allowlist below passes now: what the processes need to start, reach and
 // authenticate against their API, and launch a browser.
 
-import { chmodSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { chmodSync, createReadStream, lstatSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -113,4 +114,49 @@ function makeRemovable(dir) {
 
 export function removeAllTempDirs() {
   for (const dir of [...LIVE_DIRS]) removeTempDir(dir);
+}
+
+// Files the MCP servers write for themselves into the download directory, so
+// `downloads` counts only what a page made the browser save, in either
+// condition. playwright-mcp names its snapshots and logs <kind>-<ISO time>.<ext>;
+// firefox-devtools-mcp's screencast_stop saves screencast-<uuid>.webm.
+const TOOL_ARTIFACTS = [
+  /^[a-z]+(?:-[a-z]+)*-\d{4}-\d\d-\d\dT\d\d-\d\d-\d\d-\d{3}Z(?:\.\w+)?$/,
+  /^screencast-[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\.\w+$/,
+];
+
+async function describeFile(path, name) {
+  let bytes;
+  try {
+    bytes = lstatSync(path).size;
+    const hash = createHash('sha256');
+    let read = 0;
+    for await (const chunk of createReadStream(path)) {
+      hash.update(chunk);
+      read += chunk.length;
+    }
+    return { name, bytes: read, sha256: hash.digest('hex') };
+  } catch (error) {
+    return { name, ...(bytes == null ? {} : { bytes }), error: error.code ?? error.message };
+  }
+}
+
+// What the browser saved into an attempt's download directory, read before the
+// directory is removed. A file still downloading keeps Firefox's .part name.
+// Never throws, like removeTempDir: a file it cannot read is recorded with its
+// error.
+export async function attemptDownloads(dir) {
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const out = [];
+  for (const e of entries) {
+    if (e.isFile() && !TOOL_ARTIFACTS.some((re) => re.test(e.name))) {
+      out.push(await describeFile(join(dir, e.name), e.name));
+    }
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
 }

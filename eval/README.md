@@ -68,6 +68,51 @@ Both the gate and paid runs resolve `firefox-devtools-mcp` in this order, so
 2. `FIREFOX_DEVTOOLS_MCP=/path/to/checkout` — a built checkout's repo root
 3. the `@mozilla/firefox-devtools-mcp` dependency from `package.json`
 
+### What a paid run pins
+
+**Every site gets its own origin.** `run.mjs` serves each site on its own loopback
+port with its directory at `/`, the shape the container serves, so no task prompt
+names a `pages/` directory such as `/flaky/slow.html` or `/maze/`. A page can still
+link to one: many pages hard-code their own directory (`href="/flaky/"`), and the
+origin answers that path, until check-fixtures enforces relative self-links. `--single-origin`
+serves every site under its directory's path on one port instead, which is how every
+run before 2026-09-19 was served. The two are separate measurement epochs: `meta.serving`
+records the mode, a run without it was single-origin, and `--rerun-failed` keeps the mode
+of the run it tops up.
+
+**Both conditions' browsers run in one environment.** Before any paid work the preflight
+loads a loopback page in each condition's browser and records its Firefox version, user
+agent, Accept-Language, locale, time zone, viewport and colour scheme into `meta.env`.
+`report.md` flags anything that differs between conditions or from its pin:
+
+| setting | pinned to | firefox-devtools-mcp | playwright-mcp |
+|---|---|---|---|
+| time zone | `UTC` | `TZ` in the agent's environment, which both backends pass to the MCP server | the same |
+| locale | `en-US`, Accept-Language `en-US,en;q=0.9` | prefs `intl.accept_languages` and `javascript.use_us_english_locale` via `--pref` | the same prefs via `firefoxUserPrefs` in a `--config` file |
+| viewport | `1366x683` | `--viewport 1366x768`, which sizes the window; the toolbars take the rest | `--viewport-size 1366x683` |
+| colour scheme | `light` | pref `layout.css.prefers-color-scheme.content-override=1` | `contextOptions.colorScheme` in the config file |
+
+The Firefox version is the one setting left unpinned: `firefox-devtools-mcp` drives the
+installed Firefox, and Playwright drives its own patched build. The two differ today, and
+every report says so. A `--headed` run sizes each `firefox-devtools-mcp` window to its
+grid cell, so its viewport is flagged too. `--mcp-command` servers launch as given, with
+the time zone the only pin that reaches them. `--rerun-failed` cannot restore the
+environment of the run it tops up, so it records how its own differs as
+`meta.rerunEnvDrift`, and `report.md` lists that too. A run without `meta.env` predates
+the pins, and every top-up of one says its rows ran unpinned.
+
+**Downloads stay in the attempt.** Each attempt's browser saves downloads into
+`downloads/` in the attempt's directory, where the agent's shell can read them:
+`firefox-devtools-mcp` through the `browser.download.*` prefs, and `playwright-mcp`
+through `--output-dir`, which also receives its own snapshot and log files. The row
+records what landed as `downloads: [{name, bytes, sha256}]`, or `{name, bytes, error}`
+for a file it could not read. It leaves out what the servers write there for
+themselves, so `downloads` counts only what a page made the browser save: playwright-mcp's
+timestamp-named snapshots and logs, and the `screencast-<uuid>.webm` that
+firefox-devtools-mcp's `screencast_stop` saves. Unpinned, `firefox-devtools-mcp` saved
+chart-escape's CSV export and every screencast into the operator's `~/Downloads`. The
+gate sends its downloads to each worker's temporary directory.
+
 ## How a task is graded
 
 `checkout-stop` asks an agent to walk a store's cart, shipping and payment steps to the

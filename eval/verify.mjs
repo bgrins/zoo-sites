@@ -33,7 +33,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync
 import { availableParallelism, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { devtoolsMcpEntry, startMcpServer } from './mcp-stdio.mjs';
+import { devtoolsMcpEntry, downloadPrefs, prefArgs, startMcpServer } from './mcp-stdio.mjs';
 import { detectScreen, windowGrid } from './window-grid.mjs';
 import { startPagesServer } from '../server.mjs';
 import { ORIGINS, originUrls } from '../manifest.mjs';
@@ -233,14 +233,16 @@ async function makeWorker(grid, slot) {
     return owner.url + (rest.startsWith('/') ? rest : `/${rest}`);
   };
   // Headed workers each launch into a seeded profile so their windows tile
-  // instead of stacking; the browser owns the dir, so it outlives no run.
-  const stateDir = grid ? mkdtempSync(join(tmpdir(), 'zoo-verify-')) : null;
+  // instead of stacking; the browser owns the dir, so it outlives no run. A
+  // download lands in the worker's dir too, never in the operator's ~/Downloads.
+  const stateDir = mkdtempSync(join(tmpdir(), 'zoo-verify-'));
   const server = await startMcpServer({
     args: [
       devtoolsMcpEntry(),
       '--enable-script',
       ...(HEADED ? [] : ['--headless']),
       ...(grid ? ['--profile-path', grid.seed(stateDir, slot)] : []),
+      ...prefArgs(downloadPrefs(join(stateDir, 'downloads'))),
     ],
     env: PROFILE_ENV,
   });
@@ -288,7 +290,7 @@ async function makeWorker(grid, slot) {
   const close = async () => {
     await server.close();
     await pages.close();
-    if (stateDir) rmSync(stateDir, { recursive: true, force: true });
+    rmSync(stateDir, { recursive: true, force: true });
   };
   return { pages, helpers, tasks, close };
 }

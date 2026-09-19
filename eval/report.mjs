@@ -115,10 +115,129 @@ function medianLines(results) {
   return lines;
 }
 
+const SERVING_NOTE = {
+  origins: "one origin per site, each on its own loopback port with its directory at '/'",
+  'single-origin': 'single-origin, every site under its pages/ directory on one port',
+};
+
+// What the preflight measured, as [label, read(env)] columns. The user agent is
+// compared with its version numbers removed, since `firefox` already compares
+// those.
+const ENV_COLUMNS = [
+  ['Firefox', (e) => e.firefox],
+  ['locale', (e) => e.locale],
+  ['Accept-Language', (e) => e.acceptLanguage],
+  ['time zone', (e) => e.timeZone],
+  ['viewport', (e) => e.viewport],
+  ['colour scheme', (e) => e.colorScheme],
+];
+const ENV_COMPARED = [
+  ...ENV_COLUMNS,
+  ['navigator.languages', (e) => (e.languages ?? []).join(',')],
+  ['device pixel ratio', (e) => e.devicePixelRatio],
+  ['user agent', (e) => String(e.userAgent ?? '').replace(/\d+(\.\d+)*/g, 'N')],
+];
+// The pins a measured value is held to, by column label.
+const PINNED = { locale: 'locale', 'time zone': 'timeZone', viewport: 'viewport', 'colour scheme': 'colorScheme' };
+
+// Every way the conditions' browsers differed from each other or from their
+// pins. A run's numbers compare surfaces only as far as these allow.
+export function envMismatches(meta) {
+  const measured = Object.entries(meta.env ?? {}).filter(([, e]) => !e.unmeasured);
+  const out = Object.entries(meta.env ?? {})
+    .filter(([, e]) => e.unmeasured)
+    .map(([c, e]) => `${c} unmeasured (${e.unmeasured})`);
+  for (const [label, read] of ENV_COMPARED) {
+    const values = measured.map(([c, e]) => [c, read(e)]);
+    if (new Set(values.map(([, v]) => JSON.stringify(v))).size > 1) {
+      out.push(`${label} differs: ${values.map(([c, v]) => `${c} ${v}`).join(', ')}`);
+    }
+    const pin = meta.envPins?.[PINNED[label]];
+    if (pin == null) continue;
+    for (const [c, v] of values) {
+      if (v !== pin) out.push(`${c} ${label} is ${v}, not the pinned ${pin}`);
+    }
+  }
+  return out;
+}
+
+// How a --rerun-failed top-up's browsers differed from those of the run it tops
+// up, whose rows it is read with. `prior` is that run's meta; one without env
+// predates the pins.
+export function envDrift(prior, meta) {
+  if (!prior.env || !prior.envPins) {
+    return ['that run predates the browser pins of 2026-09-19, so its rows ran unpinned'];
+  }
+  const out = [];
+  for (const [c, now] of Object.entries(meta.env ?? {})) {
+    const then = prior.env[c];
+    if (!then) {
+      out.push(`${c} was not measured in that run`);
+    } else if (then.unmeasured || now.unmeasured) {
+      if (!then.unmeasured !== !now.unmeasured) {
+        out.push(`${c} was ${then.unmeasured ? 'unmeasured' : 'measured'} then, ${now.unmeasured ? 'unmeasured' : 'measured'} now`);
+      }
+    } else {
+      for (const [label, read] of ENV_COMPARED) {
+        if (JSON.stringify(read(then)) !== JSON.stringify(read(now))) {
+          out.push(`${c} ${label} was ${read(then)}, now ${read(now)}`);
+        }
+      }
+    }
+  }
+  const pins = meta.envPins ?? {};
+  const changed = Object.keys({ ...prior.envPins, ...pins }).filter(
+    (k) => JSON.stringify(prior.envPins[k]) !== JSON.stringify(pins[k])
+  );
+  if (changed.length) out.push(`pins changed: ${changed.join(', ')}`);
+  return out;
+}
+
+function envLines(meta) {
+  if (!meta.env) return [];
+  const pins = meta.envPins ?? {};
+  const lines = [
+    '',
+    '## Condition environment',
+    '',
+    `What each condition's browser reported in the preflight. Pinned for every ` +
+      `condition: locale ${pins.locale}, time zone ${pins.timeZone}, viewport ` +
+      `${pins.viewport}, colour scheme ${pins.colorScheme}.`,
+    '',
+    `| condition | ${ENV_COLUMNS.map(([label]) => label).join(' | ')} |`,
+    `|---|${ENV_COLUMNS.map(() => '---').join('|')}|`,
+  ];
+  for (const [condition, e] of Object.entries(meta.env)) {
+    lines.push(
+      e.unmeasured
+        ? `| ${condition} | ${ENV_COLUMNS.map(() => '?').join(' | ')} |`
+        : `| ${condition} | ${ENV_COLUMNS.map(([, read]) => read(e) ?? '?').join(' | ')} |`
+    );
+  }
+  const mismatches = envMismatches(meta);
+  lines.push('');
+  if (mismatches.length) {
+    lines.push('ENVIRONMENT MISMATCH, so a difference between these conditions may come from these rather than the surface:');
+    for (const m of mismatches) lines.push(`  - ${m}`);
+  } else {
+    lines.push('The conditions ran in the same browser environment.');
+  }
+  if (meta.rerunEnvDrift?.length) {
+    lines.push(
+      '',
+      `ENVIRONMENT DIFFERS from ${meta.rerunFailed}, the run this tops up, so a row here ` +
+        'and a row there may differ by environment rather than by surface:'
+    );
+    for (const d of meta.rerunEnvDrift) lines.push(`  - ${d}`);
+  }
+  return lines;
+}
+
 export function markdownReport({ meta, results, totals }) {
   const models = Object.entries(meta.models ?? {})
     .map(([b, m]) => `${b}: ${m}`)
     .join(', ');
+  const mismatches = envMismatches(meta);
   const lines = [
     `# zoo-sites eval report`,
     '',
@@ -137,6 +256,20 @@ export function markdownReport({ meta, results, totals }) {
         ]
       : []),
     `- tasks are simulated local pages (no live web); harness: run.mjs`,
+    // Serving is a measurement epoch: single-origin URLs name the pages/
+    // directory, which can describe the test (/flaky/slow.html, /maze/).
+    `- serving: ${SERVING_NOTE[meta.serving ?? 'single-origin']}.` +
+      (meta.serving ? '' : ' Not recorded: the run predates per-origin serving.') +
+      ' Runs served differently are separate measurement epochs; do not compare them.',
+    ...(mismatches.length
+      ? [`- ENVIRONMENT MISMATCH between conditions (${mismatches.length}): see "Condition environment"`]
+      : []),
+    ...(meta.rerunEnvDrift?.length
+      ? [
+          `- ENVIRONMENT DIFFERS from the run this tops up (${meta.rerunEnvDrift.length}): ` +
+            'see "Condition environment"',
+        ]
+      : []),
     `- compare on OUTPUT TOKENS. Turns compare only between runs whose backend ` +
       `counts a turn the same way (codex only approximates one), and a surface ` +
       `that packs several browser operations into one call does more per turn.`,
@@ -154,6 +287,7 @@ export function markdownReport({ meta, results, totals }) {
             `so the two are not measured the same way`,
         ]
       : []),
+    ...envLines(meta),
     '',
     '## Totals per condition',
     '',
@@ -260,9 +394,15 @@ export function markdownReport({ meta, results, totals }) {
     const cut = r.surface?.truncated?.length
       ? `SURFACE TRUNCATED ${JSON.stringify(r.surface.truncated)} — `
       : '';
-    const note = r.extraction_failed
-      ? `${cut}EXTRACTION FAILED (${r.extraction_failed}) — ${noteBase}`
-      : cut + noteBase;
+    const saved = r.downloads?.length
+      ? ` — downloaded ${r.downloads
+          .map((d) => `${d.name} (${d.error ? `unreadable: ${d.error}` : `${d.bytes} B`})`)
+          .join(', ')}`
+      : '';
+    const note =
+      (r.extraction_failed
+        ? `${cut}EXTRACTION FAILED (${r.extraction_failed}) — ${noteBase}`
+        : cut + noteBase) + saved;
     lines.push(
       `| ${r.condition} | ${task} | ${r.success ? 'PASS' : 'FAIL'} | ${r.turns ?? ''} | ` +
         `${r.input_tokens ?? ''} | ${r.cache_creation ?? ''} | ` +

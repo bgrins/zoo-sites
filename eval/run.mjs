@@ -6,7 +6,8 @@
 //   node run.mjs [options] — see --help for the full flag list.
 //
 // Suites: 'basic' = tiny smoke pages, 'web' = simulated sites; both are
-// served locally from pages/ (no live web). --headed shows Firefox.
+// served locally from pages/ (no live web), every site on its own loopback
+// port unless --single-origin. --headed shows Firefox.
 // Two conditions ship by default: 'firefox-devtools-mcp' and 'playwright-mcp'
 // (the vendored @playwright/mcp). --mcp-command replaces the former with any
 // stdio MCP server, and --conditions selects which run.
@@ -42,22 +43,30 @@
 // counts a turn the same way (see markdownReport's note).
 //
 // Every attempt is isolated: a fresh working directory that is removed
-// afterwards, an allowlisted environment (agent-env.mjs), and a pinned tool
-// policy per backend that each run's meta records.
+// afterwards and receives the browser's downloads, an allowlisted environment
+// (agent-env.mjs), and a pinned tool policy per backend that each run's meta
+// records. Every condition's browser runs with the same locale, time zone,
+// viewport and colour scheme (BROWSER_PINS in mcp-stdio.mjs).
 
 import { spawn, spawnSync } from 'node:child_process';
+import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
-import { createWriteStream, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  createWriteStream, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startPagesServer } from '../server.mjs';
+import { ORIGINS, originUrls } from '../manifest.mjs';
 import { basicTasks } from './tasks/basic.mjs';
 import { webTasks } from './tasks/web.mjs';
 import { devtoolsTasks } from './tasks/devtools.mjs';
-import { agentEnv, makeTempDir, removeAllTempDirs, removeTempDir } from './agent-env.mjs';
+import { agentEnv, attemptDownloads, makeTempDir, removeAllTempDirs, removeTempDir } from './agent-env.mjs';
 import { extractFields, extractorInfo, isSentinel } from './extract.mjs';
-import { devtoolsMcpEntry, devtoolsMcpInfo, startMcpServer } from './mcp-stdio.mjs';
-import { markdownReport, totalsByCondition } from './report.mjs';
+import {
+  BROWSER_PINS, PINNED_PREFS, devtoolsMcpEntry, devtoolsMcpInfo, downloadPrefs, prefArgs, startMcpServer,
+} from './mcp-stdio.mjs';
+import { envDrift, markdownReport, totalsByCondition } from './report.mjs';
 import { transcriptName } from './run-files.mjs';
 import { createReachRecorder, gradedValues, mintedValues } from './surface-reach.mjs';
 import { detectScreen, windowGrid } from './window-grid.mjs';
@@ -193,6 +202,8 @@ const REPEAT = numberFlag('repeat', 1, (n) => Number.isInteger(n) && n >= 1, 'a 
 const RERUN_FAILED = flag('rerun-failed', null);
 let RERUN_IDS = null;
 let RERUN_SUITE = null;
+let RERUN_SERVING = null;
+let RERUN_PRIOR_ENV = null;
 if (RERUN_FAILED) {
   const priorPath = join(RERUN_FAILED.replace(/\/results\.json$/, ''), 'results.json');
   let prior;
@@ -203,6 +214,11 @@ if (RERUN_FAILED) {
   }
   const priorMeta = prior.meta ?? {};
   RERUN_SUITE = priorMeta.suite ?? null;
+  // A run that records no serving mode predates per-origin serving.
+  RERUN_SERVING = priorMeta.serving ?? 'single-origin';
+  // Unlike its serving, a run's browser environment cannot be restored, so a
+  // top-up records how its own differs.
+  RERUN_PRIOR_ENV = { env: priorMeta.env, envPins: priorMeta.envPins };
   const failed = prior.results.filter((r) => !r.success).map((r) => r.task);
   // A run that was interrupted, crashed, or lost a whole condition has no row at
   // all for some tasks, and a missing row cannot fail. meta.tasks names every
@@ -234,6 +250,13 @@ if (RERUN_FAILED) {
   );
 }
 const SUITE = flag('suite', RERUN_SUITE ?? 'basic');
+// 'origins' serves every site on its own port with its directory at '/', the
+// container's shape. 'single-origin' serves every site under its pages/
+// directory on one port, so every URL an agent sees names that directory
+// (/flaky/slow.html, /maze/), and it is how every run before 2026-09-19 was
+// served. A rerun keeps the serving of the run it tops up, since a top-up is
+// read together with that run.
+const SERVING = args.includes('--single-origin') ? 'single-origin' : RERUN_SERVING ?? 'origins';
 // --task takes a comma list of ids, each optionally using * as a wildcard, so a
 // few tasks can be run without the whole suite:
 //   --task ledger-sum                     one task
@@ -321,7 +344,20 @@ Selecting what to run:
   --rerun-failed <dir>    select exactly the tasks that failed, errored or never
                           finished in an earlier run dir (reads its
                           results.json; overrides --task) — for topping up a
-                          run that hit flaky errors or was interrupted
+                          run that hit flaky errors or was interrupted. Keeps
+                          that run's suite and serving mode; it cannot keep
+                          that run's browser environment, so report.md notes
+                          where the two differ
+
+Serving:
+  --single-origin         serve every site under its pages/ directory on one
+                          port, as every run before 2026-09-19 was. Default:
+                          every site on its own loopback port with its
+                          directory at '/', so no task prompt names a
+                          directory (a page link that hard-codes its own
+                          directory still does). The two modes are separate
+                          measurement epochs; meta records which one a run
+                          used
 
 Reporting:
   --report-from <dir>     rewrite report.md from a finished run's results.json
@@ -381,7 +417,10 @@ Conditions and models:
   --mcp-command "<cmd>"   custom stdio MCP server for the firefox-devtools-mcp
                           condition, e.g.
                           "npx @playwright/mcp@latest --browser firefox";
-                          replaces the built-in firefox-devtools-mcp server
+                          replaces the built-in firefox-devtools-mcp server.
+                          It launches as given: the time zone reaches it
+                          through its environment, but the other browser pins
+                          and the download directory do not
 
 Execution:
   --parallel              run conditions concurrently
@@ -390,8 +429,14 @@ Execution:
                           wall timings gain contention noise)
   --help                  show this help
 
-Before any paid work, each condition's MCP server is started once and must list
-its tools; the run aborts if one cannot.
+Before any paid work, each condition's MCP server is started once, must list
+its tools, and loads a loopback page that records its browser's Firefox
+version, user agent, Accept-Language, locale, time zone, viewport and colour
+scheme into meta.env; the run aborts if one cannot. Every condition is pinned
+to locale ${BROWSER_PINS.locale}, time zone ${BROWSER_PINS.timeZone}, a ${BROWSER_PINS.viewport.width}x${BROWSER_PINS.viewport.height} viewport and the ${BROWSER_PINS.colorScheme} colour
+scheme, and report.md flags whatever still differs. Each attempt's browser
+saves downloads into downloads/ in the attempt's directory, and the row records
+them as downloads [{name, bytes, sha256}].
 
 Results land in results/run-<timestamp>/ (gitignored): results.json,
 report.md (shareable), and transcripts/*.jsonl (full agent message streams,
@@ -498,7 +543,55 @@ function ensurePlaywrightFirefox() {
   });
 }
 
-function mcpStdioFor(condition, ctx) {
+// The time zone is the one pin a browser takes from its environment. Both
+// backends start the MCP server with the agent's environment (codex forwards
+// it by name), so the agent's shell runs in the same zone as its browser.
+const PINNED_ENV = { TZ: BROWSER_PINS.timeZone };
+const agentEnvFor = (backend) => ({ ...agentEnv(backend), ...PINNED_ENV });
+
+const VIEWPORT = `${BROWSER_PINS.viewport.width}x${BROWSER_PINS.viewport.height}`;
+// firefox-devtools-mcp's --viewport sizes the WINDOW, and a headless Firefox's
+// toolbars take 85px of it; the preflight measures the page size that leaves.
+// A headed window takes its cell of the grid instead.
+const DEVTOOLS_WINDOW = `${BROWSER_PINS.viewport.width}x${BROWSER_PINS.viewport.height + 85}`;
+// playwright-mcp takes Firefox prefs and Playwright's own emulation only from a
+// config file. Playwright emulates a colour scheme whatever the pref says.
+const PLAYWRIGHT_CONFIG = {
+  browser: {
+    launchOptions: { firefoxUserPrefs: PINNED_PREFS },
+    contextOptions: { colorScheme: BROWSER_PINS.colorScheme },
+  },
+};
+let playwrightConfigPath = null;
+function playwrightConfigFile() {
+  if (!playwrightConfigPath) {
+    playwrightConfigPath = join(makeTempDir('zoo-eval-playwright-'), 'config.json');
+    writeFileSync(playwrightConfigPath, JSON.stringify(PLAYWRIGHT_CONFIG, null, 2));
+  }
+  return playwrightConfigPath;
+}
+
+// A headed Firefox is still writing its profile for a moment after its MCP
+// server closes, and recreated a profile removed then. Every headed profile
+// therefore lives under one directory that is removed when the run exits.
+let gridProfiles = null;
+function gridProfileDir() {
+  gridProfiles ??= makeTempDir('zoo-eval-profiles-');
+  return mkdtempSync(join(gridProfiles, 'p-'));
+}
+// Before that removal, wait up to `ms` for every browser launched on one of
+// those profiles to exit; each names its profile on its command line.
+async function awaitGridBrowsers(ms = 15000) {
+  if (!gridProfiles) return;
+  for (const stop = Date.now() + ms; Date.now() < stop; ) {
+    if (spawnSync('pgrep', ['-f', gridProfiles]).status !== 0) return;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+}
+
+// `downloadsDir` is where the browser saves downloads; `profileDir` is a
+// profile seeded with a headed window's grid cell.
+function mcpStdioFor(condition, { downloadsDir, profileDir = null }) {
   if (condition === 'playwright-mcp') {
     return {
       command: process.execPath,
@@ -508,6 +601,14 @@ function mcpStdioFor(condition, ctx) {
         'firefox',
         '--isolated',
         ...(HEADED ? [] : ['--headless']),
+        '--viewport-size',
+        VIEWPORT,
+        '--config',
+        playwrightConfigFile(),
+        // Its downloads land in its output directory, which also holds its own
+        // snapshot and log files. Unset, that is .playwright-mcp/ in the cwd.
+        '--output-dir',
+        downloadsDir,
       ],
     };
   }
@@ -521,42 +622,129 @@ function mcpStdioFor(condition, ctx) {
             // checkout, otherwise the @mozilla/firefox-devtools-mcp dependency.
             devtoolsMcpEntry(),
             '--enable-script',
-            ...(HEADED ? [] : ['--headless']),
-            ...(ctx.stdioProfile ? ['--profile-path', ctx.stdioProfile] : []),
+            ...(HEADED ? [] : ['--headless', '--viewport', DEVTOOLS_WINDOW]),
+            ...(profileDir ? ['--profile-path', profileDir] : []),
+            ...prefArgs({ ...PINNED_PREFS, ...downloadPrefs(downloadsDir) }),
           ],
         };
   }
   return null;
 }
 
+// What the browser reports about itself, returned URI-encoded between markers
+// because each server wraps a returned string in its own quoting.
+const ENV_PROBE = `() => {
+  const dt = Intl.DateTimeFormat().resolvedOptions();
+  return 'ZOOENV' + encodeURIComponent(JSON.stringify({
+    userAgent: navigator.userAgent,
+    languages: navigator.languages,
+    locale: dt.locale,
+    timeZone: dt.timeZone,
+    viewport: innerWidth + 'x' + innerHeight,
+    screen: screen.width + 'x' + screen.height,
+    devicePixelRatio,
+    colorScheme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+  })) + 'ZOOENV';
+}`;
+const ENV_TOOLS = [
+  { navigate: 'navigate_page', evaluate: 'evaluate_script' },
+  { navigate: 'browser_navigate', evaluate: 'browser_evaluate' },
+];
+
+// A loopback page for the preflight to load, which keeps the request headers a
+// page cannot read about itself.
+async function startProbeServer() {
+  const seen = new Map();
+  const server = createServer((req, res) => {
+    const path = new URL(req.url ?? '/', 'http://probe').pathname;
+    if (!seen.has(path)) seen.set(path, req.headers);
+    res.writeHead(path === '/favicon.ico' ? 404 : 200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>preflight</title></head><body></body></html>');
+  });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  return {
+    url: `http://127.0.0.1:${server.address().port}`,
+    headersAt: (path) => seen.get(path) ?? {},
+    close: () => new Promise((resolve) => server.close(resolve)),
+  };
+}
+
+// A --mcp-command server whose tools go by other names is recorded unmeasured
+// rather than failed: listing its tools already proved it starts.
+async function measureEnv(server, tools, probe, path) {
+  const names = new Set(tools.map((t) => t.name));
+  const pair = ENV_TOOLS.find((p) => names.has(p.navigate) && names.has(p.evaluate));
+  if (!pair) return { unmeasured: 'the server has no navigate/evaluate tool pair the harness knows' };
+  const call = async (name, toolArgs) => {
+    const r = await server.call(name, toolArgs);
+    const text = (r.content ?? []).map((c) => c.text ?? '').join('\n');
+    if (r.isError) throw new Error(`${name} failed: ${text.slice(0, 300)}`);
+    return text;
+  };
+  await call(pair.navigate, { url: probe.url + path });
+  const text = await call(pair.evaluate, { function: ENV_PROBE });
+  const encoded = text.match(/ZOOENV([A-Za-z0-9\-_.!~*'()%]*)ZOOENV/)?.[1];
+  if (encoded == null) throw new Error(`${pair.evaluate} returned no environment: ${text.slice(0, 300)}`);
+  const page = JSON.parse(decodeURIComponent(encoded));
+  return {
+    firefox: page.userAgent.match(/Firefox\/([\d.]+)/)?.[1] ?? null,
+    acceptLanguage: probe.headersAt(path)['accept-language'] ?? null,
+    ...page,
+  };
+}
+
 // Free checks before any paid work. A crashing --mcp-command, or a server that
 // needs a variable the environment allowlist drops, otherwise leaves every
 // agent with only Bash, and the run grades that as the surface. The server gets
-// the agents' environment and an empty cwd; listing tools launches no browser.
+// the agents' environment, an empty cwd and the flags an attempt gets, and its
+// browser loads one loopback page, so the environment it reports is the one
+// every attempt of the condition runs in. Returns that environment by condition.
 async function preflight() {
-  for (const condition of CONDITIONS) {
-    const dir = makeTempDir('zoo-eval-preflight-');
-    let server;
-    try {
-      const spec = mcpStdioFor(condition, {});
-      server = await startMcpServer({
-        command: spec.command,
-        args: spec.args,
-        baseEnv: agentEnv(null),
-        cwd: dir,
-      });
-      const { tools } = await server.listTools();
-      if (!tools?.length) throw new Error('the server listed no tools');
-      console.log(`(preflight: ${condition} lists ${tools.length} tools)`);
-    } catch (error) {
-      throw new Error(
-        `preflight: the ${condition} MCP server did not start and list its tools, ` +
-          `so no agent ran:\n${error.message}`
-      );
-    } finally {
-      await server?.close();
-      removeTempDir(dir);
+  const env = {};
+  const probe = await startProbeServer();
+  try {
+    for (const condition of CONDITIONS) {
+      const dir = makeTempDir('zoo-eval-preflight-');
+      let server;
+      try {
+        const downloadsDir = join(dir, 'downloads');
+        mkdirSync(downloadsDir);
+        const profileDir =
+          GRID && POSITIONABLE.includes(condition)
+            ? GRID.seed(gridProfileDir(), slotFor(BACKEND_NAMES[0], condition, 0))
+            : null;
+        const spec = mcpStdioFor(condition, { downloadsDir, profileDir });
+        server = await startMcpServer({
+          command: spec.command,
+          args: spec.args,
+          baseEnv: agentEnvFor(null),
+          cwd: dir,
+        });
+        const { tools } = await server.listTools();
+        if (!tools?.length) throw new Error('the server listed no tools');
+        env[condition] = await measureEnv(server, tools, probe, `/${condition}`);
+        const e = env[condition];
+        console.log(
+          `(preflight: ${condition} lists ${tools.length} tools; ` +
+            (e.unmeasured
+              ? `environment unmeasured: ${e.unmeasured})`
+              : `Firefox ${e.firefox}, ${e.locale}, ${e.timeZone}, ${e.viewport}, ${e.colorScheme})`)
+        );
+      } catch (error) {
+        throw new Error(
+          `preflight: the ${condition} MCP server did not start, list its tools and ` +
+            `load a page, so no agent ran:\n${error.message}`
+        );
+      } finally {
+        await server?.close();
+        removeTempDir(dir);
+      }
     }
+  } finally {
+    await probe.close();
   }
   // The first codex home of a process reads the model catalog, which can fail,
   // so a codex extractor's is built here too rather than after the first paid
@@ -573,6 +761,7 @@ async function preflight() {
       );
     }
   }
+  return env;
 }
 
 // Every running attempt's stop function, so an interrupt can end the agents.
@@ -580,11 +769,21 @@ const ACTIVE_STOPS = new Set();
 
 async function runTask(backendName, condition, label, task, ctx, rep = 1, attempt = 0) {
   const backend = BACKENDS[backendName];
-  const mcpStdio = mcpStdioFor(condition, ctx);
   // A fresh working directory per attempt: stored runs showed two parallel
   // agents writing the same file in one shared dir, and repeats reusing the
-  // scripts an earlier task left there.
+  // scripts an earlier task left there. Downloads land inside it, where the
+  // agent's shell can read them.
   const attemptDir = makeTempDir('zoo-eval-attempt-');
+  const downloadsDir = join(attemptDir, 'downloads');
+  mkdirSync(downloadsDir);
+  // A headed window's profile is seeded per attempt, outside the agent's cwd:
+  // a profile kept per worker would hand one task's cookies and storage to the
+  // next.
+  const profileRoot = ctx.gridSlot != null ? gridProfileDir() : null;
+  const mcpStdio = mcpStdioFor(condition, {
+    downloadsDir,
+    profileDir: profileRoot ? GRID.seed(profileRoot, ctx.gridSlot) : null,
+  });
   const spec = {
     prompt: taskPrompt(task),
     model: modelFor(backendName),
@@ -592,7 +791,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     condition,
     cwd: attemptDir,
     mcpStdio,
-    env: agentEnv(backendName),
+    env: agentEnvFor(backendName),
   };
   // Stream the raw agent transcript (thinking, tool calls, results) to disk
   // as it happens rather than buffering.
@@ -645,6 +844,9 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
 
   const wallStart = Date.now();
   let r;
+  let wallEnd;
+  let failed = null;
+  let downloads = [];
   try {
     r = await backend.run(spec);
   } catch (error) {
@@ -652,7 +854,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     // could measure on the throw as `spend`, so the retry loop records it
     // instead of losing it from every total.
     const spend = error?.spend ?? { unknown: true };
-    const failed = limitHit
+    failed = limitHit
       ? new Error(`stopped by harness ${limitHit}`)
       : error instanceof Error
         ? error
@@ -662,12 +864,22 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     failed.transcript = transcript;
     throw failed;
   } finally {
+    wallEnd = Date.now();
     clearTimeout(wallTimer);
     ACTIVE_STOPS.delete(stopFor);
     transcriptStream?.end();
+    // Hashing a large download stays out of the attempt's wall time.
+    downloads = await attemptDownloads(downloadsDir);
+    if (failed) failed.downloads = downloads;
     removeTempDir(attemptDir);
+    if (profileRoot) {
+      // Whatever this misses goes with the parent directory at exit.
+      try {
+        rmSync(profileRoot, { recursive: true, force: true, maxRetries: 3 });
+      } catch {}
+    }
   }
-  const wallMs = Date.now() - wallStart;
+  const wallMs = wallEnd - wallStart;
   const discard = (message, extra = {}) =>
     Object.assign(new Error(message), {
       spend: {
@@ -678,6 +890,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
         cost_usd: r.cost_usd,
       },
       transcript,
+      downloads,
       ...extra,
     });
   // A run that finished past the cap fails like one stopped at it. Codex
@@ -788,25 +1001,28 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
       ? { grading: 'fields', fields, extraction, answer_full: r.text }
       : {}),
     ...(extractionFailed ? { extraction_failed: extractionFailed } : {}),
+    ...(downloads.length ? { downloads } : {}),
     ...(ctx.transcriptsDir ? { transcript } : {}),
   };
 }
 
 // The devtools suite (T120-T124): same task shape as webTasks, graded against
 // the same fixture server. Kept out of 'web' (see below); 'all' includes it.
-async function buildTasks(base) {
+// `origins` maps each manifest key to its origin URL; left undefined, the
+// factories map every key onto its path prefix under `base`.
+async function buildTasks(base, origins = undefined) {
   let tasks = [];
   if (SUITE === 'basic' || SUITE === 'all') {
-    tasks.push(...basicTasks(base));
+    tasks.push(...basicTasks(base, origins));
   }
   if (SUITE === 'web' || SUITE === 'all') {
-    tasks.push(...(await webTasks(base)));
+    tasks.push(...(await webTasks(base, origins)));
   }
   // Devtools-surface tasks live in their OWN suite by owner decision: the
   // primary comparison is web-agent flows, and a console/network task mixed
   // into the web sweep would skew its totals. 'all' includes them.
   if (SUITE === 'devtools' || SUITE === 'all') {
-    tasks.push(...(await devtoolsTasks(base)));
+    tasks.push(...(await devtoolsTasks(base, origins)));
   }
   for (const t of tasks) {
     if (t.tier && !(t.tier in WALL_TIERS)) {
@@ -864,9 +1080,9 @@ function errorRow({ backend, label, task, rep, error, ...extra }) {
   };
 }
 
-// One isolated execution environment: pages server + state dir. Sequential
+// One isolated execution environment: a pages server and its state. Sequential
 // runs use one env per condition; --parallel-tasks uses one per worker. Every
-// live env is tracked so an interrupt removes temp dirs instead of leaking
+// live env is tracked so an interrupt closes its listeners instead of leaking
 // them (agents spawn their own MCP servers as children, which die with us).
 const ACTIVE_ENVS = new Set();
 // The run in progress, so an interrupt or a crash can still write every row
@@ -922,22 +1138,21 @@ process.on('exit', removeAllTempDirs);
 async function makeEnv(backendName, condition, label, workerIndex = 0) {
   // Each env gets its own pages server so validator state (sessions/beacons)
   // never mixes across concurrent agents.
-  const pages = await startPagesServer({ modes: RUN_MODES, seed: RUN_SEED });
-  const stateDir = makeTempDir(`zoo-eval-${condition}-`);
-  // Seed window geometry so headed windows tile into their grid cell
-  // (stdio MCP servers launch their own Firefox and get it via --profile-path).
-  const stdioProfile =
-    GRID && POSITIONABLE.includes(condition)
-      ? GRID.seed(stateDir, slotFor(backendName, condition, workerIndex))
-      : null;
+  const pages = await startPagesServer({
+    modes: RUN_MODES,
+    seed: RUN_SEED,
+    origins: SERVING === 'origins' ? ORIGINS : null,
+  });
   const env = {
     pages,
-    stateDir,
-    stdioProfile,
+    origins: SERVING === 'origins' ? originUrls(pages.url, pages.origins) : undefined,
+    // The grid cell this worker's headed windows tile into (stdio MCP servers
+    // launch their own Firefox and get the geometry via --profile-path).
+    gridSlot:
+      GRID && POSITIONABLE.includes(condition) ? slotFor(backendName, condition, workerIndex) : null,
     async close() {
       ACTIVE_ENVS.delete(env);
       await pages.close();
-      removeTempDir(stateDir);
     },
   };
   ACTIVE_ENVS.add(env);
@@ -951,8 +1166,8 @@ async function runCondition(backendName, condition, shared, onRow) {
   console.log(`[${label}] starting (model: ${modelFor(backendName) || '(backend default)'})`);
 
   async function runOne(env, item) {
-    // Task asks embed the env's pages URL, so rebuild against this env.
-    const task = (await buildTasks(env.pages.url)).find((t) => t.id === item.id);
+    // Task asks embed the env's pages URLs, so rebuild against this env.
+    const task = (await buildTasks(env.pages.url, env.origins)).find((t) => t.id === item.id);
     const tag = REPEAT > 1 ? `${item.id} (r${item.rep})` : item.id;
     // Every failed attempt's spend. `unknown` counts attempts whose backend
     // could not say what they spent (codex reports usage only at turn end).
@@ -974,12 +1189,7 @@ async function runCondition(backendName, condition, shared, onRow) {
       // defaults, so a mode can never leak into the next task in this process.
       Object.assign(env.pages.state.modes, task.serverModes ?? {});
       try {
-        const ctx = {
-          ...shared,
-          stateDir: env.stateDir,
-          pages: env.pages,
-          stdioProfile: env.stdioProfile,
-        };
+        const ctx = { ...shared, pages: env.pages, gridSlot: env.gridSlot };
         const r = await runTask(backendName, condition, label, task, ctx, item.rep, attempt);
         console.log(
           `[${label}] ${tag}: ${r.success ? 'PASS' : 'FAIL'} turns=${r.turns} ` +
@@ -1024,6 +1234,7 @@ async function runCondition(backendName, condition, shared, onRow) {
           ...(infra ? { infra: true } : {}),
           ...(attempt ? { retries: attempt } : {}),
           ...discardedFields(),
+          ...(error?.downloads?.length ? { downloads: error.downloads } : {}),
           ...(error?.transcript ? { transcript: error.transcript } : {}),
         });
       }
@@ -1127,7 +1338,8 @@ function packageVersion(name) {
 // Everything needed to reproduce the run: the flags that change what ran, the
 // code and tool versions it ran on, and the isolation it ran under. Variable
 // NAMES only, never values.
-function buildMeta(startedAt, selected) {
+// `env` is what each condition's browser reported in the preflight.
+function buildMeta(startedAt, selected, env) {
   return {
     date: startedAt.toISOString(),
     backend: BACKEND_NAMES.join(','),
@@ -1136,6 +1348,16 @@ function buildMeta(startedAt, selected) {
     ),
     effort: EFFORT,
     suite: SUITE,
+    // A run without this key predates per-origin serving and was single-origin.
+    serving: SERVING,
+    env,
+    envPins: {
+      ...BROWSER_PINS,
+      viewport: VIEWPORT,
+      devtoolsWindow: HEADED ? 'the headed grid cell' : DEVTOOLS_WINDOW,
+      prefs: PINNED_PREFS,
+      playwrightConfig: PLAYWRIGHT_CONFIG,
+    },
     task: ONLY_TASK ?? undefined,
     // What --rerun-failed needs to name the tasks an interrupt left unfinished.
     tasks: selected.map((t) => t.id),
@@ -1166,7 +1388,9 @@ function buildMeta(startedAt, selected) {
     sdks: Object.fromEntries(BACKEND_NAMES.map((n) => [n, packageVersion(SDK_PACKAGES[n])])),
     isolation: {
       scratch: 'fresh directory per attempt',
-      env: Object.fromEntries(BACKEND_NAMES.map((n) => [n, Object.keys(agentEnv(n)).sort()])),
+      downloads: '<attempt dir>/downloads, recorded on the row',
+      ...(HEADED ? { browserProfile: 'seeded per attempt with its grid cell' } : {}),
+      env: Object.fromEntries(BACKEND_NAMES.map((n) => [n, Object.keys(agentEnvFor(n)).sort()])),
       toolPolicy: Object.fromEntries(BACKEND_NAMES.map((n) => [n, BACKENDS[n].TOOL_POLICY])),
     },
     node: process.version,
@@ -1193,7 +1417,10 @@ async function main() {
         .map((t) => `${t.id}  [${t.tier ?? DEFAULT_TIER}, cap ${wallCapFor(t)}s]`)
         .join('\n')
     );
-    console.log(`\n${selected.length} task(s) selected from suite '${SUITE}'`);
+    console.log(
+      `\n${selected.length} task(s) selected from suite '${SUITE}', served ` +
+        (SERVING === 'origins' ? 'one origin per site' : 'single-origin')
+    );
     return;
   }
   if (MAX_OUTPUT && BACKENDS.codex) {
@@ -1202,25 +1429,38 @@ async function main() {
         'fails an over-cap codex run then instead of stopping it\n'
     );
   }
+  if (RERUN_FAILED && SERVING !== 'origins' && !args.includes('--single-origin')) {
+    console.log(`note: serving single-origin, as ${RERUN_FAILED} was\n`);
+  }
 
-  await preflight();
-
-  const startedAt = new Date();
-  const stamp = startedAt.toISOString().replace(/[:.]/g, '-');
-  const runDir = join(here, 'results', `run-${stamp}`);
-  const transcriptsDir = join(runDir, 'transcripts');
-  mkdirSync(transcriptsDir, { recursive: true });
-  const meta = buildMeta(startedAt, selected);
-  Object.assign(LIVE, { runDir, meta, rows: [] });
-  const shared = { transcriptsDir };
-  const onRow = (row) => LIVE.rows.push(row);
-
+  // The preflight loads a page in every condition's browser, so Playwright's
+  // Firefox has to be installed and the headed grid laid out before it.
   if (CONDITIONS.includes('playwright-mcp')) {
     await ensurePlaywrightFirefox();
   }
   if (HEADED) {
     GRID = windowGrid(TOTAL_SLOTS, detectScreen(flag('screen', null)));
   }
+  const env = await preflight();
+
+  const startedAt = new Date();
+  const stamp = startedAt.toISOString().replace(/[:.]/g, '-');
+  const runDir = join(here, 'results', `run-${stamp}`);
+  const transcriptsDir = join(runDir, 'transcripts');
+  mkdirSync(transcriptsDir, { recursive: true });
+  const meta = buildMeta(startedAt, selected, env);
+  if (RERUN_PRIOR_ENV) {
+    meta.rerunEnvDrift = envDrift(RERUN_PRIOR_ENV, meta);
+    if (meta.rerunEnvDrift.length) {
+      console.log(
+        `note: the browsers differ from those of ${RERUN_FAILED}, and report.md says so:\n  ` +
+          meta.rerunEnvDrift.join('\n  ') + '\n'
+      );
+    }
+  }
+  Object.assign(LIVE, { runDir, meta, rows: [] });
+  const shared = { transcriptsDir };
+  const onRow = (row) => LIVE.rows.push(row);
 
   const runs = BACKEND_NAMES.flatMap((backendName) =>
     CONDITIONS.map((condition) => [backendName, condition])
@@ -1268,6 +1508,7 @@ async function main() {
 
   const failed = results.filter((r) => !r.success).length;
   process.exitCode = failed ? 1 : 0;
+  await awaitGridBrowsers();
 }
 
 main().catch((error) => {

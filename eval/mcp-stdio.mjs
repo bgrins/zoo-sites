@@ -76,6 +76,43 @@ export function devtoolsMcpInfo() {
   };
 }
 
+// The browser settings every condition launches with, so two conditions differ
+// by their tool surface rather than by the machine they ran on. Unpinned, one
+// measurement found 1366x683 against 1280x720, dark against light, and the
+// operator's own time zone in both. `viewport` is the page's inner size.
+export const BROWSER_PINS = {
+  locale: 'en-US',
+  acceptLanguage: 'en-US, en',
+  timeZone: 'UTC',
+  viewport: { width: 1366, height: 683 },
+  colorScheme: 'light',
+};
+
+// Firefox prefs both conditions set. The JS locale follows the build's own
+// locale (intl.locale.requested=de-DE left an en-US build at en-US), so
+// javascript.use_us_english_locale is what holds a localised system Firefox to
+// en-US. Unset, the colour scheme follows the operator's OS appearance;
+// Playwright emulates one over the pref.
+export const PINNED_PREFS = {
+  'intl.accept_languages': BROWSER_PINS.acceptLanguage,
+  'javascript.use_us_english_locale': true,
+  'layout.css.prefers-color-scheme.content-override': 1,
+};
+
+// Downloads go to `dir` without a dialog. Firefox's default is the operator's
+// ~/Downloads, where an attachment a fixture serves would otherwise land.
+export function downloadPrefs(dir) {
+  return {
+    'browser.download.dir': dir,
+    'browser.download.folderList': 2,
+    'browser.download.useDownloadDir': true,
+    'browser.download.always_ask_before_handling_new_types': false,
+  };
+}
+
+// firefox-devtools-mcp's repeatable --pref flag, which it hands Firefox at launch.
+export const prefArgs = (prefs) => Object.entries(prefs).flatMap(([k, v]) => ['--pref', `${k}=${v}`]);
+
 // `baseEnv` is what the server inherits under `env`; the runner's preflight
 // passes the agents' allowlist so a server that needs a dropped variable fails
 // there, before any paid work, rather than inside every agent.
