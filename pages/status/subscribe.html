@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Subscribe to updates - Nimbrel Edge status</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/atom+xml" title="Nimbrel Edge incident history" href="history.atom">
 <link rel="stylesheet" href="status.css">
 <style>
   .subform { margin-top: 14px; }
@@ -31,10 +33,11 @@
 <body>
 <header class="mast">
   <div class="mast-inner">
-    <span class="mark">Nimbrel <b>Edge</b></span>
-    <nav>
+    <a class="mark" href="index.html">Nimbrel <b>Edge</b></a>
+    <nav aria-label="Status pages">
       <a href="index.html">Status</a>
       <a href="history.html">Incident history</a>
+      <a href="subscribe.html" class="on">Subscribe</a>
     </nav>
     <span class="tz">All times UTC</span>
   </div>
@@ -49,15 +52,15 @@
 
   <section class="panel">
     <h2>Email notifications</h2>
-    <form class="subform" method="get" action="subscribe.html">
+    <form class="subform" id="subform" novalidate>
       <div class="field">
         <label for="addr">Email address</label>
         <input type="email" id="addr" name="addr" placeholder="you@yourcompany.example" required>
         <p class="hint">We send a confirmation link to this address and add nothing to the list
         until it is followed.</p>
       </div>
-      <div class="field">
-        <label>Components to follow</label>
+      <fieldset class="field">
+        <legend>Components to follow</legend>
         <div class="picks">
           <span><input type="checkbox" id="c-edge" name="component" value="edge" checked>
           <label for="c-edge">Edge delivery</label></span>
@@ -70,7 +73,7 @@
           <span><input type="checkbox" id="c-logs" name="component" value="logs">
           <label for="c-logs">Log streaming</label></span>
         </div>
-      </div>
+      </fieldset>
       <div class="field">
         <label for="scope">Send me</label>
         <select id="scope" name="scope">
@@ -85,13 +88,14 @@
         <button type="submit" class="btn">Send confirmation link</button>
         <span class="note">Unsubscribe from the footer of any message.</span>
       </div>
+      <p class="sub-result" id="subResult" role="status"></p>
     </form>
   </section>
 
   <section class="panel">
     <h2>Other ways to follow</h2>
-    <p>An RSS feed of the incident history carries the same records as this page and is the
-    lightest way to watch it from a wiki or a chat integration. Teams on the Ridge plan can point
+    <p>The <a href="history.atom">incident feed</a> (Atom) carries the same records as the
+    incident history and is the lightest way to watch it from a wiki or a chat integration. Teams on the Ridge plan can point
     a webhook at their own endpoint instead; the payload names the component, the state it moved
     to, the incident reference, and the update text, and it is retried for six hours before we
     give up on an endpoint.</p>
@@ -105,7 +109,7 @@
     <p>An address on this list is used to send status notifications and nothing else. We do not
     add it to product announcements, we do not pass it to anyone outside Nimbrel Networks, and we
     delete it within thirty days of an unsubscribe. Asking to be removed does not require an
-    account, and a request to noc@nimbrel.example is honoured the same working day.</p>
+    account, and a request to noc@nimbrel.example is honored the same working day.</p>
     <p class="more"><a href="definitions.html">Status definitions</a> sets out what each state
     means, and <a href="about.html">About this page</a> explains how a state is decided.</p>
   </section>
@@ -118,11 +122,56 @@
       <a href="history.html">Incident history</a>
       <a href="about.html">About this page</a>
       <a href="subscribe.html">Subscribe to updates</a>
+      <a href="history.atom">Incident feed</a>
       <a href="definitions.html">Status definitions</a>
     </div>
-    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay.</p>
-    <p>Network operations centre: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
+    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay, CA.
+    <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms</a></p>
+    <p>Network operations center: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
   </div>
 </footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const form = document.getElementById('subform');
+const result = document.getElementById('subResult');
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const addr = document.getElementById('addr').value.trim();
+  const components = [...form.querySelectorAll('input[name="component"]:checked')].map((c) => c.value);
+  result.className = 'sub-result';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) {
+    result.classList.add('bad');
+    result.textContent = 'Enter a full email address, such as you@yourcompany.example.';
+    return;
+  }
+  if (!components.length) {
+    result.classList.add('bad');
+    result.textContent = 'Pick at least one component to follow.';
+    return;
+  }
+  const button = form.querySelector('button');
+  button.disabled = true;
+  try {
+    const res = await fetch('/api/status/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, addr, components, scope: document.getElementById('scope').value }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      result.classList.add('bad');
+      result.textContent = body.error || 'The subscription service did not accept the request. Try again.';
+      button.disabled = false;
+      return;
+    }
+    result.classList.add('good');
+    result.textContent = 'Check ' + body.addr + ' for a confirmation link. Nothing is sent to that address until the link is followed.';
+  } catch {
+    result.classList.add('bad');
+    result.textContent = 'The subscription service could not be reached. Try again in a minute.';
+    button.disabled = false;
+  }
+});
+</script>
 </body>
 </html>

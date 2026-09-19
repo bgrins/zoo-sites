@@ -39,7 +39,7 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
     {
       id: 'timeout-vs-slow',
       ask:
-        `Open ${origins.zellick}/slow.html and restore the sealed archive; the ` +
+        `Open ${origins.zellick}/archive.html and restore the sealed archive; the ` +
         `restore can take about 10 seconds. Report the archive reference shown ` +
         `when it completes.`,
       answerSchema: {

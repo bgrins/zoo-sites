@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Status definitions - Nimbrel Edge status</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/atom+xml" title="Nimbrel Edge incident history" href="history.atom">
 <link rel="stylesheet" href="status.css">
 <style>
   .deftable { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
@@ -16,10 +18,11 @@
 <body>
 <header class="mast">
   <div class="mast-inner">
-    <span class="mark">Nimbrel <b>Edge</b></span>
-    <nav>
+    <a class="mark" href="index.html">Nimbrel <b>Edge</b></a>
+    <nav aria-label="Status pages">
       <a href="index.html">Status</a>
       <a href="history.html">Incident history</a>
+      <a href="subscribe.html">Subscribe</a>
     </nav>
     <span class="tz">All times UTC</span>
   </div>
@@ -93,7 +96,7 @@
     traffic beyond a contracted rate limit, a request rejected because a credential expired, or
     an outage caused by software you deployed to the edge yourself.</p>
     <p>Beta components are excluded until they are announced as generally available. A beta
-    component is labelled as such in the control panel and does not appear on this page.</p>
+    component is labeled as such in the control panel and does not appear on this page.</p>
   </section>
 
   <section class="panel">
@@ -117,10 +120,12 @@
       <a href="history.html">Incident history</a>
       <a href="about.html">About this page</a>
       <a href="subscribe.html">Subscribe to updates</a>
+      <a href="history.atom">Incident feed</a>
       <a href="definitions.html">Status definitions</a>
     </div>
-    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay.</p>
-    <p>Network operations centre: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
+    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay, CA.
+    <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms</a></p>
+    <p>Network operations center: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
   </div>
 </footer>
 </body>

@@ -1,7 +1,7 @@
 // pages/flaky/ - the unreliable report backend and the cold-storage restore (flaky-retry, timeout-vs-slow).
 import { randomBytes } from 'node:crypto';
 
-// pages/flaky/slow.html — tier 3 cold-storage restore (T039 timeout-vs-slow).
+// pages/flaky/archive.html — tier 3 cold-storage restore (T039 timeout-vs-slow).
 // The delay is enforced server-side so no client can shorten it, and the archive
 // reference is minted only AFTER it elapses: a caller that gives up early never
 // sees a reference at all. Re-asking while a job is still mounting really does
@@ -36,7 +36,7 @@ export function routes(ctx) {
       // transcript.
       const fromPage =
         req.headers['sec-fetch-site'] === 'same-origin' ||
-        /^\/flaky\/slow\.html$/.test(refererPath(req));
+        /^\/flaky\/archive\.html$/.test(refererPath(req));
       archive.requests += 1;
       if (!fromPage) archive.offPage += 1;
       // Asking again while a job is still mounting re-queues the media behind it,
@@ -89,7 +89,7 @@ export function documents() {
     // by an agent that never loaded it. The contact sheet loads fixtures in
     // iframes, which are real navigations too, so both dests count.
     onHtml({ pathname, found, nav }) {
-      if (pathname === '/flaky/slow.html' && (nav.document || nav.framed)) {
+      if (pathname === '/flaky/archive.html' && (nav.document || nav.framed)) {
         const archive = (found.session.archive ??= {
           requests: 0,
           served: 0,

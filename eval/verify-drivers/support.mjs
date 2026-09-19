@@ -4,7 +4,7 @@
 //
 // Two measured properties of our surface this driver documents:
 //   - the default 100-line snapshot loses the chat composer after the FIRST
-//     exchange (the help page is 91 lines with the dock open, and each message
+//     exchange (the help page is 97 lines with the dock open, and each message
 //     costs 3 lines), so every send after the first needs a scoped snapshot;
 //   - message text truncates at 27 characters, so the adviser's instructions are
 //     only ever half-readable through the snapshot.
@@ -21,7 +21,7 @@ const ACCOUNT_PATH = '/support/account.html';
 // than at the shared default gap.
 const until = (label, fn) => poll(label, fn, { gap: 500 });
 
-// The dock sits at the end of a 78-line help page, so scope the snapshot to it
+// The dock sits at the end of an 81-line help page, so scope the snapshot to it
 // rather than raising maxLines: that is the cheaper of the two workarounds and
 // the one an agent discovers from the "[+N lines]" marker. It stays cheap however
 // long the chat runs — the transcript keeps only its most recent messages in the

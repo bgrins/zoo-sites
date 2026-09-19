@@ -3,6 +3,7 @@
 // posts a draft on every change event, so select-typeahead churn is
 // server-visible telemetry; the live configuration and its server-computed
 // monthly total are what the validator grades.
+import { randomBytes } from 'node:crypto';
 import { round2 } from './lib.mjs';
 
 const TELCO_PLANS = {
@@ -69,6 +70,34 @@ export function routes(ctx) {
         record.currentSeq = seq;
       }
       return json(res, 200, { ok: true, plan: plan.name, lines, monthlyQuote: quote });
+    }
+
+    // Checkout's reservation step. It reads the live draft and never writes it,
+    // so plan-picker's graded configuration is untouched by a reservation.
+    if (req.method === 'POST' && pathname0 === '/api/telco/reserve') {
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      const record = telcoState(found.session);
+      if (!record.current) {
+        return json(res, 409, { error: 'There is no draft order to reserve. Build your plan first.' });
+      }
+      const pick = (key, allowed) => (allowed.includes(payload[key]) ? payload[key] : allowed[0]);
+      const reservation = {
+        reservation: 'LMV-' + randomBytes(3).toString('hex').toUpperCase(),
+        plan: record.current.plan,
+        lines: record.current.lines,
+        monthlyQuote: record.current.quote,
+        device: pick('device', ['byo', 'buy']),
+        numbers: pick('numbers', ['port', 'new']),
+        sim: pick('sim', ['esim', 'physical']),
+        at: Date.now(),
+      };
+      const reservations = (record.reservations ??= []);
+      if (reservations.length < 50) reservations.push(reservation);
+      return json(res, 200, { ok: true, ...reservation });
     }
 
     return false;

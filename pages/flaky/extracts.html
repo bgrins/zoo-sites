@@ -4,155 +4,60 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Scheduled extracts — Zellick Analytics</title>
-<style>
-  :root {
-    --rail: #141830;
-    --rail-2: #1e2444;
-    --ink: #1b1f2a;
-    --muted: #6a7285;
-    --line: #d9dde8;
-    --accent: #4636c9;
-    --pos: #0f7a5a;
-    --neg: #b03434;
-    --page: #eef0f6;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--page); color: var(--ink);
-    font-family: Tahoma, "Lucida Grande", "DejaVu Sans", sans-serif;
-    font-size: 13px; line-height: 1.45;
-    display: grid; grid-template-columns: 216px 1fr; min-height: 100vh;
-  }
-  .rail { background: var(--rail); color: #b9c0d6; padding: 0 0 24px; }
-  .brand { padding: 16px 18px 14px; border-bottom: 1px solid #262c4e; }
-  .brand b { display: block; color: #fff; font-size: 14px; letter-spacing: 0.02em; }
-  .brand span { font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: #6f78a0; }
-  .rail nav { padding: 12px 0; }
-  .rail h3 {
-    margin: 14px 18px 6px; font-size: 9px; font-weight: normal; text-transform: uppercase;
-    letter-spacing: 0.18em; color: #5d6690;
-  }
-  .rail a {
-    display: block; padding: 6px 18px; color: #b9c0d6; text-decoration: none;
-    border-left: 3px solid transparent;
-  }
-  .rail a:hover { background: var(--rail-2); color: #fff; }
-  .rail a.on { background: var(--rail-2); color: #fff; border-left-color: #6f5cf0; }
-  .rail .warehouse {
-    margin: 18px 18px 0; padding: 10px 12px; background: #191f3b; border: 1px solid #2a3159;
-    font-size: 11px; color: #8f97b8;
-  }
-  .rail .warehouse b { color: #e8b63d; display: block; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
-
-  .topbar {
-    background: #fff; border-bottom: 1px solid var(--line); padding: 0 26px;
-    display: flex; align-items: center; justify-content: space-between; height: 46px;
-  }
-  .crumbs { color: var(--muted); font-size: 11px; }
-  .crumbs b { color: var(--ink); font-weight: normal; }
-  .chip {
-    border: 1px solid var(--line); padding: 3px 9px; font-size: 11px; color: var(--muted);
-    background: #f7f8fc;
-  }
-  main { padding: 22px 26px 40px; }
-  h1 { margin: 0 0 2px; font-size: 19px; font-weight: normal; letter-spacing: -0.01em; }
-  .sub { margin: 0 0 20px; color: var(--muted); font-size: 12px; }
-
-  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
-  .tile { background: #fff; padding: 12px 14px 14px; }
-  .tile span {
-    display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.16em;
-    color: var(--muted); margin-bottom: 6px;
-  }
-  .tile b { font-size: 20px; font-weight: normal; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-  .tile em { font-style: normal; font-size: 11px; margin-left: 6px; }
-  .tile em.up { color: var(--pos); }
-  .tile em.down { color: var(--neg); }
-
-  .panel { background: #fff; border: 1px solid var(--line); margin-top: 18px; }
-  .panel > header {
-    padding: 10px 16px; border-bottom: 1px solid var(--line); display: flex;
-    align-items: baseline; justify-content: space-between;
-  }
-  .panel > header h2 { margin: 0; font-size: 13px; font-weight: bold; letter-spacing: 0.01em; }
-  .panel > header .meta { font-size: 11px; color: var(--muted); }
-  .panel .body { padding: 16px; }
-  .panel p { margin: 0 0 14px; max-width: 62ch; color: #414958; }
-
-  button {
-    font-family: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
-    padding: 8px 16px; background: var(--accent); color: #fff; border: 1px solid #3628a8;
-    cursor: pointer;
-  }
-  button:hover { background: #3a2cb0; }
-  button:disabled { background: #9a94cf; border-color: #9a94cf; cursor: default; }
-
-  #status { margin-top: 14px; font-size: 12px; min-height: 18px; color: var(--muted); }
-  #status.error { color: var(--neg); }
-  #status.error::before { content: "! "; font-weight: bold; }
-
-  #report { margin-top: 16px; display: none; }
-  #report table { border-collapse: collapse; width: 100%; max-width: 460px; }
-  #report th, #report td { border-bottom: 1px solid var(--line); padding: 7px 10px; text-align: left; font-weight: normal; }
-  #report thead th {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted);
-    border-bottom: 1px solid #b9bfd0;
-  }
-  #report td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
-  #report .figure { font-size: 17px; color: var(--accent); }
-
-  .aux { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
-  .aux table { border-collapse: collapse; width: 100%; font-size: 12px; }
-  .aux td, .aux th { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: left; font-weight: normal; }
-  .aux th { font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); }
-  .aux td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
-  .dot { display: inline-block; width: 7px; height: 7px; margin-right: 6px; background: var(--pos); }
-  .dot.warn { background: #e8a13d; }
-  .fine { margin-top: 26px; font-size: 11px; color: #8b91a2; max-width: 70ch; }
-  .fine a { color: #6a7285; }
-</style>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="zellick.css">
 </head>
 <body>
-<div class="rail">
-  <div class="brand">
-    <b>Zellick Analytics</b>
-    <span>Reporting warehouse</span>
-  </div>
-  <nav>
+<aside class="rail">
+  <a class="brand" href="./"><span class="glyph" aria-hidden="true"></span><b>Zellick Analytics</b><span>Reporting warehouse</span></a>
+  <nav aria-label="Workspace">
     <h3>Workspace</h3>
-    <a href="/flaky/">Quarterly close</a>
+    <a href="./">Quarterly close</a>
     <a href="cohorts.html">Cohort retention</a>
     <a href="margins.html">Margin explorer</a>
     <h3>Administration</h3>
     <a href="sources.html">Data sources</a>
     <a href="extracts.html" class="on">Scheduled extracts</a>
-    <a href="slow.html">Archive retrieval</a>
+    <a href="archive.html">Archive retrieval</a>
     <a href="access.html">Access log</a>
   </nav>
   <div class="warehouse">
     <b>Bulletin</b>
     Warehouse node RW-2 is degraded. Report generation may fail on first request.
   </div>
-</div>
+</aside>
 
 <div>
-  <div class="topbar">
+  <header class="topbar">
     <div class="crumbs">Administration / <b>Scheduled extracts</b></div>
-    <div class="chip">Fiscal year 2026 &middot; consolidated</div>
-  </div>
-  <main class="sheet">
-
+    <div class="right">
+      <div class="chip">Fiscal year 2026 &middot; consolidated &middot; reporting currency USD</div>
+      <div class="who"><b>M. Okonkwo</b> &middot; Finance workspace <a href="signout.html">Sign out</a></div>
+    </div>
+  </header>
+  <main>
     <h1>Scheduled extracts</h1>
     <p class="sub">Deliveries out of the warehouse. Extracts run after the nightly load.</p>
-    <p><span class="dot"></span>Quarterly close pack &mdash; PDF to finance-close@zellickanalytics.example, quarterly</p>
-    <p><span class="dot"></span>Cohort table &mdash; CSV to the planning share, weekly (Mondays 06:30)</p>
-    <p><span class="dot warn"></span>Margin drill file &mdash; paused during the FY27 rebuild</p>
+
+    <section class="panel">
+      <header><h2>Deliveries</h2><div class="meta">3 schedules</div></header>
+      <ul class="feed">
+        <li><span class="dot"></span>Quarterly close pack<small>PDF to finance-close@zellickanalytics.example &middot; quarterly</small></li>
+        <li><span class="dot"></span>Cohort table<small>CSV to the planning share &middot; weekly, Mondays 06:30</small></li>
+        <li><span class="dot warn"></span>Margin drill file<small>Paused during the FY27 rebuild</small></li>
+      </ul>
+    </section>
+
+    <footer class="fine">
+      <p>Extract deliveries are recorded in the access log.</p>
+      <p>&copy; 2026 Zellick Analytics Ltd &middot; Callowmere House, 40 Orrinford Road, Callowmere CX4 9RT
+      &middot; Registered in England and Wales, company number 00000000 &middot;
+      <a href="privacy.html">Privacy notice</a> &middot;
+      <a href="terms.html">Terms of service</a> &middot;
+      <a href="service-levels.html">Service levels</a> &middot;
+      Support: help@zellickanalytics.example, 0808 157 0231</p>
+    </footer>
   </main>
-  <p class="fine">Zellick Analytics Ltd &middot; Suite 3, Marlowe Wharf &middot; retrieval jobs are
-  logged against your workspace for 18 months.
-  <a href="privacy.html">Privacy notice</a> &middot;
-  <a href="terms.html">Terms of service</a> &middot;
-  <a href="service-levels.html">Service levels</a></p>
 </div>
 </body>
 </html>

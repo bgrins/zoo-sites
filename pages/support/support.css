@@ -11,8 +11,8 @@
   --accent-dark: #a2154f;
   --warn: #8a5a06;
   --good: #1c6b47;
-  --head: "Franklin Gothic Medium", "Franklin Gothic", "Nimbus Sans", "Liberation Sans", Arial, sans-serif;
-  --text: Candara, "Noto Sans", "DejaVu Sans", "Segoe UI", sans-serif;
+  --head: "Franklin Gothic Medium", "Franklin Gothic", "DIN Alternate", "Nimbus Sans", "Liberation Sans", Arial, sans-serif;
+  --text: Candara, Avenir, "Noto Sans", "DejaVu Sans", "Segoe UI", sans-serif;
   --ref: "Cascadia Mono", "Roboto Mono", "Liberation Mono", "Courier New", monospace;
 }
 * { box-sizing: border-box; }
@@ -45,7 +45,7 @@ header.top {
   padding: 15px 26px 0;
   border-bottom: 4px solid var(--accent);
 }
-.mark { font-family: var(--head); line-height: 1.05; }
+.mark { display: inline-block; font-family: var(--head); line-height: 1.05; color: #fff; text-decoration: none; }
 .mark b {
   display: block;
   font-size: 25px;
@@ -282,3 +282,44 @@ footer.foot .fine { margin-top: 18px; padding-top: 12px; border-top: 1px solid #
 .dock textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .dock .compose button { padding: 9px 14px; letter-spacing: 0.1em; }
 .dock .closed { padding: 12px 13px; }
+
+main.body p.note { font-size: 13.5px; color: var(--muted); max-width: 66ch; }
+.stuck .cap {
+  font-family: var(--head);
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.stuck input.text {
+  font-family: var(--text);
+  font-size: 15px;
+  padding: 9px 11px;
+  border: 1px solid #a9a29a;
+  border-radius: 0;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 4px;
+}
+.stuck input.text:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+@media (max-width: 760px) {
+  .util { flex-wrap: wrap; gap: 4px 16px; padding: 6px 16px; }
+  .util .push { margin-left: 0; }
+  header.top { padding: 13px 16px 0; }
+  .shell { grid-template-columns: 1fr; }
+  aside.rail { border-right: 0; border-bottom: 1px solid var(--rule); padding: 14px 16px 6px; }
+  aside.rail ol { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+  aside.rail li { margin: 0; }
+  aside.rail a { border-left: 0; border-bottom: 3px solid transparent; padding: 5px 8px; font-size: 13.5px; }
+  aside.rail a.here { border-bottom-color: var(--accent); }
+  main.body { padding: 20px 16px 48px; }
+  main.body h1 { font-size: 25px; }
+  .cards { grid-template-columns: 1fr; }
+  .kit .row { flex-wrap: wrap; gap: 2px 14px; }
+  .kit .k { width: auto; flex: 1 0 100%; }
+  table.spec th { width: auto; }
+  footer.foot { padding: 20px 16px 24px; }
+  footer.foot .cols { gap: 18px 36px; }
+  .dock { right: 0; left: 0; width: auto; }
+}

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NE-4B9E1 Relay mesh congestion in the Aparra region - Nimbrel Edge status</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/atom+xml" title="Nimbrel Edge incident history" href="../history.atom">
+<link rel="stylesheet" href="../status.css">
+</head>
+<body>
+<header class="mast">
+  <div class="mast-inner">
+    <a class="mark" href="../index.html">Nimbrel <b>Edge</b></a>
+    <nav aria-label="Status pages">
+      <a href="../index.html">Status</a>
+      <a href="../history.html">Incident history</a>
+      <a href="../subscribe.html">Subscribe</a>
+    </nav>
+    <span class="tz">All times UTC</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel">
+    <p class="crumb"><a href="../history.html">Incident history</a> / NE-4B9E1</p>
+    <h1>Relay mesh congestion in the Aparra region</h1>
+    <div class="inc-meta">
+      <span class="inc-ref">NE-4B9E1</span>
+      <span class="inc-ts">2026-07-03 19:41 to 21:05</span>
+      <span class="chip chip-operational">Resolved</span>
+    </div>
+    <p class="panel-sub">Affected component: Relay mesh.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Updates</h2>
+    <ol class="updates">
+      <li><span class="up-state">Resolved</span><span class="up-ts">2026-07-03 21:05</span><p>Spill capacity has absorbed the load and paths in the Aparra region have measured clean for a full window. Relay path checks now report the region as operational.</p></li>
+      <li><span class="up-state">Monitoring</span><span class="up-ts">2026-07-03 20:22</span><p>Spill capacity is online and queueing on the two relays is falling. Checks from the region may still report congested paths for a short while.</p></li>
+      <li><span class="up-state">Identified</span><span class="up-ts">2026-07-03 19:58</span><p>A fiber cut in the Aparra region has moved traffic onto two relays, which are now oversubscribed. We are bringing spill capacity online.</p></li>
+      <li><span class="up-state">Investigating</span><span class="up-ts">2026-07-03 19:41</span><p>Relay path checks from the Aparra region are reporting congested paths. We are investigating.</p></li>
+    </ol>
+  </section>
+
+  <section class="panel">
+    <h2>Postmortem</h2>
+    <p>A civil works crew cut a regional fiber route at 19:36. The four relays serving the region were designed to lose one route, but this cut took the routes feeding two of them, so their traffic moved onto the remaining two.</p>
+    <p>Spill capacity in the neighboring region is held for exactly this case, but bringing it online is a manual step, and it took 41 minutes to complete. Paths from the region were congested for most of that time.</p>
+    <p>Spill capacity for the region is now brought online automatically when two relays are lost at once, and the step has been added to the quarterly failover exercise.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <div class="flinks">
+      <a href="../index.html">Status</a>
+      <a href="../history.html">Incident history</a>
+      <a href="../about.html">About this page</a>
+      <a href="../subscribe.html">Subscribe to updates</a>
+      <a href="../history.atom">Incident feed</a>
+      <a href="../definitions.html">Status definitions</a>
+    </div>
+    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay, CA.
+    <a href="../privacy.html">Privacy</a> &middot; <a href="../terms.html">Terms</a></p>
+    <p>Network operations center: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
+  </div>
+</footer>
+</body>
+</html>

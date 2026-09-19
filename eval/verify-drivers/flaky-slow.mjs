@@ -1,4 +1,4 @@
-// Golden-path driver for pages/flaky/slow.html (T039 timeout-vs-slow). See
+// Golden-path driver for pages/flaky/archive.html (T039 timeout-vs-slow). See
 // probes.mjs for the contract.
 //
 // The point of the task is patience, so the driver must not cheat by shortening
@@ -19,7 +19,7 @@ export const DRIVERS = {
     note: 'submits one restore and polls take_snapshot through the 8s wait; never awaits the fetch (evaluate_script caps at 5s)',
     wrong: 'The archive restored and the reference is AR-0000.',
     async run(h) {
-      await h.goto('/flaky/slow.html');
+      await h.goto('/flaky/archive.html');
       const snap = await h.snapshot();
       const uid = snap.match(RE_RESTORE)?.[1];
       if (!uid) throw new Error('no Restore Archive button in the snapshot');

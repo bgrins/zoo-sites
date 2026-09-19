@@ -4,51 +4,31 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Network — Lumeva Mobile</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="lumeva.css">
 <style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: "Century Gothic", "URW Gothic", Futura, "Trebuchet MS", Verdana, sans-serif;
-    font-size: 16px; line-height: 1.5; color: #241b28; background: #fff;
-    font-variant-numeric: tabular-nums;
-  }
-  .topbar {
-    display: flex; align-items: center; gap: 34px; padding: 14px 32px;
-    border-bottom: 2px solid #d0006f;
-  }
-  .wordmark { font-size: 24px; font-weight: bold; letter-spacing: 0.5px; color: #d0006f; text-decoration: none; }
-  .topbar nav { display: flex; gap: 22px; }
-  .topbar nav a { color: #241b28; text-decoration: none; font-size: 14px; letter-spacing: 0.6px; text-transform: uppercase; padding: 4px 0; }
-  .topbar nav a.here { color: #d0006f; border-bottom: 2px solid #d0006f; }
-  .topbar nav a:hover { color: #d0006f; }
-  .hero { background: #d0006f; color: #fff; padding: 40px 32px; }
-  .hero .inner { max-width: 980px; margin: 0 auto; }
-  .hero h1 { font-size: 34px; margin: 0 0 8px; }
-  .hero p { margin: 0; color: #ffd9ec; }
-  section { padding: 42px 32px; }
-  .inner { max-width: 980px; margin: 0 auto; }
   h2 { font-size: 24px; margin: 0 0 6px; }
-  p.body { color: #453c4a; max-width: 720px; }
+  p.body { color: var(--body); max-width: 720px; }
   .regions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 26px; }
-  .region { border: 2px solid #e6dfe4; padding: 18px 20px; }
+  .region { border: 2px solid var(--line); border-radius: 14px; padding: 18px 20px; }
   .region h3 { margin: 0 0 4px; font-size: 17px; }
-  .region .pct { font-size: 34px; font-weight: bold; color: #d0006f; margin: 0; line-height: 1.1; }
-  .region .cap { font-size: 12.5px; letter-spacing: 1.2px; text-transform: uppercase; color: #6b6470; margin: 2px 0 0; }
-  footer { background: #241b28; color: #b9aec0; font-size: 13.5px; padding: 26px 32px; line-height: 1.9; }
-  footer .inner { max-width: 980px; margin: 0 auto; }
-  footer a { color: #ecd9e6; text-decoration: none; }
+  .region .pct { font-size: 34px; font-weight: bold; margin: 0; line-height: 1.1; }
+  .region .cap { font-size: 12.5px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin: 2px 0 0; }
+  @media (max-width: 760px) { .regions { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
-<div class="topbar">
-  <a class="wordmark" href="/telco/">lumeva</a>
-  <nav>
-    <a href="/telco/">Plans</a>
-    <a href="/telco/network.html" class="here">Network</a>
-    <a href="/telco/help.html">Help</a>
+<header class="topbar">
+  <a class="wordmark" href="./">lumeva</a>
+  <nav aria-label="Main">
+    <a href="./">Plans</a>
+    <a href="network.html" class="here">Network</a>
+    <a href="help.html">Help</a>
   </nav>
-</div>
+  <span class="care">Care team 1-512-555-0142</span>
+</header>
 
+<main>
 <div class="hero">
   <div class="inner">
     <h1>The Lumeva network</h1>
@@ -89,17 +69,20 @@
     <p class="body">Signal Plus lines carry Roam Lite in 12 nearby countries; Signal Plus Ultra
     lines carry Roam Global in 90. Roaming data draws from your monthly high-speed allowance,
     and texting home is always included. Ready to pick a tier? Head back to the
-    <a href="/telco/#builder">plan builder</a>.</p>
+    <a href="./#builder">plan builder</a>.</p>
   </div>
 </section>
+</main>
 
 <footer>
   <div class="inner">
-    Lumeva Mobile · 55 Kestrel Way, Duneport · care@lumeva.example · 1-512-555-0142<br>
-    <a href="/telco/network.html">Network coverage</a> ·
-    <a href="/telco/help.html">Help center</a> ·
-    <a href="/telco/legal.html">Terms and privacy</a><br>
-    Coverage and speeds vary by location and load. &copy; Lumeva Mobile.
+    Lumeva Wireless LLC &middot; 55 Caliche Row, Duneport, TX &middot; care@lumeva.example &middot; 1-512-555-0142<br>
+    <a href="network.html">Network coverage</a> &middot;
+    <a href="help.html">Help center</a> &middot;
+    <a href="terms.html">Terms of service</a> &middot;
+    <a href="privacy.html">Privacy notice</a> &middot;
+    <a href="legal.html">Legal and disclosures</a><br>
+    Coverage and speeds vary by location and load. &copy; 2026 Lumeva Wireless LLC. Lumeva Mobile is a service of Lumeva Wireless LLC.
   </div>
 </footer>
 </body>

@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>Book a collection — Corvane Parcel Network</title>
 <link rel="stylesheet" href="corvane.css">
 </head>
@@ -16,7 +17,7 @@
 
 <header class="chrome">
   <div class="bar">
-    <div class="wordmark"><b>Corvane</b><span>Parcel Network</span></div>
+    <a class="wordmark" href="./"><b>Corvane</b><span>Parcel Network</span></a>
     <div class="acct">Guest session &middot; rates shown ex VAT</div>
   </div>
   <nav class="main">
@@ -57,7 +58,11 @@
               <option>In 3 working days</option>
             </select>
           </div>
-          <button type="submit">Check availability</button>
+          <div class="field">
+            <label for="contact">Email for the confirmation</label>
+            <input id="contact" name="contact" type="email" spellcheck="false">
+          </div>
+          <button type="submit">Book collection</button>
         </form>
         <div class="note" id="collectNote" role="status"></div>
         <h3>What the driver needs</h3>
@@ -119,6 +124,7 @@
 </footer>
 
 <script>
+  const NONCE = '__SESSION_NONCE__';
   const form = document.getElementById('collect');
   const postcode = document.getElementById('postcode');
   const parcels = document.getElementById('parcels');
@@ -130,7 +136,9 @@
     note.textContent = message;
   }
 
-  form.addEventListener('submit', (event) => {
+  const contact = document.getElementById('contact');
+
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!postcode.value.trim()) {
       setNote('warn', 'Enter the collection postcode.');
@@ -148,7 +156,36 @@
       day.focus();
       return;
     }
-    setNote('warn', 'Guest bookings are not confirmed online. Call 0808 157 0420 (option 2) with these details before 20:00 to secure the slot, or sign in to book against an account.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.value.trim())) {
+      setNote('warn', 'Enter an email address for the confirmation.');
+      contact.focus();
+      return;
+    }
+    setNote('', 'Checking the rounds...');
+    try {
+      const res = await fetch('/api/parcels/collection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nonce: NONCE,
+          postcode: postcode.value.trim(),
+          parcels: count,
+          day: day.value,
+          contact: contact.value.trim(),
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setNote('bad', body.error || 'The booking was not accepted. Check the details and try again.');
+        return;
+      }
+      setNote('good', 'Collection booked: reference ' + body.reference + '. ' + body.parcels +
+        (body.parcels === 1 ? ' parcel' : ' parcels') + ' from ' + body.postcode + ', ' +
+        body.day.toLowerCase() + ', ' + body.window + '. The confirmation goes to ' + body.contact + '.');
+      form.querySelector('button').disabled = true;
+    } catch {
+      setNote('bad', 'The booking service could not be reached. Try again, or call 0808 157 0420 (option 2).');
+    }
   });
 </script>
 </body>

@@ -1,0 +1,143 @@
+:root {
+  --paper: #f4f2ec;
+  --rail: #fbfaf6;
+  --rail-line: #dcd7ca;
+  --ink: #1f2328;
+  --body: #3a3f45;
+  --muted: #676b70;
+  --line: #e1ddd2;
+  --accent: #1f5fbf;
+  --accent-dark: #174a96;
+  --accent-wash: #edf2fb;
+  --pos: #19714a;
+  --neg: #b0332b;
+  --warn: #a8660a;
+  --figure: "DIN Alternate", "Bahnschrift", "PT Sans", sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: "PT Sans", "Segoe UI", Tahoma, sans-serif;
+  font-size: 13.5px; line-height: 1.45;
+  display: grid; grid-template-columns: 224px 1fr; min-height: 100vh;
+}
+a { color: var(--accent); }
+body > div { min-width: 0; }
+
+.rail { background: var(--rail); border-right: 1px solid var(--rail-line); padding: 0 0 24px; }
+.rail .brand {
+  display: grid; grid-template-columns: 22px 1fr; column-gap: 9px; align-items: center;
+  padding: 18px 18px 16px; text-decoration: none; color: var(--ink);
+  border-bottom: 1px solid var(--rail-line);
+}
+.rail .brand .glyph {
+  grid-row: span 2; width: 22px; height: 22px; border-radius: 3px;
+  background:
+    linear-gradient(to top, #fff 0 0) 4px 12px / 3px 6px no-repeat,
+    linear-gradient(to top, #fff 0 0) 9.5px 7px / 3px 11px no-repeat,
+    linear-gradient(to top, #fff 0 0) 15px 4px / 3px 14px no-repeat,
+    var(--accent);
+}
+.rail .brand b { font-size: 15px; font-weight: bold; }
+.rail .brand span:last-child { font-size: 11.5px; color: var(--muted); }
+.rail nav { padding: 10px 0; }
+.rail h3 {
+  margin: 16px 18px 5px; font-size: 11.5px; font-weight: bold; color: #7a7466;
+}
+.rail nav a {
+  display: block; padding: 6px 18px 6px 15px; color: var(--body); text-decoration: none;
+  border-left: 3px solid transparent;
+}
+.rail nav a:hover { background: #f1efe7; color: var(--ink); }
+.rail nav a.on { background: var(--accent-wash); color: var(--accent-dark); border-left-color: var(--accent); font-weight: bold; }
+.rail .warehouse {
+  margin: 18px 14px 0; padding: 10px 12px; background: #fff7e8; border: 1px solid #ecd6a8;
+  border-radius: 3px; font-size: 12px; color: #5c4a26;
+}
+.rail .warehouse b { color: var(--warn); display: block; font-size: 12px; margin-bottom: 2px; }
+
+.topbar {
+  background: #fff; border-bottom: 1px solid var(--line); border-top: 3px solid var(--accent);
+  padding: 0 26px; display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; min-height: 48px; flex-wrap: wrap;
+}
+.crumbs { color: var(--muted); font-size: 12.5px; }
+.crumbs b { color: var(--ink); font-weight: normal; }
+.topbar .right { display: flex; align-items: center; gap: 14px; font-size: 12.5px; }
+.chip {
+  border: 1px solid var(--line); border-radius: 12px; padding: 2px 10px; font-size: 12px;
+  color: var(--muted); background: #faf9f5;
+}
+.who { color: var(--body); }
+.who b { font-weight: bold; color: var(--ink); }
+.who a { margin-left: 8px; }
+
+main { padding: 22px 26px 34px; }
+h1 { margin: 0 0 2px; font-size: 21px; font-weight: bold; color: var(--ink); }
+.sub { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
+
+.panel { background: #fff; border: 1px solid var(--line); border-radius: 4px; margin-top: 18px; }
+.panel > header {
+  padding: 10px 16px; border-bottom: 1px solid var(--line); display: flex;
+  align-items: baseline; justify-content: space-between; gap: 12px;
+}
+.panel > header h2 { margin: 0; font-size: 14px; font-weight: bold; }
+.panel > header .meta { font-size: 12px; color: var(--muted); }
+.panel .body { padding: 16px; }
+.panel .body.flush { padding: 0; }
+.panel p { margin: 0 0 14px; max-width: 64ch; color: var(--body); }
+.panel .body p:last-child { margin-bottom: 0; }
+
+button {
+  font-family: inherit; font-size: 13px; font-weight: bold;
+  padding: 7px 16px; background: var(--accent); color: #fff; border: 1px solid var(--accent-dark);
+  border-radius: 3px; cursor: pointer;
+}
+button:hover { background: var(--accent-dark); }
+button:disabled { background: #9db3d8; border-color: #9db3d8; cursor: default; }
+
+table.grid, .aux table { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.grid th, table.grid td, .aux td, .aux th {
+  padding: 7px 12px; border-bottom: 1px solid var(--line); text-align: left; font-weight: normal;
+}
+table.grid th, .aux th { font-size: 12px; font-weight: bold; color: var(--muted); background: #faf9f5; }
+table.grid td.n, .aux td:last-child { text-align: right; font-family: var(--figure); font-variant-numeric: tabular-nums; }
+table.grid th.n { text-align: right; }
+table.grid tr:last-child td, .aux tr:last-child td { border-bottom: 0; }
+
+.feed { list-style: none; margin: 0; padding: 0; }
+.feed li { padding: 9px 16px; border-bottom: 1px solid var(--line); color: var(--body); }
+.feed li:last-child { border-bottom: 0; }
+.feed li small { display: block; color: var(--muted); font-size: 12px; }
+
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; background: var(--pos); }
+.dot.warn { background: #e0a030; }
+
+.aux { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+.aux .panel { margin-top: 0; }
+.aux ul { margin: 0; padding: 0 0 0 16px; font-size: 13px; color: var(--body); }
+.aux li { margin-bottom: 6px; }
+.aux dl { margin: 0; font-size: 13px; }
+.aux dt { color: var(--muted); font-size: 12px; }
+.aux dd { margin: 0 0 9px; font-variant-numeric: tabular-nums; }
+
+footer.fine {
+  margin-top: 28px; padding-top: 12px; border-top: 1px solid var(--line);
+  font-size: 12px; color: #5f6368; max-width: 78ch;
+}
+footer.fine p { margin: 0 0 4px; }
+footer.fine a { color: #4a5a78; }
+
+@media (max-width: 820px) {
+  body { grid-template-columns: 1fr; }
+  .rail { border-right: 0; border-bottom: 1px solid var(--rail-line); padding-bottom: 10px; }
+  .rail nav { display: flex; flex-wrap: wrap; padding: 6px 10px 0; }
+  .rail h3 { display: none; }
+  .rail nav a { padding: 5px 9px; border-left: 0; border-bottom: 2px solid transparent; }
+  .rail nav a.on { border-bottom-color: var(--accent); }
+  .rail .warehouse { margin: 10px 14px 0; }
+  .topbar, main { padding-left: 16px; padding-right: 16px; }
+  .aux { grid-template-columns: 1fr; }
+  .panel .body.flush { overflow-x: auto; }
+  table.grid th, table.grid td { padding: 7px 8px; }
+}

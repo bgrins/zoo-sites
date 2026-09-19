@@ -1,0 +1,68 @@
+:root {
+  --ink: #16181d;
+  --ink-2: #2b2f37;
+  --volt: #c8f03c;
+  --volt-deep: #4a6300;
+  --wash: #f6f8ec;
+  --line: #e1e5d6;
+  --body: #3d4238;
+  --muted: #5f6459;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Century Gothic", "URW Gothic", Futura, "Trebuchet MS", Verdana, sans-serif;
+  font-size: 16px; line-height: 1.5; color: var(--ink); background: #fff;
+  font-variant-numeric: tabular-nums;
+}
+a { color: var(--volt-deep); }
+
+.topbar {
+  display: flex; align-items: center; gap: 12px 34px; flex-wrap: wrap;
+  padding: 14px 32px; background: var(--ink); color: #fff;
+}
+.wordmark {
+  font-size: 25px; font-weight: bold; letter-spacing: 0.5px; color: var(--volt);
+  text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+}
+.wordmark::before {
+  content: ""; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--volt); box-shadow: 0 0 0 4px rgba(200, 240, 60, 0.25);
+}
+.topbar nav { display: flex; gap: 22px; flex-wrap: wrap; }
+.topbar nav a {
+  color: #e8ebe3; text-decoration: none; font-size: 14px; letter-spacing: 0.6px;
+  text-transform: uppercase; padding: 4px 0; border-bottom: 2px solid transparent;
+}
+.topbar nav a.here { color: var(--volt); border-bottom-color: var(--volt); }
+.topbar nav a:hover { color: var(--volt); }
+.topbar .care { margin-left: auto; font-size: 13px; color: #b3b8ac; }
+
+.hero { background: var(--volt); color: var(--ink); padding: 40px 32px; }
+.hero .inner { max-width: 980px; margin: 0 auto; }
+.hero h1 { font-size: 34px; margin: 0 0 8px; line-height: 1.15; }
+.hero p { margin: 0; color: #2f3b0c; }
+
+section { padding: 42px 32px; }
+.inner { max-width: 980px; margin: 0 auto; }
+
+.btn {
+  display: inline-block; font: inherit; font-weight: bold; font-size: 14px;
+  letter-spacing: 1.2px; text-transform: uppercase; text-decoration: none;
+  padding: 13px 26px; background: var(--ink); color: var(--volt);
+  border: 2px solid var(--ink); border-radius: 26px; cursor: pointer;
+}
+.btn:hover { background: var(--ink-2); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+footer { background: var(--ink); color: #aeb3a7; font-size: 13.5px; padding: 26px 32px; line-height: 1.9; }
+footer .inner { max-width: 980px; margin: 0 auto; }
+footer a { color: #e3f5a8; text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+@media (max-width: 760px) {
+  .topbar { padding: 12px 18px; }
+  .topbar .care { margin-left: 0; width: 100%; }
+  .hero, section, footer { padding-left: 18px; padding-right: 18px; }
+  .hero h1 { font-size: 28px; }
+}

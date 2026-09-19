@@ -4,15 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Incident history - Nimbrel Edge status</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/atom+xml" title="Nimbrel Edge incident history" href="history.atom">
 <link rel="stylesheet" href="status.css">
 </head>
 <body>
 <header class="mast">
   <div class="mast-inner">
-    <span class="mark">Nimbrel <b>Edge</b></span>
-    <nav>
+    <a class="mark" href="index.html">Nimbrel <b>Edge</b></a>
+    <nav aria-label="Status pages">
       <a href="index.html">Status</a>
       <a href="history.html" class="on">Incident history</a>
+      <a href="subscribe.html">Subscribe</a>
     </nav>
     <span class="tz">All times UTC</span>
   </div>
@@ -30,7 +33,7 @@
     <h2>July 2026</h2>
     <section class="panel">
       <div class="inc">
-        <h3>Log streaming delivering with delay</h3>
+        <h3><a href="incidents/ne-2d08f.html">Log streaming delivering with delay</a></h3>
         <div class="inc-meta">
           <span class="inc-ref">NE-2D08F</span>
           <span class="inc-ts">opened 2026-07-28 06:12</span>
@@ -40,7 +43,7 @@
         Delivery continues with a delay of up to four minutes.</p>
       </div>
       <div class="inc">
-        <h3>Elevated relay latency on trans-Atlantic routes</h3>
+        <h3><a href="incidents/ne-c214a.html">Elevated relay latency on trans-Atlantic routes</a></h3>
         <div class="inc-meta">
           <span class="inc-ref">NE-C214A</span>
           <span class="inc-ts">2026-07-21 09:14 to 11:47</span>
@@ -50,7 +53,7 @@
         was steered to the Vireo ring until the carrier restored the segment.</p>
       </div>
       <div class="inc">
-        <h3>Control panel sign-in errors</h3>
+        <h3><a href="incidents/ne-77d02.html">Control panel sign-in errors</a></h3>
         <div class="inc-meta">
           <span class="inc-ref">NE-77D02</span>
           <span class="inc-ts">2026-07-14 15:03 to 15:26</span>
@@ -60,13 +63,13 @@
         was rolled back and sign-in recovered without action needed from customers.</p>
       </div>
       <div class="inc">
-        <h3>Relay mesh congestion in the Aparra region</h3>
+        <h3><a href="incidents/ne-4b9e1.html">Relay mesh congestion in the Aparra region</a></h3>
         <div class="inc-meta">
           <span class="inc-ref">NE-4B9E1</span>
           <span class="inc-ts">2026-07-03 19:41 to 21:05</span>
           <span class="chip chip-operational">Resolved</span>
         </div>
-        <p>A regional fibre cut concentrated traffic onto two relays. Checks run during the
+        <p>A regional fiber cut concentrated traffic onto two relays. Checks run during the
         window reported congested paths until spill capacity came online.</p>
       </div>
     </section>
@@ -76,7 +79,7 @@
     <h2>June 2026</h2>
     <section class="panel">
       <div class="inc">
-        <h3>API gateway elevated error rate</h3>
+        <h3><a href="incidents/ne-05f1b.html">API gateway elevated error rate</a></h3>
         <div class="inc-meta">
           <span class="inc-ref">NE-05F1B</span>
           <span class="inc-ts">2026-06-19 02:12 to 02:58</span>
@@ -86,7 +89,7 @@
         roughly 2 percent of API traffic. The node was drained and reprovisioned.</p>
       </div>
       <div class="inc">
-        <h3>Scheduled maintenance: relay firmware rollout</h3>
+        <h3><a href="incidents/ne-e60d3.html">Scheduled maintenance: relay firmware rollout</a></h3>
         <div class="inc-meta">
           <span class="inc-ref">NE-E60D3</span>
           <span class="inc-ts">2026-06-07 01:00 to 03:30</span>
@@ -102,7 +105,7 @@
     <h2>May 2026</h2>
     <section class="panel">
       <div class="inc">
-        <h3>Control panel slow page loads</h3>
+        <h3><a href="incidents/ne-1a9c4.html">Control panel slow page loads</a></h3>
         <div class="inc-meta">
           <span class="inc-ref">NE-1A9C4</span>
           <span class="inc-ts">2026-05-28 13:20 to 14:02</span>
@@ -112,7 +115,7 @@
         terminated and shipped with an index the same day.</p>
       </div>
       <div class="inc">
-        <h3>DNS propagation delay for new zones</h3>
+        <h3><a href="incidents/ne-b7730.html">DNS propagation delay for new zones</a></h3>
         <div class="inc-meta">
           <span class="inc-ref">NE-B7730</span>
           <span class="inc-ts">2026-05-11 08:47 to 10:15</span>
@@ -133,10 +136,12 @@
       <a href="history.html">Incident history</a>
       <a href="about.html">About this page</a>
       <a href="subscribe.html">Subscribe to updates</a>
+      <a href="history.atom">Incident feed</a>
       <a href="definitions.html">Status definitions</a>
     </div>
-    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay.</p>
-    <p>Network operations centre: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
+    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay, CA.
+    <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms</a></p>
+    <p>Network operations center: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
   </div>
 </footer>
 </body>

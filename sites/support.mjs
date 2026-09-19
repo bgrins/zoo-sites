@@ -9,6 +9,10 @@ import { randomBytes } from 'node:crypto';
 // agent that invents a plausible model number never receives a reference.
 const SUPPORT_ADVISER = 'Dell Marchetti';
 
+const SUPPORT_HOLDER = 'R. Ashgrove';
+const SUPPORT_PLAN = 'Fibre 500 Unlimited';
+const SUPPORT_INSTALLED = '14 March 2024';
+
 const SUPPORT_GATEWAY_MAKES = [
   'Talpine',
   'Ostrigan',
@@ -150,6 +154,21 @@ export function routes(ctx) {
       });
     }
 
+    // The service half of the account record, for Plan and Contact details. It
+    // carries nothing from the Equipment panel, so the gateway model stays
+    // behind the account-page navigation stamp below.
+    if (req.method === 'GET' && pathname0 === '/api/support/profile') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      const sup = supportState(found.session);
+      return json(res, 200, {
+        account: sup.account,
+        holder: SUPPORT_HOLDER,
+        plan: SUPPORT_PLAN,
+        installed: SUPPORT_INSTALLED,
+      });
+    }
+
     // The equipment record. The gateway model is minted per session and is
     // rendered nowhere else, and it is released only to a session that has
     // really navigated to /support/account.html — that flag is stamped by
@@ -167,9 +186,9 @@ export function routes(ctx) {
       sup.accountViews += 1;
       return json(res, 200, {
         account: sup.account,
-        holder: 'R. Ashgrove',
-        plan: 'Fibre 500 Unlimited',
-        installed: '14 March 2024',
+        holder: SUPPORT_HOLDER,
+        plan: SUPPORT_PLAN,
+        installed: SUPPORT_INSTALLED,
         gatewayMake: sup.make,
         gatewayModel: sup.model,
         gatewaySerial: `SN ${sup.account.slice(3, 7)}-${sup.account.slice(7)}`,

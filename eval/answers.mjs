@@ -300,7 +300,7 @@ export const ANSWERS = {
       'PX-4485': 'Label Created',
     },
     // Tolerant per-status matchers so a correct agent cannot fail on case,
-    // spacing, an inserted article, a named depot ("held at Tyburn depot") or an
+    // spacing, an inserted article, a named depot ("held at Tarnwick depot") or an
     // inflected verb ("a label has been created"). The two words may sit up to
     // ~40 chars apart but never across a sentence or line break, so the status
     // still has to be stated about this parcel. Never give these the /g flag.
@@ -671,7 +671,7 @@ export const ANSWERS = {
   // pages/flaky/index.html — revenue served after 2 failed attempts (server.mjs).
   flaky: { revenue: '$1,284,550' },
 
-  // pages/flaky/slow.html — tier 3 cold-storage restore (T039 timeout-vs-slow).
+  // pages/flaky/archive.html — tier 3 cold-storage restore (T039 timeout-vs-slow).
   // The archive reference is minted per session from randomBytes after the full
   // delay, so the ground truth is the SHAPE of a reference plus the patience
   // budget; the value is read out of the session that actually waited.

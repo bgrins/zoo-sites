@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NE-05F1B API gateway elevated error rate - Nimbrel Edge status</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/atom+xml" title="Nimbrel Edge incident history" href="../history.atom">
+<link rel="stylesheet" href="../status.css">
+</head>
+<body>
+<header class="mast">
+  <div class="mast-inner">
+    <a class="mark" href="../index.html">Nimbrel <b>Edge</b></a>
+    <nav aria-label="Status pages">
+      <a href="../index.html">Status</a>
+      <a href="../history.html">Incident history</a>
+      <a href="../subscribe.html">Subscribe</a>
+    </nav>
+    <span class="tz">All times UTC</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel">
+    <p class="crumb"><a href="../history.html">Incident history</a> / NE-05F1B</p>
+    <h1>API gateway elevated error rate</h1>
+    <div class="inc-meta">
+      <span class="inc-ref">NE-05F1B</span>
+      <span class="inc-ts">2026-06-19 02:12 to 02:58</span>
+      <span class="chip chip-operational">Resolved</span>
+    </div>
+    <p class="panel-sub">Affected component: API gateway.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Updates</h2>
+    <ol class="updates">
+      <li><span class="up-state">Resolved</span><span class="up-ts">2026-06-19 02:58</span><p>The affected cache node has been reprovisioned and error rates on the API gateway have been normal for a full window.</p></li>
+      <li><span class="up-state">Identified</span><span class="up-ts">2026-06-19 02:31</span><p>A cache node restarted with stale route tables and is answering some requests with 5xx errors. The node has been drained while it is reprovisioned.</p></li>
+      <li><span class="up-state">Investigating</span><span class="up-ts">2026-06-19 02:12</span><p>We are seeing an elevated rate of 5xx responses from the API gateway, affecting roughly 2 percent of requests.</p></li>
+    </ol>
+  </section>
+
+  <section class="panel">
+    <h2>Postmortem</h2>
+    <p>A routine restart of one gateway cache node restored its route tables from a snapshot taken before the previous day's change, instead of fetching current tables. About 2 percent of API requests were routed by that node for 46 minutes and failed.</p>
+    <p>Health checks passed throughout because the node answered them from the same stale tables. The node was found by correlating error rates per node.</p>
+    <p>A restarted node now refuses traffic until its route tables match the current version, and health checks compare the version they serve against the control plane.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <div class="flinks">
+      <a href="../index.html">Status</a>
+      <a href="../history.html">Incident history</a>
+      <a href="../about.html">About this page</a>
+      <a href="../subscribe.html">Subscribe to updates</a>
+      <a href="../history.atom">Incident feed</a>
+      <a href="../definitions.html">Status definitions</a>
+    </div>
+    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay, CA.
+    <a href="../privacy.html">Privacy</a> &middot; <a href="../terms.html">Terms</a></p>
+    <p>Network operations center: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
+  </div>
+</footer>
+</body>
+</html>
