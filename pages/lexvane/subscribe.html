@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Subscribe — Lexvane from Marrowfield Press</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --pine: #14442f; --pine-deep: #0b2b1d; --lime: #cde36f;
@@ -28,7 +29,7 @@
     font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
     font-style: italic; font-size: 13px; color: var(--lime); letter-spacing: .02em;
   }
-  .wordmark { font-size: 34px; font-weight: bold; letter-spacing: .22em; text-transform: uppercase; line-height: 1.05; }
+  .wordmark { display: block; color: inherit; text-decoration: none; font-size: 34px; font-weight: bold; letter-spacing: .22em; text-transform: uppercase; line-height: 1.05; }
   .tagline { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #a9c4b1; }
   .mast-side { text-align: right; font-size: 12px; color: #a9c4b1; }
   .mast-side .sub {
@@ -67,6 +68,26 @@
   .foot-links a { color: var(--lime); text-decoration: none; margin-right: 14px; }
   .foot-links a:hover { text-decoration: underline; }
   .foot-rule { border-top: 1px solid #24503a; margin: 14px 0 12px; }
+  .choose {
+    display: inline-block; margin-top: 4px; padding: 7px 15px; border-radius: 999px;
+    background: var(--lime); color: var(--pine-deep); font-weight: bold; text-decoration: none;
+    border: 2px solid var(--pine);
+  }
+  .tiers { border: 0; padding: 0; margin: 0 0 12px; }
+  .tiers legend { font-weight: bold; margin-bottom: 4px; }
+  .tiers label { display: block; padding: 3px 0; }
+  .field { display: block; font-weight: bold; margin-bottom: 4px; }
+  #joinEmail {
+    font: inherit; width: 100%; max-width: 360px; padding: 8px 10px; border: 2px solid var(--pine);
+    border-radius: 8px; background: var(--paper);
+  }
+  .join {
+    display: block; margin-top: 12px; font: inherit; font-weight: bold; cursor: pointer;
+    padding: 9px 18px; background: var(--lime); color: var(--pine-deep);
+    border: 3px solid var(--pine); border-radius: 9px; box-shadow: 3px 3px 0 var(--pine);
+  }
+  #joinResult { font-weight: bold; }
+  #joinResult.bad { color: #8a2d12; }
 </style>
 </head>
 <body>
@@ -74,7 +95,7 @@
   <div class="mast-inner">
     <div>
       <div class="kicker">Marrowfield Press</div>
-      <div class="wordmark">Lexvane</div>
+      <a class="wordmark" href="./">Lexvane</a>
       <div class="tagline">The daily five</div>
     </div>
     <div class="mast-side">
@@ -97,7 +118,7 @@
   <section class="card">
     <h1>Subscribe to the games desk</h1>
     <p>The daily grid is free to play. A subscription keeps your record and opens the
-    back pages: pick the tier that suits, cancel any time from your account page.</p>
+    back pages: pick the tier that suits, and cancel any time from the link in your welcome email.</p>
   </section>
   <section class="card">
     <h2>Puzzles only</h2>
@@ -108,6 +129,7 @@
       <li>Every game from the desk: the mini crossword, Numberline, the anagram ladder and the Saturday cryptic.</li>
       <li>A place on the streak leaderboard.</li>
     </ul>
+    <p><a class="choose" href="#join" data-tier="puzzles">Choose Puzzles only</a></p>
   </section>
   <section class="card">
     <h2>Full press</h2>
@@ -118,8 +140,25 @@
       <li>The Saturday print edition delivered, with the solutions page.</li>
       <li>Subscriber-only notes from the setters each month.</li>
     </ul>
+    <p><a class="choose" href="#join" data-tier="full">Choose Full press</a></p>
     <p>Both tiers renew monthly. Billing questions are covered under
     <a href="help.html#subscribers">subscriber help</a>.</p>
+  </section>
+  <section class="card" id="join">
+    <h2>Start a subscription</h2>
+    <p>Tell us where to send the payment link. The subscription starts when the payment is
+    taken, and your record from today's grid onwards is kept against this address.</p>
+    <form id="joinForm" novalidate>
+      <fieldset class="tiers">
+        <legend>Tier</legend>
+        <label><input type="radio" name="tier" value="puzzles" checked> Puzzles only, £3.49 a month</label>
+        <label><input type="radio" name="tier" value="full"> Full press, £8.99 a month</label>
+      </fieldset>
+      <label class="field" for="joinEmail">Email address</label>
+      <input id="joinEmail" name="email" type="email" autocomplete="email">
+      <button type="submit" class="join">Send my payment link</button>
+    </form>
+    <p id="joinResult" role="status"></p>
   </section>
 </main>
 <footer>
@@ -129,10 +168,50 @@
       <a href="archive.html">Puzzle archive</a><a href="help.html">How to play</a><a href="help.html#subscribers">Subscriber help</a><a href="legal.html#privacy">Privacy notice</a><a href="legal.html#terms">Terms of use</a><a href="help.html#contact">Contact the games desk</a>
     </p>
     <div class="foot-rule"></div>
-    <p>Marrowfield Press Ltd, 8 Calder Wharf, Bramlington BR4 2QN. Registered in England and Wales, no. 00000000.</p>
+    <p>Marrowfield Press Ltd, 8 Calder Wharf, Bramlington LX7 3WB. Registered in England and Wales, no. 00000000.</p>
     <p>Subscriber enquiries: help@marrowfieldpress.example &middot; 03069 990402</p>
     <p>&copy; 2026 Marrowfield Press Ltd. All rights reserved.</p>
   </div>
 </footer>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const form = document.getElementById('joinForm');
+  const result = document.getElementById('joinResult');
+  for (const link of document.querySelectorAll('.choose')) {
+    link.addEventListener('click', () => {
+      form.querySelector('input[value="' + link.dataset.tier + '"]').checked = true;
+    });
+  }
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    result.className = '';
+    result.textContent = 'Sending...';
+    let res;
+    let body = {};
+    try {
+      res = await fetch('/api/lexvane/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nonce: NONCE,
+          email: document.getElementById('joinEmail').value,
+          tier: form.querySelector('input[name="tier"]:checked').value,
+        }),
+      });
+      body = await res.json();
+    } catch {
+      result.className = 'bad';
+      result.textContent = 'The subscriptions desk could not be reached. Nothing was set up; please try again.';
+      return;
+    }
+    if (!res.ok) {
+      result.className = 'bad';
+      result.textContent = body.error || 'That did not go through. Please check the form.';
+      return;
+    }
+    result.textContent = 'Payment link sent to ' + body.email + ' for ' + body.tier + ' (' + body.price +
+      '). Your reference is ' + body.reference + '.';
+  });
+</script>
 </body>
 </html>

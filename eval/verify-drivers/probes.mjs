@@ -227,6 +227,32 @@ export const DRIVERS = {
         throw new Error('a curl unlock is not legible as off-page in the beacon');
       }
       await goto('/shadow/');
+      // An empty keypad entry is answered in the module and never posted, and a
+      // wrong code is written to the console's own event log.
+      const attempts = () => ctx.pages.state.beaconsOf('shadow-unlock').length;
+      const beforeEmpty = attempts();
+      const keyIn = (code) =>
+        evaluate(`() => {
+          const inner = document.querySelector('fx-panel').shadowRoot.querySelector('fx-input');
+          const input = inner.shadowRoot.querySelector('input');
+          input.value = ${JSON.stringify(code)};
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          inner.shadowRoot.querySelector('button').click();
+        }`);
+      const moduleLine = () =>
+        evaluate(() => {
+          const inner = document.querySelector('fx-panel').shadowRoot.querySelector('fx-input');
+          return inner.shadowRoot.querySelector('.msg')?.textContent?.trim() ?? '';
+        });
+      await keyIn('');
+      const emptyLine = await until('the module to answer an empty entry', async () => (await moduleLine()) || null);
+      if (!/enter the stage code/i.test(emptyLine) || attempts() !== beforeEmpty) {
+        throw new Error(`an empty entry was posted or unanswered: "${emptyLine}", ${attempts() - beforeEmpty} request(s)`);
+      }
+      await keyIn('ORCHID-21');
+      await until('a rejected code to reach the event log', () =>
+        evaluate(() => /code rejected/.test(document.getElementById('eventLog')?.textContent ?? ''))
+      );
       await evaluate(() => {
         const panel = document.querySelector('fx-panel');
         const inner = panel.shadowRoot.querySelector('fx-input');
@@ -246,6 +272,8 @@ export const DRIVERS = {
         return typeof text === 'string' && text && !/^Checking/.test(text) ? text : null;
       });
       if (!/Metronome/i.test(msg)) throw new Error(`unlock message not rendered; read "${msg}"`);
+      const lamp = await evaluate(() => document.getElementById('stageLed')?.className ?? '');
+      if (!/green/.test(lamp)) throw new Error(`the stage lamp did not turn green on a grant: "${lamp}"`);
       const fields = { message: msg };
       this.wrongFields = [{ message: 'Access denied: invalid code' }];
       this.alsoCorrectFields = [fields, { message: `"${msg.toLowerCase()}".` }];

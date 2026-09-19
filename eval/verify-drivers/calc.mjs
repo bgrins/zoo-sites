@@ -9,6 +9,10 @@
 // inputs. The route below is the only snapshot-visible one: the formula-audit
 // pane's flag buttons select cells, and the formula bar then shows each flagged
 // cell's definition one at a time.
+//
+// The one exception is the keyboard regression after the repair: the surface
+// has no key tool, so it dispatches the keys shortcuts.html documents with
+// evaluate, and reads what they did from the snapshot and the server state.
 
 import { bumpCode, probeSession, uidOf } from './lib.mjs';
 
@@ -63,7 +67,7 @@ export const DRIVERS = {
       'The workbook total was short because the August column total in C14 used a split ' +
         'range. I replaced it with =SUM(C2:C13) and the sheet reconciles now.',
     ],
-    async run({ base, goto, mcp, snapshot, sleep }, ctx) {
+    async run({ base, goto, mcp, snapshot, sleep, evaluate }, ctx) {
       await goto('/calc/');
 
       let snap = '';
@@ -152,6 +156,46 @@ export const DRIVERS = {
         await sleep(200);
       }
       if (!checksum) throw new Error('the workbook never issued a reconciliation checksum');
+
+      // Focus and selection are one cursor, and the documented shortcuts work.
+      // All of this happens after the repair, so it changes nothing graded:
+      // reads after the repairing commit never count, and nothing is edited.
+      const graded = [...ctx.pages.state.sessions.values()].find((s) => s.calc?.checksum === checksum)?.calc;
+      if (!graded) throw new Error('no session holds the reconciled sheet');
+      const nameBoxSays = async (ref) => {
+        for (let i = 0; i < 60; i += 1) {
+          if (nameBox(await snapshot()).value === ref) return true;
+          await sleep(200);
+        }
+        return false;
+      };
+      const key = (init) =>
+        evaluate(`() => {
+          const target = document.activeElement || document.body;
+          target.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...${JSON.stringify(init)} }));
+        }`);
+      await evaluate(() => document.querySelector('#grid-body td[data-ref="B3"]').focus());
+      if (!(await nameBoxSays('B3'))) throw new Error('focusing cell B3 did not select it');
+      await key({ key: 'ArrowDown' });
+      if (!(await nameBoxSays('B4'))) throw new Error('ArrowDown from B3 did not move the selection to B4');
+      const bulkBefore = graded.formulaReads.filter((r) => r.bulk).length;
+      await key({ key: '`', code: 'Backquote', ctrlKey: true });
+      for (let i = 0; i < 60 && graded.formulaReads.filter((r) => r.bulk).length === bulkBefore; i += 1) await sleep(200);
+      const bulk = graded.formulaReads.filter((r) => r.bulk);
+      if (bulk.length !== bulkBefore + 1 || !bulk.at(-1).fromPage) {
+        throw new Error('Ctrl+` did not load Show formulas through the recorded bulk read');
+      }
+      const focusB4 = () => evaluate(() => document.querySelector('#grid-body td[data-ref="B4"]')?.focus());
+      await focusB4();
+      await key({ key: 'F2' });
+      const editing = await evaluate(() => document.activeElement?.id ?? '');
+      if (editing !== 'formula') throw new Error(`F2 on a cell focused "${editing}", not the formula bar`);
+      await focusB4();
+      await key({ key: '`', code: 'Backquote', ctrlKey: true });
+      for (let i = 0; i < 60; i += 1) {
+        if ((await evaluate(() => document.getElementById('btn-showformulas').getAttribute('aria-pressed'))) === 'false') break;
+        await sleep(200);
+      }
 
       // Curl sessions that reconcile their own sheets by routes the grade has to
       // tell apart. A probe's culprit comes out of the server state, because the

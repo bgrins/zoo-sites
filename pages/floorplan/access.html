@@ -4,21 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Console access and roles &mdash; Cadre Workplace</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="cadre.css">
 </head>
 <body>
-<div class="topbar">
-  <span class="wordmark">Cadre <span>Workplace</span></span>
-  <nav class="tabs">
+<header class="topbar">
+  <a class="wordmark" href="index.html">Cadre <span>Workplace</span></a>
+  <nav class="tabs" aria-label="Console">
     <a href="index.html">Space plan</a>
     <a href="moves.html">Move requests</a>
     <a href="standards.html">Workplace standards</a>
+    <a class="here" aria-current="page" href="support.html">Help</a>
   </nav>
   <span class="operator">Halverd Estates Management</span>
-</div>
+  <details class="user">
+    <summary>M. Ferrand &middot; Record reader</summary>
+    <div class="menu">
+      <a href="access.html">Your role and access</a>
+      <a href="signout.html">Signing out</a>
+    </div>
+  </details>
+</header>
 <div class="crumbs">Portfolio / Administration / Console access and roles</div>
 
-<div class="page">
+<main class="page">
   <h1>Console access and roles</h1>
   <p class="hint">HE-STD-11, revision 4. Who may open which part of Cadre Workplace, how a role is
   granted, and how long it lasts.</p>
@@ -94,16 +103,17 @@
   for twelve months. The log supports occupancy queries and access reviews. It is not used for
   performance monitoring, and an extract naming an individual needs the portfolio administrator's
   authority.</p>
-</div>
+</main>
 
 <footer>
   <p>Cadre Workplace 4.6 &middot; space records are the system of record for occupancy reporting.</p>
-  <p>Halverd Estates Management, 14 Ostmark Row, Denhollow DH2 8QP &middot;
+  <p>Halverd Estates Management, 14 Ostmark Row, Denhollow DQ3 5JX &middot;
   <a href="standards.html">Workplace standards</a> &middot;
   <a href="index.html">Space plan</a> &middot;
   <a href="booking.html">Booking space</a> &middot;
   <a href="support.html">Service desk</a> &middot; estates.support@halverd-estates.example</p>
-  <p>&copy; 2026 Halverd Estates Management Ltd. Registered in Denhollow, company 00000000.</p>
+  <p>&copy; 2026 Halverd Estates Management Ltd. Registered in England and Wales, company number 00000000.
+  &middot; <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of use</a></p>
 </footer>
 </body>
 </html>

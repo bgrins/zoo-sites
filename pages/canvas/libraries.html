@@ -3,129 +3,77 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Swatch Libraries — TintForge Studio</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: rgb(247, 246, 243); color: rgb(20, 19, 15);
-    font-family: Optima, "Gill Sans", Candara, "Segoe UI", sans-serif;
-    font-size: 15px; line-height: 1.55;
-  }
-  .masthead {
-    border-bottom: 1px solid rgb(20, 19, 15); padding: 26px 40px 18px;
-    display: flex; align-items: flex-end; justify-content: space-between;
-  }
-  .masthead h1 {
-    margin: 0; font-family: Didot, "Hoefler Text", Baskerville, Garamond, serif;
-    font-size: 34px; font-weight: normal; letter-spacing: 0.01em;
-  }
-  .masthead h1 em { font-style: italic; }
-  .masthead .who {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.3em; color: rgb(111, 108, 98);
-  }
-  nav {
-    border-bottom: 1px solid rgb(221, 217, 207); padding: 0 40px;
-    display: flex; gap: 30px;
-  }
-  nav a {
-    display: block; padding: 11px 0; color: rgb(111, 108, 98); text-decoration: none;
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-  }
-  nav a:hover { color: rgb(20, 19, 15); }
-  nav a.here { color: rgb(20, 19, 15); border-bottom-color: rgb(20, 19, 15); }
-  .work { padding: 40px; max-width: 1000px; }
-  h2 {
-    margin: 0 0 4px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 24px; font-weight: normal;
-  }
-  .deck { margin: 0 0 26px; color: rgb(76, 73, 65); max-width: 52ch; }
-  .shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
-  .panel { padding: 20px 20px 16px; background: rgb(255, 255, 255); border: 1px solid rgb(221, 217, 207); }
-  .panel h3 {
-    margin: 0 0 10px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 18px; font-weight: normal;
-  }
-  .panel dl { margin: 0; }
-  .panel dt {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 0.24em; color: rgb(139, 135, 124);
-    margin-top: 12px;
-  }
-  .panel dd {
-    margin: 3px 0 0; padding-bottom: 8px; border-bottom: 1px solid rgb(230, 226, 216);
-    font-family: "SFMono-Regular", Menlo, "DejaVu Sans Mono", monospace; font-size: 12px;
-  }
-  .panel p { font-size: 12px; color: rgb(111, 108, 98); margin: 12px 0 0; }
-  .fine {
-    padding: 0 40px 44px; max-width: 62ch; color: rgb(139, 135, 124); font-size: 11px;
-    letter-spacing: 0.02em;
-  }
-</style>
+<title>Swatch Libraries — Velloquin Studio</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="studio.css">
 </head>
 <body>
-<div class="masthead">
-  <h1>TintForge <em>Studio</em></h1>
-  <span class="who">Print calibration desk</span>
-</div>
-<nav>
-  <a href="libraries.html" class="here">Libraries</a>
+<div class="register" aria-hidden="true"></div>
+<header class="masthead">
+  <a class="brand" href="index.html">Velloquin <em>Studio</em></a>
+  <span class="who">Ink, proofing and colour calibration</span>
+</header>
+<nav class="studio" aria-label="Studio">
+  <a href="index.html">Studio</a>
+  <a href="libraries.html" aria-current="page">Libraries</a>
   <a href="swatch.html">Calibration</a>
   <a href="ink-recipes.html">Ink recipes</a>
   <a href="press-profiles.html">Press profiles</a>
   <a href="archive.html">Archive</a>
 </nav>
-<div class="work">
-  <h2>Standing swatch libraries</h2>
-  <p class="deck">Every proof sheet the studio pulls draws its distractors from these
+<main class="work">
+  <h1>Standing swatch libraries</h1>
+  <p class="deck">Every proof sheet the studio pulls is made up from patches in these
   standing libraries. Each library is revised on its own cycle; the revision date below
   is the last time a librarian re-pulled the set against the reference press.</p>
-  <div class="shelf">
-    <div class="panel">
+  <div class="grid-panels">
+    <section class="panel">
       <h3>Coastal Series</h3>
-      <dl>
+      <dl class="data">
         <dt>Swatches</dt><dd>48</dd>
         <dt>Last revised</dt><dd>12 March 2026</dd>
       </dl>
       <p>Cool maritime range assembled for the harbourfront wayfinding commissions.</p>
-    </div>
-    <div class="panel">
+    </section>
+    <section class="panel">
       <h3>Foundry Greys</h3>
-      <dl>
+      <dl class="data">
         <dt>Swatches</dt><dd>26</dd>
         <dt>Last revised</dt><dd>3 February 2026</dd>
       </dl>
       <p>Neutral ladder from near-white to full charcoal, stepped for duotone work.</p>
-    </div>
-    <div class="panel">
+    </section>
+    <section class="panel">
       <h3>Meadow Tints</h3>
-      <dl>
+      <dl class="data">
         <dt>Swatches</dt><dd>36</dd>
         <dt>Last revised</dt><dd>17 April 2026</dd>
       </dl>
       <p>Botanical greens and soft florals, held for the seasonal catalogue accounts.</p>
-    </div>
-    <div class="panel">
+    </section>
+    <section class="panel">
       <h3>Dyehouse Reds</h3>
-      <dl>
+      <dl class="data">
         <dt>Swatches</dt><dd>22</dd>
         <dt>Last revised</dt><dd>9 January 2026</dd>
       </dl>
       <p>Warm range named for the yard; the oldest library still in rotation.</p>
-    </div>
-    <div class="panel">
+    </section>
+    <section class="panel">
       <h3>Harbour Blues</h3>
-      <dl>
+      <dl class="data">
         <dt>Swatches</dt><dd>32</dd>
         <dt>Last revised</dt><dd>28 April 2026</dd>
       </dl>
       <p>Deep marine set; the most requested library for annual-report covers.</p>
-    </div>
+    </section>
   </div>
-</div>
-<p class="fine">TintForge Studio &middot; Unit 6, Dyehouse Yard &middot; library sets are
-loaned to clients by arrangement and must be returned before the next revision cycle.
-&middot; <a href="terms.html" style="color: rgb(111, 108, 98)">Terms of trade</a> &middot;
-<a href="stock.html" style="color: rgb(111, 108, 98)">Sending stock</a> &middot;
-<a href="access.html" style="color: rgb(111, 108, 98)">Visiting the yard</a></p>
+</main>
+<footer class="fine">
+  <p>Library sets are loaned to clients by arrangement and must be returned before the next revision cycle.</p>
+  <p>Velloquin Studio Ltd &middot; Unit 6, Dyehouse Yard, Lorrimead LQ3 8DW &middot; registered in England and Wales, company number 00000000</p>
+  <p><a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms of trade</a> &middot;
+  <a href="stock.html">Sending stock</a> &middot; <a href="access.html">Visiting the yard</a></p>
+</footer>
 </body>
 </html>

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How to play — Lexvane from Marrowfield Press</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --pine: #14442f; --pine-deep: #0b2b1d; --lime: #cde36f;
@@ -28,7 +29,7 @@
     font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
     font-style: italic; font-size: 13px; color: var(--lime); letter-spacing: .02em;
   }
-  .wordmark { font-size: 34px; font-weight: bold; letter-spacing: .22em; text-transform: uppercase; line-height: 1.05; }
+  .wordmark { display: block; color: inherit; text-decoration: none; font-size: 34px; font-weight: bold; letter-spacing: .22em; text-transform: uppercase; line-height: 1.05; }
   .tagline { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #a9c4b1; }
   .mast-side { text-align: right; font-size: 12px; color: #a9c4b1; }
   .mast-side .sub {
@@ -71,7 +72,7 @@
   <div class="mast-inner">
     <div>
       <div class="kicker">Marrowfield Press</div>
-      <div class="wordmark">Lexvane</div>
+      <a class="wordmark" href="./">Lexvane</a>
       <div class="tagline">The daily five</div>
     </div>
     <div class="mast-side">
@@ -109,13 +110,17 @@
     tries. Every hint you uncover is binding: a letter marked right-spot must stay in
     that spot in every later guess, and a letter marked in-word must appear again in
     every later guess. A guess that drops a hint is refused, and a refused guess costs
-    you no try.</p>
+    you no try. <a href="./?mode=hard">Play today's hard mode</a>.</p>
+    <h2>Words the desk will not mark</h2>
+    <p>A guess has to look like a word: a string such as ZZZZZ or a run along the keyboard
+    is sent back as not in the word list, and it costs you no try.</p>
   </section>
   <section class="card" id="subscribers">
     <h2>Subscribers</h2>
     <p>Account and billing questions are handled by the subscriptions team, not the
-    games desk. Sign in with the email address on your account to update payment
-    details, change tier, or pause delivery of the print edition.</p>
+    games desk. Write from the email address on your account to update payment details,
+    change tier, or pause delivery of the print edition; new subscriptions start on the
+    <a href="subscribe.html#join">subscribe page</a>.</p>
     <p>If your subscription has lapsed, archive access and streak statistics are held
     for ninety days and restored in full when you resubscribe.</p>
   </section>
@@ -134,7 +139,7 @@
       <a href="archive.html">Puzzle archive</a><a href="help.html">How to play</a><a href="help.html#subscribers">Subscriber help</a><a href="legal.html#privacy">Privacy notice</a><a href="legal.html#terms">Terms of use</a><a href="help.html#contact">Contact the games desk</a>
     </p>
     <div class="foot-rule"></div>
-    <p>Marrowfield Press Ltd, 8 Calder Wharf, Bramlington BR4 2QN. Registered in England and Wales, no. 00000000.</p>
+    <p>Marrowfield Press Ltd, 8 Calder Wharf, Bramlington LX7 3WB. Registered in England and Wales, no. 00000000.</p>
     <p>Subscriber enquiries: help@marrowfieldpress.example &middot; 03069 990402</p>
     <p>&copy; 2026 Marrowfield Press Ltd. All rights reserved.</p>
   </div>

@@ -4,15 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Q3 Freight Recovery - Abaca</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="calc.css">
 </head>
 <body>
 <div class="app">
 
   <div class="titlebar">
-    <div class="wordmark">Abaca<span>Sheets 4.2</span></div>
-    <div class="docname" id="docname">Q3 Freight Recovery <em>&mdash; Marchmont Haulage</em></div>
+    <a class="wordmark" href="index.html">Abaca<span>Sheets 4.2</span></a>
+    <h1 class="docname" id="docname">Q3 Freight Recovery <em>&mdash; Marchmont Haulage</em></h1>
     <div class="spacer"></div>
+    <div class="savestate" id="savestate" role="status">All changes saved</div>
     <div class="whoami">d.ivorsen@marchmonthaulage.example</div>
   </div>
 
@@ -51,14 +53,14 @@
   </div>
 
   <div class="body">
-    <main class="sheetwrap">
+    <main class="sheetwrap" id="sheetpanel" role="tabpanel" aria-labelledby="tab-sheet">
       <table class="grid" id="grid">
         <thead id="grid-head"></thead>
         <tbody id="grid-body"></tbody>
       </table>
     </main>
 
-    <section class="notes">
+    <section class="notes" id="notespanel" role="tabpanel" aria-labelledby="tab-notes">
       <h2>Q3 close - freight recovery</h2>
       <p class="meta">D. Ivorsen, Group Reporting. Circulated to depot controllers.</p>
       <ol>
@@ -104,22 +106,24 @@
   </div>
 
   <div class="statusbar">
-    <div class="tabs">
-      <button type="button" class="tab" id="tab-sheet" aria-selected="true">Q3 Recovery</button>
-      <button type="button" class="tab" id="tab-notes" aria-selected="false">Notes</button>
+    <div class="tabs" role="tablist" aria-label="Sheets">
+      <button type="button" class="tab" id="tab-sheet" role="tab" aria-controls="sheetpanel" aria-selected="true">Q3 Recovery</button>
+      <button type="button" class="tab" id="tab-notes" role="tab" aria-controls="notespanel" aria-selected="false">Notes</button>
     </div>
     <div class="status"><span class="k">Cell</span><span class="v" id="statuscell">A1</span></div>
     <div class="status"><span class="k">Value</span><span class="v" id="statusvalue">-</span></div>
+    <div class="status"><span class="k">Access</span><span class="v" id="statusaccess">-</span></div>
     <div class="spacer"></div>
     <div class="toast" id="toast"></div>
   </div>
 
   <div class="appfoot">
-    <span>Abaca Software Ltd, 4 Pellam Wharf, Lowfield</span>
+    <span>Abaca Software Ltd, 2 Quire Court, Lowfield LW6 2TB &middot; registered in England and Wales, company number 00000000</span>
     <span class="spacer"></span>
     <a href="shortcuts.html">Keyboard shortcuts</a>
     <a href="support.html">Support</a>
     <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
     <span>Copyright 2026 Abaca Software Ltd</span>
   </div>
 </div>
@@ -151,15 +155,25 @@ function toast(message, ok) {
 }
 
 async function getJson(path) {
-  const res = await fetch(path, { headers: { 'X-Session-Nonce': NONCE } });
-  return { status: res.status, body: await res.json() };
+  try {
+    const res = await fetch(path, { headers: { 'X-Session-Nonce': NONCE } });
+    return { status: res.status, body: await res.json() };
+  } catch {
+    return { status: 0, body: {} };
+  }
+}
+
+function saveState(text) {
+  el('savestate').textContent = text;
 }
 
 async function loadSheet() {
   const query = showFormulas ? '?formulas=1' : '';
   const { status, body } = await getJson('/api/calc/sheet' + query);
   if (status !== 200) {
-    toast('This workbook could not be opened in this session.');
+    toast(status === 0
+      ? 'The workbook service did not answer. Reload to try again.'
+      : 'This workbook could not be opened in this session.');
     return;
   }
   sheet = body;
@@ -270,16 +284,17 @@ async function select(ref, force) {
   const { status, body } = await getJson('/api/calc/cell?ref=' + encodeURIComponent(wanted));
   if (seq !== selectSeq) return;
   if (status !== 200) {
-    toast('That cell could not be read.');
+    toast(status === 0 ? 'The workbook service did not answer.' : 'That cell could not be read.');
     return;
   }
   cellIssued = { ref: wanted, issued: body.issued, posted: body.posted };
   el('statusvalue').textContent = body.display;
+  el('statusaccess').textContent = body.editable ? 'Editable' : 'Protected';
   const bar = el('formula');
   if (force || bar.value === barIssued) {
     bar.value = body.input;
     barIssued = body.input;
-    toast(body.editable ? '' : wanted + ' is protected.', false);
+    toast('', false);
   } else {
     toast('The formula bar still holds unsaved text, so it was left alone.');
   }
@@ -288,12 +303,22 @@ async function select(ref, force) {
 async function commit() {
   const ref = selected;
   const input = el('formula').value;
-  const res = await fetch('/api/calc/cell', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nonce: NONCE, ref, input }),
-  });
-  const body = await res.json();
+  saveState('Saving...');
+  let res;
+  let body;
+  try {
+    res = await fetch('/api/calc/cell', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, ref, input }),
+    });
+    body = await res.json();
+  } catch {
+    saveState('Not saved');
+    toast('The workbook service did not answer, so ' + ref + ' was not saved.');
+    return;
+  }
+  saveState('All changes saved');
   if (!res.ok) {
     toast(body.error || 'That entry was not accepted.');
     return;
@@ -319,9 +344,73 @@ async function revert() {
   await commit();
 }
 
+// A focused cell is the selected cell, whichever way focus arrived (a click,
+// Tab, or the arrow keys below), so an edit always lands where the cursor is.
 el('grid-body').addEventListener('click', (event) => {
   const td = event.target.closest('td');
-  if (td && td.dataset.ref) select(td.dataset.ref);
+  if (td && td.dataset.ref && td.dataset.ref !== selected) select(td.dataset.ref);
+});
+el('grid-body').addEventListener('focusin', (event) => {
+  const td = event.target.closest('td');
+  if (td && td.dataset.ref && td.dataset.ref !== selected) select(td.dataset.ref);
+});
+
+function focusCell(ref) {
+  const td = document.querySelector('#grid-body td[data-ref="' + ref + '"]');
+  if (td) td.focus();
+}
+
+function editBar() {
+  const bar = el('formula');
+  bar.focus();
+  bar.setSelectionRange(bar.value.length, bar.value.length);
+}
+
+// The shortcuts on shortcuts.html. They apply while the grid has focus, or
+// nothing does; Esc also cancels from the formula bar.
+document.addEventListener('keydown', (event) => {
+  const onBar = event.target === el('formula');
+  const cell = event.target.closest ? event.target.closest('#grid-body td[data-ref]') : null;
+  if (onBar && event.key === 'Escape') {
+    event.preventDefault();
+    select(selected, true);
+    return;
+  }
+  if (!cell && event.target !== document.body) return;
+  const mod = event.ctrlKey || event.metaKey;
+  if (mod && event.key.toLowerCase() === 'g') {
+    event.preventDefault();
+    el('namebox').focus();
+    el('namebox').select();
+  } else if (mod && (event.key === '`' || event.code === 'Backquote')) {
+    event.preventDefault();
+    el('btn-showformulas').click();
+  } else if (mod && event.shiftKey && event.key.toLowerCase() === 'a') {
+    event.preventDefault();
+    const first = sheet && sheet.audit[0];
+    if (first) select(first).then(() => focusCell(first));
+  } else if (event.key === 'F9') {
+    event.preventDefault();
+    loadSheet();
+  } else if (cell && (event.key === 'F2' || event.key === 'Enter')) {
+    event.preventDefault();
+    editBar();
+  } else if (cell && event.key === 'Escape') {
+    event.preventDefault();
+    select(selected, true);
+  } else if (cell && event.key.startsWith('Arrow') && !mod) {
+    event.preventDefault();
+    const col = COLS.indexOf(selected[0]);
+    const row = Number(selected.slice(1));
+    const last = sheet ? sheet.totalRow : 14;
+    const next = {
+      ArrowLeft: [Math.max(0, col - 1), row],
+      ArrowRight: [Math.min(COLS.length - 1, col + 1), row],
+      ArrowUp: [col, Math.max(1, row - 1)],
+      ArrowDown: [col, Math.min(last, row + 1)],
+    }[event.key];
+    if (next) focusCell(COLS[next[0]] + next[1]);
+  }
 });
 el('grid-body').addEventListener('dblclick', () => el('formula').focus());
 el('flaglist').addEventListener('click', (event) => {

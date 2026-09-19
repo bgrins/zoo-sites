@@ -4,21 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Workplace standards &mdash; Cadre Workplace</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="cadre.css">
 </head>
 <body>
-<div class="topbar">
-  <span class="wordmark">Cadre <span>Workplace</span></span>
-  <nav class="tabs">
+<header class="topbar">
+  <a class="wordmark" href="index.html">Cadre <span>Workplace</span></a>
+  <nav class="tabs" aria-label="Console">
     <a href="index.html">Space plan</a>
     <a href="moves.html">Move requests</a>
-    <a class="here" href="standards.html">Workplace standards</a>
+    <a class="here" aria-current="page" href="standards.html">Workplace standards</a>
+    <a href="support.html">Help</a>
   </nav>
   <span class="operator">Halverd Estates Management</span>
-</div>
+  <details class="user">
+    <summary>M. Ferrand &middot; Record reader</summary>
+    <div class="menu">
+      <a href="access.html">Your role and access</a>
+      <a href="signout.html">Signing out</a>
+    </div>
+  </details>
+</header>
 <div class="crumbs">Portfolio / Standards / Space classification</div>
 
-<div class="page">
+<main class="page">
   <h1>Space classification standard</h1>
   <p class="hint">HE-STD-07, revision 3. Applies to every managed building in the Halverd portfolio.</p>
 
@@ -56,17 +65,18 @@
     <li>North point sits below the footprint, with the scale bar to its right.</li>
     <li>Departmental tint is advisory and is refreshed only when a sheet is reissued.</li>
   </ul>
-</div>
+</main>
 
 <footer>
   <p>Cadre Workplace 4.6 &middot; space records are the system of record for occupancy reporting.</p>
-  <p>Halverd Estates Management, 14 Ostmark Row, Denhollow DH2 8QP &middot;
+  <p>Halverd Estates Management, 14 Ostmark Row, Denhollow DQ3 5JX &middot;
   <a href="index.html">Space plan</a> &middot;
   <a href="moves.html">Move requests</a> &middot;
   <a href="booking.html">Booking space</a> &middot;
   <a href="access.html">Console access</a> &middot;
   <a href="support.html">Service desk</a> &middot; estates.support@halverd-estates.example</p>
-  <p>&copy; 2026 Halverd Estates Management Ltd. Registered in Denhollow, company 00000000.</p>
+  <p>&copy; 2026 Halverd Estates Management Ltd. Registered in England and Wales, company number 00000000.
+  &middot; <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of use</a></p>
 </footer>
 </body>
 </html>

@@ -4,41 +4,53 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ostmark House, Level 04 &mdash; Cadre Workplace</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="cadre.css">
 </head>
 <body>
-<div class="topbar">
-  <span class="wordmark">Cadre <span>Workplace</span></span>
-  <nav class="tabs">
-    <a class="here" href="index.html">Space plan</a>
+<header class="topbar">
+  <a class="wordmark" href="index.html">Cadre <span>Workplace</span></a>
+  <nav class="tabs" aria-label="Console">
+    <a class="here" aria-current="page" href="index.html">Space plan</a>
     <a href="moves.html">Move requests</a>
     <a href="standards.html">Workplace standards</a>
+    <a href="support.html">Help</a>
   </nav>
   <span class="operator">Halverd Estates Management</span>
-</div>
+  <details class="user">
+    <summary>M. Ferrand &middot; Record reader</summary>
+    <div class="menu">
+      <a href="access.html">Your role and access</a>
+      <a href="signout.html">Signing out</a>
+    </div>
+  </details>
+</header>
 <div class="crumbs">Portfolio / Ostmark House / Level 04 / Space plan</div>
 
 <main class="shell">
   <aside class="rail">
     <div class="rail-block">
-      <h2>Levels</h2>
+      <p class="rail-h">Levels</p>
       <ul class="levels">
-        <li>Level 06</li>
-        <li>Level 05</li>
-        <li class="active">Level 04</li>
-        <li>Level 03</li>
-        <li>Level 02</li>
-        <li>Ground</li>
+        <li class="nosheet">Level 06<span>no sheet</span></li>
+        <li class="nosheet">Level 05<span>no sheet</span></li>
+        <li class="active" aria-current="page">Level 04</li>
+        <li class="nosheet">Level 03<span>in reissue</span></li>
+        <li class="nosheet">Level 02<span>no sheet</span></li>
+        <li class="nosheet">Ground<span>reception</span></li>
       </ul>
+      <p class="empty">Level 04 is the only sheet issued to this console this quarter. The
+      Level 03 sheet is with Estates CAD for reissue; the ground floor is booked through
+      reception.</p>
     </div>
     <div class="rail-block">
-      <h2>Layers</h2>
+      <p class="rail-h">Layers</p>
       <label class="layer" for="ly-tint"><input type="checkbox" id="ly-tint" value="no-tint" checked> Department tint</label>
       <label class="layer" for="ly-desks"><input type="checkbox" id="ly-desks" value="no-desks" checked> Desk positions</label>
       <label class="layer" for="ly-codes"><input type="checkbox" id="ly-codes" value="no-codes" checked> Room codes</label>
     </div>
     <div class="rail-block">
-      <h2>Department tint</h2>
+      <p class="rail-h">Department tint</p>
       <ul class="legend">
         <li><span class="swatch sw-plan"></span>Space Planning</li>
         <li><span class="swatch sw-fac"></span>Facilities Operations</li>
@@ -47,7 +59,7 @@
       </ul>
     </div>
     <div class="rail-block">
-      <h2>Sheet</h2>
+      <p class="rail-h">Sheet</p>
       <p class="empty">OST-L04-SP rev D, issued 02 June. Occupancy figures are held in the
       space record for each room and are not printed on the sheet.</p>
     </div>
@@ -142,13 +154,14 @@
 
 <footer>
   <p>Cadre Workplace 4.6 &middot; space records are the system of record for occupancy reporting.</p>
-  <p>Halverd Estates Management, 14 Ostmark Row, Denhollow DH2 8QP &middot;
+  <p>Halverd Estates Management, 14 Ostmark Row, Denhollow DQ3 5JX &middot;
   <a href="standards.html">Workplace standards</a> &middot;
   <a href="moves.html">Move requests</a> &middot;
   <a href="booking.html">Booking space</a> &middot;
   <a href="access.html">Console access</a> &middot;
   <a href="support.html">Service desk</a> &middot; estates.support@halverd-estates.example</p>
-  <p>&copy; 2026 Halverd Estates Management Ltd. Registered in Denhollow, company 00000000.</p>
+  <p>&copy; 2026 Halverd Estates Management Ltd. Registered in England and Wales, company number 00000000.
+  &middot; <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of use</a></p>
 </footer>
 
 <script>
@@ -201,12 +214,15 @@ async function openRoom(region) {
     const res = await fetch('/api/floorplan/room?id=' + encodeURIComponent(id), {
       headers: { 'X-Session-Nonce': NONCE },
     });
-    if (!res.ok) throw new Error('record refused');
+    if (!res.ok) throw new Error(res.status === 403 ? 'session' : 'record');
     data = await res.json();
-  } catch {
+  } catch (error) {
     if (token !== seq) return;
-    record.innerHTML = '<p class="warn">Space records are locked to this console session. ' +
-      'Reload the sheet and select the room again.</p>';
+    record.innerHTML = error.message === 'session'
+      ? '<p class="warn">Space records are locked to this console session. ' +
+        'Reload the sheet and select the room again.</p>'
+      : '<p class="warn">The space record service did not answer for ' + esc(id) +
+        '. Select the room again, or tell the service desk if it keeps happening.</p>';
     return;
   }
   if (token !== seq) return;

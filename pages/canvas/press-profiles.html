@@ -3,119 +3,67 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Press Profiles — TintForge Studio</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: rgb(247, 246, 243); color: rgb(20, 19, 15);
-    font-family: Optima, "Gill Sans", Candara, "Segoe UI", sans-serif;
-    font-size: 15px; line-height: 1.55;
-  }
-  .masthead {
-    border-bottom: 1px solid rgb(20, 19, 15); padding: 26px 40px 18px;
-    display: flex; align-items: flex-end; justify-content: space-between;
-  }
-  .masthead h1 {
-    margin: 0; font-family: Didot, "Hoefler Text", Baskerville, Garamond, serif;
-    font-size: 34px; font-weight: normal; letter-spacing: 0.01em;
-  }
-  .masthead h1 em { font-style: italic; }
-  .masthead .who {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.3em; color: rgb(111, 108, 98);
-  }
-  nav {
-    border-bottom: 1px solid rgb(221, 217, 207); padding: 0 40px;
-    display: flex; gap: 30px;
-  }
-  nav a {
-    display: block; padding: 11px 0; color: rgb(111, 108, 98); text-decoration: none;
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-  }
-  nav a:hover { color: rgb(20, 19, 15); }
-  nav a.here { color: rgb(20, 19, 15); border-bottom-color: rgb(20, 19, 15); }
-  .work { padding: 40px; max-width: 1000px; }
-  h2 {
-    margin: 0 0 4px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 24px; font-weight: normal;
-  }
-  .deck { margin: 0 0 26px; color: rgb(76, 73, 65); max-width: 52ch; }
-  .presses { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-  .panel { padding: 20px 20px 16px; background: rgb(255, 255, 255); border: 1px solid rgb(221, 217, 207); }
-  .panel h3 {
-    margin: 0 0 10px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 18px; font-weight: normal;
-  }
-  .panel dl { margin: 0; }
-  .panel dt {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 0.24em; color: rgb(139, 135, 124);
-    margin-top: 12px;
-  }
-  .panel dd {
-    margin: 3px 0 0; padding-bottom: 8px; border-bottom: 1px solid rgb(230, 226, 216);
-    font-family: "SFMono-Regular", Menlo, "DejaVu Sans Mono", monospace; font-size: 12px;
-  }
-  .panel p { font-size: 12px; color: rgb(111, 108, 98); margin: 12px 0 0; }
-  .fine {
-    padding: 0 40px 44px; max-width: 62ch; color: rgb(139, 135, 124); font-size: 11px;
-    letter-spacing: 0.02em;
-  }
-</style>
+<title>Press Profiles — Velloquin Studio</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="studio.css">
 </head>
 <body>
-<div class="masthead">
-  <h1>TintForge <em>Studio</em></h1>
-  <span class="who">Print calibration desk</span>
-</div>
-<nav>
+<div class="register" aria-hidden="true"></div>
+<header class="masthead">
+  <a class="brand" href="index.html">Velloquin <em>Studio</em></a>
+  <span class="who">Ink, proofing and colour calibration</span>
+</header>
+<nav class="studio" aria-label="Studio">
+  <a href="index.html">Studio</a>
   <a href="libraries.html">Libraries</a>
   <a href="swatch.html">Calibration</a>
   <a href="ink-recipes.html">Ink recipes</a>
-  <a href="press-profiles.html" class="here">Press profiles</a>
+  <a href="press-profiles.html" aria-current="page">Press profiles</a>
   <a href="archive.html">Archive</a>
 </nav>
-<div class="work">
-  <h2>Press profiles</h2>
+<main class="work">
+  <h1>Press profiles</h1>
   <p class="deck">Each press on the floor carries a house profile, re-verified whenever
   the rollers are reset or the fount is changed. Work orders name the press and the
   profile together; a proof pulled under any other pairing is void.</p>
-  <div class="presses">
-    <div class="panel">
-      <h3>Heidel 4C</h3>
-      <dl>
-        <dt>Profile</dt><dd>TF-2</dd>
+  <div class="grid-panels wide">
+    <section class="panel">
+      <h3>Vallom 4C</h3>
+      <dl class="data">
+        <dt>Profile</dt><dd>VQ-2</dd>
         <dt>Units</dt><dd>Four, straight run</dd>
         <dt>Substrate note</dt><dd>Coated matte 170 gsm</dd>
         <dt>Verified</dt><dd>14 April 2026</dd>
       </dl>
       <p>The main proofing press. Nearly all current work orders run under this pairing.</p>
-    </div>
-    <div class="panel">
-      <h3>Rollmark 2C</h3>
-      <dl>
-        <dt>Profile</dt><dd>TF-5</dd>
+    </section>
+    <section class="panel">
+      <h3>Vallom 2P</h3>
+      <dl class="data">
+        <dt>Profile</dt><dd>VQ-5</dd>
         <dt>Units</dt><dd>Two, perfecting</dd>
         <dt>Substrate note</dt><dd>Uncoated laid 120 gsm</dd>
         <dt>Verified</dt><dd>2 March 2026</dd>
       </dl>
       <p>Reserved for duotone and stationery work; slow make-ready, steady inking.</p>
-    </div>
-    <div class="panel">
-      <h3>Vandergrift Proofer</h3>
-      <dl>
-        <dt>Profile</dt><dd>TF-1</dd>
+    </section>
+    <section class="panel">
+      <h3>Bench proofer</h3>
+      <dl class="data">
+        <dt>Profile</dt><dd>VQ-1</dd>
         <dt>Units</dt><dd>Single, hand-fed</dd>
         <dt>Substrate note</dt><dd>Cotton rag 250 gsm</dd>
         <dt>Verified</dt><dd>20 January 2026</dd>
       </dl>
-      <p>The bench proofer used for draw-downs and library revisions, not client runs.</p>
-    </div>
+      <p>The hand-fed proofer used for draw-downs and library revisions, not client runs.</p>
+    </section>
   </div>
-</div>
-<p class="fine">TintForge Studio &middot; Unit 6, Dyehouse Yard &middot; profiles are
-re-verified on a rolling schedule and lapse automatically after six months.
-&middot; <a href="terms.html" style="color: rgb(111, 108, 98)">Terms of trade</a> &middot;
-<a href="stock.html" style="color: rgb(111, 108, 98)">Sending stock</a> &middot;
-<a href="access.html" style="color: rgb(111, 108, 98)">Visiting the yard</a></p>
+</main>
+<footer class="fine">
+  <p>Profiles are re-verified on a rolling schedule and lapse automatically after six months.</p>
+  <p>Velloquin Studio Ltd &middot; Unit 6, Dyehouse Yard, Lorrimead LQ3 8DW &middot; registered in England and Wales, company number 00000000</p>
+  <p><a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms of trade</a> &middot;
+  <a href="stock.html">Sending stock</a> &middot; <a href="access.html">Visiting the yard</a></p>
+</footer>
 </body>
 </html>

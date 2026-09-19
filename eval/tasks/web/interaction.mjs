@@ -104,18 +104,18 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         // curl probe cannot shadow the real run. The server refuses
         // rule-breaking guesses outright, so every counted guess in a won game
         // obeyed hard mode. The count is either the counted guesses or
-        // counted-plus-refused ("5 attempts, 2 refused").
+        // counted-plus-refused ("5 attempts, 2 refused"), where refused covers
+        // both free refusals: a dropped hint and a non-word.
         const games = [...ctx.pages.state.sessions.values()]
           .map((s) => s.lexvaneHard?.[3])
           .filter(Boolean);
+        const refusedIn = (g) => g.violations.length + (g.nonWords?.length ?? 0);
         const { game, spent: totalUsed } = lexvaneGraded(games, (g) =>
-          [g.guesses.length, g.guesses.length + g.violations.length].includes(
-            fields?.finalGuessNumber
-          )
+          [g.guesses.length, g.guesses.length + refusedIn(g)].includes(fields?.finalGuessNumber)
         );
         const won = game?.won === true;
         const used = game?.guesses.length ?? 0;
-        const refused = game?.violations.length ?? 0;
+        const refused = game ? refusedIn(game) : 0;
         // The five-try cap is the whole point, so it is enforced across ALL
         // sessions: minting fresh cookies to farm feedback on the same word and
         // then winning in one guess spends more than five counted guesses. A

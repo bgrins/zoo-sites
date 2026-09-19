@@ -59,6 +59,7 @@ body {
 }
 
 .wordmark {
+  text-decoration: none;
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.16em;
@@ -76,8 +77,16 @@ body {
 }
 
 .docname {
+  margin: 0;
   font-size: 12px;
+  font-weight: 400;
   color: var(--chrome-ink);
+}
+
+.savestate {
+  color: var(--chrome-dim);
+  font-size: 11px;
+  margin-right: 14px;
 }
 
 .docname em {
@@ -568,4 +577,8 @@ body.notes-open .notes {
 
 .appfoot .spacer {
   flex: 1;
+}
+
+.doc a {
+  color: var(--moss-dark);
 }

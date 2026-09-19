@@ -3,80 +3,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Terms of Trade — TintForge Studio</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: rgb(247, 246, 243); color: rgb(20, 19, 15);
-    font-family: Optima, "Gill Sans", Candara, "Segoe UI", sans-serif;
-    font-size: 15px; line-height: 1.55;
-  }
-  .masthead {
-    border-bottom: 1px solid rgb(20, 19, 15); padding: 26px 40px 18px;
-    display: flex; align-items: flex-end; justify-content: space-between;
-  }
-  .masthead h1 {
-    margin: 0; font-family: Didot, "Hoefler Text", Baskerville, Garamond, serif;
-    font-size: 34px; font-weight: normal; letter-spacing: 0.01em;
-  }
-  .masthead h1 em { font-style: italic; }
-  .masthead .who {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.3em; color: rgb(111, 108, 98);
-  }
-  nav {
-    border-bottom: 1px solid rgb(221, 217, 207); padding: 0 40px;
-    display: flex; gap: 30px;
-  }
-  nav a {
-    display: block; padding: 11px 0; color: rgb(111, 108, 98); text-decoration: none;
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-  }
-  nav a:hover { color: rgb(20, 19, 15); }
-  nav a.here { color: rgb(20, 19, 15); border-bottom-color: rgb(20, 19, 15); }
-  .work { padding: 40px; max-width: 1000px; }
-  h2 {
-    margin: 0 0 4px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 24px; font-weight: normal;
-  }
-  h3.rule {
-    margin: 34px 0 4px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 20px; font-weight: normal;
-  }
-  .deck { margin: 0 0 14px; color: rgb(76, 73, 65); max-width: 52ch; }
-  .lede { margin: 0 0 20px; max-width: 54ch; font-size: 17px; color: rgb(38, 36, 30); }
-  .fine {
-    padding: 0 40px 44px; max-width: 62ch; color: rgb(139, 135, 124); font-size: 11px;
-    letter-spacing: 0.02em;
-  }
-  .fine a { color: rgb(111, 108, 98); }
-</style>
+<title>Terms of Trade — Velloquin Studio</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="studio.css">
 </head>
 <body>
-<div class="masthead">
-  <h1>TintForge <em>Studio</em></h1>
-  <span class="who">Print calibration desk</span>
-</div>
-<nav>
+<div class="register" aria-hidden="true"></div>
+<header class="masthead">
+  <a class="brand" href="index.html">Velloquin <em>Studio</em></a>
+  <span class="who">Ink, proofing and colour calibration</span>
+</header>
+<nav class="studio" aria-label="Studio">
+  <a href="index.html">Studio</a>
   <a href="libraries.html">Libraries</a>
   <a href="swatch.html">Calibration</a>
   <a href="ink-recipes.html">Ink recipes</a>
   <a href="press-profiles.html">Press profiles</a>
   <a href="archive.html">Archive</a>
 </nav>
-<div class="work">
-  <h2>Terms of trade</h2>
+<main class="work prose">
+  <h1>Terms of trade</h1>
   <p class="lede">These are the terms the studio works to. A copy goes out with every
   quotation, and the version supplied with your quotation is the one that governs your
   order.</p>
 
-  <h3 class="rule">Quotations and orders</h3>
+  <h2 class="rule">Quotations and orders</h2>
   <p class="deck">A quotation holds for thirty days and covers the work described on it,
   the stock named on it, and one press and profile pairing. An order begins when the studio
   books it onto a press, not when the enquiry arrives, and the booking is confirmed to you in
   writing with the order number you should quote in all correspondence.</p>
 
-  <h3 class="rule">Proof pulls</h3>
+  <h2 class="rule">Proof pulls</h2>
   <p class="deck">Each order carries up to three pulls. A pull is either approved by you or
   sent back for reproof, and the order closes on the first pull you approve. Where three
   pulls have been sent back, the studio will not pull a fourth against the same order: the
@@ -84,13 +41,13 @@
   is requoted. That is not a penalty. It means the reference, the stock or the profile is
   wrong, and pulling again would only spend your money confirming it.</p>
 
-  <h3 class="rule">Approval</h3>
-  <p class="deck">Approval is given on the sheet, in the studio or through the calibration
-  desk, by the person named on the order as holding sign-off. The studio cannot accept
+  <h2 class="rule">Approval</h2>
+  <p class="deck">Approval is given on the sheet in the studio, or in writing to the bench after a check at
+  the calibration desk, by the person named on the order as holding sign-off. The studio cannot accept
   approval passed on by a third party. Once a pull is approved the studio's obligation is to
   match that sheet, and nothing else, on any later run against the same order.</p>
 
-  <h3 class="rule">What the studio cannot promise</h3>
+  <h2 class="rule">What the studio cannot promise</h2>
   <p class="deck">Print is a physical process on a physical substrate. The studio guarantees a
   match to the approved sheet within the tolerance stated on the order, on the stock supplied
   for that order, on the press named on it. It does not guarantee a match on a different
@@ -98,20 +55,23 @@
   varnishing. Where a substitution is unavoidable the studio will say so before pulling and
   will requote rather than proceed on the old tolerance.</p>
 
-  <h3 class="rule">Ownership and retention</h3>
+  <h2 class="rule">Ownership and retention</h2>
   <p class="deck">Proofs, recipe cards, milling notes and library sets remain the property of
   the studio and are released only against the originating order. Approved sheets are
   flat-filed for two years and then destroyed unless you ask in writing for them to be kept
   longer. Stock you supply and do not use is returned with the job or held for sixty days.</p>
 
-  <h3 class="rule">Payment and cancellation</h3>
+  <h2 class="rule">Payment and cancellation</h2>
   <p class="deck">Accounts are invoiced on completion and payable within thirty days. Bench
   time cancelled with more than three working days' notice is not charged; inside that, the
   booked time is charged whether or not ink was milled, because the slot cannot be resold at
   that notice. Ink already milled to a client's reference is charged in full.</p>
-</div>
-<p class="fine">TintForge Studio &middot; Unit 6, Dyehouse Yard &middot; registered company
-number 00000000 &middot; these terms are governed by the law of England and Wales &middot;
-<a href="stock.html">Sending stock</a> &middot; <a href="access.html">Visiting the yard</a></p>
+</main>
+<footer class="fine">
+  <p>These terms are governed by the law of England and Wales.</p>
+  <p>Velloquin Studio Ltd &middot; Unit 6, Dyehouse Yard, Lorrimead LQ3 8DW &middot; registered in England and Wales, company number 00000000</p>
+  <p><a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms of trade</a> &middot;
+  <a href="stock.html">Sending stock</a> &middot; <a href="access.html">Visiting the yard</a></p>
+</footer>
 </body>
 </html>

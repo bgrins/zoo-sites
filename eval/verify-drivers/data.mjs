@@ -814,6 +814,56 @@ export const DRIVERS = {
       if (farmed.body.won !== true || farmed.body.guessNumber !== 1) {
         throw new Error(`the farming probe did not win in one guess: ${JSON.stringify(farmed.body)}`);
       }
+      // Off the graded game, on day 1 in the same browser: a non-word is refused
+      // without spending a try, six misses end on an X/6 share card that names
+      // the puzzle, the stats chips count this session's own games, and an
+      // unknown day is labelled as the grid it actually plays.
+      const board = () =>
+        evaluate(() => ({
+          status: document.getElementById('status').textContent.trim(),
+          counter: document.getElementById('counter').textContent.trim(),
+          lines: document.getElementById('feedback').children.length,
+          share: document.getElementById('share').textContent,
+          played: document.getElementById('statPlayed')?.textContent ?? '',
+        }));
+      const submit = async (attempt) => {
+        const before = await board();
+        const snap = await snapshot();
+        await mcp('fill_by_uid', { uid: uidFor(snap, 'input "Enter your guess"', 'guess input'), value: attempt });
+        await mcp('click_by_uid', { uid: uidFor(snap, 'button "Submit guess"', 'submit button') });
+        return until(`the games desk to answer for ${attempt}`, async () => {
+          const now = await board();
+          if (now.lines > before.lines) return now;
+          return now.status && now.status !== before.status && !/games desk\.$/.test(now.status) ? now : null;
+        });
+      };
+      await goto('/lexvane/?day=1');
+      await until('the day-1 board to load', () => evaluate(() => document.getElementById('counter').textContent === 'Guess 0 of 6'));
+      const junk = await submit('ZZZZZ');
+      if (!/not in word list/i.test(junk.status) || junk.counter !== 'Guess 0 of 6') {
+        throw new Error(`a non-word was not refused for free: "${junk.status}" at ${junk.counter}`);
+      }
+      for (const miss of ['SLATE', 'MOUND', 'CHIRP', 'GRASP', 'CRIMP', 'BRISK']) await submit(miss);
+      const card = await until('the loss share card', async () => {
+        const now = await board();
+        return /out of guesses/i.test(now.status) && now.share ? now : null;
+      });
+      if (!/^Lexvane 1482 X\/6\n/.test(card.share)) {
+        throw new Error(`a loss share card reads "${card.share.split('\n')[0]}", not "Lexvane 1482 X/6"`);
+      }
+      if (card.played !== 'Played 2') {
+        throw new Error(`the stats chip reads "${card.played}" after one win and one loss`);
+      }
+      await goto('/lexvane/?day=10');
+      const relabelled = await until('an unknown day to be relabelled', () =>
+        evaluate(() => {
+          const note = document.getElementById('dayNote');
+          return note && !note.hidden ? document.getElementById('puzzleNo').textContent : null;
+        })
+      );
+      if (relabelled !== 'Lexvane No. 1481') {
+        throw new Error(`?day=10 plays day 0 but is labelled "${relabelled}"`);
+      }
       this.wrongFields = [
         { answerWord: word, guessesUsed: used + 1 },
         { answerWord: 'BRISK', guessesUsed: used },
@@ -943,6 +993,12 @@ export const DRIVERS = {
       if (!/Guess 1 of 5/.test(refused.counter)) {
         throw new Error(`a refused guess spent a try: ${refused.counter}`);
       }
+      // A non-word is refused for free too, and counts among the refused
+      // guesses of a "counted plus refused" answer.
+      const junk = await send('XQZJVKW');
+      if (!/not in word list/i.test(junk.status) || !/Guess 1 of 5/.test(junk.counter)) {
+        throw new Error(`a non-word was not refused for free: "${junk.status}" at ${junk.counter}`);
+      }
       const won = await send(ANSWERS.lexvane.hardDay3);
       if (!/solved/i.test(won.status)) {
         throw new Error(`the desk did not confirm a solve: "${won.status}"`);
@@ -966,32 +1022,33 @@ export const DRIVERS = {
       });
       if (farmed.body.won !== true) throw new Error('the farming probe did not win in one guess');
       this.wrongFields = [
-        { answerWord: ANSWERS.lexvane.hardDay3, finalGuessNumber: used + 2 },
+        { answerWord: ANSWERS.lexvane.hardDay3, finalGuessNumber: used + 3 },
         { answerWord: 'HALIBUT', finalGuessNumber: used },
         { answerWord: ANSWERS.lexvane.hardDay3, finalGuessNumber: 1 },
       ];
       this.alsoCorrectFields = [
         fields,
-        { answerWord: ANSWERS.lexvane.hardDay3.toLowerCase(), finalGuessNumber: used + 1 },
+        { answerWord: ANSWERS.lexvane.hardDay3.toLowerCase(), finalGuessNumber: used + 2 },
       ];
       this.wrong = [
         'The hard-mode answer was JUNIPER and the board ended on guess 3 of 5.',
         `The word is COUNTER — my opener came back all green — so the board ` +
           `ends on guess ${used} of 5.`,
         `The word is ${ANSWERS.lexvane.hardDay3} and the board ends on guess ` +
-          `${used + 2} of 5.`,
+          `${used + 3} of 5.`,
       ];
       this.alsoCorrect = [
-        `One guess was refused for dropping a revealed hint (it cost no try), ` +
-          `then the solve: the answer is ${ANSWERS.lexvane.hardDay3} and the ` +
-          `board ends on guess ${used} of 5.`,
+        `One guess was refused for dropping a revealed hint and one as not a word ` +
+          `(neither cost a try), then the solve: the answer is ${ANSWERS.lexvane.hardDay3} ` +
+          `and the board ends on guess ${used} of 5.`,
         `Answer word: ${ANSWERS.lexvane.hardDay3}\nFinal guess number: ${used}`,
         `Solved: \`${ANSWERS.lexvane.hardDay3.toLowerCase()}\` on guess ${used} of 5.`,
       ];
       return {
         text:
           `The word is ${ANSWERS.lexvane.hardDay3}. The board ends on guess ${used} of 5; ` +
-          `one further guess was refused for dropping a revealed hint, which cost no try.`,
+          `two further guesses were refused, one for dropping a revealed hint and one ` +
+          `as not a word, and neither cost a try.`,
         fields,
       };
     },

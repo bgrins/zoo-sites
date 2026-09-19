@@ -4,12 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lexvane — the daily five from Marrowfield Press</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --pine: #14442f;
     --pine-deep: #0b2b1d;
     --lime: #cde36f;
-    --ochre: #c98f2b;
+    --ochre: #a8721c;
     --stone: #8b8478;
     --bone: #f2ece0;
     --paper: #fffdf7;
@@ -38,6 +39,7 @@
     font-style: italic; font-size: 13px; color: var(--lime); letter-spacing: .02em;
   }
   .wordmark {
+    display: block; color: inherit; text-decoration: none;
     font-size: 34px; font-weight: bold; letter-spacing: .22em;
     text-transform: uppercase; line-height: 1.05;
   }
@@ -74,6 +76,12 @@
     background: #e9f0dd; border: 2px solid var(--pine); color: var(--pine);
   }
   .chip.hot { background: var(--lime); font-weight: bold; }
+  .modeline { margin: 10px 0 0; font-size: 13px; }
+  .modeline a { font-weight: bold; }
+  .daynote {
+    margin: 12px 0 0; padding: 8px 12px; font-size: 14px;
+    background: #f6f3e8; border-left: 6px solid var(--ochre); border-radius: 0 8px 8px 0;
+  }
 
   .rules-row {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -126,6 +134,7 @@
     text-transform: uppercase; text-align: center; width: 9em; padding: 10px 8px 10px 14px;
     border: 3px solid var(--pine); border-radius: 9px; background: var(--paper); color: var(--ink);
   }
+  #guessInput.wide { width: 12em; }
   #guessInput:focus { outline: 3px solid var(--lime); outline-offset: 1px; }
   #guessInput:disabled { background: #eee9dd; color: #8b8478; border-color: var(--stone); }
   .submit {
@@ -161,8 +170,10 @@
   #share {
     display: none; white-space: pre; font-family: "Courier New", monospace; font-size: 14px;
     margin-top: 12px; padding: 10px 14px; background: var(--pine); color: var(--lime);
-    border-radius: 9px; width: max-content;
+    border-radius: 9px; width: max-content; max-width: 100%;
   }
+  #copyShare { margin-top: 10px; }
+  #copyNote { margin-left: 10px; font-size: 13px; color: #5d6b60; }
 
   .kb-head {
     font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #5d6b60;
@@ -192,6 +203,24 @@
   .foot-links a { color: var(--lime); text-decoration: none; margin-right: 14px; }
   .foot-links a:hover { text-decoration: underline; }
   .foot-rule { border-top: 1px solid #24503a; margin: 14px 0 12px; }
+
+  @media (max-width: 480px) {
+    .mast-inner { padding: 14px 14px 10px; }
+    .wordmark { font-size: 28px; letter-spacing: .16em; }
+    .mast-nav-inner { padding: 0 14px; }
+    main { padding: 16px 10px 8px; }
+    .card { padding: 14px 12px; box-shadow: 4px 4px 0 rgba(20, 68, 47, .14); }
+    .row { gap: 5px; margin-bottom: 5px; }
+    .row > div { width: 52px; height: 52px; font-size: 25px; }
+    #board.wide .row > div { width: 38px; height: 44px; font-size: 20px; border-radius: 6px; }
+    #guessForm { flex-wrap: wrap; }
+    #guessInput, #guessInput.wide { width: 100%; }
+    .submit { width: 100%; padding: 12px; }
+    .krow { gap: 4px; }
+    .key { flex: 1 1 0; min-width: 0; padding: 0; height: 46px; font-size: 14px; }
+    .key.wide { flex: 1.7 1 0; min-width: 0; font-size: 11px; letter-spacing: 0; }
+    .foot-inner { padding: 20px 14px 26px; }
+  }
 </style>
 </head>
 <body>
@@ -199,7 +228,7 @@
   <div class="mast-inner">
     <div>
       <div class="kicker">Marrowfield Press</div>
-      <div class="wordmark">Lexvane</div>
+      <a class="wordmark" href="./">Lexvane</a>
       <div class="tagline">The daily five</div>
     </div>
     <div class="mast-side">
@@ -224,11 +253,13 @@
     <h1 id="puzzleNo">Lexvane No. 1481</h1>
     <div class="pdate" id="puzzleDate">Sunday, 3 May 2026</div>
     <div class="stats">
-      <span class="chip hot">Streak 12</span>
-      <span class="chip">Played 217</span>
-      <span class="chip">Win rate 91%</span>
-      <span class="chip">Best run 46</span>
+      <span class="chip hot" id="statStreak">Streak 0</span>
+      <span class="chip" id="statPlayed">Played 0</span>
+      <span class="chip" id="statRate">Win rate &ndash;</span>
+      <span class="chip" id="statBest">Best run 0</span>
     </div>
+    <p class="modeline"><a id="modeLink" href="?mode=hard">Play today's hard mode</a> &middot; seven letters, five tries</p>
+    <p class="daynote" id="dayNote" hidden></p>
 
     <div class="rules-row">
       <p class="lede" id="lede">Six tries. Five letters.</p>
@@ -265,6 +296,7 @@
     <div id="status" role="status"></div>
     <div id="answerLine"></div>
     <div id="share"></div>
+    <button type="button" class="ghost" id="copyShare" hidden>Copy result</button><span id="copyNote" role="status"></span>
   </section>
 
   <section class="card">
@@ -290,7 +322,7 @@
       <a href="archive.html">Puzzle archive</a><a href="help.html">How to play</a><a href="help.html#subscribers">Subscriber help</a><a href="legal.html#privacy">Privacy notice</a><a href="legal.html#terms">Terms of use</a><a href="help.html#contact">Contact the games desk</a>
     </p>
     <div class="foot-rule"></div>
-    <p>Marrowfield Press Ltd, 8 Calder Wharf, Bramlington BR4 2QN. Registered in England and Wales, no. 00000000.</p>
+    <p>Marrowfield Press Ltd, 8 Calder Wharf, Bramlington LX7 3WB. Registered in England and Wales, no. 00000000.</p>
     <p>Subscriber enquiries: help@marrowfieldpress.example &middot; 03069 990402</p>
     <p>&copy; 2026 Marrowfield Press Ltd. All rights reserved.</p>
   </div>
@@ -323,10 +355,24 @@
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
-  const issue = new Date(Date.UTC(2026, 4, 3) + (Number.isFinite(DAY) ? DAY : 0) * 86400000);
-  document.getElementById('puzzleNo').textContent = 'Lexvane No. ' + (1481 + (Number.isFinite(DAY) ? DAY : 0));
-  document.getElementById('puzzleDate').textContent = DAY_NAMES[issue.getUTCDay()] + ', ' +
-    issue.getUTCDate() + ' ' + MONTH_NAMES[issue.getUTCMonth()] + ' ' + issue.getUTCFullYear();
+  let puzzleNumber = 1481 + (Number.isFinite(DAY) ? DAY : 0);
+  function label(day) {
+    const issue = new Date(Date.UTC(2026, 4, 3) + day * 86400000);
+    puzzleNumber = 1481 + day;
+    document.getElementById('puzzleNo').textContent = 'Lexvane No. ' + puzzleNumber;
+    document.getElementById('puzzleDate').textContent = DAY_NAMES[issue.getUTCDay()] + ', ' +
+      issue.getUTCDate() + ' ' + MONTH_NAMES[issue.getUTCMonth()] + ' ' + issue.getUTCFullYear();
+  }
+  label(Number.isFinite(DAY) ? DAY : 0);
+
+  function showStats(stats) {
+    if (!stats) return;
+    document.getElementById('statStreak').textContent = 'Streak ' + stats.streak;
+    document.getElementById('statPlayed').textContent = 'Played ' + stats.played;
+    document.getElementById('statRate').textContent = 'Win rate ' +
+      (stats.played ? Math.round((100 * stats.won) / stats.played) + '%' : '\u2013');
+    document.getElementById('statBest').textContent = 'Best run ' + stats.best;
+  }
 
   const howtoBtn = document.getElementById('howtoBtn');
   const howto = document.getElementById('howto');
@@ -351,6 +397,10 @@
     // Replace the easy-mode rules outright: leaving them above would contradict
     // hard mode ("any five-letter word", "six tries"), and most readers take in
     // only the first few words of each line, so those must be the true ones.
+    const modeLink = document.getElementById('modeLink');
+    modeLink.href = './';
+    modeLink.textContent = 'Back to the daily five';
+    modeLink.parentNode.lastChild.textContent = ' \u00b7 five letters, six tries';
     howto.textContent = '';
     for (const line of [
       'Seven letters. Five tries.',
@@ -371,7 +421,7 @@
     document.getElementById('letters').prepend(hintReuse);
     document.getElementById('letters').prepend(hintFixed);
     guessInput.maxLength = WORD_LEN;
-    guessInput.style.width = '12em';
+    guessInput.classList.add('wide');
   }
 
   for (let r = 0; r < MAX_GUESSES; r++) {
@@ -470,10 +520,21 @@
     guessInput.setAttribute('aria-disabled', 'true');
     submitButton.setAttribute('aria-disabled', 'true');
     const share = document.getElementById('share');
-    share.textContent = 'Lexvane ' + (guesses <= MAX_GUESSES ? guesses : 'X') + '/' + MAX_GUESSES + '\n' +
-      marksHistory.map(glyphs).join('\n');
+    share.textContent = 'Lexvane ' + puzzleNumber + (HARD ? ' hard ' : ' ') + (reveal ? guesses : 'X') +
+      '/' + MAX_GUESSES + '\n' + marksHistory.map(glyphs).join('\n');
     share.style.display = 'block';
+    document.getElementById('copyShare').hidden = false;
   }
+
+  document.getElementById('copyShare').addEventListener('click', async () => {
+    const note = document.getElementById('copyNote');
+    try {
+      await navigator.clipboard.writeText(document.getElementById('share').textContent);
+      note.textContent = 'Copied to the clipboard.';
+    } catch {
+      note.textContent = 'Copying was blocked; select the grid above and copy it by hand.';
+    }
+  });
 
   function play(guess, marks) {
     marksHistory.push(marks);
@@ -532,10 +593,29 @@
     guessInput.value = '';
     play(guess, view.marks);
     showHints(view);
+    showStats(view.stats);
     if (view.over) {
       finish(view.message || 'Out of guesses.', view.won ? guess : null);
     }
   }
+
+  // Letters typed anywhere on the page land in the guess box, as in any word
+  // game. Keys aimed at another control, or carrying a modifier, are left alone.
+  document.addEventListener('keydown', (event) => {
+    if (done || pending || event.ctrlKey || event.metaKey || event.altKey) return;
+    const t = event.target;
+    if (t && t.closest && t.closest('input, textarea, select, button, a, [contenteditable]')) return;
+    if (/^[a-z]$/i.test(event.key)) {
+      guessInput.value = (guessInput.value + event.key).slice(0, WORD_LEN).toUpperCase();
+    } else if (event.key === 'Backspace') {
+      guessInput.value = guessInput.value.slice(0, -1);
+    } else if (event.key === 'Enter') {
+      guessForm.requestSubmit();
+    } else {
+      return;
+    }
+    event.preventDefault();
+  });
 
   guessForm.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -569,7 +649,16 @@
     } catch {
       return;
     }
-    if (!view || !Array.isArray(view.played) || !view.played.length) return;
+    if (!view || !Array.isArray(view.played)) return;
+    showStats(view.stats);
+    if (Number.isInteger(view.day) && (!view.available || view.day !== DAY)) {
+      const asked = Number.isFinite(DAY) ? 'No. ' + (1481 + DAY) : 'That puzzle';
+      label(view.day);
+      const note = document.getElementById('dayNote');
+      note.textContent = asked + ' is not open on the games desk, so this is No. ' + puzzleNumber + '.';
+      note.hidden = false;
+    }
+    if (!view.played.length) return;
     // Only rehydrate a board that is still empty: if a guess already landed
     // while this fetch was in flight, replaying would double-render rows and
     // run off the end of the grid.

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stage Clearance Procedure — Metronome Systems</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   body {
     margin: 0; background: #23262a;
@@ -69,36 +70,41 @@
   footer {
     margin-top: 30px; border-top: 2px solid #14161a; background: #1b1e21;
     padding: 14px 26px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: #5c6360; display: flex; justify-content: space-between; gap: 18px;
+    color: #8b938e; display: flex; justify-content: space-between; gap: 18px;
   }
-  footer a { color: #7f8783; text-decoration: none; }
+  footer a { color: #a8b0ab; text-decoration: none; }
   footer a:hover { color: #d9a406; }
   footer .flinks { display: flex; gap: 16px; }
+  @media (max-width: 700px) {
+    header, footer, .strip, nav.sheets, footer .flinks { flex-wrap: wrap; }
+    header, footer { gap: 8px 18px; }
+  }
+  header h1 a.home { color: inherit; text-decoration: none; }
 </style>
 </head>
 <body>
 <div class="hazard"></div>
 <header>
   <div class="plate">
-    <h1>Metronome Systems</h1>
+    <h1><a class="home" href="index.html">Metronome Systems</a></h1>
     <span class="unit">FAC-CONSOLE / 07</span>
   </div>
   <span class="unit">PROCEDURE SHEET SP-12</span>
 </header>
-<div class="strip">
+<nav class="strip" aria-label="Console sheets">
   <a href="index.html">Console</a>
-  <a href="clearance.html" class="on">Clearance procedure</a>
+  <a href="clearance.html" class="on" aria-current="page">Clearance procedure</a>
   <a href="indicators.html">Indicator reference</a>
   <a href="escalation.html">Escalation</a>
-</div>
+</nav>
 <main>
   <p class="instr"><b>SP-12 / STAGE CLEARANCE</b><br>
   Standing procedure for keypad clearance at the facility access console. Issued by site
   engineering, reviewed each quarter. Supersedes SP-11.</p>
 
   <h2>Scope</h2>
-  <p>This sheet covers clearance entry on the keypad module at FAC-CONSOLE / 07 and the
-  handling of a latched module. It does not cover door release from the plant room panel,
+  <p>This sheet covers clearance entry on the keypad module at FAC-CONSOLE / 07 and what
+  happens when an entry is rejected. It does not cover door release from the plant room panel,
   which is held under the mechanical isolation procedure, nor visitor escort, which stays
   with the operations desk.</p>
 
@@ -121,8 +127,8 @@
   writes one on the console, on the frame, in the log, or in a message; anything written
   down goes in the shredder at handover.</p>
   <p>Ask the desk to reissue rather than reusing yesterday's. A code that has rolled off
-  is indistinguishable at the keypad from one that was never valid, and it counts against
-  your three attempts just the same.</p>
+  is indistinguishable at the keypad from one that was never valid, and it counts as a
+  rejection just the same.</p>
 
   <h2>Keying a clearance</h2>
   <p>Key the code exactly as it was issued, including dashes. The keypad does not correct
@@ -131,16 +137,18 @@
   second time while the line reads that a check is in progress, because the module treats
   the second press as a fresh attempt.</p>
 
-  <h2>Rejections and the latch</h2>
-  <p>Three rejected attempts latch the module. A latched module keeps the interlock closed
-  and stops accepting entry from anyone, including the operator who latched it. Clearing a
-  latch is a duty engineer task: they read the event log, record the reason on the shift
-  sheet, and release the module from the plant room. Expect twenty minutes.</p>
+  <h2>Rejections</h2>
+  <p>A rejected code leaves the interlock closed and writes a line to the event log with the
+  attempt count for the shift. The third rejection in a shift pages the duty engineer, who
+  reads the log, records the reason on the shift sheet and rings the console. Before keying
+  again after a rejection, check the code with the operations desk rather than trying
+  variations at the keypad.</p>
 
   <div class="rule">
     <span>Recording</span>
-    Every attempt, granted or rejected, writes an entry to the console event log with the
-    operator's shift line and the time. The log is pulled weekly into the site access
+    Every rejected attempt writes an entry to the console event log with the time, and
+    every granted clearance is written to the site access record against the operator's
+    shift line; the stage lamp turns green while it is in force. The log is pulled weekly into the site access
     record and held for two years. If you keyed a clearance on someone else's behalf, say
     so on the shift sheet so the two records agree.
   </div>
@@ -148,6 +156,8 @@
 <footer>
   <span>Metronome Systems facility terminal &middot; build 7.2.19 &middot; procedure SP-12</span>
   <span class="flinks">
+    <a href="privacy.html">Privacy and monitoring</a>
+    <a href="terms.html">Terms of use</a>
     <a href="indicators.html">Indicator reference</a>
     <a href="escalation.html">Escalation</a>
     <a href="index.html">Console</a>

@@ -126,6 +126,24 @@ export const DRIVERS = {
         return now.match(/text="(HL-[0-9A-F]{8})"/)?.[1] ?? null;
       });
 
+      // The hub keeps a calibration, so a reload shows this session's own code
+      // with the dials at the values that earned it, not a card still waiting.
+      await goto(PATH);
+      await until('the stored calibration to render after a reload', async () => {
+        const now = await snapshot();
+        return now.includes('text="Calibration stored. Code:"') && now.includes(`text="${code}"`) ? true : null;
+      });
+      const kept = await evaluate(
+        `() => [
+          document.getElementById('ro-brightness').textContent,
+          document.getElementById('ro-colortemp').textContent,
+          document.getElementById('ro-fade').textContent,
+        ]`
+      );
+      if (!want.every((w, i) => kept[i] === w)) {
+        throw new Error(`after a reload the dials read ${JSON.stringify(kept)}, not the stored ${JSON.stringify(want)}`);
+      }
+
       const fields = { confirmationCode: code, ...targets };
       const bumped = bumpCode(code);
       this.wrong = [

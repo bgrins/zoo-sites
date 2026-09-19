@@ -4,15 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Energy — Hearthline Hub</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="hearthline.css">
 </head>
 <body>
 <header>
-  <div class="mark">Hearth<b>line</b><span class="sub">Hub console</span></div>
-  <nav class="pills">
+  <a class="mark" href="index.html">Hearth<b>line</b><span class="sub">Hub console</span></a>
+  <nav class="pills" aria-label="Hub">
     <a href="index.html">Home</a>
     <a href="devices.html">Devices</a>
-    <a class="on" href="energy.html">Energy</a>
+    <a class="on" aria-current="page" href="energy.html">Energy</a>
+    <a href="settings.html">Settings</a>
   </nav>
   <div class="home-state">14 Alder Croft<br>Hub online &middot; firmware 9.4.2</div>
 </header>
@@ -24,7 +26,7 @@
 
   <div class="tiles">
     <div class="tile"><div class="k">Today so far</div><div class="v">7.9 kWh</div><div class="d">Typical for a Tuesday</div></div>
-    <div class="tile"><div class="k">Yesterday</div><div class="v">12.4 kWh</div><div class="d">EUR 3.61 settled</div></div>
+    <div class="tile"><div class="k">Yesterday</div><div class="v">12.4 kWh</div><div class="d">&pound;3.14 settled</div></div>
     <div class="tile"><div class="k">This week</div><div class="v">41.2 kWh</div><div class="d">4% below last week</div></div>
     <div class="tile"><div class="k">Standby load</div><div class="v">86 W</div><div class="d">Overnight baseline</div></div>
   </div>
@@ -41,7 +43,7 @@
 
   <div class="card">
     <h2>Tariff</h2>
-    <p class="note">Half-hourly settlement with Groenerf Energie. Off-peak window
+    <p class="note">Half-hourly settlement with Ydrell Energy. Off-peak window
     01:00 to 06:00; the hub already shifts the hot-water boost and any smart-plug
     schedules marked flexible into that window.</p>
   </div>
@@ -49,11 +51,12 @@
 
 <footer>
   <a href="privacy.html">Privacy</a>
-  <a href="index.html">Home</a>
+  <a href="terms.html">Terms of service</a>
   <a href="devices.html">Manage devices</a>
-  <p>Hearthline Systems BV &middot; Windgat 11, 2611 KE Delft</p>
+  <a href="settings.html">Hub settings</a>
+  <p>Hearthline Systems Ltd &middot; Unit 3, Kilnworth Park, Pellowdean PW3 6HD &middot; registered in England and Wales, company number 00000000</p>
   <p>Support: care@hearthline.example &middot; +44 20 7946 0141</p>
-  <p>&copy; 2021-2026 Hearthline Systems BV. All rights reserved.</p>
+  <p>&copy; 2021-2026 Hearthline Systems Ltd. All rights reserved.</p>
 </footer>
 </body>
 </html>

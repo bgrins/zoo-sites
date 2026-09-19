@@ -117,7 +117,7 @@ function calcTokens(src) {
       let j = i;
       while (j < src.length && /[0-9.]/.test(src[j])) j += 1;
       const value = Number(src.slice(i, j));
-      if (!Number.isFinite(value)) throw new Error(`bad number "${src.slice(i, j)}"`);
+      if (!Number.isFinite(value)) throw new Error(`${src.slice(i, j)} is not a number`);
       out.push({ t: 'num', v: value });
       i = j;
     } else if (/[A-Za-z$_]/.test(ch)) {
@@ -129,7 +129,7 @@ function calcTokens(src) {
       out.push({ t: ch });
       i += 1;
     } else {
-      throw new Error(`unexpected character "${ch}"`);
+      throw new Error(`a formula cannot contain the character ${ch}`);
     }
   }
   return out;
@@ -143,7 +143,15 @@ function calcParse(src) {
   let p = 0;
   const peek = () => toks[p];
   const eat = (t) => {
-    if (toks[p]?.t !== t) throw new Error(`expected "${t}"`);
+    if (toks[p]?.t !== t) {
+      throw new Error(
+        t === ')'
+          ? 'a closing parenthesis is missing'
+          : t === 'word'
+            ? 'a range needs an end cell, as in B2:B13'
+            : `something is missing before the end of the formula`
+      );
+    }
     return toks[p++];
   };
 
@@ -172,7 +180,7 @@ function calcParse(src) {
   }
   function parsePrimary() {
     const tk = peek();
-    if (!tk) throw new Error('formula ends early');
+    if (!tk) throw new Error('the formula stops before it is complete');
     if (tk.t === 'num') {
       p += 1;
       return { k: 'num', v: tk.v };
@@ -199,21 +207,21 @@ function calcParse(src) {
         return { k: 'call', name: tk.v.toUpperCase(), args };
       }
       const start = calcParseRef(tk.v.toUpperCase());
-      if (!start) throw new Error(`unknown name "${tk.v}"`);
+      if (!start) throw new Error(`${tk.v} is not a cell reference or a function this workbook knows`);
       if (peek()?.t === ':') {
         p += 1;
         const endTok = eat('word');
         const end = calcParseRef(endTok.v.toUpperCase());
-        if (!end) throw new Error(`bad range end "${endTok.v}"`);
+        if (!end) throw new Error(`${endTok.v} is not a cell reference, so the range has no end`);
         return { k: 'range', a: start, b: end };
       }
       return { k: 'ref', ref: start.ref };
     }
-    throw new Error('unexpected token');
+    throw new Error('there is an operator or comma where a value should be');
   }
 
   const ast = parseExpr();
-  if (p !== toks.length) throw new Error('trailing characters');
+  if (p !== toks.length) throw new Error('there is extra text after the end of the formula');
   return ast;
 }
 
@@ -222,7 +230,7 @@ function calcExpandRange(a, b) {
   const c2 = Math.max(a.col, b.col);
   const r1 = Math.min(a.row, b.row);
   const r2 = Math.max(a.row, b.row);
-  if ((c2 - c1 + 1) * (r2 - r1 + 1) > 400) throw new Error('range too large');
+  if ((c2 - c1 + 1) * (r2 - r1 + 1) > 400) throw new Error('that range is larger than this workbook allows');
   const out = [];
   for (let r = r1; r <= r2; r += 1) {
     for (let c = c1; c <= c2; c += 1) out.push(calcColName(c) + r);
@@ -283,7 +291,7 @@ function calcEval(ast, get) {
         const factor = 10 ** digits;
         return Math.round(flat[0] * factor) / factor;
       }
-      throw new Error(`unknown function ${node.name}`);
+      throw new Error(`${node.name} is not a function this workbook knows`);
     }
     throw new Error('bad formula');
   }
@@ -639,13 +647,13 @@ export function routes(ctx) {
         try {
           ast = calcParse(input.slice(1));
         } catch (error) {
-          return reject(`${ref}: ${error.message}`);
+          return reject(`There is a problem with the formula in ${ref}: ${error.message}.`);
         }
         let refs;
         try {
           refs = calcRefsOf(ast);
         } catch (error) {
-          return reject(`${ref}: ${error.message}`);
+          return reject(`There is a problem with the formula in ${ref}: ${error.message}.`);
         }
         if (refs.has(ref)) return reject(`${ref} cannot refer to itself.`);
         if (computed && refs.size < 2) {
@@ -673,7 +681,7 @@ export function routes(ctx) {
         const at = introduced.includes(ref) ? ref : introduced[0];
         const message =
           at === ref
-            ? `${ref}: ${check.errors[at]}`
+            ? `There is a problem with the formula in ${ref}: ${check.errors[at]}.`
             : `${ref} would break ${at}: ${check.errors[at]}`;
         calc.cells[ref] = previous;
         return reject(message);

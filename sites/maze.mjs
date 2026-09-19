@@ -1,8 +1,8 @@
-// pages/maze/ - Kestrel 4 traverse grid (maze-escape). The wall map is minted per session.
+// pages/maze/ - Orvaken 4 traverse grid (maze-escape). The wall map is minted per session.
 import { randomBytes } from 'node:crypto';
 import { lcg } from './lib.mjs';
 
-// pages/maze/ — Kestrel 4 traverse grid. The 6x6 wall map is minted per session
+// pages/maze/ — Orvaken 4 traverse grid. The 6x6 wall map is minted per session
 // from ctx.draw and never leaves the server: the page is told only the clear
 // headings of cells the rover has actually entered. Each hex digit of a row is
 // the set of CLEAR headings out of one cell (N=1, E=2, S=4, W=8). Layouts are

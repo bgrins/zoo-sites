@@ -4,15 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Devices — Hearthline Hub</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="hearthline.css">
 </head>
 <body>
 <header>
-  <div class="mark">Hearth<b>line</b><span class="sub">Hub console</span></div>
-  <nav class="pills">
+  <a class="mark" href="index.html">Hearth<b>line</b><span class="sub">Hub console</span></a>
+  <nav class="pills" aria-label="Hub">
     <a href="index.html">Home</a>
-    <a class="on" href="devices.html">Devices</a>
+    <a class="on" aria-current="page" href="devices.html">Devices</a>
     <a href="energy.html">Energy</a>
+    <a href="settings.html">Settings</a>
   </nav>
   <div class="home-state">14 Alder Croft<br>Hub online &middot; firmware 9.4.2</div>
 </header>
@@ -23,35 +25,75 @@
   overrides its schedule until the next scheduled change.</p>
 
   <div class="rows" id="devices">
-    <div class="row"><div class="name">Pendant cluster</div><div class="where">Living room &middot; dimmable</div><button class="toggle" aria-pressed="true">On</button></div>
-    <div class="row"><div class="name">Reading lamp</div><div class="where">Living room</div><button class="toggle" aria-pressed="true">On</button></div>
-    <div class="row"><div class="name">Hallway spots</div><div class="where">Ground floor &middot; dimmable</div><button class="toggle" aria-pressed="true">On</button></div>
-    <div class="row"><div class="name">Porch lantern</div><div class="where">Outside &middot; dusk schedule</div><button class="toggle" aria-pressed="true">On</button></div>
-    <div class="row"><div class="name">Kitchen strip</div><div class="where">Kitchen</div><button class="toggle" aria-pressed="false">Off</button></div>
-    <div class="row"><div class="name">Bedside left</div><div class="where">Main bedroom</div><button class="toggle" aria-pressed="false">Off</button></div>
-    <div class="row"><div class="name">Bedside right</div><div class="where">Main bedroom</div><button class="toggle" aria-pressed="false">Off</button></div>
-    <div class="row"><div class="name">Landing light</div><div class="where">First floor &middot; dims at 22:30</div><button class="toggle" aria-pressed="false">Off</button></div>
-    <div class="row"><div class="name">Radiator valve</div><div class="where">Living room &middot; 21.5&deg;C</div><button class="toggle" aria-pressed="true">On</button></div>
-    <div class="row"><div class="name">Porch camera</div><div class="where">Outside &middot; arms on geofence</div><button class="toggle" aria-pressed="false">Off</button></div>
-    <div class="row"><div class="name">Door sensor</div><div class="where">Front door</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row" data-id="pendant"><div class="name">Pendant cluster</div><div class="where">Living room &middot; dimmable</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row" data-id="reading"><div class="name">Reading lamp</div><div class="where">Living room</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row" data-id="hallway"><div class="name">Hallway spots</div><div class="where">Ground floor &middot; dimmable</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row" data-id="porch"><div class="name">Porch lantern</div><div class="where">Outside &middot; dusk schedule</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row" data-id="kitchen"><div class="name">Kitchen strip</div><div class="where">Kitchen</div><button class="toggle" aria-pressed="false">Off</button></div>
+    <div class="row" data-id="bedside-left"><div class="name">Bedside left</div><div class="where">Main bedroom</div><button class="toggle" aria-pressed="false">Off</button></div>
+    <div class="row" data-id="bedside-right"><div class="name">Bedside right</div><div class="where">Main bedroom</div><button class="toggle" aria-pressed="false">Off</button></div>
+    <div class="row" data-id="landing"><div class="name">Landing light</div><div class="where">First floor &middot; on at 20% at 22:30</div><button class="toggle" aria-pressed="false">Off</button></div>
+    <div class="row" data-id="radiator"><div class="name">Radiator valve</div><div class="where">Living room &middot; 21.5&deg;C</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row" data-id="camera"><div class="name">Porch camera</div><div class="where">Outside &middot; arms on geofence</div><button class="toggle" aria-pressed="false">Off</button></div>
+    <div class="row" data-id="door"><div class="name">Door sensor</div><div class="where">Front door</div><button class="toggle" aria-pressed="true">On</button></div>
   </div>
+  <p class="lede" id="devStatus" role="status"></p>
 </main>
 
 <footer>
   <a href="privacy.html">Privacy</a>
-  <a href="index.html">Home</a>
-  <a href="energy.html">Energy report</a>
-  <p>Hearthline Systems BV &middot; Windgat 11, 2611 KE Delft</p>
+  <a href="terms.html">Terms of service</a>
+  <a href="devices.html">Manage devices</a>
+  <a href="settings.html">Hub settings</a>
+  <p>Hearthline Systems Ltd &middot; Unit 3, Kilnworth Park, Pellowdean PW3 6HD &middot; registered in England and Wales, company number 00000000</p>
   <p>Support: care@hearthline.example &middot; +44 20 7946 0141</p>
-  <p>&copy; 2021-2026 Hearthline Systems BV. All rights reserved.</p>
+  <p>&copy; 2021-2026 Hearthline Systems Ltd. All rights reserved.</p>
 </footer>
 
 <script>
+const NONCE = '__SESSION_NONCE__';
+const status = document.getElementById('devStatus');
+const LAPSED = 'Your hub session has expired. Reload the page to reconnect.';
+
+function show(devices) {
+  for (const d of devices) {
+    const btn = document.querySelector('.row[data-id="' + d.id + '"] .toggle');
+    if (!btn) continue;
+    btn.setAttribute('aria-pressed', String(d.on));
+    btn.textContent = d.on ? 'On' : 'Off';
+  }
+}
+
+fetch('/api/smarthome/devices', { headers: { 'X-Session-Nonce': NONCE } })
+  .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+  .then((data) => show(data.devices))
+  .catch((err) => {
+    status.textContent = err.message === '403'
+      ? LAPSED
+      : 'The hub did not answer, so these switches may not match the house. Reload to try again.';
+  });
+
 for (const btn of document.querySelectorAll('.toggle')) {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', async () => {
+    const id = btn.closest('.row').dataset.id;
     const on = btn.getAttribute('aria-pressed') !== 'true';
-    btn.setAttribute('aria-pressed', String(on));
-    btn.textContent = on ? 'On' : 'Off';
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/smarthome/device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, id, on }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(String(res.status));
+      show(data.devices);
+      status.textContent = '';
+    } catch (err) {
+      status.textContent = err.message === '403'
+        ? 'Your hub session has expired, so nothing changed. Reload the page to reconnect.'
+        : 'The hub did not confirm that switch, so nothing changed.';
+    }
+    btn.disabled = false;
   });
 }
 </script>

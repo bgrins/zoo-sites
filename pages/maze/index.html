@@ -3,26 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Traverse console — Kestrel 4 — Ostara Surface Systems</title>
+<title>Traverse console — Orvaken 4 — Ostara Surface Systems</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="maze.css">
 </head>
 <body>
-<div class="mast">
-  <span class="org">Ostara Surface Systems</span>
+<header class="mast">
+  <a class="org" href="index.html">Ostara Surface Systems</a>
   <span class="div">Surface fleet operations</span>
-  <span class="who">drive team 2 &middot; k.oyelaran@ostara-surface.example</span>
-</div>
+  <details class="who">
+    <summary>drive team 2 &middot; k.oyelaran@ostara-surface.example</summary>
+    <div class="menu">
+      <a href="handbook.html#handover">Hand over the console</a>
+      <a href="signout.html">Signing out</a>
+    </div>
+  </details>
+</header>
 <div class="chips">
   <span class="chip">Sol 214</span>
   <span class="chip">Site Vantor Basin</span>
-  <span class="chip">Rover Kestrel 4</span>
-  <span class="chip">Mode blind drive</span>
-  <span class="chip">Odom 1.94 km</span>
+  <span class="chip">Rover Orvaken 4</span>
+  <span class="chip" id="chipMode">Mode blind drive</span>
+  <span class="chip" id="chipOdom">Odom 1.94 km</span>
 </div>
 <div class="shell">
   <nav class="rail">
-    <h2>Kestrel 4</h2>
+    <p class="railhead">Orvaken 4</p>
     <a href="index.html" class="on">Traverse</a>
+    <a href="survey.html">Survey record</a>
     <a href="power.html">Power and thermal</a>
     <a href="instruments.html">Instruments</a>
     <a href="uplink.html">Uplink windows</a>
@@ -32,7 +40,7 @@
   </nav>
   <main class="content">
     <h1>Traverse console</h1>
-    <p class="lede">Kestrel 4 is parked at the basin entry cell A1. Sol plan 214 calls for a
+    <p class="lede">Orvaken 4 is parked at the basin entry cell A1. Sol plan 214 calls for a
     transit to the extraction pad at F6, the far corner of the survey grid. Hazard mapping is
     line of sight: the navigation camera resolves obstructions only for cells the rover has
     entered, so the rest of the grid stays unsurveyed. Drives are issued one cell at a time,
@@ -47,7 +55,7 @@
     <section class="extract" id="extract" hidden>
       <h2>Extraction code</h2>
       <p class="code" id="code"></p>
-      <p>Kestrel 4 is on the extraction pad and sol plan 214 is closed. Read the code back
+      <p>Orvaken 4 is on the extraction pad and sol plan 214 is closed. Read the code back
       to mission control to release the recovery window.</p>
     </section>
 
@@ -85,7 +93,7 @@
           </div>
         </div>
         <p class="legend">Hatched cells are unsurveyed. Heavy edges are confirmed
-        obstructions. Orange marker is the rover, striped square is the pad.
+        obstructions. The blue disc is the rover and the green striped square is the pad.
         <a href="survey.html">Survey record</a> lists every cell mapped so far.</p>
       </section>
 
@@ -98,16 +106,16 @@
     </div>
   </main>
 </div>
-<div class="foot">
+<footer class="foot">
   <p class="links">
     <a href="data-policy.html">Data policy</a>
     <a href="terms.html">Operating terms</a>
     <a href="contact.html">Contact the drive desk</a>
   </p>
-  <p>&copy; 2026 Ostara Surface Systems Ltd. Registered office: 14 Bellamy Wharf,
-  Tarnbridge TR4 2QN. Flight operations support: ops-desk@ostara-surface.example,
+  <p>&copy; 2026 Ostara Surface Systems Ltd. Registered office: Unit 9, Theodolite Row,
+  Tarnbridge ZT4 9FR. Registered in England and Wales, company number 00000000. Flight operations support: ops-desk@ostara-surface.example,
   +44 20 7946 0812.</p>
-</div>
+</footer>
 <script>
 const NONCE = '__SESSION_NONCE__';
 const COLS = 'ABCDEF';
@@ -155,7 +163,15 @@ function stamp(n) {
   return 'D' + String(n).padStart(2, '0');
 }
 
+// The odometer carried into sol 214, plus twelve metres per completed drive.
+const ODOM_START_M = 1940;
+const CELL_M = 12;
+
 function paint(view) {
+  document.getElementById('chipOdom').textContent =
+    'Odom ' + ((ODOM_START_M + CELL_M * view.drives) / 1000).toFixed(2) + ' km';
+  document.getElementById('chipMode').textContent =
+    view.reachedExit ? 'Mode parked on pad' : 'Mode blind drive';
   document.getElementById('telPos').textContent = 'POS ' + view.at;
   document.getElementById('telClear').textContent = 'CLEAR ' + (view.clear.join(',') || 'none');
   const walls = ORDER.filter((d) => !view.clear.includes(d));
@@ -215,7 +231,7 @@ function down(message) {
   last.classList.add('tel-alert');
   document.getElementById('alertHead').textContent = 'Reload to reconnect';
   document.getElementById('alertBody').textContent =
-    'The uplink to Kestrel 4 dropped, so the deck is inhibited. Reloading the console '
+    'The uplink to Orvaken 4 dropped, so the deck is inhibited. Reloading the console '
     + 'reconnects it; the rover holds its position and its survey record.';
   document.getElementById('alert').hidden = false;
   lock(true);
