@@ -4,10 +4,64 @@
 // the English page, switch edition through the site's own editions menu, and read
 // a reference out of RTL Arabic body copy.
 
-import { bumpCode, until } from './lib.mjs';
+import { addSession, bumpCode, findSession, until } from './lib.mjs';
+
+const releasing = (state) => findSession(state, (s) => s.intl?.releases?.length).session.intl;
 
 const localeNotice = {
   note: 'switches to the Arabic edition and reads the notice reference',
+  wrongState: [
+    {
+      name: 'no session was ever released a translated notice',
+      mutate: (state) => {
+        for (const s of state.sessions.values()) if (s.intl) s.intl.releases = [];
+      },
+    },
+    {
+      name: 'only the other destination was ever released',
+      mutate: (state) => {
+        for (const s of state.sessions.values()) {
+          for (const r of s.intl?.releases ?? []) {
+            r.dest = 'ashkar-coast';
+            r.reference = s.intl.refs['ashkar-coast'];
+          }
+        }
+      },
+    },
+  ],
+  alsoCorrectState: [
+    {
+      name: 'an English-only session minted first',
+      mutate: (state) =>
+        addSession(
+          state,
+          {
+            intl: {
+              refs: { 'port-vasiri': 'QTA-2026-0A0A', 'ashkar-coast': 'QTA-2026-0B0B' },
+              requests: { en: 1, ar: 0, ja: 0 },
+              editionNavs: { en: 1, ar: 0, ja: 0 },
+              releases: [],
+            },
+          },
+          { first: true }
+        ),
+    },
+    // An agent re-checking its work under a fresh cookie is released a newer
+    // notice with a different reference; the answer still names the first.
+    {
+      name: 'a later session was released a newer Port Vasiri reference',
+      mutate: (state) => {
+        const intl = structuredClone(releasing(state));
+        intl.refs['port-vasiri'] = bumpCode(intl.refs['port-vasiri']);
+        intl.releases = intl.releases.map((r) => ({
+          ...r,
+          reference: intl.refs[r.dest],
+          at: r.at + 60000,
+        }));
+        addSession(state, { intl });
+      },
+    },
+  ],
   wrong: 'The advisory reference for Port Vasiri is QTA-2026-0000.',
   async run({ goto, mcp, snapshot }) {
     // The link on the destination list carries no text of its own: the name and
@@ -82,6 +136,19 @@ const localeNotice = {
       throw new Error(`editions disagree: ar=${reference} ja=${jaReference}`);
     }
 
+    // The other destination's notice, read the same way, so the validator is
+    // tested against a real reference an agent could claim for the wrong port.
+    await goto('/intl/ar/');
+    const arHome = await untilSnapshot((s) => s.includes('ساحل أشكر'), 'the Arabic destination list');
+    const ashkarUid = anchorAbove(arHome, 'ساحل أشكر');
+    if (!ashkarUid) throw new Error('no Ashkar Coast link in the Arabic destination list');
+    await mcp('click_by_uid', { uid: ashkarUid });
+    const ashkar = await untilSnapshot((s) => {
+      const ref = s.match(/المرجع: (QTA-2026-[0-9A-F]{4})/)?.[1];
+      return ref && ref !== reference;
+    }, 'the Arabic Ashkar Coast notice');
+    const ashkarRef = ashkar.match(/المرجع: (QTA-2026-[0-9A-F]{4})/)[1];
+
     // A wrong answer of exactly the right shape, guaranteed distinct from the
     // reference this session was actually issued; and the real reference put to
     // the one claim this task must never accept, that nothing further applies.
@@ -89,6 +156,9 @@ const localeNotice = {
       `The advisory reference for Port Vasiri is ${bumpCode(reference)}.`,
       `Advisory reference ${reference} keeps Port Vasiri at Level 2; nothing further ` +
         `applies to arrivals beyond the standing advisory level.`,
+      // The prose forms of the two seaArrivalsNeedPermit wrongFields below.
+      `Reference ${reference}: only arrivals by air need an entry permit; sea arrivals are exempt.`,
+      `Reference ${reference}: no entry permit is required.`,
     ];
     localeNotice.alsoCorrect = [
       `Advisory reference: ${reference}\nApplies to sea arrivals: entry permit from ` +
@@ -129,15 +199,36 @@ const localeNotice = {
       requirement:
         'Arrivals by sea must obtain an entry permit from the harbour office at least ' +
         '72 hours before arrival; the north quay is closed and the Ashkar Coast ferry suspended.',
+      seaArrivalsNeedPermit: true,
     };
+    const claim = (requirement, seaArrivalsNeedPermit, advisoryReference = reference) => ({
+      advisoryReference,
+      requirement,
+      seaArrivalsNeedPermit,
+    });
     localeNotice.wrongFields = [
-      { advisoryReference: bumpCode(reference), requirement: fields.requirement },
-      { advisoryReference: reference, requirement: null },
-      { advisoryReference: reference, requirement: 'Nothing applies beyond the standing advisory level.' },
+      claim(fields.requirement, true, bumpCode(reference)),
+      claim(fields.requirement, true, ashkarRef),
+      claim(fields.requirement, true, `${reference} / ${ashkarRef}`),
+      // A hedge whose second code the strict shape misses.
+      claim(fields.requirement, true, `${reference} or ${ashkarRef.replace(/-/g, ' ')}`),
+      claim(null, true),
+      claim(fields.requirement, null),
+      claim('Nothing applies beyond the standing advisory level.', false),
+      // The notice's own air/sea clause swapped, and the permit negated.
+      claim('Only arrivals by air need an entry permit; arrivals by sea are exempt.', false),
+      claim('No entry permit is required; nothing further applies beyond the standing advisory level.', false),
     ];
     localeNotice.alsoCorrectFields = [
       fields,
-      { advisoryReference: reference.toLowerCase(), requirement: 'an entry permit is needed 72 hours ahead' },
+      claim('an entry permit is needed 72 hours ahead', true, reference.toLowerCase()),
+      // No "permit" and no "72" in it, which a keyword test once failed.
+      claim('Sea arrivals need port-entry permission from the harbour office three days in advance.', true),
+      // The reference as it comes out of Japanese text, RTL text and markdown.
+      claim(fields.requirement, true, reference.replace(/-/g, '\uff0d')),
+      claim(fields.requirement, true, `\u200f${reference}\u200e`),
+      claim(fields.requirement, true, `**${reference}**`),
+      claim(fields.requirement, true, `المرجع: ${reference}`),
     ];
     return {
       text: [

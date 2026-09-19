@@ -263,29 +263,72 @@ export function eqEnum(got, want) {
   return normalise(got) === normalise(want);
 }
 
+// What a code picks up on its way into an answer without changing what was
+// read: markdown emphasis, bidi and zero-width marks copied out of RTL text,
+// fullwidth forms copied out of CJK text (NFKC), and Arabic-Indic digits.
+function foldCode(s) {
+  return String(s)
+    .normalize('NFKC')
+    .replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/g, '')
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06f0-\u06f9]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[*_~`]+/g, '')
+    .replace(/[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]/g, '-');
+}
+
 // Server-minted codes (PREFIX-HEX and friends) compare case-, whitespace- and
-// dash-insensitively: the tolerance costs no discrimination because the code
-// body is random. Retires the hand-rolled flat() clones.
+// dash-insensitively, through foldCode, and ignoring punctuation at either end
+// ("AR-4149B7."): the tolerance costs no discrimination because the code body
+// is random. Retires the hand-rolled flat() clones.
 export function eqCode(got, want) {
   if (typeof got !== 'string' || !want) return false;
-  const flat = (s) => String(s).toUpperCase().replace(/[\s‐-―−-]+/g, '');
+  const flat = (s) =>
+    foldCode(s)
+      .toUpperCase()
+      .replace(/[\s-]+/g, '')
+      .replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
   return flat(got) === flat(want);
 }
 
-// Clock times compare numerically: "10:00 a.m.", "10 AM" and "10.00am" all
-// equal '10:00am'; an unmarked "6:30" also matches a pm want, since answers
-// drop the marker when the page's context makes it obvious.
+// The one code of a known shape inside a field, so "Reference AR-4149B7"
+// grades as the code it names. `shape` is matched case-insensitively as a whole
+// token, never as part of a longer code, with any ^/$ anchors dropped. The rest
+// of the field may label the code but not qualify it: a field naming two
+// different codes, or none, comes back unchanged, and so does one whose rest
+// carries any digit, which is how a second code the shape misses shows up ("AR
+// 0892F0", a truncated "AR-0892F"), or negates the code ("not AR-4149B7").
+// eqCode then rejects it as before.
+export function soleCode(got, shape) {
+  if (typeof got !== 'string') return got;
+  const body = shape.source.replace(/^\^/, '').replace(/\$$/, '');
+  const token = new RegExp(`(?<![A-Za-z0-9])(?:${body})(?![A-Za-z0-9])`, 'gi');
+  const folded = foldCode(got);
+  const found = new Set([...folded.matchAll(token)].map((m) => m[0].toUpperCase()));
+  if (found.size !== 1) return got;
+  const rest = folded.replace(token, ' ');
+  if (/\d/.test(rest) || /\b(?:not|never)\b|n't\b/i.test(rest)) return got;
+  return [...found][0];
+}
+
+// Clock times compare numerically: "10:00 a.m.", "10 AM", "10.00am" and
+// "1000" all equal '10:00am'; an unmarked "6:30" also matches a pm want, since
+// answers drop the marker when the page's context makes it obvious. A
+// zero-padded or zero hour ("06:30", "00:45") is a 24-hour time, and so is
+// marked: it never takes the twelve-hour allowance.
 export function eqTime(got, want) {
   const parse = (s) => {
     if (typeof s !== 'string') return null;
-    const m = normalise(s).match(/(\d{1,2})(?:[:.](\d{2}))?\s*(a\.?\s?m\.?|p\.?\s?m\.?)?/);
+    const m = normalise(s).match(
+      /(?<!\d)(\d{1,2})(?:[:.]?(\d{2}))?(?!\d)\s*(a\.?\s?m\.?|p\.?\s?m\.?)?/
+    );
     if (!m) return null;
     let h = Number(m[1]);
     const min = Number(m[2] ?? 0);
     const marker = m[3]?.[0] ?? null;
     if (marker === 'p' && h < 12) h += 12;
     if (marker === 'a' && h === 12) h = 0;
-    return { mins: h * 60 + min, marked: marker !== null };
+    const twentyFour = marker === null && (m[1].startsWith('0') || h === 0);
+    return { mins: h * 60 + min, marked: marker !== null || twentyFour };
   };
   const g = parse(got);
   const w = parse(want);
@@ -303,19 +346,30 @@ export function normaliseWords(s) {
   return ' ' + normalise(String(s)).replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
 }
 
+export const MONTH_NAMES = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
+];
+const MONTH_ABBREVIATIONS = Object.fromEntries([
+  ...MONTH_NAMES.filter((m) => m !== 'may').map((m) => [m.slice(0, 3), m]),
+  ['sept', 'september'],
+]);
+
 // normaliseWords for a date, folding the day forms an agent (or the extractor
-// quoting one) plausibly writes: "June 12th", "the 12th of June" and "12 June"
-// all reduce to the same tokens as "June 12". A bare whole-word test for the
-// day number rejects every ordinal form otherwise, failing a correct "June
-// 12th". The fold lives here so every date-graded task inherits it instead of
-// reinventing it privately.
+// quoting one) plausibly writes: "June 12th", "the 12th of June", "the 12th day
+// of June", "12 June", "Jun 12" and "12-Jun" all reduce to the same tokens as
+// "June 12". A bare whole-word test for the day number rejects every ordinal
+// form otherwise, failing a correct "June 12th", and a month-name test rejects
+// every abbreviation. The fold lives here so every date-graded task inherits it
+// instead of reinventing it privately.
 export function normaliseDateWords(s) {
-  return normaliseWords(
+  const words = normaliseWords(
     String(s)
       .replace(/(\d{1,2})(st|nd|rd|th)\b/gi, '$1')
       .replace(/\bthe\s+(\d{1,2})\b/gi, '$1')
-      .replace(/\b(\d{1,2})\s+of\s+/gi, '$1 ')
+      .replace(/\b(\d{1,2})\s+(?:day\s+)?of\s+/gi, '$1 ')
   );
+  return words.replace(/ [a-z]+(?= )/g, (w) => ` ${MONTH_ABBREVIATIONS[w.slice(1)] ?? w.slice(1)}`);
 }
 
 // Person names compare order-free ("Quill, Dana" names Dana Quill) and

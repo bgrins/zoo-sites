@@ -160,7 +160,8 @@ Declarations on this form are no longer accepted at any office or by mail.</p>
 );
 
 export function routes(ctx) {
-  const { json, readJson, requireSession, sitePath } = ctx;
+  const { json, readJson, requireSession, sitePath, fromPage } = ctx;
+  const govFromPage = fromPage('/gov/');
   return async (req, res, url, pathname0) => {
     // T047 search-decoy: pages/gov/search.html renders this ranking client-side.
     // The query is logged on the session (not in a global bucket) so a stray
@@ -182,10 +183,12 @@ export function routes(ctx) {
 
     // T044/T045/T047: the page-JS half of the gov navigation gates. The static
     // handler records the document navigation (path taken from the request); this
-    // records that the page's own script ran in the same session, which needs the
-    // session cookie, the session nonce and the per-path token the server
-    // substituted into that page's body. The path is claimed by the client but is
-    // worthless without the token minted for it.
+    // records that something holding the session cookie posted the session nonce
+    // and the per-path token the server substituted into that page's body:
+    // normally the page's own script, but a shell that scraped the token out of
+    // the body it fetched can post it too. The path is claimed by the client but
+    // is worthless without the token minted for it. `fromPage` is legibility,
+    // never proof (curl sets the headers it reads).
     if (req.method === 'POST' && pathname0 === '/api/gov/page-view') {
       let payload = await readJson(req, res);
       if (payload === undefined) return;
@@ -199,7 +202,7 @@ export function routes(ctx) {
       if (!want || want !== payload?.token) {
         return json(res, 403, { error: 'page token required' });
       }
-      (found.session.govViews ??= []).push({ path, at: Date.now() });
+      (found.session.govViews ??= []).push({ path, at: Date.now(), fromPage: govFromPage(req) });
       return json(res, 200, { ok: true });
     }
 
@@ -280,8 +283,11 @@ export function documents(ctx) {
       // identity comes from the request path rather than from anything a client
       // claims in a beacon body, and an in-page fetch() cannot set the
       // sec-fetch-* headers (forbidden header names) so it never lands here.
-      // `curl -H` CAN, which is why the validators require this record and the
-      // page-JS beacon on the same session, and report a nav with no beacon.
+      // `curl -H` CAN, and the same shell can then post the beacon with the
+      // token from the body it got, so the validators' pairing of this record
+      // with the beacon on one session proves a navigation-shaped request whose
+      // body reached a cookie holder, not a rendering browser. They report a nav
+      // with no beacon, and a beacon without fetch metadata, in `detail`.
       // Framed loads do not count.
       if (pathname.startsWith('/gov/') && nav.document) {
         (found.session.govNav ??= []).push({ path: pathname, at: Date.now() });

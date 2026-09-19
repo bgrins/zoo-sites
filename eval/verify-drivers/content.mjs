@@ -50,7 +50,8 @@ export const DRIVERS = {
       const rv7 = uidOf(home, 'a "Form RV-7"');
       if (!rv7) throw new Error('no "Form RV-7" link in the gov home snapshot');
       await mcp('click_by_uid', { uid: rv7 });
-      await atPath(evaluate, '/gov/rv7.html');
+      // Unprefixed, because --origins serves the Bureau at its origin's root.
+      await atPath(evaluate, '/rv7.html');
       // The deadline sits mid-paragraph. Snapshot node text is capped at 100
       // chars and then truncated to 30 for display, so it cannot carry the
       // sentence — reading the page text is the only route.
@@ -68,6 +69,8 @@ export const DRIVERS = {
       this.wrongFields = [
         { filingDeadline: 'April 15', instructionsUrl: url },
         { filingDeadline: deadline[1], instructionsUrl: deadlinesUrl },
+        { filingDeadline: 'June 30', instructionsUrl: url },
+        { filingDeadline: 'May 12 to June 30', instructionsUrl: url },
       ];
       this.alsoCorrectFields = [
         fields,
@@ -76,6 +79,9 @@ export const DRIVERS = {
         // bare ' 12 ' token test rejects every one of these.
         { filingDeadline: 'June 12th', instructionsUrl: url },
         { filingDeadline: 'the 12th of June', instructionsUrl: url },
+        { filingDeadline: 'the 12th day of June', instructionsUrl: url },
+        { filingDeadline: 'Jun 12', instructionsUrl: url },
+        { filingDeadline: '12-Jun', instructionsUrl: url },
       ];
       this.wrong = [
         `Form RV-7 is due April 15, the general filing-season close, and the ` +
@@ -130,10 +136,12 @@ export const DRIVERS = {
         throw new Error(`unexpected Harborview Thursday hours: "${hours}"`);
       }
       const fields = { opensAt: '10:00 am', closesAt: '6:30 pm' };
-      // The host page's general hours are the decoy the iframe supersedes.
+      // The host page's general hours are the decoy the iframe supersedes, and
+      // each half of it is paired with the right other half.
       this.wrongFields = [
         { opensAt: '8:30 am', closesAt: '4:30 pm' },
         { opensAt: '10:00 am', closesAt: '4:30 pm' },
+        { opensAt: '8:30 am', closesAt: '6:30 pm' },
       ];
       this.alsoCorrectFields = [
         fields,
@@ -245,7 +253,7 @@ export const DRIVERS = {
       const months = 2;
       const perMonth = Math.max(base * rate, floor);
       const total = base + perMonth * months;
-      // Deliberate pin, not tracking: ANSWERS.feeSchedule fixes 209, and a
+      // Deliberate pin, not tracking: ANSWERS.gov.rv7LateTotal fixes 209, and a
       // fee-table edit must fail HERE with the arithmetic in hand rather than
       // downstream in the validator. Changing the table means changing both.
       if (total !== 209) throw new Error(`computed total ${total}, expected 209`);

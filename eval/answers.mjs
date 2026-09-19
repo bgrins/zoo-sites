@@ -106,12 +106,14 @@ export const ANSWERS = {
 
   // pages/gov/rv7.html; schedule-widget.html (iframe); handbook.html section
   // 22; fee-schedule.html (RV-7 base $185 + 2 months at the $12/mo minimum
-  // surcharge per footnote = $209.00, never stated in fixture source).
+  // surcharge per footnote = $209.00, never stated in fixture source). The
+  // deadline is also repeated, as a cross-reference to rv7.html, on
+  // rv7-instructions.html; the two copies must agree.
   gov: {
     deadline: 'June 12',
     instructionsPath: 'rv7-instructions',
-    harborviewThursday: '10:00 am – 6:30 pm',
-    handbookRetention: '7 years',
+    harborviewThursday: { opens: '10:00 am', closes: '6:30 pm' },
+    handbookRetentionYears: 7,
     rv7LateTotal: '209.00',
   },
 
@@ -126,11 +128,19 @@ export const ANSWERS = {
       '/gov/departments/assessment-standards/field-operations/ground-works/subsurface-permits.html',
     siblingPath:
       '/gov/departments/assessment-standards/field-operations/ground-works/surface-permits.html',
-    subsurfaceHours: 'Tue & Thu 9:15 AM - 12:45 PM',
+    // The desk page prints 'Tue & Thu 9:15 AM - 12:45 PM'.
+    subsurfaceHours: { days: ['tuesday', 'thursday'], opens: '9:15 AM', closes: '12:45 PM' },
     subsurfacePhone: '(555) 014-3391',
     surfacePhone: '(555) 014-8862',
     rv7Mailing: 'Bureau of Civic Revenue, Declarations Unit, PO Box 4410, Statehouse Plaza Station',
+    // The parts of rv7Mailing the validator requires, and the words only the
+    // RV-7A address, which the search ranks first, carries. The unit is
+    // matched by its full name because the RV-7 page itself warns against the
+    // "amendments annex".
+    rv7Box: '4410',
+    rv7Station: 'Statehouse Plaza',
     rv7aDecoyMailing: 'Bureau of Civic Revenue, Amendments Section, PO Box 7 A, Substation Annex',
+    rv7aDecoyWords: ['amendments section', 'box 7 a', 'box 7a', 'substation annex'],
     rv3Revision: '11/2019',
   },
 
@@ -337,11 +347,12 @@ export const ANSWERS = {
 
   // pages/intl/ — Qandara Travel Advisory Authority, published as three editions
   // (English, Arabic, Japanese) that are updated independently. The supplementary
-  // notices live only in server.mjs and only the Arabic and Japanese editions ever
-  // carried them, so the English edition is genuinely incomplete rather than
+  // notices live only in sites/intl.mjs and only the Arabic and Japanese editions
+  // ever carried them, so the English edition is genuinely incomplete rather than
   // merely harder to read. Each reference is a per-session randomBytes value on
   // session.intl, which is what the validator reads out of ctx.pages.state; only
-  // the shapes and the human-readable facts are recorded here, for QA.
+  // the shapes and the human-readable facts are recorded here. The validator
+  // reads `dest` and `referencePattern`; the rest is for QA.
   localeNotice: {
     dest: 'port-vasiri',
     publishedIn: ['ar', 'ja'],
@@ -815,12 +826,11 @@ export const ANSWERS = {
 
   // pages/roles/ — the Alderpost vacancy desk (faceted-search). The 86-vacancy
   // catalogue, the client brief, the winning facet combination and every
-  // vacancy reference are minted per session in server.mjs and exist nowhere
-  // under pages/; the validator reads the drawn target back out of
-  // ctx.pages.state. All this entry holds is the fixture's fixed shapes, used
-  // for human QA and for the one judgment call the validator makes: how many
-  // OTHER vacancy references an answer may quote before it stops being an
-  // answer and becomes a list of the catalogue.
+  // vacancy reference are minted per session in sites/roles.mjs and exist
+  // nowhere under pages/; the validator reads the drawn target back out of
+  // ctx.pages.state. All this entry holds is the fixture's fixed shapes, for
+  // human QA, and the reference shape the validator uses to take the code out
+  // of a claimed "Reference AR-...".
   facetedSearch: {
     catalogue: 86,
     pageSize: 10,

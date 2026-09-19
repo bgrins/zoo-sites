@@ -6,13 +6,74 @@
 import { originUrls } from '../../../manifest.mjs';
 import { ANSWERS } from '../../answers.mjs';
 import {
+  MONTH_NAMES,
   eqCode,
   eqMoney,
   eqTime,
   normalise,
   normaliseDateWords,
   normaliseWords,
+  soleCode,
 } from '../../extract.mjs';
+
+const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const RANGE_WORDS = /\b(?:to|through|thru|till?|until)\b/;
+// The only marks that may separate two days of a list.
+const LIST_MARKS = /^[\s,&/+;:|()[\]'"、・]*$/;
+const CLOCK = String.raw`\d{1,2}(?:[:.]?\d{2})?\s*(?:[ap]\.?\s?m\b\.?)?`;
+// A time, or a span of two, inside a day item ("Tue & Thu 9:15 AM - 12:45 PM").
+const CLOCK_SPAN = new RegExp(`${CLOCK}(?:\\s*(?:-|~|〜|to|till?|until)\\s*${CLOCK})?`, 'g');
+
+// The set of weekdays an extracted list names, however the answer grouped,
+// shortened or qualified them: ['Tuesday and Thursday'], ['Tue & Thu 9:15 AM -
+// 12:45 PM'], ['Tu', 'Th'] and ['Tuesday mornings', 'Thursday mornings'] all
+// name tuesday and thursday. Words that are not days are skipped, and so are
+// times. Between two days only a list mark or a word may sit; a range word or
+// any other mark ("Tue - Thu", "Tuesday to Thursday", "Tue ~ Thu", "Tue → Thu")
+// makes the list unreadable (null), so a range never collapses into its two
+// endpoints.
+function weekdaysOf(items) {
+  if (!Array.isArray(items)) return null;
+  const days = new Set();
+  for (const item of items) {
+    if (typeof item !== 'string') return null;
+    const text = item
+      .normalize('NFKC')
+      .toLowerCase()
+      .replace(/[*_`]+/g, '')
+      .replace(/[‐-―−]/g, '-')
+      .replace(/\d+(?:st|nd|rd|th)\b/g, ' ')
+      .replace(CLOCK_SPAN, ' ')
+      .replace(/([a-z])\.(?!\.)/g, '$1');
+    // What sits between the previous day and this part; null before the first day.
+    let gap = null;
+    for (const [part] of text.matchAll(/[a-z]+|[^a-z]+/g)) {
+      const stem = part.replace(/s$/, '');
+      const day =
+        /^[a-z]/.test(part) &&
+        stem.length >= 2 &&
+        WEEKDAYS.find((d) => d.startsWith(part) || d.startsWith(stem));
+      if (!day) {
+        if (gap !== null) gap += /^[a-z]/.test(part) ? ` ${part} ` : part;
+        continue;
+      }
+      if (gap !== null && (RANGE_WORDS.test(gap) || !LIST_MARKS.test(gap.replace(/[a-z0-9]+/g, ' ')))) {
+        return null;
+      }
+      days.add(day);
+      gap = '';
+    }
+  }
+  return days;
+}
+
+// Telemetry for the gov page gates: page-view beacons for `path` whose POST
+// carried neither the browser's same-origin fetch metadata nor a Referer.
+const beaconsOffPage = (sessions, path) =>
+  sessions.reduce(
+    (n, s) => n + (s.govViews ?? []).filter((v) => v.path === path && v.fromPage === false).length,
+    0
+  );
 
 export async function navigationTasks(base, origins = originUrls(base)) {
   return [
@@ -32,10 +93,12 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (text, ctx, fields) => {
-        // Date compared by tokens so "June 12" and "12 June" both name it, and
-        // through the shared ordinal fold so "June 12th" does too.
+        // Month and day must sit next to each other, in either order, so "June
+        // 12" and "12 June" both name it and "May 12 to June 30" does not; the
+        // shared fold turns "June 12th" and "Jun 12" into the same tokens.
+        const [month, day] = normaliseDateWords(ANSWERS.gov.deadline).trim().split(' ');
         const d = normaliseDateWords(fields?.filingDeadline ?? '');
-        const dateOk = d.includes(' june ') && d.includes(' 12 ');
+        const dateOk = d.includes(` ${month} ${day} `) || d.includes(` ${day} ${month} `);
         const urlOk =
           typeof fields?.instructionsUrl === 'string' &&
           fields.instructionsUrl.toLowerCase().includes(ANSWERS.gov.instructionsPath);
@@ -91,37 +154,58 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         const sessions = [...ctx.pages.state.sessions.values()];
         // Two server-observed factors on ONE session: the static handler recorded
         // a document navigation to the desk path (path taken from the request, so
-        // it cannot be claimed), and that page's own script posted the per-path
-        // token the server substituted into the body it served. sec-fetch-* is a
-        // forbidden header for fetch() but `curl -H` sets it freely, so the
-        // navigation record alone proves only "not an in-page fetch"; the pair is
-        // the repo's live-session baseline (cookie + nonce + per-page token). It
-        // is also what makes the near-miss desks ("Subsurface Utility Notices" in
+        // it cannot be claimed), and a page-view beacon carried the per-path token
+        // the server substituted into the body it served. sec-fetch-* is a
+        // forbidden header for fetch(), so the record rules out an in-page fetch,
+        // but `curl -H` sets it freely and the same shell can scrape the token and
+        // post the beacon: the pair proves a navigation-shaped request whose body
+        // reached a cookie holder, not a rendering browser, and beaconsOffPage in
+        // detail shows a beacon sent without the browser's fetch metadata. It is
+        // also what makes the near-miss desks ("Subsurface Utility Notices" in
         // another division) an auto-fail: different path, different hours.
         const navHit = (s) => (s.govNav ?? []).some((n) => n.path === g.deskPath);
         const viewHit = (s) => (s.govViews ?? []).some((v) => v.path === g.deskPath);
         const winners = sessions.filter((s) => navHit(s) && viewHit(s));
-        // A navigation record with no matching beacon is the signature of a
-        // forged-header request; reported so a suspicious pass is visible.
+        // Telemetry: a navigation record with no matching beacon is what a
+        // forged-header request that never posted the beacon leaves behind.
         const navOnly = sessions.filter((s) => navHit(s) && !viewHit(s)).length;
-        // "Tuesday and Thursday" and "Tue & Thu" are the same right answer;
-        // eqTime handles the European dot notation.
-        const open = eqTime(fields?.opensAt, '9:15am');
-        const close = eqTime(fields?.closesAt, '12:45pm');
-        const gotDays = Array.isArray(fields?.daysOpen) ? fields.daysOpen : [];
-        const hasDay = (prefix) =>
-          gotDays.some((d) => typeof d === 'string' && normalise(d).startsWith(prefix));
-        const days = gotDays.length === 2 && hasDay('tue') && hasDay('thu');
+        // The ask is to navigate the directory to the desk, so every index page
+        // above the desk must have been requested during the run, in some
+        // session. htmlGets is every HTML GET a session made, so a request from
+        // in-page script counts, and so does one from a shell: curl with no
+        // cookie jar mints a session per request, and a scripted crawl of the
+        // directory is a route the eval measures rather than fails. What fails
+        // is a desk reached with no walk at all, such as a URL lifted from grep
+        // of pages/.
+        const tree = g.deskPath.split('/').slice(2, -1);
+        const ancestors = tree.map((_, i) => `/gov/${tree.slice(0, i + 1).join('/')}/index.html`);
+        const fetched = (s, a) => (s.htmlGets?.[a] ?? 0) > 0;
+        const descended = ancestors.every((a) => sessions.some((s) => fetched(s, a)));
+        // Telemetry: whether the session that visited the desk walked the tree
+        // itself, or the walk came from other cookies.
+        const descent = !descended
+          ? 'none'
+          : winners.some((s) => ancestors.every((a) => fetched(s, a)))
+            ? 'one-session'
+            : 'cross-session';
+        const want = g.subsurfaceHours;
+        const open = eqTime(fields?.opensAt, want.opens);
+        const close = eqTime(fields?.closesAt, want.closes);
+        const gotDays = weekdaysOf(fields?.daysOpen);
+        const days =
+          !!gotDays && gotDays.size === want.days.length && want.days.every((d) => gotDays.has(d));
+        // Telemetry: every directory page the run opened, detours included.
         const walked = sessions.reduce(
           (n, s) =>
             n + (s.govNav ?? []).filter((x) => x.path.startsWith('/gov/departments/')).length,
           0
         );
         return {
-          pass: winners.length > 0 && open && close && days,
+          pass: winners.length > 0 && descended && open && close && days,
           detail:
-            `deskVisits=${winners.length} navWithoutPageJs=${navOnly} open=${open} ` +
-            `close=${close} days=${days} treePagesOpened=${walked} ` +
+            `deskVisits=${winners.length} descent=${descent} navWithoutPageJs=${navOnly} ` +
+            `beaconsOffPage=${beaconsOffPage(sessions, g.deskPath)} ` +
+            `open=${open} close=${close} days=${days} treePagesOpened=${walked} ` +
             `fields=${JSON.stringify(fields)}`,
         };
       },
@@ -153,9 +237,11 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         // the field names the target desk by construction, so handing the
         // start desk's number to the target is a wrong VALUE (the decoy digits
         // fail numerically) and the per-clause machinery is gone.
+        // The seven local digits, so the area code is optional.
+        const local = (phone) => phone.replace(/\D/g, '').slice(-7);
         const digits = String(fields?.telephoneNumber ?? '').replace(/\D/g, '');
-        const wanted = digits.includes('0148862');
-        const decoy = digits.includes('0143391');
+        const wanted = digits.includes(local(g.surfacePhone));
+        const decoy = digits.includes(local(g.subsurfacePhone));
         // Efficiency only, never scored: a session that walked back to the
         // directory root took the long way round instead of using breadcrumbs.
         const viaRoot = sessions.some((s) =>
@@ -164,7 +250,8 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         return {
           pass: winners.length > 0 && wanted && !decoy,
           detail:
-            `siblingVisits=${winners.length} navWithoutPageJs=${navOnly} has8862=${wanted} ` +
+            `siblingVisits=${winners.length} navWithoutPageJs=${navOnly} ` +
+            `beaconsOffPage=${beaconsOffPage(sessions, g.siblingPath)} hasNumber=${wanted} ` +
             `decoy=${decoy} viaDirectoryRoot=${viaRoot} fields=${JSON.stringify(fields)}`,
         };
       },
@@ -180,7 +267,9 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         properties: {
           mailingAddress: {
             type: ['string', 'null'],
-            description: 'the full mailing address for submitting Form RV-7',
+            description:
+              'the full mailing address for submitting Form RV-7, the address only: leave out ' +
+              'any remark about another form or its address',
           },
         },
       },
@@ -207,16 +296,21 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         // The field is RV-7's address by construction, so the swap this task
         // measures (handing RV-7 the annex box) is a wrong VALUE and the
         // per-clause attribution machinery is gone. "PO Box 4410", "P.O. Box
-        // 4410" and "Box 4410" all count; the annex box fails.
+        // 4410" and "Box 4410" all count, with the station the ask's "full"
+        // address needs; any part of the RV-7A address, its unit included, fails.
+        const g = ANSWERS.govNav;
         const addr = normaliseWords(fields?.mailingAddress ?? '');
-        const box = /(?<!\d)4410(?!\d)/.test(addr) && addr.includes(' box ');
-        const decoyAddr = / box 7 a | box 7a |substation annex/.test(addr);
+        const box = new RegExp(`(?<!\\d)${g.rv7Box}(?!\\d)`).test(addr) && addr.includes(' box ');
+        const station = addr.includes(normaliseWords(g.rv7Station));
+        const decoyAddr = g.rv7aDecoyWords.some((w) => addr.includes(normaliseWords(w)));
         return {
-          pass: gate !== 'none' && box && !decoyAddr,
+          pass: gate !== 'none' && box && station && !decoyAddr,
           detail:
             `gate=${gate} searches=${searches} openedRV7Instructions=${openedTruth.length} ` +
-            `openedRV7A=${openedDecoy.length} hasBox4410=${box} decoyAddr=${decoyAddr} ` +
-            `fields=${JSON.stringify(fields)}`,
+            `openedRV7A=${openedDecoy.length} ` +
+            `beaconsOffPage=${beaconsOffPage(sessions, '/gov/rv7-instructions.html')} ` +
+            `hasBox=${box} hasStation=${station} ` +
+            `decoyAddr=${decoyAddr} fields=${JSON.stringify(fields)}`,
         };
       },
     },
@@ -247,9 +341,28 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         const bounces = sessions.reduce((n, s) => n + (s.rv3?.bounces ?? 0), 0);
         const notices = sessions.reduce((n, s) => n + (s.rv3?.interstitials ?? 0), 0);
         const cold = sessions.reduce((n, s) => n + (s.rv3?.cold ?? 0), 0);
-        // "11/2019" and "November 2019" name the same revision.
-        const d = normaliseWords(fields?.revisionDate ?? '');
-        const rev = d.includes(' 2019 ') && (d.includes(' 11 ') || d.includes(' nov ') || d.includes(' november '));
+        // "11/2019", "2019-11", "Nov 2019" and "November 2019" name the same
+        // revision. The claim is each month bound to the revision year: named
+        // or numbered just before it, named with a day between ("March 11,
+        // 2019"), or numbered just after it ("2019-11"). Every one must be the
+        // right month, so "March 11, 2019" and a hedge between two 2019 months
+        // fail, and so does "3/11/2019", where either number could be the
+        // month; a month bound to another year ("supersedes Mar 2017") is not
+        // the claim.
+        const [mm, yyyy] = ANSWERS.govNav.rv3Revision.split('/').map(Number);
+        const words = normaliseDateWords(fields?.revisionDate ?? '').trim().split(' ');
+        const named = (w) => MONTH_NAMES.indexOf(w) + 1 || null;
+        const num = (w) => (/^\d{1,2}$/.test(w ?? '') ? Number(w) : null);
+        const monthNum = (w) => (num(w) >= 1 && num(w) <= 12 ? num(w) : null);
+        const bound = words.flatMap((w, i) => {
+          if (w !== String(yyyy)) return [];
+          const [before2, before, after] = [words[i - 2], words[i - 1], words[i + 1]];
+          if (named(before)) return [named(before)];
+          if (num(before) && named(before2)) return [named(before2)];
+          if (monthNum(before)) return [monthNum(before2) ? NaN : monthNum(before)];
+          return monthNum(after) ? [monthNum(after)] : [];
+        });
+        const rev = bound.length > 0 && bound.every((m) => m === mm);
         return {
           pass: served.length > 0 && rev,
           detail:
@@ -273,7 +386,7 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (text, ctx, fields) => ({
-        pass: fields?.retentionYears === 7,
+        pass: fields?.retentionYears === ANSWERS.gov.handbookRetentionYears,
         detail: `fields=${JSON.stringify(fields)}`,
       }),
     },
@@ -291,8 +404,9 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (text, ctx, fields) => {
-        const opensOk = eqTime(fields?.opensAt, '10:00am');
-        const closesOk = eqTime(fields?.closesAt, '6:30pm');
+        const want = ANSWERS.gov.harborviewThursday;
+        const opensOk = eqTime(fields?.opensAt, want.opens);
+        const closesOk = eqTime(fields?.closesAt, want.closes);
         return {
           pass: opensOk && closesOk,
           detail: `opensOk=${opensOk} closesOk=${closesOk} fields=${JSON.stringify(fields)}`,
@@ -315,13 +429,11 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (rawText, ctx, fields) => {
-        // Emphasis marks stripped and the Unicode dash family folded, because a
-        // reported reference turns up as **AR-4149B7** and AR–4149B7 alike.
-        const text = rawText
-          .replace(/[*_~`\\]+/g, '')
-          .replace(/[\u2010-\u2015\u2212\u00ad]/g, '-')
-          .replace(/[\u200b-\u200d\u2060\ufeff]/g, '');
-        const cites = (ref) => !!ref && eqCode(fields?.reference, ref);
+        // A reported reference turns up as **AR-4149B7**, AR–4149B7 and
+        // "Reference AR-4149B7" alike; eqCode folds the first two and soleCode
+        // takes the code out of the third.
+        const claimed = soleCode(fields?.reference, ANSWERS.facetedSearch.referencePattern);
+        const cites = (ref) => !!ref && eqCode(claimed, ref);
         const desks = [...ctx.pages.state.sessions.values()].map((s) => s.roles).filter(Boolean);
         // Every session mints its OWN catalogue, brief and references, so a curl
         // probe and the browser run are graded against different ground truth.
@@ -343,7 +455,9 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         // The field is the single claimed reference, so the shotgun/targetLast
         // machinery (which rejects normal reviewing prose) is unrepresentable:
         // quoting rejected references in prose costs nothing, claiming one as the
-        // answer is a wrong value.
+        // answer is a wrong value. References are unique per desk, so `reported`
+        // already excludes a decoy; this conjunct is defence in depth that names
+        // the decoy in `detail`.
         const decoyClaimed = graded
           ? graded.postings.filter((p) => p.id !== graded.targetId && cites(p.ref)).map((p) => p.ref)
           : [];
@@ -421,21 +535,18 @@ export async function navigationTasks(base, origins = originUrls(base)) {
               'language edition states a requirement, even if it notes the ' +
               'English page shows none',
           },
+          seaArrivalsNeedPermit: {
+            type: ['boolean', 'null'],
+            description:
+              'true if the answer says travellers arriving by sea need an entry ' +
+              'permit or other clearance from the harbour or port office before ' +
+              'they arrive; false if it says arrivals by sea need none; null if it ' +
+              'does not say',
+          },
         },
       },
       validate: (text, ctx, fields) => {
-        // Strip markdown emphasis and fold the unicode dash family onto '-', so a
-        // prettified reference still reads as the reference it is. This answer is
-        // copied out of an RTL run or out of Japanese text, so the reference token
-        // itself routinely picks up a bidi mark, a zero-width space, a fullwidth
-        // hyphen or Arabic-Indic digits on the way out — none of which change what
-        // the agent read.
-        const clean = String(text)
-          .replace(/[*_~`]+/g, '')
-          .replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/g, '')
-          .replace(/[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]/g, '-')
-          .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
-          .replace(/[\u06f0-\u06f9]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
+        const dest = ANSWERS.localeNotice.dest;
         const sessions = [...ctx.pages.state.sessions.values()];
         const sum = (pick) => sessions.reduce((n, s) => n + (s.intl ? pick(s.intl) : 0), 0);
         const editions = ['en', 'ar', 'ja']
@@ -448,7 +559,7 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         const releases = sessions
           .flatMap((s) =>
             (s.intl?.releases ?? [])
-              .filter((r) => r.dest === 'port-vasiri' && r.locale !== 'en')
+              .filter((r) => r.dest === dest && r.locale !== 'en')
               .map((r) => ({ ...r, refs: s.intl.refs }))
           )
           .sort((a, b) => b.at - a.at);
@@ -464,36 +575,40 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         // (a curl probe, a re-minted cookie), and an agent that re-checks its work
         // afterwards leaves a newer release carrying a different reference; fall
         // back to the newest so an answer with no reference still reports one.
-        const cleanRef = (v) =>
-          String(v ?? '')
-            .replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/g, '')
-            .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
-            .replace(/[\u06f0-\u06f9]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
-        const carries = (ref) => eqCode(cleanRef(fields?.advisoryReference), ref);
+        // The reference is copied out of RTL or Japanese text, so it arrives with
+        // bidi marks, fullwidth hyphens or Arabic-Indic digits; eqCode folds
+        // those, and soleCode takes it out of "المرجع: QTA-2026-1A2B".
+        const claimed = soleCode(fields?.advisoryReference, ANSWERS.localeNotice.referencePattern);
+        const carries = (ref) => eqCode(claimed, ref);
         const record = releases.find((r) => carries(r.reference)) ?? releases[0];
         const refOk = carries(record.reference);
         // The one wrong answer this task must not hand out is "nothing applies
-        // beyond the standing advisory".
+        // beyond the standing advisory". The colleagues arrive by sea, so the
+        // claim graded is the one the notice makes about sea arrivals, as its
+        // own field: a keyword test over the requirement passed "no permit is
+        // needed" and the notice's own air/sea clause swapped.
         const requirement = String(fields?.requirement ?? '');
-        const requirementOk =
-          requirement.length > 0 &&
-          (/(^|[^\d])72([^\d]|$)/.test(requirement) ||
-            /permit|licen[cs]e|authoris|authoriz|clearance/i.test(requirement));
-        // Every destination's reference is minted at session start, so this list is
-        // populated whether or not the agent ever opened the other destination
-        // and the signal below means what it says. With the reference a single
-        // claimed field, quoting another destination's reference in prose costs
-        // nothing; CLAIMING one is a wrong value.
+        const requirementOk = requirement.length > 0 && fields?.seaArrivalsNeedPermit === true;
+        // Telemetry: whether the prose mentions the permit or the 72 hours, so a
+        // run whose extraction nulled the sea-arrival claim is visible as such.
+        const prose = normalise(text);
+        // Telemetry too, since refOk already fails it. Every destination's
+        // reference is minted at session start, so this list is populated whether
+        // or not the agent ever opened the other destination and the signal below
+        // means what it says. With the reference a single claimed field, quoting
+        // another destination's reference in prose costs nothing; CLAIMING one is
+        // a wrong value.
         const decoys = Object.entries(record.refs)
-          .filter(([dest]) => dest !== 'port-vasiri')
+          .filter(([d]) => d !== dest)
           .map(([, ref]) => ref);
         const detail =
           `reference=${record.reference} readIn=${record.locale} ` +
           `translatedReads=${releases.length} ` +
           `localesRead=${[...new Set(releases.map((r) => r.locale))].join('+')} ` +
           `${editions} sessions=${sessions.length} answerCarriesReference=${refOk} ` +
-          `mentions72Hours=${/(^|[^\d])72([^\d]|$)/.test(clean)} ` +
-          `mentionsPermit=${/permit|licen[cs]e|authoris|authoriz|clearance/i.test(clean)} ` +
+          `seaArrivalsNeedPermit=${fields?.seaArrivalsNeedPermit ?? null} ` +
+          `mentions72Hours=${/(^|[^\d])72([^\d]|$)/.test(prose)} ` +
+          `mentionsPermit=${/permit|licen[cs]e|authoris|authoriz|clearance/.test(prose)} ` +
           `namesAnotherDestinationsReference=${decoys.some((ref) => carries(ref))}`;
         if (!refOk) {
           return {

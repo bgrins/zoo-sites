@@ -14,7 +14,8 @@
 //   - every href is absolutized and cut at 27 chars, so a result row's vacancy
 //     id is unreadable and the link has to be clicked rather than followed.
 
-import { esc, snapText, uidOf, until } from './lib.mjs';
+import { randomBytes } from 'node:crypto';
+import { addSession, esc, findSession, snapText, uidOf, until } from './lib.mjs';
 
 const PATH = '/roles/';
 const CHROME_LINKS = /a "(Vacancy search|Clients|Desk notes|Back to vacancy search)"/;
@@ -58,9 +59,46 @@ function bandBounds(label) {
   return { low: numbers[0], high: numbers.length > 1 ? numbers[1] : Infinity };
 }
 
+// A second desk as a curl probe or a re-minted cookie would mint it: the same
+// shape with its own ids and references, and its own target opened.
+function strayDesk(state) {
+  const desk = structuredClone(findSession(state, (s) => s.roles).session.roles);
+  for (const posting of desk.postings) {
+    const id = 'alp-' + randomBytes(3).toString('hex');
+    if (posting.id === desk.targetId) desk.targetId = id;
+    posting.id = id;
+    posting.ref = 'AR-' + randomBytes(3).toString('hex').toUpperCase();
+  }
+  desk.targetRef = desk.postings.find((p) => p.id === desk.targetId).ref;
+  desk.opened = [desk.targetId];
+  return desk;
+}
+
 export const DRIVERS = {
   'faceted-search': {
     note: 'reads the per-session brief, drives four facets, recovers from an empty result set',
+    wrongState: [
+      {
+        name: 'the target record was never opened',
+        mutate: (state) => {
+          const { roles } = findSession(state, (s) => s.roles).session;
+          roles.opened = roles.opened.filter((id) => id !== roles.targetId);
+        },
+      },
+    ],
+    // Minted before and after the golden desk, so neither "first desk" nor
+    // "latest desk to open its target" can stand in for "the desk the answer
+    // quotes".
+    alsoCorrectState: [
+      {
+        name: 'a stray desk minted first opened its own target',
+        mutate: (state) => addSession(state, { roles: strayDesk(state) }, { first: true }),
+      },
+      {
+        name: 'a stray desk minted last opened its own target',
+        mutate: (state) => addSession(state, { roles: strayDesk(state) }),
+      },
+    ],
     async run({ goto, mcp }) {
       await goto(PATH);
       let snap = await until('the desk to answer', async () => {
@@ -220,8 +258,26 @@ export const DRIVERS = {
       ];
 
       const fields = { reference };
-      this.wrongFields = [{ reference: 'AR-0000' }];
-      this.alsoCorrectFields = [fields, { reference: String(reference).toLowerCase() }];
+      this.wrongFields = [
+        { reference: 'AR-0000' },
+        { reference: decoyRef },
+        { reference: `${reference} or ${decoyRef}` },
+        { reference: `${reference}0` },
+        // A hedge whose second code the strict shape misses, and a negation.
+        { reference: `${reference} or ${decoyRef.replace('-', ' ')}` },
+        { reference: `${reference} or ${decoyRef.slice(0, -1)}` },
+        { reference: `not ${reference}` },
+      ];
+      // The wrappers a reference picks up on its way out of an answer.
+      this.alsoCorrectFields = [
+        fields,
+        { reference: String(reference).toLowerCase() },
+        { reference: `**${reference}**` },
+        { reference: `\`${reference}\`` },
+        { reference: `${reference}.` },
+        { reference: `Reference ${reference}` },
+        { reference: String(reference).replace('-', '\uff0d') },
+      ];
       return {
         text:
           `Filtering the desk to ${brief.discipline}, ${brief.base}, ${contractValue} and the ` +
