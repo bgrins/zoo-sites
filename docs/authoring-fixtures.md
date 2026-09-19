@@ -234,13 +234,17 @@ avoid into something measured.
 - **Grade what the ask asks for.** Where the ask names a field, the schema declares it
   and the validator reads it. Where no check reads it, cut it from the ask instead of
   leaving the agent to produce output nothing scores.
-- **Every validator change ships with regression strings.** `eval/verify.mjs` takes
-  `wrong` as a string OR an array (all must FAIL) and `alsoCorrect` as an array (all
-  must PASS) on the task's driver in `eval/verify-drivers/`; schema tasks use
-  `wrongFields` / `alsoCorrectFields`. Add the string FIRST, watch
-  `node eval/verify.mjs --task <id>` go red, then change the validator. A tightening
-  never seen to fail has not been shown to do anything. `docs/process.md` states the
-  full fix-pass method.
+- **Every validator change ships with regression strings.** On the task's driver in
+  `eval/verify-drivers/`, `wrongFields` lists answers that must FAIL and
+  `alsoCorrectFields` answers that must PASS, each graded against the golden run's
+  server state. A server-state conjunct or a cross-session hole needs the state
+  varied instead: `wrongState` (all must FAIL) and `alsoCorrectState` (all must
+  PASS) take `{ name, mutate(state), fields? }` cases, and each case grades its own
+  copy of that state, planted through the helpers in `eval/verify-drivers/lib.mjs`.
+  The prose `wrong` / `alsoCorrect` strings run only under the paid `--extract`.
+  Add the assertion FIRST, watch `node eval/verify.mjs --task <id>` go red, then
+  change the validator. A tightening never seen to fail has not been shown to do
+  anything. `docs/process.md` states the full fix-pass method.
 
 ## Prove the fixture works, not that the surface can win it
 
@@ -249,9 +253,13 @@ driver in `eval/verify-drivers/` navigates and acts through the same
 `firefox-devtools-mcp` server the condition uses, and returns the answer text a
 correct agent would produce. Read `eval/verify-drivers/probes.mjs` (the driver
 contract), `eval/verify-drivers/lib.mjs` (`until`, `clickToPath`, `uidOf`,
-`snapText`, `bumpCode`) and `eval/verify-drivers/registrar.mjs` (shadowing probe,
-confirm dead end, uid clicks), write your driver in the same shape, and run
-`node eval/verify.mjs --task <your-id>`.
+`snapText`, `bumpCode`, and `addSession`, `findSession`, `addBeacon` for state
+cases) and `eval/verify-drivers/registrar.mjs` (shadowing probe, confirm dead end,
+uid clicks), write your driver in the same shape, and run
+`node eval/verify.mjs --task <your-id>`. Add `--origins` to drive it with every site
+on its own port, the shape the container serves. That flag maps where the driver
+navigates, not what it answers, so a driver whose answer names a URL reads it off the
+page (`location.href`) rather than building it from `base`.
 
 What green means: **the site behaves correctly and its server-side state lands**.
 It does NOT mean the task is winnable through the snapshot. That is the result the

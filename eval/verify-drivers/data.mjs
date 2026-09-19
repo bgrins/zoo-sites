@@ -10,7 +10,7 @@
 //     14") and, on a 127.0.0.1:PORT origin, the whole path of an href.
 
 import { ANSWERS } from '../answers.mjs';
-import { bumpCode, clickToPath, esc, uidOf, until } from './lib.mjs';
+import { addSession, bumpCode, clickToPath, esc, findSession, uidOf, until } from './lib.mjs';
 
 function uidFor(snap, pattern, label) {
   const uid = uidOf(snap, pattern);
@@ -630,6 +630,41 @@ export const DRIVERS = {
       'word list is available to deduce it from, so this proves the fixture, the hard-mode ' +
       'refusal and the validator work — not that the puzzle is solvable',
     wrong: 'The hard-mode answer was JUNIPER and the board ended on guess 3 of 5.',
+    // The five-try budget spans sessions: a fresh cookie that farms feedback on
+    // the same word, leaving the real session to win, spends more than five.
+    wrongState: [
+      {
+        name: 'a stray session farms guesses until six are counted in total',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.lexvaneHard?.[3]?.won);
+          const spent = [...state.sessions.values()].reduce(
+            (n, s) => n + (s.lexvaneHard?.[3]?.guesses.length ?? 0),
+            0
+          );
+          const farmed = ['CAPTAIN', 'PLASTER', 'MINARET', 'BLISTER', 'CHARTER', 'LANTERN']
+            .slice(0, 6 - spent)
+            .map((guess) => ({ guess, marks: [], at: Date.now() }));
+          addSession(state, {
+            lexvaneHard: {
+              3: { ...session.lexvaneHard[3], guesses: farmed, violations: [], won: false, over: false },
+            },
+          });
+        },
+      },
+    ],
+    alsoCorrectState: [
+      {
+        name: 'a stray session opens the puzzle and never guesses',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.lexvaneHard?.[3]?.won);
+          addSession(state, {
+            lexvaneHard: {
+              3: { ...session.lexvaneHard[3], guesses: [], violations: [], won: false, over: false },
+            },
+          });
+        },
+      },
+    ],
     async run({ goto, evaluate, mcp, snapshot }) {
       await goto('/lexvane/?mode=hard&day=3');
       await until('the hard-mode hint lines to render', () =>

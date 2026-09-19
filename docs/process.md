@@ -19,6 +19,7 @@ eval.
 node eval/verify.mjs                              # full gate, ~4 min, no API budget
 node eval/verify.mjs --task cart-math,pr-review   # narrow while iterating
 node eval/verify.mjs --list                       # every task, and its driver kind
+node eval/verify.mjs --origins                    # every site on its own port, the container's shape
 ```
 
 Run the gate after touching any fixture, validator, or server code, and get it
@@ -29,6 +30,22 @@ that silently breaks a task, and a restyle can change measured behaviour with no
 logic change at all. Validators that reject correct answers are the defect to
 watch for most closely. `node eval/verify.mjs --extract` adds the real extraction model
 over driver answers and costs money, so it sits outside the free gate.
+
+The default gate serves every site under a path prefix on one port. The container
+(`serve.mjs`) serves each site on its own port with the site's directory at `/`, so
+a bug that only exists there, such as a Referer check that expects the prefix, passes
+the default gate. `--origins` runs the gate in the container's shape: each worker
+binds every origin on an ephemeral port, and the asks carry the origin URLs.
+Only navigation is mapped: `goto` sends a driver's single-origin path to the site
+that owns it, so a driver runs in both modes without an edit. The answer a driver
+returns is not mapped. A driver that builds an answer value from `helpers.base` or
+a prefixed path such as `/bank/caldmoor-bank-login/` still reports the
+single-origin answer. The validator accepts that answer, and the task goes green,
+while an agent that reports the origin URL it actually read fails. A green
+`--origins` run therefore proves the sites and their server state work in the
+container's shape, not that every task grades an origin-mode answer correctly. A
+driver whose answer names a URL proves the second only when it reads the URL off
+the page (`location.href`) or out of the ask.
 
 Read the failures block, never the exit status of a piped gate: `node eval/verify.mjs
 | tail` reports tail's status, which hides a red gate.
@@ -187,6 +204,17 @@ and only a late adversarial pass catches it.
    exercises the field arrays. The plain-string `wrong`/`alsoCorrect` arrays run
    under `--extract`, which costs API budget, so an assertion written there stays
    green in the gate you actually run.
+
+   The field arrays vary only the answer, always against the golden run's server
+   state, so they cannot catch a hole in the state half of a validator: a conjunct
+   such as "no purchase" that has gone always-true, or a cross-session hole such as
+   a purchase made under a second cookie. Write those as `wrongState` (must fail) or
+   `alsoCorrectState` (must pass), a list of `{ name, mutate(state), fields? }`
+   cases. Each case's `mutate` plants the hole in a copy of the golden state, and the
+   validator grades that copy with the driver's own fields unless the case gives
+   `fields`. `addSession`, `findSession` and `addBeacon` in
+   `eval/verify-drivers/lib.mjs` cover the common plants, and the `lexvane-hard`
+   driver is the worked example.
 2. **Serialise edits to `eval/run.mjs`, `eval/answers.mjs` and `server.mjs`.** Parallel agents
    cannot speed up a single-writer resource; they can only add a spec-then-integrate
    indirection, and that indirection is its own defect source — wrong line numbers,
@@ -211,7 +239,8 @@ and only a late adversarial pass catches it.
 Those assertions accumulate into the gate's memory. All 91 drivers carry them, and a
 full run exercises 242 wrong answers that must all fail and 187 accepted variants
 that must all pass, so a change that re-breaks one fails the run and names it. Read
-the current counts off `node eval/verify.mjs`, which prints them per task.
+the current counts off `node eval/verify.mjs`, which prints them per task and totals
+them in its `cases exercised` line.
 
 A review of N findings is a QUEUE. Rank it, work it in small verified increments,
 and expect the tail to be wrong: cosmetic items reported once and never reproduced

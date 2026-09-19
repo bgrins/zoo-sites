@@ -1,6 +1,8 @@
 // Shared helpers for golden-path drivers: poll loops, uid extractors, snapshot
-// unwraps. Keep this file dependency-free and frozen during parallel driver
-// work - it is a single-writer resource.
+// unwraps, state-case mutations. Keep this file dependency-free and frozen
+// during parallel driver work - it is a single-writer resource.
+
+import { randomBytes, randomUUID } from 'node:crypto';
 
 // Poll until fn() returns a truthy value; throw a labelled error otherwise.
 // The label reads as "timed out waiting for <label>", so phrase it as the
@@ -97,4 +99,43 @@ export function bumpCode(code) {
 // Escape a literal for use inside a RegExp.
 export function esc(literal) {
   return String(literal).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// State-case helpers. A wrongState/alsoCorrectState case's mutate(state)
+// receives a COPY of the pages server's state (eval/verify.mjs), and these
+// plant or find what a validator reads there.
+
+// Plant a session the golden path never made, the way a curl probe or a
+// re-minted cookie does: fresh sid and nonce, then the given per-task fields.
+// It is minted last unless `first`, which mints it before every other session,
+// in both Map order and createdAt, as a probe sent ahead of the run would be:
+// the shape that shadows a validator reading sessions[0].
+export function addSession(state, fields = {}, { first = false } = {}) {
+  const sid = randomUUID();
+  const others = [...state.sessions];
+  const createdAt = first
+    ? Math.min(Date.now(), ...others.map(([, s]) => s.createdAt ?? Infinity)) - 1
+    : Date.now();
+  const session = { nonce: randomBytes(12).toString('hex'), createdAt, ...fields };
+  if (first) state.sessions.clear();
+  state.sessions.set(sid, session);
+  if (first) for (const [key, value] of others) state.sessions.set(key, value);
+  return { sid, session };
+}
+
+// The first session, in mint order, that satisfies the predicate: the one a
+// validator picks with sessions.values().find(). Returns { sid, session } or
+// null.
+export function findSession(state, predicate) {
+  for (const [sid, session] of state.sessions) {
+    if (predicate(session, sid)) return { sid, session };
+  }
+  return null;
+}
+
+// Record a beacon as POST /api/beacon does, for gates that read beaconsOf().
+export function addBeacon(state, sid, kind, data = {}) {
+  const beacon = { sid, kind, data, at: Date.now() };
+  state.beacons.push(beacon);
+  return beacon;
 }

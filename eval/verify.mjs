@@ -3,7 +3,7 @@
 // spending agent budget.
 //
 //   node eval/verify.mjs [--task <ids>] [--headed] [--list] [--jobs <n>] [--extract]
-//                   [--profile [path]]
+//                   [--origins] [--profile [path]]
 //
 // Tasks run across parallel workers by default (each with its own pages server
 // and Firefox instance, the same isolation run.mjs uses for --parallel-tasks);
@@ -15,10 +15,12 @@
 // An agent sweep catches both, at ~$20 and ~30 minutes. This catches most of it
 // in minutes for nothing.
 //
-// It drives the browser through a real MCP server — the same surface the `mcp`
-// condition uses — so a green run also proves the snapshot and tool surface are
-// sufficient to win the task. A Playwright-driven equivalent would not: it would
-// prove only that the fixture works.
+// It drives the browser through a real MCP server, the same one the
+// `firefox-devtools-mcp` condition uses. A green run proves the site behaves
+// correctly and its server-side state lands; it does NOT prove the snapshot is
+// enough to win the task, because drivers reach past snapshot limits with
+// evaluate_script and what a surface cannot read is the result the eval reports
+// ("What green means" in docs/authoring-fixtures.md).
 //
 // Each driver returns the answer text a correct agent would produce, having done
 // the real interaction so the server-observed gates are genuinely satisfied.
@@ -34,7 +36,8 @@ import { fileURLToPath } from 'node:url';
 import { devtoolsMcpEntry, startMcpServer } from './mcp-stdio.mjs';
 import { detectScreen, windowGrid } from './window-grid.mjs';
 import { startPagesServer } from '../server.mjs';
-import { conforms, extractFields } from './extract.mjs';
+import { ORIGINS, originUrls } from '../manifest.mjs';
+import { conforms, enforceQuotes, extractFields, normalise } from './extract.mjs';
 import { DRIVERS } from './verify-drivers/index.mjs';
 import { checkFixtures } from '../scripts/check-fixtures.mjs';
 
@@ -49,6 +52,10 @@ const HEADED = args.includes('--headed');
 // extraction-then-validation outcome. The only place the extractor's own
 // quality is measured; the default gate stays free.
 const EXTRACT = args.includes('--extract');
+// The container's shape (serve.mjs): every site on its own port with its
+// directory at '/', instead of every site under a path prefix on one port.
+// Ports stay ephemeral so parallel workers never collide.
+const ORIGIN_MODE = args.includes('--origins');
 // --profile [path]: record ONE Gecko profile covering the whole run, and mark
 // each task's boundaries inside it so a hot region can be attributed to a
 // driver. Open the result at https://profiler.firefox.com.
@@ -103,17 +110,17 @@ const selected = (id) => !patterns || patterns.some((p) => (p.includes('*')
 // driver is verified regardless of which suite a paid run selects. The
 // factories are the same modules run.mjs imports, so the gate always grades
 // exactly the code a paid run grades.
-async function loadTasks(base) {
+async function loadTasks(base, origins) {
   const { webTasks } = await import('./tasks/web.mjs');
   const { devtoolsTasks } = await import('./tasks/devtools.mjs');
-  return [...(await webTasks(base)), ...(await devtoolsTasks(base))];
+  return [...(await webTasks(base, origins)), ...(await devtoolsTasks(base, origins))];
 }
 
-// Without this, an unrecognised --help silently ran the whole two-minute gate.
+// Without this, an unrecognised --help silently ran the whole four-minute gate.
 if (args.includes('--help') || args.includes('-h')) {
   console.log(`The gate: drive every task's golden path through a real browser and
 assert that each validator accepts a correct answer and rejects a wrong one.
-Free, no API spend, about 90 seconds.
+Free, no API spend, about 4 minutes.
 
 Usage: node eval/verify.mjs [options]
 
@@ -128,6 +135,9 @@ Usage: node eval/verify.mjs [options]
                           the same shapes as the run it is compared against
   --extract               PAID: also run the real extraction model over the
                           driver answers and assert the graded outcome
+  --origins               serve every site on its own port with its directory
+                          at '/', the container's shape, instead of under path
+                          prefixes on one port
   --profile [path]        record one Gecko profile of the whole run, task
                           boundaries marked (default: profile.json; pins --jobs 1)
   --profile-interval <ms> profiler sampling interval (default: 10)
@@ -185,9 +195,10 @@ function assertFixtureMediaMuted() {
 
 assertFixtureMediaMuted();
 
-// The 91 drivers below only ever drive single-origin mode, so a link that
-// resolves under site prefixes and 404s under the container's one-origin-per-port
-// mounts passes every one of them. This is the only check that sees both.
+// The drivers below drive single-origin mode unless --origins is given, so a
+// link that resolves under site prefixes and 404s under the container's
+// one-origin-per-port mounts passes every one of them in the default gate. This
+// is the only default check that sees both.
 function assertFixturesResolve() {
   const problems = checkFixtures();
   if (problems.length) {
@@ -204,7 +215,23 @@ assertFixturesResolve();
 // that dies takes its Firefox with it, and FIREFOX_DEVTOOLS_MCP points the
 // whole gate at a local tool checkout.
 async function makeWorker(grid, slot) {
-  const pages = await startPagesServer({ seed: SEED });
+  const pages = await startPagesServer({ seed: SEED, origins: ORIGIN_MODE ? ORIGINS : null });
+  const origins = ORIGIN_MODE ? originUrls(pages.url, pages.origins) : undefined;
+  // Drivers name single-origin paths (/paylink/checkout.html). In origin mode
+  // the site owning the longest matching dir prefix serves the rest of the path
+  // at its own root, so shop/gadgetron-mirror never lands on shop/gadgetron.
+  // A path no site owns (/, /api/...) stays on the single-origin listener.
+  // Only goto maps: helpers.base stays that listener, so an answer a driver
+  // builds from base or a prefixed path grades the single-origin answer.
+  const byDir = [...pages.origins].sort((a, b) => b.dir.length - a.dir.length);
+  const urlFor = (path) => {
+    const owner = byDir.find(
+      (o) => path.startsWith(`/${o.dir}`) && /^([/?#]|$)/.test(path.slice(o.dir.length + 1))
+    );
+    if (!owner) return pages.url + path;
+    const rest = path.slice(owner.dir.length + 1);
+    return owner.url + (rest.startsWith('/') ? rest : `/${rest}`);
+  };
   // Headed workers each launch into a seeded profile so their windows tile
   // instead of stacking; the browser owns the dir, so it outlives no run.
   const stateDir = grid ? mkdtempSync(join(tmpdir(), 'zoo-verify-')) : null;
@@ -224,7 +251,7 @@ async function makeWorker(grid, slot) {
   const helpers = {
     mcp,
     base: pages.url,
-    goto: (path) => mcp('navigate_page', { url: pages.url + path }),
+    goto: (path) => mcp('navigate_page', { url: urlFor(path) }),
     evaluate: async (fn, fnArgs) => {
       const r = await mcp('evaluate_script', { function: String(fn), args: fnArgs });
       const text = (r.content ?? []).map((c) => c.text).join('\n');
@@ -257,7 +284,7 @@ async function makeWorker(grid, slot) {
   // would otherwise change what the gate exercises.
   if (PROFILE) await helpers.goto('/');
   // Task asks embed the pages URL, so each worker rebuilds its own task list.
-  const tasks = await loadTasks(pages.url);
+  const tasks = await loadTasks(pages.url, origins);
   const close = async () => {
     await server.close();
     await pages.close();
@@ -270,6 +297,83 @@ let pass = 0;
 let fail = 0;
 let skipped = 0;
 const failures = [];
+const exercised = {
+  wrongFields: 0,
+  alsoCorrectFields: 0,
+  wrongState: 0,
+  alsoCorrectState: 0,
+  neverAnswered: 0,
+};
+
+// A deep copy of the pages server's state for one wrongState/alsoCorrectState
+// case. One structuredClone call copies every data member together, so a
+// reference two members share stays shared in the copy (a roster beacon holds
+// the same attendees array as its session). The server's methods close over the
+// original state, so each one validators call is rebuilt on the copy, and a
+// method this does not know fails loudly rather than reading the real state.
+const STATE_METHODS = new Set(['beaconsOf', 'reset']);
+function cloneState(state) {
+  const methods = Object.keys(state).filter((k) => typeof state[k] === 'function');
+  const unknown = methods.filter((k) => !STATE_METHODS.has(k));
+  if (unknown.length) throw new Error(`cloneState cannot rebuild state.${unknown.join(', state.')}`);
+  // state.beacons and state.collect are CappedLog arrays (server.mjs); their rows
+  // are plain data, so a case grades a plain array of the same rows.
+  const data = Object.fromEntries(
+    Object.entries(state)
+      .filter(([k]) => !methods.includes(k))
+      .map(([k, v]) => [k, Array.isArray(v) ? Array.from(v) : v])
+  );
+  assertPlainData(data, 'state', new Set());
+  const clone = structuredClone(data);
+  clone.beaconsOf = (kind) => clone.beacons.filter((b) => b.kind === kind);
+  return clone;
+}
+
+// structuredClone throws on a function, and silently turns a class instance or
+// a Buffer into a plain object or Uint8Array without its methods, so anything
+// outside plain data fails here, naming its path, before a case grades a copy
+// that differs from the state.
+const PLAIN_PROTOTYPES = new Set([
+  null,
+  Object.prototype,
+  Array.prototype,
+  Map.prototype,
+  Set.prototype,
+  Date.prototype,
+]);
+function assertPlainData(value, path, seen) {
+  if (typeof value === 'function' || typeof value === 'symbol') {
+    throw new Error(`${path} holds a ${typeof value}, which a state case cannot copy`);
+  }
+  if (value === null || typeof value !== 'object' || seen.has(value)) return;
+  seen.add(value);
+  if (!PLAIN_PROTOTYPES.has(Object.getPrototypeOf(value))) {
+    throw new Error(`${path} holds a ${value.constructor?.name ?? 'exotic object'}, which a state case cannot copy`);
+  }
+  const entries =
+    value instanceof Map
+      ? [...value]
+      : value instanceof Set
+        ? [...value].map((child, i) => [i, child])
+        : Object.entries(value);
+  for (const [key, child] of entries) assertPlainData(child, `${path}.${String(key)}`, seen);
+}
+
+// What a validator receives when extraction runs over an answer that states
+// nothing: the extractor nulls every { value, quote } pair and enforceQuotes
+// collapses the pairs onto the task's own shape. The quoted schema never lets an
+// object or array be null, so objects keep their keys and arrays come back
+// empty, or as one row of nulls, the other shape an extractor can emit.
+function neverAnswered(schema) {
+  const raw = (node, rows) =>
+    node.type === 'object'
+      ? Object.fromEntries(Object.entries(node.properties ?? {}).map(([k, v]) => [k, raw(v, rows)]))
+      : node.type === 'array'
+        ? Array.from({ length: rows }, () => raw(node.items, rows))
+        : { value: null, quote: null };
+  const shapes = [0, 1].map((rows) => enforceQuotes(raw(schema, rows), normalise('')));
+  return JSON.stringify(shapes[0]) === JSON.stringify(shapes[1]) ? [shapes[0]] : shapes;
+}
 
 // Stamp a task boundary into the Gecko profile. `performance.mark` surfaces as a
 // UserTiming marker carrying its own name, which is what lets a hot region in
@@ -303,6 +407,14 @@ async function runOne(worker, id) {
   const { pages, helpers } = worker;
   const task = worker.tasks.find((t) => t.id === id);
   const driver = DRIVERS[task.id];
+  // Every check below grades fields against the task's schema, so a task graded
+  // on prose alone would have nothing here to pass or fail.
+  if (!task.answerSchema) {
+    fail++;
+    failures.push(`${task.id}: task has no answerSchema`);
+    console.log(`FAIL  ${task.id}  task has no answerSchema`);
+    return;
+  }
   const ctx = { pages };
   pages.state.reset();
   // Restore the window before every task, not just after the one that resizes.
@@ -345,21 +457,34 @@ async function runOne(worker, id) {
   return;
 
   async function gradeOne() {
-  // Schema tasks return { text, fields }: fields graded here for free, text
-  // kept for the transcript-shaped assertions and --extract mode.
-  const answer = typeof out === 'string' ? out : out.text;
-  const fields = typeof out === 'string' ? null : (out.fields ?? null);
-  if (task.answerSchema) {
+    // Drivers return { text, fields }: fields graded here for free, text kept
+    // for the transcript-shaped assertions and --extract mode.
+    const answer = typeof out === 'string' ? out : out.text;
+    const fields = typeof out === 'string' ? null : (out.fields ?? null);
+    const wrongFields = [driver.wrongFields ?? []].flat();
+    const alsoCorrectFields = [driver.alsoCorrectFields ?? []].flat();
+    const wrongState = [driver.wrongState ?? []].flat();
+    const alsoCorrectState = [driver.alsoCorrectState ?? []].flat();
     const schemaProblems = [
       ...conforms(fields, task.answerSchema).map((e) => `driver fields${e}`),
-      ...[driver.wrongFields ?? []].flat().flatMap((wf, i) =>
+      ...wrongFields.flatMap((wf, i) =>
         conforms(wf, task.answerSchema).map((e) => `wrongFields[${i}]${e}`)
       ),
-      ...[driver.alsoCorrectFields ?? []].flat().flatMap((af, i) =>
+      ...alsoCorrectFields.flatMap((af, i) =>
         conforms(af, task.answerSchema).map((e) => `alsoCorrectFields[${i}]${e}`)
       ),
+      ...Object.entries({ wrongState, alsoCorrectState }).flatMap(([key, cases]) =>
+        cases.flatMap((c, i) => [
+          ...(typeof c?.name === 'string' && typeof c?.mutate === 'function'
+            ? []
+            : [`${key}[${i}] needs a name and a mutate(state)`]),
+          ...(c?.fields === undefined
+            ? []
+            : conforms(c.fields, task.answerSchema).map((e) => `${key}[${i}].fields${e}`)),
+        ])
+      ),
     ];
-    if (!(driver.wrongFields ?? []).length) {
+    if (!wrongFields.length) {
       schemaProblems.push('schema task has no wrongFields regression assertions');
     }
     if (schemaProblems.length) {
@@ -369,119 +494,132 @@ async function runOne(worker, id) {
       return;
     }
     const good = task.validate(answer, ctx, fields);
-    const badAccepted = (driver.wrongFields ?? [])
+    const badAccepted = wrongFields
       .map((wf) => ({ wf, r: task.validate('', ctx, wf) }))
       .filter(({ r }) => r.pass !== false);
-    const goodRejected = (driver.alsoCorrectFields ?? [])
+    const goodRejected = alsoCorrectFields
       .map((af) => ({ af, r: task.validate('', ctx, af) }))
       .filter(({ r }) => r.pass !== true);
-    // The never-answered case: all-null fields (extraction skipped or fully
-    // quote-gated) must fail for every schema task, unconditionally.
-    const nulls = task.validate('', ctx, null);
-    if (good.pass === true && !badAccepted.length && !goodRejected.length && nulls.pass === false) {
-      if (EXTRACT) {
-        const extractProblems = [];
-        const graded = async (text) => {
-          const { fields: f } = await extractFields({
-            ask: task.ask,
-            answer: text,
-            schema: task.answerSchema,
-          });
-          return task.validate(text, ctx, f);
-        };
-        try {
-          const own = await graded(answer);
-          if (own.pass !== true) {
-            extractProblems.push(`driver text failed after extraction — ${own.detail ?? ''}`);
-          }
-          for (const w of [driver.wrong ?? []].flat()) {
-            const r = await graded(w);
-            if (r.pass !== false) {
-              extractProblems.push(`wrong string PASSED after extraction: ${JSON.stringify(w.slice(0, 60))}`);
-            }
-          }
-          for (const a of [driver.alsoCorrect ?? []].flat()) {
-            const r = await graded(a);
-            if (r.pass !== true) {
-              extractProblems.push(`correct phrasing FAILED after extraction: ${JSON.stringify(a.slice(0, 60))} — ${r.detail ?? ''}`);
-            }
-          }
-        } catch (error) {
-          extractProblems.push(`extractor threw — ${error.message}`);
-        }
-        if (extractProblems.length) {
-          fail++;
-          failures.push(`${task.id}: ${extractProblems[0]}`);
-          console.log(`FAIL  ${task.id}  [--extract] ${extractProblems.join('; ')}`);
-          return;
-        }
+    // The field arrays vary only the answer against the golden server state, so
+    // a server-state conjunct can go always-true under them and stay green.
+    // State cases vary the state instead (a purchase in a stray session, a
+    // budget split across cookies), each on its own copy, so the real state
+    // every other check reads never changes.
+    const gradeState = (c) => {
+      try {
+        const state = cloneState(pages.state);
+        c.mutate(state);
+        const caseFields = c.fields === undefined ? fields : c.fields;
+        return task.validate('', { ...ctx, pages: { ...pages, state } }, caseFields);
+      } catch (error) {
+        return { threw: error };
       }
-      pass++;
-      console.log(
-        `ok    ${task.id}  (fields; ${(driver.wrongFields ?? []).length} wrong, ` +
-          `${(driver.alsoCorrectFields ?? []).length} accepted variants` +
-          `${EXTRACT ? '; extractor verified' : ''})`
-      );
-    } else {
-      fail++;
-      const why =
-        good.pass !== true
-          ? `validator REJECTED the driver's fields — ${good.detail ?? ''}`
-          : badAccepted.length
-            ? `validator ACCEPTED wrongFields ${JSON.stringify(badAccepted[0].wf).slice(0, 70)} — ${badAccepted[0].r.detail ?? ''}`
-            : goodRejected.length
-              ? `validator REJECTED alsoCorrectFields ${JSON.stringify(goodRejected[0].af).slice(0, 70)} — ${goodRejected[0].r.detail ?? ''}`
-              : 'validator PASSED all-null fields (never-answered must fail)';
-      failures.push(`${task.id}: ${why}`);
-      console.log(`FAIL  ${task.id}  ${why}`);
-    }
-    return;
-  }
-  const good = task.validate(answer, ctx);
-  // The same server state must REJECT every wrong answer, or the validator is
-  // only checking the interaction and would pass any prose. `wrong` may be a
-  // list: specific strings can wrongly PASS (a region-totals table naming the
-  // wrong winner, added/removed lists swapped, a rotated points column), so a
-  // validator carries those exact strings here as a permanent regression
-  // assertion.
-  const wrongs = [driver.wrong ?? 'The answer is 42.'].flat();
-  // `alsoCorrect` is the mirror: strings that MUST pass. A validator can reject
-  // a correct answer for paraphrasing, hedging, or naming a rival value
-  // contrastively ("X, not Y"). Those go here so a future tightening cannot
-  // silently reintroduce the false fail.
-  const alsoCorrect = [driver.alsoCorrect ?? []].flat();
-
-  const badAccepted = wrongs
-    .map((w) => ({ w, r: task.validate(w, ctx) }))
-    .filter(({ r }) => r.pass !== false);
-  const goodRejected = alsoCorrect
-    .map((a) => ({ a, r: task.validate(a, ctx) }))
-    .filter(({ r }) => r.pass !== true);
-
-  const ok = good.pass === true && !badAccepted.length && !goodRejected.length;
-  if (ok) {
-    const extra = [
-      driver.canned ? 'canned prose' : null,
-      wrongs.length > 1 ? `${wrongs.length} wrong answers rejected` : null,
-      alsoCorrect.length ? `${alsoCorrect.length} phrasings accepted` : null,
+    };
+    const stateAccepted = wrongState
+      .map((c) => ({ c, r: gradeState(c) }))
+      .filter(({ r }) => r.pass !== false);
+    const stateRejected = alsoCorrectState
+      .map((c) => ({ c, r: gradeState(c) }))
+      .filter(({ r }) => r.pass !== true);
+    // Never answered: null fields (extraction skipped or failed) and the shapes
+    // an answer that states nothing extracts to must fail for every task.
+    const unansweredShapes = [null, ...neverAnswered(task.answerSchema)];
+    const unanswered = unansweredShapes
+      .map((f) => {
+        try {
+          return { f, r: task.validate('', ctx, f) };
+        } catch (error) {
+          return { f, r: { threw: error } };
+        }
+      })
+      .filter(({ r }) => r.pass !== false);
+    exercised.wrongFields += wrongFields.length;
+    exercised.alsoCorrectFields += alsoCorrectFields.length;
+    exercised.wrongState += wrongState.length;
+    exercised.alsoCorrectState += alsoCorrectState.length;
+    exercised.neverAnswered += unansweredShapes.length;
+    const stateWhy = (verb, key, { c, r }) =>
+      r.threw
+        ? `${key} "${c.name}" threw — ${r.threw.message}`
+        : `validator ${verb} ${key} "${c.name}" — ${r.detail ?? ''}`;
+    const why = [
+      good.pass !== true && `validator REJECTED the driver's fields — ${good.detail ?? ''}`,
+      ...badAccepted.map(
+        ({ wf, r }) => `validator ACCEPTED wrongFields ${JSON.stringify(wf).slice(0, 70)} — ${r.detail ?? ''}`
+      ),
+      ...goodRejected.map(
+        ({ af, r }) => `validator REJECTED alsoCorrectFields ${JSON.stringify(af).slice(0, 70)} — ${r.detail ?? ''}`
+      ),
+      ...stateAccepted.map((s) => stateWhy('ACCEPTED', 'wrongState', s)),
+      ...stateRejected.map((s) => stateWhy('REJECTED', 'alsoCorrectState', s)),
+      ...unanswered.map(({ f, r }) =>
+        r.threw
+          ? `validator threw on never-answered fields ${JSON.stringify(f).slice(0, 70)} — ${r.threw.message}`
+          : `validator PASSED never-answered fields ${JSON.stringify(f).slice(0, 70)} (never-answered must fail) — ${r.detail ?? ''}`
+      ),
     ].filter(Boolean);
-    pass++;
-    console.log(`ok    ${task.id}${extra.length ? `  (${extra.join(', ')})` : ''}`);
-  } else {
-    fail++;
-    let why;
-    if (good.pass !== true) {
-      why = `validator REJECTED a correct solution — ${good.detail ?? ''}`;
-    } else if (badAccepted.length) {
-      const { w, r } = badAccepted[0];
-      why = `validator ACCEPTED a wrong answer ${JSON.stringify(w.slice(0, 70))} — ${r.detail ?? ''}`;
-    } else {
-      const { a, r } = goodRejected[0];
-      why = `validator REJECTED a correct phrasing ${JSON.stringify(a.slice(0, 70))} — ${r.detail ?? ''}`;
+    if (why.length) {
+      fail++;
+      failures.push(`${task.id}: ${why[0]}${why.length > 1 ? `  (+${why.length - 1} more, listed above)` : ''}`);
+      console.log(`FAIL  ${task.id}  ${why.join('\n        ')}`);
+      return;
     }
-    failures.push(`${task.id}: ${why}`);
-    console.log(`FAIL  ${task.id}  ${why}`);
-  }
+    if (EXTRACT) {
+      const extractProblems = [];
+      const graded = async (text) => {
+        const { fields: f } = await extractFields({
+          ask: task.ask,
+          answer: text,
+          schema: task.answerSchema,
+        });
+        return task.validate(text, ctx, f);
+      };
+      try {
+        const own = await graded(answer);
+        if (own.pass !== true) {
+          extractProblems.push(`driver text failed after extraction — ${own.detail ?? ''}`);
+        }
+        // `wrong` is the prose form of wrongFields: strings that must FAIL once
+        // extracted. Specific strings can wrongly PASS (a region-totals table
+        // naming the wrong winner, added/removed lists swapped, a rotated
+        // points column), so a driver carries those exact strings as a
+        // permanent regression assertion.
+        for (const w of [driver.wrong ?? []].flat()) {
+          const r = await graded(w);
+          if (r.pass !== false) {
+            extractProblems.push(`wrong string PASSED after extraction: ${JSON.stringify(w.slice(0, 60))}`);
+          }
+        }
+        // `alsoCorrect` is the mirror: strings that MUST pass. A validator can
+        // reject a correct answer for paraphrasing, hedging, or naming a rival
+        // value contrastively ("X, not Y"), and these keep a future tightening
+        // from silently reintroducing the false fail.
+        for (const a of [driver.alsoCorrect ?? []].flat()) {
+          const r = await graded(a);
+          if (r.pass !== true) {
+            extractProblems.push(`correct phrasing FAILED after extraction: ${JSON.stringify(a.slice(0, 60))} — ${r.detail ?? ''}`);
+          }
+        }
+      } catch (error) {
+        extractProblems.push(`extractor threw — ${error.message}`);
+      }
+      if (extractProblems.length) {
+        fail++;
+        failures.push(`${task.id}: ${extractProblems[0]}`);
+        console.log(`FAIL  ${task.id}  [--extract] ${extractProblems.join('; ')}`);
+        return;
+      }
+    }
+    pass++;
+    const stateCounts =
+      wrongState.length || alsoCorrectState.length
+        ? `; ${wrongState.length} wrong states, ${alsoCorrectState.length} accepted states`
+        : '';
+    console.log(
+      `ok    ${task.id}  (fields; ${wrongFields.length} wrong, ` +
+        `${alsoCorrectFields.length} accepted variants${stateCounts}` +
+        `${EXTRACT ? '; extractor verified' : ''})`
+    );
   }
 }
 
@@ -520,7 +658,16 @@ try {
   for (const worker of workers) await worker.close();
 }
 
-console.log(`\n${pass} ok, ${fail} failed, ${skipped} without a golden path`);
+console.log(
+  `\n${pass} ok, ${fail} failed, ${skipped} without a golden path` +
+    `${ORIGIN_MODE ? ' (origin mode)' : ''}`
+);
+console.log(
+  `cases exercised: ${exercised.wrongFields} wrongFields and ${exercised.wrongState} wrongState ` +
+    `(must fail), ${exercised.alsoCorrectFields} alsoCorrectFields and ` +
+    `${exercised.alsoCorrectState} alsoCorrectState (must pass), ` +
+    `${exercised.neverAnswered} never-answered shapes (must fail)`
+);
 if (failures.length) {
   console.log('\nfailures:');
   for (const f of failures) console.log(`  - ${f}`);
