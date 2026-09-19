@@ -14,84 +14,106 @@
 // the reported token counts (codex reports no price of its own).
 
 import { Codex } from '@openai/codex-sdk';
-import { tmpdir } from 'node:os';
-import { calcPrice } from '@pydantic/genai-prices';
+import { existsSync, mkdirSync, symlinkSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+import { makeTempDir, removeTempDir } from '../agent-env.mjs';
+import { priceTokens } from './pricing.mjs';
 
 // Pinned explicitly (rather than deferring to ~/.codex/config.toml) so runs
 // are reproducible and the model is recorded in results.
 export const DEFAULT_MODEL = 'gpt-5.6-terra';
+export const EFFORT_LEVELS = ['minimal', 'low', 'medium', 'high', 'xhigh'];
+
+// Recorded in each run's meta, so results from before and after a policy
+// change stay distinguishable.
+export const TOOL_POLICY = {
+  sandbox: 'workspace-write',
+  network: true,
+  writable: 'attempt cwd + a private TMPDIR (macOS mktemp ignores TMPDIR, so a bare mktemp is denied)',
+  webSearch: 'disabled',
+  approval: 'never',
+  codexHome: 'isolated per process: the login, no config, no bundled skills',
+};
+
+// Settings every codex process gets on top of the isolated home. On first start
+// codex unpacks its bundled skills (imagegen, skill-installer and more) into
+// CODEX_HOME and lists them in the prompt; the anthropic agent loads no
+// skills, so codex loads none either.
+export const ISOLATED_CONFIG = { skills: { bundled: { enabled: false } } };
+
+// A codex process otherwise reads the user's whole ~/.codex: config.toml,
+// plugins, skills, MCP servers and global AGENTS.md. Stored runs opened by
+// reading a plugin's SKILL.md and called the user's own browser MCP server, so
+// the conditions were not isolated. Each process gets a fresh CODEX_HOME holding
+// only the login. auth.json is linked rather than copied: a token refresh then
+// lands in the real file instead of dying with the temp dir, and no copy of the
+// credential outlives a crashed run. Without an auth.json the API key env var is
+// the login, and codex exec reads it as CODEX_API_KEY.
+export function isolatedCodexHome(env) {
+  const root = makeTempDir('zoo-codex-');
+  const home = join(root, 'home');
+  const tmp = join(root, 'tmp');
+  mkdirSync(home);
+  mkdirSync(tmp);
+  const auth = join(process.env.CODEX_HOME || join(homedir(), '.codex'), 'auth.json');
+  const login = {};
+  if (existsSync(auth)) {
+    symlinkSync(auth, join(home, 'auth.json'));
+  } else if (!env.CODEX_API_KEY && env.OPENAI_API_KEY) {
+    login.CODEX_API_KEY = env.OPENAI_API_KEY;
+  }
+  return {
+    home,
+    tmp,
+    env: { ...env, ...login, CODEX_HOME: home },
+    hasLogin: existsSync(auth) || Boolean(env.CODEX_API_KEY || env.OPENAI_API_KEY),
+    close: () => removeTempDir(root),
+  };
+}
 
 // Codex reports OpenAI-convention usage, where input_tokens counts the cached
 // and cache-written tokens too. The clamp keeps inconsistent figures (or a
 // switch to the exclusive convention upstream) printing 0 rather than a
-// negative; priceRun's own Math.max covers the same case from the other side.
+// negative.
 function uncachedInput(usage) {
   if (!usage) return 0;
   const cached = (usage.cached_input_tokens ?? 0) + (usage.cache_write_input_tokens ?? 0);
   return Math.max(0, (usage.input_tokens ?? 0) - cached);
 }
 
-// Warn once per model id whose price entry was resolved by approximate match,
-// so a silently mispriced model is visible instead of quietly wrong.
-const pricingWarned = new Set();
-
-// The anthropic backend gets an authoritative price from its SDK; codex reports
-// none, so price the reported tokens against genai-prices' bundled table (no
-// network call). Codex uses OpenAI's convention where input_tokens ALREADY
-// includes the cached portion, which is what calcPrice expects — it subtracts
-// the cached tokens itself and rejects a negative remainder. Best-effort by
-// design: an unknown model must never fail a run.
-function priceRun(modelId, usage) {
-  if (!usage || !modelId) return null;
-  const cacheRead = usage.cached_input_tokens ?? 0;
-  const cacheWrite = usage.cache_write_input_tokens ?? 0;
-  try {
-    const priced = calcPrice(
-      {
-        input_tokens: Math.max(usage.input_tokens ?? 0, cacheRead + cacheWrite),
-        cache_read_tokens: cacheRead,
-        cache_write_tokens: cacheWrite,
-        output_tokens: usage.output_tokens ?? 0,
+export function codexConfig({ mcpStdio, effort, shellTmp, path }) {
+  return {
+    ...ISOLATED_CONFIG,
+    approval_policy: 'never',
+    ...(effort ? { model_reasoning_effort: effort } : {}),
+    // Every condition gets the same network-enabled shell so the only
+    // difference is how the browser is driven. workspace-write also opens
+    // $TMPDIR and /tmp by default, which every other attempt shares (stored runs
+    // kept cookie jars at fixed /tmp paths), so both are closed and the shell
+    // gets a private TMPDIR instead. TMPPREFIX is zsh's temp dir for heredocs.
+    // macOS mktemp ignores TMPDIR and uses the per-user temp dir, which holds
+    // every attempt's directories and so stays closed: there, a bare `mktemp`
+    // fails and `mktemp -p "$TMPDIR"` works. A PATH shim cannot fix it, because
+    // the shell is a login zsh whose path_helper puts /usr/bin first.
+    sandbox_workspace_write: {
+      network_access: true,
+      writable_roots: [shellTmp],
+      exclude_tmpdir_env_var: true,
+      exclude_slash_tmp: true,
+    },
+    // The process env is already the harness allowlist (agent-env.mjs); the
+    // default excludes still keep *KEY*, *SECRET* and *TOKEN* out of the shell.
+    shell_environment_policy: {
+      inherit: 'all',
+      ignore_default_excludes: false,
+      set: {
+        ...(path ? { PATH: path } : {}),
+        TMPDIR: shellTmp,
+        TMPPREFIX: join(shellTmp, 'zsh'),
       },
-      modelId
-    );
-    // Unknown models come back as null rather than throwing.
-    if (!priced) return null;
-    const matched = priced.model?.id;
-    if (matched && matched !== modelId && !pricingWarned.has(modelId)) {
-      pricingWarned.add(modelId);
-      console.log(`[codex] pricing "${modelId}" using the "${matched}" price entry`);
-    }
-    return priced.total_price ?? null;
-  } catch {
-    return null;
-  }
-}
-
-export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio, abortController }) {
-  const codexOptions = {
-    // When env is provided the SDK does not inherit process.env, so run.mjs
-    // builds it from the full process.env.
-    env: { ...env },
-    config: {
-      approval_policy: 'never',
-      ...(effort ? { model_reasoning_effort: effort } : {}),
     },
-  };
-  // Every condition gets the same network-enabled shell so the only
-  // difference is how the browser is driven.
-  codexOptions.config.sandbox_workspace_write = {
-    network_access: true,
-    writable_roots: [tmpdir()],
-  };
-  codexOptions.config.shell_environment_policy = {
-    inherit: 'all',
-    set: {
-      ...(env?.PATH ? { PATH: env.PATH } : {}),
-    },
-  };
-  {
-    codexOptions.config.mcp_servers = {
+    mcp_servers: {
       firefox: {
         command: mcpStdio.command,
         args: mcpStdio.args,
@@ -102,63 +124,81 @@ export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio
         startup_timeout_sec: 60,
         tool_timeout_sec: 180,
       },
-    };
-  }
-  const codex = new Codex(codexOptions);
-  const thread = codex.startThread({
-    ...(model ? { model } : {}),
-    workingDirectory: cwd,
-    skipGitRepoCheck: true,
-    sandboxMode: 'workspace-write',
-  });
+    },
+  };
+}
 
-  const started = Date.now();
-  const { events } = await thread.runStreamed(prompt);
-  let usage = null;
-  let text = '';
-  let toolCalls = 0;
-  let failure = null;
-  for await (const event of events) {
-    // The SDK exposes no cancellation, so honour the harness ceilings by
-    // leaving the stream. The codex process may linger briefly after this.
-    if (abortController?.signal.aborted) {
-      failure = { message: abortController.signal.reason ?? 'aborted by harness limit' };
-      break;
-    }
-    onMessage?.(event);
-    if (event.type === 'turn.completed') {
-      usage = event.usage;
-    } else if (event.type === 'turn.failed') {
-      failure = event.error;
-    } else if (event.type === 'error') {
-      failure = { message: event.message };
-    } else if (event.type === 'item.completed') {
-      const item = event.item;
-      if (item.type === 'command_execution' || item.type === 'mcp_tool_call') {
-        toolCalls++;
-      } else if (item.type === 'agent_message') {
-        text = item.text ?? text;
+export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio, abortController }) {
+  const codexHome = isolatedCodexHome(env ?? {});
+  try {
+    // When env is provided the SDK does not inherit process.env, so this is
+    // exactly the harness allowlist plus CODEX_HOME.
+    const codex = new Codex({
+      env: codexHome.env,
+      config: codexConfig({ mcpStdio, effort, shellTmp: codexHome.tmp, path: env?.PATH }),
+    });
+    const thread = codex.startThread({
+      ...(model ? { model } : {}),
+      workingDirectory: cwd,
+      skipGitRepoCheck: true,
+      sandboxMode: 'workspace-write',
+      webSearchMode: 'disabled',
+    });
+
+    const started = Date.now();
+    // The signal kills the codex process, so a harness ceiling stops the run
+    // rather than only the stream; the SDK then throws, and run.mjs attributes
+    // the stop. Codex reports usage only in turn.completed, so an aborted run's
+    // spend is unknown.
+    const { events } = await thread.runStreamed(prompt, { signal: abortController?.signal });
+    let usage = null;
+    let text = '';
+    let toolCalls = 0;
+    let failure = null;
+    for await (const event of events) {
+      onMessage?.(event);
+      if (event.type === 'turn.completed') {
+        usage = event.usage;
+      } else if (event.type === 'turn.failed') {
+        failure = event.error;
+      } else if (event.type === 'error') {
+        failure = { message: event.message };
+      } else if (event.type === 'item.completed') {
+        const item = event.item;
+        if (item.type === 'command_execution' || item.type === 'mcp_tool_call') {
+          toolCalls++;
+        } else if (item.type === 'agent_message') {
+          text = item.text ?? text;
+        }
       }
     }
+    const counts = {
+      // Normalized to the backend interface's uncached-remainder convention:
+      // codex reports an input_tokens INCLUSIVE of both cache figures, so
+      // reporting it raw put an inclusive number in the same report column as
+      // anthropic's exclusive one and read as a 10000x input gap.
+      input_tokens: uncachedInput(usage),
+      cache_creation: usage?.cache_write_input_tokens ?? 0,
+      cache_read: usage?.cached_input_tokens ?? 0,
+      output_tokens: usage?.output_tokens ?? 0,
+    };
+    const cost_usd = usage ? priceTokens(model ?? DEFAULT_MODEL, counts, 'codex') : null;
+    if (failure) {
+      const error = new Error(`codex turn failed: ${failure.message}`);
+      if (usage) error.spend = { ...counts, cost_usd };
+      throw error;
+    }
+    return {
+      text,
+      // Codex reports one "turn" per run; approximate agent turns as tool-call
+      // rounds plus the final response.
+      turns: toolCalls + 1,
+      ...counts,
+      cost_usd,
+      duration_ms: Date.now() - started,
+      api_duration_ms: null,
+    };
+  } finally {
+    codexHome.close();
   }
-  if (failure) {
-    throw new Error(`codex turn failed: ${failure.message}`);
-  }
-  return {
-    text,
-    // Codex reports one "turn" per run; approximate agent turns as tool-call
-    // rounds plus the final response.
-    turns: toolCalls + 1,
-    // Normalized to the backend interface's uncached-remainder convention:
-    // codex reports an input_tokens INCLUSIVE of both cache figures, so
-    // reporting it raw put an inclusive number in the same report column as
-    // anthropic's exclusive one and read as a 10000x input gap.
-    input_tokens: uncachedInput(usage),
-    cache_creation: usage?.cache_write_input_tokens ?? 0,
-    cache_read: usage?.cached_input_tokens ?? 0,
-    output_tokens: usage?.output_tokens ?? 0,
-    cost_usd: priceRun(model ?? DEFAULT_MODEL, usage),
-    duration_ms: Date.now() - started,
-    api_duration_ms: null,
-  };
 }

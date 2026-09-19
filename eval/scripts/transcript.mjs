@@ -9,10 +9,8 @@
 // transcripts.md into the run dir (shareable next to report.md).
 
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const here = dirname(fileURLToPath(import.meta.url));
+import { join } from 'node:path';
+import { latestRun, parseTranscriptName } from '../run-files.mjs';
 
 const args = process.argv.slice(2);
 const FULL = args.includes('--full');
@@ -21,18 +19,7 @@ const taskIdx = args.indexOf('--task');
 const ONLY_TASK = taskIdx !== -1 ? args[taskIdx + 1] : null;
 const dirArg = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--task');
 
-function latestRunDir() {
-  const resultsDir = join(here, '..', 'results');
-  const runs = readdirSync(resultsDir)
-    .filter((d) => d.startsWith('run-'))
-    .sort();
-  if (!runs.length) {
-    throw new Error(`no runs under ${resultsDir}`);
-  }
-  return join(resultsDir, runs[runs.length - 1]);
-}
-
-const runDir = dirArg ?? latestRunDir();
+const runDir = dirArg ?? latestRun('transcripts');
 const transcriptsDir = join(runDir, 'transcripts');
 if (!existsSync(transcriptsDir)) {
   throw new Error(`no transcripts/ in ${runDir}`);
@@ -158,26 +145,19 @@ function normalize(lines) {
   return steps;
 }
 
-// transcripts are named <label>--<task>[--rN].jsonl where label is a condition
-// ('firefox-devtools-mcp') or '<backend>--<condition>'; neither a task id nor a
-// condition name ever contains '--'.
-function parseName(file) {
-  const parts = file.replace(/\.jsonl$/, '').split('--');
-  let rep = null;
-  if (/^r\d+$/.test(parts[parts.length - 1])) {
-    rep = Number(parts.pop().slice(1));
-  }
-  return { task: parts[parts.length - 1], label: parts.slice(0, -1).join('/'), rep };
-}
-
-function metaFor(label, task, rep) {
-  const r = resultsMeta?.results?.find(
-    (x) =>
-      x.task === task &&
-      (x.condition === label || x.condition === label.split('/').pop()) &&
-      (rep == null || x.rep === rep)
-  );
-  if (!r) return '';
+// The row a transcript belongs to. A row names its graded attempt's transcript
+// (or, in older runs, is matched by label, task and rep); any other attempt of
+// the same task was discarded by a retry or a harness stop.
+function metaFor(file, label, task, rep, attempt) {
+  const rows = resultsMeta?.results ?? [];
+  const same = (x) =>
+    x.task === task &&
+    (x.condition === label || x.condition === label.split('/').pop()) &&
+    (x.rep ?? 1) === (rep ?? 1);
+  const r =
+    rows.find((x) => x.transcript === file) ??
+    rows.find((x) => !x.transcript && same(x) && (x.retries ?? 0) + 1 === attempt);
+  if (!r) return rows.some(same) ? ' — discarded attempt' : '';
   const bits = [
     r.success ? 'PASS' : 'FAIL',
     r.turns != null ? `${r.turns} turns` : null,
@@ -194,10 +174,10 @@ const files = readdirSync(transcriptsDir)
 
 const byTask = new Map();
 for (const file of files) {
-  const { task, label, rep } = parseName(file);
+  const { task, label, rep, attempt } = parseTranscriptName(file);
   if (ONLY_TASK && task !== ONLY_TASK) continue;
   if (!byTask.has(task)) byTask.set(task, []);
-  byTask.get(task).push({ label, rep, file });
+  byTask.get(task).push({ label, rep, attempt, file });
 }
 
 // Preserve suite ordering from results.json where available.
@@ -220,15 +200,19 @@ if (resultsMeta?.meta) {
     : m.model;
   out.push(
     `backend=${m.backend} model=${models} effort=${m.effort ?? '(default)'} ` +
-      `suite=${m.suite} mcp=${m.mcpTransport}` +
-      (m.mcpCommand ? ` mcpCommand="${m.mcpCommand}"` : '')
+      `suite=${m.suite} conditions=${m.conditions}` +
+      (m.mcpCommand ? ` mcpCommand="${m.mcpCommand}"` : '') +
+      (m.interrupted ? ` INTERRUPTED(${m.interrupted})` : '')
   );
 }
 
 for (const task of orderedTasks) {
   out.push('', `## ${task}`);
-  for (const { label, rep, file } of byTask.get(task)) {
-    out.push('', `### ${label}${rep ? ` (r${rep})` : ''}${metaFor(label, task, rep)}`, '');
+  for (const { label, rep, attempt, file } of byTask.get(task)) {
+    const heading =
+      `${label}${rep ? ` (r${rep})` : ''}${attempt > 1 ? ` [attempt ${attempt}]` : ''}` +
+      metaFor(file, label, task, rep, attempt);
+    out.push('', `### ${heading}`, '');
     const lines = readFileSync(join(transcriptsDir, file), 'utf8').trim().split('\n');
     let n = 0;
     for (const step of normalize(lines)) {

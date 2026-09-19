@@ -13,7 +13,11 @@
 //
 // Backends stream different message shapes, so extraction is structural rather
 // than per-backend: any {type:'text', text} block reached through a result-ish
-// key counts, as does a shell command's aggregated output.
+// key counts, as does a shell command's aggregated output and the content of an
+// Agent SDK tool_result block.
+
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const RESULT_KEYS = new Set(['result', 'tool_result', 'toolResult', 'output', 'response']);
 // An assistant's own words are not evidence of what the surface showed it.
@@ -28,12 +32,24 @@ function collectText(node, underResult, out) {
   if (typeof node !== 'object') return;
 
   if (AGENT_ITEM_TYPES.has(node.type)) return;
+  // The Agent SDK hands a tool's reply back as a tool_result block under
+  // message.content: text blocks for an MCP tool, a plain string for Read, Bash
+  // and errors. No result-ish key leads to it, so without this every anthropic
+  // row reported every value absent.
+  if (node.type === 'tool_result') {
+    if (typeof node.content === 'string') out.push(node.content);
+    else collectText(node.content, true, out);
+    return;
+  }
   if (underResult && node.type === 'text' && typeof node.text === 'string') out.push(node.text);
   // A shell tool's stdout reaches the agent the same way a tool result does.
   if (typeof node.aggregated_output === 'string') out.push(node.aggregated_output);
 
   for (const [key, value] of Object.entries(node)) {
     if (key === 'arguments') continue; // what the agent SENT, not what it got back
+    // The SDK's structured copy of the tool_result above; reading both would
+    // count every reply twice.
+    if (key === 'tool_use_result') continue;
     collectText(value, underResult || RESULT_KEYS.has(key), out);
   }
 }
@@ -153,8 +169,8 @@ export function mintedValues(state, limit = 40) {
 export function createReachRecorder() {
   const chunks = [];
   let chars = 0;
-  // A run can stream tens of MB of snapshots; keep the tail bounded so a long
-  // task cannot balloon the runner's memory.
+  // A run can stream tens of MB of snapshots; keep only the first CAP
+  // characters so a long task cannot balloon the runner's memory.
   const CAP = 24 * 1024 * 1024;
   return {
     observe(message) {
@@ -163,9 +179,6 @@ export function createReachRecorder() {
       if (!text) return;
       chunks.push(text);
       chars += text.length;
-    },
-    get chars() {
-      return chars;
     },
     reach(values) {
       return reachOf(values, chunks.join('\n'));
@@ -176,9 +189,19 @@ export function createReachRecorder() {
 // Re-analyse a finished run from its transcripts, so a past run can be asked the
 // question without paying for a new one:
 //   node eval/surface-reach.mjs eval/results/run-<stamp>
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Compared as real paths: import.meta.url is percent-encoded and symlink-free
+// (macOS /tmp is /private/tmp), while argv[1] is neither.
+const invokedDirectly = (() => {
+  try {
+    return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+})();
+if (invokedDirectly) {
   const { readFileSync, existsSync } = await import('node:fs');
   const { join } = await import('node:path');
+  const { transcriptCandidates } = await import('./run-files.mjs');
   const dir = process.argv[2];
   if (!dir) {
     console.error('usage: node eval/surface-reach.mjs <run-dir>');
@@ -189,8 +212,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const notable = [];
   for (const row of res.results) {
     if (!row.fields) continue;
-    const file = join(dir, 'transcripts', `${row.condition}--${row.task}.jsonl`);
-    if (!existsSync(file)) continue;
+    const file = transcriptCandidates(row)
+      .map((name) => join(dir, 'transcripts', name))
+      .find((path) => existsSync(path));
+    if (!file) continue;
     const rec = createReachRecorder();
     for (const line of readFileSync(file, 'utf8').split('\n')) {
       if (line.trim()) {

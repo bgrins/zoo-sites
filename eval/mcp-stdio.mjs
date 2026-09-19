@@ -3,7 +3,8 @@
 // server runs as a CHILD of this process - it dies with us, so a crashed
 // gate cannot leak detached Firefox instances.
 
-import { existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -51,12 +52,40 @@ export function devtoolsMcpEntry() {
   return resolved;
 }
 
-export async function startMcpServer({ command, args, env = {} } = {}) {
+// Which firefox-devtools-mcp build a run measured, for its meta: the version
+// alone cannot tell a local checkout's working tree from the release.
+export function devtoolsMcpInfo() {
+  const entry = devtoolsMcpEntry();
+  const root = join(entry, '..', '..');
+  let version = null;
+  try {
+    version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version ?? null;
+  } catch {}
+  if (!process.env.FIREFOX_DEVTOOLS_MCP) return { source: 'dependency', version };
+  const git = (gitArgs) => {
+    const r = spawnSync('git', ['-C', root, ...gitArgs], { encoding: 'utf8' });
+    return r.status === 0 ? r.stdout.trim() : null;
+  };
+  const status = git(['status', '--porcelain']);
+  return {
+    source: 'FIREFOX_DEVTOOLS_MCP',
+    path: root,
+    version,
+    commit: git(['rev-parse', 'HEAD']),
+    dirty: status == null ? null : status !== '',
+  };
+}
+
+// `baseEnv` is what the server inherits under `env`; the runner's preflight
+// passes the agents' allowlist so a server that needs a dropped variable fails
+// there, before any paid work, rather than inside every agent.
+export async function startMcpServer({ command, args, env = {}, baseEnv = process.env, cwd } = {}) {
   const client = new Client({ name: 'zoo-sites-harness', version: '0.1.0' });
   const transport = new StdioClientTransport({
     command: command ?? process.execPath,
     args,
-    env: { ...process.env, ...env },
+    env: { ...baseEnv, ...env },
+    ...(cwd ? { cwd } : {}),
     // Piped, not inherited: the server logs on every run and inheriting would
     // interleave that into the harness output. Kept only to explain a failed
     // connect, which otherwise reports "Connection closed" with no cause.
@@ -79,6 +108,7 @@ export async function startMcpServer({ command, args, env = {} } = {}) {
   return {
     call: (name, toolArgs = {}) =>
       client.callTool({ name, arguments: toolArgs }, undefined, { timeout: CALL_TIMEOUT_MS }),
+    listTools: () => client.listTools(undefined, { timeout: CALL_TIMEOUT_MS }),
     close: () => client.close().catch(() => {}),
   };
 }

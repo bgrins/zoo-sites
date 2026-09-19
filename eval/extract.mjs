@@ -8,6 +8,7 @@
 // in the answer, or the field is nulled locally. A null field fails the task.
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import { agentEnv } from './agent-env.mjs';
 
 export const EXTRACTOR_MODEL = 'claude-haiku-4-5';
 export const CODEX_EXTRACTOR_MODEL = 'gpt-5.6-terra';
@@ -130,7 +131,7 @@ function extractionPrompt(ask, answer) {
   );
 }
 
-async function extractAnthropic({ ask, answer, schema }) {
+async function extractAnthropic({ ask, answer, schema, abortController }) {
   const model = process.env.EVAL_EXTRACTOR_MODEL || EXTRACTOR_MODEL;
   const options = {
     model,
@@ -140,6 +141,10 @@ async function extractAnthropic({ ask, answer, schema }) {
     persistSession: false,
     permissionMode: 'dontAsk',
     outputFormat: { type: 'json_schema', schema: quotedSchema(schema) },
+    // The same allowlist the agents get, so a parent session's model, effort
+    // and control-channel variables cannot reach the grader either.
+    env: agentEnv('anthropic'),
+    abortController,
   };
   let result = null;
   for await (const m of query({ prompt: extractionPrompt(ask, answer), options })) {
@@ -159,39 +164,75 @@ async function extractAnthropic({ ask, answer, schema }) {
 // Symmetric codex path: same prompt, same quoted schema (the SDK's
 // outputSchema forces the final response to conform), same local quote gate.
 // The read-only sandbox has no network access, so like tools: [] above, the
-// extraction turn gets no second chance at the task's work.
-async function extractCodex({ ask, answer, schema }) {
+// extraction turn gets no second chance at the task's work. It runs from an
+// empty directory under its own CODEX_HOME (see backends/codex.mjs), so neither
+// this repository's AGENTS.md nor the user's codex config reaches the grader.
+async function extractCodex({ ask, answer, schema, abortController }) {
   const { Codex } = await import('@openai/codex-sdk');
+  const { ISOLATED_CONFIG, isolatedCodexHome } = await import('./backends/codex.mjs');
   const model = process.env.EVAL_EXTRACTOR_MODEL || CODEX_EXTRACTOR_MODEL;
-  const codex = new Codex({
-    config: { approval_policy: 'never', model_reasoning_effort: 'low' },
-  });
-  const thread = codex.startThread({
-    model,
-    skipGitRepoCheck: true,
-    sandboxMode: 'read-only',
-  });
-  const turn = await thread.run(extractionPrompt(ask, answer), {
-    outputSchema: quotedSchema(schema),
-  });
-  let raw;
+  const codexHome = isolatedCodexHome(agentEnv('codex'));
   try {
-    raw = JSON.parse(turn.finalResponse);
-  } catch {
-    throw new Error('extraction failed: codex final response is not JSON');
+    const codex = new Codex({
+      env: codexHome.env,
+      config: { ...ISOLATED_CONFIG, approval_policy: 'never', model_reasoning_effort: 'low' },
+    });
+    const thread = codex.startThread({
+      model,
+      workingDirectory: codexHome.tmp,
+      skipGitRepoCheck: true,
+      sandboxMode: 'read-only',
+      webSearchMode: 'disabled',
+    });
+    const turn = await thread.run(extractionPrompt(ask, answer), {
+      outputSchema: quotedSchema(schema),
+      signal: abortController.signal,
+    });
+    let raw;
+    try {
+      raw = JSON.parse(turn.finalResponse);
+    } catch {
+      throw new Error('extraction failed: codex final response is not JSON');
+    }
+    return {
+      raw,
+      model,
+      output_tokens: turn.usage?.output_tokens ?? null,
+      cost_usd: null,
+    };
+  } finally {
+    codexHome.close();
   }
+}
+
+export function extractorInfo() {
   return {
-    raw,
-    model,
-    output_tokens: turn.usage?.output_tokens ?? null,
-    cost_usd: null,
+    extractor: EXTRACTOR,
+    model:
+      process.env.EVAL_EXTRACTOR_MODEL ||
+      (EXTRACTOR === 'codex' ? CODEX_EXTRACTOR_MODEL : EXTRACTOR_MODEL),
   };
 }
 
-export async function extractFields({ ask, answer, schema }) {
+// A hung extraction call would otherwise hold its task, and with it a worker,
+// forever; the caller's retry loop gets the timeout as an ordinary failure.
+export async function extractFields({ ask, answer, schema, timeoutMs = 120000 }) {
   const started = Date.now();
   const impl = EXTRACTOR === 'codex' ? extractCodex : extractAnthropic;
-  const { raw, model, output_tokens, cost_usd } = await impl({ ask, answer, schema });
+  const abortController = new AbortController();
+  const timer = setTimeout(() => abortController.abort(), timeoutMs);
+  let extracted;
+  try {
+    extracted = await impl({ ask, answer, schema, abortController });
+  } catch (error) {
+    if (abortController.signal.aborted) {
+      throw new Error(`extraction timed out after ${Math.round(timeoutMs / 1000)}s`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+  const { raw, model, output_tokens, cost_usd } = extracted;
   return {
     fields: enforceQuotes(raw, normalise(answer)),
     // Pre-enforcement output, for debugging quote-gate nulls.

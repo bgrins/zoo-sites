@@ -20,6 +20,7 @@ import {
 import { homedir, tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { latestRun, RESULTS_ROOT as resultsRoot } from '../run-files.mjs';
 import { basicTasks } from '../tasks/basic.mjs';
 import { webTasks } from '../tasks/web.mjs';
 import { devtoolsTasks } from '../tasks/devtools.mjs';
@@ -56,16 +57,6 @@ excluded by design.`);
   process.exit(0);
 }
 
-const resultsRoot = join(here, '..', 'results');
-function latestRun() {
-  const dirs = readdirSync(resultsRoot)
-    .filter((d) => d.startsWith('run-'))
-    .filter((d) => existsSync(join(resultsRoot, d, 'results.json')))
-    .sort();
-  if (!dirs.length) throw new Error(`no completed runs under ${resultsRoot}`);
-  return join(resultsRoot, dirs.at(-1));
-}
-
 const runDir = resolve(positional ? positional.replace(/\/results\.json$/, '') : latestRun());
 if (!existsSync(join(runDir, 'results.json'))) {
   throw new Error(`${runDir} has no results.json`);
@@ -89,7 +80,7 @@ const backends = [...new Set(rows.map((r) => r.backend))].filter(Boolean);
 const tasksSeen = [...new Set(rows.map((r) => r.task))];
 
 const manifest = {
-  bundleFormat: 1,
+  bundleFormat: 2,
   createdAt: new Date().toISOString(),
   run: basename(runDir),
   meta: run.meta ?? {},
@@ -105,17 +96,26 @@ const manifest = {
       backends.length > 1 ? 'agent harness' : null,
     ].filter(Boolean),
   },
+  // The run records the commit it ran on; a run older than that record only
+  // has the commit this bundle was made from, which may be a different tree.
   environment: {
-    node: process.version,
+    node: run.meta?.node ?? null,
     platform: `${process.platform} ${process.arch}`,
-    gitCommit: sh('git', ['rev-parse', 'HEAD']),
-    gitDirty: (sh('git', ['status', '--porcelain']) ?? '') !== '',
+    gitCommit: run.meta?.git?.commit ?? null,
+    gitDirty: run.meta?.git?.dirty ?? null,
+    bundledFrom: {
+      node: process.version,
+      gitCommit: sh('git', ['rev-parse', 'HEAD']),
+      gitDirty: (sh('git', ['status', '--porcelain']) ?? '') !== '',
+    },
   },
   versions: {
-    playwrightMcp: (() => {
-      const p = createRequire(import.meta.url).resolve('@playwright/mcp/package.json');
-      return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')).version : null;
-    })(),
+    playwrightMcp:
+      run.meta?.surfaces?.['playwright-mcp']?.version ??
+      (() => {
+        const p = createRequire(import.meta.url).resolve('@playwright/mcp/package.json');
+        return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')).version : null;
+      })(),
   },
   totals: run.totals ?? null,
 };
@@ -197,30 +197,37 @@ Repeats per cell: ${manifest.shape.repeats}.
   every sub-check the validator evaluated, token counts, cost, timings.
 - \`report.md\` — the human-readable summary${manifest.shape.repeats > 1 ? ', including per-task medians with ranges' : ''}.
 - \`tasks.json\` — every task's id, wall-clock tier, and the exact prompt given.
-- \`transcripts/\` — full agent message streams, one JSONL per task run: every
-  thought, tool call, tool result, and final answer.
+- \`transcripts/\` — full agent message streams, one JSONL per attempt: every
+  thought, tool call, tool result, and final answer. A row's \`transcript\`
+  names the file of the attempt it reports.
 
 The grading key and validator source are excluded by design.
 
 ## Reading the numbers
 
-- **Output tokens** and **cost** are the comparable efficiency metrics.
-- **Turns are not comparable across conditions.** A shell-driven condition can
-  chain several browser commands into one turn (measured at 1.21 browser
-  operations per turn against 1.00 for a per-tool MCP surface), and one harness
-  only approximates a turn count. Treat turns as diagnostic.
-- **Absolute cost is not comparable across runs.** Prompt-cache creation volume
-  varies enough between runs to move a cost ratio substantially with identical
-  turn counts. Compare within a run.
+- **Output tokens are the comparable efficiency metric.**
+- **Turns compare only between runs whose backend counts a turn the same way.**
+  Codex only approximates a turn, and surfaces pack different amounts of work
+  into one call: a shell-driven surface measures about 1.21 browser operations
+  per turn against 1.00 for a per-tool MCP surface.
+- **Cost compares within one run and never between two.** Every condition in a
+  run meets the same prompt cache, so a ratio there is fair; across runs,
+  cache-creation volume swings enough to move a ratio from 1.03 to 1.50 at
+  identical turn counts. Treat a run's cost as its budget, not its score.
+- **A pass rate counts graded attempts.** A row marked \`infra\` never reached a
+  grade, because an API or transport error outlived the retries or an interrupt
+  stopped it. A row whose
+  \`error\` names a harness limit is a FAILURE, not infra: the agent hit the
+  wall clock or the output-token ceiling on every attempt it was given.
 - **Wall time carries machine noise**, more so if the run used parallelism
   (\`parallelTasks\` in \`meta\`). A task has been observed at 94.9s versus 27.9s
   across repeats with an identical turn count.
 - **Pass rate is near ceiling** on most tasks by design: the suite is built so
   that efficiency, not success, is the discriminator. A failure is therefore
   interesting — read its \`detail\` string, which names the sub-check that failed.
-- Rows carrying \`retries\` hit a transient infrastructure error and were re-run;
-  rows whose \`error\` mentions a harness limit hit a wall-clock or output-token
-  ceiling rather than failing the task.
+- Rows carrying \`retries\` were re-run after a transient error or a wall-limit
+  stop. The spend of every discarded attempt is on its row as \`discarded_*\`
+  and totalled in report.md, outside the per-condition columns.
 `);
 
 const outPath = resolve(flag('out', join(resultsRoot, `${bundleName}.zip`)));
