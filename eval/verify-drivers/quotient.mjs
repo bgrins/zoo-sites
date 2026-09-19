@@ -10,33 +10,44 @@
 // Firefox < 153, so instrumentation before the triggering click is the one
 // route that always works.
 
-import { until, uidOf } from './lib.mjs';
+import { ANSWERS } from '../answers.mjs';
+import { quotientStray } from './devtools-lib.mjs';
+import { addSession, findSession, until, uidOf } from './lib.mjs';
 
 // Which helper reads which batch field. Fixed public knowledge from
 // pages/quotient/app.js; which PAIR is broken is the per-session draw.
-const FIELD_HELPERS = {
-  vendorAliases: 'normalizeVendor',
-  fx: 'applyFxRate',
-  taxRules: 'splitTaxLines',
-  adjustments: 'mergeAdjustments',
-  costCenters: 'assignCostCenters',
-  rounding: 'applyRoundingPolicy',
-  periods: 'flagAging',
-  ledgerMeta: 'composeSummary',
-};
+const FIELD_HELPERS = Object.fromEntries(
+  ANSWERS.quotient.batchFields.map(({ field, helper }) => [field, helper])
+);
+
+// The field a 200 batch body lacks: the session's draw, read as a curl
+// probe reads it.
+const omittedFrom = (body) => Object.keys(FIELD_HELPERS).find((k) => !(k in (body ?? {})));
 
 export const DRIVERS = {
   'silent-throw': {
     note:
       'instruments window "error" via evaluate_script BEFORE the one-shot click; ' +
       'our console entry for the throw carries no stack, so the wrapper is the ' +
-      'attribution route',
+      'attribution route; curl probes draw stray batches first, so selection ' +
+      'must prefer the page-served session',
     // Static wrong for --extract: renderCards is in app.js but is not one of
     // the eight helpers, and rows is never the omitted field.
     wrong:
       'The reconciliation fails because renderCards throws an uncaught TypeError: ' +
       'the batch response is missing its rows field.',
-    async run({ goto, mcp, snapshot, evaluate }) {
+    async run({ goto, mcp, snapshot, evaluate, base }) {
+      // Curl probes sent ahead of the run, each drawing its own one-shot
+      // batch: the validator must grade the session that ran the
+      // reconciliation through the page, not a stray draw an answer names.
+      const strayDraw = async () => {
+        const { status, body } = await (await quotientStray(base, '/quotient/reconcile.html')).batch();
+        const omitted = status === 200 ? omittedFrom(body) : null;
+        if (!omitted) throw new Error(`a stray batch answered ${status} with no omitted field`);
+        return omitted;
+      };
+      const strays = [];
+      for (let i = 0; i < 3; i++) strays.push(await strayDraw());
       await goto('/quotient/reconcile.html');
       // The batch is one-shot, so attribution has to be armed before the
       // first click: an uncaught TypeError's stack exists only at throw time.
@@ -90,6 +101,15 @@ export const DRIVERS = {
       if (!decoy || decoy === field) {
         throw new Error(`the 410 reference copy omits ${decoy}, expected a different field`);
       }
+      // A stray draw distinct from both the page's draw and its decoy, so
+      // naming it is wrong for a reason no other pin already covers.
+      let strayField = strays.find((f) => f !== field && f !== decoy);
+      for (let i = 0; !strayField && i < 20; i++) {
+        const f = await strayDraw();
+        if (f !== field && f !== decoy) strayField = f;
+      }
+      if (!strayField) throw new Error(`no stray draw differed from ${field} and ${decoy}`);
+      const strayFields = { throwingFunction: FIELD_HELPERS[strayField], missingField: strayField };
       const fields = { throwingFunction: frame, missingField: field };
       this.wrong = [
         this.wrong,
@@ -113,11 +133,59 @@ export const DRIVERS = {
         { throwingFunction: FIELD_HELPERS[decoy], missingField: field },
         // Swapped bindings.
         { throwingFunction: field, missingField: frame },
+        // A curl probe's draw, made before the page run.
+        strayFields,
+        // A qualified wrong helper, and two helpers where one is asked for.
+        { throwingFunction: `Reconciler.${FIELD_HELPERS[decoy]}`, missingField: field },
+        { throwingFunction: `${frame} / ${FIELD_HELPERS[decoy]}`, missingField: field },
+        // Another app.js function named as the thrower, the helper as context.
+        { throwingFunction: `runReconciliation (via ${frame})`, missingField: field },
+        { throwingFunction: `renderCards after ${frame}`, missingField: field },
+        { throwingFunction: `the caller of ${frame}`, missingField: field },
       ];
       this.alsoCorrectFields = [
         fields,
         { throwingFunction: `${frame}()`, missingField: `batch.${field}` },
         { throwingFunction: frame.toLowerCase(), missingField: field.toUpperCase() },
+        // The helper named with a qualifier or its source file. app.js is a
+        // classic script, so its functions are window properties.
+        { throwingFunction: `window.${frame}`, missingField: field },
+        { throwingFunction: `Reconciler.${frame}`, missingField: field },
+        { throwingFunction: `${frame} (app.js)`, missingField: field },
+      ];
+      const pageServed = (s) => Boolean(s.quotient?.batch?.servedFromPage);
+      this.alsoCorrectState = [
+        {
+          // No page-served session at all: the answer is graded against the
+          // shell's own draws.
+          name: 'a pure shell run is graded on its own draw',
+          mutate(state) {
+            for (const [sid, s] of [...state.sessions]) if (pageServed(s)) state.sessions.delete(sid);
+          },
+          fields: strayFields,
+        },
+        {
+          // A later session that also ran the batch through the page (a
+          // re-run under a fresh cookie; a forged Referer looks the same) is
+          // graded on its own one-shot draw.
+          name: 'a second page-served session is graded on its own draw',
+          mutate(state) {
+            const page = findSession(state, pageServed).session;
+            addSession(state, {
+              quotient: {
+                batch: {
+                  ...page.quotient.batch,
+                  omitted: strayField,
+                  helper: FIELD_HELPERS[strayField],
+                  servedAt: page.quotient.batch.servedAt + 1,
+                },
+                quotes: [],
+                offPageQuotes: 0,
+              },
+            });
+          },
+          fields: strayFields,
+        },
       ];
       return {
         text:
@@ -132,13 +200,21 @@ export const DRIVERS = {
 
   'mid-flight-rate': {
     note:
-      'wraps Response.prototype.json via evaluate_script between the first and ' +
-      'second quote; the debugger route (set_logpoint on quote.js line 19) needs ' +
+      'wraps Response.prototype.json via evaluate_script before the first ' +
+      'quote; the debugger route (set_logpoint on quote.js line 19) needs ' +
       'Firefox 153+ and is covered in the staging self-test notes',
     // Static wrong for --extract: plausible-looking 4dp figure outside the
     // mint range [1.0500, 1.4999], so it can never be a session's rate.
     wrong: 'The rate multiplier applied to the second quote was 1.5300.',
-    async run({ goto, mcp, snapshot, evaluate }) {
+    async run({ goto, mcp, snapshot, evaluate, base: origin }) {
+      // A curl client can send a lane that is not a string; the quote must
+      // still be recorded under the lane it priced, or no validator can ever
+      // match it.
+      const stray = await quotientStray(origin, '/quotient/quote.html');
+      const odd = await stray.quote({ lane: ['casterway'], weight: 65 });
+      if (odd.status !== 200 || odd.body.lane !== 'casterway') {
+        throw new Error(`an array lane was echoed as ${JSON.stringify(odd.body.lane)} (${odd.status})`);
+      }
       await goto('/quotient/quote.html');
       const price = async (laneValue, weight) => {
         const radio = uidOf(await snapshot(), `input[^\\n]*value="${laneValue}"`);
@@ -152,18 +228,10 @@ export const DRIVERS = {
         await mcp('click_by_uid', { uid: button });
       };
 
-      // An exploratory quote before following the ask: the validator must
-      // grade the asked-for Casterway/65 rate wherever it sits in the quote
-      // list, and an index-based answer (the Harlow rate, second in this
-      // session) must fail.
-      await price('veldt-north', 12);
-      await until('the exploratory quote to render a total', async () =>
-        /"\$([\d,]+)"/.exec(await snapshot())?.[1] ?? null, { tries: 30, gap: 200 });
-
-      // The instrumentation the ask exists to force, armed before both asked
-      // quotes: the rate is destructured and dropped by the page - it exists
-      // only while the response is being read. Catching the Harlow rate too
-      // gives the driver its index-answer wrong pin.
+      // The instrumentation the ask exists to force, armed before every
+      // quote: the rate is destructured and dropped by the page - it exists
+      // only while the response is being read. Catching the exploratory and
+      // Harlow rates too gives the driver its order and index wrong pins.
       await evaluate(`() => {
         window.__seenRates = [];
         const original = Response.prototype.json;
@@ -173,15 +241,21 @@ export const DRIVERS = {
           return value;
         };
       }`);
-      await price('harlow-dunmere', 40);
       const seenRates = (n, label) =>
         until(label, async () => {
           const rates = (await evaluate('() => window.__seenRates')) ?? [];
           return rates.length >= n ? rates : null;
         }, { tries: 30, gap: 200 });
-      const harlowRate = (await seenRates(1, 'the fetch wrapper to see the first rate'))[0];
+      // An exploratory quote of the second asked shipment before following
+      // the ask: its rate was applied to a Casterway 65 kg quote, but not to
+      // the one priced after the Harlow shipment, so it must fail. The Harlow
+      // rate then sits second in the quote list, the index-answer pin.
       await price('casterway', 65);
-      const rate = (await seenRates(2, 'the fetch wrapper to see the second rate'))[1];
+      const exploreRate = (await seenRates(1, 'the fetch wrapper to see the exploratory rate'))[0];
+      await price('harlow-dunmere', 40);
+      const harlowRate = (await seenRates(2, 'the fetch wrapper to see the Harlow rate'))[1];
+      await price('casterway', 65);
+      const rate = (await seenRates(3, 'the fetch wrapper to see the asked Casterway rate'))[2];
       const shown = await evaluate(`() => document.getElementById('total').textContent`);
       const total = Number(String(shown).replace(/[$,]/g, ''));
       // Bind the captured rate to the rendered figure: base mirrors the
@@ -193,9 +267,11 @@ export const DRIVERS = {
       const round4 = (n) => Math.round(n * 10000) / 10000;
       const twoDp = Math.round(rate * 100) / 100;
       const neighbour = round4(total / base);
-      // Guarded stand-ins: the Harlow rate and the 2dp truncation, nudged onto
-      // a different grid point whenever the draw makes them collide with the
-      // real rate.
+      // Guarded stand-ins: the exploratory and Harlow rates and the 2dp
+      // truncation, nudged onto a different grid point whenever the draw makes
+      // them collide with the real rate.
+      const exploreWrong =
+        Math.abs(exploreRate - rate) > 0.00005 ? exploreRate : round4(rate + 0.0005);
       const harlowWrong =
         Math.abs(harlowRate - rate) > 0.00005 ? harlowRate : round4(rate + 0.0002);
       const twoDpWrong = Math.abs(twoDp - rate) > 0.00005 ? twoDp : round4(rate + 0.0004);
@@ -215,6 +291,9 @@ export const DRIVERS = {
         `The server-issued multiplier for the second asked shipment works out to ${rate}.`,
       ];
       this.wrongFields = [
+        // The Casterway 65 kg rate priced before the Harlow shipment: the
+        // right shipment, out of the asked order.
+        { rateMultiplier: exploreWrong },
         // The rate of the session's second quote by INDEX (the Harlow
         // shipment): the ask demands the rate applied to the asked-for second
         // shipment, not a position in the quote list.
@@ -231,6 +310,30 @@ export const DRIVERS = {
         { rateMultiplier: total },
       ];
       this.alsoCorrectFields = [fields];
+      const graded = (s) => s.quotient?.quotes?.some((q) => q.fromPage && q.rate === rate);
+      const requoteRate = [1.0501, 1.0502, 1.0503, 1.0504].find((r) =>
+        [exploreRate, harlowRate, rate].every((x) => Math.abs(x - r) > 0.00005)
+      );
+      this.wrongState = [
+        {
+          name: 'no Harlow 40 kg quote precedes the asked Casterway one',
+          mutate(state) {
+            const s = findSession(state, graded).session;
+            s.quotient.quotes = s.quotient.quotes.filter((q) => q.lane !== 'harlow-dunmere');
+          },
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a re-quote of the asked Casterway shipment after the flow',
+          mutate(state) {
+            const s = findSession(state, graded).session;
+            const last = s.quotient.quotes.at(-1);
+            s.quotient.quotes.push({ ...last, rate: requoteRate, at: last.at + 1 });
+          },
+          fields: { rateMultiplier: requoteRate },
+        },
+      ];
       return {
         text:
           `After a quick exploratory quote, I priced the 40 kg Harlow - Dunmere shipment ` +

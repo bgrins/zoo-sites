@@ -5,7 +5,7 @@
 // the console log for the silent partial import. No driver ever reads a
 // response body out of a network tool (ours never returns one).
 
-import { until, uidOf, textOf } from './lib.mjs';
+import { bumpCode, until, uidOf, textOf } from './lib.mjs';
 
 const TRACE = /^DT-[0-9A-F]{8}$/i;
 const REF = /^MR-[0-9A-F]{8}$/i;
@@ -57,13 +57,27 @@ export const DRIVERS = {
       }
 
       const path = new URL(hit.url).pathname + new URL(hit.url).search;
+      const shard = Number(new URL(hit.url).searchParams.get('shard'));
+      const healthyShard = [1, 2, 3, 4].find((n) => n !== shard);
       const fields = { failedRequest: path, statusCode: 502, traceId: trace };
       this.wrongFields = [
         // Misattributed to the sign-in POST that succeeded.
         { failedRequest: '/api/depot/signin', statusCode: 502, traceId: trace },
         // Misattributed to the cached-roster fallback file (a 200), which also
-        // contains the word "roster".
+        // contains the word "roster", by path and in prose.
         { failedRequest: '/depot/data/roster-cache.json', statusCode: 502, traceId: trace },
+        { failedRequest: 'the cached roster file', statusCode: 502, traceId: trace },
+        { failedRequest: 'the cached-roster fallback', statusCode: 502, traceId: trace },
+        { failedRequest: 'the request for the cached roster', statusCode: 502, traceId: trace },
+        { failedRequest: 'the roster served from the cache', statusCode: 502, traceId: trace },
+        // The fallback named first, the live endpoint only as context.
+        {
+          failedRequest: '/depot/data/roster-cache.json (fallback after /api/depot/roster failed)',
+          statusCode: 502,
+          traceId: trace,
+        },
+        // A shard the page never requested (it would have answered 200).
+        { failedRequest: `/api/depot/roster?shard=${healthyShard}`, statusCode: 502, traceId: trace },
         // Right request, wrong status.
         { failedRequest: path, statusCode: 404, traceId: trace },
         // Fabricated trace.
@@ -73,6 +87,20 @@ export const DRIVERS = {
         fields,
         { failedRequest: `GET /api/depot/roster (shard ${det.url.match(/shard=(\d)/)?.[1] ?? '?'})`, statusCode: 502, traceId: trace.toLowerCase() },
         { failedRequest: 'the roster request', statusCode: 502, traceId: trace },
+        // Prose that sets the live request against the cache.
+        { failedRequest: 'the non-cached roster request', statusCode: 502, traceId: trace },
+        { failedRequest: 'the roster request, not the cached fallback', statusCode: 502, traceId: trace },
+        {
+          failedRequest: 'the roster fetch that should have replaced the cached roster',
+          statusCode: 502,
+          traceId: trace,
+        },
+        // The live endpoint named alongside the fallback it triggered.
+        {
+          failedRequest: `GET ${path} (the page then fell back to roster-cache.json)`,
+          statusCode: 502,
+          traceId: trace,
+        },
       ];
       this.alsoCorrect = [
         `The sign-in POST itself returned 200; what failed was the follow-up roster fetch ` +
@@ -156,19 +184,50 @@ export const DRIVERS = {
         { failedRequest: '/api/depot/manifests', statusCode: 500, supportRef: out.ref },
         // A healthy request named as the failure (correct status claimed).
         { failedRequest: '/api/depot/kpis', statusCode: 507, supportRef: out.ref },
-        // The document itself (a 200) named as the failing request, without
-        // naming the store endpoint. NOTE: supportRef is detail-only, so every
-        // wrongFields entry here is wrong in the pass conditions, not the ref.
+        // A stylesheet (a 200) named as the failing request.
         { failedRequest: '/depot/depot.css', statusCode: 507, supportRef: null },
         // The page document misattribution: normalises to contain "manifests"
-        // but the document loaded fine (a 200).
+        // but the document loaded fine (a 200), by path and in prose.
         { failedRequest: '/depot/manifests.html', statusCode: 507, supportRef: null },
+        { failedRequest: 'the manifests page itself (the document)', statusCode: 507, supportRef: null },
+        { failedRequest: 'the manifests document request', statusCode: 507, supportRef: null },
+        // The document named first, the endpoint only as context.
+        {
+          failedRequest: '/depot/manifests.html (its /api/depot/manifests call is fine)',
+          statusCode: 507,
+          supportRef: null,
+        },
+        // The intake page's manifest data file, a 200 this page never fetches.
+        { failedRequest: '/depot/data/manifest-dm2116.txt', statusCode: 507, supportRef: null },
+        // Right diagnosis, but a stated ref that is not the minted one:
+        // fabricated, one character off, the body's error code, and a
+        // fabricated one behind a placeholder word.
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: 'MR-00000000' },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: bumpCode(out.ref) },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: 'manifest_store_locked' },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: 'unknown, possibly MR-00000000' },
       ];
       this.alsoCorrectFields = [
         fields,
-        // The ref is NOT a pass condition (it is the capability probe): a
-        // correct diagnosis with no recovered ref must pass.
+        // The ref is optional (it is the capability probe): a correct
+        // diagnosis with no recovered ref must pass.
         { failedRequest: 'GET /api/depot/manifests', statusCode: 507, supportRef: null },
+        // A placeholder for the unrecovered ref states none.
+        { failedRequest: 'GET /api/depot/manifests', statusCode: 507, supportRef: 'not available' },
+        { failedRequest: 'GET /api/depot/manifests', statusCode: 507, supportRef: 'N/A' },
+        {
+          failedRequest: 'GET /api/depot/manifests',
+          statusCode: 507,
+          supportRef: 'not recoverable (response body not exposed)',
+        },
+        // The endpoint named alongside the document that fetched it.
+        {
+          failedRequest: 'GET /api/depot/manifests (fetched by manifests.html on load)',
+          statusCode: 507,
+          supportRef: null,
+        },
+        { failedRequest: 'the manifests request the page document issues', statusCode: 507, supportRef: null },
+        { failedRequest: 'the manifests XHR, not the document', statusCode: 507, supportRef: null },
         { failedRequest: 'the manifests API request', statusCode: 507, supportRef: out.ref.toLowerCase() },
         // Singular prose naming is a legitimate answer shape.
         { failedRequest: 'the manifest request', statusCode: 507, supportRef: out.ref },
@@ -262,6 +321,8 @@ export const DRIVERS = {
       this.wrongFields = [
         // Believing the page: all 40 accepted.
         { acceptedCount: 40, rejectedKeys: [], diagCode: null },
+        // Read the rejects off the console but still believed the page's 40.
+        { acceptedCount: 40, rejectedKeys: keys, diagCode: diag },
         // One reject missed.
         { acceptedCount: 37, rejectedKeys: keys.slice(0, 2), diagCode: diag },
         // Over-claiming a healthy line as rejected. The line is derived from the

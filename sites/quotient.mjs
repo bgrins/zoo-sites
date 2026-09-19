@@ -19,7 +19,8 @@
 // body and one transient stack frame. quotientMintRate guarantees the rounded
 // total collides with at least QUOTIENT_MIN_COLLISIONS other candidate rates,
 // so back-computing total / base cannot identify the rate. Every issued rate
-// is recorded in order on the session; the validator grades the second.
+// is recorded in order on the session; the validator grades a Casterway 65 kg
+// quote priced after a Harlow - Dunmere 40 kg one.
 import { randomBytes } from 'node:crypto';
 
 // Field -> helper map. Mirrors pages/quotient/app.js exactly: each helper's
@@ -204,14 +205,14 @@ export function routes(ctx) {
         });
       }
       const q = quotientState(found.session);
-      const base = quotientBaseFor(payload.lane, weight);
+      const base = quotientBaseFor(laneKey, weight);
       const rate = quotientMintRate(base);
       const ref = 'QF-' + randomBytes(3).toString('hex').toUpperCase();
       const onPage = fromQuotient(req);
       if (!onPage) q.offPageQuotes += 1;
       q.quotes.push({
         ref,
-        lane: payload.lane,
+        lane: laneKey,
         weight,
         base,
         rate,
@@ -219,7 +220,7 @@ export function routes(ctx) {
         fromPage: onPage,
         at: Date.now(),
       });
-      return json(res, 200, { ref, lane: payload.lane, weight, rate });
+      return json(res, 200, { ref, lane: laneKey, weight, rate });
     }
 
     return false;

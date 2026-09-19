@@ -3,6 +3,34 @@
 import { eqCode, eqName, normalise, normaliseWords } from '../extract.mjs';
 import { originUrls } from '../../manifest.mjs';
 
+// The first URL path a field carries is the request it names; a later path is
+// context, as in "GET /api/depot/roster (then fell back to roster-cache.json)".
+// Null when the field names its request in prose.
+function firstPath(field) {
+  const m = normalise(field ?? '')
+    .replace(/\b[a-z][a-z0-9+.-]*:\/\/[^/\s]*/g, ' ')
+    .match(/(?:^|[^\w.\/-])(\/[\w.-][\w.\/-]*|api\/[\w.\/-]*)/);
+  return m ? '/' + m[1].replace(/^\/|\/+$/g, '') : null;
+}
+
+const REQUEST_NOUN = /^(request|requests|fetch|fetches|call|calls|xhr|api|endpoint|get)$/;
+
+// Prose names a request by its first mention of the resource word. A word
+// that points elsewhere (the fallback's cache stem, the page's document)
+// before that mention names the other thing; after it, it is context only
+// when a request noun follows the resource word, as in "the roster request,
+// not the cached fallback".
+function namesInProse(field, resource, pointsElsewhere) {
+  const words = normaliseWords(field ?? '').trim().split(' ');
+  const at = words.findIndex((w) => resource.test(w));
+  if (at === -1) return false;
+  const elsewhere = words.map((_, j) => j).filter((j) => pointsElsewhere(words, j));
+  return (
+    elsewhere.every((j) => j > at) &&
+    (elsewhere.length === 0 || REQUEST_NOUN.test(words[at + 1] ?? ''))
+  );
+}
+
 export async function devtoolsTasks(base, origins = originUrls(base)) {
   return [
     {
@@ -44,19 +72,38 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
         const d = graded?.depot;
         // The failing request must be the roster fetch, not the sign-in POST
         // and not the cached-roster fallback file (which also contains the
-        // word "roster" but succeeded with a 200).
-        const named = normaliseWords(fields?.failedRequest ?? '');
-        const namesRoster = named.includes(' roster ') && !named.includes(' cache ');
+        // word "roster" but succeeded with a 200). A field that carries a
+        // path is graded on its first one. Prose must name the roster, and
+        // not by the fallback's file name or as the cached one; "non-cached"
+        // points at the live request.
+        const request = normalise(fields?.failedRequest ?? '');
+        const path = firstPath(request);
+        const namesRoster = path
+          ? path === '/api/depot/roster'
+          : !normaliseWords(request).includes(' json ') &&
+            namesInProse(
+              request,
+              /^roster$/,
+              (w, j) => /^cach(e|ed|ing)$/.test(w[j]) && !/^(non|not)$/.test(w[j - 1] ?? '')
+            );
+        // The page requests only the shard sign-in assigned, so a named shard
+        // must be that one; a shard-less naming stands.
+        const shardsNamed = [...request.matchAll(/\bshard\s*(?:[=:#-]|no\.?|number)?\s*(\d+)/g)].map(
+          (m) => Number(m[1])
+        );
+        const shardOk = Boolean(d) && shardsNamed.every((n) => n === d.shard);
         return {
           pass:
             Boolean(d) &&
             eqCode(fields?.traceId, d.trace) &&
             fields?.statusCode === 502 &&
-            namesRoster,
+            namesRoster &&
+            shardOk,
           // rosterHits is the retention gap expressed as a number: how many
           // times the failure had to be (re-)caused for the surface to see it.
           detail:
             `signedIn=${sessions.length} shard=${d?.shard ?? '?'} ` +
+            `namesRoster=${namesRoster} namedShards=${shardsNamed.join('/') || '-'} ` +
             `rosterHits=${d?.rosterHits ?? 0} failServed=${d?.rosterFailures ?? 0} ` +
             `signins=${d?.signins ?? 0} fields=${JSON.stringify(fields)}`,
         };
@@ -93,10 +140,13 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (text, ctx, fields) => {
-        // Pass = the diagnosis alone (507 on the manifests request): the ref
-        // lives only in the response body, which the network surface never
-        // returns, so refFound is the measured capability gap and is recorded in
-        // detail, NEVER required to pass. The 507 is
+        // Pass = the diagnosis (507 on the manifests request), plus the ref
+        // whenever the answer states one. The ref lives only in the response
+        // body, which firefox-devtools-mcp's network tools never return
+        // (playwright-mcp's browser_network_request does), so an answer that
+        // says it could not recover the ref still passes: refFound is the
+        // measured capability gap. A stated ref is a claim, though, and a
+        // fabricated one fails. The 507 is
         // deliberate: 500 is the modal guess for a broken API, so a guessed
         // status must fail - the log is the only place to read the real one.
         const sessions = [...ctx.pages.state.sessions.values()].filter(
@@ -106,20 +156,37 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
           sessions.find((s) => eqCode(fields?.supportRef, s.depot.manifestRef)) ??
           sessions[0];
         const d = graded?.depot;
-        const named = normaliseWords(fields?.failedRequest ?? '');
-        // Singular and plural prose namings both count; the page document
-        // (manifests.html, a 200) must not, so its extension is excluded.
-        const namesManifests =
-          (named.includes(' manifest ') || named.includes(' manifests ')) &&
-          !named.includes(' html ');
+        // A field that carries a path is graded on its first one. Otherwise
+        // singular and plural prose namings both count, but the page document
+        // (manifests.html, a 200) and the intake page's manifest data file
+        // (manifest-dm2116.txt, a 200) must not: their file names fail
+        // anywhere, the word "document" only where it names the thing.
+        const request = normalise(fields?.failedRequest ?? '');
+        const path = firstPath(request);
+        const namesManifests = path
+          ? path === '/api/depot/manifests'
+          : !/ (html|txt|dm2116) /.test(normaliseWords(request)) &&
+            namesInProse(request, /^manifests?$/, (w, j) => w[j] === 'document');
+        // A stated ref is an identifier: a token that mixes letters and
+        // digits, carries an underscore, or is the MR prefix. "N/A" and "not
+        // recoverable (body not exposed)" state none and pass like null;
+        // "manifest_store_locked" is the body's error code claimed as the ref.
+        const refStated = String(fields?.supportRef ?? '')
+          .split(/[^a-z0-9_]+/i)
+          .some((t) => /^mr$/i.test(t) || t.includes('_') || (/\d/.test(t) && /[a-z]/i.test(t)));
         const refFound = Boolean(d) && eqCode(fields?.supportRef, d.manifestRef);
         return {
-          pass: Boolean(d) && fields?.statusCode === 507 && namesManifests,
+          pass:
+            Boolean(d) &&
+            fields?.statusCode === 507 &&
+            namesManifests &&
+            (!refStated || refFound),
           // manifestHits > 1 is the price of the missing capability: the
           // re-fetch an agent needs to reach the body without response-body
           // capture.
           detail:
             `sessions=${sessions.length} manifestHits=${d?.manifestHits ?? 0} ` +
+            `namesManifests=${namesManifests} refStated=${refStated} ` +
             `refFound=${refFound} ref=${d?.manifestRef ?? '?'} ` +
             `fields=${JSON.stringify(fields)}`,
         };
@@ -222,19 +289,40 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
           [flat(got), flat(got).replace(/^(batch|payload|response|data|json)/, '')].includes(
             flat(want)
           );
+        // "applyFxRate()", "window.applyFxRate" and "applyFxRate (app.js:21)"
+        // all name the helper: a dotted qualifier may precede it and only its
+        // source location may follow. "the caller of applyFxRate" and
+        // "renderCards after applyFxRate" name some other function.
+        const namesHelper = (got, helper) => {
+          if (typeof got !== 'string' || !helper) return false;
+          if (eqName(got, helper)) return true;
+          const m = got
+            .toLowerCase()
+            .match(new RegExp(`^[^a-z0-9_$]*(?:[a-z_$][\\w$]*\\.)*${helper.toLowerCase()}(?![\\w$])(.*)$`));
+          return (
+            Boolean(m) &&
+            m[1]
+              .split(/[^a-z0-9_$]+/)
+              .filter(Boolean)
+              .every((t) => /^(app|js|at|line|\d+)$/.test(t))
+          );
+        };
         const sessions = [...ctx.pages.state.sessions.values()].filter((s) => s.quotient?.batch);
         // Grade the session that ran the reconciliation through the page.
         // The draw space is only 8 pairs, so the usual answer-matching
         // selection is collision-prone: a stray curl probe has a 1-in-8
         // chance of drawing whatever pair the answer names, and must not
         // shadow the run that clicked the button. servedFromPage is
-        // forgeable legibility (curl -H sets sec-fetch-site freely), so it
-        // steers SELECTION only and never the pass bit: forging it buys
-        // nothing an honest browser run does not already get, and a pure
+        // forgeable legibility (curl -H sets Referer and sec-fetch-site
+        // freely), so it steers SELECTION only and never the pass bit. Every
+        // page-served session competes on its own one-shot draw: a re-run
+        // through the page under a fresh cookie is an honest second batch,
+        // and a shell session with a forged Referer is indistinguishable
+        // from one, so forging buys exactly what that re-run gets. A pure
         // shell run (no page-served session at all) is still graded, against
         // its own draw.
         const fieldOf = (s) => fieldEq(fields?.missingField, s.quotient.batch.omitted);
-        const helperOf = (s) => eqName(fields?.throwingFunction ?? '', s.quotient.batch.helper);
+        const helperOf = (s) => namesHelper(fields?.throwingFunction, s.quotient.batch.helper);
         const pageServed = sessions.filter((s) => s.quotient.batch.servedFromPage);
         const pool = pageServed.length ? pageServed : sessions;
         const graded =
@@ -245,11 +333,13 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
         const fieldOk = Boolean(batch) && fieldOf(graded);
         const helperOk = Boolean(batch) && helperOf(graded);
         // Naming the DECOY draw means the agent re-fetched the one-shot batch
-        // out of band and trusted the 410's reference copy.
+        // out of band and trusted the 410's reference copy. Telemetry, as are
+        // the serve counters: the decoy is never the graded draw, so the pass
+        // bit already fails that answer.
         const namedDecoy =
           Boolean(batch) &&
           (fieldEq(fields?.missingField, batch.decoyField) ||
-            eqName(fields?.throwingFunction ?? '', batch.decoyHelper));
+            namesHelper(fields?.throwingFunction, batch.decoyHelper));
         return {
           pass: fieldOk && helperOk,
           detail:
