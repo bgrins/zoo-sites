@@ -737,8 +737,9 @@ export const ANSWERS = {
   // both years whose names or titles look like the real deltas (Dara/Dana
   // Quill, the two Ellerys, the two Achebes, an unchanged "Senior" title).
   // `unchanged` is every person present and identical in both years (all 25,
-  // the 4 decoys included); the validator uses its COUNT as the anti-dump
-  // gate, since the ask tells the agent to list only changed people.
+  // the 4 decoys included). `changed`, `decoys` and `unchanged` are for human
+  // QA: the validator reads only added, removed and titleChange, and its exact
+  // set equality per category already fails any unchanged person listed.
   rosters: {
     added: ['Sadie Achebe', 'Nell Braddock', 'Yusuf Palermo'],
     removed: ['Priya Ellery', 'Tobias Wren'],
@@ -826,8 +827,8 @@ export const ANSWERS = {
   },
 
   // pages/metrics/ chart-escape: everything graded is a per-session draw read
-  // back out of ctx.pages.state, and month-name folding lives in the extractor,
-  // so this key holds nothing.
+  // back out of ctx.pages.state, and month parsing lives in the validator, so
+  // this key holds nothing.
 
   // pages/roles/ — the Alderpost vacancy desk (faceted-search). The 86-vacancy
   // catalogue, the client brief, the winning facet combination and every

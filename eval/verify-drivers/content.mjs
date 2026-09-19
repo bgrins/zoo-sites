@@ -369,6 +369,7 @@ export const DRIVERS = {
             found.push({
               rank: slot,
               title: link.textContent.trim(),
+              site: entry.querySelector('.headline .origin')?.textContent.trim() ?? '',
               // The score sits in the vote pill as its own text node, ahead of
               // the "points" label span.
               points: entry.querySelector('.tally')?.firstChild?.textContent.trim() ?? '',
@@ -436,7 +437,34 @@ export const DRIVERS = {
         { rows: fieldRows.map((r, i) => ({ ...r, rank: fieldRows[(i + 1) % fieldRows.length].rank })) },
         { rows: fieldRows.map((r) => ({ ...r, rank: 1 })) },
       ];
-      this.alsoCorrectFields = [fields, { rows: [...fieldRows].reverse() }];
+      // The ask wants the top 20: a table cut at 18 rows, or finished with two
+      // invented ones, is not that. Transcription noise is allowed two rows
+      // with one cell off each, never a row with two cells off or a third row.
+      const invented = { title: 'Notes on a quiet week', points: 3, comments: 0 };
+      const offBy = (r, key) => ({ ...r, [key]: r[key] + 1 });
+      this.wrongFields.push(
+        { rows: fieldRows.slice(0, 18) },
+        { rows: [...fieldRows.slice(0, 18), { ...invented, rank: 19 }, { ...invented, rank: 20 }] },
+        { rows: fieldRows.map((r, i) => (i === 4 ? offBy(offBy(r, 'points'), 'comments') : r)) },
+        { rows: fieldRows.map((r, i) => ([2, 7, 12].includes(i) ? offBy(r, 'points') : r)) }
+      );
+      // The front page prints each post's domain after its title, and a title
+      // cell that keeps it is still that post's title, but only with its OWN
+      // domain.
+      const sites = rows.map((r) => r.site).filter(Boolean);
+      if (sites.length < 2) throw new Error('expected the front page to print post domains');
+      let k = 0;
+      this.wrongFields.push({
+        rows: fieldRows.map((r, i) =>
+          rows[i].site ? { ...r, title: `${r.title} (${sites[++k % sites.length]})` } : r
+        ),
+      });
+      this.alsoCorrectFields = [
+        fields,
+        { rows: [...fieldRows].reverse() },
+        { rows: fieldRows.map((r, i) => (rows[i].site ? { ...r, title: `${r.title} (${rows[i].site})` } : r)) },
+        { rows: fieldRows.map((r, i) => (i === 3 ? offBy(r, 'points') : i === 15 ? offBy(r, 'comments') : r)) },
+      ];
       return { text: table(rows), fields };
     },
   },

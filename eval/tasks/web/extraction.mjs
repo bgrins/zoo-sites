@@ -196,13 +196,14 @@ export async function extractionTasks(base, origins = originUrls(base)) {
         const addedOk = setEq(fields?.added, A.added);
         const removedOk = setEq(fields?.removed, A.removed);
         const tc = Array.isArray(fields?.titleChanged) ? fields.titleChanged : [];
-        // The new title must be stated FOR Dana Quill: the unchanged decoy
-        // Dara Quill also holds "Senior Analyst", so the pairing is graded,
-        // not the phrase.
+        // The new title must be stated FOR Dana Quill, and for her alone: the
+        // unchanged decoy Dara Quill also holds "Senior Analyst", so the
+        // pairing is graded, not the phrase. "Sr." is the same title.
+        const title = (t) => (typeof t === 'string' ? t.replace(/\bsr\b\.?/gi, 'Senior') : t);
         const titleOk =
           tc.length === 1 &&
           eqPerson(tc[0]?.name, A.titleChange.name) &&
-          eqEnum(tc[0]?.newTitle, A.titleChange.to);
+          eqEnum(title(tc[0]?.newTitle), A.titleChange.to);
         return {
           pass: addedOk && removedOk && titleOk,
           detail:
@@ -232,14 +233,19 @@ export async function extractionTasks(base, origins = originUrls(base)) {
         // sweep of the rows endpoint still produces genuine fetches — it cannot
         // be prohibited without breaking the task, so it is made legible
         // instead: offPage counts requests that did not come from the page.
+        // Grade a session that was actually served the needle row (row 3418)
+        // over at least three fetches, so a reload-heavy browser session cannot
+        // shadow the shell sweep that found it; failing that, the busiest one,
+        // for the detail line.
         const sessions = [...ctx.pages.state.sessions.values()];
-        const logOf = (s) => s.biglist ?? { fetches: 0, offsets: [], offPage: 0 };
-        const winner = sessions
-          .filter((s) => logOf(s).fetches > 0)
-          .sort((a, b) => logOf(b).fetches - logOf(a).fetches)[0];
-        const log = winner ? logOf(winner) : { fetches: 0, offsets: [], offPage: 0 };
-        // The needle is row 3418, which only arrives in the batch at offset 3250.
-        const needleBatch = log.offsets.some((o) => o <= 3417 && 3417 < o + 250);
+        const empty = { fetches: 0, offsets: [], offPage: 0, needleServed: 0 };
+        const logOf = (s) => s.biglist ?? empty;
+        const busiest = (list) => list.sort((a, b) => logOf(b).fetches - logOf(a).fetches)[0];
+        const winner =
+          busiest(sessions.filter((s) => logOf(s).needleServed > 0 && logOf(s).fetches >= 3)) ??
+          busiest(sessions.filter((s) => logOf(s).fetches > 0));
+        const log = winner ? logOf(winner) : empty;
+        const needleBatch = log.needleServed > 0;
         const nameOk = eqPerson(fields?.fullName, ANSWERS.biglist.name);
         const floorOk = fields?.floor === Number(ANSWERS.biglist.floor);
         return {
@@ -318,9 +324,11 @@ export async function extractionTasks(base, origins = originUrls(base)) {
         const valueEdits = (s) => (s.gridEdits ?? []).filter((e) => e.from !== e.to);
         const lastEditAt = (s) =>
           (s.gridEdits ?? []).reduce((max, e) => Math.max(max, e.at ?? 0), 0);
-        // Grade the session that did the most work on the sheet, not the first
-        // one that happens to look clean: a botched browser session must not be
-        // masked by a stray curl probe that applied the corrections correctly.
+        // The final sheet is graded on the session that did the most work on
+        // it, not the first one that happens to look clean. "Leave every other
+        // line untouched" is counted across EVERY session instead: a line saved
+        // under one cookie is still touched when a fresh cookie then applies
+        // only the memo, so a session boundary cannot mask a botched sheet.
         const withEdits = [...ctx.pages.state.sessions.values()].filter(
           (s) => (s.gridEdits ?? []).length > 0
         );
@@ -331,7 +339,9 @@ export async function extractionTasks(base, origins = originUrls(base)) {
               valueEdits(b).length - valueEdits(a).length || lastEditAt(b) - lastEditAt(a)
           )[0];
         const finalOk = session ? gridOk(session) : false;
-        const touched = [...new Set(valueEdits(session ?? {}).map((e) => e.sku))].sort();
+        const touched = [
+          ...new Set(withEdits.flatMap((s) => valueEdits(s).map((e) => e.sku))),
+        ].sort();
         const onlyWanted =
           touched.length === wanted.length && touched.every((sku, i) => sku === wanted[i]);
         const got = Array.isArray(fields?.correctedSkus) ? fields.correctedSkus : [];
@@ -509,18 +519,36 @@ export async function extractionTasks(base, origins = originUrls(base)) {
         // grades row by row - which is what alsoCorrectFields' reversed rows
         // assert.
         const rows = Array.isArray(fields?.rows) ? fields.rows : [];
-        const correct = top20.filter((item, idx) =>
-          rows.some(
-            (r) =>
-              r?.rank === idx + 1 &&
-              eqName(r?.title, item.title) &&
-              r?.points === item.points &&
-              r?.comments === item.comments
-          )
-        ).length;
+        // The front page prints each post's domain right after its title, so a
+        // title cell may carry the post's OWN domain; eqName folds the brackets
+        // or dash around it.
+        const titleOk = (got, item) =>
+          eqName(got, item.title) || (!!item.site && eqName(got, `${item.title} ${item.site}`));
+        // Cells right in the best row claiming this rank, of title/points/comments.
+        const cellsRight = (item, idx) =>
+          Math.max(
+            -1,
+            ...rows
+              .filter((r) => r?.rank === idx + 1)
+              .map(
+                (r) =>
+                  titleOk(r?.title, item) +
+                  (r?.points === item.points) +
+                  (r?.comments === item.comments)
+              )
+          );
+        const scores = top20.map(cellsRight);
+        const correct = scores.filter((n) => n === 3).length;
+        // Every one of the top 20 must be present with at most one cell off, and
+        // at most two of them off at all: that absorbs a slip in transcription,
+        // not a table cut at 18 rows or finished with invented ones.
+        const bad = scores.flatMap((n, idx) => (n < 2 ? [idx + 1] : []));
+        const off = scores.flatMap((n, idx) => (n === 2 ? [idx + 1] : []));
         return {
-          pass: correct >= 18,
-          detail: `rows correct: ${correct}/20 (extracted ${rows.length})`,
+          pass: bad.length === 0 && correct >= 18,
+          detail:
+            `rows correct: ${correct}/20 (extracted ${rows.length}) ` +
+            `oneCellOff=[${off.join(',')}] missingOrWrong=[${bad.join(',')}]`,
         };
       },
     },
@@ -536,7 +564,7 @@ export async function extractionTasks(base, origins = originUrls(base)) {
         properties: {
           month: {
             type: ['string', 'null'],
-            description: 'the month that fell furthest, with its year, e.g. Apr 2026',
+            description: 'the month that fell furthest, with its year if the answer gives one, e.g. Apr 2026',
           },
           activeSeats: { type: ['integer', 'null'], description: 'that month’s exact Active seats figure' },
         },
@@ -546,23 +574,50 @@ export async function extractionTasks(base, origins = originUrls(base)) {
         // contradiction / side-listing clause machinery this validator carried
         // (the largest in the suite) is unrepresentable: a coin-flip answer
         // that lists both candidate falls has not filled the field with one.
-        const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        const MONTHS = [
+          'jan(?:uary)?', 'feb(?:ruary)?', 'mar(?:ch)?', 'apr(?:il)?', 'may', 'june?', 'july?',
+          'aug(?:ust)?', 'sep(?:t(?:ember)?)?', 'oct(?:ober)?', 'nov(?:ember)?', 'dec(?:ember)?',
+        ];
+        const MONTH_NAME = new RegExp(`\\b(?:${MONTHS.map((n) => `(${n})`).join('|')})(?![a-z])`, 'g');
+        // 2025-03, 03/2025, "Mar 2025", "Mar-25", "Mar 25" and the axis ticks'
+        // own "Mar'25". A field naming more than one month ("Mar 2026 (down
+        // from Feb 2026)") is read by the first one it names. A month name
+        // takes the four-digit year nearest it, else a two-digit year right
+        // after it; a fiscal "FY25" is no calendar year and leaves it yearless.
         const parseMonth = (v) => {
           const t = normalise(v ?? '');
-          const ym = t.match(/\b(20\d\d)[-/](\d\d?)\b/);
-          if (ym) return { m: Number(ym[2]) - 1, y: Number(ym[1]) };
-          const mi = MONTHS.findIndex((mo) => new RegExp(`\\b${mo}`).test(t));
-          const y = t.match(/\b(20\d\d)\b/);
-          return mi >= 0 ? { m: mi, y: y ? Number(y[1]) : null } : null;
+          const years = [...t.matchAll(/\b20\d\d\b/g)];
+          const named = [...t.matchAll(MONTH_NAME)].map((x) => {
+            const end = x.index + x[0].length;
+            const gap = (yr) => (yr.index >= end ? yr.index - end : x.index - (yr.index + 4));
+            const near = [...years].sort((a, b) => gap(a) - gap(b))[0];
+            const yy = t.slice(end).match(/^[ .'-]*(\d\d)(?!\d)/);
+            const y = near ? Number(near[0]) : yy ? 2000 + Number(yy[1]) : null;
+            return { at: x.index, m: x.slice(1).findIndex(Boolean), y };
+          });
+          const numeric = [
+            ...[...t.matchAll(/\b(20\d\d)[-/.](\d\d?)\b/g)].map((x) => ({
+              at: x.index,
+              m: Number(x[2]) - 1,
+              y: Number(x[1]),
+            })),
+            ...[...t.matchAll(/\b(\d\d?)[-/.](20\d\d)\b/g)].map((x) => ({
+              at: x.index,
+              m: Number(x[1]) - 1,
+              y: Number(x[2]),
+            })),
+          ];
+          return [...named, ...numeric].sort((a, b) => a.at - b.at)[0] ?? null;
         };
-        // A yearless month is accepted only when the series holds that month
-        // once; the fixture spans two calendar years on purpose.
-        const monthEq = (got, label, points) => {
+        // A stated calendar year must match. A yearless month is the ask's own
+        // shape ("Report that month"), and pass also demands the exact figure,
+        // which names one point because the mint keeps every value distinct, so
+        // a yearless month cannot credit the same month of the other year.
+        const monthEq = (got, label) => {
           const g = parseMonth(got);
           const w = parseMonth(label);
           if (!g || !w || g.m !== w.m) return false;
-          if (g.y !== null) return g.y === w.y;
-          return points.filter((p) => parseMonth(p.label)?.m === w.m).length === 1;
+          return g.y === null || g.y === w.y;
         };
         const routeOf = (s) => {
           const m = s.metrics;
@@ -575,7 +630,7 @@ export async function extractionTasks(base, origins = originUrls(base)) {
         const sessions = [...ctx.pages.state.sessions.values()].filter((s) => s.metrics);
         const describes = (s) =>
           fields?.activeSeats === s.metrics.target.value &&
-          monthEq(fields?.month, s.metrics.target.label, s.metrics.points);
+          monthEq(fields?.month, s.metrics.target.label);
         const reached = (s) =>
           s.metrics.tableViews > 0 || s.metrics.csvReads > 0 || s.metrics.directReads > 0;
         // Every session mints its OWN series, so a curl probe and the browser run
@@ -588,7 +643,7 @@ export async function extractionTasks(base, origins = originUrls(base)) {
         const target = m?.target ?? null;
         const runnerUp = m?.runnerUp ?? null;
         const figureOk = !!target && fields?.activeSeats === target.value;
-        const monthOk = !!target && monthEq(fields?.month, target.label, m.points);
+        const monthOk = !!target && monthEq(fields?.month, target.label);
         return {
           pass: monthOk && figureOk,
           detail:
@@ -650,13 +705,21 @@ export async function extractionTasks(base, origins = originUrls(base)) {
                 : con.logFetches > 3 * con.pageLoads
                   ? 'log-api'
                   : 'canvas-only';
-        const decoyClaimed = con
-          ? ['decoyScan', 'decoyPush', 'decoyCleanup'].filter((k) =>
-              eqCode(fields?.errorId, con[k])
+        // Telemetry, never a gate: which non-failing step's id, in any session,
+        // the answer named. A decoy fails on its own, because no session's
+        // graded id equals it; as a conjunct this could only fail the right id
+        // on the rare mint where a decoy repeats it.
+        const decoyClaimed = [
+          ...new Set(
+            sessions.flatMap((s) =>
+              ['decoyScan', 'decoyPush', 'decoyCleanup'].filter((k) =>
+                eqCode(fields?.errorId, s.console[k])
+              )
             )
-          : [];
+          ),
+        ];
         return {
-          pass: Boolean(graded) && decoyClaimed.length === 0,
+          pass: Boolean(graded),
           detail:
             `sessions=${sessions.length} route=${route} ` +
             `searches=${con?.searchQueries ?? 0} searchHits=${con?.searchHits ?? 0} ` +

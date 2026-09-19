@@ -1,5 +1,8 @@
 // pages/biglist/ - the 5,000-row virtualized directory.
 
+// Row index of the QX- badge, the only row the task grades.
+const NEEDLE = 3417;
+
 export function routes(ctx) {
   const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
   const fromBiglist = fromPage('/biglist/');
@@ -36,7 +39,7 @@ export function routes(ctx) {
       };
       // The needle lives only here, never in fixture files on disk.
       const rowFor = (i) => {
-        if (i === 3417) {
+        if (i === NEEDLE) {
           return { id: i + 1, badge: 'QX-4417', name: 'Ingrid Halvorsen', dept: 'Research', floor: 14 };
         }
         const h = mix(i);
@@ -58,12 +61,21 @@ export function routes(ctx) {
       // with nothing but the page nonce. A shell sweep of this endpoint does
       // produce genuine fetches; that is derivation, not forgery, so it is made
       // legible through offPage rather than prohibited.
-      const bl = (found.session.biglist ??= { fetches: 0, rows: 0, offsets: [], offPage: 0 });
+      const bl = (found.session.biglist ??= {
+        fetches: 0,
+        rows: 0,
+        offsets: [],
+        offPage: 0,
+        needleServed: 0,
+      });
       // Legibility, never proof: curl sets these headers freely.
       const fromPage = fromBiglist(req);
       bl.fetches += 1;
       bl.rows += rows.length;
       if (!bl.offsets.includes(offset)) bl.offsets.push(offset);
+      // Responses that carried the needle row itself, which an offset near it
+      // with a short limit does not.
+      if (offset <= NEEDLE && NEEDLE < offset + rows.length) bl.needleServed += 1;
       if (!fromPage) bl.offPage += 1;
       state.beacons.push({
         sid: found.sid,

@@ -16,6 +16,7 @@
 
 import { bumpCode, esc, textOf, uidOf as uidMatch, until as poll } from './lib.mjs';
 import { straySession } from './probes.mjs';
+import { GRID_EDIT_STATES } from './extraction-lib.mjs';
 
 const uidOf = (snap, pattern, what) => {
   const m = uidMatch(snap, pattern);
@@ -656,6 +657,8 @@ export const DRIVERS = {
   // --- inline grid editing; the server holds the sheet and logs every edit ---
   'grid-edit': {
     note: 'memo read from the DOM; each cell edited through Edit/Save buttons',
+    wrongState: GRID_EDIT_STATES.wrong,
+    alsoCorrectState: GRID_EDIT_STATES.alsoCorrect,
     wrong: ['Done — I corrected GR-1104, GR-1109 and GR-1123.'],
     async run({ goto, snapshot, mcp, evaluate }) {
       await goto('/grid-edit/');

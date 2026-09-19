@@ -49,6 +49,31 @@ export const DRIVERS = {
     alsoCorrect: [
       'The QX- badge (QX-4417) belongs to Ingrid Halvorsen, who works in Research on the 14th floor.',
     ],
+    // The needle has to have been SERVED: an offset near it is not the row.
+    wrongState: [
+      {
+        name: 'the only session read offsets 0 and 250 and one row at 3200',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.biglist);
+          session.biglist = { fetches: 3, rows: 501, offsets: [0, 250, 3200], offPage: 3, needleServed: 0 };
+        },
+      },
+    ],
+    alsoCorrectState: [
+      {
+        // A reload-heavy session outnumbering the one that streamed batch 14.
+        name: 'a stray session makes more fetches than the browser, none reaching the needle',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.biglist);
+          const fetches = session.biglist.fetches + 1;
+          addSession(
+            state,
+            { biglist: { fetches, rows: 250 * fetches, offsets: [0], offPage: 0, needleServed: 0 } },
+            { first: true }
+          );
+        },
+      },
+    ],
     async run({ goto, evaluate, mcp, snapshot }) {
       await goto('/biglist/');
       await until('the virtual list to render a row', () =>
@@ -168,10 +193,13 @@ export const DRIVERS = {
           count++;
         }
         if (page === 7) break;
-        const snap = await snapshot();
-        await mcp('click_by_uid', {
-          uid: uidFor(snap, 'a "Next"', 'pager Next link'),
-        });
+        await clickToPath(
+          mcp,
+          evaluate,
+          async () => uidFor(await snapshot(), 'a "Next"', 'pager Next link'),
+          `page-${page + 1}.html`,
+          `ledger page ${page + 1}`
+        );
       }
       const fields = { hardwareTotal: Number(total.toFixed(2)) };
       this.wrongFields = [
@@ -192,6 +220,13 @@ export const DRIVERS = {
   'ledger-csv': {
     note: 'clicks Export CSV so the server mints the token; the CSV body is bulk text, read via evaluate',
     wrong: 'The exported CSV holds 140 data rows and its largest amount is $3,783.63.',
+    alsoCorrectState: [
+      {
+        name: 'a stray session minted first exports but never fetches the CSV',
+        mutate: (state) =>
+          addSession(state, { ledgerToken: '0000000000000000', ledgerExports: 1 }, { first: true }),
+      },
+    ],
     async run({ goto, evaluate, mcp, snapshot }) {
       await goto('/ledger/');
       const snap = await snapshot();
@@ -246,24 +281,6 @@ export const DRIVERS = {
   // --- join two tables, neither of which holds the answer ---
   'crm-join': {
     note: 'joins orders to customers; both are table markup the snapshot drops, so evaluate reads them',
-    // Wrongs 2-3: the winning region and figure appear, but the stated
-    // conclusion credits a rival.
-    wrong: [
-      'Callowfen generated the highest total order value, $171,347.05.',
-      'Callowfen generated the highest total order value, $213,726.10. Tidereach was second.',
-      'Westmarch is the region with the highest total order value. Region totals: ' +
-        'Tidereach $213,726.10; Callowfen $171,347.00; Westmarch $99,120.40; ' +
-        'Norhaven $87,301.55.',
-    ],
-    alsoCorrect: [
-      'The highest total order value came from Tidereach. Its total across the ' +
-        '40 orders is $213,726.10.',
-      'Tidereach generated the highest total, $213,726.10, ahead of Callowfen ' +
-        'at $171,347.00.',
-      '| Region | Total order value |\n|---|---|\n| Tidereach | $213,726.10 |\n' +
-        '| Callowfen | $171,347.00 |\n| Norhaven | $99,120.40 |\n' +
-        '| Westmarch | $87,301.55 |\nTidereach is the top region by total order value.',
-    ],
     async run({ goto, evaluate, mcp, snapshot }) {
       await goto('/crm/');
       const home = await snapshot();
@@ -298,13 +315,40 @@ export const DRIVERS = {
         if (!where) throw new Error(`order account ${account} has no customer row`);
         totals.set(where, (totals.get(where) ?? 0) + Number(value.replace(/[$,]/g, '')));
       }
-      const [top, amount] = [...totals].sort((a, b) => b[1] - a[1])[0];
-      const runnerUp = [...totals].sort((a, b) => b[1] - a[1])[1];
+      const ranked = [...totals].sort((a, b) => b[1] - a[1]);
+      const [top, amount] = ranked[0];
+      const runnerUp = ranked[1];
+      const smallestTopOrder = Math.min(
+        ...orders
+          .filter(([, account]) => region.get(account) === top)
+          .map(([, , value]) => Number(value.replace(/[$,]/g, '')))
+      );
       const fields = { region: top, totalOrderValue: amount };
       this.wrongFields = [
         { region: 'Callowfen', totalOrderValue: amount },
         { region: 'Westmarch', totalOrderValue: amount },
         { region: top, totalOrderValue: runnerUp[1] },
+        // The winning region's total with its smallest order missed out.
+        { region: top, totalOrderValue: Number((amount - smallestTopOrder).toFixed(2)) },
+        // Just outside the 0.5% rounding window.
+        { region: top, totalOrderValue: Number((amount * 0.99).toFixed(2)) },
+      ];
+      const regionTotals = ranked.map(([name, total]) => `${name} $${money(total)}`).join('; ');
+      // Wrongs 2-3: the winning region and figure appear, but the stated
+      // conclusion credits a rival.
+      this.wrong = [
+        `${runnerUp[0]} generated the highest total order value, $${money(runnerUp[1])}.`,
+        `${runnerUp[0]} generated the highest total order value, $${money(amount)}. ${top} was second.`,
+        `${ranked[2][0]} is the region with the highest total order value. Region totals: ${regionTotals}.`,
+      ];
+      this.alsoCorrect = [
+        `The highest total order value came from ${top}. Its total across the ` +
+          `${orders.length} orders is $${money(amount)}.`,
+        `${top} generated the highest total, $${money(amount)}, ahead of ${runnerUp[0]} ` +
+          `at $${money(runnerUp[1])}.`,
+        '| Region | Total order value |\n|---|---|\n' +
+          ranked.map(([name, total]) => `| ${name} | $${money(total)} |`).join('\n') +
+          `\n${top} is the top region by total order value.`,
       ];
       this.alsoCorrectFields = [
         fields,
@@ -400,6 +444,15 @@ export const DRIVERS = {
         { ...fields, titleChanged: [{ name: 'Dara Quill', newTitle: 'Senior Analyst' }] },
         { ...fields, titleChanged: [{ name: 'Dana Quill', newTitle: 'Lead Analyst' }] },
         { ...fields, added: [...added, 'Odile Tanaka'] },
+        // The real change listed beside the unchanged decoy who holds the same title.
+        {
+          ...fields,
+          titleChanged: [
+            { name: 'Dana Quill', newTitle: 'Senior Analyst' },
+            { name: 'Dara Quill', newTitle: 'Senior Analyst' },
+          ],
+        },
+        { ...fields, titleChanged: [{ name: 'Dana Quill', newTitle: 'Analyst' }] },
       ];
       const lastFirst = (n) => {
         const parts = n.split(' ');
@@ -413,6 +466,13 @@ export const DRIVERS = {
           titleChanged: fields.titleChanged.map(({ name, newTitle }) => ({
             name: lastFirst(name),
             newTitle,
+          })),
+        },
+        {
+          ...fields,
+          titleChanged: fields.titleChanged.map(({ name, newTitle }) => ({
+            name,
+            newTitle: newTitle.replace(/^Senior\b/, 'Sr.'),
           })),
         },
       ];

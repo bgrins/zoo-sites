@@ -1,6 +1,6 @@
 // Golden path for the Fernwood Commons neighbourhood feed
 // (pages/fernwood/, task feed-needle). See probes.mjs for the contract.
-import { until, snapText, bumpCode } from './lib.mjs';
+import { addSession, findSession, until, snapText, bumpCode } from './lib.mjs';
 
 const FEED_REF = /Ref (FW-[0-9A-F]{6})/;
 
@@ -46,6 +46,31 @@ export const DRIVERS = {
     wrong:
       'The final tally post is by Fernwood Commons Team: 238 bags. ' +
       'Its reference code is FW-000000.',
+    alsoCorrectState: [
+      {
+        name: 'a stray session minted first reads batch 1 of its own feed',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.fernwood);
+          const f = session.fernwood;
+          const other = (post) => ({ ...post, ref: bumpCode(post.ref), count: post.count + 1 });
+          addSession(
+            state,
+            {
+              fernwood: {
+                ...f,
+                needle: other(f.needle),
+                teaser: other(f.teaser),
+                lookalike: other(f.lookalike),
+                requests: [{ batch: 1, via: null, y: null, at: Date.now() }],
+                maxBatch: 1,
+                badCursor: 0,
+              },
+            },
+            { first: true }
+          );
+        },
+      },
+    ],
     async run({ goto, evaluate, mcp }) {
       await goto('/fernwood/');
       const snap = () => snapText(mcp, { maxLines: 400 });
