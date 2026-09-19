@@ -4,7 +4,7 @@
   --plum-soft: #6d4a7d;
   --amber: #d98324;
   --ink: #2f2a33;
-  --muted: #7c7286;
+  --muted: #756b7e;
   --line: #e6e0ea;
   --canvas: #f7f4f9;
 }
@@ -382,7 +382,7 @@ h1 {
   margin-top: 22px;
   margin-bottom: 0;
   font-size: 12px;
-  color: #9c92a4;
+  color: #736c79;
   max-width: 74ch;
 }
 

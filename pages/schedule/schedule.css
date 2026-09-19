@@ -2,7 +2,7 @@
   --app: #e4e7ea;
   --card: #ffffff;
   --ink: #1d2126;
-  --mute: #5f6770;
+  --mute: #575e66;
   --rule: #c5cbd1;
   --grid: #dde1e5;
   --bar: #4b5259;
@@ -53,19 +53,19 @@ a {
 
 .wordmark span {
   font-weight: normal;
-  color: #b9e3c8;
+  color: #c0e6cd;
 }
 
 .sub {
   margin: 1px 0 0;
   font-size: 10px;
-  color: #c9ced3;
+  color: #dadde1;
 }
 
 .desk {
   margin: 0;
   font-size: 10px;
-  color: #c9ced3;
+  color: #dadde1;
   text-align: right;
 }
 
@@ -369,7 +369,7 @@ h1 {
 }
 
 button {
-  background: linear-gradient(#28a05b, var(--go));
+  background: linear-gradient(#1c7f46, #1b7a43);
   color: #fff;
   border: 1px solid var(--go-dark);
   border-radius: 3px;

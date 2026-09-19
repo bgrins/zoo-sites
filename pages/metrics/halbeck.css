@@ -7,14 +7,14 @@
   --line-soft: #e4e4de;
   --ink: #16191d;
   --muted: #55564f;
-  --faint: #86877f;
+  --faint: #6b6c66;
   --jet: #16191d;
   --lime: #b8e62e;
   --lime-deep: #4f7d00;
   --lime-soft: #eef8cf;
   --pos: #1d7a3a;
   --neg: #c0392b;
-  --ui: "PT Sans", "Source Sans 3", "Source Sans Pro", "Liberation Sans", Arial, sans-serif;
+  --ui: "Hiragino Sans", "Noto Sans", "Source Sans 3", "Liberation Sans", Arial, sans-serif;
   --display: "DIN Alternate", "DIN 2014", Bahnschrift, "Barlow Semi Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
   --num: var(--display);
 }
@@ -363,7 +363,7 @@ footer.foot .push { margin-left: auto; }
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tile:nth-child(3) { border-left: 0; }
   .tile:nth-child(n + 3) { border-top: 1px solid var(--line); }
-  .two { grid-template-columns: 1fr; }
+  .two { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 760px) {

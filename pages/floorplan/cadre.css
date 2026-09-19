@@ -7,7 +7,7 @@
   --card: #ffffff;
   --rule: #c3ccd5;
   --rule-soft: #dde3e9;
-  --muted: #5d6a7a;
+  --muted: #5b6777;
   --flag: #b5490f;
   --flag-soft: #fbeee5;
   --ok: #1c6448;
@@ -147,7 +147,7 @@ a { color: var(--indigo); }
   font-size: 13px;
 }
 
-.levels li.nosheet { color: #8793a2; }
+.levels li.nosheet { color: #636b76; }
 .levels li.nosheet span { font-size: 11px; margin-left: 6px; }
 
 .levels li.active {

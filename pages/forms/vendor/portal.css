@@ -12,8 +12,8 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  font-family: "Public Sans", "Source Sans 3", "Franklin Gothic Book", "PT Sans", "Liberation Sans", Arial, sans-serif;
-  font-size: 15px;
+  font-family: "Public Sans", Geneva, Verdana, "DejaVu Sans", sans-serif;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--ink);
   background: var(--paper);

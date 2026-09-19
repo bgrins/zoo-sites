@@ -70,7 +70,7 @@ a:hover { color: var(--ember); }
 .crumbbar h1.crumb { margin: 0; font-weight: normal; }
 .crumbbar .crumb a { color: #cbb8e2; text-decoration: none; }
 .crumbbar .crumb a:hover { text-decoration: underline; }
-.crumbbar .crumb .sep { color: #7c6d90; padding: 0 4px; }
+.crumbbar .crumb .sep { color: #9a8faa; padding: 0 4px; }
 .crumbbar .crumb b { color: #fff; font-weight: bold; }
 .crumbbar .vis {
   font-size: 10px;

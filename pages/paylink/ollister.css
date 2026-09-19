@@ -37,7 +37,7 @@ a {
   font-size: 11px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #7d7566;
+  color: #746d5f;
 }
 
 .shopnav {
@@ -79,7 +79,7 @@ h2 {
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #7d7566;
+  color: #746d5f;
   margin: 0 0 18px;
 }
 
@@ -106,7 +106,7 @@ h2 {
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #7d7566;
+  color: #746d5f;
 }
 
 .line {
@@ -118,7 +118,7 @@ h2 {
 }
 
 .line .qty {
-  color: #7d7566;
+  color: #746d5f;
   font-size: 12px;
 }
 
@@ -203,7 +203,7 @@ h2 {
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #7d7566;
+  color: #746d5f;
   margin-bottom: 4px;
 }
 
@@ -276,7 +276,7 @@ footer .addr {
 
 .shopnav .count { color: #9c3b24; }
 
-.crumb a { color: #7d7566; }
+.crumb a { color: #746d5f; }
 
 .addline { margin: 10px 0 0; }
 
@@ -322,7 +322,7 @@ button.add.ghost { border-color: #b9ac91; color: #5a5346; }
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #7d7566;
+  color: #746d5f;
 }
 
 .packing label { display: block; margin: 4px 0; font-size: 14px; }

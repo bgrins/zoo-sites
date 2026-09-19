@@ -55,7 +55,7 @@ a { color: #0d5c8a; }
 }
 .depts .state {
   margin-left: auto; font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
-  color: #8b93a3;
+  color: #6c737f;
 }
 .depts .state.synced { color: #1d7a3c; font-weight: bold; }
 table.grid { border-collapse: collapse; width: 100%; font-size: 12px; }

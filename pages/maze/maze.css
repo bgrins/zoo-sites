@@ -327,7 +327,7 @@ a { color: var(--rover); }
   color: var(--dim);
 }
 .foot .links { margin-bottom: 4px; }
-.foot .links a { margin-right: 14px; }
+.foot .links a { margin-right: 14px; color: #1d59b3; }
 
 .notice {
   max-width: 640px;

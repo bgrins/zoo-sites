@@ -11,14 +11,14 @@
     border-left: 3px solid var(--accent); background: var(--accent-wash); padding: 10px 14px;
     margin: 0 0 16px; max-width: 64ch;
   }
-  .notice p { margin: 0; color: #2c3440; }
+  .notice p { margin: 0; color: var(--body); }
   .notice p + p { margin-top: 8px; }
 
   .progress { margin-top: 14px; min-height: 34px; }
   .progress p { margin: 0; font-size: 13px; color: var(--muted); }
   .progress .elapsed { color: var(--ink); font-variant-numeric: tabular-nums; }
-  .track { margin-top: 7px; height: 5px; width: 260px; max-width: 100%; border-radius: 3px; background: #e6e2d7; display: none; }
-  .track i { display: block; height: 5px; border-radius: 3px; background: var(--accent); width: 0; }
+  .track { margin-top: 7px; height: 5px; width: 260px; max-width: 100%; border-radius: 0; background: var(--line); display: none; }
+  .track i { display: block; height: 5px; background: var(--ink); width: 0; }
   .progress.error p { color: var(--neg); }
 
   #result { display: none; margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }

@@ -2,7 +2,7 @@
   --page: #f1eff8;
   --panel: #ffffff;
   --ink: #241f33;
-  --dim: #6d6688;
+  --dim: #6a6385;
   --faint: #6f6790;
   --line: #ded8ee;
   --line-soft: #ebe6f7;
@@ -719,7 +719,7 @@ fieldset.plain[disabled] textarea {
 
 .footer-nav {
   margin-bottom: 9px;
-  color: #6f639f;
+  color: #8f85b4;
 }
 
 .footer-nav a {

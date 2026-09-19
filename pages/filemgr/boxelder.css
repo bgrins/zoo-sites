@@ -2,7 +2,7 @@
     --chrome: #e9eaf0;
     --chrome-line: #cfd2de;
     --ink: #1b1c2a;
-    --muted: #6f7286;
+    --muted: #6c6f83;
     --indigo: #4f46c5;
     --indigo-soft: #eceafb;
     --row-line: #edeef4;
@@ -170,7 +170,7 @@
     background: #fbfbfd;
     padding: 12px 8px 10px;
   }
-  .sidebar .group { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #9296a8; padding: 8px 8px 4px; }
+  .sidebar .group { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #6f7280; padding: 8px 8px 4px; }
   .sidebar .place {
     display: block;
     padding: 5px 9px;

@@ -57,7 +57,7 @@
     clip-path: polygon(0 70%, 10% 52%, 22% 68%, 34% 44%, 48% 62%, 60% 46%, 74% 66%, 86% 50%, 100% 68%, 100% 100%, 0 100%);
   }
   .hero .copy { position: relative; max-width: 32ch; }
-  .kicker { text-transform: uppercase; letter-spacing: 4px; font-size: 11px; color: var(--sand); margin: 0 0 8px; }
+  .kicker { text-transform: uppercase; letter-spacing: 4px; font-size: 11px; color: #e6dccb; margin: 0 0 8px; }
   .hero h1 {
     margin: 0 0 10px; font-size: 58px; line-height: 0.94; font-weight: 600;
     text-transform: uppercase; letter-spacing: -0.5px;
@@ -100,6 +100,11 @@
     nav.top .word { flex-basis: 100%; }
     nav.top .tel { margin-left: 0; }
     .hero { min-height: 260px; padding: 0 18px 26px; }
+    .hero {
+      background:
+        radial-gradient(70% 45% at 86% 10%, #f0c9a0 0%, rgba(240, 201, 160, 0) 48%),
+        linear-gradient(180deg, #2c3a4a 0%, #5b6472 42%, #8a7a68 74%, #b09a80 100%);
+    }
     .hero h1 { font-size: 40px; }
     .strip { padding: 12px 18px; gap: 4px 22px; }
     .layout { padding: 30px 18px 50px; gap: 30px; }

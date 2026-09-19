@@ -76,7 +76,7 @@ a { color: var(--mg-blue); }
 .info h2 { font-size: 16px; margin: 0 0 3px; font-weight: bold; }
 .info h2 a { color: #10307e; text-decoration: none; }
 .attrs { margin: 0 0 4px; font-size: 13px; color: #414a5e; }
-.stars { margin: 0 0 4px; font-size: 12px; color: #6b7385; }
+.stars { margin: 0 0 4px; font-size: 12px; color: #606878; }
 .stars .score { color: #1c1f24; font-weight: bold; }
 .fulfil { margin: 0; font-size: 12px; color: #2f6b3a; }
 .fulfil.none { color: #8f1220; }
@@ -103,7 +103,7 @@ a { color: var(--mg-blue); }
   display: block; margin-top: 9px; background: var(--mg-price); color: #fff;
   text-align: center; padding: 9px 0; text-decoration: none; font-weight: bold; font-size: 14px;
 }
-.basket.off { background: #e7e9ef; color: #6b7385; }
+.basket.off { background: #e7e9ef; color: #606878; }
 .compare-link { display: block; margin-top: 6px; font-size: 12px; }
 .more { padding: 18px 22px 30px; text-align: center; }
 .more button {
