@@ -72,10 +72,9 @@ Both the gate and paid runs resolve `firefox-devtools-mcp` in this order, so
 
 **Every site gets its own origin.** `run.mjs` serves each site on its own loopback
 port with its directory at `/`, the shape the container serves, so no task prompt
-names a `pages/` directory such as `/flaky/slow.html` or `/maze/`. A page can still
-link to one: many pages hard-code their own directory (`href="/flaky/"`), and the
-origin answers that path, until check-fixtures enforces relative self-links. `--single-origin`
-serves every site under its directory's path on one port instead, which is how every
+names a `pages/` directory such as `/flaky/slow.html` or `/maze/`, and no page links to
+one: `scripts/check-fixtures.mjs` fails a page that hard-codes its own directory.
+`--single-origin` serves every site under its directory's path on one port instead, which is how every
 run before 2026-09-19 was served. The two are separate measurement epochs: `meta.serving`
 records the mode, a run without it was single-origin, and `--rerun-failed` keeps the mode
 of the run it tops up.

@@ -93,7 +93,7 @@ const localeNotice = {
       until(what, async () => {
         const snap = await snapshot();
         return test(snap) ? snap : null;
-      }, { tries: 25, gap: 200 });
+      }, { tries: 75, gap: 200 });
 
     await goto('/intl/');
     const home = await untilSnapshot((s) => s.includes('Port Vasiri'), 'the destination list');

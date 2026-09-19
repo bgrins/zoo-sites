@@ -354,8 +354,7 @@ Serving:
                           port, as every run before 2026-09-19 was. Default:
                           every site on its own loopback port with its
                           directory at '/', so no task prompt names a
-                          directory (a page link that hard-codes its own
-                          directory still does). The two modes are separate
+                          directory. The two modes are separate
                           measurement epochs; meta records which one a run
                           used
 

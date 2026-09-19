@@ -29,11 +29,19 @@
 // canned — those are marked `canned: true` and prove the validator accepts a
 // correct answer, not that composing one is possible.
 
+import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { availableParallelism, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { devtoolsMcpEntry, downloadPrefs, prefArgs, startMcpServer } from './mcp-stdio.mjs';
+import {
+  BROWSER_PINS,
+  PINNED_PREFS,
+  devtoolsMcpEntry,
+  downloadPrefs,
+  prefArgs,
+  startMcpServer,
+} from './mcp-stdio.mjs';
 import { detectScreen, windowGrid } from './window-grid.mjs';
 import { startPagesServer } from '../server.mjs';
 import { ORIGINS, originUrls } from '../manifest.mjs';
@@ -243,11 +251,13 @@ async function makeWorker(grid, slot) {
     args: [
       devtoolsMcpEntry(),
       '--enable-script',
-      ...(HEADED ? [] : ['--headless']),
+      // The browser environment paid runs pin (BROWSER_PINS), so a fixture that
+      // depends on the time zone, locale or colour scheme behaves the same here.
+      ...(HEADED ? [] : ['--headless', '--viewport', '1366x768']),
       ...(grid ? ['--profile-path', grid.seed(stateDir, slot)] : []),
-      ...prefArgs(downloadPrefs(join(stateDir, 'downloads'))),
+      ...prefArgs({ ...PINNED_PREFS, ...downloadPrefs(join(stateDir, 'downloads')) }),
     ],
-    env: PROFILE_ENV,
+    env: { TZ: BROWSER_PINS.timeZone, ...PROFILE_ENV },
   });
   const mcp = (name, toolArgs = {}) => server.call(name, toolArgs);
   // Most drivers only need to navigate and read/poke the page; uid-based tools
@@ -293,6 +303,12 @@ async function makeWorker(grid, slot) {
   const close = async () => {
     await server.close();
     await pages.close();
+    // Firefox outlives its MCP server by a few hundred ms and meanwhile rewrites
+    // a seeded profile, recreating a directory removed too early.
+    for (const stop = Date.now() + 10000; Date.now() < stop; ) {
+      if (spawnSync('pgrep', ['-f', stateDir]).status !== 0) break;
+      await new Promise((r) => setTimeout(r, 200));
+    }
     rmSync(stateDir, { recursive: true, force: true });
   };
   return { pages, helpers, tasks, close };
