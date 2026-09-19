@@ -709,6 +709,96 @@ export const DRIVERS = {
           ...fields,
           tells: ['phishing pages warn that your account will be suspended', 'footer reads "CaldmoorBenk Holdings"'],
         },
+        // The lookalike's deadline and seal vocabulary said of phishing pages in general.
+        {
+          ...fields,
+          tells: ['Phishing pages often demand action within 24 hours', 'Fake sites often display fake 256-bit encryption badges'],
+        },
+        {
+          ...fields,
+          tells: ['phishing pages usually threaten to lock you out in 24 hours', 'scam pages typically show a "Verified Secure" seal'],
+        },
+        { ...fields, tells: ['phishing pages often demand action within 24 hours', 'footer reads "CaldmoorBenk Holdings"'] },
+        // Lore in one clause cannot borrow a page-specific tell from another,
+        // and a real-vs-fake contrast still has to say the fake's logo is green.
+        { ...fields, tells: ['phishing pages often say unusual sign-in activity was detected', 'footer reads "CaldmoorBenk Holdings"'] },
+        { ...fields, tells: ['phishing pages often have links, all going to index.html', 'footer reads "CaldmoorBenk Holdings"'] },
+        {
+          ...fields,
+          tells: ['the logo is a navy rounded square, whereas this page has no green circle', 'footer reads "CaldmoorBenk Holdings"'],
+        },
+        { ...fields, tells: ['the logo is navy, and the fake has a green padlock', 'footer reads "CaldmoorBenk Holdings"'] },
+        { ...fields, tells: ["the logo matches, but the fake's sign-in button is green", 'footer reads "CaldmoorBenk Holdings"'] },
+        // Denials of what the lookalike shows, and an indefinite phishing subject.
+        { ...fields, tells: ['no 24-hour deadline was shown', 'no SiteTrust seal on the page'] },
+        { ...fields, tells: ['the logo is not a green circle', 'footer reads "CaldmoorBenk Holdings"'] },
+        {
+          ...fields,
+          tells: ['a phishing page will show a banner saying your account will be suspended', 'footer reads "CaldmoorBenk Holdings"'],
+        },
+        // A generic lead-in governs the example after it.
+        {
+          ...fields,
+          tells: [
+            'Phishing sites often show warnings, e.g. a banner saying your account will be suspended',
+            'Phishing kits often do this, e.g. nav links that reload the same page',
+          ],
+        },
+        { ...fields, tells: ['Common in phishing kits: menu links that all point to index.html', 'footer reads "CaldmoorBenk Holdings"'] },
+        // A logo said to match, and a green thing on the fake that is not its logo.
+        {
+          ...fields,
+          tells: ["The logo is identical on both pages, but the fake's heading text is green", 'footer reads "CaldmoorBenk Holdings"'],
+        },
+        { ...fields, tells: ["The logo is the same, while this page's footer text is green", 'footer reads "CaldmoorBenk Holdings"'] },
+        { ...fields, tells: ['Compare the logo, since phishing kits use green circles', 'footer reads "CaldmoorBenk Holdings"'] },
+        // Stock advice with the figure as its subject, and denials of the figure.
+        {
+          ...fields,
+          tells: ['24-hour deadlines are a common phishing tactic', '256-bit encryption badges are commonly faked by phishing sites'],
+        },
+        { ...fields, tells: ['a common tell is a 24h deadline', 'a common tell is a 256-bit seal'] },
+        { ...fields, tells: ['not a 24-hour deadline in sight', 'never saw a 256-bit badge'] },
+        {
+          ...fields,
+          tells: ['I saw no SiteTrust seal on the fake or the real page', 'no 24-hour deadline on either the fake or the genuine site'],
+        },
+        // The alert's sentences as advice, as a rule, or said of the real bank.
+        { ...fields, tells: ['Fake login pages claim unusual sign-in activity was detected', 'footer reads "CaldmoorBenk Holdings"'] },
+        {
+          ...fields,
+          tells: ['the real bank never asks you to confirm your username and password now', 'footer reads "CaldmoorBenk Holdings"'],
+        },
+        {
+          ...fields,
+          tells: ['Never confirm your username and password now just because a message says so', 'footer reads "CaldmoorBenk Holdings"'],
+        },
+        {
+          ...fields,
+          tells: ["If an alert says your account will be suspended, it's a phishing page", 'footer reads "CaldmoorBenk Holdings"'],
+        },
+        {
+          ...fields,
+          tells: [
+            'Any banner saying your account will be suspended means it is a phishing site',
+            'footer reads "CaldmoorBenk Holdings"',
+          ],
+        },
+        {
+          ...fields,
+          tells: ['A warning that transfers will be blocked is a phishing page hallmark', 'footer reads "CaldmoorBenk Holdings"'],
+        },
+        // The nearest wrong forms of a leading verdict, a page anchor and a
+        // negation said of the real page.
+        {
+          ...fields,
+          tells: [
+            'Only a phishing page would show a banner saying your account will be suspended',
+            'footer reads "CaldmoorBenk Holdings"',
+          ],
+        },
+        { ...fields, tells: ['Phishing pages often paint a SiteTrust seal into the page', 'footer reads "CaldmoorBenk Holdings"'] },
+        { ...fields, tells: ['no SiteTrust seal on the fake but the real page has one', 'footer reads "CaldmoorBenk Holdings"'] },
         // A field hedging between both sites names neither.
         { ...fields, fraudulentUrl: `${fakeHref} or ${legitHref}` },
         // Both banks share one host under --origins, and in single-origin mode
@@ -751,6 +841,53 @@ export const DRIVERS = {
         ],
         // The alert's exact wording, tied to the banner that shows it.
         ['alert banner: "Action required", your account will be suspended', 'footer reads "CaldmoorBenk Holdings"'],
+        // A real-vs-fake logo contrast, a page-specific tell with a generic aside,
+        // and the alert body quoted verbatim with no word for the banner.
+        [
+          'footer reads "CaldmoorBenk Holdings" (misspelled)',
+          'Logo differs: the real site uses a navy rounded square, the fake uses a green circle',
+        ],
+        ['footer reads "CaldmoorBenk Holdings"', 'The real site has a navy rounded-square logo; the fake has a green circle'],
+        [
+          'footer reads "CaldmoorBenk Holdings" (misspelled)',
+          'Every nav and footer link points back to index.html, a common trait of phishing kits',
+        ],
+        [
+          'footer reads "CaldmoorBenk Holdings" (misspelled)',
+          '"Unusual sign-in activity was detected on your account. Confirm your username and password now"',
+        ],
+        [
+          '"Verified Secure Connection — SiteTrust Seal, 256-bit checked" badge',
+          'All links (Personal, Business, Privacy, Terms...) go to index.html, typically seen on phishing sites',
+        ],
+        // A lore aside after the page's own seal and deadline leaves them scored.
+        [
+          'a "Verified Secure Connection" SiteTrust seal is painted into the page, a trick phishing pages often use',
+          'the banner threatens suspension within 24 hours, a pressure tactic phishing pages commonly use',
+        ],
+        [
+          'a "256-bit encryption" badge is drawn into the page, which real banks usually do not do',
+          'footer reads "CaldmoorBenk Holdings", a typo fake sites commonly make',
+        ],
+        ['It is a phishing page: it demands action within 24 hours', 'footer reads "CaldmoorBenk Holdings"'],
+        ['this is a phishing page that demands action within 24 hours', 'the real page has no SiteTrust seal'],
+        [
+          'Like most phishing pages, it shows a "Verified Secure Connection — SiteTrust Seal, 256-bit checked" badge',
+          'the page shows a 24-hour suspension threat typical of phishing pages',
+        ],
+        [
+          'the fake uses a green circle, while the real logo is a navy rounded square',
+          'this is a phishing page whose banner says the account will be suspended',
+        ],
+        // A verdict on this page with an adverb or "looks like", a frequency
+        // adverb said of the real page, a figure that is not denied, a label, and
+        // the alert quoted whole.
+        ['This is likely a phishing page that demands action within 24 hours', 'footer reads "CaldmoorBenk Holdings"'],
+        ['The real page usually has no alert but the fake demands action within 24 hours', 'footer reads "CaldmoorBenk Holdings"'],
+        ['Looks like a phishing site with a "SiteTrust Seal" badge painted into the page', 'footer reads "CaldmoorBenk Holdings"'],
+        ['the banner gives no more than 24 hours to act', 'footer reads "CaldmoorBenk Holdings"'],
+        ['Classic phishing tactic: the banner says your account will be suspended', 'footer reads "CaldmoorBenk Holdings"'],
+        ['"Confirm your username and password now or your account will be suspended"', 'footer reads "CaldmoorBenk Holdings"'],
       ];
       this.alsoCorrectFields = [
         fields,

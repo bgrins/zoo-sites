@@ -387,12 +387,40 @@ export const DRIVERS = {
             winner(state).auth = 'full';
           },
         },
+        {
+          // A second cookie jar read the balance too and was never logged out.
+          name: 'an earlier session that read the dashboard was left signed in',
+          mutate: (state) =>
+            addSession(
+              state,
+              signedIn(winner(state).portalLoginAt - 1000, '', { portalDashboards: 1, consoleOk: true }),
+              { first: true }
+            ),
+        },
       ];
       this.alsoCorrectState = [
         {
           name: 'an exploratory reports-area sign-in before the run was left signed in',
           mutate: (state) =>
             addSession(state, signedIn(winner(state).portalLoginAt - 1000, 'reports'), { first: true }),
+        },
+        {
+          name: 'an earlier session that read the dashboard was logged out too',
+          mutate: (state) => {
+            const at = winner(state).portalLoginAt;
+            addSession(
+              state,
+              signedIn(at - 1000, '', {
+                portalDashboards: 1,
+                portalActive: false,
+                portalSignedOut: true,
+                portalSignedOutAt: at - 500,
+                portalSignOuts: [at - 500],
+                auth: null,
+              }),
+              { first: true }
+            );
+          },
         },
         {
           name: 'signed back in after logging out, then logged out again',
