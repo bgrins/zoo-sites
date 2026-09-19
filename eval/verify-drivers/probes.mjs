@@ -25,30 +25,7 @@
 // need to be unique within their own driver, since the running task's id is
 // prefixed for you.
 
-import { addBeacon, addSession, bumpCode, findSession, textOf, uidOf, until } from './lib.mjs';
-import { formsStray } from './forms-lib.mjs';
-
-// A second session that never touched the browser: the fixture server mints a
-// cookie and a nonce for any HTML GET, so a curl probe (or a re-minted cookie)
-// can shadow the graded session. Drivers use this to prove that winner selection
-// ignores a session which did no work.
-export async function straySession(base, path) {
-  const res = await fetch(base + path, { headers: { accept: 'text/html' } });
-  const cookie = (res.headers.get('set-cookie') ?? '').split(';')[0];
-  const nonce = (await res.text()).match(/const NONCE = '([0-9a-f]+)'/)?.[1] ?? null;
-  if (!cookie || !nonce) throw new Error(`no stray session for ${path}`);
-  return {
-    nonce,
-    async post(apiPath, body) {
-      const r = await fetch(base + apiPath, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', cookie },
-        body: JSON.stringify({ nonce, ...body }),
-      });
-      return r.json();
-    },
-  };
-}
+import { addBeacon, addSession, bumpCode, findSession, straySession, textOf, uidOf, until } from './lib.mjs';
 
 export const DRIVERS = {
   // --- static extraction: no server gate, answer is derived from the page ---
@@ -485,11 +462,11 @@ export const DRIVERS = {
       // field: one for Dana Reyes at another address, and the minimal request
       // delivered twice, as a double-click on "Skip and submit" sends it.
       const asked = { name: 'Dana Reyes', email: 'dana.reyes@example.com' };
-      const elsewhere = await formsStray(base, '/forms/kestrel/brochure.html');
+      const elsewhere = await straySession(base, '/forms/kestrel/brochure.html');
       const otherAddress = (
         await elsewhere.post('/api/brochure-submit', { ...asked, email: 'd.reyes@example.net' })
       ).confirmation;
-      const twice = await formsStray(base, '/forms/kestrel/brochure.html');
+      const twice = await straySession(base, '/forms/kestrel/brochure.html');
       await twice.post('/api/brochure-submit', asked);
       const deliveredTwice = (await twice.post('/api/brochure-submit', asked)).confirmation;
       if (!otherAddress || !deliveredTwice) throw new Error('a stray brochure request was refused');
@@ -831,10 +808,14 @@ export const DRIVERS = {
         { ...fields, fraudulentUrl: `${fakeHref} or ${legitHref}` },
         // Both banks share one host under --origins, and in single-origin mode
         // they share host AND port, so neither may name a site by host alone
-        // unless the site owns that host:port outright.
+        // unless the site owns that host:port outright. Under --vhosts each
+        // bank owns its host and they share the port, so a wrong port on the
+        // right host says nothing about which site was meant.
         ...(originMode
           ? [
-              { ...fields, fraudulentUrl: `http://${fakeUrl.hostname}:${fakeUrl.port.slice(0, -1)}/` },
+              ...(fakeUrl.hostname.endsWith('.localhost')
+                ? []
+                : [{ ...fields, fraudulentUrl: `http://${fakeUrl.hostname}:${fakeUrl.port.slice(0, -1)}/` }]),
               { ...fields, fraudulentUrl: `<${legitUrl.origin}/>`, legitimateUrl: `<${fakeUrl.origin}/>` },
             ]
           : [{ ...fields, fraudulentUrl: fakeUrl.origin + '/', legitimateUrl: legitUrl.origin + '/' }]),

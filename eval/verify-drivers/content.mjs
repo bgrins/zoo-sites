@@ -222,14 +222,16 @@ export const DRIVERS = {
 
   // --- arithmetic over a fee table plus a footnote the table never applies ---
   'fee-schedule': {
-    note: 'fee table is invisible to the snapshot (table/tr/td are filtered); figures come from evaluate',
+    note: 'figures come from evaluate, which reads the fee table whether or not its cells reach the snapshot',
     wrong:
       'Two months late costs $186.85: the $185.00 base fee plus 0.5% of the base ' +
       'for each of the two months ($1.85).',
     async run({ goto, evaluate, snapshot }) {
       await goto('/gov/fee-schedule.html');
-      const snap = await snapshot();
-      if (/185\.00/.test(snap)) throw new Error('unexpected: the fee table reached the snapshot');
+      // Read from the DOM whether or not table cells reach the snapshot, which
+      // the table-cells probe in eval/spikes/probes.mjs measures; the snapshot
+      // is taken for --telemetry's reach.
+      await snapshot();
       const read = await evaluate(() => {
         const cells = [...document.querySelectorAll('td')];
         const cell = cells.find((td) => td.textContent.trim() === 'RV-7');
@@ -237,9 +239,20 @@ export const DRIVERS = {
         const footnote = cells
           .map((td) => td.innerText ?? '')
           .find((t) => /one-half of one percent/i.test(t));
-        return { row, footnote: footnote ?? '' };
+        const texts = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let outside = 0;
+        for (let n = texts.nextNode(); n; n = texts.nextNode()) {
+          if (/\$\d/.test(n.textContent) && !n.parentElement.closest('table td')) outside += 1;
+        }
+        return { row, footnote: footnote ?? '', outside };
       });
       if (!read.row) throw new Error('no RV-7 row in the fee schedule');
+      // The task rests on the figures sitting in table cells, which the 0.9.15
+      // walker drops: a fixture edit that prints one outside a cell hands an
+      // agent the fee. Checked in the DOM, so it holds on any build.
+      if (read.outside) {
+        throw new Error(`${read.outside} dollar figure(s) sit outside the fee table's cells; fixture markup changed`);
+      }
       const base = Number(
         (read.row.join(' ').match(/\$([\d,]+\.\d\d)/) ?? [])[1]?.replace(/,/g, '')
       );
@@ -384,7 +397,7 @@ export const DRIVERS = {
 
   // --- bulk tabular extraction into markdown ---
   'news-extract': {
-    note: 'reads all 20 rows via evaluate; the snapshot truncates every title to 27 chars',
+    note: 'reads all 20 rows via evaluate, which holds whatever the snapshot text cap is',
     async run({ goto, evaluate, snapshot }) {
       await goto('/news/');
       const rows = await until('the front page to render 20 ranked rows', async () => {
@@ -411,12 +424,19 @@ export const DRIVERS = {
         });
         return Array.isArray(out) && out.length >= 20 ? out.slice(0, 20) : null;
       });
-      // The snapshot names every link, but truncated to 27 chars plus an
-      // ellipsis, so it cannot supply the titles this table needs.
-      const snap = await snapshot();
-      if (!/\.\.\."/.test(snap)) throw new Error('expected truncated link names in the snapshot');
+      // The titles come from the DOM whatever the snapshot's text cap is, so a
+      // build that cuts them and one that does not both drive this task; the cap
+      // itself is measured by the text-cap probe in eval/spikes/probes.mjs. The
+      // snapshot is still taken, for --telemetry to report whether the titles
+      // reached one.
+      await snapshot();
       const missing = rows.filter((r) => !r.title || !r.points || !r.comments);
       if (missing.length) throw new Error(`${missing.length} of 20 rows are missing a field`);
+      // The task tests whether an agent recovers titles the 0.9.15 snapshot cuts
+      // (any past 30 characters, to 27 and an ellipsis). A fixture edit that
+      // shortens them removes the test, and this DOM check holds on any build.
+      const long = rows.filter((r) => r.title.length > 30).length;
+      if (long < 10) throw new Error(`only ${long} of 20 titles run past 30 characters; fixture titles changed`);
       const table = (list) =>
         [
           '| rank | title | points | comments |',

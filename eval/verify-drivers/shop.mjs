@@ -1,7 +1,6 @@
 // Golden-path drivers for pages/shop/. See probes.mjs for the contract.
 
-import { straySession } from './probes.mjs';
-import { addSession, bumpCode, findSession, snapText } from './lib.mjs';
+import { addSession, bumpCode, findSession, snapText, straySession } from './lib.mjs';
 
 // The default snapshot is 100 lines, which truncates every one of these
 // listings before the interesting controls; 500 is the tool's hard cap.

@@ -227,28 +227,38 @@ export const DRIVERS = {
       // Address ONE line among 153 comment buttons. The accessible names are
       // ambiguous across files (three "Comment on new line 10" buttons on this
       // page), so each candidate has to be resolved back to a selector.
-      const diffSnap = await snap(500);
       const label = new RegExp(`uid=(\\S+) button "Comment on new line ${defect.line}"`, 'g');
-      const candidates = [...diffSnap.matchAll(label)].map((m) => m[1]);
-      if (!candidates.length) {
+      const short = defect.file.split('/').pop().replace(/\.[a-z]+$/, '');
+      const wantSelector = `#c-${short}-${defect.line}`;
+      // The defect's own file box (#f-<file>), for a walker that emits enough of
+      // the diff to push its line past the 500-line window.
+      const fileSnap = () => snapText(mcp, { selector: `#f-${short}`, maxLines: 500 });
+      const resolveAmong = async (text) => {
+        const candidates = [...text.matchAll(label)].map((m) => m[1]);
+        for (const uid of candidates) {
+          const r = await mcp('resolve_uid_to_selector', { uid });
+          if (textOf(r).includes(wantSelector)) return { uid, candidates };
+        }
+        return { uid: null, candidates };
+      };
+      let found = await resolveAmong(await snap(500));
+      if (!found.uid) found = await resolveAmong(await fileSnap());
+      if (!found.candidates.length) {
         throw new Error(`no gutter button for line ${defect.line} in the snapshot`);
       }
-      const wantSelector = '#c-' + defect.file.split('/').pop().replace(/\.[a-z]+$/, '') + '-' + defect.line;
-      let target = null;
-      for (const uid of candidates) {
-        const r = await mcp('resolve_uid_to_selector', { uid });
-        if (textOf(r).includes(wantSelector)) target = uid;
-      }
-      if (!target) {
+      if (!found.uid) {
         throw new Error(
-          `none of ${candidates.length} line-${defect.line} buttons resolved to ${wantSelector}`
+          `none of ${found.candidates.length} line-${defect.line} buttons resolved to ${wantSelector}`
         );
       }
-      await mcp('click_by_uid', { uid: target });
+      await mcp('click_by_uid', { uid: found.uid });
 
       const composer = await until('the line comment composer', async () => {
+        const want = `textarea "Comment on line ${defect.line}"`;
         const s = await snap(500);
-        return s.includes(`textarea "Comment on line ${defect.line}"`) ? s : null;
+        if (s.includes(want)) return s;
+        const scoped = await fileSnap();
+        return scoped.includes(want) ? scoped : null;
       });
       const areaUid = uidOf(composer, `textarea "Comment on line ${defect.line}"`);
       const addUid = uidOf(composer, 'button "Add review comment"');

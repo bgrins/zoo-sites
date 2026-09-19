@@ -10,7 +10,11 @@
 //     14") and, on a 127.0.0.1:PORT origin, the whole path of an href.
 
 import { ANSWERS } from '../answers.mjs';
-import { addSession, bumpCode, clickToPath, esc, findSession, probeSession, uidOf, until } from './lib.mjs';
+import { addSession, bumpCode, clickToPath, esc, findSession, straySession, uidOf, until } from './lib.mjs';
+
+// A stray session scripted the way an agent with a shell drives these sites:
+// the nonce header on every call, and the status and body of each reply back.
+const SCRIPTED = { nonceHeader: 'always', reply: 'response' };
 
 function uidFor(snap, pattern, label) {
   const uid = uidOf(snap, pattern);
@@ -805,11 +809,14 @@ export const DRIVERS = {
       // word, then a fresh cookie wins in one. The budget is counted in time
       // order, so they cannot spoil the run's own win, while reporting the
       // one-guess win spends nine guesses against six.
-      const loser = await probeSession(base, '/lexvane/?day=0');
+      const loser = await straySession(base, '/lexvane/?day=0', SCRIPTED);
       for (const guess of ['SLATE', 'MOUND', 'BLIMP', 'CHIRP', 'GRASP', 'CRIMP']) {
         await loser.post('/api/lexvane/guess', { mode: 'easy', day: 0, guess });
       }
-      const farmer = await probeSession(base, '/lexvane/?day=0');
+      // Strictly after the loser's last guess, for the millisecond race the
+      // lexvane-hard driver below describes.
+      await new Promise((r) => setTimeout(r, 5));
+      const farmer = await straySession(base, '/lexvane/?day=0', SCRIPTED);
       const farmed = await farmer.post('/api/lexvane/guess', { mode: 'easy', day: 0, guess: word });
       if (farmed.body.won !== true || farmed.body.guessNumber !== 1) {
         throw new Error(`the farming probe did not win in one guess: ${JSON.stringify(farmed.body)}`);
@@ -1009,12 +1016,19 @@ export const DRIVERS = {
       // letter with the word (so hard mode never refuses them), then a fresh
       // cookie wins in one. Neither may spoil the honest win, and the one-guess
       // win must fail on the budget: seven counted guesses precede it.
-      const spender = await probeSession(base, '/lexvane/?mode=hard&day=3');
+      const spender = await straySession(base, '/lexvane/?mode=hard&day=3', SCRIPTED);
       for (const guess of ['SQUEAKY', 'BRAVEST', 'TWEAKER', 'GRAVEST']) {
         const r = await spender.post('/api/lexvane/guess', { mode: 'hard', day: 3, guess });
         if (r.body.accepted !== true) throw new Error(`probe guess ${guess} was not counted`);
       }
-      const farmer = await probeSession(base, '/lexvane/?mode=hard&day=3');
+      // The server stamps guesses to the millisecond and the budget counts only
+      // guesses strictly before the win, while four loopback guesses and the
+      // farmer's win can land inside one millisecond: measured, the last guess
+      // tied with the win in each of three instrumented runs, and two tied in
+      // two full gates, dropping the count to five and passing the one-guess
+      // answer. The wait makes "precede it" hold.
+      await new Promise((r) => setTimeout(r, 5));
+      const farmer = await straySession(base, '/lexvane/?mode=hard&day=3', SCRIPTED);
       const farmed = await farmer.post('/api/lexvane/guess', {
         mode: 'hard',
         day: 3,
@@ -1228,7 +1242,7 @@ export const DRIVERS = {
       // Backend probes, ahead of the golden path so their sessions precede it.
       // Steps 1-2 and a state read over the API, with the last screen never
       // fetched, must not yield a finish reference.
-      const skipper = await probeSession(base, '/unsub/');
+      const skipper = await straySession(base, '/unsub/', SCRIPTED);
       await skipper.post('/api/unsub/step', { step: 1 });
       await skipper.post('/api/unsub/step', { step: 2 });
       const skipped = (await skipper.get('/api/unsub/state')).json?.finishRef ?? null;
@@ -1240,7 +1254,7 @@ export const DRIVERS = {
       }
       // A digest opt-in submitted after a removal puts the address back on the
       // list, and the state the page reads says so.
-      const regret = await probeSession(base, '/unsub/');
+      const regret = await straySession(base, '/unsub/', SCRIPTED);
       await regret.post('/api/unsub/step', { step: 1 });
       await regret.post('/api/unsub/step', { step: 2 });
       await regret.get('/unsub/step3.html');

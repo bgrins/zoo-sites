@@ -37,8 +37,7 @@ const PREMIUM = 0.22;
 const LIMIT_TOTAL = 2200;
 const allIn = (amount) => Math.round(amount * (1 + PREMIUM) * 100) / 100;
 
-import { addSession, snapText, uidOf, until as poll } from './lib.mjs';
-import { strayClient } from './recovery-lib.mjs';
+import { addSession, snapText, straySession, uidOf, until as poll } from './lib.mjs';
 
 // The saleroom ladder moves in ticks seconds apart, so polls here default to a
 // 2s cadence with a long budget; call sites override where the answer is quick.
@@ -94,7 +93,7 @@ async function placeBid(mcp, amount) {
 // session's first read of the lot and the pin is shared by every session.
 async function openTopDraw(base, modes) {
   modes.auctionDraw = 'decline';
-  const room = await strayClient(base, LOT_PATH);
+  const room = await straySession(base, LOT_PATH, { provenance: 'referer', reply: 'response' });
   const first = await room.get('/api/auction/lot');
   modes.auctionDraw = 'win';
   if (first.status !== 200 || first.body?.opening !== 1300) {

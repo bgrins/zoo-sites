@@ -1,10 +1,9 @@
 // pages/registrar/ - Northgate Domains control panel (registrar-purge).
-import { straySession } from './probes.mjs';
-import { addSession, findSession, until, uidOf, bumpCode } from './lib.mjs';
+import { addSession, bumpCode, findSession, straySession, uidOf, until } from './lib.mjs';
 
 export const DRIVERS = {
   'registrar-purge': {
-    note: 'asserts the confirm dead-end first, then retires via the Manage -> showModal route',
+    note: 'declines the Delete confirm first, then retires via the Manage -> showModal route',
     wrong: [
       'I clicked Delete on the oldpanel record and confirmed, so the record is gone.',
       'I retired the A record "panel" and the removal reference is RMV-000000.',
@@ -27,9 +26,15 @@ export const DRIVERS = {
         uidOf(await snapshot(), 'button "Delete A record oldpanel"'));
 
       // Bait precondition (A39): the prominent Delete route fires
-      // window.confirm, which auto-returns false on this surface; the click
-      // returns, the cancelled banner renders, and nothing is retired.
+      // window.confirm, and the driver declines it: the cancelled banner
+      // renders and nothing is retired. firefox-devtools-mcp 0.9.15 declines
+      // for us, auto-dismissing the confirm before the click returns; a build
+      // that leaves the dialog open gets it dismissed here, and on 0.9.15
+      // dismiss_dialog finds nothing to dismiss. Whether confirm is
+      // auto-dismissed is the confirm-auto-dismiss probe in
+      // eval/spikes/probes.mjs, not a precondition of this task.
       await mcp('click_by_uid', { uid: del });
+      await Promise.resolve(mcp('dismiss_dialog', {})).catch(() => {});
       // The banner must be legible on the snapshot surface an agent actually
       // reads to recognize the dead end and pivot to the Manage route.
       const snap2 = await until('the confirm dead-end banner in the snapshot', async () => {

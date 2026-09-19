@@ -11,8 +11,7 @@
 // route that always works.
 
 import { ANSWERS } from '../answers.mjs';
-import { quotientStray } from './devtools-lib.mjs';
-import { addSession, findSession, until, uidOf } from './lib.mjs';
+import { addSession, findSession, straySession, until, uidOf } from './lib.mjs';
 
 // Which helper reads which batch field. Fixed public knowledge from
 // pages/quotient/app.js; which PAIR is broken is the per-session draw.
@@ -41,7 +40,8 @@ export const DRIVERS = {
       // batch: the validator must grade the session that ran the
       // reconciliation through the page, not a stray draw an answer names.
       const strayDraw = async () => {
-        const { status, body } = await (await quotientStray(base, '/quotient/reconcile.html')).batch();
+        const stray = await straySession(base, '/quotient/reconcile.html', { nonce: 'QT_NONCE', reply: 'response' });
+        const { status, body } = await stray.get('/api/quotient/batch');
         const omitted = status === 200 ? omittedFrom(body) : null;
         if (!omitted) throw new Error(`a stray batch answered ${status} with no omitted field`);
         return omitted;
@@ -214,8 +214,8 @@ export const DRIVERS = {
       // A curl client can send a lane that is not a string; the quote must
       // still be recorded under the lane it priced, or no validator can ever
       // match it.
-      const stray = await quotientStray(origin, '/quotient/quote.html');
-      const odd = await stray.quote({ lane: ['casterway'], weight: 65 });
+      const stray = await straySession(origin, '/quotient/quote.html', { nonce: 'QT_NONCE', reply: 'response' });
+      const odd = await stray.post('/api/quotient/quote', { lane: ['casterway'], weight: 65 });
       if (odd.status !== 200 || odd.body.lane !== 'casterway') {
         throw new Error(`an array lane was echoed as ${JSON.stringify(odd.body.lane)} (${odd.status})`);
       }

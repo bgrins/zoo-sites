@@ -13,7 +13,7 @@
 //   - every move re-renders the board, and a re-render plus the fresh snapshot
 //     invalidates every uid, so a four-card triage costs a snapshot per card.
 
-import { probeSession, snapText, until } from './lib.mjs';
+import { snapText, straySession, until } from './lib.mjs';
 
 const PATH = '/kanban/';
 const LANES = { backlog: 'Backlog', doing: 'Doing', done: 'Done' };
@@ -137,7 +137,7 @@ export const DRIVERS = {
       // dealt board before triaging and saving again. Each revision is real, so
       // each must fail on the layout it was issued for.
       const probeBoard = async () => {
-        const probe = await probeSession(base, PATH);
+        const probe = await straySession(base, PATH, { nonceHeader: 'always', reply: 'response' });
         const { body } = await probe.get('/api/kanban/board');
         if (!Array.isArray(body.cards)) throw new Error('probe could not read its board');
         const save = async (place) => {

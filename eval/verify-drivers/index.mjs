@@ -45,59 +45,61 @@ import { DRIVERS as telco } from './telco.mjs';
 import { DRIVERS as utility } from './utility.mjs';
 import { DRIVERS as kiosk } from './kiosk.mjs';
 
+// Keyed by file name, which is what the duplicate-id error and DRIVER_FILES
+// report.
 const modules = {
-  probes,
-  shop,
-  forms,
-  formsUpload,
-  content,
-  auth,
-  data,
-  gadgetronMirror,
-  floorplan,
-  consent,
-  govNavigation,
-  flakySlow,
-  viewport,
-  paylink,
-  forge,
-  support,
-  schedule,
-  auction,
-  calc,
-  consoleLog,
-  intl,
-  kanban,
-  metrics,
-  roles,
-  vault,
-  media,
-  status,
-  smarthome,
-  insure,
-  bistro,
-  cabins,
-  depot,
-  quotient,
-  boxoffice,
-  fernwood,
-  registrar,
-  telco,
-  jobs,
-  utility,
-  kiosk,
+  'probes.mjs': probes,
+  'shop.mjs': shop,
+  'forms.mjs': forms,
+  'forms-upload.mjs': formsUpload,
+  'content.mjs': content,
+  'auth.mjs': auth,
+  'data.mjs': data,
+  'gadgetron-mirror.mjs': gadgetronMirror,
+  'floorplan.mjs': floorplan,
+  'consent.mjs': consent,
+  'gov-navigation.mjs': govNavigation,
+  'flaky-slow.mjs': flakySlow,
+  'viewport.mjs': viewport,
+  'paylink.mjs': paylink,
+  'forge.mjs': forge,
+  'support.mjs': support,
+  'schedule.mjs': schedule,
+  'auction.mjs': auction,
+  'calc.mjs': calc,
+  'console.mjs': consoleLog,
+  'intl.mjs': intl,
+  'kanban.mjs': kanban,
+  'metrics.mjs': metrics,
+  'roles.mjs': roles,
+  'vault.mjs': vault,
+  'media.mjs': media,
+  'status.mjs': status,
+  'smarthome.mjs': smarthome,
+  'insure.mjs': insure,
+  'bistro.mjs': bistro,
+  'cabins.mjs': cabins,
+  'depot.mjs': depot,
+  'quotient.mjs': quotient,
+  'boxoffice.mjs': boxoffice,
+  'fernwood.mjs': fernwood,
+  'registrar.mjs': registrar,
+  'telco.mjs': telco,
+  'jobs.mjs': jobs,
+  'utility.mjs': utility,
+  'kiosk.mjs': kiosk,
 };
 
 export const DRIVERS = {};
-const seen = new Map();
-for (const [name, mod] of Object.entries(modules)) {
+// The file each task's driver lives in, which verify.mjs --affected maps a
+// changed driver file back through.
+export const DRIVER_FILES = {};
+for (const [file, mod] of Object.entries(modules)) {
   for (const [id, driver] of Object.entries(mod)) {
-    if (seen.has(id)) {
-      throw new Error(
-        `duplicate golden-path driver for "${id}" in ${name}.mjs and ${seen.get(id)}.mjs`
-      );
+    if (DRIVER_FILES[id]) {
+      throw new Error(`duplicate golden-path driver for "${id}" in ${file} and ${DRIVER_FILES[id]}`);
     }
-    seen.set(id, name);
+    DRIVER_FILES[id] = file;
     DRIVERS[id] = driver;
   }
 }

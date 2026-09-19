@@ -2,8 +2,10 @@
 // validator still accepts a correct solution and rejects a wrong one — without
 // spending agent budget.
 //
-//   node eval/verify.mjs [--task <ids>] [--headed] [--list] [--jobs <n>] [--extract]
-//                   [--origins] [--profile [path]]
+//   node eval/verify.mjs [--task <ids>] [--area <names>] [--affected [files]]
+//                   [--headed] [--list] [--jobs <n>] [--extract] [--origins | --vhosts]
+//                   [--telemetry [path]] [--compare <json>] [--record-timings]
+//                   [--profile [path]]
 //
 // Tasks run across parallel workers by default (each with its own pages server
 // and Firefox instance, the same isolation run.mjs uses for --parallel-tasks);
@@ -30,7 +32,17 @@
 // correct answer, not that composing one is possible.
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { availableParallelism, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,6 +50,7 @@ import {
   BROWSER_PINS,
   PINNED_PREFS,
   devtoolsMcpEntry,
+  devtoolsMcpInfo,
   downloadPrefs,
   prefArgs,
   startMcpServer,
@@ -46,15 +59,24 @@ import { detectScreen, windowGrid } from './window-grid.mjs';
 import { startPagesServer } from '../server.mjs';
 import { ORIGINS, originUrls } from '../manifest.mjs';
 import { conforms, enforceQuotes, extractFields, normalise } from './extract.mjs';
-import { DRIVERS } from './verify-drivers/index.mjs';
-import { addSession } from './verify-drivers/lib.mjs';
-import { gradedValues, mintedValues } from './surface-reach.mjs';
+import { DRIVERS, DRIVER_FILES } from './verify-drivers/index.mjs';
+import { addSession, textOf } from './verify-drivers/lib.mjs';
+import { gradedValues, mintedValues, reachOf } from './surface-reach.mjs';
 import { checkFixtures } from '../scripts/check-fixtures.mjs';
 
+const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const flag = (name, fallback) => {
   const i = args.indexOf(`--${name}`);
   return i === -1 ? fallback : args[i + 1];
+};
+// A flag whose value is optional: a bare `--telemetry --jobs 1` must not read
+// the next flag as its value.
+const optionalFlag = (name, fallback) => {
+  const i = args.indexOf(`--${name}`);
+  if (i === -1) return null;
+  const next = args[i + 1];
+  return next && !next.startsWith('--') ? next : fallback;
 };
 const HEADED = args.includes('--headed');
 // Paid, opt-in: runs the real extraction model over the driver's text answer
@@ -75,15 +97,7 @@ const ORIGIN_MODE = args.includes('--origins');
 // That is the interesting workload for a browser agent, but it is not ordinary
 // browsing, and these fixtures are small synthetic pages run headless, so
 // layout and paint numbers here do not transfer to real sites.
-//
-// Resolved by hand rather than with flag(): the path is optional, so a bare
-// `--profile --jobs 1` must not read the next flag as a filename.
-const PROFILE = (() => {
-  const i = args.indexOf('--profile');
-  if (i === -1) return null;
-  const next = args[i + 1];
-  return next && !next.startsWith('--') ? next : 'profile.json';
-})();
+const PROFILE = optionalFlag('profile', 'profile.json');
 // Firefox reads these at startup and writes the profile when it exits, so the
 // whole run has to share one browser. 10ms sampling with 100M entries held a
 // full 91-driver run with nothing discarded, costing ~800MB of buffer and a
@@ -115,6 +129,31 @@ const patterns = ONLY ? ONLY.split(',').map((s) => s.trim()).filter(Boolean) : n
 const selected = (id) => !patterns || patterns.some((p) => (p.includes('*')
   ? new RegExp('^' + p.split('*').map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$').test(id)
   : p === id));
+const AREAS = flag('area', null)?.split(',').map((s) => s.trim()).filter(Boolean) ?? null;
+// --affected [files]: only the tasks the given files (comma list, repo- or
+// cwd-relative) can change, or those of the working tree's changes against HEAD
+// when no list is given. affectedTasks() below holds the mapping.
+const AFFECTED = args.includes('--affected') ? optionalFlag('affected', '') : null;
+// Every site on one port, told apart by its Host header (<key>.localhost), the
+// shape a host-routed deployment serves; see startPagesServer's `vhosts`.
+const VHOSTS = args.includes('--vhosts');
+if (VHOSTS && ORIGIN_MODE) throw new Error('--vhosts and --origins are two serving modes; pick one');
+const SERVING = VHOSTS ? 'vhosts' : ORIGIN_MODE ? 'origins' : 'single-origin';
+// --telemetry [path]: per-tool latency, result size and errors, and whether each
+// graded value reached a snapshot the driver received, written as JSON to diff
+// between two builds. It records; it never changes what passes. By default it
+// lands in eval/results/, which git ignores, stamped so a baseline is never
+// overwritten.
+const TELEMETRY = optionalFlag(
+  'telemetry',
+  join(REPO, 'eval', 'results', `verify-telemetry-${new Date().toISOString().replace(/[:.]/g, '-')}.json`)
+);
+const COMPARE = flag('compare', null);
+if (COMPARE && !TELEMETRY) throw new Error('--compare diffs a --telemetry run against a baseline, so it needs --telemetry');
+if (COMPARE && !existsSync(COMPARE)) throw new Error(`--compare: no telemetry file at ${COMPARE}`);
+// Per-task wall time from a serial run, which orders the queue longest-first.
+const TIMINGS_FILE = join(REPO, 'eval', 'verify-drivers', 'timings.json');
+const RECORD_TIMINGS = args.includes('--record-timings');
 
 // The gate covers the web suite AND the devtools suite: every task with a
 // driver is verified regardless of which suite a paid run selects. The
@@ -136,7 +175,13 @@ Free, no API spend: under 2 minutes at the default --jobs, about 3.5 with
 Usage: node eval/verify.mjs [options]
 
   --task <ids>            comma list; * wildcards, e.g. --task 'ledger-*'
+  --area <names>          only tasks tagged with one of these capability areas
+                          (tasks/areas.json; --list shows each task's)
+  --affected [files]      only tasks the files can change (comma list); with no
+                          list, the working tree's changes against HEAD
   --list                  every task and whether it has a driver
+  --dry-run               print the tasks a run would drive, in queue order, and
+                          stop
   --jobs <n>              parallel workers (default: cores - 2, capped at 4)
   --headed                visible Firefox, one window per worker, tiled into a
                           screen-sized grid
@@ -149,6 +194,19 @@ Usage: node eval/verify.mjs [options]
   --origins               serve every site on its own port with its directory
                           at '/', the container's shape, instead of under path
                           prefixes on one port
+  --vhosts                serve every site on one port, routed by Host header
+                          (<key>.localhost)
+  --telemetry [path]      write per-tool latency, result chars and errors, and
+                          golden-path reach (did each graded value reach a
+                          snapshot?) as JSON (default:
+                          eval/results/verify-telemetry-<time>.json)
+  --compare <json>        with --telemetry, print what changed against an
+                          earlier telemetry file (another build's)
+  --telemetry-diff <a> <b> print what changed between two telemetry files; runs
+                          no task
+  --record-timings        write each task's wall time to
+                          verify-drivers/timings.json, which orders the queue
+                          longest-first; record from a --jobs 1 run
   --profile [path]        record one Gecko profile of the whole run, task
                           boundaries marked (default: profile.json; pins --jobs 1)
   --profile-interval <ms> profiler sampling interval (default: 10)
@@ -169,12 +227,25 @@ if (args.includes('--list')) {
     const d = DRIVERS[t.id];
     console.log(
       `  ${d ? (d.canned ? 'canned ' : 'driven ') : '  --   '} ${t.id}` +
+        `  [${t.family}: ${t.areas.join(', ') || 'no areas'}]` +
         (d?.note ? `  (${d.note})` : '')
     );
   }
   console.log('\ndriven = interaction and answer both produced by the driver');
   console.log('canned = interaction driven, prose supplied (judgment/composition task)');
   console.log('  --   = no golden path yet');
+  const untagged = tasks.filter((t) => !t.areas.length).map((t) => t.id);
+  if (untagged.length) {
+    console.log(`\nno areas in tasks/areas.json (eval/scripts/derive-areas.mjs derives them): ${untagged.join(', ')}`);
+  }
+  process.exit(0);
+}
+
+const telemetryDiff = args.indexOf('--telemetry-diff');
+if (telemetryDiff !== -1) {
+  const [a, b] = args.slice(telemetryDiff + 1, telemetryDiff + 3);
+  if (!a || !b) throw new Error('--telemetry-diff takes two telemetry files');
+  printTelemetryDiff(JSON.parse(readFileSync(a, 'utf8')), JSON.parse(readFileSync(b, 'utf8')));
   process.exit(0);
 }
 
@@ -226,12 +297,21 @@ assertFixturesResolve();
 // that dies takes its Firefox with it, and FIREFOX_DEVTOOLS_MCP points the
 // whole gate at a local tool checkout.
 async function makeWorker(grid, slot) {
-  const pages = await startPagesServer({ seed: SEED, origins: ORIGIN_MODE ? ORIGINS : null });
-  const origins = ORIGIN_MODE ? originUrls(pages.url, pages.origins) : undefined;
-  // Drivers name single-origin paths (/paylink/checkout.html). In origin mode
-  // the site owning the longest matching dir prefix serves the rest of the path
-  // at its own root, so shop/gadgetron-mirror never lands on shop/gadgetron.
-  // A path no site owns (/, /api/...) stays on the single-origin listener.
+  const pages = await startPagesServer({
+    seed: SEED,
+    origins: ORIGIN_MODE ? ORIGINS : null,
+    ...(VHOSTS ? { vhosts: true } : {}),
+  });
+  if (VHOSTS && !pages.origins?.length) {
+    await pages.close();
+    throw new Error('--vhosts needs a server.mjs whose startPagesServer supports { vhosts: true }');
+  }
+  const origins = ORIGIN_MODE || VHOSTS ? originUrls(pages.url, pages.origins) : undefined;
+  // Drivers name single-origin paths (/paylink/checkout.html). In origin and
+  // vhost mode the site owning the longest matching dir prefix serves the rest
+  // of the path at its own root, so shop/gadgetron-mirror never lands on
+  // shop/gadgetron. A path no site owns (/, /api/...) stays on the
+  // single-origin listener, 127.0.0.1 in vhost mode too.
   // Only goto maps: helpers.base stays that listener, so an answer a driver
   // builds from base or a prefixed path grades the single-origin answer.
   const byDir = [...pages.origins].sort((a, b) => b.dir.length - a.dir.length);
@@ -259,7 +339,40 @@ async function makeWorker(grid, slot) {
     ],
     env: { TZ: BROWSER_PINS.timeZone, ...PROFILE_ENV },
   });
-  const mcp = (name, toolArgs = {}) => server.call(name, toolArgs);
+  // Every call a driver or the harness makes, for --telemetry. `phase` tells
+  // the driver's calls from the harness's own (the viewport reset before a
+  // task, the reach snapshot after it), so per-task tool counts are the
+  // driver's alone.
+  const calls = [];
+  // A new browser sits on about:blank until its first navigation, so healthy()
+  // reads about:blank as a relaunch only once this worker has navigated.
+  let navigated = false;
+  const serverCall = async (name, toolArgs) => {
+    const result = await server.call(name, toolArgs);
+    if (name === 'navigate_page' && !result.isError) navigated = true;
+    return result;
+  };
+  const mcp = async (name, toolArgs = {}) => {
+    if (!TELEMETRY) return serverCall(name, toolArgs);
+    const started = performance.now();
+    const call = { tool: name, phase: helpers.phase, ms: 0, chars: 0, isError: false, threw: null };
+    calls.push(call);
+    try {
+      const result = await serverCall(name, toolArgs);
+      const text = textOf(result);
+      call.chars = text.length;
+      call.isError = !!result.isError;
+      if (call.isError) call.errorText = text.slice(0, 160);
+      if (name === 'take_snapshot') call.text = text;
+      if (name === 'navigate_page') call.url = toolArgs.url;
+      return result;
+    } catch (error) {
+      call.threw = String(error.message).slice(0, 160);
+      throw error;
+    } finally {
+      call.ms = performance.now() - started;
+    }
+  };
   // Most drivers only need to navigate and read/poke the page; uid-based tools
   // are available too, and using them is what makes this a real dogfood of the
   // surface.
@@ -291,6 +404,7 @@ async function makeWorker(grid, slot) {
     // without --profile, so a driver may call it freely.
     mark: (label) => mark(helpers, `zoo:${helpers.taskId}:${label}`),
     taskId: null,
+    phase: 'harness',
   };
   // Settle the browser onto a real content process before the first task, so
   // that task's boundary marks are comparable with each other. Without it the
@@ -311,8 +425,49 @@ async function makeWorker(grid, slot) {
     }
     rmSync(stateDir, { recursive: true, force: true });
   };
-  return { pages, helpers, tasks, close };
+  // Whether the MCP server and the browser the driver was using still answer.
+  // A hung browser answers nothing, hence the timeout. A crashed one is
+  // relaunched silently by firefox-devtools-mcp on its next call, onto
+  // about:blank, a page no driver returns to once it has navigated.
+  const healthy = async () => {
+    let timer;
+    const timeout = new Promise((r) => (timer = setTimeout(() => r(false), 15000)));
+    const probe = server
+      .call('evaluate_script', { function: '() => location.href' })
+      .then((r) => !r.isError && !(navigated && /"about:blank"/.test(textOf(r))))
+      .catch(() => false);
+    const ok = await Promise.race([probe, timeout]);
+    clearTimeout(timer);
+    return ok;
+  };
+  // A URL this worker serves as the single-origin path it maps to
+  // (/registrar/index.html), whichever serving mode served it, or null.
+  const pathOf = (url) => {
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return null;
+    }
+    const owner = byDir.find((o) => url === o.url || url.startsWith(`${o.url}/`));
+    if (owner) return `/${owner.dir}${parsed.pathname}`;
+    return url.startsWith(pages.url) ? parsed.pathname : null;
+  };
+  return { pages, helpers, tasks, close, calls, healthy, pathOf, slot, listTools: server.listTools };
 }
+
+// The manifest dir a single-origin path lies under, the longest one winning so
+// /shop/gadgetron-mirror/ never reads as shop/gadgetron.
+const DIRS_LONGEST_FIRST = [...new Set(ORIGINS.map((o) => o.dir))].sort((a, b) => b.length - a.length);
+function dirOfPath(path) {
+  return DIRS_LONGEST_FIRST.find((d) => path === `/${d}` || path.startsWith(`/${d}/`)) ?? null;
+}
+
+// What a dead or wedged worker throws, as opposed to a driver's own assertion:
+// the stdio transport closing, an MCP request timing out, or the browser gone
+// from under WebDriver.
+const TRANSPORT_ERROR =
+  /Connection closed|Not connected|MCP error -3200[01]|Request timed out|EPIPE|ECONNRESET|socket hang up|browser has (?:been )?closed|Browsing context has been discarded|invalid session id|session (?:not created|deleted)/i;
 
 let pass = 0;
 let fail = 0;
@@ -492,6 +647,323 @@ async function mark(helpers, name) {
 // itself means loading a ~270MB JSON.
 const taskTimings = [];
 
+// --telemetry's per-task records, keyed by task id.
+const telemetryTasks = {};
+let restarts = 0;
+
+// The telemetry helpers are function declarations because --telemetry-diff
+// calls printTelemetryDiff before the rest of this module has initialised.
+function round(n) {
+  return Math.round(n * 10) / 10;
+}
+
+// Nearest-rank percentile, so a p50 is always a latency some call really took.
+function percentile(xs, p) {
+  if (!xs.length) return null;
+  const sorted = [...xs].sort((a, b) => a - b);
+  return round(sorted[Math.max(0, Math.ceil(p * sorted.length) - 1)]);
+}
+
+// Per tool over one task's calls. `ms` keeps each call's latency, because
+// per-task medians cannot be combined into a median over any set of tasks.
+function toolStats(calls) {
+  const by = {};
+  for (const c of calls) (by[c.tool] ??= []).push(c);
+  return Object.fromEntries(
+    Object.entries(by)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([tool, list]) => [
+        tool,
+        {
+          calls: list.length,
+          errors: list.filter((c) => c.isError).length,
+          threw: list.filter((c) => c.threw).length,
+          chars: list.reduce((n, c) => n + c.chars, 0),
+          p50_ms: percentile(list.map((c) => c.ms), 0.5),
+          p90_ms: percentile(list.map((c) => c.ms), 0.9),
+          max_ms: percentile(list.map((c) => c.ms), 1),
+          ms: list.map((c) => round(c.ms)),
+        },
+      ])
+  );
+}
+
+// Several tasks' toolStats as one, latency over their pooled calls.
+function mergeToolStats(perTask) {
+  const by = {};
+  for (const stats of perTask) for (const [tool, s] of Object.entries(stats ?? {})) (by[tool] ??= []).push(s);
+  const total = (parts, key) => parts.reduce((n, s) => n + (s[key] ?? 0), 0);
+  return Object.fromEntries(
+    Object.entries(by)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([tool, parts]) => {
+        const ms = parts.flatMap((s) => s.ms ?? []);
+        return [
+          tool,
+          {
+            calls: total(parts, 'calls'),
+            errors: total(parts, 'errors'),
+            threw: total(parts, 'threw'),
+            chars: total(parts, 'chars'),
+            p50_ms: percentile(ms, 0.5),
+            p90_ms: percentile(ms, 0.9),
+            max_ms: percentile(ms, 1),
+          },
+        ];
+      })
+  );
+}
+
+// What the snapshots a driver received looked like: how many were cut at the
+// line window ("[+N lines"), how many hit the walker's depth or node cap
+// ("[DOM truncated]"), and how many quoted strings the formatter cut short.
+function snapshotStats(snaps) {
+  return {
+    calls: snaps.length,
+    chars: snaps.reduce((n, s) => n + s.length, 0),
+    lines: snaps.reduce((n, s) => n + s.split('\n').length, 0),
+    lineCut: snaps.filter((s) => /\[\+\d+ lines/.test(s)).length,
+    domTruncated: snaps.filter((s) => s.includes('[DOM truncated]')).length,
+    cutStrings: snaps.reduce((n, s) => n + (s.match(/\.\.\."/g) ?? []).length, 0),
+  };
+}
+
+function reachCounts(reach) {
+  const out = { values: 0, seen: 0, truncated: 0, absent: 0 };
+  for (const state of Object.values(reach ?? {})) {
+    out.values++;
+    out[state]++;
+  }
+  return out;
+}
+
+// The scalars gradedValues() tests, keyed by where they sit in the answer
+// ("rows[2].title"), because a minted value changes every run and its path is
+// what two runs share.
+function fieldPaths(fields) {
+  const out = {};
+  const walk = (node, path) => {
+    if (node == null) return;
+    if (typeof node === 'object') {
+      for (const [k, v] of Object.entries(node)) walk(v, Array.isArray(node) ? `${path}[${k}]` : path ? `${path}.${k}` : k);
+      return;
+    }
+    if ((typeof node === 'string' || typeof node === 'number') && String(node).length >= 3) out[path] = String(node);
+  };
+  walk(fields, '');
+  return out;
+}
+
+// Each graded answer field as seen, truncated (the snapshot shows its opening
+// and an ellipsis) or absent, over the snapshots the driver itself took and
+// over one full-window snapshot the harness takes of the page the driver left;
+// and the same counted over the codes the server minted.
+function reachRecord(fields, state, driverText, finalText) {
+  const paths = fieldPaths(fields);
+  const minted = mintedValues(state);
+  const over = (text) => {
+    const found = reachOf(Object.values(paths), text);
+    return {
+      fields: Object.fromEntries(Object.entries(paths).map(([p, v]) => [p, found[v] ?? 'absent'])),
+      minted: reachCounts(reachOf(minted, text)),
+    };
+  };
+  return { driver: over(driverText), final: over(finalText) };
+}
+
+// Which build of the tool this is, by content: a version string cannot tell a
+// patched checkout from the release it was cut from.
+function buildIdentity() {
+  const entry = devtoolsMcpEntry();
+  const sha = (file) => (existsSync(file) ? createHash('sha256').update(readFileSync(file)).digest('hex') : null);
+  return {
+    ...devtoolsMcpInfo(),
+    entry,
+    sha256: sha(entry),
+    walkerSha256: sha(join(dirname(entry), 'snapshot.injected.global.js')),
+  };
+}
+
+function toolsIdentity(tools) {
+  const described = (tools ?? [])
+    .map(({ name, description, inputSchema }) => ({ name, description, inputSchema }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const json = JSON.stringify(described);
+  return {
+    count: described.length,
+    names: described.map((t) => t.name),
+    hash: createHash('sha256').update(json).digest('hex'),
+    schemaChars: json.length,
+  };
+}
+
+// Run-wide figures over the tasks `ids` names, rebuilt from their per-task
+// records, so a diff can total two files over the same tasks.
+function telemetryTotals(tasks, ids) {
+  const list = ids.map((id) => tasks[id]).filter(Boolean);
+  const sum = (key) => {
+    const out = {};
+    for (const t of list) for (const [k, v] of Object.entries(t[key] ?? {})) out[k] = (out[k] ?? 0) + v;
+    return out;
+  };
+  const reachTotal = (pick, counted = false) => {
+    const out = { values: 0, seen: 0, truncated: 0, absent: 0, tasks: 0, tasksAllSeen: 0 };
+    for (const t of list) {
+      const reach = t.reach && pick(t.reach);
+      if (!reach || !Object.keys(reach).length) continue;
+      const counts = counted ? reach : reachCounts(reach);
+      if (!counts.values) continue;
+      for (const k of ['values', 'seen', 'truncated', 'absent']) out[k] += counts[k];
+      out.tasks++;
+      if (counts.seen === counts.values) out.tasksAllSeen++;
+    }
+    return out;
+  };
+  return {
+    tasks: list.length,
+    tools: mergeToolStats(list.map((t) => t.tools)),
+    harness: mergeToolStats(list.map((t) => t.harness)),
+    snapshot: sum('snapshot'),
+    reach: {
+      driver: reachTotal((r) => r.driver.fields),
+      final: reachTotal((r) => r.final.fields),
+      mintedDriver: reachTotal((r) => r.driver.minted, true),
+      mintedFinal: reachTotal((r) => r.final.minted, true),
+    },
+  };
+}
+
+function telemetryReport() {
+  const tasks = Object.fromEntries(Object.entries(telemetryTasks).sort(([a], [b]) => a.localeCompare(b)));
+  return {
+    version: 1,
+    build: buildIdentity(),
+    tools: toolsIdentity(toolList),
+    firefox: firefoxVersion,
+    run: {
+      at: new Date().toISOString(),
+      jobs: JOBS,
+      seed: SEED,
+      serving: SERVING,
+      tasks: Object.keys(tasks).length,
+      ok: pass,
+      failed: fail,
+      restarts,
+    },
+    // Over the tasks that passed: a failed task's calls stop wherever its
+    // driver threw, and its answer fields are not the graded values.
+    totals: {
+      ...telemetryTotals(tasks, Object.keys(tasks).filter((id) => tasks[id].verdict === 'ok')),
+      excluded: Object.fromEntries(
+        Object.entries(tasks)
+          .filter(([, t]) => t.verdict !== 'ok')
+          .map(([id, t]) => [id, t.verdict])
+      ),
+    },
+    tasks,
+  };
+}
+
+// What changed between two --telemetry files, most often the same gate on two
+// builds of the tool. It calls only function declarations, because
+// --telemetry-diff calls it before the rest of this module has initialised.
+function printTelemetryDiff(a, b) {
+  const label = (t) =>
+    `${t.build?.version ?? '?'} (${t.build?.source ?? '?'}, ${String(t.build?.sha256 ?? '').slice(0, 12)})`;
+  const arrow = (x, y) => (x === y ? String(x ?? '-') : `${x ?? '-'} -> ${y ?? '-'}`);
+  console.log(`\ntelemetry diff: ${label(a)} -> ${label(b)}`);
+  if (!a.run?.seed || a.run.seed !== b.run?.seed) {
+    console.log('  the two runs did not share a --seed, so value-level flips below include difficulty-draw noise');
+  }
+  if (a.build?.walkerSha256 !== b.build?.walkerSha256) console.log('  the snapshot walker differs');
+  if (a.tools?.hash !== b.tools?.hash) {
+    const [an, bn] = [new Set(a.tools?.names ?? []), new Set(b.tools?.names ?? [])];
+    const added = [...bn].filter((n) => !an.has(n));
+    const removed = [...an].filter((n) => !bn.has(n));
+    console.log(
+      `  tools/list differs: ${arrow(a.tools?.count, b.tools?.count)} tools, ` +
+        `${arrow(a.tools?.schemaChars, b.tools?.schemaChars)} schema chars` +
+        (added.length ? `; added ${added.join(', ')}` : '') +
+        (removed.length ? `; removed ${removed.join(', ')}` : '')
+    );
+  }
+  const flips = Object.keys(b.tasks ?? {})
+    .filter((id) => a.tasks?.[id] && a.tasks[id].verdict !== b.tasks[id].verdict)
+    .map((id) => `${id} ${a.tasks[id].verdict} -> ${b.tasks[id].verdict}`);
+  console.log(`  verdicts: ${arrow(a.run?.ok, b.run?.ok)} ok, ${arrow(a.run?.failed, b.run?.failed)} failed` +
+    (flips.length ? `; flipped: ${flips.join(', ')}` : ''));
+  // Every figure below is over the tasks ok in both files, so a task one build
+  // fails, or one run skipped, moves no total.
+  const both = Object.keys(b.tasks ?? {})
+    .filter((id) => a.tasks?.[id]?.verdict === 'ok' && b.tasks[id].verdict === 'ok')
+    .sort();
+  const excluded = new Set([...Object.keys(a.tasks ?? {}), ...Object.keys(b.tasks ?? {})]).size - both.length;
+  const [ta, tb] = [telemetryTotals(a.tasks ?? {}, both), telemetryTotals(b.tasks ?? {}, both)];
+  console.log(`  totals over the ${both.length} task${both.length === 1 ? '' : 's'} ok in both files (${excluded} excluded)`);
+  // Latency moves by tens of percent between two runs of one build, so a row
+  // prints for it only past both floors, and one run proves no latency claim.
+  const rows = [];
+  const names = [...new Set([...Object.keys(ta.tools), ...Object.keys(tb.tools)])].sort();
+  for (const name of names) {
+    const [x, y] = [ta.tools[name] ?? {}, tb.tools[name] ?? {}];
+    const p50 = (x.p50_ms ?? 0) - (y.p50_ms ?? 0);
+    const slower = Math.abs(p50) > Math.max(5, 0.25 * (x.p50_ms ?? 0));
+    const chars = Math.abs((y.chars ?? 0) - (x.chars ?? 0)) > 0.05 * Math.max(x.chars ?? 0, 1);
+    if (x.calls === y.calls && x.errors === y.errors && x.threw === y.threw && !slower && !chars) continue;
+    rows.push(
+      `    ${name.padEnd(24)} calls ${arrow(x.calls, y.calls)}, errors ${arrow(x.errors, y.errors)}, ` +
+        `p50 ${arrow(x.p50_ms, y.p50_ms)} ms, chars ${arrow(x.chars, y.chars)}`
+    );
+  }
+  console.log(rows.length ? `  tools that moved (latency needs 3 runs a side before it means anything):\n${rows.join('\n')}` : '  no tool moved');
+  const [sa, sb] = [ta.snapshot, tb.snapshot];
+  console.log(
+    `  snapshots: ${arrow(sa.calls, sb.calls)} calls, ${arrow(sa.chars, sb.chars)} chars, ` +
+      `${arrow(sa.lineCut, sb.lineCut)} line-cut, ${arrow(sa.domTruncated, sb.domTruncated)} DOM-truncated, ` +
+      `${arrow(sa.cutStrings, sb.cutStrings)} cut strings`
+  );
+  for (const key of ['driver', 'final']) {
+    const [x, y] = [ta.reach[key], tb.reach[key]];
+    console.log(
+      `  reach, ${key === 'driver' ? "driver's snapshots" : 'final full-window snapshot'}: ` +
+        `seen ${arrow(x.seen, y.seen)} of ${arrow(x.values, y.values)}, truncated ${arrow(x.truncated, y.truncated)}, ` +
+        `absent ${arrow(x.absent, y.absent)}`
+    );
+    const moved = [];
+    for (const id of both) {
+      const before = a.tasks[id].reach?.[key]?.fields ?? {};
+      for (const [value, state] of Object.entries(b.tasks[id].reach?.[key]?.fields ?? {})) {
+        if (before[value] && before[value] !== state) moved.push(`      ${id}: ${JSON.stringify(value).slice(0, 60)} ${before[value]} -> ${state}`);
+      }
+    }
+    if (moved.length) console.log(moved.join('\n'));
+  }
+}
+
+function recordTelemetry(worker, task, { verdict, ms, fields, finalText, finalUrl }) {
+  const driverCalls = worker.calls.filter((c) => c.phase === 'driver');
+  const snaps = driverCalls.filter((c) => c.tool === 'take_snapshot' && c.text != null).map((c) => c.text);
+  const paths = [...driverCalls.filter((c) => c.url).map((c) => c.url), finalUrl]
+    .filter(Boolean)
+    .map(worker.pathOf)
+    .filter(Boolean);
+  telemetryTasks[task.id] = {
+    family: task.family,
+    areas: task.areas,
+    verdict,
+    ms,
+    // The pages the driver navigated to and the one it ended on; a page it
+    // reached by clicking a link shows only as the last.
+    pages: [...new Set(paths)],
+    dirs: [...new Set(paths.map(dirOfPath).filter(Boolean))].sort(),
+    tools: toolStats(driverCalls),
+    harness: toolStats(worker.calls.filter((c) => c.phase === 'harness')),
+    errors: driverCalls.filter((c) => c.isError || c.threw).map((c) => `${c.tool}: ${c.threw ?? c.errorText}`),
+    snapshot: snapshotStats(snaps),
+    reach: fields ? reachRecord(fields, worker.pages.state, snaps.join('\n'), finalText ?? '') : null,
+  };
+}
+
 async function runOne(worker, id) {
   const { pages, helpers } = worker;
   const task = worker.tasks.find((t) => t.id === id);
@@ -506,6 +978,8 @@ async function runOne(worker, id) {
   }
   const ctx = { pages };
   pages.state.reset();
+  worker.calls.length = 0;
+  helpers.phase = 'harness';
   // Restore the window before every task, not just after the one that resizes.
   // A driver that resizes restores in its own `finally`, but that restore is
   // swallowed on failure, and the resize tool can time out under load — which
@@ -528,20 +1002,39 @@ async function runOne(worker, id) {
   await mark(helpers, `zoo:${task.id}:start`);
   const startedAt = Date.now();
   let out;
+  let verdict = 'fail';
+  helpers.phase = 'driver';
   try {
     out = await driver.run(helpers, ctx);
   } catch (error) {
+    helpers.phase = 'harness';
+    const ms = Date.now() - startedAt;
     await mark(helpers, `zoo:${task.id}:end`);
-    taskTimings.push({ task: task.id, ms: Date.now() - startedAt, ok: false });
+    taskTimings.push({ task: task.id, ms, ok: false });
     fail++;
-    failures.push(`${task.id}: driver threw — ${error.message}`);
-    console.log(`FAIL  ${task.id}  driver threw: ${error.message}`);
-    return;
+    // A dead worker fails every task after this one for no reason of theirs,
+    // so it is restarted, and this task's failure says what it most likely
+    // was: the browser or the MCP server, not the fixture.
+    const transport = TRANSPORT_ERROR.test(error.message) || !(await worker.healthy());
+    if (transport) {
+      failures.push(
+        `${task.id}: transport error on worker ${worker.slot} — ${error.message} ` +
+          `(rerun this task alone before reading it as a fixture failure)`
+      );
+      console.log(`FAIL  ${task.id}  transport error on worker ${worker.slot}: ${error.message}`);
+    } else {
+      failures.push(`${task.id}: driver threw — ${error.message}`);
+      console.log(`FAIL  ${task.id}  driver threw: ${error.message}`);
+    }
+    if (TELEMETRY) recordTelemetry(worker, task, { verdict: transport ? 'transport' : 'fail', ms });
+    return { restart: transport };
   }
+  helpers.phase = 'harness';
+  const ms = Date.now() - startedAt;
   // Grading is harness-side and costs the browser nothing, so the task's span
   // ends with its last browser interaction rather than with its verdict.
   await mark(helpers, `zoo:${task.id}:end`);
-  taskTimings.push({ task: task.id, ms: Date.now() - startedAt, ok: true });
+  taskTimings.push({ task: task.id, ms, ok: true });
   // A throwing validator must register as that task's failure, not abort the
   // whole gate mid-flight with workers still up.
   try {
@@ -550,6 +1043,18 @@ async function runOne(worker, id) {
     fail++;
     failures.push(`${task.id}: validator threw — ${error.message}`);
     console.log(`FAIL  ${task.id}  validator threw: ${error.message}`);
+  }
+  if (TELEMETRY) {
+    // The page the driver left, in the whole 500-line window, for reach. Taken
+    // once the verdict is in, so it can change neither what the driver saw nor
+    // the state the validator graded.
+    const finalText = await helpers
+      .mcp('take_snapshot', { maxLines: 500 })
+      .then(textOf)
+      .catch(() => '');
+    const finalUrl = await helpers.evaluate(() => location.href).catch(() => null);
+    const fields = typeof out === 'string' ? null : (out?.fields ?? null);
+    recordTelemetry(worker, task, { verdict, ms, fields, finalText, finalUrl });
   }
   return;
 
@@ -764,6 +1269,7 @@ async function runOne(worker, id) {
       }
     }
     pass++;
+    verdict = 'ok';
     const stateCounts =
       wrongState.length || alsoCorrectState.length
         ? `; ${wrongState.length} wrong states, ${alsoCorrectState.length} accepted states`
@@ -777,10 +1283,174 @@ async function runOne(worker, id) {
   }
 }
 
+// --affected: which tasks a set of changed files can change. Conservative: a
+// file no rule knows maps to every task, and only files the gate never loads
+// (docs, results, the paid runner, spikes) map to none.
+const AFFECTS_NONE =
+  /^(?:docs\/|staging\/|docker\/|\.github\/|eval\/(?:results|spikes|scripts|backends)\/|scripts\/|eval\/(?:run|report|ab|agent-env|run-files)\.mjs$|eval\/tasks\/(?:areas\.json|basic\.mjs)$|eval\/verify-drivers\/timings\.json$|serve\.mjs$|preview\.html$|LICENSE$|NOTICE$)|\.md$/;
+const AFFECTS_ALL =
+  /^(?:eval\/(?:verify|extract|answers|surface-reach|mcp-stdio|window-grid)\.mjs|eval\/tasks\/web\.mjs|eval\/verify-drivers\/index\.mjs|server\.mjs|manifest\.mjs|package(?:-lock)?\.json|sites\/(?:index|lib)\.mjs)$/;
+
+function changedFiles(list) {
+  if (list) {
+    return list
+      .split(',')
+      .map((f) => f.trim())
+      .filter(Boolean)
+      .map((f) => {
+        const rel = relative(REPO, resolve(f));
+        return (rel.startsWith('..') ? f : rel).split('\\').join('/');
+      });
+  }
+  const git = (gitArgs) => {
+    const r = spawnSync('git', ['-C', REPO, ...gitArgs], { encoding: 'utf8' });
+    if (r.status !== 0) throw new Error(`--affected with no file list needs git: ${r.stderr.trim()}`);
+    return r.stdout.split('\n').filter(Boolean);
+  };
+  return [...new Set([...git(['diff', '--name-only', 'HEAD']), ...git(['ls-files', '--others', '--exclude-standard'])])];
+}
+
+// Which driver files import each file under verify-drivers/, followed through
+// the shared libs, so a change to safety-lib.mjs reaches every driver that
+// imports it, directly or through another lib.
+function driverImporters() {
+  const dir = join(REPO, 'eval', 'verify-drivers');
+  const importsOf = {};
+  for (const f of readdirSync(dir).filter((x) => x.endsWith('.mjs'))) {
+    importsOf[f] = [...readFileSync(join(dir, f), 'utf8').matchAll(/from '\.\/([\w-]+\.mjs)'/g)].map((m) => m[1]);
+  }
+  const users = (target, seen = new Set()) => {
+    for (const [f, deps] of Object.entries(importsOf)) {
+      if (deps.includes(target) && !seen.has(f)) {
+        seen.add(f);
+        users(f, seen);
+      }
+    }
+    return seen;
+  };
+  return users;
+}
+
+// The pages/ dirs each task can load: the origins its ask names, the paths its
+// driver's run() names, and the task ids manifest.mjs lists beside each origin.
+function taskDirs(tasks) {
+  const dirs = new Map(tasks.map((t) => [t.id, new Set()]));
+  for (const t of tasks) {
+    const source = `${t.ask ?? ''}\n${DRIVERS[t.id]?.run?.toString() ?? ''}`;
+    for (const [, path] of source.matchAll(/(?:http:\/\/placeholder|['\`])(\/[\w./-]+)/g)) {
+      const dir = dirOfPath(path);
+      if (dir) dirs.get(t.id).add(dir);
+    }
+  }
+  const manifest = readFileSync(join(REPO, 'manifest.mjs'), 'utf8');
+  for (const [, comment, dir] of manifest.matchAll(/\/\/ ([^\n]*)\n\s*\{ key: '[^']+', dir: '([^']+)'/g)) {
+    for (const word of comment.match(/[a-z0-9]+(?:-[a-z0-9]+)+|[a-z]+/g) ?? []) dirs.get(word)?.add(dir);
+  }
+  return dirs;
+}
+
+// The dirs a sites/ module serves: those whose paths it names, and the ones
+// named for it (sites/shop.mjs serves shop/*). A module that names none is
+// followed to the modules importing it.
+function siteDirs(file) {
+  const allDirs = DIRS_LONGEST_FIRST;
+  const read = (f) => readFileSync(join(REPO, 'sites', f), 'utf8');
+  const own = (f) => {
+    const src = read(f);
+    const name = f.replace(/\.mjs$/, '');
+    return allDirs.filter((d) => src.includes(`/${d}/`) || d === name || d.split('/')[0] === name);
+  };
+  const found = new Set(own(file));
+  if (!found.size) {
+    for (const f of readdirSync(join(REPO, 'sites')).filter((x) => x.endsWith('.mjs') && x !== 'index.mjs')) {
+      if (read(f).includes(`'./${file}'`)) for (const d of own(f)) found.add(d);
+    }
+  }
+  return found;
+}
+
+function affectedTasks(files, tasks) {
+  const ids = (list) => new Set([...list].filter((id) => DRIVERS[id]));
+  const all = ids(tasks.map((t) => t.id));
+  const dirs = taskDirs(tasks);
+  const users = driverImporters();
+  const byDir = (dirSet) => ids(tasks.filter((t) => [...dirs.get(t.id)].some((d) => dirSet.has(d))).map((t) => t.id));
+  const out = new Set();
+  const lines = [];
+  for (const file of files) {
+    let hit;
+    let why;
+    const driverFile = file.match(/^eval\/verify-drivers\/([\w-]+\.mjs)$/)?.[1];
+    const family = file.match(/^eval\/tasks\/(?:web\/)?([\w-]+)\.mjs$/)?.[1];
+    if (AFFECTS_NONE.test(file)) [hit, why] = [new Set(), 'not loaded by the gate'];
+    else if (AFFECTS_ALL.test(file)) [hit, why] = [all, 'shared by every task'];
+    else if (driverFile) {
+      const files = new Set([driverFile, ...users(driverFile)]);
+      hit = ids(Object.entries(DRIVER_FILES).filter(([, f]) => files.has(f)).map(([id]) => id));
+      const named = [...files].filter((f) => Object.values(DRIVER_FILES).includes(f));
+      why = !hit.size ? 'no driver uses it' : named.length > 4 ? `drivers in ${named.length} files` : `drivers in ${named.join(', ')}`;
+    } else if (family && tasks.some((t) => t.family === family)) {
+      [hit, why] = [ids(tasks.filter((t) => t.family === family).map((t) => t.id)), `the ${family} family`];
+    } else if (file.startsWith('pages/')) {
+      const dir = dirOfPath(file.slice('pages'.length));
+      [hit, why] = dir ? [byDir(new Set([dir])), `pages under ${dir}/`] : [all, 'outside every site dir'];
+    } else if (/^sites\/[\w-]+\.mjs$/.test(file)) {
+      const served = siteDirs(file.slice('sites/'.length));
+      [hit, why] = served.size ? [byDir(served), `serves ${[...served].join(', ')}`] : [all, 'serves no dir it names'];
+    } else [hit, why] = [all, 'no rule maps it, so every task'];
+    for (const id of hit) out.add(id);
+    lines.push(`  ${file}: ${hit.size} task${hit.size === 1 ? '' : 's'} (${why})`);
+  }
+  return { ids: out, lines };
+}
+
+function recordedTimings() {
+  try {
+    return JSON.parse(readFileSync(TIMINGS_FILE, 'utf8')).ms ?? {};
+  } catch {
+    return {};
+  }
+}
+
+// Recorded wall times order the queue longest-first, so the slowest driver
+// (live-auction, about 70s) starts at once instead of last, when it alone
+// would set the run's length. A task with no recorded time counts as median.
+function longestFirst(ids) {
+  const recorded = recordedTimings();
+  const known = Object.values(recorded).sort((a, b) => a - b);
+  const median = known.length ? known[Math.floor(known.length / 2)] : 0;
+  return ids
+    .map((id, i) => ({ id, i, ms: recorded[id] ?? median }))
+    .sort((a, b) => b.ms - a.ms || a.i - b.i)
+    .map((t) => t.id);
+}
+
 const allTasks = await loadTasks('http://placeholder');
-const queue = [];
+if (AREAS) {
+  const known = new Set(allTasks.flatMap((t) => t.areas));
+  const unknown = AREAS.filter((a) => !known.has(a));
+  if (unknown.length) {
+    console.error(`--area: no task is tagged ${unknown.join(', ')}; known areas: ${[...known].sort().join(', ')}`);
+    process.exit(1);
+  }
+}
+let affected = null;
+if (AFFECTED !== null) {
+  const files = changedFiles(AFFECTED || null);
+  affected = affectedTasks(files, allTasks);
+  console.log(`--affected: ${files.length} changed file${files.length === 1 ? '' : 's'}, ${affected.ids.size} task${affected.ids.size === 1 ? '' : 's'}`);
+  for (const line of affected.lines) console.log(line);
+  if (!affected.ids.size) {
+    console.log('no task can change, and the fixture checks above passed');
+    process.exit(0);
+  }
+  console.log('');
+}
+let queue = [];
 for (const task of allTasks) {
   if (!selected(task.id)) continue;
+  if (AREAS && !task.areas.some((a) => AREAS.includes(a))) continue;
+  if (affected && !affected.ids.has(task.id)) continue;
   if (!DRIVERS[task.id]) {
     skipped++;
     continue;
@@ -788,33 +1458,63 @@ for (const task of allTasks) {
   queue.push(task.id);
 }
 
-if (patterns && !queue.length) {
-  console.error(`--task matched nothing for: ${patterns.join(', ')}`);
+if ((patterns || AREAS) && !queue.length) {
+  console.error(`the selection matched no task with a driver: ${[...(patterns ?? []), ...(AREAS ?? [])].join(', ')}`);
   process.exit(1);
+}
+queue = longestFirst(queue);
+if (args.includes('--dry-run')) {
+  const recorded = recordedTimings();
+  console.log(`${queue.length} task${queue.length === 1 ? '' : 's'} would run, in this order:`);
+  for (const id of queue) console.log(`  ${id}${recorded[id] ? `  (${(recorded[id] / 1000).toFixed(1)}s recorded)` : ''}`);
+  process.exit(0);
 }
 
 const workers = [];
+let firefoxVersion = null;
+let toolList = null;
+let next = 0;
 try {
   const count = Math.min(JOBS, Math.max(1, queue.length));
   // Grid sized to the workers that will actually exist, not to --jobs: a
   // two-task run asked for eight ways still tiles into two cells.
   const grid = HEADED ? windowGrid(count, detectScreen(flag('screen', null))) : null;
   for (let i = 0; i < count; i++) workers.push(await makeWorker(grid, i));
-  let next = 0;
+  if (TELEMETRY) {
+    toolList = (await workers[0].listTools()).tools;
+    const ua = await workers[0].helpers.evaluate(() => navigator.userAgent).catch(() => '');
+    firefoxVersion = String(ua).match(/Firefox\/([\d.]+)/)?.[1] ?? null;
+  }
   await Promise.all(
-    workers.map(async (worker) => {
+    workers.map(async (_, slot) => {
       while (next < queue.length) {
-        await runOne(worker, queue[next++]);
+        const outcome = await runOne(workers[slot], queue[next++]);
+        if (!outcome?.restart || next >= queue.length) continue;
+        await workers[slot].close().catch(() => {});
+        workers[slot] = null;
+        try {
+          workers[slot] = await makeWorker(grid, slot);
+          restarts++;
+          console.log(`      worker ${slot} restarted`);
+        } catch (error) {
+          console.log(`worker ${slot} could not restart, and stops here: ${error.message}`);
+          return;
+        }
       }
     })
   );
 } finally {
-  for (const worker of workers) await worker.close();
+  for (const worker of workers) await worker?.close();
+}
+for (const id of queue.slice(next)) {
+  fail++;
+  failures.push(`${id}: never ran, because every worker died`);
 }
 
 console.log(
   `\n${pass} ok, ${fail} failed, ${skipped} without a golden path` +
-    `${ORIGIN_MODE ? ' (origin mode)' : ''}`
+    `${SERVING === 'single-origin' ? '' : ` (${SERVING === 'origins' ? 'origin' : 'vhost'} mode)`}` +
+    `${restarts ? `, ${restarts} worker restart${restarts === 1 ? '' : 's'} after a transport error` : ''}`
 );
 console.log(
   `cases exercised: ${exercised.wrongFields} wrongFields and ${exercised.wrongState} wrongState ` +
@@ -851,5 +1551,41 @@ if (PROFILE) {
           slowest.slice(0, 3).map((t) => `${t.task} ${t.ms}ms`).join(', ')
       : `\nprofile: nothing written to ${path} — Firefox may have been killed rather than closed`
   );
+}
+if (TELEMETRY) {
+  const telemetry = telemetryReport();
+  mkdirSync(dirname(resolve(TELEMETRY)), { recursive: true });
+  writeFileSync(resolve(TELEMETRY), JSON.stringify(telemetry, null, 1) + '\n');
+  const { driver, final } = telemetry.totals.reach;
+  const excluded = Object.keys(telemetry.totals.excluded).length;
+  console.log(
+    `\ntelemetry: ${resolve(TELEMETRY)}\n` +
+      `  over ${telemetry.totals.tasks} ok task${telemetry.totals.tasks === 1 ? '' : 's'}${excluded ? ` (${excluded} not ok, excluded)` : ''}, ` +
+      `graded values in a driver's snapshot: ${driver.seen}/${driver.values} seen, ${driver.truncated} truncated; ` +
+      `in the final full-window snapshot: ${final.seen}/${final.values} seen, ${final.truncated} truncated`
+  );
+  if (COMPARE) printTelemetryDiff(JSON.parse(readFileSync(COMPARE, 'utf8')), telemetry);
+}
+if (RECORD_TIMINGS) {
+  const ms = recordedTimings();
+  for (const t of taskTimings) if (t.ok) ms[t.task] = t.ms;
+  const sorted = Object.fromEntries(Object.entries(ms).sort(([a], [b]) => a.localeCompare(b)));
+  writeFileSync(
+    TIMINGS_FILE,
+    JSON.stringify(
+      {
+        measured: {
+          at: new Date().toISOString().slice(0, 10),
+          jobs: JOBS,
+          devtools: devtoolsMcpInfo().version,
+          serving: SERVING,
+        },
+        ms: sorted,
+      },
+      null,
+      1
+    ) + '\n'
+  );
+  console.log(`\ntimings: ${taskTimings.filter((t) => t.ok).length} tasks recorded in ${relative(process.cwd(), TIMINGS_FILE)}`);
 }
 process.exitCode = fail ? 1 : 0;

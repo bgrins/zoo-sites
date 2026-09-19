@@ -1,6 +1,5 @@
 // pages/status/ - Nimbrel Edge status page (status-flash).
-import { addSession, until, uidOf, bumpCode } from './lib.mjs';
-import { straySession } from './probes.mjs';
+import { addSession, bumpCode, straySession, uidOf, until } from './lib.mjs';
 
 export const DRIVERS = {
   'status-flash': {

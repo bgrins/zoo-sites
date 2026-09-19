@@ -2,6 +2,7 @@
 // kept out of the web suite by owner decision. Same contract as web.mjs.
 import { eqCode, eqName, normalise, normaliseWords, soleCode } from '../extract.mjs';
 import { originUrls } from '../../manifest.mjs';
+import { tagTasks } from './web.mjs';
 
 // The first URL path a field carries is the request it names; a later path is
 // context, as in "GET /api/depot/roster (then fell back to roster-cache.json)".
@@ -170,7 +171,7 @@ const withoutStatus = (v, code) =>
   typeof v === 'string' ? v.replace(new RegExp(`(?<![\\w-])${code}(?![\\w-])`, 'g'), ' ') : v;
 
 export async function devtoolsTasks(base, origins = originUrls(base)) {
-  return [
+  const tasks = [
     {
       id: 'shard-forensics',
       tier: 'quick',
@@ -587,4 +588,5 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
       },
     },
   ];
+  return tagTasks(tasks, 'devtools');
 }

@@ -17,9 +17,8 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { bumpCode } from './lib.mjs';
+import { bumpCode, straySession } from './lib.mjs';
 import { act, untilSnap } from './forms.mjs';
-import { formsStray } from './forms-lib.mjs';
 
 // The two form controls are indistinguishable by tag in the snapshot; the file
 // input is the one that precedes the "No file attached" line.
@@ -38,8 +37,12 @@ export const DRIVERS = {
       // line sent as if from the page, and the right line sent from a shell
       // with neither Sec-Fetch-Site nor a Referer.
       const strayReceipt = async (content, headers) => {
-        const stray = await formsStray(base, '/forms/draymere/upload.html');
-        const { receipt } = await stray.upload({ filename: 'count.txt', content, headers });
+        const stray = await straySession(base, '/forms/draymere/upload.html');
+        const { receipt } = await stray.upload('/api/upload', {
+          fields: { attested: 'yes' },
+          file: { field: 'doc', filename: 'count.txt', content },
+          headers,
+        });
         if (!receipt) throw new Error('the intake refused a stray upload');
         return receipt;
       };
@@ -49,10 +52,10 @@ export const DRIVERS = {
       // shape serves the page: under /forms/draymere/ here, at the origin's
       // root under --origins.
       const draymere = ctx.pages.origins.find((o) => o.dir === 'forms/draymere');
-      const referred = await formsStray(base, '/forms/draymere/upload.html');
-      await referred.upload({
-        filename: 'count.txt',
-        content: 'INVENTORY-OK\n',
+      const referred = await straySession(base, '/forms/draymere/upload.html');
+      await referred.upload('/api/upload', {
+        fields: { attested: 'yes' },
+        file: { field: 'doc', filename: 'count.txt', content: 'INVENTORY-OK\n' },
         origin: draymere?.url ?? base,
         headers: {
           referer: draymere ? `${draymere.url}/upload.html` : `${base}/forms/draymere/upload.html`,

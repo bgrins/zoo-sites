@@ -3,6 +3,7 @@
 // during parallel driver work - it is a single-writer resource.
 
 import { randomBytes, randomUUID } from 'node:crypto';
+import http from 'node:http';
 
 // Poll until fn() returns a truthy value; throw a labelled error otherwise.
 // The label reads as "timed out waiting for <label>", so phrase it as the
@@ -140,36 +141,119 @@ export function addBeacon(state, sid, kind, data = {}) {
   return beacon;
 }
 
-// A cookie-and-nonce session driven over plain fetch, the way a curl probe or a
-// scripted agent drives a site without a browser: the HTML GET mints the cookie
-// and the page carries the nonce. Each call resolves to { status, json, text,
-// body }, where body is json or {} when the response is not JSON.
-export async function probeSession(base, path) {
+// A session outside the browser, the way a curl probe, a scripted agent or a
+// re-minted cookie makes one: one HTML GET of `path` mints the cookie, and the
+// page carries the nonce. Drivers use one to prove that grading picks the
+// session that did the work over one that merely exists, and to reach states
+// no page offers. Every later request goes over Node's fetch, which sends
+// `sec-fetch-mode: cors` and no sec-fetch-site or sec-fetch-dest, so what a
+// site records about a call comes down to the headers chosen here. Each choice
+// is therefore an option rather than a helper's habit:
+//
+//   provenance   'off-page' (default): no Referer, so a site that stamps
+//                provenance records every call as made off the page.
+//                'referer': every API call names the minting page as its
+//                Referer, as the page's own script would, still without the
+//                sec-fetch-site a browser adds.
+//   nonce        where the page declares it: 'NONCE' (default,
+//                `const NONCE = '...'`) or 'QT_NONCE' (`window.QT_NONCE`, the
+//                Quotient pages).
+//   nonceHeader  'get' (default): X-Session-Nonce on GETs only, as page script
+//                sends it; 'always': on POSTs as well.
+//   reply        'body' (default): a call resolves to the parsed JSON body, or
+//                {} when the reply is not JSON. 'response': to
+//                { status, json, text, body }, json null when the reply is not
+//                JSON and body json ?? {}.
+//
+// get(apiPath, { origin, headers }), post(apiPath, body, { origin, headers })
+// and upload(apiPath, { fields, file, origin, headers }), a multipart POST with
+// the nonce first, then `fields`, then `file` ({ field, filename, content,
+// type }), add request headers of the caller's choosing. `origin` may name any
+// listener, because sessions live in one table behind all of them; it defaults
+// to `base`. open(pagePath) loads a page as a top-level document navigation and
+// resolves its status, over node:http, since fetch stamps its own sec-fetch-mode
+// over the one a navigation carries.
+const NONCE_PATTERNS = {
+  NONCE: /const NONCE = '([0-9a-f]+)'/,
+  QT_NONCE: /window\.QT_NONCE = '([0-9a-f]+)'/,
+};
+export async function straySession(
+  base,
+  path,
+  { provenance = 'off-page', nonce: declared = 'NONCE', nonceHeader = 'get', reply = 'body' } = {}
+) {
+  if (!['off-page', 'referer'].includes(provenance)) throw new Error(`unknown provenance ${provenance}`);
+  if (!NONCE_PATTERNS[declared]) throw new Error(`unknown nonce declaration ${declared}`);
+  if (!['get', 'always'].includes(nonceHeader)) throw new Error(`unknown nonceHeader ${nonceHeader}`);
+  if (!['body', 'response'].includes(reply)) throw new Error(`unknown reply shape ${reply}`);
   const page = await fetch(base + path, { headers: { accept: 'text/html' } });
   const cookie = (page.headers.get('set-cookie') ?? '').split(';')[0];
-  const nonce = (await page.text()).match(/NONCE = '([0-9a-f]+)'/)?.[1] ?? null;
-  if (!cookie || !nonce) throw new Error(`no probe session for ${path}`);
-  const call = async (method, apiPath, body) => {
-    const res = await fetch(base + apiPath, {
-      method,
-      headers: {
-        cookie,
-        'x-session-nonce': nonce,
-        ...(body ? { 'content-type': 'application/json' } : {}),
-      },
-      body: body ? JSON.stringify({ nonce, ...body }) : undefined,
-    });
+  const nonce = (await page.text()).match(NONCE_PATTERNS[declared])?.[1] ?? null;
+  if (!cookie || !nonce) throw new Error(`no stray session for ${path}`);
+  const referer = provenance === 'referer' ? { referer: base + path } : {};
+  const send = async (url, init) => {
+    const res = await fetch(url, init);
     const text = await res.text();
     let json = null;
     try {
       json = JSON.parse(text);
     } catch {}
-    return { status: res.status, json, text, body: json ?? {} };
+    return reply === 'body' ? (json ?? {}) : { status: res.status, json, text, body: json ?? {} };
   };
   return {
     sid: cookie.replace(/^sid=/, ''),
     nonce,
-    get: (apiPath) => call('GET', apiPath),
-    post: (apiPath, body = {}) => call('POST', apiPath, body),
+    cookie,
+    get: (apiPath, { origin = base, headers = {} } = {}) =>
+      send(origin + apiPath, { headers: { cookie, ...referer, 'x-session-nonce': nonce, ...headers } }),
+    post: (apiPath, body = {}, { origin = base, headers = {} } = {}) =>
+      send(origin + apiPath, {
+        method: 'POST',
+        headers: {
+          cookie,
+          ...referer,
+          ...(nonceHeader === 'always' ? { 'x-session-nonce': nonce } : {}),
+          'content-type': 'application/json',
+          ...headers,
+        },
+        body: JSON.stringify({ nonce, ...body }),
+      }),
+    upload: (apiPath, { fields = {}, file, origin = base, headers = {} }) => {
+      const form = new FormData();
+      form.append('nonce', nonce);
+      for (const [name, value] of Object.entries(fields)) form.append(name, value);
+      if (file) {
+        form.append(file.field, new Blob([file.content], { type: file.type ?? 'text/plain' }), file.filename);
+      }
+      return send(origin + apiPath, {
+        method: 'POST',
+        headers: {
+          cookie,
+          ...referer,
+          ...(nonceHeader === 'always' ? { 'x-session-nonce': nonce } : {}),
+          ...headers,
+        },
+        body: form,
+      });
+    },
+    open: (pagePath) =>
+      new Promise((resolve, reject) => {
+        const req = http.get(
+          new URL(pagePath, base),
+          {
+            headers: {
+              cookie,
+              accept: 'text/html',
+              'sec-fetch-mode': 'navigate',
+              'sec-fetch-dest': 'document',
+            },
+          },
+          (res) => {
+            res.resume();
+            res.on('end', () => resolve(res.statusCode));
+          }
+        );
+        req.on('error', reject);
+      }),
   };
 }

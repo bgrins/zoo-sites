@@ -1,8 +1,7 @@
 // Golden-path drivers for the consent-wall fixtures. See probes.mjs for the contract.
 
 import { ANSWERS } from '../answers.mjs';
-import { addSession, findSession, uidOf, until } from './lib.mjs';
-import { straySession } from './probes.mjs';
+import { addSession, findSession, straySession, uidOf, until } from './lib.mjs';
 
 const textIn = (snap, re) => snap.match(re)?.[1] ?? null;
 

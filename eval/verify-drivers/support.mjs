@@ -11,8 +11,7 @@
 // Neither is worked around in the fixture; the driver takes the same routes an
 // agent has to take.
 
-import { addSession, bumpCode, findSession, snapText, uidOf, until as poll } from './lib.mjs';
-import { strayClient } from './recovery-lib.mjs';
+import { addSession, bumpCode, findSession, snapText, straySession, uidOf, until as poll } from './lib.mjs';
 
 const CHAT_PATH = '/support/';
 const ACCOUNT_PATH = '/support/account.html';
@@ -53,7 +52,7 @@ const mistype = (model) => model.replace(/.$/, (c) => (c === 'A' ? 'C' : 'A'));
 // its own model with the suffix mistyped, the one slip the ask allows, which
 // the adviser must record.
 async function narrate(base) {
-  const chat = await strayClient(base, CHAT_PATH);
+  const chat = await straySession(base, CHAT_PATH, { provenance: 'referer', reply: 'response' });
   if ((await chat.open(ACCOUNT_PATH)) !== 200) throw new Error('the narrating session could not open the account page');
   const record = (await chat.get('/api/support/account')).body;
   if (!record?.account || !record?.plan || !record?.installed || !record?.gatewayModel) {
@@ -89,7 +88,7 @@ export const DRIVERS = {
       // A second session that opens the account page, reads the model and
       // sends nothing else: the adviser raises a case on that opener at once,
       // so its reference is real, but the fault was never described to anyone.
-      const bare = await strayClient(base, CHAT_PATH);
+      const bare = await straySession(base, CHAT_PATH, { provenance: 'referer', reply: 'response' });
       if ((await bare.open(ACCOUNT_PATH)) !== 200) throw new Error('the bare session could not open the account page');
       const bareModel = (await bare.get('/api/support/account')).body?.gatewayModel;
       if (!/^GX-\d{4}[A-Z]$/.test(bareModel ?? '')) throw new Error('the bare session got no gateway model');

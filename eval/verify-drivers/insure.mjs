@@ -1,6 +1,5 @@
 // pages/insure/ - Cresthaven Mutual quotation desk (policy-quote).
-import { straySession } from './probes.mjs';
-import { until, uidOf, bumpCode, snapText } from './lib.mjs';
+import { bumpCode, snapText, straySession, uidOf, until } from './lib.mjs';
 
 export const DRIVERS = {
   'policy-quote': {

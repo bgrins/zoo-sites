@@ -1,7 +1,6 @@
 // Golden-path driver for pages/bistro/ (order-modifiers). See probes.mjs for
 // the contract.
-import { straySession } from './probes.mjs';
-import { addSession, findSession, until, uidOf, snapText, bumpCode } from './lib.mjs';
+import { addSession, bumpCode, findSession, snapText, straySession, uidOf, until } from './lib.mjs';
 
 // The ticket column and the Place order button sit past the default 100-line
 // snapshot cap once both builder and ticket are populated (and `firefox-cli

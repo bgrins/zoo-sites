@@ -14,10 +14,8 @@
 // Everything else below is driven with take_snapshot + fill_by_uid /
 // click_by_uid.
 
-import { addSession, bumpCode, esc, findSession, textOf, uidOf as uidMatch, until as poll } from './lib.mjs';
-import { straySession } from './probes.mjs';
+import { addSession, bumpCode, esc, findSession, snapText, straySession, textOf, uidOf as uidMatch, until as poll } from './lib.mjs';
 import { GRID_EDIT_STATES } from './extraction-lib.mjs';
-import { formsStray } from './forms-lib.mjs';
 
 const uidOf = (snap, pattern, what) => {
   const m = uidMatch(snap, pattern);
@@ -93,7 +91,7 @@ export const DRIVERS = {
         notes: '',
       };
       const walkToReview = async (data) => {
-        const stray = await formsStray(base, '/forms/drennhill/');
+        const stray = await straySession(base, '/forms/drennhill/');
         await stray.post('/api/form-step', { step: 2, data });
         const { refCode } = await stray.post('/api/form-step', { step: 3, data });
         if (!refCode) throw new Error('a stray session did not reach the review step');
@@ -284,7 +282,7 @@ export const DRIVERS = {
         referral: 'RF-7304',
       };
       const completeStray = async (change) => {
-        const stray = await formsStray(base, '/forms/vendor/register.html');
+        const stray = await straySession(base, '/forms/vendor/register.html');
         const { errors } = await stray.post('/api/register', asked);
         const fix = {
           email: String(errors?.email).match(/[\w.+-]+@[\w.-]+\.\w+/)?.[0],
@@ -555,7 +553,7 @@ export const DRIVERS = {
       // it. Redrawn when its position collides with the browser's (1 in 700).
       let strayPos = pos;
       for (let i = 0; i < 8 && strayPos === pos; i++) {
-        const stray = await formsStray(base, '/forms/fernlight/beta-signup.html');
+        const stray = await straySession(base, '/forms/fernlight/beta-signup.html');
         strayPos = (
           await stray.post('/api/beta-signup', {
             name: 'Tamsin Vinter',
@@ -617,7 +615,7 @@ export const DRIVERS = {
       // the Korrin branch list directly and confirms the right branch. The
       // browser session, which drives every level, must still be the one
       // graded.
-      const shortcut = await formsStray(base, '/forms/farholt/office-finder.html');
+      const shortcut = await straySession(base, '/forms/farholt/office-finder.html');
       const branches = await shortcut.get('/api/offices?level=office&parent=korrin');
       const listed = branches.options?.find((o) => o.value === 'harbor-east')?.label ?? '';
       const skipped = await shortcut.post('/api/office-finder', {
@@ -774,7 +772,7 @@ export const DRIVERS = {
       // pageload. Redrawn on the 1-in-65536 collision with the browser's code.
       let unreloaded = code;
       for (let i = 0; i < 5 && unreloaded === code; i++) {
-        const stray = await formsStray(base, '/forms/thornbury/draft.html');
+        const stray = await straySession(base, '/forms/thornbury/draft.html');
         for (const [field, value] of Object.entries(DRAFT_ASKED)) {
           await stray.post('/api/draft-save', { field, value });
         }
@@ -783,7 +781,7 @@ export const DRIVERS = {
       if (!unreloaded || unreloaded === code) throw new Error('no distinct unreloaded stray code');
       // The guidance returns an over-cap budget or an open-ended duration
       // unassessed, so the queue refuses both instead of issuing a reference.
-      const overCap = await formsStray(base, '/forms/thornbury/draft.html');
+      const overCap = await straySession(base, '/forms/thornbury/draft.html');
       for (const [field, value] of Object.entries({ ...DRAFT_ASKED, budget: '950000', duration: 'forever' })) {
         await overCap.post('/api/draft-save', { field, value });
       }
@@ -793,14 +791,14 @@ export const DRIVERS = {
       }
       // The asked values in forms the validator accepts must still queue, and the
       // portal must then report the draft as queued under that reference.
-      const formatted = await formsStray(base, '/forms/thornbury/draft.html');
+      const formatted = await straySession(base, '/forms/thornbury/draft.html');
       for (const [field, value] of Object.entries({ ...DRAFT_ASKED, budget: '£4,800', duration: 'six months' })) {
         await formatted.post('/api/draft-save', { field, value });
       }
       const formattedRef = (await formatted.post('/api/draft-complete', {})).reference;
       if (!formattedRef) throw new Error('the review queue refused £4,800 over six months');
       for (const duration of ['6. months', '6 months ..']) {
-        const punctuated = await formsStray(base, '/forms/thornbury/draft.html');
+        const punctuated = await straySession(base, '/forms/thornbury/draft.html');
         for (const [field, value] of Object.entries({ ...DRAFT_ASKED, duration })) {
           await punctuated.post('/api/draft-save', { field, value });
         }
@@ -933,7 +931,7 @@ export const DRIVERS = {
           throw new Error(`stray capsule is ${summary.length} characters, outside 140-160`);
         }
         for (let i = 0; i < 5; i++) {
-          const stray = await formsStray(base, '/forms/nerrow/abstract.html');
+          const stray = await straySession(base, '/forms/nerrow/abstract.html');
           const lodged = (await stray.post('/api/abstract', { summary })).id;
           if (!lodged) throw new Error('the desk refused a stray capsule');
           if (lodged !== id) return lodged;
@@ -1081,7 +1079,10 @@ export const DRIVERS = {
     wrongState: GRID_EDIT_STATES.wrong,
     alsoCorrectState: GRID_EDIT_STATES.alsoCorrect,
     wrong: ['Done — I corrected GR-1104, GR-1109 and GR-1123.'],
-    async run({ goto, snapshot, mcp, evaluate }) {
+    async run({ goto, mcp, evaluate }) {
+      // The whole 500-line window: the save notice sits below the sheet, and a
+      // walker that emits every cell's text pushes it past the default 100 lines.
+      const snapshot = () => snapText(mcp, { maxLines: 500 });
       await goto('/grid-edit/');
       let snap = await untilSnap(
         snapshot,

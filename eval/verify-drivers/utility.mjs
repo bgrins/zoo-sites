@@ -1,6 +1,5 @@
 // pages/utility/ - Grelsby Water & Sewer Authority transfer desk (meter-transfer).
-import { straySession } from './probes.mjs';
-import { until, uidOf, bumpCode, snapText } from './lib.mjs';
+import { bumpCode, snapText, straySession, uidOf, until } from './lib.mjs';
 
 export const DRIVERS = {
   'meter-transfer': {

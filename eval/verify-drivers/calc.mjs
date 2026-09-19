@@ -3,18 +3,21 @@
 // Driven entirely through the snapshot surface — take_snapshot / click_by_uid /
 // fill_by_uid, no evaluate_script — because the point of the task is whether the
 // dual representation of a cell (value in the grid, formula in the formula bar)
-// reaches us at all. It does NOT for the grid: the sheet is a <table>, which the
-// walker drops wholesale, so every number on this page is invisible to us. It
-// DOES for the formula bar, because the walker reads the `value` DOM property of
-// inputs. The route below is the only snapshot-visible one: the formula-audit
-// pane's flag buttons select cells, and the formula bar then shows each flagged
-// cell's definition one at a time.
+// reaches us at all. On firefox-devtools-mcp 0.9.15 it does NOT for the grid:
+// the sheet is a <table>, which the walker drops wholesale, so every number on
+// this page is invisible to us (the table-cells probe in eval/spikes/probes.mjs
+// measures that; this driver does not depend on it). It DOES for the formula
+// bar, because the walker reads the `value` DOM property of inputs. The route
+// below needs nothing from the grid: the formula-audit pane's flag buttons
+// select cells, and the formula bar then shows each flagged cell's definition
+// one at a time.
 //
-// The one exception is the keyboard regression after the repair: the surface
-// has no key tool, so it dispatches the keys shortcuts.html documents with
-// evaluate, and reads what they did from the snapshot and the server state.
+// Two exceptions use evaluate. One checks the fixture's shape and reads nothing
+// the answer uses. The other is the keyboard regression after the repair: the
+// surface has no key tool, so it dispatches the keys shortcuts.html documents
+// with evaluate, and reads what they did from the snapshot and the server state.
 
-import { bumpCode, probeSession, uidOf } from './lib.mjs';
+import { bumpCode, snapText, straySession, uidOf } from './lib.mjs';
 
 function flagButtons(snap) {
   return [...snap.matchAll(/uid=(\S+) button "([A-E]\d{1,2})"/g)].map((m) => ({
@@ -67,7 +70,11 @@ export const DRIVERS = {
       'The workbook total was short because the August column total in C14 used a split ' +
         'range. I replaced it with =SUM(C2:C13) and the sheet reconciles now.',
     ],
-    async run({ base, goto, mcp, snapshot, sleep, evaluate }, ctx) {
+    async run({ base, goto, mcp, sleep, evaluate }, ctx) {
+      // The whole 500-line window on every read: a walker that emits the grid's
+      // cells would push the audit pane and the formula bar past the default
+      // 100 lines.
+      const snapshot = () => snapText(mcp, { maxLines: 500 });
       await goto('/calc/');
 
       let snap = '';
@@ -78,8 +85,29 @@ export const DRIVERS = {
       }
       const flags = flagButtons(snap).map((f) => f.ref);
       if (flags.length < 8) throw new Error(`formula audit listed ${flags.length} flags, expected 8`);
-      if (/Ardsley|Havenscar|Lowdham/.test(snap)) {
-        throw new Error('grid text unexpectedly present in the snapshot; fixture markup changed');
+      // The task rests on the grid being a <table>, whose cells the 0.9.15
+      // walker drops: a fixture edit that puts the depot names or figures
+      // outside table cells hands an agent the numbers. Checked in the DOM, so
+      // it holds on any build.
+      const grid = await evaluate(() => {
+        const cells = [...document.querySelectorAll('#grid-body td[data-ref]')];
+        const texts = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let names = 0;
+        let outside = 0;
+        for (let n = texts.nextNode(); n; n = texts.nextNode()) {
+          if (!/Ardsley|Havenscar|Lowdham/.test(n.textContent)) continue;
+          names += 1;
+          if (!n.parentElement.closest('table td')) outside += 1;
+        }
+        return {
+          figures: cells.filter((td) => /^-?[\d,]+\.\d\d$/.test(td.textContent.trim())).length,
+          inTable: cells.every((td) => td.closest('table')),
+          names,
+          outside,
+        };
+      });
+      if (!grid.inTable || grid.figures < 10 || grid.names < 3 || grid.outside) {
+        throw new Error(`the grid is no longer table cells holding its figures; fixture markup changed: ${JSON.stringify(grid)}`);
       }
 
       // Open each flagged cell in the formula bar and keep the one whose formula
@@ -206,7 +234,7 @@ export const DRIVERS = {
           ? `=SUM(${ref[0]}2:${ref[0]}13)`
           : `=SUM(B${ref.slice(1)}:D${ref.slice(1)})`;
       const probeSheet = async () => {
-        const probe = await probeSession(base, '/calc/');
+        const probe = await straySession(base, '/calc/', { nonceHeader: 'always', reply: 'response' });
         const { body } = await probe.get('/api/calc/sheet');
         const calc = ctx.pages.state.sessions.get(probe.sid)?.calc;
         if (!Array.isArray(body.audit) || !calc) throw new Error('probe could not open its sheet');

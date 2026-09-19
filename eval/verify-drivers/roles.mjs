@@ -31,13 +31,19 @@ function briefValue(snap, key) {
   return lines[at - 1].match(/text="([^"]*)"/)?.[1] ?? null;
 }
 
-// The tally sits in a sibling <span> immediately after the checkbox.
+// The tally is the first sibling <span> after the checkbox. A walker that also
+// emits the <label> puts that line between them, so the search runs to the
+// next checkbox rather than reading only the next line.
 function facetCount(snap, label) {
   const lines = snap.split('\n');
   const at = lines.findIndex((l) => l.includes(`input "${label}"`));
   if (at === -1) return null;
-  const found = lines[at + 1]?.match(/span text="(\d+)"/);
-  return found ? Number(found[1]) : null;
+  for (const line of lines.slice(at + 1, at + 4)) {
+    if (/ input "/.test(line)) break;
+    const found = line.match(/span text="(\d+)"/);
+    if (found) return Number(found[1]);
+  }
+  return null;
 }
 
 function totalOf(snap) {

@@ -10,7 +10,7 @@
 // booking desk writes them rather than trimmed to fit the snapshot's text cap.
 // The quick-book line and the reference the desk issues stay on the uid surface.
 
-import { bumpCode, until } from './lib.mjs';
+import { bumpCode, snapText, until } from './lib.mjs';
 
 const DAY_KEYS = {
   monday: 'Mon',
@@ -26,7 +26,7 @@ export const DRIVERS = {
     wrong: [
       'I booked the Bramble Suite on Monday at 09:00; the desk gave me reference PCR-4C71A9.',
     ],
-    async run({ goto, evaluate, snapshot, mcp }) {
+    async run({ goto, evaluate, mcp }) {
       await goto('/schedule/');
       // The card is read from the DOM, not the snapshot. Its conditions are
       // written the way a booking desk writes them and run past the snapshot's
@@ -84,8 +84,10 @@ export const DRIVERS = {
       const answer = windows[0];
       if (!answer) throw new Error('no window in the week meets the request card');
 
-      // uids expire on every take_snapshot, so read them from a fresh one.
-      const fresh = await snapshot();
+      // uids expire on every take_snapshot, so read them from a fresh one. The
+      // whole 500-line window, because the form sits below the grid: a walker
+      // that emits the grid's cells pushes it past the default 100 lines.
+      const fresh = await snapText(mcp, { maxLines: 500 });
       const uid = (label) => {
         const m = new RegExp(`uid=(\\S+) (?:input|button) "${label}"`).exec(fresh);
         if (!m) throw new Error(`no "${label}" control in the snapshot`);
@@ -100,7 +102,7 @@ export const DRIVERS = {
       // cannot be satisfied by the state before the click.
       const reference = await until(
         'the desk to issue a reference',
-        async () => /PCR-[0-9A-F]{6}/.exec(await snapshot())?.[0] ?? null,
+        async () => /PCR-[0-9A-F]{6}/.exec(await snapText(mcp, { maxLines: 500 }))?.[0] ?? null,
         { tries: 120 }
       ).catch(() => '');
       if (!reference) {
