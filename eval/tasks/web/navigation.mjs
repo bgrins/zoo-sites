@@ -348,9 +348,14 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         // right month, so "March 11, 2019" and a hedge between two 2019 months
         // fail, and so does "3/11/2019", where either number could be the
         // month; a month bound to another year ("supersedes Mar 2017") is not
-        // the claim.
+        // the claim. The form number the ask names is dropped first, so the 3
+        // in "RV-3, 11/2019" or "RV-3 11 2019" is never read as a day.
         const [mm, yyyy] = ANSWERS.govNav.rv3Revision.split('/').map(Number);
-        const words = normaliseDateWords(fields?.revisionDate ?? '').trim().split(' ');
+        const raw = String(fields?.revisionDate ?? '')
+          .normalize('NFKC')
+          .replace(/[‐-―−]/g, '-')
+          .replace(/(?<![A-Za-z0-9])RV[\s-]*3(?!\d)/gi, ' ');
+        const words = normaliseDateWords(raw).trim().split(' ');
         const named = (w) => MONTH_NAMES.indexOf(w) + 1 || null;
         const num = (w) => (/^\d{1,2}$/.test(w ?? '') ? Number(w) : null);
         const monthNum = (w) => (num(w) >= 1 && num(w) <= 12 ? num(w) : null);

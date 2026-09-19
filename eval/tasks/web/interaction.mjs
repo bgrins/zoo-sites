@@ -5,7 +5,7 @@
 
 import { originUrls } from '../../../manifest.mjs';
 import { ANSWERS } from '../../answers.mjs';
-import { eqCode, eqEnum, normalise, normaliseWords } from '../../extract.mjs';
+import { eqCode, eqEnum, normalise, normaliseWords, soleCode } from '../../extract.mjs';
 
 // The earliest-won game whose guess count the answer reports, else the
 // earliest-won game, else the first game; and how many guesses every session
@@ -401,9 +401,11 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         // The separator is loose because "CM 8D5495" and "cm-8d5495" are the
         // same id, and the `CM` prefix is optional because "returned revision
         // 8D5495" quotes the minted value exactly, minus a constant the fixture
-        // chose.
+        // chose. soleCode takes the id out of "Board revision CM-8D5495", and
+        // its shape takes the bare body too, so "CM-8D5495 or FACADE" is a hedge.
+        const claimed = soleCode(fields?.boardRevision, /(?:CM-)?[0-9A-F]{6}/);
         const quotedOf = (s) =>
-          s.kanban.layouts.find((l) => eqMinted(fields?.boardRevision, l.revision, 'CM-')) ?? null;
+          s.kanban.layouts.find((l) => eqMinted(claimed, l.revision, 'CM-')) ?? null;
         // The quoted revision has to be one the server issued for a triaged
         // board, and the last save has to be triaged too. Saving twice and
         // quoting the first correct save is still a report of that save; quoting
@@ -601,8 +603,11 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         const sheets = [...ctx.pages.state.sessions.values()].map((s) => s.calc).filter(Boolean);
         // The workbook prints the checksum as RC-XXXXXX; accept the bare hex, a
         // space instead of the hyphen, and any letter case, but never a prefix of
-        // it and never a longer token that merely contains it.
-        const hasCode = (code) => eqMinted(fields?.checksum, code, 'RC-');
+        // it and never a longer token that merely contains it. soleCode takes it
+        // out of "Reconciliation checksum RC-1A2B3C", and its shape takes the
+        // bare hex too, so "RC-1A2B3C or FEDCBA" is a hedge.
+        const claimed = soleCode(fields?.checksum, /(?:RC-)?[0-9A-F]{6}/);
+        const hasCode = (code) => eqMinted(claimed, code, 'RC-');
         // The cell may be quoted absolute ($E$14), behind a sheet name
         // ('Q3 Recovery'!E14, Sheet1!E14) or in a phrase ("cell E14."), but it
         // has to name exactly one cell of the sheet's A-E columns: "E14 or C14"

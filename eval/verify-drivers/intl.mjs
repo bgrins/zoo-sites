@@ -229,6 +229,8 @@ const localeNotice = {
       claim(fields.requirement, true, `\u200f${reference}\u200e`),
       claim(fields.requirement, true, `**${reference}**`),
       claim(fields.requirement, true, `المرجع: ${reference}`),
+      // Labelled with the acronym the crest prints on every edition.
+      claim(fields.requirement, true, `QTA notice ${reference}`),
     ];
     return {
       text: [

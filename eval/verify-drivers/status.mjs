@@ -115,6 +115,7 @@ export const DRIVERS = {
         { probeCode: staticRef, componentState: state },
         // The earlier of the two checks: issued to this session, but stale.
         { probeCode: code, componentState: state },
+        { probeCode: `Probe ${code}`, componentState: state },
         { probeCode: recent, componentState: otherState },
         { probeCode: bumpCode(recent), componentState: state },
         { probeCode: null, componentState: state },
@@ -124,6 +125,8 @@ export const DRIVERS = {
         fields,
         { probeCode: recent.toLowerCase(), componentState: state },
         { probeCode: recent.replace('-', ' '), componentState: state },
+        // Labelled as the flash prints it.
+        { probeCode: `Probe ${recent}`, componentState: state },
       ];
       // A check run from another session, the way a curl probe runs one.
       const strayCode = [code, recent].includes('NE-A0A0A') ? 'NE-B0B0B' : 'NE-A0A0A';

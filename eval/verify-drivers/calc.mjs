@@ -222,6 +222,9 @@ export const DRIVERS = {
         { cellReference: `'Q3 Recovery'!${decoyFlag}`, checksum },
         blindFields,
         { cellReference: rebroken.culprit.ref, checksum: repaired.checksum },
+        { cellReference: rebroken.culprit.ref, checksum: `Checksum ${repaired.checksum}` },
+        // A hedge whose second checksum is quoted bare, with no digit to show it.
+        { cellReference: culprit.ref, checksum: `${checksum} or FEDCBA` },
       ];
       this.alsoCorrectFields = [
         fields,
@@ -230,6 +233,8 @@ export const DRIVERS = {
         { cellReference: `Sheet1!${culprit.ref}`, checksum },
         { cellReference: `cell ${culprit.ref}.`, checksum },
         { cellReference: retried.culprit.ref, checksum: fixed.checksum },
+        // Labelled as the reconciliation panel prints it.
+        { cellReference: culprit.ref, checksum: `Reconciliation checksum ${checksum}` },
       ];
       this.wrong = [
         this.wrong[0],

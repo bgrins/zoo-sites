@@ -144,10 +144,17 @@ export const DRIVERS = {
         { boardRevision: untouchedRevision },
         { boardRevision: routineRevision },
         { boardRevision: staleRevision },
+        { boardRevision: `Board revision ${staleRevision}` },
+        { boardRevision: `Board revision ${String(staleRevision).replace(/^CM-/i, '')}` },
+        // A hedge whose second revision is quoted bare, with no digit to show it.
+        { boardRevision: `${revision} or FACADE` },
       ];
       this.alsoCorrectFields = [
         fields,
         { boardRevision: String(revision).replace(/^CM-/i, '') },
+        // Labelled as the board prints it.
+        { boardRevision: `Board revision ${revision}` },
+        { boardRevision: `Board revision ${String(revision).replace(/^CM-/i, '')}` },
       ];
       return {
         text:

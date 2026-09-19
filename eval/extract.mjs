@@ -294,10 +294,16 @@ export function eqCode(got, want) {
 // grades as the code it names. `shape` is matched case-insensitively as a whole
 // token, never as part of a longer code, with any ^/$ anchors dropped. The rest
 // of the field may label the code but not qualify it: a field naming two
-// different codes, or none, comes back unchanged, and so does one whose rest
-// carries any digit, which is how a second code the shape misses shows up ("AR
-// 0892F0", a truncated "AR-0892F"), or negates the code ("not AR-4149B7").
-// eqCode then rejects it as before.
+// different codes, or none, comes back unchanged, and so does one that negates
+// the code ("not AR-4149B7") or whose rest still names a second code the shape
+// misses. A second code shows up as any digit ("AR 0892F0"), as the shape's
+// letter prefix again ("or AR BCDEFA", "AR-BCDEF"; a hex body can be all
+// letters), or as the shape with its dashes and one character gone
+// ("ARBCDEFA"). eqCode then rejects it as before. A shape that puts a literal
+// digit after its prefix (QTA-2026-...) gives every second code a digit, so
+// there the bare prefix may label the code ("QTA notice QTA-2026-1A2B"). A
+// caller whose comparator also takes the bare body passes the prefix as
+// optional, (?:CM-)?, so a bare second body counts as a code too.
 export function soleCode(got, shape) {
   if (typeof got !== 'string') return got;
   const body = shape.source.replace(/^\^/, '').replace(/\$$/, '');
@@ -306,7 +312,15 @@ export function soleCode(got, shape) {
   const found = new Set([...folded.matchAll(token)].map((m) => m[0].toUpperCase()));
   if (found.size !== 1) return got;
   const rest = folded.replace(token, ' ');
-  if (/\d/.test(rest) || /\b(?:not|never)\b|n't\b/i.test(rest)) return got;
+  const prefix = /^[A-Za-z]+-?\d/.test(body) ? null : body.match(/^[A-Za-z]+/)?.[0];
+  // Dashes outside character classes go optional, and each {n} may fall one short.
+  const loose = body
+    .replace(/\[(?:\\.|[^\]\\])*\]|-/g, (m) => (m === '-' ? '[\\s-]*' : m))
+    .replace(/\{(\d+)\}/g, (_, n) => `{${n - 1},${n}}`);
+  const another =
+    (!!prefix && new RegExp(`(?<![A-Za-z0-9])${prefix}(?![A-Za-z])`, 'i').test(rest)) ||
+    new RegExp(`(?<![A-Za-z0-9])(?:${loose})(?![A-Za-z0-9])`, 'i').test(rest);
+  if (another || /\d/.test(rest) || /\b(?:not|never)\b|n't\b/i.test(rest)) return got;
   return [...found][0];
 }
 

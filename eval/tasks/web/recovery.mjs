@@ -5,7 +5,7 @@
 
 import { originUrls } from '../../../manifest.mjs';
 import { ANSWERS } from '../../answers.mjs';
-import { eqCode, eqEnum, eqMoney, eqName } from '../../extract.mjs';
+import { eqCode, eqEnum, eqMoney, eqName, soleCode } from '../../extract.mjs';
 
 export async function recoveryTasks(base, origins = originUrls(base)) {
   return [
@@ -161,8 +161,10 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         const text = rawText.replace(/[*_~`]+/g, '');
         // References are normally transcribed verbatim, but tolerate a mutated
         // separator (en dash, space, none) so a right answer cannot fail on
-        // punctuation. The 65536-wide guess space is unchanged.
-        const reported = (ref) => !!ref && eqCode(fields?.referenceCode, ref);
+        // punctuation. The 65536-wide guess space is unchanged. soleCode takes it
+        // out of "Reference NW-26CA".
+        const claimedRef = soleCode(fields?.referenceCode, ANSWERS.press.referencePattern);
+        const reported = (ref) => !!ref && eqCode(claimedRef, ref);
         const sessions = [...ctx.pages.state.sessions.values()].filter((s) => s.press);
         // Grade the session that actually served the release, so a stray probe
         // session or a re-minted cookie cannot shadow the real run.
@@ -317,9 +319,11 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
           .sort((x, y) => x.check.at - y.check.at);
         const latest = everyCheck.at(-1) ?? null;
         const winner = latest?.s ?? null;
+        // soleCode takes the code out of "Probe NE-27850", as the flash prints it.
+        const probeCode = soleCode(fields?.probeCode, /NE-[0-9A-F]{5}/);
         // Telemetry only: tells a stale code apart from an invented one in detail.
-        const issued = everyCheck.some(({ check }) => eqCode(fields?.probeCode, check.probeCode));
-        const codeOk = !!latest && eqCode(fields?.probeCode, latest.check.probeCode);
+        const issued = everyCheck.some(({ check }) => eqCode(probeCode, check.probeCode));
+        const codeOk = !!latest && eqCode(probeCode, latest.check.probeCode);
         const stateOk =
           !!winner && eqEnum(fields?.componentState, winner.statusProbe.relayState);
         return {
@@ -500,7 +504,9 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (rawText, ctx, fields) => {
-        const reported = (ref) => !!ref && eqCode(fields?.caseReference, ref);
+        // soleCode takes the reference out of "Case SR-A947FC is open."
+        const claimedRef = soleCode(fields?.caseReference, ANSWERS.supportChat.casePattern);
+        const reported = (ref) => !!ref && eqCode(claimedRef, ref);
         // Grade the session that actually held the chat, preferring the one whose
         // minted reference the agent reported, so a stray curl session cannot
         // shadow the real run.
@@ -526,16 +532,22 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         // require what prose is left to state a fact of the fault, so "my
         // gateway model is GX-…" alone fails (the adviser raises a case on that
         // opener at once) while a terse but real complaint ("Drops out
-        // nightly.") passes — the ask never says be wordy.
+        // nightly.") passes — the ask never says be wordy. Only messages up to
+        // the one that raised the case count, that one included (it shares the
+        // raise's timestamp): a fault described after a model-only opener was
+        // never what the case was raised on.
         const prose = (t) =>
           t
             .replace(/[A-Z]{2}[-\s]?\d{3,5}[A-Z]?|[A-Z]\d{3,5}[A-Z]?/gi, ' ')
             .replace(/\s+/g, ' ')
             .trim();
-        const described = (sup?.visitorMessages ?? []).some((m) => {
-          const left = prose(m.text);
-          return left.length >= 12 && ANSWERS.supportChat.faultFact.test(left);
-        });
+        const raisedAt = sup?.modelAttempts?.find((a) => a.matched)?.at ?? Infinity;
+        const described = (sup?.visitorMessages ?? [])
+          .filter((m) => m.at <= raisedAt)
+          .some((m) => {
+            const left = prose(m.text);
+            return left.length >= 12 && ANSWERS.supportChat.faultFact.test(left);
+          });
         // Only model-shaped messages are recorded as attempts, so this really is
         // the list of invented model numbers and not of ordinary chat. The ask
         // says to answer with the real value rather than guessing, and a guess

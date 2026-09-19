@@ -497,6 +497,12 @@ export const DRIVERS = {
         { revisionDate: '3/11/2019' },
         // A second revision in the same year is a hedge between two months.
         { revisionDate: '11/2019 (May 2019 reprint)' },
+        // Day and month either way round, whatever single mark joins them.
+        { revisionDate: '3 / 11 / 2019' },
+        { revisionDate: '3 11 2019' },
+        { revisionDate: '03–11-2019' },
+        { revisionDate: '3/11, 2019' },
+        { revisionDate: '3/11 2019' },
       ];
       this.alsoCorrectFields = [
         fields,
@@ -507,6 +513,15 @@ export const DRIVERS = {
         { revisionDate: 'Revised Nov 2019 (supersedes Mar 2017)' },
         { revisionDate: '11/2019 (may be a reprint)' },
         { revisionDate: 'Rev. 11/2019 (the forms table lists 06/03)' },
+        // The form number is not a day.
+        { revisionDate: 'Form RV-3, 11/2019' },
+        { revisionDate: 'RV-3: 11/2019' },
+        { revisionDate: 'RV-3 (11/2019)' },
+        { revisionDate: 'Form RV-3 11/2019' },
+        { revisionDate: 'Form RV-3 — 11-2019' },
+        { revisionDate: 'RV-3 11 2019' },
+        { revisionDate: 'RV-3 - 11 - 2019' },
+        { revisionDate: 'Form RV 3, 11/2019' },
       ];
       this.wrong = [
         this.wrong[0],

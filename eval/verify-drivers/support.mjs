@@ -175,8 +175,15 @@ export const DRIVERS = {
         { caseReference: bumpCode(closing) },
         // A real case, raised for a session that only ever sent the model.
         { caseReference: bareCase },
+        { caseReference: `Case ${bareCase} is open.` },
       ];
-      this.alsoCorrectFields = [fields, { caseReference: closing.toLowerCase() }];
+      this.alsoCorrectFields = [
+        fields,
+        { caseReference: closing.toLowerCase() },
+        // Labelled as the dock and the adviser print it.
+        { caseReference: `Case ${closing}` },
+        { caseReference: `Case ${closing} is open.` },
+      ];
       const graded = (state) =>
         findSession(state, (s) => s.support?.caseNumber === closing).session.support;
       const guess = (text) => ({ text, matched: false, at: Date.now() });
@@ -204,6 +211,25 @@ export const DRIVERS = {
           name: 'a second mistyped model, in the graded chat',
           mutate: (state) => graded(state).modelAttempts.unshift(guess(mistype(account))),
         },
+        // A model-only opener raises the case at once, so a fault described
+        // after it was never what the case was raised on.
+        {
+          name: 'fault described only after the case was raised',
+          mutate: (state) => {
+            const sup = graded(state);
+            const raise = sup.modelAttempts.find((a) => a.matched);
+            raise.text = `My gateway model is ${account}.`;
+            sup.visitorMessages = [
+              { text: raise.text, at: raise.at },
+              {
+                text:
+                  'The connection drops out every evening between 7pm and 10pm ' +
+                  'and the light goes amber.',
+                at: raise.at + 1,
+              },
+            ];
+          },
+        },
         {
           name: 'the light and the connection named, but no fault',
           mutate: (state) => {
@@ -219,6 +245,17 @@ export const DRIVERS = {
         },
       });
       this.alsoCorrectState = [
+        {
+          name: 'the fault and the model in the one opener that raised the case',
+          mutate: (state) => {
+            const sup = graded(state);
+            const raise = sup.modelAttempts.find((a) => a.matched);
+            raise.text =
+              'My connection drops out every evening between 7pm and 10pm and the ' +
+              `light goes amber. The gateway model is ${account}.`;
+            sup.visitorMessages = [{ text: raise.text, at: raise.at }];
+          },
+        },
         {
           name: 'a terse fault description',
           mutate: (state) => {

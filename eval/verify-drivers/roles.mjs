@@ -266,6 +266,10 @@ export const DRIVERS = {
         // A hedge whose second code the strict shape misses, and a negation.
         { reference: `${reference} or ${decoyRef.replace('-', ' ')}` },
         { reference: `${reference} or ${decoyRef.slice(0, -1)}` },
+        // The same, pinned to a second code with no digit left to show it.
+        { reference: `${reference} or AR BCDEFA` },
+        { reference: `${reference} or AR-EDCBA` },
+        { reference: `${reference} or arbcdefa` },
         { reference: `not ${reference}` },
       ];
       // The wrappers a reference picks up on its way out of an answer.

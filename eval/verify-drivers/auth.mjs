@@ -675,9 +675,15 @@ export const DRIVERS = {
       const fields = { headline, referenceCode: reference };
       this.wrongFields = [
         { headline, referenceCode: bumpCode(reference) },
+        { headline, referenceCode: `Reference ${bumpCode(reference)}` },
         { headline: 'Quarterly figures ahead of schedule', referenceCode: reference },
       ];
-      this.alsoCorrectFields = [fields, { headline, referenceCode: reference.toLowerCase() }];
+      this.alsoCorrectFields = [
+        fields,
+        { headline, referenceCode: reference.toLowerCase() },
+        // Labelled as the release prints it.
+        { headline, referenceCode: `Reference ${reference}` },
+      ];
       // The ask says to wait the embargo out rather than reload or hammer the
       // page, and the newsroom counts both, so these vary the counts under the
       // honest answer.
