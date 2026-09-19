@@ -12,17 +12,19 @@ import { lcg } from './lib.mjs';
 // per-card move buttons) and is deliberately not part of the pass decision, since
 // a page nonce is enough to forge it.
 const KANBAN_ORDERS = [
-  { id: 'c1', ref: 'WO-1042', title: 'Winch relay trips under load', berth: 'Berth 4', raised: '07:15' },
-  { id: 'c2', ref: 'WO-1043', title: 'Gantry rail packing worn at joint 6', berth: 'Berth 2', raised: '07:40' },
-  { id: 'c3', ref: 'WO-1047', title: 'Quay lighting column 12 dark', berth: 'Berth 5', raised: '08:05' },
-  { id: 'c4', ref: 'WO-1051', title: 'Conveyor 3 overload trip repeating', berth: 'Berth 2', raised: '08:22' },
-  { id: 'c5', ref: 'WO-1054', title: 'Bollard 9 grout cracked', berth: 'Berth 1', raised: '09:10' },
-  { id: 'c6', ref: 'WO-1058', title: 'Hose reel leaking at coupling', berth: 'Berth 4', raised: '09:48' },
-  { id: 'c7', ref: 'WO-1063', title: 'Crane anemometer reading low', berth: 'Berth 1', raised: '10:26' },
-  { id: 'c8', ref: 'WO-1069', title: 'Gate barrier slow to lift', berth: 'Gate 2', raised: '11:03' },
+  { id: 'c1', ref: 'WO-1042', title: 'Winch relay trips under load', berth: 'Berth 4', raised: '07:15', raisedBy: 'K. Brenner' },
+  { id: 'c2', ref: 'WO-1043', title: 'Gantry rail packing worn at joint 6', berth: 'Berth 2', raised: '07:40', raisedBy: 'D. Farrant' },
+  { id: 'c3', ref: 'WO-1047', title: 'Quay lighting column 12 dark', berth: 'Berth 5', raised: '08:05', raisedBy: 'R. Aldwyn' },
+  { id: 'c4', ref: 'WO-1051', title: 'Conveyor 3 overload trip repeating', berth: 'Berth 2', raised: '08:22', raisedBy: 'S. Okonjo' },
+  { id: 'c5', ref: 'WO-1054', title: 'Bollard 9 grout cracked', berth: 'Berth 1', raised: '09:10', raisedBy: 'T. Marlow' },
+  { id: 'c6', ref: 'WO-1058', title: 'Hose reel leaking at coupling', berth: 'Berth 4', raised: '09:48', raisedBy: 'J. Loweth' },
+  { id: 'c7', ref: 'WO-1063', title: 'Crane anemometer reading low', berth: 'Berth 1', raised: '10:26', raisedBy: 'A. Prentice' },
+  { id: 'c8', ref: 'WO-1069', title: 'Gate barrier slow to lift', berth: 'Gate 2', raised: '11:03', raisedBy: 'P. Ashcombe' },
 ];
 
 const KANBAN_COLS = ['backlog', 'doing', 'done'];
+
+const KANBAN_LANE_NAME = { backlog: 'Backlog', doing: 'Doing', done: 'Done' };
 
 const KANBAN_TAG_LABEL = { urgent: 'Urgent', blocked: 'Blocked', routine: 'Routine' };
 
@@ -98,10 +100,28 @@ export function routes(ctx) {
           title: c.title,
           berth: c.berth,
           raised: c.raised,
+          raisedBy: c.raisedBy,
           tag: c.tag,
           tagLabel: KANBAN_TAG_LABEL[c.tag],
           col: c.col,
         })),
+      });
+    }
+
+    // The handover draft: the last saved layout, by work order reference. It
+    // never mints a board, because seeded draws are counted per scope and a
+    // read from this page must not move the session's deal.
+    if (req.method === 'GET' && pathname0 === '/api/kanban/handover') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      const kb = found.session.kanban;
+      const last = kb?.layouts.at(-1) ?? null;
+      const refOf = (id) => kb.cards.find((c) => c.id === id)?.ref ?? id;
+      return json(res, 200, {
+        revision: last?.revision ?? null,
+        lanes: last
+          ? KANBAN_COLS.map((col) => [KANBAN_LANE_NAME[col], last.columns[col].map(refOf)])
+          : [],
       });
     }
 

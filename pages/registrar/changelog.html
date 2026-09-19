@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zone change log - Northgate Domains</title>
+<link rel="stylesheet" href="northgate.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<nav class="rail">
+  <p class="mark"><a href="./">Northgate <b>Domains</b></a></p>
+  <p class="plan">Registrar console</p>
+  <p class="sect">Account</p>
+  <a href="overview.html">Overview</a>
+  <a href="domains.html">Domains</a>
+  <a href="billing.html">Billing</a>
+  <a href="support.html">Support</a>
+  <p class="sect">fernvale-labs.example.net</p>
+  <a href="index.html">DNS records</a>
+  <a href="forwarding.html">Email forwarding</a>
+  <a href="certificates.html">TLS certificates</a>
+  <a href="transfers.html">Transfers</a>
+  <a class="on" href="changelog.html">Zone change log</a>
+  <p class="who">Signed in as m.calloway<br>Fernvale Labs LLC<br>Reseller tier: Direct</p>
+</nav>
+
+<div class="frame">
+  <div class="topstrip">
+    <span class="crumb">Domains / <span class="zone">fernvale-labs.example.net</span> / <b>Zone change log</b></span>
+    <span class="gap"></span>
+    <span class="acct">Registry lock: off</span>
+  </div>
+
+  <main>
+    <h1>Zone change log</h1>
+    <p class="lede">Every change to the fernvale-labs.example.net zone, newest first. Retirements carry
+    the removal reference support uses to look the change up; quote it in any dispute.</p>
+    <div class="pagebody">
+      <table class="plain" id="log">
+        <thead>
+          <tr><th>When</th><th>Record</th><th>Change</th><th>Reference</th></tr>
+        </thead>
+        <tbody id="log-recent"></tbody>
+        <tbody>
+          <tr><td>2026-07-22 04:10 UTC</td><td class="mono">TXT @</td><td>SPF policy updated to include the Northgate mail relays</td><td class="mono">ZC-7784102</td></tr>
+          <tr><td>2026-06-14 09:02 UTC</td><td class="mono">CNAME mail</td><td>Added for webmail</td><td class="mono">ZC-7690355</td></tr>
+          <tr><td>2026-05-30 16:47 UTC</td><td class="mono">A panel</td><td>Added for the new control panel host</td><td class="mono">ZC-7652918</td></tr>
+          <tr><td>2026-03-08 11:20 UTC</td><td class="mono">MX @</td><td>TTL lowered from 14400 to 3600</td><td class="mono">ZC-7431006</td></tr>
+        </tbody>
+      </table>
+      <p class="note-line" id="log-note"></p>
+    </div>
+  </main>
+
+  <footer>
+    &copy; 2026 Northgate Domains Ltd. ICANN-accredited registrar. Registered in England and
+    Wales, company number 00000000. 14 Quaymarket Street, Harwick HW2 4EL &middot; <a href="legal.html#privacy">Privacy</a> &middot;
+    <a href="legal.html#terms">Terms of service</a> &middot;
+    <a href="support.html">Support</a>
+  </footer>
+</div>
+<script>
+const NONCE = '__SESSION_NONCE__';
+(async () => {
+  const note = document.getElementById('log-note');
+  let data;
+  try {
+    const r = await fetch('/api/registrar/records', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!r.ok) throw new Error('records ' + r.status);
+    data = await r.json();
+  } catch {
+    note.textContent = 'Changes made in this session could not be loaded. Reload the page to try again.';
+    return;
+  }
+  const body = document.getElementById('log-recent');
+  const retired = data.records.filter((rec) => rec.status === 'retired');
+  for (const rec of retired) {
+    const tr = document.createElement('tr');
+    const cells = [
+      ['', 'Pending publication'],
+      ['mono', rec.type + ' ' + rec.host],
+      ['', 'Retired: ' + rec.note],
+      ['mono', rec.reference],
+    ];
+    for (const [cls, text] of cells) {
+      const td = document.createElement('td');
+      if (cls) td.className = cls;
+      td.textContent = text;
+      tr.append(td);
+    }
+    body.append(tr);
+  }
+  note.textContent = retired.length
+    ? 'Pending changes reach every edge at the next SOA refresh.'
+    : 'No changes are waiting to be published.';
+})();
+</script>
+</body>
+</html>

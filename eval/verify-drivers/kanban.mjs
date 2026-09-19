@@ -45,7 +45,7 @@ const wantedLane = (card) =>
 export const DRIVERS = {
   'kanban-triage': {
     note: 'the only driver that calls drag_by_uid_to_uid; drags all four cards',
-    async run({ base, goto, mcp }) {
+    async run({ base, goto, mcp, evaluate }) {
       await goto(PATH);
       const snapshot = () => snapText(mcp, { maxLines: 400 });
 
@@ -92,6 +92,30 @@ export const DRIVERS = {
         const snap = await snapshot();
         if (!snap.includes('text="Board saved"')) return null;
         return snap.match(/text="(CM-[0-9A-F]{6})"/)?.[1] ?? null;
+      });
+
+      // A lane-button move re-renders every lane; focus has to come back to the
+      // moved card rather than drop to <body>. Checked after the graded save, so
+      // the unsaved move reaches no layout the validator reads, then discarded.
+      const saved = await snapshot();
+      const moveBtn = saved.match(/uid=(\S+) button "Move (WO-\d+) to (?:Backlog|Doing|Done)"/);
+      if (!moveBtn) throw new Error('no per-card move button in the snapshot');
+      await mcp('click_by_uid', { uid: moveBtn[1] });
+      await until(`focus to return to ${moveBtn[2]} after a button move`, async () => {
+        const at = await evaluate(() =>
+          document.activeElement?.closest('article')?.getAttribute('aria-label') ??
+          document.activeElement?.tagName ?? ''
+        );
+        return String(at).startsWith(moveBtn[2]) ? at : null;
+      }, { tries: 12 });
+      const discard = (await snapshot()).match(/uid=(\S+) button "Discard changes"/)?.[1];
+      if (!discard) throw new Error('no Discard changes button in the snapshot');
+      await mcp('click_by_uid', { uid: discard });
+      await until('the discarded move to revert to the saved board', async () => {
+        const now = readBoard(await snapshot());
+        const card = now.cards.find((c) => c.ref === moveBtn[2]);
+        const was = beforeSave.cards.find((c) => c.ref === moveBtn[2]);
+        return card && was && card.lane === was.lane ? true : null;
       });
 
       // A wrong answer that looks right: the same prose, a revision the server

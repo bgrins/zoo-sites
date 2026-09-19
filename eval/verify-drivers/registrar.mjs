@@ -49,6 +49,15 @@ export const DRIVERS = {
       await mcp('click_by_uid', { uid: manage });
       const retire = await until('the Retire record button on the manage view', async () =>
         uidOf(await snapshot(), 'button "Retire record"'), { tries: 20 });
+      // The Manage view is its own screen: the list's filter row and the
+      // previous view's cancelled-deletion note do not follow it there.
+      const leftovers = await evaluate(() => ({
+        filterShown: document.getElementById('toolrow')?.getClientRects().length > 0,
+        note: document.getElementById('zone-note')?.textContent.trim() ?? '',
+      }));
+      if (leftovers.filterShown || leftovers.note) {
+        throw new Error(`the Manage view kept list-view leftovers: ${JSON.stringify(leftovers)}`);
+      }
       await mcp('click_by_uid', { uid: retire });
       const confirm = await until('the dialog Confirm retirement button to get a uid', async () =>
         uidOf(await snapshot(), 'button "Confirm retirement"'), { tries: 20 });

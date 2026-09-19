@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Billing - Northgate Domains</title>
 <link rel="stylesheet" href="northgate.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <nav class="rail">
-  <p class="mark">Northgate <b>Domains</b></p>
+  <p class="mark"><a href="./">Northgate <b>Domains</b></a></p>
   <p class="plan">Registrar console</p>
   <p class="sect">Account</p>
   <a href="overview.html">Overview</a>
@@ -20,6 +21,7 @@
   <a href="forwarding.html">Email forwarding</a>
   <a href="certificates.html">TLS certificates</a>
   <a href="transfers.html">Transfers</a>
+  <a href="changelog.html">Zone change log</a>
   <p class="who">Signed in as m.calloway<br>Fernvale Labs LLC<br>Reseller tier: Direct</p>
 </nav>
 
@@ -40,11 +42,42 @@
       <p>Statements are issued to billing@fernvale-labs.example.net. Contact support to change
       the billing address or add a VAT number.</p>
     </div>
+
+    <h2>Invoices</h2>
+    <div class="pagebody">
+      <table class="plain invoices">
+        <thead>
+          <tr><th>Invoice</th><th>Date</th><th>For</th><th>Amount</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">NG-INV-88231</td><td>2026-03-08</td><td>.net renewal, 1 year</td><td>&pound;14.40</td><td>Settled</td></tr>
+          <tr><td class="mono">NG-INV-74117</td><td>2025-03-08</td><td>.net renewal, 1 year</td><td>&pound;13.90</td><td>Settled</td></tr>
+          <tr><td class="mono">NG-INV-60522</td><td>2024-03-08</td><td>.net renewal, 1 year</td><td>&pound;13.90</td><td>Settled</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Price list</h2>
+    <div class="pagebody">
+      <table class="plain">
+        <thead>
+          <tr><th>Service</th><th>Price</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>.net registration or renewal, per year</td><td>&pound;14.40</td></tr>
+          <tr><td>.net transfer in, includes one year</td><td>&pound;14.40</td></tr>
+          <tr><td>Registry lock, per domain per year</td><td>&pound;30.00</td></tr>
+          <tr><td>Redemption after lapse</td><td>&pound;95.00</td></tr>
+          <tr><td>DNS hosting, email forwarding, WHOIS privacy</td><td>included</td></tr>
+        </tbody>
+      </table>
+      <p class="note-line">Prices in pounds sterling. VAT is added for customers in the United Kingdom.</p>
+    </div>
   </main>
 
   <footer>
-    &copy; 2026 Northgate Domains Ltd. ICANN-accredited registrar. 14 Quaymarket Street,
-    Harwick HW2 4EL &middot; <a href="legal.html#privacy">Privacy</a> &middot;
+    &copy; 2026 Northgate Domains Ltd. ICANN-accredited registrar. Registered in England and
+    Wales, company number 00000000. 14 Quaymarket Street, Harwick HW2 4EL &middot; <a href="legal.html#privacy">Privacy</a> &middot;
     <a href="legal.html#terms">Terms of service</a> &middot;
     <a href="support.html">Support</a>
   </footer>

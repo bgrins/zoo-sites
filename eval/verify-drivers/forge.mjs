@@ -283,6 +283,15 @@ export const DRIVERS = {
         return /RV-[0-9A-F]{4}/.test(String(text)) ? String(text) : null;
       });
 
+      // A submitted review is part of the pull request's record: after a fresh
+      // load, the Conversation tab lists it and Merge status names the verdict.
+      const reviewId = result.match(/RV-[0-9A-F]{4}/)[0];
+      await goto('/forge/pulls/482/');
+      await until('the submitted review on the Conversation tab after a reload', async () => {
+        const text = String(await evaluate(() => document.querySelector('main')?.innerText ?? ''));
+        return text.includes(reviewId) && /Changes requested by r\.vandermolen/.test(text) ? true : null;
+      }, { tries: 20 });
+
       const answer =
         `The failing job is caused by ${defect.file} line ${defect.line}, where the new ` +
         `code uses ${defect.identifier}. I left a review comment on that exact line and ` +

@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Berth register - Coppermast Dispatch</title>
 <link rel="stylesheet" href="coppermast.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <div class="topbar">
-  <span class="mark"><b>Coppermast</b> Dispatch</span>
+  <a class="mark" href="./"><b>Coppermast</b> Dispatch</a>
   <nav class="topnav">
     <a href="index.html">Board</a>
     <a href="berths.html" class="on">Berths</a>
@@ -20,34 +21,29 @@
 
 <p class="crumbs">Operations / Terminal 3 / Berth register</p>
 
-<main class="sheet">
+<main class="sheet doc">
   <h1>Berth register</h1>
   <p class="blurb">Quay allocation for the current tide window. Berth changes are made by the
   duty controller and take effect at the next shift boundary.</p>
 
-  <section class="lane" style="max-width:640px">
-    <div class="lane-head"><h2>Terminal 3 quay</h2><span class="chip">6 berths</span></div>
-    <div class="lane-body">
-      <article class="card"><div class="card-head"><span class="ref">Berth 1</span><span class="tag">Occupied</span></div>
-        <p class="ttl">Aveline Star, general cargo</p><p class="meta">Departs 21:40</p></article>
-      <article class="card"><div class="card-head"><span class="ref">Berth 2</span><span class="tag">Occupied</span></div>
-        <p class="ttl">Fenmoor Tide, bulk aggregate</p><p class="meta">Departs 04:15</p></article>
-      <article class="card"><div class="card-head"><span class="ref">Berth 3</span><span class="tag">Vacant</span></div>
-        <p class="ttl">Held for survey</p><p class="meta">Released 09:00 tomorrow</p></article>
-      <article class="card"><div class="card-head"><span class="ref">Berth 4</span><span class="tag">Occupied</span></div>
-        <p class="ttl">Corwen Bay, containers</p><p class="meta">Departs 18:20</p></article>
-      <article class="card"><div class="card-head"><span class="ref">Berth 5</span><span class="tag">Vacant</span></div>
-        <p class="ttl">Unallocated</p><p class="meta">Available now</p></article>
-      <article class="card"><div class="card-head"><span class="ref">Berth 6</span><span class="tag">Closed</span></div>
-        <p class="ttl">Fender replacement</p><p class="meta">Reopens 14 March</p></article>
-    </div>
-  </section>
+  <table class="register">
+    <caption>Terminal 3 quay &middot; 6 berths</caption>
+    <thead>
+      <tr><th>Berth</th><th>State</th><th>Vessel or use</th><th>Cargo</th><th>Next change</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="code">Berth 1</td><td><span class="state s-occupied">Occupied</span></td><td>Aveline Star</td><td>General cargo</td><td>Departs 21:40</td></tr>
+      <tr><td class="code">Berth 2</td><td><span class="state s-occupied">Occupied</span></td><td>Fenmoor Tide</td><td>Bulk aggregate</td><td>Departs 04:15</td></tr>
+      <tr><td class="code">Berth 3</td><td><span class="state s-held">Vacant, held</span></td><td>Held for survey</td><td>-</td><td>Released 09:00 tomorrow</td></tr>
+      <tr><td class="code">Berth 4</td><td><span class="state s-occupied">Occupied</span></td><td>Corwen Bay</td><td>Containers</td><td>Departs 18:20</td></tr>
+      <tr><td class="code">Berth 5</td><td><span class="state s-vacant">Vacant</span></td><td>Unallocated</td><td>-</td><td>Available now</td></tr>
+      <tr><td class="code">Berth 6</td><td><span class="state s-closed">Closed</span></td><td>Fender replacement</td><td>-</td><td>Reopens 14 March</td></tr>
+    </tbody>
+  </table>
 
-  <div class="notes">
-    <h3>Allocation policy</h3>
-    <p>Vessels over 180 metres are restricted to berths 1, 2 and 4. A berth held for survey is
-    not available for reallocation until the survey record is closed.</p>
-  </div>
+  <h2>Allocation policy</h2>
+  <p>Vessels over 180 metres are restricted to berths 1, 2 and 4. A berth held for survey is
+  not available for reallocation until the survey record is closed.</p>
 </main>
 
 <footer>
@@ -58,9 +54,11 @@
     <a href="guide.html">Board guide</a>
     <a href="statuses.html">Status reference</a>
     <a href="escalation.html">Escalation</a>
+    <a href="legal.html#privacy">Privacy</a>
+    <a href="legal.html#terms">Terms</a>
   </div>
-  <p>&copy; 2026 Coppermast Terminals Limited. Registered in England, company 00000000.</p>
-  <address>Coppermast Terminals, Ravensgate Quay, Hollingport HP4 2LN &middot; dispatch@coppermast-terminals.example</address>
+  <p>&copy; 2026 Coppermast Terminals Limited. Registered in England and Wales, company number 00000000.</p>
+  <address>Coppermast Terminals, Ravensgate Quay, Tessenport TP4 7QD &middot; dispatch@coppermast-terminals.example</address>
 </footer>
 </body>
 </html>

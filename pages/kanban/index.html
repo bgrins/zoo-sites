@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shift triage board - Coppermast Dispatch</title>
 <link rel="stylesheet" href="coppermast.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <div class="topbar">
-  <span class="mark"><b>Coppermast</b> Dispatch</span>
+  <a class="mark" href="./"><b>Coppermast</b> Dispatch</a>
   <nav class="topnav">
     <a href="index.html" class="on">Board</a>
     <a href="berths.html">Berths</a>
@@ -29,7 +30,7 @@
     <button type="button" class="btn btn-primary" id="save">Save board</button>
     <button type="button" class="btn" id="reload">Discard changes</button>
     <span class="hint">Drag a card between lanes, or use the move buttons on the card.</span>
-    <span class="saveline" id="saveline">Not saved this shift</span>
+    <span class="saveline" id="saveline" aria-live="polite">Not saved this shift</span>
     <span class="revline" id="revline" hidden>Board revision <span id="revision"></span></span>
   </div>
 
@@ -68,9 +69,11 @@
     <a href="guide.html">Board guide</a>
     <a href="statuses.html">Status reference</a>
     <a href="escalation.html">Escalation</a>
+    <a href="legal.html#privacy">Privacy</a>
+    <a href="legal.html#terms">Terms</a>
   </div>
-  <p>&copy; 2026 Coppermast Terminals Limited. Registered in England, company 00000000.</p>
-  <address>Coppermast Terminals, Ravensgate Quay, Hollingport HP4 2LN &middot; dispatch@coppermast-terminals.example</address>
+  <p>&copy; 2026 Coppermast Terminals Limited. Registered in England and Wales, company number 00000000.</p>
+  <address>Coppermast Terminals, Ravensgate Quay, Tessenport TP4 7QD &middot; dispatch@coppermast-terminals.example</address>
 </footer>
 
 <script>
@@ -109,7 +112,7 @@ function cardEl(card) {
 
   const meta = document.createElement('p');
   meta.className = 'meta';
-  meta.textContent = card.berth + ' / raised ' + card.raised;
+  meta.textContent = card.berth + ' / raised ' + card.raised + (card.raisedBy ? ' by ' + card.raisedBy : '');
 
   const acts = document.createElement('div');
   acts.className = 'acts';
@@ -163,6 +166,9 @@ function move(id, to, via) {
   moves.push({ card: id, from: card.col, to, via });
   card.col = to;
   render();
+  // render() rebuilds every lane, so a keyboard move would otherwise leave
+  // focus on <body>; put it back on the moved card's first lane button.
+  if (via === 'button') laneBody(to).querySelector('[data-card="' + id + '"] .acts button')?.focus();
   setSaveline('Unsaved changes', false);
 }
 
@@ -206,7 +212,7 @@ async function load() {
     if (!res.ok) throw new Error('board read failed');
     data = await res.json();
   } catch {
-    setBoardError('Board unavailable. Sign in again from the dispatch portal, then use Discard changes to retry.');
+    setBoardError('The board could not be read from the work order service. Use Discard changes to try again; if it keeps failing, reload the page to start a new console session.');
     return;
   }
   setBoardError('');

@@ -16,7 +16,7 @@ const DEPOT_INTAKE_LINES = 40;
 const DEPOT_INTAKE_REJECTS = 3;
 
 const DEPOT_ROSTER_LIVE = {
-  shiftDate: 'Mon 28 Jul',
+  shiftDate: 'Tue 28 Jul',
   source: 'live',
   rows: [
     { bay: 'B1', operator: 'K. Ademi', role: 'Reach truck', window: '06:00-14:00' },
@@ -42,7 +42,7 @@ const DEPOT_PANELS = {
       { bay: 'D8', trailer: 'TRL-4479', carrier: 'Ferrant & Blythe', state: 'Sealed', tone: 'ok' },
       { bay: 'D9', trailer: '-', carrier: '-', state: 'Open', tone: 'hold' },
       { bay: 'D10', trailer: 'TRL-4471', carrier: 'Cardew Freight', state: 'Tipping', tone: 'ok' },
-      { bay: 'D11', trailer: 'TRL-4468', carrier: 'Northgate Pallet Co-op', state: 'Held', tone: 'stop' },
+      { bay: 'D11', trailer: 'TRL-4468', carrier: 'Skarrowby Pallet Co-op', state: 'Held', tone: 'stop' },
     ],
   },
   '/api/depot/moves': {
@@ -256,15 +256,30 @@ export function routes(ctx) {
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
+      const description = String(payload.description ?? '').trim().slice(0, 2000);
+      if (!description) return json(res, 400, { error: 'description_required' });
       const d = depotState(found.session);
       const ticket = 'IN-' + randomBytes(2).toString('hex').toUpperCase();
       d.incidents.push({
         ticket,
-        category: String(payload.category ?? ''),
-        location: String(payload.location ?? ''),
+        category: String(payload.category ?? '').slice(0, 80),
+        location: String(payload.location ?? '').slice(0, 80),
+        description,
         at: Date.now(),
       });
       return json(res, 200, { ok: true, ticket });
+    }
+
+    // This terminal's tickets, newest first, for the Recent tickets panel.
+    if (req.method === 'GET' && pathname0 === '/api/depot/incidents') {
+      const found = getSession(req);
+      const mine = found?.session.depot?.incidents ?? [];
+      return json(res, 200, {
+        tickets: mine
+          .slice()
+          .reverse()
+          .map((t) => ({ ticket: t.ticket, category: t.category, location: t.location, state: 'Review' })),
+      });
     }
 
     return false;

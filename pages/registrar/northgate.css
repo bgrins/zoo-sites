@@ -25,6 +25,8 @@ body {
   margin: 0;
 }
 .rail .mark b { color: #8f86ff; }
+.rail .mark a { display: inline; padding: 0; border: 0; color: #fff; }
+.rail .mark a:hover { background: none; text-decoration: underline; }
 .rail .plan {
   margin: 2px 16px 14px;
   font-size: 10px;
@@ -102,6 +104,8 @@ h2 { font-size: 14px; margin: 26px 0 8px; }
   background: #fff;
 }
 .toolrow .count { color: #6d6a8f; font-size: 12px; }
+.toolrow[hidden] { display: none; }
+.rec-empty { padding: 14px 12px; color: #5c5980; }
 
 #zone-note { margin: 0 0 10px; }
 .note {
@@ -230,3 +234,45 @@ footer a { color: #3d3787; }
 .pagebody { background: #fff; border: 1px solid #d5d7e6; border-radius: 3px; padding: 14px 16px; max-width: 720px; }
 .pagebody p { margin: 0 0 10px; max-width: 60em; }
 .pagebody p:last-child { margin-bottom: 0; }
+
+.lede a { color: #3d3787; }
+table.plain { border-collapse: collapse; width: 100%; }
+table.plain th, table.plain td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e7e8f1; vertical-align: top; }
+table.plain th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: #6d6a8f; font-weight: normal; }
+table.plain tr:last-child td { border-bottom: 0; }
+.mono { font-family: Consolas, 'Liberation Mono', Menlo, monospace; font-size: 12px; white-space: nowrap; }
+.note-line { color: #6d6a8f; font-size: 12px; margin: 10px 0 0; }
+.pagebody + h2 { margin-top: 22px; }
+
+@media (max-width: 760px) {
+  body { flex-direction: column; }
+  .rail { width: auto; flex: none; padding: 10px 12px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 4px; }
+  .rail .mark { padding: 0 8px 0 0; flex: 1 0 100%; }
+  .rail .plan, .rail .sect, .rail .who { display: none; }
+  .rail a { padding: 4px 8px; border-left: 0; border-bottom: 2px solid transparent; }
+  .rail a.on { border-bottom-color: #8f86ff; }
+  .topstrip { flex-wrap: wrap; padding: 8px 12px; }
+  main { padding: 14px 12px 24px; }
+  .zonefacts { flex-wrap: wrap; gap: 10px 20px; }
+  .rec-head { display: none; }
+  .rec-row { grid-template-columns: 58px minmax(0, 1fr) auto; grid-template-areas: "type host status" "value value value" "ttl actions actions"; row-gap: 6px; }
+  .rec-row .rec-type { grid-area: type; }
+  .rec-row .rec-host { grid-area: host; }
+  .rec-row .rec-value { grid-area: value; white-space: normal; overflow-wrap: anywhere; }
+  .rec-row .rec-ttl { grid-area: ttl; white-space: nowrap; }
+  .rec-row .rec-ttl::before { content: "TTL "; color: #6d6a8f; }
+  .rec-row .tag { grid-area: status; justify-self: end; }
+  .rec-row .rec-actions { grid-area: actions; }
+  .detail .fact { flex-direction: column; }
+  table.invoices thead { display: none; }
+  table.invoices, table.invoices tbody { display: block; }
+  table.invoices tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; padding: 8px 0; border-bottom: 1px solid #e7e8f1; }
+  table.invoices tr:last-child { border-bottom: 0; }
+  table.invoices td { padding: 0; border-bottom: 0; }
+  table.invoices td:nth-child(1) { grid-area: 1 / 1; }
+  table.invoices td:nth-child(2) { grid-area: 2 / 1; color: #6d6a8f; }
+  table.invoices td:nth-child(3) { grid-area: 3 / 1; }
+  table.invoices td:nth-child(4) { grid-area: 1 / 2; text-align: right; }
+  table.invoices td:nth-child(5) { grid-area: 2 / 2; text-align: right; color: #6d6a8f; }
+  footer { padding: 14px 12px; }
+}

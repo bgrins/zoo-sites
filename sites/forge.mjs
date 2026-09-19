@@ -572,6 +572,24 @@ export function routes(ctx) {
       });
     }
 
+    // The session's submitted reviews, for the Conversation tab. Read-only, and
+    // it never mints forge state: seeded draws are counted per scope, so a
+    // visit here before the diff must not move the session's defect draw.
+    if (req.method === 'GET' && pathname0 === '/api/forge/reviews') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      const reviews = found.session.forge?.reviews ?? [];
+      return json(res, 200, {
+        reviewer: 'r.vandermolen',
+        reviews: reviews.map((r) => ({
+          id: r.id,
+          verdict: r.verdict,
+          summary: r.summary,
+          comments: r.comments.map((c) => ({ file: c.file, line: c.line, body: c.body })),
+        })),
+      });
+    }
+
     // A submitted review is the graded artifact: verdict plus the line comments
     // it carries. Recorded on the session (so state.reset() clears it) with a
     // randomBytes review id, and a soft provenance flag for reviews that did not

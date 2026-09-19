@@ -9,6 +9,12 @@ import { randomBytes } from 'node:crypto';
 // plausible-wrong neighbour.
 const REGISTRAR_DOMAIN = 'fernvale-labs.example.net';
 
+// The zone as last published. Each retirement bumps the serial, and the edges
+// pick the change up at the next SOA refresh, so there is no new publish time
+// to show until then.
+const REGISTRAR_SERIAL = 2026072205;
+const REGISTRAR_PUBLISHED = '2026-07-22 04:10 UTC';
+
 const REGISTRAR_RECORDS = [
   { id: 'rr-101', type: 'A', host: '@', value: '203.0.113.42', ttl: 3600, status: 'active', note: 'Primary web endpoint' },
   { id: 'rr-102', type: 'A', host: 'www', value: '203.0.113.42', ttl: 3600, status: 'active', note: 'Alias of the apex' },
@@ -48,6 +54,8 @@ export function routes(ctx) {
       const reg = registrarState(found.session);
       return json(res, 200, {
         domain: REGISTRAR_DOMAIN,
+        serial: REGISTRAR_SERIAL + reg.retirements.length,
+        published: reg.retirements.length ? 'queued for the next SOA refresh' : REGISTRAR_PUBLISHED,
         records: REGISTRAR_RECORDS.map((r) => {
           const retired = reg.retirements.find((x) => x.recordId === r.id) ?? null;
           return {

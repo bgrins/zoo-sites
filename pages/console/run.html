@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run - orchid-api - Cindergrid</title>
+<link rel="stylesheet" href="console.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html">CINDERGRID</a>
+  <span class="crumb">gridworks-eu / orchid-api</span>
+  <span class="env" id="env">production</span>
+  <span class="spacer"></span>
+  <span class="who">t.ashgrove</span>
+</header>
+
+<div class="shell">
+  <nav class="rail">
+    <span class="rail-label">Project</span>
+    <a href="index.html">Deployments</a>
+    <a href="runs.html" class="on">Run history</a>
+    <a href="secrets.html">Secrets</a>
+    <a href="settings.html">Settings</a>
+    <a href="support.html">Support</a>
+  </nav>
+
+  <main id="run">
+    <div class="runhead">
+      <h1 id="run-title">Run</h1>
+      <span class="chip" id="run-state"></span>
+    </div>
+    <p class="subhead" id="run-sub"></p>
+
+    <div class="facts" id="run-facts"></div>
+
+    <h2>Step summary</h2>
+    <div class="steps" id="run-steps"></div>
+
+    <h2>Log excerpt</h2>
+    <pre class="log-excerpt" id="run-log"></pre>
+    <p class="rolenote">Step boundaries and every WARN or ERROR line. The complete log is in the
+    run's support bundle, kept for fourteen days; ask <a href="support.html">support</a> for a copy.</p>
+    <p class="subhead"><a href="runs.html">Back to run history</a></p>
+  </main>
+</div>
+
+<footer>
+  Cindergrid Systems Ltd, 4 Brevel Yard, Drisselby DB3 7NQ, United Kingdom.
+  Registered in England and Wales, company number 00000000.<br>
+  <a href="status.html">Status</a> &middot; <a href="docs.html">Documentation</a> &middot;
+  <a href="terms.html">Terms of service</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  <a href="mailto:support@cindergrid.example.net">support@cindergrid.example.net</a><br>
+  &copy; 2026 Cindergrid Systems Ltd
+</footer>
+
+<script>
+(() => {
+  const STEPS = ['checkout', 'build/image', 'scan/deps', 'push/registry', 'migrate/schema',
+    'release/gate', 'rollout/canary', 'notify/webhook', 'diagnostics', 'cleanup/artifacts'];
+  const PASS = ['2.4s', '1m 51s', '11.8s', '33.0s', '6.9s', '2.9s', '48.2s', '1.1s', '9.0s', '5.6s'];
+
+  // Historical runs are immutable once sealed, so the viewer ships them with
+  // the page rather than paging them from the log service.
+  const RUNS = {
+    4191: { env: 'production', state: 'Promoted', started: '2026-03-10 16:02:11 UTC', duration: '4m 02s',
+      commit: 'a93e71c', change: 858, author: 'j.okafor', msg: 'routing hints for tenant sharding',
+      notes: { 'scan/deps': ['warn', 'Passed with findings'] } },
+    4188: { env: 'production', state: 'Promoted', started: '2026-03-10 11:47:30 UTC', duration: '3m 58s',
+      commit: '0d4b2f8', change: 855, author: 't.ashgrove', msg: 'bump gateway client to 4.9.2' },
+    4184: { env: 'production', state: 'Promoted', started: '2026-03-09 09:12:05 UTC', duration: '4m 40s',
+      commit: '7c21e0a', change: 851, author: 'r.lindqvist', msg: 'quota accounting rewrite, phase two',
+      notes: { 'migrate/schema': ['ok', 'Passed', '38.5s'] } },
+    4179: { env: 'production', state: 'Failed', started: '2026-03-06 14:55:48 UTC', duration: '4m 53s',
+      commit: 'e5a0913', change: 849, author: 'r.lindqvist', msg: 'quota accounting rewrite, phase one',
+      failAt: 'migrate/schema',
+      fail: 'migrate/schema: advisory lock held by another session for 120s, migration abandoned' },
+    4176: { env: 'production', state: 'Promoted', started: '2026-03-05 08:31:17 UTC', duration: '3m 51s',
+      commit: '41f7d6b', change: 846, author: 'j.okafor', msg: 'retire legacy quota endpoint' },
+    4193: { env: 'staging', state: 'Promoted', started: '2026-03-11 09:52:40 UTC', duration: '4m 12s',
+      commit: '5f3c9a1', change: 861, author: 't.ashgrove', msg: 'rebuild of 5f3c9a1 for verification' },
+    4190: { env: 'staging', state: 'Promoted', started: '2026-03-10 15:40:02 UTC', duration: '4m 05s',
+      commit: 'a93e71c', change: 858, author: 'j.okafor', msg: 'routing hints for tenant sharding' },
+    4187: { env: 'staging', state: 'Promoted', started: '2026-03-10 10:58:44 UTC', duration: '3m 49s',
+      commit: '0d4b2f8', change: 855, author: 't.ashgrove', msg: 'bump gateway client to 4.9.2' },
+  };
+
+  const el = (tag, cls, text) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+
+  const id = new URLSearchParams(location.search).get('id');
+  if (id === '4192') return location.replace('index.html');
+  const run = RUNS[id];
+  if (!run) {
+    document.getElementById('run-title').textContent = 'Run not found';
+    document.getElementById('run-state').remove();
+    document.getElementById('run-sub').textContent = id
+      ? `There is no run ${id} for orchid-api in the last 14 days. Older runs are in the archive; ask support to restore one.`
+      : 'Choose a run from the run history.';
+    for (const node of document.querySelectorAll('#run h2, #run-facts, #run-steps, #run-log, #run .rolenote')) node.remove();
+    return;
+  }
+
+  document.title = `Run ${id} - orchid-api - Cindergrid`;
+  document.getElementById('env').textContent = run.env;
+  document.getElementById('run-title').textContent = `Run ${id}`;
+  const chip = document.getElementById('run-state');
+  chip.textContent = run.state;
+  if (run.state === 'Failed') chip.classList.add('chip-fail');
+  document.getElementById('run-sub').textContent =
+    `orchid-api to ${run.env}, change ${run.change} by ${run.author}: ${run.msg}. ` +
+    (run.failAt ? `Stopped at step ${run.failAt}.` : `Promoted after all gates passed.`);
+
+  const tag = `${run.started.slice(0, 10).replace(/-/g, '.')}-${id}`;
+  const facts = document.getElementById('run-facts');
+  for (const [k, v] of [['Commit', run.commit], ['Image tag', tag], ['Started', run.started], ['Duration', run.duration]]) {
+    const fact = el('div', 'fact');
+    fact.append(el('span', 'fact-k', k), el('span', 'fact-v', v));
+    facts.append(fact);
+  }
+
+  const failIdx = run.failAt ? STEPS.indexOf(run.failAt) : -1;
+  const steps = document.getElementById('run-steps');
+  const outcome = STEPS.map((name, i) => {
+    if (failIdx >= 0 && i === failIdx) return ['bad', 'Failed', '2m 00s'];
+    if (failIdx >= 0 && i > failIdx && i < 8) return ['', 'Skipped', '-'];
+    const [cls, label, dur] = run.notes?.[name] ?? ['ok', 'Passed'];
+    return [cls, label, dur ?? PASS[i]];
+  });
+  STEPS.forEach((name, i) => {
+    const [cls, label, dur] = outcome[i];
+    const row = el('div', 'step');
+    row.append(el('span', 'step-name', name), el('span', 'step-status ' + cls, label), el('span', 'step-dur', dur));
+    steps.append(row);
+  });
+
+  const log = document.getElementById('run-log');
+  const t0 = Date.parse(run.started.replace(' UTC', 'Z').replace(' ', 'T'));
+  let t = t0;
+  const line = (level, text) => {
+    t += 1300 + ((log.childElementCount * 7919) % 21000);
+    const row = el('span', level === 'ERROR' ? 'lvl-error' : level === 'WARN' ? 'lvl-warn' : '');
+    row.append(el('span', 'ts', new Date(t).toISOString().slice(11, 23)), ` ${level.padEnd(5)} ${text}\n`);
+    log.append(row);
+  };
+  line('INFO', `runner accepted job ${id} (pool standard-4x)`);
+  STEPS.forEach((name, i) => {
+    const [, label] = outcome[i];
+    if (label === 'Skipped') return line('WARN', `${name}: skipped, upstream step did not pass`);
+    if (label === 'Failed') return line('ERROR', run.fail);
+    if (name === 'checkout') return line('INFO', `checkout: cloning source at ${run.commit}`);
+    if (name === 'scan/deps' && label !== 'Passed') line('WARN', 'scan/deps: 2 moderate findings below the blocking threshold');
+    if (name === 'rollout/canary') line('INFO', 'rollout/canary: 5% of traffic for 40s, error budget unchanged');
+    line('INFO', `${name} finished in ${outcome[i][2]}`);
+  });
+  line('INFO', `run ${id} finished with status ${run.state.toUpperCase()} in ${run.duration}`);
+})();
+</script>
+</body>
+</html>

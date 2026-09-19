@@ -30,9 +30,9 @@ export const DRIVERS = {
 
       // The page signs in, meets the 502, falls back to the cached roster and
       // navigates; the dashboard shows yesterday's date and nothing else.
-      const snap = await until('the dashboard to render the cached (Sun 27 Jul) roster', async () => {
+      const snap = await until('the dashboard to render the cached (Mon 27 Jul) roster', async () => {
         const s = await snapshot();
-        return /Sun 27 Jul/.test(s) ? s : null;
+        return /Mon 27 Jul/.test(s) ? s : null;
       });
       if (/DT-[0-9A-F]{8}/i.test(snap)) throw new Error('the trace id leaked into the DOM');
 
@@ -202,7 +202,7 @@ export const DRIVERS = {
       this.alsoCorrect = [
         `The sign-in POST itself returned 200; what failed was the follow-up roster fetch ` +
           `${path}, which came back 502 Bad Gateway with trace id ${trace}. The dashboard ` +
-          `silently fell back to the cached Sun 27 Jul roster.`,
+          `silently fell back to the cached Mon 27 Jul roster.`,
         `Failed request: GET ${path}\nStatus: 502\nTrace id: ${trace}`,
         `The roster fetch is the failure - 502 Bad Gateway, trace id ${trace.toLowerCase()}; ` +
           `sign-in itself succeeded and the page quietly showed the cached roster.`,
@@ -220,7 +220,7 @@ export const DRIVERS = {
           `Sign-in succeeded, but the dashboard's roster fetch failed: GET ${path} ` +
           `returned 502 Bad Gateway. The server sent the trace id ${trace} in the ` +
           `X-Depot-Trace response header, and the page silently fell back to the cached ` +
-          `roster from Sun 27 Jul.`,
+          `roster from Mon 27 Jul.`,
         fields,
       };
     },

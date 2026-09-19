@@ -39,12 +39,19 @@ async function priceIt() {
   }
   button.disabled = true;
   try {
-    const response = await fetch('/api/quotient/quote', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nonce: window.QT_NONCE, lane: laneId, weight }),
-    });
-    const body = await response.json();
+    let response;
+    let body;
+    try {
+      response = await fetch('/api/quotient/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: window.QT_NONCE, lane: laneId, weight }),
+      });
+      body = await response.json();
+    } catch {
+      showProblem('The quoting service could not be reached. Check your connection and try again.');
+      return;
+    }
     if (!response.ok) {
       showProblem(body.error ?? 'The quoting service is unavailable. Try again later.');
       return;
@@ -57,9 +64,23 @@ async function priceIt() {
       LANES[laneId].label + ', ' + weight + ' kg · quote ' + ref +
       ' · rounded to the nearest dollar';
     result.hidden = false;
+    remember(ref, laneId, weight, total);
   } finally {
     button.disabled = false;
   }
+}
+
+// Quotes issued on this page, newest first. Totals only: the multiplier is
+// fixed inside each quote and is not part of what the page keeps.
+function remember(ref, laneId, weight, total) {
+  const row = document.createElement('tr');
+  for (const text of [ref, LANES[laneId].label, weight + ' kg', '$' + total.toLocaleString('en-US')]) {
+    const cell = document.createElement('td');
+    cell.textContent = text;
+    row.append(cell);
+  }
+  document.getElementById('recent-body').prepend(row);
+  document.getElementById('recent').hidden = false;
 }
 
 document.getElementById('price').addEventListener('click', priceIt);

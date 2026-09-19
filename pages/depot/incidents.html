@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Incidents - Marlowe Depot Systems</title>
 <link rel="stylesheet" href="depot.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="mast">
   <img class="mark" src="assets/mark.svg" alt="" width="26" height="26">
-  <span class="brand">Marlowe Depot Systems</span>
+  <a class="brand" href="./">Marlowe Depot Systems</a>
   <span class="site">Yard 4 &middot; Grenford</span>
   <span class="grow"></span>
   <span class="meta">Ops console 6.2.4</span>
@@ -23,7 +24,8 @@
   <a href="index.html" class="signout" data-tab="signin">Sign in</a>
 </nav>
 
-<div class="wrap">
+<main class="wrap">
+  <h1 class="pagehead">Incidents</h1>
   <div class="cols">
     <div class="col">
       <section class="panel">
@@ -73,20 +75,24 @@
       <section class="panel">
         <h2>Recent tickets</h2>
         <div class="bd tight">
-          <table>
-            <tr><th>Logged</th><th>Category</th><th>State</th></tr>
-            <tr><td class="muted">27 Jul</td><td>Damage to equipment</td><td><span class="pill hold">Review</span></td></tr>
-            <tr><td class="muted">26 Jul</td><td>Near miss</td><td><span class="pill ok">Closed</span></td></tr>
-            <tr><td class="muted">24 Jul</td><td>Goods-in discrepancy</td><td><span class="pill ok">Closed</span></td></tr>
+          <table id="tickets">
+            <thead>
+              <tr><th>Ticket</th><th>Logged</th><th>Category</th><th>State</th></tr>
+            </thead>
+            <tbody id="ticket-body">
+              <tr><td>IN-3F08</td><td class="muted">27 Jul</td><td>Damage to equipment</td><td><span class="pill hold">Review</span></td></tr>
+              <tr><td>IN-2B71</td><td class="muted">26 Jul</td><td>Near miss</td><td><span class="pill ok">Closed</span></td></tr>
+              <tr><td>IN-2A96</td><td class="muted">24 Jul</td><td>Goods-in discrepancy</td><td><span class="pill ok">Closed</span></td></tr>
+            </tbody>
           </table>
         </div>
       </section>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="foot">
-  <span>&copy; 2026 Marlowe Depot Systems Ltd. Registered office: Unit 9, Grenford Trade Park, Grenford GR2 4LX.</span>
+  <span>&copy; 2026 Marlowe Depot Systems Ltd. Registered in England and Wales, company number 00000000. Registered office: Unit 9, Grenford Trade Park, Grenford GR2 4LX.</span>
   <a href="legal.html#privacy">Privacy</a>
   <a href="legal.html#terms">Terms</a>
   <a href="incidents.html">Report an incident</a>
@@ -95,9 +101,44 @@
 
 <script>
 const NONCE = '__SESSION_NONCE__';
+
+function ticketRow(t) {
+  const tr = document.createElement('tr');
+  const cells = [t.ticket, '28 Jul', t.category];
+  cells.forEach((text, i) => {
+    const td = document.createElement('td');
+    if (i === 1) td.className = 'muted';
+    td.textContent = text;
+    tr.append(td);
+  });
+  const state = document.createElement('td');
+  const pill = document.createElement('span');
+  pill.className = 'pill hold';
+  pill.textContent = t.state || 'Review';
+  state.append(pill);
+  tr.append(state);
+  return tr;
+}
+
+(async () => {
+  try {
+    const r = await fetch('/api/depot/incidents');
+    if (!r.ok) return;
+    const out = await r.json();
+    const body = document.getElementById('ticket-body');
+    for (const t of out.tickets.slice().reverse()) body.prepend(ticketRow(t));
+  } catch {}
+})();
+
 document.getElementById('incident').addEventListener('submit', async (e) => {
   e.preventDefault();
   const note = document.getElementById('incident-note');
+  const desc = document.getElementById('desc');
+  if (!desc.value.trim()) {
+    note.textContent = 'Describe what happened before logging the incident.';
+    desc.focus();
+    return;
+  }
   note.textContent = 'Logging...';
   try {
     const r = await fetch('/api/depot/incident', {
@@ -112,9 +153,18 @@ document.getElementById('incident').addEventListener('submit', async (e) => {
       }),
     });
     const out = await r.json();
-    note.textContent = r.ok
-      ? 'Logged as ticket ' + out.ticket + '. The shift lead reviews new tickets each hour.'
-      : 'Could not log the incident. Try again.';
+    if (r.ok) {
+      note.textContent = 'Logged as ticket ' + out.ticket + '. The shift lead reviews new tickets each hour.';
+      document.getElementById('ticket-body').prepend(ticketRow({
+        ticket: out.ticket,
+        category: document.getElementById('cat').value,
+      }));
+      desc.value = '';
+    } else {
+      note.textContent = out.error === 'description_required'
+        ? 'Describe what happened before logging the incident.'
+        : 'Could not log the incident. Try again.';
+    }
   } catch {
     note.textContent = 'Could not log the incident. Try again.';
   }

@@ -9,7 +9,7 @@
   --ink: #21272d;
   --dim: #5b6670;
   --amber: #e09a1a;
-  --amber-deep: #9c6708;
+  --amber-deep: #875a06;
   --ok: #2b6e4a;
   --stop: #a83a2c;
   --cond: "Arial Narrow", "Liberation Sans Narrow", "Helvetica Neue Condensed", "Roboto Condensed", Arial, sans-serif;
@@ -42,6 +42,7 @@ a:hover { text-decoration: underline; }
 }
 
 .mast .brand {
+  text-decoration: none;
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 2.5px;
@@ -87,12 +88,21 @@ a:hover { text-decoration: underline; }
   background: rgba(255, 255, 255, 0.04);
 }
 
-.tabs .signout { color: var(--steel-400); }
+.tabs .signout { color: #aab4bd; }
 
 .wrap {
   max-width: 1060px;
   margin: 18px auto 30px;
   padding: 0 18px;
+}
+
+.pagehead {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--steel-600);
 }
 
 .cols {
@@ -249,3 +259,15 @@ button.primary:hover { background: var(--amber); color: var(--steel-900); }
   border-bottom: 1px solid var(--hair);
   padding-bottom: 4px;
 }
+
+@media (max-width: 760px) {
+  .mast { height: auto; min-height: 46px; flex-wrap: wrap; padding: 6px 12px; }
+  .mast .meta { display: none; }
+  .tabs { overflow-x: auto; padding: 0 8px; }
+  .tabs a { flex: none; }
+  .wrap { padding: 0 12px; }
+  .cols, .signin-grid { grid-template-columns: 1fr; }
+  .foot { padding: 12px 12px 26px; }
+}
+
+#tickets td:first-child { white-space: nowrap; }
