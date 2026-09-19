@@ -20,6 +20,8 @@
 // - HTML goes out with Cache-Control: no-cache, private. What the static
 //   branch does with a miss (a site's 404.html, favicon.svg, robots.txt), a
 //   directory without its slash (301) and a non-GET (405) is in sites/README.md.
+// - Every request handle() serves appends a row to state.ledger. It is
+//   telemetry for the run's report; no validator reads it.
 
 import http from 'node:http';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
@@ -54,6 +56,8 @@ const ROBOTS_TXT = 'User-agent: *\nDisallow:\n';
 // belonging to shop/gadgetron.
 const SITE_DIRS = ORIGINS.map((o) => o.dir).sort((a, b) => b.length - a.length);
 
+const originToken = (origin) => `__ORIGIN_${origin.key.toUpperCase().replace(/-/g, '_')}__`;
+
 const BODY_CAP = 65536;
 
 // serve.mjs is a standing habitat that never calls state.reset(), so it starts
@@ -72,6 +76,12 @@ const COLLECT_BODY_KEEP = 8192;
 // bytes of data, so only a forged row is cut, and the marker it gets is a value
 // any client could have sent anyway.
 const BEACON_DATA_KEEP = 2048;
+// The ledger gets a row per request, so a habitat keeps more of them than of
+// beacons; a row is a few hundred bytes, and its path is cut to LEDGER_PATH_KEEP
+// in every mode, since the query of a scripted flood is not worth holding.
+const MAX_LEDGER = 10000;
+const MAX_DRAWS = 1000;
+const LEDGER_PATH_KEEP = 512;
 
 function trimBeacon(row) {
   const bytes = Buffer.byteLength(JSON.stringify(row.data ?? null));
@@ -182,6 +192,72 @@ function isLoopback(req) {
 
 function isDocumentNav(req) {
   return navOf(req).document;
+}
+
+// The ledger's reading of a request: its Fetch Metadata as sent, what it was
+// for (`route`), and what sent it (`client`). Both eval browsers send
+// sec-fetch-* on loopback (see navOf), so a loopback request without them came
+// from a shell or a script outside the page, and off loopback, where a browser
+// may omit them too, the client is unknown. Legibility, never proof: curl sets
+// the headers freely.
+function requestClass(req) {
+  const dest = req.headers['sec-fetch-dest'] ?? null;
+  const mode = req.headers['sec-fetch-mode'] ?? null;
+  const nav = navOf(req);
+  const route = nav.document
+    ? 'document'
+    : nav.framed
+      ? 'frame'
+      : nav.image
+        ? 'image'
+        : dest === 'empty'
+          ? 'fetch'
+          : dest !== null
+            ? 'subresource'
+            : 'other';
+  const client = dest !== null ? 'browser' : isLoopback(req) ? 'shell' : 'unknown';
+  return { dest, mode, route, client };
+}
+
+// The sid a Set-Cookie value (a string or an array of them) sets, or null.
+function cookieSid(value) {
+  for (const line of [value ?? []].flat()) {
+    const m = /^\s*sid=([^;\s]*)/.exec(String(line));
+    if (m) return m[1];
+  }
+  return null;
+}
+
+// Counts the body bytes a response writes, and the sid cookie it sets through
+// writeHead, whose headers res.getHeader() never sees.
+function meter(res) {
+  const seen = { bytes: 0, sid: null };
+  const count = (chunk, encoding) => {
+    if (chunk == null || typeof chunk === 'function') return;
+    seen.bytes +=
+      typeof chunk === 'string'
+        ? Buffer.byteLength(chunk, typeof encoding === 'string' ? encoding : 'utf8')
+        : chunk.length;
+  };
+  const { write, end, writeHead } = res;
+  res.write = function (chunk, encoding, cb) {
+    count(chunk, encoding);
+    return write.call(this, chunk, encoding, cb);
+  };
+  res.end = function (chunk, encoding, cb) {
+    count(chunk, encoding);
+    return end.call(this, chunk, encoding, cb);
+  };
+  res.writeHead = function (...args) {
+    const headers = args.find((a) => a && typeof a === 'object');
+    if (headers && !Array.isArray(headers)) {
+      for (const [name, value] of Object.entries(headers)) {
+        if (name.toLowerCase() === 'set-cookie') seen.sid = cookieSid(value) ?? seen.sid;
+      }
+    }
+    return writeHead.apply(this, args);
+  };
+  return seen;
 }
 
 function readBody(req) {
@@ -339,6 +415,42 @@ because an index of every fixture would spoil the answers.</p>
 `;
 }
 
+// A fetch() for node-side code (drivers, scripts) that reaches a host-routed
+// site: a localhost or *.localhost URL connects to 127.0.0.1 and names its host
+// in the Host header, which fetch() will not let a caller set. Some Linux
+// resolvers do not resolve *.localhost at all, and 127.0.0.1 is the address
+// every pages server on loopback listens on. Redirects are returned, not
+// followed.
+export function loopbackFetch(url, { method = 'GET', headers = {}, body } = {}) {
+  const target = new URL(url);
+  const local = target.hostname === 'localhost' || target.hostname.endsWith('.localhost');
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      {
+        host: local ? '127.0.0.1' : target.hostname,
+        port: target.port || 80,
+        method,
+        path: target.pathname + target.search,
+        headers: { ...headers, host: target.host },
+        agent: false,
+      },
+      (res) => {
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('error', reject);
+        res.on('end', () => {
+          const out = new Headers();
+          for (let i = 0; i < res.rawHeaders.length; i += 2) out.append(res.rawHeaders[i], res.rawHeaders[i + 1]);
+          const empty = method === 'HEAD' || [204, 205, 304].includes(res.statusCode);
+          resolve(new Response(empty ? null : Buffer.concat(chunks), { status: res.statusCode, headers: out }));
+        });
+      }
+    );
+    req.on('error', reject);
+    req.end(body);
+  });
+}
+
 export async function startPagesServer({
   port = 0,
   preview = false,
@@ -350,6 +462,19 @@ export async function startPagesServer({
   // state, which is what the cross-site validators rely on. The container
   // (serve.mjs) runs this mode.
   origins = null,
+  // Host-routed mode binds ONE listener, and a request whose Host is
+  // <key>.localhost[:port] serves that manifest origin's dir at '/', with the
+  // same rewrite, hooks and navigation rules as origin mode. A request naming
+  // any other host (127.0.0.1, localhost) keeps single-origin behaviour.
+  // Browsers resolve *.localhost to loopback and keep cookies per host, so each
+  // site gets its own sid, which origin mode cannot give: cookies ignore the
+  // port. `origins`, when given, narrows the hosts routed; there are no extra
+  // ports. Node and browsers resolve *.localhost to ::1 before 127.0.0.1, so on
+  // IPv4 loopback the server also listens on [::1] at the same port, and
+  // startup fails if another process holds it; otherwise that process would
+  // answer every host-routed request. Node-side code still goes through
+  // loopbackFetch, since some Linux resolvers do not resolve *.localhost.
+  vhosts = false,
   // Container/zoo mode binds the manifest's exact ports; local origin mode
   // stays ephemeral so parallel workers never collide.
   fixedPorts = false,
@@ -376,6 +501,14 @@ export async function startPagesServer({
     // { sid, method, path, body, bytes, at } — every hit on the bait /collect
     // path; `body` is the first COLLECT_BODY_KEEP of the `bytes` received
     collect: capped ? new CappedLog(MAX_COLLECT) : [],
+    // { sid, at, method, path, site, dest, mode, route, client, status, bytes,
+    // ms, minted?, aborted? } — every request handle() serves, pushed on arrival
+    // and completed when the response closes (status null until then). `path`
+    // is in sitePath form with its query, `site` the manifest dir it belongs
+    // to. Telemetry only: no validator reads it.
+    ledger: capped ? new CappedLog(MAX_LEDGER) : [],
+    // { scope, pick, index, forced? } — every ctx.pick, in order
+    draws: capped ? new CappedLog(MAX_DRAWS) : [],
     // { gadgetronDown } — per-task page-serving switches
     modes: { ...defaultModes },
     beaconsOf(kind) {
@@ -390,6 +523,8 @@ export async function startPagesServer({
       state.sessions.clear();
       state.beacons.length = 0;
       state.collect.length = 0;
+      state.ledger.length = 0;
+      state.draws.length = 0;
       state.drawCounters.clear();
       // Account-keyed cross-origin state (the Fernmail mailbox) is per-task
       // like everything else.
@@ -416,6 +551,32 @@ export async function startPagesServer({
       ]);
     }
     return out.subarray(0, n);
+  }
+
+  // One of `options` for a DIFFICULTY draw, logged to state.draws so a row can
+  // say which variant its run faced. state.modes['pick.<scope>'] forces the
+  // choice, by option value first and then by index, so an experiment can hold
+  // one factor fixed; a force naming neither throws rather than quietly drawing.
+  // The draw is consumed either way, which keeps the scope's later draws the
+  // same in a forced run and an unforced one. Options should be plain data
+  // (names, numbers), because the log is state and is cloned and written out.
+  function pick(scope, options) {
+    if (!Array.isArray(options) || options.length === 0) {
+      throw new Error(`pick(${scope}): options must be a non-empty array`);
+    }
+    let index = draw(scope, 4).readUInt32BE(0) % options.length;
+    const forced = state.modes[`pick.${scope}`];
+    if (forced !== undefined && forced !== null) {
+      let at = options.indexOf(forced);
+      if (at === -1) at = options.findIndex((o) => String(o) === String(forced));
+      if (at === -1 && /^\d+$/.test(String(forced)) && Number(forced) < options.length) at = Number(forced);
+      if (at === -1) {
+        throw new Error(`pick(${scope}): mode pick.${scope}=${JSON.stringify(forced)} names no option or index`);
+      }
+      index = at;
+    }
+    state.draws.push({ scope, pick: options[index], index, ...(forced != null ? { forced: true } : {}) });
+    return options[index];
   }
 
   function parseCookies(req) {
@@ -467,15 +628,26 @@ export async function startPagesServer({
   // (populated as listeners bind; local origin mode uses ephemeral ports so
   // parallel envs never collide - fixed manifest ports are container-only).
   const originDirs = new Map();
+  // Host-routed mode: lowercase manifest key -> pages/ subtree served at the
+  // root of http://<key>.localhost:<port>.
+  const hostDirs = new Map();
+
+  // The dir served at the root of the origin this request arrived on, or
+  // undefined in single-origin serving. The Host is checked before the port.
+  function originDirOf(req) {
+    if (hostDirs.size) {
+      const host = (req.headers.host ?? '').toLowerCase().replace(/:\d*$/, '').replace(/\.$/, '');
+      if (host.endsWith('.localhost')) {
+        const dir = hostDirs.get(host.slice(0, -'.localhost'.length));
+        if (dir) return dir;
+      }
+    }
+    return originDirs.get(req.socket.localPort);
+  }
   // __ORIGIN_<KEY>__ tokens in HTML resolve to each origin's base URL in
   // origin mode and to the legacy path prefix in single-origin mode, so the
   // rare deliberate cross-origin link works in both.
-  const originTokens = new Map(
-    ORIGINS.map((o) => [
-      `__ORIGIN_${o.key.toUpperCase().replace(/-/g, '_')}__`,
-      `/${o.dir}`,
-    ])
-  );
+  const originTokens = new Map(ORIGINS.map((o) => [originToken(o), `/${o.dir}`]));
 
   // The path everything server-side uses for `path` arriving on this request's
   // origin. In origin mode a site lives at its origin's root: rewrite the path
@@ -486,7 +658,7 @@ export async function startPagesServer({
   // for any path a page reports (location.pathname, Referer), which in origin
   // mode arrives unprefixed.
   function sitePath(req, path) {
-    const originDir = originDirs.get(req.socket.localPort);
+    const originDir = originDirOf(req);
     const alreadyPrefixed =
       originDir && (path === `/${originDir}` || path.startsWith(`/${originDir}/`));
     // /collect is the injection-bait exfiltration sink and is global like /api/.
@@ -499,9 +671,10 @@ export async function startPagesServer({
   }
 
   // The manifest dir of the site a sitePath-form `pathname` belongs to: the
-  // origin's own in origin mode, else the longest dir prefixing the path.
+  // origin's own in origin and host-routed mode, else the longest dir
+  // prefixing the path.
   function siteDirOf(req, pathname) {
-    const originDir = originDirs.get(req.socket.localPort);
+    const originDir = originDirOf(req);
     if (originDir) return originDir;
     const lower = pathname.toLowerCase();
     return SITE_DIRS.find((dir) => lower === `/${dir}` || lower.startsWith(`/${dir}/`)) ?? null;
@@ -551,7 +724,7 @@ export async function startPagesServer({
   const ctx = {
     state, json, readBody, readJson, getSession, requireSession, mintSession, fromPage, TYPES,
     isDocumentNav, sitePath, refererPath,
-    root, readFile, join, draw,
+    root, readFile, join, draw, pick,
   };
   const siteHandlers = SITES.map((factory) => factory(ctx));
   const documentHooks = DOCUMENTS.map((factory) => factory(ctx));
@@ -575,7 +748,50 @@ export async function startPagesServer({
     });
   });
 
+  // The request's ledger row, pushed now and completed when the response closes,
+  // so a request still in flight shows up with status null.
+  function record(req, res) {
+    let path = req.url ?? '/';
+    let site = null;
+    try {
+      const url = new URL(path, 'http://localhost');
+      const pathname = sitePath(req, url.pathname);
+      path = pathname + url.search;
+      site = siteDirOf(req, pathname);
+      // An API path carries no site dir, so single-origin serving names the
+      // site of the page that called it.
+      if (!site && pathname.startsWith('/api/') && sameHostReferer(req)) {
+        site = siteDirOf(req, refererPath(req));
+      }
+    } catch {}
+    const row = {
+      sid: getSession(req)?.sid ?? null,
+      at: Date.now(),
+      method: req.method,
+      path: path.slice(0, LEDGER_PATH_KEEP),
+      site,
+      ...requestClass(req),
+      status: null,
+      bytes: 0,
+      ms: null,
+    };
+    state.ledger.push(row);
+    const seen = meter(res);
+    res.once('close', () => {
+      row.status = res.headersSent ? res.statusCode : null;
+      row.bytes = req.method === 'HEAD' ? 0 : seen.bytes;
+      row.ms = Date.now() - row.at;
+      if (!res.writableFinished) row.aborted = true;
+      const minted = seen.sid ?? cookieSid(res.getHeader('set-cookie'));
+      if (minted) {
+        row.minted = true;
+        row.sid ??= minted;
+      }
+    });
+  }
+
   async function handle(req, res) {
+    record(req, res);
     const url = new URL(req.url ?? '/', 'http://localhost');
     const pathname0 = sitePath(req, url.pathname);
 
@@ -799,7 +1015,7 @@ export async function startPagesServer({
     const page = siteDir ? await readOptional(join(root, siteDir, '404.html')) : null;
     res.writeHead(404, { 'Content-Type': TYPES['.html'] });
     if (page) {
-      const base = originDirs.has(req.socket.localPort) ? '/' : `/${siteDir}/`;
+      const base = originDirOf(req) ? '/' : `/${siteDir}/`;
       res.end(withBase(substituteOrigins(page.toString('utf8')), base));
       return;
     }
@@ -815,14 +1031,49 @@ export async function startPagesServer({
   // 0.0.0.0 is a bind address, not a reachable one: self-links must name a host
   // a client can actually connect to.
   const advertiseHost = host === '0.0.0.0' || host === '::' ? '127.0.0.1' : host;
-  await new Promise((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(port, host, resolve);
-  });
-  const boundPort = server.address().port;
-  const originServers = [];
+  const listen = (srv, p, h) =>
+    new Promise((resolve, reject) => {
+      srv.once('error', reject);
+      srv.listen(p, h, () => {
+        srv.off('error', reject);
+        resolve();
+      });
+    });
+  const extraServers = [];
+  let boundPort;
+  // An ephemeral port free on IPv4 may be taken on [::1]; a few fresh draws
+  // find one free on both.
+  for (let attempt = 1; ; attempt++) {
+    await listen(server, port, host);
+    boundPort = server.address().port;
+    if (!vhosts || !['127.0.0.1', '0.0.0.0'].includes(host)) break;
+    const v6 = http.createServer(server.listeners('request')[0]);
+    try {
+      await listen(v6, boundPort, '::1');
+      extraServers.push(v6);
+      break;
+    } catch (error) {
+      // No IPv6 loopback: nothing else can listen there either.
+      if (error.code === 'EADDRNOTAVAIL' || error.code === 'EAFNOSUPPORT') break;
+      await new Promise((resolve) => server.close(resolve));
+      if (error.code !== 'EADDRINUSE' || port !== 0 || attempt === 5) {
+        throw new Error(
+          `vhosts: cannot listen on [::1]:${boundPort} (${error.code}), where *.localhost ` +
+            'resolves before 127.0.0.1; another process there would answer every site'
+        );
+      }
+    }
+  }
   const boundOrigins = [];
-  for (const origin of origins ?? []) {
+  if (vhosts) {
+    for (const origin of origins ?? ORIGINS) {
+      const url = `http://${origin.key}.localhost:${boundPort}`;
+      hostDirs.set(origin.key.toLowerCase(), origin.dir);
+      originTokens.set(originToken(origin), url);
+      boundOrigins.push({ ...origin, boundPort, url });
+    }
+  }
+  for (const origin of vhosts ? [] : (origins ?? [])) {
     const extra = http.createServer(server.listeners('request')[0]);
     await new Promise((resolve, reject) => {
       extra.once('error', reject);
@@ -830,22 +1081,22 @@ export async function startPagesServer({
     });
     const actual = extra.address().port;
     originDirs.set(actual, origin.dir);
-    const key = `__ORIGIN_${origin.key.toUpperCase().replace(/-/g, '_')}__`;
-    originTokens.set(key, `http://${advertiseHost}:${actual}`);
+    originTokens.set(originToken(origin), `http://${advertiseHost}:${actual}`);
     boundOrigins.push({ ...origin, boundPort: actual, url: `http://${advertiseHost}:${actual}` });
-    originServers.push(extra);
+    extraServers.push(extra);
   }
   return {
     port: boundPort,
     url: `http://${advertiseHost}:${boundPort}`,
     state,
     origins: boundOrigins,
+    serving: vhosts ? 'vhosts' : origins ? 'origins' : 'single-origin',
     // close() alone waits out every connection with a request in flight or not
     // yet sent (a browser preconnect), which can outlast docker stop's 10s
     // grace, so those sockets are dropped as soon as close() starts.
     close: () =>
       Promise.all(
-        [server, ...originServers].map(
+        [server, ...extraServers].map(
           (srv) =>
             new Promise((resolve) => {
               srv.close(resolve);

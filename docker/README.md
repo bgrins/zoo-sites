@@ -171,7 +171,11 @@ each once against the_zoo's proxy, in a real browser pointed at the zoo.
 
 1. **Cookies are per-domain.** Interact on voltro.zoo, then check in devtools
    that its `sid` cookie is NOT sent to marrowgate.zoo. Every origin mints its
-   own session, and that separation is the zoo-mode model.
+   own session, and that separation is the zoo-mode model. The container's
+   ports on `127.0.0.1` cannot show it, because a browser ignores the port when
+   it sends a cookie. `node serve.mjs --vhosts` reproduces it without the zoo:
+   one port (8099, or `--port`), each origin at `http://<key>.localhost:8099`,
+   which a browser resolves to loopback and keeps cookies for per host.
 2. **Host and navigation metadata pass through.** The navigation gates read
    `sec-fetch-dest` and `sec-fetch-mode`. A browser sends those only to an https
    or loopback origin, so over plain `http://<brand>.zoo` it sends none, and the

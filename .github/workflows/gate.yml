@@ -14,7 +14,8 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Headroom for the crawl step, which took 6.7 minutes on a laptop at --jobs 3.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,3 +40,11 @@ jobs:
         run: |
           node eval/verify.mjs --jobs 2
           node eval/verify.mjs --jobs 2
+      # Its own step, after the gate: a red gate is a broken task, and a red crawl
+      # is a page that throws, rejects or 4xx/5xxs on load in some serving mode
+      # (single-origin, one port per origin, one host per origin) without an entry
+      # in the crawler's DELIBERATE list. Drives Playwright's Firefox, installed
+      # above. --jobs is pinned for the gate's reason; a tab spends most of a load
+      # waiting for its page to go quiet, so 3 tabs fit a 2-core runner.
+      - name: Site crawl, every serving mode
+        run: node scripts/crawl.mjs --jobs 3

@@ -1,8 +1,10 @@
 // Static fixture health check: every origin has a front door, every file is
-// reachable from some origin, every internal link resolves, and pages keep the
-// site conventions in sites/README.md (relative self-links, footer legal links,
-// favicon links). Warnings (a reserved phone number shared by unrelated sites,
-// a site with no link to a Privacy or Terms page) print but never fail.
+// reachable from some origin, every internal link resolves, every API path and
+// script-written URL a page names is served, and pages keep the site conventions
+// in sites/README.md (relative self-links, footer legal links, favicon links).
+// scripts/crawl.mjs is the runtime half, in a browser. Warnings (a reserved
+// phone number shared by unrelated sites, a site with no link to a Privacy or
+// Terms page) print but never fail.
 //
 //   node scripts/check-fixtures.mjs
 //
@@ -238,6 +240,15 @@ const SAME_BUSINESS = [
 const businessOf = (dir) => SAME_BUSINESS.find((group) => group.includes(dir))?.join('+') ?? dir;
 
 const TEXT_FILE = /\.(?:html|js|json|txt|xml|svg)$/;
+
+const SITES_DIR = join(HERE, '..', 'sites');
+// A quoted literal that is a whole /api/ path; a query ends the path.
+const API_LITERAL = /(['"`])(\/api\/[\w./-]*)(?:\?[^'"`\n]*)?\1/g;
+const INLINE_SCRIPT = new RegExp(String.raw`<script\b(?![^>]*\bsrc\s*=)(${TAG_REST})([\s\S]*?)<\/script>`, 'gi');
+// fetch('x'), location.href = 'x', location.assign/replace('x'), window.open('x'),
+// for a literal holding no template substitution.
+const SCRIPT_TARGET =
+  /(?:\bfetch\(\s*|\blocation\.href\s*=\s*|\blocation\.(?:assign|replace)\(\s*|\bwindow\.open\(\s*)(['"`])((?:(?!\1)[^$\n])+)\1/g;
 
 // What a link to each legal page says, for the warning that a site links none.
 const LEGAL_PAGE = { Privacy: /privacy|data (?:policy|protection)/i, Terms: /terms|conditions/i };
@@ -483,6 +494,34 @@ function runChecks() {
   }
   for (const { raw, sites } of phones.values()) {
     if (sites.size > 1) warnings.push(`phone: ${raw.trim()} appears on ${sites.size} unrelated sites: ${[...sites].sort().join(', ')}`);
+  }
+
+  // 10. Requests page script writes out. The checks above strip script bodies,
+  // and scripts/crawl.mjs sees only what a page asks for as it loads, so a
+  // mistyped API path behind a button, or a script navigation to a missing
+  // page, reaches neither. An /api/ literal anywhere under pages/ must be a
+  // path some route in sites/ or server.mjs names, exactly or under a route
+  // prefix ending in "/"; a relative literal handed to fetch() or a location
+  // assignment in an inline script must load in every mode serving the page.
+  const routeLiterals = [join(HERE, '..', 'server.mjs'), ...walk(SITES_DIR).filter((f) => f.endsWith('.mjs'))]
+    .flatMap((f) => [...readFileSync(f, 'utf8').matchAll(API_LITERAL)].map((m) => m[2]));
+  const routes = new Set(routeLiterals);
+  const routePrefixes = routeLiterals.filter((r) => r.endsWith('/') && r !== '/api/');
+  for (const rel of files) {
+    if (!/\.(?:html|js)$/.test(rel)) continue;
+    const text = readFileSync(join(PAGES, rel), 'utf8');
+    for (const [, , path] of text.matchAll(API_LITERAL)) {
+      if (routes.has(path) || routePrefixes.some((p) => path.startsWith(p))) continue;
+      problems.push(`api path: pages/${rel} names ${path}, which no route in sites/ or server.mjs serves`);
+    }
+  }
+  for (const { rel, origin, html } of pages) {
+    for (const [, , body] of html.matchAll(INLINE_SCRIPT)) {
+      for (const [, , target] of body.matchAll(SCRIPT_TARGET)) {
+        if (target.startsWith('/api/')) continue;
+        for (const why of unresolved(rel, origin, target)) problems.push(`script ${why}`);
+      }
+    }
   }
 
   return { problems, warnings };
