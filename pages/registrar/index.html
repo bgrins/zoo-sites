@@ -262,8 +262,8 @@ async function openRetireDialog(rec) {
   document.getElementById('retire-dialog').showModal();
 }
 
-// change as well as input: a programmatic clear (e.g. an MCP fill with an
-// empty value) fires change without any input event.
+// change as well as input: a value cleared from script or by autofill can
+// arrive as a change event with no input event before it.
 for (const type of ['input', 'change']) {
   document.getElementById('filter').addEventListener(type, () => render());
 }

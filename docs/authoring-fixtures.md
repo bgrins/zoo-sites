@@ -57,13 +57,19 @@ Each of these binds every fixture and every validator, without exception.
    - Domains: RFC 2606 reserved only — `<brand>.example`, `<brand>.example.net`,
      `example.com`. A fictional state's portal still uses one, e.g.
      `qta.gov.example`.
-   - Phone numbers: reserved fiction ranges only. Ofcom's UK drama ranges, which
-     the fixtures use as `0113/0117/0151/0161 496 0xxx`, `0808 157 0xxx`,
-     `01632 960xxx` and `03069 990xxx`; or the NANP `(555) 01xx` block on US
-     sites.
-   - Company and VAT numbers must be unmistakable sentinels — `company number
-     00000000`, `VAT 000 0000 00`. A well-formed registration number belongs to a
-     real company, so never invent a plausible one.
+   - Phone numbers: reserved fiction ranges only. On UK sites, Ofcom's drama
+     ranges, which the fixtures use as `020 7946 0xxx` (mostly written
+     `+44 20 7946 0xxx`), `0113/0117/0151/0161 496 0xxx`, `01632 960xxx`,
+     `0808 157 0xxx` and `03069 990xxx`. On US sites, the NANP `555-0100` to
+     `555-0199` block under a geographic area code, written `541-555-0142`,
+     `1-614-555-0142`, `(415) 555-0104` or `+1 206 555 0148`. The block is not
+     reserved in toll-free codes, so `1-800-555-01xx` can be a real line. Nor is
+     `(555) 01x-xxxx`, which puts 555 in the area-code slot; `pages/gov/` still
+     uses that form, so do not copy it from there.
+   - Company, charity, VAT and regulator register numbers must be unmistakable
+     sentinels — `company number 00000000`, `VAT 000 0000 00`, `Registered
+     charity 0000000`, `firm reference 000000`. A well-formed registration number
+     belongs to a real registrant, so never invent a plausible one.
 5. **No emoji anywhere** — code, comments, log messages, strings, documentation —
    **and no copyrighted content**; invent everything.
 6. **Near-zero code comments.** Comment non-obvious mechanics only, and every

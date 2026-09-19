@@ -84,7 +84,7 @@
   const id = Number(new URLSearchParams(location.search).get('id'));
 
   // Replies nest structurally inside their parent (not just visual indent)
-  // so the hierarchy survives DOM/accessibility snapshots.
+  // so the thread still reads as a thread to a screen reader or with styles off.
   let remarkSeq = 0;
   function renderRemark(remark, parentAnchor) {
     const wrap = document.createElement('div');

@@ -14,14 +14,15 @@
 // Node builtins only, like the server tree, so eval/verify.mjs can import it and
 // the check stays runnable without installing anything.
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { NOT_ZOO_SITES, ORIGINS } from '../manifest.mjs';
+import { NOT_ZOO_SITES, ORIGINS, zooDomainsLabel } from '../manifest.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PAGES = join(HERE, '..', 'pages');
+const SNIPPET = join(HERE, '..', 'docker', 'zoo-snippet.yaml');
 
 // Paths server.mjs answers itself, so no file backs them. The rv3 pair is the
 // deliberate redirect loop (redirect-escape) and /collect is the injection-bait
@@ -56,18 +57,28 @@ const walk = (dir, acc = []) => {
 
 const originOf = (rel) => ORIGINS.find((o) => rel === o.dir || rel.startsWith(o.dir + '/'));
 
-// href/src/action/srcset. A bare srcset candidate carries a descriptor to drop.
-// Script and style bodies come out first: page JS builds URLs by concatenation
-// ("' + itemUrl + '") and the attribute regex would otherwise scrape the
-// fragments as if they were paths.
+// href/src/action/srcset, double-quoted, single-quoted or unquoted. A bare
+// srcset candidate carries a descriptor to drop. Script and style BODIES come
+// out first, keeping the opening tag so <script src> is still checked: page JS
+// builds URLs by concatenation ("' + itemUrl + '") and would otherwise be
+// scraped as paths. Attributes are read only inside a start tag, which is
+// matched quote-aware so a ">" inside a value does not end it.
+const START_TAG = /<[a-z][^>"']*(?:(?:"[^"]*"|'[^']*')[^>"']*)*>/gi;
+const URL_ATTR = /(?<=[\s"'/:])(href|src|action|srcset)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi;
 const refsIn = (html) => {
   html = html
-    .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style\b[\s\S]*?<\/style>/gi, ' ');
+    .replace(/(<script\b[^>]*>)[\s\S]*?<\/script>/gi, '$1')
+    .replace(/(<style\b[^>]*>)[\s\S]*?<\/style>/gi, '$1');
   const out = [];
-  for (const [, value] of html.matchAll(/\b(?:href|src|action)\s*=\s*"([^"]*)"/gi)) out.push(value);
-  for (const [, value] of html.matchAll(/\bsrcset\s*=\s*"([^"]*)"/gi)) {
-    for (const candidate of value.split(',')) out.push(candidate.trim().split(/\s+/)[0]);
+  for (const [tag] of html.matchAll(START_TAG)) {
+    for (const [, name, dq, sq, bare] of tag.matchAll(URL_ATTR)) {
+      const value = dq ?? sq ?? bare;
+      if (name.toLowerCase() !== 'srcset') {
+        out.push(value);
+        continue;
+      }
+      for (const candidate of value.split(',')) out.push(candidate.trim().split(/\s+/)[0]);
+    }
   }
   return out;
 };
@@ -96,6 +107,37 @@ const exists = (urlPath) => {
 export function checkFixtures() {
   const problems = [];
   const files = walk(PAGES).map((f) => relative(PAGES, f));
+
+  // 0. the_zoo publishes each origin at its manifest port, so a port is fixed
+  // once shipped: entries are append-only and port = 8100 + array index. A
+  // reorder or an insertion mid-list silently moves every later domain, and
+  // renumbering the ports to match passes the index test, so every pair the
+  // committed snippet publishes must still hold too. Only regenerating the
+  // snippet in the same change gets a move past this.
+  const seen = { key: new Set(), domain: new Set(), port: new Set() };
+  ORIGINS.forEach((origin, index) => {
+    if (origin.port !== 8100 + index) {
+      problems.push(`manifest: ${origin.key} has port ${origin.port}, expected 8100 + index = ${8100 + index}`);
+    }
+    for (const field of ['key', 'domain', 'port']) {
+      if (seen[field].has(origin[field])) problems.push(`manifest: duplicate ${field} ${origin[field]}`);
+      seen[field].add(origin[field]);
+    }
+  });
+  let published = null;
+  try {
+    published = readFileSync(SNIPPET, 'utf8').match(/zoo\.domains:\s*(\S+)/)?.[1] ?? null;
+  } catch {}
+  if (published === null) {
+    problems.push('manifest: no zoo.domains label in docker/zoo-snippet.yaml to check ports against');
+  } else {
+    const current = new Set(zooDomainsLabel().split(','));
+    for (const pair of published.split(',')) {
+      if (!current.has(pair)) {
+        problems.push(`manifest: ${pair} is published in docker/zoo-snippet.yaml but no longer in manifest.mjs`);
+      }
+    }
+  }
 
   // 1. Every origin needs a front door. serve.mjs mounts origin.dir at "/", and
   // the static handler appends index.html to a directory request, so an origin
@@ -178,7 +220,17 @@ export function checkFixtures() {
   return problems;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// realpath because the loader resolves symlinks in import.meta.url and argv[1]
+// keeps them (macOS /tmp is one); a mismatch here skips the check and exits 0.
+// An importer whose argv[1] is absent or names no file is not this script.
+const isMain = (() => {
+  try {
+    return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+})();
+if (isMain) {
   const problems = checkFixtures();
   if (problems.length) {
     console.error(`fixture check: ${problems.length} problem(s)\n`);

@@ -9,8 +9,13 @@ The tool surface is a configurable condition: `--mcp-command` replaces the built
 server, so the same tasks grade whatever an agent drives the browser through. Nothing
 here touches the live web.
 
-This directory depends on the sites through exactly two modules, `../server.mjs` and
-`../manifest.mjs`. The sites do not depend on it.
+This directory imports three modules from the sites side: `../server.mjs`,
+`../manifest.mjs`, and `../scripts/check-fixtures.mjs`, the static link and origin
+check `verify.mjs` runs before any driver. It also reads fixture files under
+`../pages/` directly: `verify.mjs` scans every page for unmuted media, and
+`tasks/web/extraction.mjs` and `tasks/web/safety.mjs` build their asks and checks
+from `pages/news/items.json` (safety also from `pages/news/threads/item-1.json`).
+The sites do not depend on it.
 
 ## The gate
 

@@ -15,8 +15,12 @@ dependencies beyond node builtins, so the image needs no `npm install`: it is th
 source plus `node:22-slim`.
 
 The image leaves out `eval/answers.mjs` (the answer key), the harness (`eval/run.mjs` and
-`eval/verify.mjs`), the drivers, and both MCP servers: the container is the habitat,
-not the eval. Graded runs (`node eval/run.mjs ...`) stay on the host, in-process with
+`eval/verify.mjs`), the drivers, both MCP servers, and the dev contact sheet
+(`preview.html`): the container is the habitat, not the eval. The server runs as the
+unprivileged `node` user over root-owned sources, and writes nothing to disk. The
+Dockerfile copies those sources with an explicit mode (`--chmod=0755`), so a
+checkout made under a restrictive umask still serves.
+Graded runs (`node eval/run.mjs ...`) stay on the host, in-process with
 their own pages server, because validators read server-observed state (sessions,
 counters, minted codes) directly. The container exposes no state-introspection
 endpoint, deliberately — such an endpoint would hand any agent in the zoo an
@@ -59,11 +63,16 @@ whole reason the variable exists. Overriding it back to `127.0.0.1` inside the
 container makes the published ports unreachable again, so do that only when the
 container is meant to be reachable by nothing.
 
-The `HEALTHCHECK` probes loopback, because `0.0.0.0` is a bind address rather than a
-connectable one. Read it as liveness only: it reports healthy whenever the server is
-up, including the case where the server bound loopback alone and refuses every
-external connection. `ENV ZOO_HOST=0.0.0.0` is what prevents that case, so a healthy
-container is not by itself evidence that the published ports answer.
+The `HEALTHCHECK` probes `127.0.0.1` whatever `ZOO_HOST` says, because `0.0.0.0`
+and `::` are bind addresses rather than connectable ones. Read it as liveness only:
+it reports healthy whenever the server is up, including the case where the server
+bound loopback alone and refuses every external connection. `ENV ZOO_HOST=0.0.0.0`
+is what prevents that case, so a healthy container is not by itself evidence that
+the published ports answer.
+
+The probe fetches `/calc.css` on port 8100 rather than a page. Every cookieless HTML
+response mints a session, and the session map is capped oldest-first, so a probe that
+fetched a page every 30 seconds would start evicting real sessions within two days.
 
 The startup log prints each origin as `http://127.0.0.1:<port>` — the URL to use
 from the host after publishing the ports — and does not report the bind address.
@@ -124,15 +133,20 @@ node docker/gen-zoo-snippet.mjs > docker/zoo-snippet.yaml
 
 Paste the block into the_zoo's `docker-compose.yaml`. The generator reads
 `manifest.mjs`, so the label cannot drift from what the container serves;
-regenerate rather than hand-edit. The `zoo.domains` label shape matches what the
+regenerate rather than hand-edit. `scripts/check-fixtures.mjs` fails when a
+`domain:port` pair in the committed snippet no longer holds in the manifest, so a
+moved or renamed origin cannot land without a regenerated snippet, which then
+has to be pasted into the_zoo again. The `zoo.domains` label shape matches what the
 zoo's config generator parses: it splits the value on commas and reads each entry
 as `domain` or `domain:port`, so a comma-separated list of `<brand>.zoo:<port>` is
 correct. If that parser changes, fix `zooDomainsLabel()` in `manifest.mjs` and
 regenerate.
 
 The image name follows the repository owner: `.github/workflows/container.yml`
-publishes `ghcr.io/<owner>/zoo-sites` on every push to `main` (tagged `latest`
-and by commit sha) and on a `v*` tag. The generator reads
+publishes `ghcr.io/<owner>/zoo-sites` once `.github/workflows/gate.yml` passes on a
+push to `main` (tagged `latest` and `sha-<short sha>`) or on a `v*` tag (tagged with
+the tag name and the sha). A red or cancelled gate publishes nothing, and a pull
+request builds the image without pushing it. The generator reads
 `GITHUB_REPOSITORY_OWNER`, so set it when regenerating outside Actions:
 
 ```sh

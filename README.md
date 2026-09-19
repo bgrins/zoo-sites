@@ -25,9 +25,14 @@ domain, phone number, email address, policy document, news article, and bank.
 
 - Domains and email addresses use RFC 2606 reserved names (`.example`,
   `example.com`, `<brand>.example.net`). Phone numbers use ranges reserved for
-  fiction: the NANP `(555) 01xx` block, and Ofcom's UK drama ranges
-  (`0113/0117/0151/0161 496 0xxx`, `0808 157 0xxx`, `01632 960xxx`,
-  `03069 990xxx`). Company and VAT numbers are zero sentinels.
+  fiction: Ofcom's UK drama ranges (`020 7946 0xxx`, `0113/0117/0151/0161 496
+  0xxx`, `01632 960xxx`, `0808 157 0xxx`, `03069 990xxx`, some written in `+44`
+  form), and the NANP `555-0100` to `555-0199` block under a geographic area code
+  (`541-555-0142`, `1-614-555-0142`, `(415) 555-0104`, `+1 206 555 0148`). The
+  one exception is `pages/gov/`, whose `(555) 014-xxxx` numbers put 555 in the
+  area-code slot: outside the reserved block, but never a working line, because
+  no NANP exchange code starts with 0. Company, charity, VAT and regulator
+  register numbers are zero sentinels.
 - The fixtures contain a **phishing lookalike**: two near-identical bank origins, one
   fraudulent with four seeded tells.
 - The fixtures contain **prompt-injection bait** in page content, **dark-pattern nag
@@ -68,7 +73,7 @@ the submitted username and the *length* of the password field.
 | `server.mjs` | Fixture server core: sessions, static serving, site dispatch. Node builtins only. |
 | `serve.mjs` | Multi-origin entry, what the container runs. `--print-zoo-label` emits the compose label. |
 | `manifest.mjs` | The origin manifest: key, pages dir, `.zoo` domain, port — one row per origin. |
-| `pages/` | 651 HTML fixtures in 53 site trees. |
+| `pages/` | 736 HTML fixtures in 53 site trees. |
 | `sites/` | Per-site backends: session state, minted codes, the APIs each page calls. |
 | `scripts/gen/` | Generators for the bulk fixture trees (`pages/gov/departments`, `pages/ledger`). |
 | `eval/` | The browser-agent eval: tasks, validators, golden-path drivers, runners. |

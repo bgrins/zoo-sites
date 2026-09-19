@@ -3,6 +3,9 @@ on:
   pull_request:
   push:
     branches: [main]
+    # container.yml publishes only after this workflow passes, so a tag has to run
+    # the gate here before it can ship an image.
+    tags: ['v*']
 permissions:
   contents: read
 concurrency:

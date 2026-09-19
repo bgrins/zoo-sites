@@ -349,8 +349,8 @@
     chip.textContent = 'Hard mode';
     document.querySelector('.stats').appendChild(chip);
     // Replace the easy-mode rules outright: leaving them above would contradict
-    // hard mode ("any five-letter word", "six tries"), and each line truncates
-    // in an accessibility snapshot, so the leading words must be the true ones.
+    // hard mode ("any five-letter word", "six tries"), and most readers take in
+    // only the first few words of each line, so those must be the true ones.
     howto.textContent = '';
     for (const line of [
       'Seven letters. Five tries.',
