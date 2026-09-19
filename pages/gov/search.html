@@ -1,11 +1,12 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Site Search - Bureau of Civic Revenue</title></head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="icon" type="image/svg+xml" href="favicon.svg"><title>Site Search - Bureau of Civic Revenue</title></head>
 <body bgcolor="#FFFFFF" text="#000000" link="#0000CC" vlink="#551A8B">
 <table width="760" border="0" cellpadding="4" cellspacing="0" align="center">
 <tr bgcolor="#003366"><td><font color="#FFFFFF" size="4" face="Times New Roman"><b>SITE SEARCH</b></font><br>
-<font color="#CCCCCC" size="1">BUREAU OF CIVIC REVENUE DOCUMENT INDEX</font></td></tr>
+<font color="#CCCCCC" size="1"><a href="index.html" style="color:#CCCCCC;text-decoration:none">BUREAU OF CIVIC REVENUE</a> DOCUMENT INDEX</font></td></tr>
 </table>
 <table width="760" border="0" cellpadding="4" cellspacing="0" align="center">
 <tr><td>
@@ -13,7 +14,7 @@
 [ <a href="sitemap.html">Site Map</a> ]</font>
 <hr>
 <form action="search.html" method="get">
-<font size="2">Search the document index:
+<font size="2"><label for="q">Search the document index:</label>
 <input type="text" name="q" size="34" id="q">
 <input type="submit" value="GO"></font>
 </form>
@@ -28,8 +29,10 @@ score; where a form has been superseded or amended, the more recently revised
 document is weighted higher.<br>
 You are visitor number 0048214 since June 1998. Questions? Contact the
 <a href="contact.html">webmaster</a>.<br>
+[ <a href="accessibility.html">Accessibility</a> ] [ <a href="privacy.html">Privacy Statement</a> ]
+[ <a href="terms.html">Terms of Use</a> ]<br>
 &copy; Bureau of Civic Revenue. An agency of the Commonwealth. Revenue Building,
-Statehouse Plaza. Privacy Statement and Records Request forms available on request.</font>
+Statehouse Plaza.</font>
 </td></tr>
 </table>
 <script type="text/javascript">
@@ -51,10 +54,12 @@ function render(data) {
   }
   var out = '<p>Documents 1 - ' + hits.length + ' of ' + hits.length +
     ' for query: ' + esc(data.q) + '</p>';
+  var link = document.createElement('a');
   for (var i = 0; i < hits.length; i++) {
     var r = hits[i];
+    link.href = r.path;
     out += '<p>' + (i + 1) + '. <a href="' + esc(r.path) + '">' + esc(r.title) + '</a><br>' +
-      esc(r.snippet) + '<br><font size="1">' + esc(r.path) + ' &middot; relevance ' +
+      esc(r.snippet) + '<br><font size="1">' + esc(link.href) + ' &middot; relevance ' +
       r.score + '%</font></p>';
   }
   show(out);
@@ -62,7 +67,15 @@ function render(data) {
 
 function run() {
   var match = /[?&]q=([^&]*)/.exec(location.search);
-  var q = match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '';
+  var q = '';
+  if (match) {
+    try {
+      q = decodeURIComponent(match[1].replace(/\+/g, ' '));
+    } catch (e) {
+      show('<p>The search words could not be read. Please type them again and press GO.</p>');
+      return;
+    }
+  }
   if (!q) return;
   document.getElementById('q').value = q;
   show('<p>Searching the index for ' + esc(q) + ' ...</p>');
@@ -70,11 +83,17 @@ function run() {
     headers: { 'X-Session-Nonce': NONCE },
   })
     .then(function (r) {
+      if (r.status === 403) throw new Error('expired');
       if (!r.ok) throw new Error('index unavailable (' + r.status + ')');
       return r.json();
     })
     .then(render)
     .catch(function (e) {
+      if (e.message === 'expired') {
+        show('<p>Your visit to the document index has timed out. Please reload this page to ' +
+          'run the search again.</p>');
+        return;
+      }
       show('<p>The document index is temporarily unavailable: ' + esc(e.message) +
         '. Please try again, or browse <a href="forms.html">Forms &amp; Publications</a>.</p>');
     });

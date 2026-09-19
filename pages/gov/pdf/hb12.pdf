@@ -3,41 +3,76 @@
 << /Type /Catalog /Pages 2 0 R >>
 endobj
 2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
 endobj
 3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
 endobj
 4 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
 endobj
 5 0 obj
-<< /Length 972 >>
+<< /Length 1823 >>
 stream
-BT /F1 12 Tf 72 740 Td (BUREAU OF CIVIC REVENUE) Tj ET
-BT /F1 10 Tf 72 722 Td (An agency of the Commonwealth) Tj ET
-BT /F1 14 Tf 72 704 Td (FORM HB-12 - HOMESTEAD BENEFIT APPLICATION) Tj ET
-BT /F1 10 Tf 72 686 Td (Rev. 03/24) Tj ET
-BT /F1 10 Tf 72 650 Td (Type or print clearly in black ink. Complete every line that applies;) Tj ET
-BT /F1 10 Tf 72 632 Td (enter NONE where a line does not apply. Read the instructions for this) Tj ET
-BT /F1 10 Tf 72 614 Td (form and consult the Schedule of Filing Fees before filing.) Tj ET
-BT /F1 10 Tf 72 596 Td (Line 1  Name of filer  ______________________________________________) Tj ET
-BT /F1 10 Tf 72 578 Td (Line 2  Account number  ___________________________________________) Tj ET
-BT /F1 10 Tf 72 560 Td (Line 3  Mailing address  __________________________________________) Tj ET
-BT /F1 10 Tf 72 542 Td (Sign and date the declaration on page 2. An unsigned filing is) Tj ET
-BT /F1 10 Tf 72 524 Td (returned unprocessed.) Tj ET
+BT /F2 11 Tf 54 748 Td (BUREAU OF CIVIC REVENUE) Tj ET
+BT /F1 8 Tf 54 735 Td (An agency of the Commonwealth) Tj ET
+BT /F2 9 Tf 400 748 Td (Form HB-12) Tj ET
+BT /F1 8 Tf 400 735 Td (Rev. 03/24) Tj ET
+1.4 w 54 726 m 558 726 l S
+BT /F2 13 Tf 54 706 Td (HOMESTEAD BENEFIT APPLICATION) Tj ET
+0.6 w 54 44 m 558 44 l S
+BT /F1 7 Tf 54 32 Td (Form HB-12 \(Rev. 03/24\)) Tj ET
+BT /F1 7 Tf 500 32 Td (Page 1 of 1) Tj ET
+0.9 g 54 668 504 16 re f 0 g
+BT /F2 9 Tf 58 672 Td (Part A. Owner and property) Tj ET
+BT /F1 8 Tf 54 650 Td (Name of owner \(last, first, middle initial\)) Tj ET
+0.6 w 54 636 m 558 636 l S
+BT /F1 8 Tf 54 622 Td (Bureau account number) Tj ET
+0.6 w 54 608 m 558 608 l S
+BT /F1 8 Tf 54 594 Td (Address of the property claimed as homestead) Tj ET
+0.6 w 54 580 m 558 580 l S
+BT /F1 8 Tf 54 566 Td (Parcel number \(from your assessment notice\)) Tj ET
+0.6 w 54 552 m 558 552 l S
+0.9 g 54 526 504 16 re f 0 g
+BT /F2 9 Tf 58 530 Td (Part B. Eligibility) Tj ET
+BT /F2 9 Tf 54 508 Td (Line 1) Tj ET
+BT /F1 9 Tf 98 508 Td (Date you began to occupy the property as your principal residence) Tj ET
+0.6 w 360 506 m 558 506 l S
+BT /F2 9 Tf 54 488 Td (Line 2) Tj ET
+BT /F1 9 Tf 98 488 Td (Number of persons living in the household) Tj ET
+0.6 w 360 486 m 558 486 l S
+BT /F2 9 Tf 54 468 Td (Line 3) Tj ET
+BT /F1 9 Tf 98 468 Td (Total household income for the prior year) Tj ET
+0.6 w 360 466 m 558 466 l S
+0.8 w 54 446 8 8 re S
+BT /F1 9 Tf 68 448 Td (I own and occupy no other property as a principal residence.) Tj ET
+0.9 g 54 420 504 16 re f 0 g
+BT /F2 9 Tf 58 424 Td (Part C. Certification) Tj ET
+BT /F1 9 Tf 54 402 Td (I certify that the information on this application is true and complete.) Tj ET
+0.6 w 54 372 m 330 372 l S
+0.6 w 360 372 m 558 372 l S
+BT /F1 7 Tf 54 362 Td (Signature) Tj ET
+BT /F1 7 Tf 360 362 Td (Date) Tj ET
 endstream
 endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Title (Form HB-12 Homestead Benefit Application) /Author (Bureau of Civic Revenue) >>
+endobj
 xref
-0 6
+0 8
 0000000000 65535 f 
 0000000009 00000 n 
 0000000058 00000 n 
 0000000115 00000 n 
-0000000241 00000 n 
-0000000311 00000 n 
+0000000212 00000 n 
+0000000314 00000 n 
+0000002189 00000 n 
+0000002325 00000 n 
 trailer
-<< /Size 6 /Root 1 0 R >>
+<< /Size 8 /Root 1 0 R /Info 7 0 R >>
 startxref
-1333
+2430
 %%EOF

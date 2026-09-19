@@ -11,7 +11,7 @@
 // See probes.mjs for the driver contract.
 
 import { ANSWERS } from '../answers.mjs';
-import { addSession, until, uidOf } from './lib.mjs';
+import { addSession, clickToPath, esc, until, uidOf } from './lib.mjs';
 
 const lines = (snap) => snap.split('\n');
 
@@ -69,25 +69,8 @@ const straySession = (path) => ({
     addSession(state, { govNav: [{ path, at: Date.now() }], govViews: [{ path, at: Date.now() }] }, { first: true }),
 });
 
-// The snapshot prints a list item and then its link on the following, more
-// indented line:
-//   uid=4_4 li text="— Ground works, site permit..."
-//     uid=4_3 a "Assessment Standards Division" href="..." text="..."
-// so a branch is chosen by matching the blurb and taking the link under it.
-function uidUnderCue(snap, cue) {
-  const rows = lines(snap);
-  const at = rows.findIndex((l) => cue.test(l));
-  if (at === -1) return null;
-  for (let i = at + 1; i < rows.length && i <= at + 3; i++) {
-    const m = rows[i].match(/uid=(\S+) a "/);
-    if (m) return m[1];
-  }
-  return null;
-}
-
 // Reads one snapshot text="..." payload. The formatter truncates at 30
-// characters, so this only works for short, front-loaded lines — which is why
-// the desk pages put each graded fact in its own short paragraph.
+// characters, so this only works for a line whose needle leads it.
 function textLine(snap, needle) {
   for (const l of lines(snap)) {
     const m = l.match(/text="([^"]*)"/);
@@ -115,10 +98,26 @@ function pollPath(evaluate, want) {
 
 const DESK = '/gov/departments/assessment-standards/field-operations/ground-works';
 
+// A desk page's fact table as { label: value }. Table cells never reach the
+// snapshot, so the driver reads them with a script; whether a surface delivers
+// them is the measurement.
+async function deskFacts(evaluate, label) {
+  return until(`the desk page's ${label} row`, async () => {
+    const facts = await evaluate(() =>
+      Object.fromEntries(
+        [...document.querySelectorAll('tr')]
+          .map((tr) => [...tr.cells].map((c) => c.textContent.replace(/\s+/g, ' ').trim()))
+          .filter((cells) => cells.length === 2)
+      )
+    );
+    return facts?.[label] ? facts : null;
+  }, { tries: 20, gap: 200 });
+}
+
 export const DRIVERS = {
   // --- five-level descent through a 127-page directory ---
   'dept-descent': {
-    note: 'descends by the front-loaded listing blurbs; hours read straight from the snapshot',
+    note: 'reads each listing blurb with evaluate (the snapshot keeps 27 chars of it) and clicks the branch by uid; the hours cell is table markup, so evaluate reads it',
     wrongState: [
       ...pageGateCases(ANSWERS.govNav.deskPath, 'desk'),
       // The ask is to navigate the directory, so a desk URL loaded with no
@@ -162,33 +161,37 @@ export const DRIVERS = {
     ],
     async run({ goto, snapshot, mcp, evaluate }) {
       await goto('/gov/departments/');
-      // One judgment call per level. Only the first 27 characters of a listing
-      // blurb survive the snapshot, so each cue below is what an agent can
-      // actually read: "Ground works, site permi...", not the full sentence.
+      // One judgment call per level, made on each listing's full blurb, which
+      // is read with a script; the chosen link is then clicked by uid. Exactly
+      // one listing per level may match, or the cue no longer decides.
       const trail = [
-        [/li text="[^"]*Ground works, site permi/, 'assessment-standards/'],
-        [/li text="[^"]*Excavation and ground wo/, 'field-operations/'],
-        [/li text="[^"]*Subsurface and surface pe/, 'ground-works/'],
+        [/ground works/i, 'assessment-standards/'],
+        [/ground works/i, 'field-operations/'],
+        [/subsurface/i, 'ground-works/'],
       ];
       for (const [cue, expect] of trail) {
-        const snap = await snapshot();
-        const uid = uidUnderCue(snap, cue);
-        if (!uid) throw new Error(`no directory listing matched ${cue} on the way to ${expect}`);
-        await mcp('click_by_uid', { uid });
-        await pollPath(evaluate, expect);
+        const listing = await evaluate(() =>
+          [...document.querySelectorAll('li')].map((li) => ({
+            name: li.querySelector('a')?.textContent.trim() ?? '',
+            text: li.textContent.replace(/\s+/g, ' ').trim(),
+          }))
+        );
+        const hits = (listing ?? []).filter((item) => cue.test(item.text));
+        if (hits.length !== 1) {
+          throw new Error(`${hits.length} directory listings matched ${cue} on the way to ${expect}`);
+        }
+        const name = esc(hits[0].name.slice(0, 20));
+        await clickToPath(mcp, evaluate, async () => uidOf(await snapshot(), `a "${name}`), expect);
       }
       const section = await snapshot();
       const desk = uidOf(section, 'a "Subsurface Permits Desk"');
       if (!desk) throw new Error('no Subsurface Permits Desk link in the Ground Works section');
       await mcp('click_by_uid', { uid: desk });
       await pollPath(evaluate, `${DESK}/subsurface-permits.html`);
-      // Read the graded hours off the page. Whether the surface also delivers
-      // the line intact is the measurement, so a truncated snapshot is a result
-      // to report rather than a reason to fail the fixture.
-      const body = String((await evaluate(() => document.body.innerText)) ?? '');
-      const hours = body.split('\n').find((line) => /9:15/.test(line));
-      if (!hours) throw new Error('counter hours missing from the desk page');
-      if (!/12:45/.test(hours)) throw new Error(`hours line is incomplete on the page: "${hours}"`);
+      const hours = (await deskFacts(evaluate, 'Public counter hours'))['Public counter hours'];
+      if (!/9:15/.test(hours) || !/12:45/.test(hours)) {
+        throw new Error(`hours cell is incomplete on the page: "${hours}"`);
+      }
       const fields = {
         daysOpen: ['Tuesday', 'Thursday'],
         opensAt: '9:15 AM',
@@ -226,6 +229,7 @@ export const DRIVERS = {
         { daysOpen: ['Tuesday mornings', 'Thursday mornings'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
         { daysOpen: ['Tue. & Thu.'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
         { daysOpen: [hours], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        { daysOpen: [`Public counter hours ${hours}`], opensAt: '9:15 AM', closesAt: '12:45 PM' },
         { daysOpen: ['Tue 9:15 AM - 12:45 PM, Thu 9:15 AM - 12:45 PM'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
       ];
       this.wrong = [
@@ -238,7 +242,7 @@ export const DRIVERS = {
       this.alsoCorrect = [
         `Days open: Tuesday and Thursday\nOpens at: 9:15 AM\nCloses at: 12:45 PM`,
         `I walked Assessment Standards > Field Operations > Ground Works down to the ` +
-          `desk page, whose counter line reads "${hours}": it opens Tuesdays and ` +
+          `desk page, whose counter hours read "${hours}": it opens Tuesdays and ` +
           `Thursdays at 9:15 AM and closes at 12:45 PM.`,
         `The desk's public counter runs Tue and Thu, 09.15 to 12.45.`,
       ];
@@ -255,17 +259,17 @@ export const DRIVERS = {
 
   // --- breadcrumb up one level, then across to the sibling desk ---
   'breadcrumb-sibling': {
-    note: 'clicks the Ground Works breadcrumb, then the sibling desk; both numbers read from snapshots',
+    note: 'clicks the Ground Works breadcrumb, then the sibling desk, by uid; both numbers are table cells, so evaluate reads them',
     wrongState: pageGateCases(ANSWERS.govNav.siblingPath, 'sibling desk'),
     alsoCorrectState: [straySession(ANSWERS.govNav.deskPath)],
-    wrong: ['The Surface Permits desk can be reached on (555) 014-3391.'],
+    wrong: ['The Surface Permits desk can be reached on (804) 555-0163.'],
     async run({ goto, snapshot, mcp, evaluate }) {
       await goto(`${DESK}/subsurface-permits.html`);
-      const start = await snapshot();
-      const own = textLine(start, /^Phone:/);
-      if (!/014-3391/.test(String(own))) {
+      const own = (await deskFacts(evaluate, 'Telephone')).Telephone;
+      if (!/555-0163/.test(String(own))) {
         throw new Error(`start page no longer shows its own number: "${own}"`);
       }
+      const start = await snapshot();
       const crumb = uidOf(start, 'a "Ground Works"');
       if (!crumb) throw new Error('no Ground Works breadcrumb on the Subsurface Permits page');
       await mcp('click_by_uid', { uid: crumb });
@@ -279,20 +283,25 @@ export const DRIVERS = {
       if (!sibling) throw new Error('no Surface Permits Desk link in the section listing');
       await mcp('click_by_uid', { uid: sibling });
       await pollPath(evaluate, `${DESK}/surface-permits.html`);
-      const page = await snapshot();
-      const phone = textLine(page, /^Phone:/);
+      const phone = (await deskFacts(evaluate, 'Telephone')).Telephone;
       const number = String(phone).match(/\(\d{3}\)\s*\d{3}-\d{4}/);
       if (!number) throw new Error(`no phone number on the sibling desk page: "${phone}"`);
-      const ownNumber = String(own).replace(/^Phone:\s*/, '');
+      const ownNumber = String(own);
       const fields = { telephoneNumber: number[0] };
       // The start desk's number handed to the target is the swap this task
       // measures; a hedge naming both desks, and the Bureau's general line.
       this.wrongFields = [
-        { telephoneNumber: '(555) 014-3391' },
-        { telephoneNumber: '(555) 014-8862 or (555) 014-3391' },
-        { telephoneNumber: '(555) 014-2200' },
+        { telephoneNumber: '(804) 555-0163' },
+        { telephoneNumber: '(804) 555-0178 or (804) 555-0163' },
+        { telephoneNumber: '(804) 555-0100' },
       ];
-      this.alsoCorrectFields = [fields, { telephoneNumber: '014-8862' }];
+      // The area code is optional, and NANP numbers come in several shapes.
+      this.alsoCorrectFields = [
+        fields,
+        { telephoneNumber: '555-0178' },
+        { telephoneNumber: '804-555-0178' },
+        { telephoneNumber: '+1 804 555 0178' },
+      ];
       this.wrong = [
         this.wrong[0],
         `Both desks route through the section line, so call the Surface Permits ` +
@@ -491,6 +500,9 @@ export const DRIVERS = {
       this.wrongFields = [
         { revisionDate: '11/2017' },
         { revisionDate: '03/2019' },
+        // The forms table's revision, an older printing.
+        { revisionDate: '06/03' },
+        { revisionDate: 'June 2003' },
         // The right numbers with 11 as a day of another month, named and in the
         // US numeric form.
         { revisionDate: 'March 11, 2019' },

@@ -130,8 +130,8 @@ export const ANSWERS = {
       '/gov/departments/assessment-standards/field-operations/ground-works/surface-permits.html',
     // The desk page prints 'Tue & Thu 9:15 AM - 12:45 PM'.
     subsurfaceHours: { days: ['tuesday', 'thursday'], opens: '9:15 AM', closes: '12:45 PM' },
-    subsurfacePhone: '(555) 014-3391',
-    surfacePhone: '(555) 014-8862',
+    subsurfacePhone: '(804) 555-0163',
+    surfacePhone: '(804) 555-0178',
     rv7Mailing: 'Bureau of Civic Revenue, Declarations Unit, PO Box 4410, Statehouse Plaza Station',
     // The parts of rv7Mailing the validator requires, and the words only the
     // RV-7A address, which the search ranks first, carries. The unit is

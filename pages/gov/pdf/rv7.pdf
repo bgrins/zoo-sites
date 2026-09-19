@@ -3,41 +3,134 @@
 << /Type /Catalog /Pages 2 0 R >>
 endobj
 2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+<< /Type /Pages /Kids [6 0 R 8 0 R] /Count 2 >>
 endobj
 3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
 endobj
 4 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
 endobj
 5 0 obj
-<< /Length 980 >>
+<< /Length 2422 >>
 stream
-BT /F1 12 Tf 72 740 Td (BUREAU OF CIVIC REVENUE) Tj ET
-BT /F1 10 Tf 72 722 Td (An agency of the Commonwealth) Tj ET
-BT /F1 14 Tf 72 704 Td (FORM RV-7 - RESIDENTIAL VEHICLE ANNUAL DECLARATION) Tj ET
-BT /F1 10 Tf 72 686 Td (Rev. 02/25) Tj ET
-BT /F1 10 Tf 72 650 Td (Type or print clearly in black ink. Complete every line that applies;) Tj ET
-BT /F1 10 Tf 72 632 Td (enter NONE where a line does not apply. Read the instructions for this) Tj ET
-BT /F1 10 Tf 72 614 Td (form and consult the Schedule of Filing Fees before filing.) Tj ET
-BT /F1 10 Tf 72 596 Td (Line 1  Name of filer  ______________________________________________) Tj ET
-BT /F1 10 Tf 72 578 Td (Line 2  Account number  ___________________________________________) Tj ET
-BT /F1 10 Tf 72 560 Td (Line 3  Mailing address  __________________________________________) Tj ET
-BT /F1 10 Tf 72 542 Td (Sign and date the declaration on page 2. An unsigned filing is) Tj ET
-BT /F1 10 Tf 72 524 Td (returned unprocessed.) Tj ET
+BT /F2 11 Tf 54 748 Td (BUREAU OF CIVIC REVENUE) Tj ET
+BT /F1 8 Tf 54 735 Td (An agency of the Commonwealth) Tj ET
+BT /F2 9 Tf 400 748 Td (Form RV-7) Tj ET
+BT /F1 8 Tf 400 735 Td (Rev. 02/25) Tj ET
+1.4 w 54 726 m 558 726 l S
+BT /F2 13 Tf 54 706 Td (RESIDENTIAL VEHICLE ANNUAL DECLARATION) Tj ET
+0.6 w 54 44 m 558 44 l S
+BT /F1 7 Tf 54 32 Td (Form RV-7 \(Rev. 02/25\)) Tj ET
+BT /F1 7 Tf 500 32 Td (Page 1 of 2) Tj ET
+BT /F1 8 Tf 54 680 Td (Type or print clearly in black ink. Complete every line that applies. Read the Form RV-7) Tj ET
+BT /F1 8 Tf 54 668 Td (Instructions and consult the Schedule of Filing Fees before filing. One form per vehicle.) Tj ET
+0.9 g 54 644 504 16 re f 0 g
+BT /F2 9 Tf 58 648 Td (Part A. Filer) Tj ET
+BT /F1 8 Tf 54 626 Td (Name of filer \(last, first, middle initial\)) Tj ET
+0.6 w 54 612 m 558 612 l S
+BT /F1 8 Tf 54 598 Td (Bureau account number) Tj ET
+0.6 w 54 584 m 558 584 l S
+BT /F1 8 Tf 54 570 Td (Mailing address \(number and street, city, ZIP code\)) Tj ET
+0.6 w 54 556 m 558 556 l S
+0.9 g 54 530 504 16 re f 0 g
+BT /F2 9 Tf 58 534 Td (Vehicle) Tj ET
+BT /F2 9 Tf 54 512 Td (Line 1) Tj ET
+BT /F1 9 Tf 98 512 Td (Vehicle identification number) Tj ET
+0.6 w 360 510 m 558 510 l S
+BT /F2 9 Tf 54 492 Td (Line 2) Tj ET
+BT /F1 9 Tf 98 492 Td (Commonwealth registration plate number) Tj ET
+0.6 w 360 490 m 558 490 l S
+BT /F2 9 Tf 54 472 Td (Line 3) Tj ET
+BT /F1 9 Tf 98 472 Td (Model year, make and body style) Tj ET
+0.6 w 360 470 m 558 470 l S
+BT /F2 9 Tf 54 452 Td (Line 4) Tj ET
+BT /F1 9 Tf 98 452 Td (Date acquired; days kept in the Commonwealth this year) Tj ET
+0.6 w 360 450 m 558 450 l S
+BT /F2 9 Tf 54 432 Td (Line 5) Tj ET
+BT /F1 9 Tf 98 432 Td (Purchase price \(or value on transfer of title\)) Tj ET
+0.6 w 360 430 m 558 430 l S
+BT /F2 9 Tf 54 412 Td (Line 6) Tj ET
+BT /F1 9 Tf 98 412 Td (Declared value. Line 5 times the Table 1 percentage) Tj ET
+0.6 w 360 410 m 558 410 l S
+0.9 g 54 380 504 16 re f 0 g
+BT /F2 9 Tf 58 384 Td (Amount due) Tj ET
+BT /F2 9 Tf 54 362 Td (Line 7) Tj ET
+BT /F1 9 Tf 98 362 Td (Base filing fee \(Schedule of Filing Fees\)) Tj ET
+0.6 w 360 360 m 558 360 l S
+BT /F2 9 Tf 54 342 Td (Line 8) Tj ET
+BT /F1 9 Tf 98 342 Td (Late-filing surcharge, if any) Tj ET
+0.6 w 360 340 m 558 340 l S
+BT /F2 9 Tf 54 322 Td (Line 9) Tj ET
+BT /F1 9 Tf 98 322 Td (Total due. Add Lines 7 and 8) Tj ET
+0.6 w 360 320 m 558 320 l S
+BT /F1 8 Tf 54 302 Td (Continue on page 2.) Tj ET
 endstream
 endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 1802 >>
+stream
+BT /F2 11 Tf 54 748 Td (BUREAU OF CIVIC REVENUE) Tj ET
+BT /F1 8 Tf 54 735 Td (An agency of the Commonwealth) Tj ET
+BT /F2 9 Tf 400 748 Td (Form RV-7) Tj ET
+BT /F1 8 Tf 400 735 Td (Rev. 02/25) Tj ET
+1.4 w 54 726 m 558 726 l S
+BT /F2 13 Tf 54 706 Td (RESIDENTIAL VEHICLE ANNUAL DECLARATION) Tj ET
+0.6 w 54 44 m 558 44 l S
+BT /F1 7 Tf 54 32 Td (Form RV-7 \(Rev. 02/25\)) Tj ET
+BT /F1 7 Tf 500 32 Td (Page 2 of 2) Tj ET
+0.9 g 54 668 504 16 re f 0 g
+BT /F2 9 Tf 58 672 Td (Part B. Declaration) Tj ET
+BT /F1 8 Tf 54 650 Td (Sign and date the declaration below. An unsigned filing is returned unprocessed.) Tj ET
+BT /F1 9 Tf 54 638 Td (I declare that the information on this form is true, correct and complete.) Tj ET
+0.6 w 54 608 m 330 608 l S
+0.6 w 360 608 m 558 608 l S
+BT /F1 7 Tf 54 598 Td (Signature) Tj ET
+BT /F1 7 Tf 360 598 Td (Date) Tj ET
+BT /F1 8 Tf 54 578 Td (Daytime telephone number) Tj ET
+0.6 w 54 564 m 558 564 l S
+0.9 g 54 538 504 16 re f 0 g
+BT /F2 9 Tf 58 542 Td (Filing checklist) Tj ET
+0.8 w 54 518 8 8 re S
+BT /F1 9 Tf 68 520 Td (Lines 1 through 9 are complete for one vehicle only.) Tj ET
+0.8 w 54 502 8 8 re S
+BT /F1 9 Tf 68 504 Td (Check or money order payable to Commonwealth Treasurer for the amount on Line 9.) Tj ET
+0.8 w 54 486 8 8 re S
+BT /F1 9 Tf 68 488 Td (Form number and account number written on the face of the check.) Tj ET
+0.8 w 54 470 8 8 re S
+BT /F1 9 Tf 68 472 Td (Mailed to the address given in the Form RV-7 Instructions, not the amendments annex.) Tj ET
+BT /F1 8 Tf 54 456 Td (An amended declaration is filed on Form RV-7A, never on this form.) Tj ET
+0.9 g 54 432 504 16 re f 0 g
+BT /F2 9 Tf 58 436 Td (For Bureau use only) Tj ET
+BT /F1 8 Tf 54 414 Td (Date opened) Tj ET
+0.6 w 54 400 m 558 400 l S
+BT /F1 8 Tf 54 386 Td (Keyed by) Tj ET
+0.6 w 54 372 m 558 372 l S
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Title (Form RV-7 Residential Vehicle Annual Declaration) /Author (Bureau of Civic Revenue) >>
+endobj
 xref
-0 6
+0 10
 0000000000 65535 f 
 0000000009 00000 n 
 0000000058 00000 n 
-0000000115 00000 n 
-0000000241 00000 n 
-0000000311 00000 n 
+0000000121 00000 n 
+0000000218 00000 n 
+0000000320 00000 n 
+0000002794 00000 n 
+0000002930 00000 n 
+0000004784 00000 n 
+0000004920 00000 n 
 trailer
-<< /Size 6 /Root 1 0 R >>
+<< /Size 10 /Root 1 0 R /Info 9 0 R >>
 startxref
-1341
+5033
 %%EOF
