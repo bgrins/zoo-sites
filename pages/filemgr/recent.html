@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Boxelder Workspace &#8212; Recent</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="boxelder.css">
 </head>
 <body data-static-list="true">
 <header class="appbar">
-  <span class="brand"><span class="mark">bx</span><span class="name">Boxelder</span></span>
+  <a class="brand" href="./" title="Boxelder home"><span class="mark">bx</span><span class="name">Boxelder</span></a>
   <button class="workspace" type="button">Marketing team <span class="caret">&#9662;</span></button>
   <span class="searchwrap">
     <input id="search" type="search" autocomplete="off" placeholder="Search Recent" aria-label="Search Recent">
@@ -46,43 +47,45 @@
       <div class="group">Places</div>
       <a class="place" href="my-files.html">My files</a>
       <span class="place">Shared drive</span>
-      <a class="place sub" href="/filemgr/">Working files</a>
+      <a class="place sub" href="./">Working files</a>
       <a class="place sub" href="brand-assets.html">Brand assets</a>
       <a class="place sub" href="campaign-26.html">Campaign 26</a>
       <a class="place sub" href="archive.html">Archive</a>
       <a class="place" href="recent.html" aria-current="true">Recent</a>
       <a class="place" href="trash.html">Trash</a>
       <div class="group">Tags</div>
-      <span class="place">Campaign 26</span>
-      <span class="place">Needs review</span>
+      <a class="place tag" href="tag-campaign-26.html">Campaign 26</a>
+      <a class="place tag" href="tag-needs-review.html">Needs review</a>
       <div class="storage">
         <div class="label">Shared drive storage</div>
         <div class="meter"><span></span></div>
-        <div>62.4 GB of 100 GB used</div>
+        <div>1.4 GB of 100 GB used</div>
         <a href="storage.html">Manage storage</a>
       </div>
     </div>
-    <div class="pane">
+    <main class="pane">
       <table id="files">
         <thead>
-          <tr><th class="sorted">Name</th><th>Kind</th><th>Size</th><th>Modified</th></tr>
+          <tr><th>Name</th><th>Kind</th><th>Size</th><th aria-sort="descending">Modified</th></tr>
         </thead>
         <tbody id="rows">
+          <tr><td class="name">retro-notes.txt</td><td class="kind">Plain text</td><td class="size">9 KB</td><td class="mod">24 Jul 2026</td></tr>
           <tr><td class="name">landing-copy.txt</td><td class="kind">Plain text</td><td class="size">18 KB</td><td class="mod">23 Jul 2026</td></tr>
           <tr><td class="name">meeting-notes-jul.txt</td><td class="kind">Plain text</td><td class="size">9 KB</td><td class="mod">22 Jul 2026</td></tr>
+          <tr><td class="name">launch-plan.xlsx</td><td class="kind">Spreadsheet</td><td class="size">96 KB</td><td class="mod">22 Jul 2026</td></tr>
           <tr><td class="name">budget-tracker.xlsx</td><td class="kind">Spreadsheet</td><td class="size">212 KB</td><td class="mod">21 Jul 2026</td></tr>
           <tr><td class="name">media-plan-q3.xlsx</td><td class="kind">Spreadsheet</td><td class="size">340 KB</td><td class="mod">17 Jul 2026</td></tr>
         </tbody>
       </table>
       <div id="empty">No files in this folder match your search.</div>
-    </div>
+    </main>
   </div>
   <div class="statusbar">
-    <span id="count">4 items in Recent</span>
+    <span id="count">6 items in Recent</span>
     <span>Recent shows items you opened in the last 30 days.</span>
   </div>
 </div>
-<div class="sitefoot">
+<footer class="sitefoot">
   <ul>
     <li><a href="help.html">Help centre</a></li>
     <li><a href="shortcuts.html">Keyboard shortcuts</a></li>
@@ -92,8 +95,9 @@
     <li><a href="contact.html">Contact support</a></li>
   </ul>
   <p>Changes sync to every collaborator on this link. Deleted items stay recoverable for 30 days.</p>
-  <p>Boxelder Software Ltd, 7 Calder Wharf, Leeds LS10 1QP &middot; support@boxelder.example</p>
-</div>
+  <p>&copy; 2026 Boxelder Software Ltd, registered in England and Wales, company number 00000000 &middot;
+  Unit 3, Rope Walk, Wrexbury WX2 6BE &middot; support@boxelder.example</p>
+</footer>
 <script src="chrome.js"></script>
 </body>
 </html>

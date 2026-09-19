@@ -129,7 +129,7 @@ export function routes(ctx) {
       // AGENT made is separable from the page's own. Route telemetry only.
       if (url.searchParams.get('src') !== 'chart') metrics.directReads += 1;
       return json(res, 200, {
-        workspace: 'Northgate Media',
+        workspace: 'Skelvane Media',
         metric: 'Active seats',
         grain: 'month',
         window: `${metrics.points[0].label} to ${metrics.points[METRICS_POINTS - 1].label}`,
@@ -163,7 +163,7 @@ export function routes(ctx) {
       for (const point of metrics.points) rows.push(`${point.label},${point.value}`);
       res.writeHead(200, {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="northgate-active-seats.csv"',
+        'Content-Disposition': 'attachment; filename="skelvane-active-seats.csv"',
       });
       return res.end(rows.join('\n') + '\n');
     }

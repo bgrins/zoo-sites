@@ -560,7 +560,7 @@ export async function extractionTasks(base, origins = originUrls(base)) {
     {
       id: 'chart-escape',
       ask:
-        `Open ${origins.halbeck}/ — the Halbeck analytics console for the Northgate ` +
+        `Open ${origins.halbeck}/ — the Halbeck analytics console for the Skelvane ` +
         `Media workspace, on its Seat usage view. In the Active seats series, work ` +
         `out which month fell furthest below the month before it. Report that month ` +
         `and its exact Active seats figure.`,

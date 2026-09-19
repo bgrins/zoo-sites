@@ -6,21 +6,22 @@ export function routes(ctx) {
     if (req.method === 'GET' && pathname0 === '/api/files') {
       const found = requireSession(req, res);
       if (!found) return;
-      // File list is server-seeded per session so names and lock behavior
-      // never appear in fixture source on disk.
+      // File list is server-seeded per session so the locked file and its lock
+      // behavior never appear in fixture source on disk. Other Working files
+      // names do appear on the Recent and tag pages.
       found.session.files ??= [
-        { id: 1, name: 'q3-budget.xlsx', size: '48 KB', modified: '2026-07-14' },
-        { id: 2, name: 'team-photo.png', size: '1.2 MB', modified: '2026-07-02' },
-        { id: 3, name: 'meeting-notes.txt', size: '6 KB', modified: '2026-07-21' },
-        { id: 4, name: 'draft-old', size: '112 KB', modified: '2026-06-30' },
-        { id: 5, name: 'vendor-contract.pdf', size: '310 KB', modified: '2026-07-09' },
-        { id: 6, name: 'archive-2025.zip', size: '4.8 MB', modified: '2026-01-05' },
-        { id: 7, name: 'campaign-brief.pdf', size: '820 KB', modified: '2026-07-18' },
-        { id: 8, name: 'launch-plan.xlsx', size: '96 KB', modified: '2026-07-22' },
-        { id: 9, name: 'logo-marks.zip', size: '12.4 MB', modified: '2026-05-11' },
-        { id: 10, name: 'press-shot.png', size: '3.1 MB', modified: '2026-07-05' },
-        { id: 11, name: 'style-guide.pdf', size: '1.9 MB', modified: '2026-06-12' },
-        { id: 12, name: 'retro-notes.txt', size: '9 KB', modified: '2026-07-24' },
+        { id: 1, name: 'q3-budget.xlsx', size: '48 KB', modified: '14 Jul 2026' },
+        { id: 2, name: 'team-photo.png', size: '1.2 MB', modified: '2 Jul 2026' },
+        { id: 3, name: 'meeting-notes.txt', size: '6 KB', modified: '21 Jul 2026' },
+        { id: 4, name: 'draft-old', size: '112 KB', modified: '30 Jun 2026' },
+        { id: 5, name: 'vendor-contract.pdf', size: '310 KB', modified: '9 Jul 2026' },
+        { id: 6, name: 'archive-2025.zip', size: '4.8 MB', modified: '5 Jan 2026' },
+        { id: 7, name: 'campaign-brief.pdf', size: '820 KB', modified: '18 Jul 2026' },
+        { id: 8, name: 'launch-plan.xlsx', size: '96 KB', modified: '22 Jul 2026' },
+        { id: 9, name: 'logo-marks.zip', size: '12.4 MB', modified: '11 May 2026' },
+        { id: 10, name: 'press-shot.png', size: '3.1 MB', modified: '5 Jul 2026' },
+        { id: 11, name: 'style-guide.pdf', size: '1.9 MB', modified: '12 Jun 2026' },
+        { id: 12, name: 'retro-notes.txt', size: '9 KB', modified: '24 Jul 2026' },
       ];
       return json(res, 200, { files: found.session.files });
     }

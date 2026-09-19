@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Binthral — Cycle count CS-2214 — Brantmoor Depot</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --teal: #10403b;
@@ -34,7 +35,7 @@
     padding: 9px 18px;
     border-bottom: 3px solid var(--teal-dark);
   }
-  .topbar .brand { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; }
+  .topbar .brand { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; color: #f4f8f5; text-decoration: none; }
   .topbar .app { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #9dbdb2; }
   .topbar .who { margin-left: auto; font-size: 11px; color: #b8cec6; }
   .subbar {
@@ -128,13 +129,16 @@
     white-space: nowrap;
   }
   td { border-bottom: 1px solid var(--rule-soft); padding: 5px 12px; vertical-align: middle; }
-  tbody tr:nth-child(even) { background: #faf9f4; }
+  tbody tr:nth-child(even of [data-sku]) { background: #faf9f4; }
   td.sku { font-weight: bold; white-space: nowrap; letter-spacing: 0.02em; }
   td.bin, td.uom { color: var(--dim); white-space: nowrap; }
   th.qty, td.qty { text-align: right; width: 92px; white-space: nowrap; }
   td.qty { font-size: 14px; cursor: cell; }
   td.qty:focus { outline: 2px solid var(--teal); outline-offset: -2px; }
   td.qty.dirty { background: #eef4ee; }
+  input.qty[aria-invalid="true"] { border-color: #8c2f18; background: #fbeee9; }
+  tr[data-sku]:has(+ tr.cellerr:not([hidden])) td { border-bottom-color: transparent; }
+  tr.cellerr td { padding: 0 140px 6px 12px; background: #fbeee9; font-size: 11px; color: #8c2f18; text-align: right; }
   td.act { text-align: right; width: 128px; white-space: nowrap; }
   input.qty {
     font: inherit;
@@ -181,11 +185,25 @@
     color: #7c7b6d;
   }
   footer p { margin: 0 0 3px; }
+  @media (max-width: 720px) {
+    .topbar { flex-wrap: wrap; row-gap: 2px; }
+    .topbar .who { margin-left: 0; flex-basis: 100%; }
+    .subbar { flex-wrap: wrap; }
+    .layout { flex-direction: column; min-height: 0; }
+    .rail { width: auto; flex: none; display: flex; flex-wrap: wrap; align-items: baseline; padding: 8px 6px; border-right: 0; border-bottom: 1px solid var(--rule); }
+    .rail h2, .rail .sep { display: none; }
+    .rail a, .rail span.item { padding: 4px 9px; border-left: 0; border-bottom: 3px solid transparent; }
+    .rail span.item.on { border-bottom-color: var(--rust); }
+    .main { padding: 14px 12px 20px; }
+    .gridwrap, .tablewrap { overflow-x: auto; }
+    #grid { min-width: 620px; }
+    footer { padding: 12px 12px 24px; }
+  }
 </style>
 </head>
 <body>
 <div class="topbar">
-  <span class="brand">Brantmoor Depot</span>
+  <a class="brand" href="./">Brantmoor Depot</a>
   <span class="app">Binthral 4.2</span>
   <span class="who">Warehouse 03 &middot; Signed in: a.vetter (Count supervisor)</span>
 </div>
@@ -196,21 +214,22 @@
 <div class="layout">
   <nav class="rail">
     <h2>Operations</h2>
-    <a href="/grid-edit/receiving.html">Receiving</a>
-    <a href="/grid-edit/putaway.html">Putaway</a>
+    <a href="receiving.html">Receiving</a>
+    <a href="putaway.html">Putaway</a>
     <span class="item on">Cycle counts</span>
-    <a href="/grid-edit/replenishment.html">Replenishment</a>
-    <a href="/grid-edit/despatch.html">Despatch</a>
+    <a href="replenishment.html">Replenishment</a>
+    <a href="despatch.html">Despatch</a>
     <div class="sep"></div>
     <h2>Reference</h2>
-    <a href="/grid-edit/bin-map.html">Bin map</a>
-    <a href="/grid-edit/item-master.html">Item master</a>
-    <a href="/grid-edit/count-history.html">Count history</a>
+    <a href="bin-map.html">Bin map</a>
+    <a href="item-master.html">Item master</a>
+    <a href="count-history.html">Count history</a>
   </nav>
   <main class="main">
     <h1>Cycle count sheet CS-2214</h1>
-    <p class="lede">Bay G rack audit, opened 24 July. Adjust counted quantities against the
-      recount memo before posting the sheet to the ledger.</p>
+    <p class="lede">Bay G rack audit, aisles 1&ndash;3, opened 24 July. Adjust counted quantities
+      against the recount memo; the stock desk posts the sheet to the ledger when the audit
+      closes.</p>
 
     <div class="memo" id="memo">
       <h3>Corrections memo</h3>
@@ -240,8 +259,8 @@
   </main>
 </div>
 <footer>
-  <p>Brantmoor Depot Ltd &middot; Unit 7, Kelvinbrae Industrial Estate, Ardwick &middot; Stock desk 0161 496 0142</p>
-  <p>&copy; 2026 Brantmoor Depot Ltd. <a href="/grid-edit/privacy.html">Privacy notice</a> &middot; <a href="/grid-edit/terms.html">Terms of use</a> &middot; <a href="/grid-edit/standards.html">Warehouse standards</a></p>
+  <p>Brantmoor Depot Ltd &middot; Unit 7, Kelvinbrae Industrial Estate, Brantmoor BQ7 3RD &middot; Stock desk 0161 496 0142</p>
+  <p>&copy; 2026 Brantmoor Depot Ltd, registered in England and Wales, company number 00000000. <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of use</a> &middot; <a href="standards.html">Warehouse standards</a></p>
 </footer>
 <script>
   const NONCE = '__SESSION_NONCE__';
@@ -311,6 +330,13 @@
       qty.title = 'Double-click to edit';
       qty.textContent = String(row.qty);
       qty.addEventListener('dblclick', () => startEdit(row.sku));
+      qty.addEventListener('keydown', (event) => {
+        if (event.target !== qty) return;
+        if (event.key === 'Enter' || event.key === 'F2') {
+          event.preventDefault();
+          startEdit(row.sku);
+        }
+      });
       tr.appendChild(qty);
 
       const act = document.createElement('td');
@@ -343,6 +369,16 @@
     input.inputMode = 'numeric';
     input.value = String(row.qty);
     input.setAttribute('aria-label', 'New qty ' + sku);
+    const hint = document.createElement('span');
+    hint.id = 'qty-error-' + sku;
+    const hintRow = document.createElement('tr');
+    hintRow.className = 'cellerr';
+    hintRow.hidden = true;
+    const hintCell = document.createElement('td');
+    hintCell.colSpan = tr.cells.length;
+    hintCell.appendChild(hint);
+    hintRow.appendChild(hintCell);
+    tr.after(hintRow);
     qtyCell.textContent = '';
     qtyCell.appendChild(input);
 
@@ -375,20 +411,47 @@
     el.className = isError ? 'err' : '';
   }
 
+  function cellError(sku, message) {
+    const input = document.querySelector('input[aria-label="New qty ' + sku + '"]');
+    const hint = document.getElementById('qty-error-' + sku);
+    if (!input || !hint) return;
+    hint.textContent = message;
+    hint.closest('tr').hidden = false;
+    input.setAttribute('aria-invalid', 'true');
+    input.setAttribute('aria-describedby', hint.id);
+    input.focus();
+    input.select();
+  }
+
   async function commit(sku, raw) {
-    const qty = Number(String(raw).trim());
-    if (!Number.isInteger(qty) || qty < 0) {
-      setStatus('Counted quantity must be a whole number', true);
+    const text = String(raw).trim();
+    const qty = Number(text);
+    if (!/^\d+$/.test(text) || qty > 99999) {
+      cellError(sku, 'Enter a whole number from 0 to 99,999');
+      setStatus(sku + ' not saved: counted quantity must be a whole number from 0 to 99,999', true);
       return;
     }
-    const res = await api('/api/grid-edit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nonce: NONCE, sku: sku, qty: qty }),
-    });
+    let res;
+    try {
+      res = await api('/api/grid-edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, sku: sku, qty: qty }),
+      });
+    } catch {
+      cellError(sku, 'Not saved: Binthral could not be reached');
+      setStatus(sku + ' not saved: the terminal lost its connection to Binthral. Try again.', true);
+      return;
+    }
     const body = await res.json().catch(() => ({}));
     if (!res.ok || !body.ok) {
-      setStatus(body.error ?? 'Adjustment rejected', true);
+      const why =
+        res.status === 403
+          ? 'your Binthral session has ended. Reload the page to sign in again.'
+          : res.status === 400
+            ? 'the stock desk system refused this line or quantity.'
+            : 'Binthral returned error ' + res.status + '. Try again.';
+      setStatus(sku + ' not saved: ' + why, true);
       render();
       return;
     }

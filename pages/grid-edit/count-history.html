@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Binthral — Count history — Brantmoor Depot</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --teal: #10403b; --teal-dark: #0a2b28; --rust: #a8442a; --paper: #f4f2ec;
@@ -13,7 +14,7 @@
   body { margin: 0; background: var(--paper); color: var(--ink); font-family: "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", sans-serif; font-size: 13px; line-height: 1.4; }
   a { color: var(--teal); }
   .topbar { display: flex; align-items: baseline; gap: 18px; background: var(--teal); color: #e8efe9; padding: 9px 18px; border-bottom: 3px solid var(--teal-dark); }
-  .topbar .brand { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; }
+  .topbar .brand { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; color: #f4f8f5; text-decoration: none; }
   .topbar .app { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #9dbdb2; }
   .topbar .who { margin-left: auto; font-size: 11px; color: #b8cec6; }
   .subbar { display: flex; align-items: center; gap: 14px; background: #e8e4d9; border-bottom: 1px solid var(--rule); padding: 5px 18px; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.09em; }
@@ -40,11 +41,24 @@
   td.date { white-space: nowrap; }
   footer { margin-top: 26px; border-top: 1px solid var(--rule); padding: 12px 22px 30px; font-size: 11px; color: #7c7b6d; }
   footer p { margin: 0 0 3px; }
+  @media (max-width: 720px) {
+    .topbar { flex-wrap: wrap; row-gap: 2px; }
+    .topbar .who { margin-left: 0; flex-basis: 100%; }
+    .subbar { flex-wrap: wrap; }
+    .layout { flex-direction: column; min-height: 0; }
+    .rail { width: auto; flex: none; display: flex; flex-wrap: wrap; align-items: baseline; padding: 8px 6px; border-right: 0; border-bottom: 1px solid var(--rule); }
+    .rail h2, .rail .sep { display: none; }
+    .rail a, .rail span.item { padding: 4px 9px; border-left: 0; border-bottom: 3px solid transparent; }
+    .rail span.item.on { border-bottom-color: var(--rust); }
+    .main { padding: 14px 12px 20px; }
+    .gridwrap, .tablewrap { overflow-x: auto; }
+    footer { padding: 12px 12px 24px; }
+  }
 </style>
 </head>
 <body>
 <div class="topbar">
-  <span class="brand">Brantmoor Depot</span>
+  <a class="brand" href="./">Brantmoor Depot</a>
   <span class="app">Binthral 4.2</span>
   <span class="who">Warehouse 03 &middot; Signed in: a.vetter (Count supervisor)</span>
 </div>
@@ -54,15 +68,15 @@
 <div class="layout">
   <nav class="rail">
     <h2>Operations</h2>
-    <a href="/grid-edit/receiving.html">Receiving</a>
-    <a href="/grid-edit/putaway.html">Putaway</a>
-    <a href="/grid-edit/">Cycle counts</a>
-    <a href="/grid-edit/replenishment.html">Replenishment</a>
-    <a href="/grid-edit/despatch.html">Despatch</a>
+    <a href="receiving.html">Receiving</a>
+    <a href="putaway.html">Putaway</a>
+    <a href="./">Cycle counts</a>
+    <a href="replenishment.html">Replenishment</a>
+    <a href="despatch.html">Despatch</a>
     <div class="sep"></div>
     <h2>Reference</h2>
-    <a href="/grid-edit/bin-map.html">Bin map</a>
-    <a href="/grid-edit/item-master.html">Item master</a>
+    <a href="bin-map.html">Bin map</a>
+    <a href="item-master.html">Item master</a>
     <span class="item on">Count history</span>
   </nav>
   <main class="main">
@@ -87,16 +101,16 @@
     <div class="panel">
       <h3>About this history</h3>
       <p>Only posted sheets appear here. The sheet currently open in
-        <a href="/grid-edit/">cycle counts</a> is shown with its line detail on the count
-        screen alone, and joins this history once it is posted to the ledger.</p>
+        <a href="./">cycle counts</a> is shown with its line detail on the count
+        screen alone, and joins this history once the stock desk posts it to the ledger.</p>
       <p>Every area of the warehouse is counted at least once a quarter; pick faces are
         counted monthly because they move fastest.</p>
     </div>
   </main>
 </div>
 <footer>
-  <p>Brantmoor Depot Ltd &middot; Unit 7, Kelvinbrae Industrial Estate, Ardwick &middot; Stock desk 0161 496 0142</p>
-  <p>&copy; 2026 Brantmoor Depot Ltd. <a href="/grid-edit/privacy.html">Privacy notice</a> &middot; <a href="/grid-edit/terms.html">Terms of use</a> &middot; <a href="/grid-edit/standards.html">Warehouse standards</a></p>
+  <p>Brantmoor Depot Ltd &middot; Unit 7, Kelvinbrae Industrial Estate, Brantmoor BQ7 3RD &middot; Stock desk 0161 496 0142</p>
+  <p>&copy; 2026 Brantmoor Depot Ltd, registered in England and Wales, company number 00000000. <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of use</a> &middot; <a href="standards.html">Warehouse standards</a></p>
 </footer>
 </body>
 </html>

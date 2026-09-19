@@ -1088,7 +1088,7 @@ export const DRIVERS = {
         (s) => /button "Edit qty GR-/.test(s) && /li text="GR-/.test(s),
         'the count sheet'
       );
-      // Memo lines read "GR-1104 qty is 18 not 81 - recount 07-24, aisle B."
+      // Memo lines read "GR-1104 qty is 18 not 81 - recounted 24/07, aisle 2."
       // Parsed from the DOM: the snapshot cuts them mid-sentence, and whether an
       // agent can still read them there is the result, not a driver precondition.
       const memoText = String(
