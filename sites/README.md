@@ -67,8 +67,10 @@ Rules:
   ctx when it needs request or session plumbing (`ctx.readJson(req, res)` parses
   a body or answers 400), and in `lib.mjs` when it is a pure function (`round2`).
 - `ctx.fromPage(prefix)` is the provenance helper: sec-fetch same-origin, or a
-  referer under the prefix. It buys legibility, never proof, and the comment at
-  each use site says so and must keep saying so.
+  Referer on the request's own host whose `refererPath` starts with the prefix,
+  so an origin-mode page, served at its origin's root, counts too, and another
+  origin's page does not. It buys legibility, never proof, and
+  the comment at each use site says so and must keep saying so.
 - Graded secrets stay server-side, per `docs/authoring-fixtures.md`. Nothing
   here changes the contract that ground truth is never derivable from `pages/`.
 - `node eval/verify.mjs` must be green before any change here is committed.

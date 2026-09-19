@@ -22,7 +22,8 @@ const seed = seedIdx !== -1 ? args[seedIdx + 1] : (process.env.EVAL_SEED ?? null
 // connection from the host while the healthcheck — which also runs inside the
 // container — keeps reporting healthy.
 const host = process.env.ZOO_HOST ?? '127.0.0.1';
-const srv = await startPagesServer({ origins: ORIGINS, fixedPorts: true, seed, host });
+// capped, because a standing habitat never resets its state between tasks.
+const srv = await startPagesServer({ origins: ORIGINS, fixedPorts: true, seed, host, capped: true });
 console.log(`zoo-sites: ${ORIGINS.length} origins up (shared state, one process)`);
 for (const o of srv.origins) {
   console.log(`  ${o.domain.padEnd(24)} ${o.url}  <- pages/${o.dir}`);

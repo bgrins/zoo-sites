@@ -144,8 +144,10 @@ regenerate.
 
 The image name follows the repository owner: `.github/workflows/container.yml`
 publishes `ghcr.io/<owner>/zoo-sites` once `.github/workflows/gate.yml` passes on a
-push to `main` (tagged `latest` and `sha-<short sha>`) or on a `v*` tag (tagged with
-the tag name and the sha). A red or cancelled gate publishes nothing, and a pull
+push to `main` (tagged `sha-<short sha>`, plus `latest` if that commit is still
+main's tip when the publish job runs) or on a `v*` tag that points at a commit on
+`main` (tagged with the tag name and the sha). A red or cancelled gate publishes
+nothing, a tag on a commit that is not on `main` publishes nothing, and a pull
 request builds the image without pushing it. The generator reads
 `GITHUB_REPOSITORY_OWNER`, so set it when regenerating outside Actions:
 

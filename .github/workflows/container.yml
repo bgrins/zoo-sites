@@ -2,7 +2,9 @@ name: container
 # Publishing waits on the gate: workflow_run fires once gate.yml finishes, and
 # the publish job runs only when that run succeeded, for a push to main or a v*
 # tag, and builds the exact commit the gate passed (head_sha), not whatever main
-# points at by then. Pull requests build the image without pushing it.
+# points at by then. That commit must be on main either way, so a tag on an
+# unmerged commit publishes nothing, and :latest goes only to main's current tip.
+# Pull requests build the image without pushing it.
 on:
   pull_request:
   workflow_run:
@@ -44,7 +46,8 @@ jobs:
       contents: read
       packages: write
     # One queue per ref, so an older main build cannot finish last and leave
-    # :latest pointing behind the newest green commit.
+    # :latest pointing behind the newest green commit. A re-run of an older run
+    # is not in that queue's order; the tip check in the tags step covers it.
     concurrency:
       group: container-${{ github.event.workflow_run.head_branch }}
       cancel-in-progress: false
@@ -57,8 +60,9 @@ jobs:
           persist-credentials: false
       # docker/metadata-action reads github.sha and github.ref, which under
       # workflow_run name the default branch's tip rather than the gated commit,
-      # so the tags are computed from the triggering run instead. A tag named
-      # main, or a branch named v1, fails the ref checks and publishes nothing.
+      # so the tags are computed from the triggering run instead. Whatever the
+      # ref's name, a commit off main publishes nothing, and so does a branch
+      # named v1. An older main commit, from a re-run, gets only its sha tag.
       - id: tags
         env:
           IMAGE: ghcr.io/${{ github.repository_owner }}/zoo-sites
@@ -67,12 +71,17 @@ jobs:
         run: |
           image="${IMAGE,,}"
           tags="${image}:sha-${SHA::7}"
-          if [ "$REF" = main ] && git merge-base --is-ancestor "$SHA" refs/remotes/origin/main; then
-            tags="${tags},${image}:latest"
+          if ! git merge-base --is-ancestor "$SHA" refs/remotes/origin/main; then
+            echo "::error::${REF} at ${SHA} is not on main; publishing nothing"
+            exit 1
+          elif [ "$REF" = main ]; then
+            if [ "$SHA" = "$(git rev-parse refs/remotes/origin/main)" ]; then
+              tags="${tags},${image}:latest"
+            fi
           elif [[ "$REF" == v* ]] && [ "$(git rev-parse -q --verify "refs/tags/${REF}^{commit}")" = "$SHA" ]; then
             tags="${tags},${image}:${REF//[^A-Za-z0-9_.-]/-}"
           else
-            echo "::error::${REF} at ${SHA} is neither on main nor a v* tag; publishing nothing"
+            echo "::error::${REF} at ${SHA} is neither main nor a v* tag; publishing nothing"
             exit 1
           fi
           echo "tags=${tags}" >> "$GITHUB_OUTPUT"

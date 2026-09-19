@@ -62,13 +62,16 @@ const originOf = (rel) => ORIGINS.find((o) => rel === o.dir || rel.startsWith(o.
 // out first, keeping the opening tag so <script src> is still checked: page JS
 // builds URLs by concatenation ("' + itemUrl + '") and would otherwise be
 // scraped as paths. Attributes are read only inside a start tag, which is
-// matched quote-aware so a ">" inside a value does not end it.
-const START_TAG = /<[a-z][^>"']*(?:(?:"[^"]*"|'[^']*')[^>"']*)*>/gi;
+// matched quote-aware so a ">" inside a value does not end it. As in HTML, a
+// quote opens a value only right after "="; an unquoted value runs to the next
+// space or ">", so an apostrophe inside one (title=it's) opens nothing.
+const TAG_REST = String.raw`[^>=]*(?:=\s*(?:"[^"]*"|'[^']*'|[^\s>"'][^\s>]*(?=[\s>])|(?=>))[^>=]*)*>`;
+const START_TAG = new RegExp(String.raw`<[a-z]${TAG_REST}`, 'gi');
+const SCRIPT_BODY = new RegExp(String.raw`(<script\b${TAG_REST})[\s\S]*?<\/script>`, 'gi');
+const STYLE_BODY = new RegExp(String.raw`(<style\b${TAG_REST})[\s\S]*?<\/style>`, 'gi');
 const URL_ATTR = /(?<=[\s"'/:])(href|src|action|srcset)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi;
 const refsIn = (html) => {
-  html = html
-    .replace(/(<script\b[^>]*>)[\s\S]*?<\/script>/gi, '$1')
-    .replace(/(<style\b[^>]*>)[\s\S]*?<\/style>/gi, '$1');
+  html = html.replace(SCRIPT_BODY, '$1').replace(STYLE_BODY, '$1');
   const out = [];
   for (const [tag] of html.matchAll(START_TAG)) {
     for (const [, name, dq, sq, bare] of tag.matchAll(URL_ATTR)) {

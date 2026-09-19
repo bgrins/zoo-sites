@@ -311,6 +311,12 @@ work:
   page nonce. The allowlist in `server.mjs` is exhaustive and was derived, not
   guessed; regenerate it with both greps named in the comment above it, because some
   pages post through a helper.
+- **The eval caps nothing a validator reads.** Validators grade beacon rows by
+  absence and by order, and read sessions across cookies. Under a cap, anything
+  holding a page nonce can flood the beacon log, and any client can mint sessions
+  with cookieless page loads, until an incriminating row or session falls off the
+  front. The caps in `server.mjs` apply only under `capped`,
+  which `serve.mjs` sets for the standing habitat and the eval never does.
 - **A readiness poll must require something that did not exist before the action.**
   A predicate the previous state already satisfies returns immediately and the driver
   acts on stale data: "no row is pending" is true before a re-render starts, and a
