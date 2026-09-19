@@ -1,4 +1,7 @@
 // pages/promo/ - overlapping offer banners (promo-zindex).
+import { randomBytes } from 'node:crypto';
+
+const VOUCHER_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 export function routes(ctx) {
   const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
@@ -16,15 +19,15 @@ export function routes(ctx) {
         data: { button },
         at: Date.now(),
       });
-      // The voucher code is server-issued so it never appears in fixture
-      // source on disk.
-      return json(
-        res,
-        200,
-        button === 'top'
-          ? { claimed: true, voucher: 'VLT-Q7M2' }
-          : { claimed: false, message: 'This offer is no longer available.' }
-      );
+      if (button !== 'top') {
+        return json(res, 200, { claimed: false, message: 'This offer is no longer available.' });
+      }
+      // The voucher is minted per session from randomBytes, so it never
+      // appears in fixture source on disk and one run's code grades no other.
+      const promo = (found.session.promo ??= {});
+      promo.voucher ??=
+        'VLT-' + [...randomBytes(4)].map((b) => VOUCHER_ALPHABET[b % 32]).join('');
+      return json(res, 200, { claimed: true, voucher: promo.voucher });
     }
 
     return false;

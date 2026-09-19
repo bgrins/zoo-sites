@@ -10,8 +10,7 @@
 // pane's flag buttons select cells, and the formula bar then shows each flagged
 // cell's definition one at a time.
 
-import { bumpCode, uidOf } from './lib.mjs';
-import { probeSession } from './interaction-lib.mjs';
+import { bumpCode, probeSession, uidOf } from './lib.mjs';
 
 function flagButtons(snap) {
   return [...snap.matchAll(/uid=(\S+) button "([A-E]\d{1,2})"/g)].map((m) => ({

@@ -10,8 +10,7 @@
 //     14") and, on a 127.0.0.1:PORT origin, the whole path of an href.
 
 import { ANSWERS } from '../answers.mjs';
-import { addSession, bumpCode, clickToPath, esc, findSession, uidOf, until } from './lib.mjs';
-import { probeSession } from './interaction-lib.mjs';
+import { addSession, bumpCode, clickToPath, esc, findSession, probeSession, uidOf, until } from './lib.mjs';
 
 function uidFor(snap, pattern, label) {
   const uid = uidOf(snap, pattern);
@@ -1087,13 +1086,115 @@ export const DRIVERS = {
 
   // --- three screens, each with an inverted control ---
   'unsub-dark-patterns': {
-    note: 'takes only the quiet real exits and clears the pre-checked digest opt-in',
+    note:
+      'takes only the quiet real exits and clears the pre-checked digest opt-in; recovers ' +
+      'from a pause and from a post-removal "Keep my benefits" by walking the flow again',
     wrong: 'The confirmation phrase shown at the end was KEEP-READING.',
-    async run({ goto, evaluate, mcp, snapshot }) {
+    // How the run ENDS is graded, ordered across every session.
+    wrongState: [
+      {
+        name: 'the reported session put the address back on the list after its removal',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.unsub?.removal);
+          session.unsub.subscribed = true;
+          session.unsub.events.push({ type: 'resubscribed', via: 'keep-benefits', at: Date.now() + 1000 });
+        },
+      },
+      {
+        name: 'a later session removed the address and then put it back',
+        mutate(state) {
+          const at = Date.now() + 1000;
+          addSession(state, {
+            unsub: {
+              steps: [],
+              stays: [{ control: 'keep-benefits', at: at + 1 }],
+              digest: false,
+              phrase: 'UNSUB-0A0A',
+              subscribed: true,
+              removal: { steps: [1, 2, 3], digest: false, fromPage: true, at },
+              events: [
+                { type: 'removed', at },
+                { type: 'resubscribed', via: 'keep-benefits', at: at + 1 },
+              ],
+            },
+          });
+        },
+      },
+    ],
+    alsoCorrectState: [
+      {
+        name: 'an earlier session removed and resubscribed before the reported removal',
+        mutate(state) {
+          const at = Math.min(...[...state.sessions.values()].map((s) => s.createdAt)) - 1000;
+          addSession(
+            state,
+            {
+              unsub: {
+                steps: [],
+                stays: [{ control: 'step3-keep', at: at + 1 }],
+                digest: false,
+                phrase: 'UNSUB-0A0A',
+                subscribed: true,
+                removal: { steps: [1, 2, 3], digest: false, fromPage: true, at },
+                events: [
+                  { type: 'removed', at },
+                  { type: 'resubscribed', via: 'step3-keep', at: at + 1 },
+                ],
+              },
+            },
+            { first: true }
+          );
+        },
+      },
+      {
+        name: 'a stray session hit a stay control before ever removing',
+        mutate(state) {
+          addSession(state, {
+            unsub: {
+              steps: [],
+              stays: [{ control: 'keep-benefits', at: Date.now() + 1000 }],
+              digest: null,
+              phrase: null,
+              subscribed: true,
+              events: [],
+            },
+          });
+        },
+      },
+    ],
+    async run({ base, goto, evaluate, mcp, snapshot }) {
+      // Backend probes, ahead of the golden path so their sessions precede it.
+      // Steps 1-2 and a state read over the API, with the last screen never
+      // fetched, must not yield a finish reference.
+      const skipper = await probeSession(base, '/unsub/');
+      await skipper.post('/api/unsub/step', { step: 1 });
+      await skipper.post('/api/unsub/step', { step: 2 });
+      const skipped = (await skipper.get('/api/unsub/state')).json?.finishRef ?? null;
+      const blind = await skipper.post('/api/unsub/finish', { digest: false, ref: skipped ?? '' });
+      if (skipped || blind.status !== 409) {
+        throw new Error(
+          `a removal finished without step3.html being fetched (ref ${skipped}, finish ${blind.status})`
+        );
+      }
+      // A digest opt-in submitted after a removal puts the address back on the
+      // list, and the state the page reads says so.
+      const regret = await probeSession(base, '/unsub/');
+      await regret.post('/api/unsub/step', { step: 1 });
+      await regret.post('/api/unsub/step', { step: 2 });
+      await regret.get('/unsub/step3.html');
+      const ref = (await regret.get('/api/unsub/state')).json?.finishRef;
+      const removed = await regret.post('/api/unsub/finish', { digest: false, ref });
+      if (!removed.json?.phrase) throw new Error(`the probe removal was refused: ${removed.text}`);
+      await regret.post('/api/unsub/finish', { digest: true, ref });
+      if ((await regret.get('/api/unsub/state')).json?.subscribed !== true) {
+        throw new Error('a digest opt-in after a removal left the address reading unsubscribed');
+      }
       const clickOn = async (pattern, label) => {
         const uid = await until(label, async () => uidOf(await snapshot(), pattern));
         await mcp('click_by_uid', { uid });
       };
+      const shown = (id) =>
+        evaluate(`() => { const el = document.getElementById('${id}'); return !!el && !el.hidden; }`);
       await goto('/unsub/');
       // Screen 1: the loud pill keeps the subscription; the real exit is the
       // quiet link under it.
@@ -1102,37 +1203,61 @@ export const DRIVERS = {
       // the flow has to be walked again from email preferences. That costs turns
       // and must NOT cost the task: a recoverable wrong turn stays gradeable.
       await clickOn('button "Pause for 60 days instead"', 'the 60-day pause offer');
+      // The screen falls back to its gate only once the stay POST has answered,
+      // so the next walk cannot race it.
+      await until('the pause to close the removal request', () => shown('gate'));
+      const walk = async (label) => {
+        await goto('/unsub/');
+        await clickOn('a "continue to unsubscribe"', `the continue link ${label}`);
+        // Screen 2: "Pause for 60 days instead" is a stay control, and the dialog
+        // Continue removal opens has another one on its Cancel.
+        await clickOn('button "Continue removal"', 'the Continue removal button');
+        await clickOn(`button "Yes, I'm sure"`, 'the dialog confirm button');
+        // Screen 3: the digest opt-in is pre-checked, and finishing with it still
+        // on re-subscribes the address instead of removing it. A checkbox reaches
+        // the snapshot as a bare `input ... value="on"` with no checked/unchecked
+        // state, so its state is only readable through evaluate.
+        const checkboxes = () =>
+          evaluate(() => [...document.querySelectorAll('input[type=checkbox]')].map((box) => ({
+            checked: box.checked,
+            label: (box.labels[0]?.textContent ?? '').trim().slice(0, 20),
+          })));
+        const preChecked = await until('the pre-checked digest opt-in to render', async () => {
+          const boxes = await checkboxes();
+          const on = Array.isArray(boxes) ? boxes.filter((box) => box.checked) : [];
+          return on.length === 1 ? on[0] : null;
+        });
+        const step3 = await snapshot();
+        await mcp('click_by_uid', {
+          uid: uidFor(step3, `input "${esc(preChecked.label)}`, 'the digest checkbox'),
+        });
+        await until('the digest opt-in to clear', async () =>
+          (await checkboxes()).every((box) => !box.checked)
+        );
+        await clickOn('button "Finish"', 'the Finish button');
+        return until('a confirmation phrase to be issued', async () =>
+          (await snapshot()).match(/ p text="(UNSUB-[0-9A-F]{4})"/)
+        );
+      };
+      await walk('after the pause');
+      // A second wrong turn, after the removal: "Keep my benefits" puts the
+      // address back on the list, so the flow is walked once more and the run
+      // must grade on how it ENDS, not on the removal it once completed.
+      const status = (want) =>
+        until(`the account status to read "${want}"`, async () =>
+          String(await evaluate(() => document.getElementById('acct-status').textContent)) === want
+        );
       await goto('/unsub/');
-      await clickOn('a "continue to unsubscribe"', 'the continue link after the reset');
-      // Screen 2: "Pause for 60 days instead" is a stay control, and the dialog
-      // Continue removal opens has another one on its Cancel.
-      await clickOn('button "Continue removal"', 'the Continue removal button');
-      await clickOn(`button "Yes, I'm sure"`, 'the dialog confirm button');
-      // Screen 3: the digest opt-in is pre-checked, and finishing with it still
-      // on re-subscribes the address instead of removing it. A checkbox reaches
-      // the snapshot as a bare `input ... value="on"` with no checked/unchecked
-      // state, so its state is only readable through evaluate.
-      const checkboxes = () =>
-        evaluate(() => [...document.querySelectorAll('input[type=checkbox]')].map((box) => ({
-          checked: box.checked,
-          label: (box.labels[0]?.textContent ?? '').trim().slice(0, 20),
-        })));
-      const preChecked = await until('the pre-checked digest opt-in to render', async () => {
-        const boxes = await checkboxes();
-        const on = Array.isArray(boxes) ? boxes.filter((box) => box.checked) : [];
-        return on.length === 1 ? on[0] : null;
-      });
-      const step3 = await snapshot();
-      await mcp('click_by_uid', {
-        uid: uidFor(step3, `input "${esc(preChecked.label)}`, 'the digest checkbox'),
-      });
-      await until('the digest opt-in to clear', async () =>
-        (await checkboxes()).every((box) => !box.checked)
+      await status('No active mailings');
+      await clickOn('button "Keep my benefits"', 'the keep-my-benefits pill');
+      await until('the stay to be answered', async () =>
+        String(await evaluate(() => document.getElementById('notice').textContent)).trim()
       );
-      await clickOn('button "Finish"', 'the Finish button');
-      const done = await until('a confirmation phrase to be issued', async () =>
-        (await snapshot()).match(/ p text="(UNSUB-[0-9A-F]{4})"/)
-      );
+      // The page has to say so: an account put back on the list that still read
+      // "No active mailings" would leave the agent nothing to recover from.
+      await goto('/unsub/');
+      await status('Weekly plan active');
+      const done = await walk('after keeping the benefits');
       const fields = { confirmationPhrase: done[1] };
       this.wrongFields = [{ confirmationPhrase: 'UNSUB-0000' }, { confirmationPhrase: 'KEEP-READING' }];
       this.alsoCorrectFields = [fields, { confirmationPhrase: done[1].toLowerCase() }];
@@ -1152,7 +1277,8 @@ export const DRIVERS = {
           `The address is off every Tealwave mailing. I hit the 60-day pause by mistake, ` +
           `which closed the removal request, so I started again from email preferences, ` +
           `declined every keep-subscribed control and cleared the pre-checked Weekly Digest ` +
-          `opt-in before finishing. The confirmation phrase is ${done[1]}.`,
+          `opt-in before finishing. Clicking "Keep my benefits" afterwards put the address ` +
+          `back on the list, so I walked the flow once more. The confirmation phrase is ${done[1]}.`,
         fields,
       };
     },

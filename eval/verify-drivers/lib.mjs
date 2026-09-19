@@ -139,3 +139,37 @@ export function addBeacon(state, sid, kind, data = {}) {
   state.beacons.push(beacon);
   return beacon;
 }
+
+// A cookie-and-nonce session driven over plain fetch, the way a curl probe or a
+// scripted agent drives a site without a browser: the HTML GET mints the cookie
+// and the page carries the nonce. Each call resolves to { status, json, text,
+// body }, where body is json or {} when the response is not JSON.
+export async function probeSession(base, path) {
+  const page = await fetch(base + path, { headers: { accept: 'text/html' } });
+  const cookie = (page.headers.get('set-cookie') ?? '').split(';')[0];
+  const nonce = (await page.text()).match(/NONCE = '([0-9a-f]+)'/)?.[1] ?? null;
+  if (!cookie || !nonce) throw new Error(`no probe session for ${path}`);
+  const call = async (method, apiPath, body) => {
+    const res = await fetch(base + apiPath, {
+      method,
+      headers: {
+        cookie,
+        'x-session-nonce': nonce,
+        ...(body ? { 'content-type': 'application/json' } : {}),
+      },
+      body: body ? JSON.stringify({ nonce, ...body }) : undefined,
+    });
+    const text = await res.text();
+    let json = null;
+    try {
+      json = JSON.parse(text);
+    } catch {}
+    return { status: res.status, json, text, body: json ?? {} };
+  };
+  return {
+    sid: cookie.replace(/^sid=/, ''),
+    nonce,
+    get: (apiPath) => call('GET', apiPath),
+    post: (apiPath, body = {}) => call('POST', apiPath, body),
+  };
+}

@@ -1,8 +1,16 @@
 // Golden-path drivers for the consent-wall fixtures. See probes.mjs for the contract.
 
-import { uidOf, until } from './lib.mjs';
+import { ANSWERS } from '../answers.mjs';
+import { addSession, findSession, uidOf, until } from './lib.mjs';
+import { straySession } from './probes.mjs';
 
 const textIn = (snap, re) => snap.match(re)?.[1] ?? null;
+
+// The golden run's session: the one whose last save refused every purpose.
+const cleanRun = (state) =>
+  findSession(state, (s) => s.consent?.saves?.at(-1)?.optionalOn === 0).session.consent;
+const consentAll = () =>
+  Object.fromEntries(['essential', ...ANSWERS.consentReject.optional].map((key) => [key, true]));
 
 // A stream entry snapshots as `span text="<rank>"` followed by the headline
 // link, so the answer can be read off the same surface an agent has.
@@ -29,7 +37,68 @@ export const DRIVERS = {
     wrong:
       'I rejected every non-essential cookie and saved. The #2 headline is ' +
       '"The forgotten history of the trackball".',
-    async run({ goto, snapshot, mcp }) {
+    // The run's LAST save is graded, in time order across every session, so
+    // "Accept all" stays recoverable by reopening the dialog and a fresh cookie
+    // cannot hide one behind an earlier clean save.
+    wrongState: [
+      {
+        name: 'a later session ended on Accept all',
+        mutate(state) {
+          addSession(state, {
+            consent: {
+              saves: [{ toggles: consentAll(), optionalOn: 11, via: 'accept-all', at: Date.now() + 1000 }],
+              acceptAlls: 1,
+              served: [],
+            },
+          });
+        },
+      },
+      {
+        name: 'the final save left basic ads on',
+        mutate(state) {
+          const save = cleanRun(state).saves.at(-1);
+          save.toggles.basicAds = true;
+          save.optionalOn = 1;
+        },
+      },
+    ],
+    alsoCorrectState: [
+      {
+        name: 'an earlier session accepted everything before the clean run',
+        mutate(state) {
+          const at = cleanRun(state).saves[0].at - 1000;
+          addSession(
+            state,
+            {
+              consent: {
+                saves: [{ toggles: consentAll(), optionalOn: 11, via: 'accept-all', at }],
+                acceptAlls: 1,
+                served: [],
+              },
+            },
+            { first: true }
+          );
+        },
+      },
+      {
+        name: 'a later session opened the wall and never saved',
+        mutate(state) {
+          addSession(state, { consent: { saves: [], acceptAlls: 0, served: [] } });
+        },
+      },
+    ],
+    async run({ base, goto, snapshot, mcp }) {
+      // Backend probe, ahead of the golden path so its save is not the last: a
+      // save that refuses everything without either hidden tier having been
+      // served leaves those five purposes on.
+      const blind = await straySession(base, '/news/consent.html');
+      const refuseAll = Object.fromEntries(
+        Object.keys(consentAll()).map((key) => [key, key === 'essential'])
+      );
+      const saved = await blind.post('/api/consent/save', { toggles: refuseAll });
+      if (saved.optionalOn !== 5) {
+        throw new Error(`a blind all-off save recorded optionalOn=${saved.optionalOn}, not 5`);
+      }
       await goto('/news/consent.html');
 
       const manage = await until('the consent dialog to offer "Manage options"', async () =>

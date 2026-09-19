@@ -40,9 +40,11 @@ export function routes(ctx) {
       // shows up in the results row.
       const fromPage = fromNews(req);
       if (!fromPage) modal.offPage += 1;
-      // Pass-granting dismissals must echo this per-show token. It travels
-      // via the page that announced the show, so the generic beacon route and
-      // a naked shown/dismiss curl pair cannot mint a graded dismissal.
+      // Pass-granting dismissals must echo this per-show token, so the generic
+      // beacon route and a dismissal replayed without reading this response
+      // cannot mint a graded dismissal. Anything that does read it can: a shell
+      // pair that echoes the token (legible as offPage), and script in the page,
+      // which is indistinguishable from the page's own close.
       modal.dismissToken = randomBytes(8).toString('hex');
       return json(res, 200, { ok: true, token: modal.dismissToken });
     }

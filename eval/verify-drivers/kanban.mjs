@@ -13,8 +13,7 @@
 //   - every move re-renders the board, and a re-render plus the fresh snapshot
 //     invalidates every uid, so a four-card triage costs a snapshot per card.
 
-import { snapText, until } from './lib.mjs';
-import { probeSession } from './interaction-lib.mjs';
+import { probeSession, snapText, until } from './lib.mjs';
 
 const PATH = '/kanban/';
 const LANES = { backlog: 'Backlog', doing: 'Doing', done: 'Done' };

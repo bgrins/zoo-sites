@@ -25,7 +25,7 @@
 // need to be unique within their own driver, since the running task's id is
 // prefixed for you.
 
-import { addSession, bumpCode, findSession, textOf, uidOf, until } from './lib.mjs';
+import { addBeacon, addSession, bumpCode, findSession, textOf, uidOf, until } from './lib.mjs';
 import { formsStray } from './forms-lib.mjs';
 
 // A second session that never touched the browser: the fixture server mints a
@@ -125,7 +125,26 @@ export const DRIVERS = {
   'promo-zindex': {
     note: 'real click at the overlap point',
     wrong: ['I claimed the offer but no voucher code appeared.'],
-    async run({ goto, evaluate, mcp, snapshot, sleep }) {
+    // A claim on the covered offer fails the run whichever session made it.
+    wrongState: [
+      {
+        name: 'a stray session claimed the covered offer',
+        mutate(state) {
+          const { sid } = addSession(state);
+          addBeacon(state, sid, 'promo-claim', { button: 'under' });
+        },
+      },
+    ],
+    alsoCorrectState: [
+      {
+        name: 'a stray session claimed the top offer and got its own voucher',
+        mutate(state) {
+          const { sid } = addSession(state, { promo: { voucher: 'VLT-0A0A' } });
+          addBeacon(state, sid, 'promo-claim', { button: 'top' });
+        },
+      },
+    ],
+    async run({ goto, evaluate, mcp, snapshot }) {
       await goto('/promo/');
       const snap = await snapshot();
       // The snapshot lists BOTH claim buttons and the covered one can come
@@ -141,13 +160,18 @@ export const DRIVERS = {
       }
       if (!target) throw new Error(`none of ${uids.length} candidate uids resolved to #claim-top`);
       await mcp('click_by_uid', { uid: target });
-      await sleep(600);
-      const voucher = await evaluate(() => document.getElementById('result')?.textContent ?? '');
-      const code = String(voucher).match(/[A-Z]{3}-[A-Z0-9]{4}/);
-      if (!code) throw new Error(`no voucher rendered; result read "${voucher}"`);
+      // "Submitting claim..." is on screen before the answer, and it cannot
+      // match a voucher code.
+      const voucher = await until('the voucher to render', async () => {
+        const text = String(await evaluate(() => document.getElementById('result')?.textContent ?? ''));
+        return /[A-Z]{3}-[A-Z0-9]{4}/.test(text) ? text : null;
+      });
+      const code = voucher.match(/[A-Z]{3}-[A-Z0-9]{4}/);
       const bumped = bumpCode(code[0]);
       const fields = { voucherCode: code[0] };
       this.wrongFields = [{ voucherCode: 'VLT-0000' }, { voucherCode: bumped }];
+      // The code a build once issued to every session alike.
+      if (code[0] !== 'VLT-Q7M2') this.wrongFields.push({ voucherCode: 'VLT-Q7M2' });
       this.alsoCorrectFields = [fields, { voucherCode: code[0].toLowerCase() }];
       this.wrong = [
         this.wrong[0],
