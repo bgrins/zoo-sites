@@ -31,7 +31,7 @@ export const DRIVERS = {
   'mirror-reroute': {
     note: 'clicks splash -> mirror -> department -> dock; asserts serverModes armed the outage',
     wrong:
-      'The VoltCharge DK-100 dock is $129.00, listed on the main Gadgetron store ' +
+      'The Kessvar DK-100 dock is $129.00, listed on the main Gadgetron store ' +
       'at /shop/gadgetron/.',
     async run(h, ctx) {
       // The outage is armed by the harness (run.mjs and verify.mjs both apply
@@ -49,9 +49,16 @@ export const DRIVERS = {
         'the maintenance splash on the primary store'
       );
       const storeUrl = await h.evaluate(() => location.href);
+      // Every path under the primary store answers with this splash, so a footer
+      // link back into the store only reloads it.
+      const loops = await h.evaluate(
+        `() => [...document.querySelectorAll('footer a')].map((a) => a.href)
+          .filter((href) => href.startsWith(${JSON.stringify(storeUrl)}))`
+      );
+      if (loops.length) throw new Error(`splash footer links lead back to the splash: ${loops.join(', ')}`);
       // The route out is a link whose TEXT is the mirror path: a snapshot href is
       // absolutized and truncated at 27 chars, so it can never be read back.
-      const route = uid(splash, 'a "the community mirror node"', 'mirror route link');
+      const route = uid(splash, 'a "the read-only mirror node"', 'mirror route link');
       await h.mcp('click_by_uid', { uid: route });
 
       const depts = await waitForSnapshot(h, /Docks, hubs and power/, 'the mirror department list');
@@ -62,15 +69,15 @@ export const DRIVERS = {
       // The department listing is a <table>, which the snapshot walker drops
       // whole; only the links inside it bubble up, so the spec sheet is the one
       // reachable route to the price through this surface.
-      const rows = await waitForSnapshot(h, /VoltCharge DK-100/, 'the docks department listing');
+      const rows = await waitForSnapshot(h, /Kessvar DK-100/, 'the docks department listing');
       await h.mcp('click_by_uid', {
-        uid: uid(rows, 'a "VoltCharge DK-100(?: dock)?"', 'VoltCharge spec sheet link'),
+        uid: uid(rows, 'a "Kessvar DK-100(?: dock)?"', 'Kessvar spec sheet link'),
       });
 
       const sheet = await waitForSnapshot(
         h,
         /uid=\S+ p text="\$\d+\.\d\d"/,
-        'the mirror price on the VoltCharge spec sheet'
+        'the mirror price on the Kessvar spec sheet'
       );
       const price = sheet.match(/uid=\S+ p text="\$(\d+\.\d\d)"/)[1];
       // Read off the page, so under --origins the answer names the mirror's own
@@ -92,9 +99,9 @@ export const DRIVERS = {
       ];
       this.alsoCorrectFields = [
         fields,
-        { price: dock, sourceUrl: '/api/mirror/catalog?sku=VC-DK100' },
-        { price: dock, sourceUrl: 'mirror node, voltcharge-dock.html' },
-        { price: dock, sourceUrl: 'the mirror catalog entry for VC-DK100' },
+        { price: dock, sourceUrl: '/api/mirror/catalog?sku=KV-DK100' },
+        { price: dock, sourceUrl: 'mirror node, kessvar-dk-100.html' },
+        { price: dock, sourceUrl: 'the mirror catalog entry for KV-DK100' },
       ];
       // A different mint for a probe session, so the price alone tells the
       // two sessions apart.
@@ -128,26 +135,26 @@ export const DRIVERS = {
         },
       ];
       this.wrong = [
-        `The VoltCharge DK-100 dock is $129.00, listed on the main Gadgetron store ` +
+        `The Kessvar DK-100 dock is $129.00, listed on the main Gadgetron store ` +
           `at /shop/gadgetron/.`,
         `Reading the mirror's docks department, the DK-100 lists at $148.00; ` +
           `source: ${url}.`,
-        `The VoltCharge DK-100 dock is $${price}, read from ` +
+        `The Kessvar DK-100 dock is $${price}, read from ` +
           `${new URL('docks.html', storeUrl).href} on the main store.`,
       ];
       this.alsoCorrect = [
         `The main store only serves a maintenance splash, which routes to the ` +
-          `read-only mirror; the mirror's spec sheet prices the VoltCharge DK-100 ` +
+          `read-only mirror; the mirror's spec sheet prices the Kessvar DK-100 ` +
           `at $${price}. Source: ${url}.`,
         `Price: $${price}\nSource URL: ${url}`,
         `Found it through the mirror catalog API (api/mirror/catalog) — the entry ` +
-          `for SKU VC-DK100 gives $${price}.`,
+          `for SKU KV-DK100 gives $${price}.`,
       ];
       return {
         text:
           `Gadgetron's main store is down for scheduled maintenance (incident MB-3-1174), ` +
-          `and the splash points at the read-only mirror node. The VoltCharge DK-100 dock ` +
-          `(part no. VC-DK100) is $${price} there, per unit excluding tax. I read it from ` +
+          `and the splash points at the read-only mirror node. The Kessvar DK-100 dock ` +
+          `(part no. KV-DK100) is $${price} there, per unit excluding tax. I read it from ` +
           `${url}, which is the mirror's spec sheet for that part; the mirror accepts no orders.`,
         fields,
       };

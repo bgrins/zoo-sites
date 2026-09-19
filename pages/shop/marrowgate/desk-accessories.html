@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desk accessories - Computers & Tablets - Marrowgate</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="marrowgate.css">
+<style>
+</style>
+</head>
+<body>
+<div class="locstrip">
+  <span id="mystore">Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <a href="stores.html">Change store</a>
+  <a href="orderstatus.html">Order status</a>
+  <a href="recycling.html">Trade-in and recycling</a>
+  <a href="customer-service.html">Customer service</a>
+</div>
+<header class="masthead">
+  <a class="wordmark" href="index.html">marrowgate</a>
+  <form class="finder" action="search.html" method="get">
+    <input name="q" aria-label="Search Marrowgate" placeholder="What can we help you find today?">
+    <button type="submit">Search</button>
+  </form>
+  <div class="acct">
+    <a href="account.html">My Marrowgate</a>
+    <a href="promos.html">Offers</a>
+    <a id="basketlink" href="basket.html">Basket</a>
+  </div>
+</header>
+<nav class="deptbar" aria-label="Departments">
+  <a href="departments.html#tv">TV &amp; Home Theater</a>
+  <a href="departments.html#computers">Computers &amp; Tablets</a>
+  <a href="index.html">Monitors</a>
+  <a href="departments.html#audio">Audio</a>
+  <a href="departments.html#smarthome">Smart Home</a>
+  <a href="departments.html#cameras">Cameras</a>
+  <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
+  <a href="departments.html#services">Services</a>
+</nav>
+<main>
+<p class="crumbs"><a href="index.html">Home</a> / <a href="departments.html#computers">Computers &amp; Tablets</a> / Desk accessories</p>
+<div class="pagehead"><h1>Desk accessories</h1></div>
+<p class="tally">4 items in Desk accessories. Prices shown exclude tax.</p>
+<ol class="results" id="results"></ol>
+<div class="more"><p>End of results for Desk accessories. Looking for a screen? See
+<a href="index.html">Monitors</a>.</p></div>
+</main>
+<footer class="legal">
+  <ul>
+    <li><a href="customer-service.html">Customer service</a></li>
+    <li><a href="basket-help.html">Basket help</a></li>
+    <li><a href="returns.html">Return policy</a></li>
+    <li><a href="price-match.html">Price match</a></li>
+    <li><a href="stores.html">Store directory</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="privacy.html">Privacy policy</a></li>
+    <li><a href="terms.html">Terms of sale</a></li>
+  </ul>
+  Prices shown exclude tax. Online prices may differ from prices in store. &copy; 2026 Marrowgate Retail Group.
+  <p class="regoffice">Marrowgate Retail Group, 1200 Ferrand Boulevard, Skellbourne, MI 48000 &middot; Customer service 1-616-555-0137</p>
+</footer>
+<script src="marrowgate-chrome.js"></script>
+<script src="marrowgate-feed.js"></script>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const results = document.getElementById('results');
+const basketLink = document.getElementById('basketlink');
+const money = (n) => '$' + Number(n).toFixed(2);
+function shot(title, hue) {
+  return '<div class="shot"><svg viewBox="0 0 132 74" role="img" aria-label="Product image, ' + title + '">' +
+    '<rect width="132" height="74" fill="hsl(' + hue + ',22%,93%)"/>' +
+    '<rect x="22" y="30" width="88" height="26" rx="4" fill="#6f6a5f"/>' +
+    '<rect x="30" y="20" width="72" height="10" rx="2" fill="#8d887b"/></svg></div>';
+}
+const rows = [
+  { title: 'Norvindle mat', href: 'norvindle.html', blurb: 'Recycled-felt desk mat, three sizes and three colors',
+    price: null },
+  ...MARROWGATE_ACCESSORIES.map((a) => ({ ...a, href: null })),
+];
+for (const [i, item] of rows.entries()) {
+  const li = document.createElement('li');
+  li.className = 'row';
+  li.innerHTML = shot(item.title, 30 + i * 70) +
+    '<div class="info"><h2 class="title"></h2><p class="attrs"></p>' +
+    '<p class="fulfil">Ships free to your address &middot; Store pickup: check nearby stores</p></div>' +
+    '<div class="buybox"></div>';
+  const h2 = li.querySelector('.title');
+  if (item.href) {
+    const a = document.createElement('a');
+    a.href = item.href;
+    a.textContent = item.title;
+    h2.appendChild(a);
+  } else {
+    h2.textContent = item.title;
+  }
+  li.querySelector('.attrs').textContent = (item.sku ? 'SKU ' + item.sku + ' · ' : '') + item.blurb;
+  const box = li.querySelector('.buybox');
+  if (item.price === null) {
+    box.innerHTML = '<p class="avail ready">Made to order</p>' +
+      '<a class="basket" href="norvindle.html">Choose size and color</a>';
+  } else {
+    const [whole, frac] = item.price.toFixed(2).split('.');
+    box.innerHTML = '<div class="pricetag"><span class="cur">$</span><span class="whole">' + whole +
+      '</span><span class="frac">' + frac + '</span></div>' +
+      '<span class="sr">Price ' + money(item.price) + ' each</span>' +
+      '<p class="avail ready">Available to ship</p>' +
+      '<a class="basket" href="basket.html" data-add="' + item.sku + '">Add to basket</a>';
+  }
+  results.appendChild(li);
+}
+async function refreshCount(body) {
+  if (!body) {
+    const res = await fetch('/api/shop/cart?store=marrowgate', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) return;
+    body = await res.json();
+  }
+  basketLink.textContent = 'Basket · ' + body.count + ' item' + (body.count === 1 ? '' : 's');
+}
+results.addEventListener('click', async (event) => {
+  const add = event.target.closest('a.basket[data-add]');
+  if (!add) return;
+  event.preventDefault();
+  add.textContent = 'Adding...';
+  try {
+    const res = await fetch('/api/shop/cart/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, store: 'marrowgate', sku: add.dataset.add, qty: 1 }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      add.textContent = body.error ?? 'Could not add. Retry';
+      return;
+    }
+    add.textContent = 'In basket - view';
+    add.removeAttribute('data-add');
+    refreshCount(body);
+  } catch {
+    add.textContent = 'Could not reach Marrowgate. Retry';
+  }
+});
+refreshCount().catch(() => {});
+</script>
+</body>
+</html>

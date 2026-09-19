@@ -2,48 +2,62 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Voltro — Product</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="voltro.css">
 <style>
-  .crumbs { padding: 10px 16px; font-size: 12px; color: #565959; }
-  .crumbs a { color: #007185; text-decoration: none; }
   .pdp { display: flex; gap: 26px; padding: 8px 16px 24px; align-items: flex-start; flex-wrap: wrap; }
   .pdp .photo { width: 380px; flex: none; }
-  .pdp .photo svg { width: 100%; height: auto; border: 1px solid #eee; border-radius: 6px; }
+  .pdp .photo svg { width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 2px; }
   .pdp .facts { flex: 1; min-width: 280px; max-width: 560px; }
-  .pdp h1 { font-size: 22px; margin: 0 0 4px; }
-  .pdp .rating { color: #de7921; font-size: 14px; margin-bottom: 8px; }
-  .pdp .price { color: #b12704; font-size: 26px; font-weight: 700; }
-  .pdp .price s { color: #565959; font-size: 14px; font-weight: 400; }
-  .pdp .permo { color: #565959; font-size: 13px; margin: 2px 0 10px; }
+  .pdp h1 { font-family: var(--round); font-size: 22px; margin: 0 0 4px; color: var(--pine); }
+  .pdp .rating { color: #8a5a00; font-size: 14px; margin-bottom: 8px; }
+  .pdp .price { color: var(--berry); font-size: 26px; font-weight: 700; }
+  .pdp .price s { color: var(--mute); font-size: 14px; font-weight: 400; }
+  .pdp .permo { color: var(--mute); font-size: 13px; margin: 2px 0 10px; }
+  .pdp .about { font-size: 13px; line-height: 1.5; margin: 10px 0 0; }
   .pdp ul { font-size: 13px; margin: 10px 0 0 18px; padding: 0; }
   .pdp ul li { margin: 3px 0; }
-  .buycol { width: 240px; flex: none; border: 1px solid #d5d9d9; border-radius: 8px; padding: 14px; font-size: 13px; }
-  .buycol .stock-in { margin: 6px 0; }
-  .buycol .stock-out { margin: 6px 0; }
-  .buycol button { width: 100%; margin-top: 8px; background: #ffd814; border: 1px solid #fcd200;
-    border-radius: 20px; padding: 8px 12px; cursor: pointer; font-size: 13px; }
-  .buycol button[disabled] { background: #eee; border-color: #ddd; color: #888; cursor: default; }
+  .buycol { width: 240px; flex: none; background: #fff; border: 1px solid var(--rule); border-top: 3px solid var(--pine-2);
+    padding: 14px; font-size: 13px; }
+  .buycol .stock-in, .buycol .stock-out { margin: 6px 0; }
+  .buycol .fulfill { color: var(--mute); }
+  .buycol button { width: 100%; margin-top: 8px; background: var(--sun); border: 1px solid var(--sun-edge);
+    border-bottom-width: 3px; border-radius: 4px; padding: 8px 12px; cursor: pointer; font: inherit; font-weight: 700; }
+  .buycol button[disabled] { background: #eceeed; border-color: #d4d8d6; color: #767d7a; cursor: default; }
   .buycol .after { margin-top: 8px; min-height: 16px; font-size: 12px; }
-  .buycol .after.good { color: #007600; font-weight: 700; }
-  .buycol .after.bad { color: #b12704; font-weight: 700; }
+  .buycol .after.good { color: #1c7a3a; font-weight: 700; }
+  .buycol .after.bad { color: var(--berry); font-weight: 700; }
+  .buycol .seller { margin-top: 10px; color: var(--mute); }
   #missing { padding: 24px 16px; font-size: 14px; }
-  #missing a { color: #007185; }
+  @media (max-width: 600px) {
+    .pdp { padding: 8px 12px 20px; gap: 16px; }
+    .pdp .photo, .buycol { width: 100%; box-sizing: border-box; }
+    .pdp .facts { min-width: 0; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <b>Voltro</b>
-  <input placeholder="Search Voltro" aria-label="Search">
-  <span>Hello, sign in</span>
-  <span>Orders</span>
+  <a class="wordmark" href="index.html">Voltro</a>
+  <form class="finder" action="search.html" method="get" role="search">
+    <input name="q" placeholder="Search Voltro" aria-label="Search Voltro">
+    <button type="submit">Search</button>
+  </form>
+  <a class="acct" href="signin.html">Sign in</a>
+  <a class="acct" href="orders.html">Orders &amp; returns</a>
   <a id="cartlink" class="cartlink" href="cart.html">View cart</a>
 </header>
-<nav>
-  <span>All</span><span>Today's Deals</span><span>Electronics</span>
-  <span>Computers</span><span>Monitors</span><span>Gift Cards</span><span>Customer Service</span>
+<nav class="depts" aria-label="Departments">
+  <a href="index.html" aria-current="page">Monitors</a>
+  <a href="search.html?q=4K">4K monitors</a>
+  <a href="desk-setup.html">Desk Setup</a>
+  <a href="sell.html">Sell on Voltro</a>
+  <a href="help.html">Help</a>
 </nav>
 <div class="crumbs"><a href="index.html">Voltro</a> &rsaquo; Monitors &rsaquo; <span id="crumbname"></span></div>
+<main>
 <div class="pdp" id="pdp" hidden>
   <div class="photo" id="photo"></div>
   <div class="facts">
@@ -51,16 +65,17 @@
     <div class="rating" id="prating"></div>
     <div class="price" id="pprice"></div>
     <div class="permo" id="ppermo"></div>
+    <p class="about" id="pabout"></p>
     <ul id="pspecs"></ul>
   </div>
   <div class="buycol">
     <div class="price" id="bprice" style="font-size:20px"></div>
     <div id="pstock"></div>
-    <div>FREE shipping on this item.</div>
+    <div class="fulfill" id="pfulfill"></div>
     <button id="add" type="button">Add to Cart</button>
     <div class="after" id="after" role="status"></div>
-    <div style="margin-top:10px;color:#565959">Sold and shipped by Voltro Retail.
-      30-day returns: see <a href="returns.html" style="color:#007185">Delivery &amp; Returns</a>.</div>
+    <div class="seller">Sold and shipped by Voltro Retail.
+      30-day returns: see <a href="returns.html">Delivery &amp; returns</a>.</div>
   </div>
 </div>
 <div id="missing" hidden>
@@ -68,11 +83,20 @@
   the seller.</p>
   <p><a href="index.html">Browse all computer monitors</a></p>
 </div>
+</main>
 <footer>
-  &copy; 2026 Voltro Marketplace, Inc. Prices and availability are subject to change.
-  · <a href="conditions.html">Conditions of Use</a> · <a href="privacy.html">Privacy Notice</a>
-  · <a href="privacy.html#ads">Interest-Based Ads</a> · <a href="sell.html">Sell on Voltro</a>
-  · <a href="careers.html">Careers</a> · <a href="help.html">Customer Service</a>
+  <ul>
+    <li><a href="help.html">Help</a></li>
+    <li><a href="orders.html">Orders &amp; returns</a></li>
+    <li><a href="returns.html">Delivery &amp; returns</a></li>
+    <li><a href="sell.html">Sell on Voltro</a></li>
+    <li><a href="careers.html">Careers</a></li>
+    <li><a href="conditions.html">Terms of Use</a></li>
+    <li><a href="privacy.html">Privacy</a></li>
+    <li><a href="privacy.html#ads">Ad choices</a></li>
+  </ul>
+  <p>&copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000.
+  Prices and availability are subject to change.</p>
 </footer>
 <script src="voltro-data.js"></script>
 <script src="voltro-nav.js"></script>
@@ -84,8 +108,19 @@ const RES_LABEL = {
   '4K': '4K UHD 3840x2160',
 };
 
+// Short maker notes shown under the headline; the listing's was-price and
+// fulfilment lines use the same rules as the storefront grid in voltro.js.
+const MAKER = {
+  Voltro: 'Voltro\'s own line, built to the same panel spec sheets as the brands it sells and backed by a two-year Voltro warranty.',
+  ScreenCraft: 'ScreenCraft panels are factory calibrated and ship with a printed color report.',
+  PixelPeak: 'PixelPeak tunes its panels for motion: low input lag and a fast pixel response.',
+  NorthLite: 'NorthLite builds for long office days, with a flicker-free backlight and a low-blue-light mode.',
+  ClaritySee: 'ClaritySee pairs a matte anti-glare coating with a fully adjustable stand.',
+};
+
 const wanted = new URLSearchParams(location.search).get('name') ?? '';
-const product = VOLTRO.products.find((p) => p[0] === wanted);
+const index = VOLTRO.products.findIndex((p) => p[0] === wanted);
+const product = VOLTRO.products[index];
 if (!product) {
   document.getElementById('missing').hidden = false;
   document.getElementById('crumbname').textContent = 'Listing unavailable';
@@ -103,7 +138,14 @@ if (!product) {
     '<rect x="56" y="80" width="48" height="4" fill="#666"/></svg>';
   document.getElementById('prating').textContent =
     rating + ' out of 5 (' + reviews.toLocaleString() + ' ratings)';
-  document.getElementById('pprice').textContent = '$' + price.toFixed(2);
+  const wasPrice = (price * 1.22 + 15).toFixed(2);
+  document.getElementById('pprice').innerHTML = '$' + price.toFixed(2) +
+    (index % 4 !== 3 ? ' <s>$' + wasPrice + '</s>' : '');
+  document.getElementById('pabout').textContent =
+    MAKER[name.split(' ')[0]] ?? '';
+  document.getElementById('pfulfill').textContent = index % 3
+    ? 'FREE shipping — get it Fri, Jul 31.'
+    : 'FREE shipping, or pick it up today at the Downtown counter.';
   document.getElementById('bprice').textContent = '$' + price.toFixed(2);
   document.getElementById('ppermo').textContent =
     'or $' + (price / 12).toFixed(2) + '/mo for 12 mo';

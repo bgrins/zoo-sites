@@ -570,16 +570,16 @@ export const ANSWERS = {
   },
 
   // pages/shop/gadgetron-maintenance.html + pages/shop/gadgetron-mirror/ — the
-  // VoltCharge dock price is minted per session by server.mjs (randomBytes) and
+  // Kessvar dock price is minted per session by sites/shop.mjs (randomBytes) and
   // exists in no fixture file, so the validator reads the expected figure back
   // out of the session it grades. Only the route is fixed ground truth.
   mirrorReroute: {
     splashPath: '/shop/gadgetron-maintenance.html',
     mirrorPath: '/shop/gadgetron-mirror/',
-    dockPath: '/shop/gadgetron-mirror/voltcharge-dock.html',
-    dockFile: 'voltcharge-dock',
-    dockSku: 'VC-DK100',
-    dock: 'VoltCharge DK-100 dock',
+    dockPath: '/shop/gadgetron-mirror/kessvar-dk-100.html',
+    dockFile: 'kessvar-dk-100',
+    dockSku: 'KV-DK100',
+    dock: 'Kessvar DK-100 dock',
     // Same department, fixed prices: quoting one of these is the classic miss.
     decoyDocks: { 'KB-DK9': '129.00', 'ZP-DK5': '148.00' },
   },

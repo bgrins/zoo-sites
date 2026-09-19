@@ -2,24 +2,27 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Compare monitors - Marrowgate</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="marrowgate.css">
 <style>
-  .cmp { margin: 12px 22px 26px; background: #fff; border: 1px solid var(--nb-rule); padding: 16px; overflow-x: auto; }
+  .cmp { margin: 12px 22px 26px; background: #fff; border: 1px solid var(--mg-rule); padding: 16px; overflow-x: auto; }
   table.cmp-grid { border-collapse: collapse; font-size: 13px; min-width: 520px; }
-  table.cmp-grid th, table.cmp-grid td { border: 1px solid var(--nb-rule); padding: 8px 12px; text-align: left; vertical-align: top; }
-  table.cmp-grid thead th { background: #eaf0ff; color: var(--nb-blue); }
+  table.cmp-grid th, table.cmp-grid td { border: 1px solid var(--mg-rule); padding: 8px 12px; text-align: left; vertical-align: top; }
+  table.cmp-grid thead th { background: #eaf0ff; color: var(--mg-blue); }
   table.cmp-grid td.rowcap { background: #f6f8fc; font-weight: bold; white-space: nowrap; }
-  .cmp .price { color: var(--nb-price); font-weight: bold; font-size: 16px; }
+  .cmp .price { color: var(--mg-price); font-weight: bold; font-size: 16px; }
   #note { margin: 12px 22px; font-size: 13px; }
 </style>
 </head>
 <body>
 <div class="locstrip">
-  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <span id="mystore">Store: Riverside Commons &middot; Open until 9:00 pm</span>
   <a href="stores.html">Change store</a>
   <a href="orderstatus.html">Order status</a>
   <a href="recycling.html">Trade-in and recycling</a>
+  <a href="customer-service.html">Customer service</a>
 </div>
 <header class="masthead">
   <a class="wordmark" href="index.html">marrowgate</a>
@@ -43,23 +46,30 @@
   <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
   <a href="departments.html#services">Services</a>
 </nav>
-<p class="crumbs">Home / Computers &amp; Tablets / Monitors / Compare</p>
+<main>
+<p class="crumbs"><a href="index.html">Home</a> / <a href="departments.html#computers">Computers &amp; Tablets</a> / <a href="index.html">Monitors</a> / Compare</p>
 <div class="pagehead"><h1>Compare monitors</h1></div>
 <p id="note"></p>
 <div class="cmp" id="cmp" hidden>
   <table class="cmp-grid" id="grid"></table>
 </div>
+</main>
 <footer class="legal">
   <ul>
+    <li><a href="customer-service.html">Customer service</a></li>
     <li><a href="basket-help.html">Basket help</a></li>
     <li><a href="returns.html">Return policy</a></li>
     <li><a href="price-match.html">Price match</a></li>
-    <li><a href="accessibility.html">Accessibility</a></li>
     <li><a href="stores.html">Store directory</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="privacy.html">Privacy policy</a></li>
+    <li><a href="terms.html">Terms of sale</a></li>
   </ul>
   Prices shown exclude tax. Online prices may differ from prices in store.
   &copy; 2026 Marrowgate Retail Group.
+  <p class="regoffice">Marrowgate Retail Group, 1200 Ferrand Boulevard, Skellbourne, MI 48000 &middot; Customer service 1-616-555-0137</p>
 </footer>
+<script src="marrowgate-chrome.js"></script>
 <script src="marrowgate-feed.js"></script>
 <script>
 const RESOLUTION = {

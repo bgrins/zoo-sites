@@ -2,31 +2,33 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Norvindle mat - Desk accessories - Marrowgate</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="marrowgate.css">
 <style>
-  .pdp { display: flex; gap: 26px; margin: 12px 22px 0; background: #fff; border: 1px solid var(--nb-rule); padding: 18px; }
+  .pdp { display: flex; gap: 26px; margin: 12px 22px 0; background: #fff; border: 1px solid var(--mg-rule); padding: 18px; }
   .pdp .hero { width: 300px; flex: none; }
   .pdp .hero svg { width: 300px; height: 180px; }
   .pdp .detail { flex: 1; min-width: 0; }
   .pdp h1 { font-size: 21px; margin: 0 0 6px; }
   .pdp .modelline { font-size: 13px; color: #414a5e; margin: 0 0 10px; }
   .pdp .spec { list-style: square; margin: 8px 0 0 18px; padding: 0; font-size: 13px; }
-  .config { width: 268px; flex: none; border-left: 1px dotted var(--nb-rule); padding-left: 18px; }
+  .config { width: 268px; flex: none; border-left: 1px dotted var(--mg-rule); padding-left: 18px; }
   .config h2 { font-size: 13px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .07em; color: #33405c; }
   .pick { margin-bottom: 12px; }
   .pick .cap { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #5b6478; margin-bottom: 3px; }
-  .pick select { width: 100%; font: inherit; font-size: 14px; padding: 6px; border: 1px solid var(--nb-rule); background: #fff; }
+  .pick select { width: 100%; font: inherit; font-size: 14px; padding: 6px; border: 1px solid var(--mg-rule); background: #fff; }
   .pick .opts { font-size: 12px; color: #5b6478; margin: 3px 0 0; }
-  .quote { border-top: 1px solid var(--nb-rule); padding-top: 11px; }
+  .quote { border-top: 1px solid var(--mg-rule); padding-top: 11px; }
   .quote .combo { font-size: 13px; color: #414a5e; margin: 0 0 4px; }
-  .quote .vprice { font-size: 28px; font-weight: bold; color: var(--nb-price); letter-spacing: -.02em; }
+  .quote .vprice { font-size: 28px; font-weight: bold; color: var(--mg-price); letter-spacing: -.02em; }
   .quote .vstock { font-size: 13px; font-weight: bold; margin: 5px 0 0; }
   .quote .vstock.ready { color: #1d5c2c; }
   .quote .vstock.gone { color: #8f1220; }
   .quote .vlead { font-size: 12px; color: #5b6478; margin: 3px 0 0; }
   .config button.add {
-    display: block; width: 100%; margin-top: 12px; background: var(--nb-price); color: #fff;
+    display: block; width: 100%; margin-top: 12px; background: var(--mg-price); color: #fff;
     border: 0; font: inherit; font-weight: bold; font-size: 15px; padding: 10px 0; cursor: pointer;
   }
   .config button.add[disabled] { background: #e7e9ef; color: #6b7385; cursor: default; }
@@ -34,17 +36,25 @@
   .config .after.bad { color: #8f1220; font-weight: bold; }
   .config .after.good { color: #1d5c2c; font-weight: bold; }
   .infopanels { display: flex; gap: 18px; margin: 12px 22px 24px; }
-  .infopanels section { flex: 1; background: #fff; border: 1px solid var(--nb-rule); padding: 14px 16px; }
+  .infopanels section { flex: 1; background: #fff; border: 1px solid var(--mg-rule); padding: 14px 16px; }
   .infopanels h2 { font-size: 14px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .06em; color: #33405c; }
   .infopanels p { font-size: 13px; margin: 0 0 6px; }
+  @media (max-width: 700px) {
+    .pdp { flex-direction: column; margin: 12px; padding: 14px; gap: 14px; }
+    .pdp .hero, .pdp .hero svg { width: 100%; height: auto; }
+    .buypanel, .config { width: 100%; border-left: 0; border-top: 1px dotted var(--mg-rule); padding: 12px 0 0; }
+    .infopanels { flex-direction: column; margin: 12px; }
+    .offerlink, #missing { margin-left: 12px; margin-right: 12px; }
+  }
 </style>
 </head>
 <body>
 <div class="locstrip">
-  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <span id="mystore">Store: Riverside Commons &middot; Open until 9:00 pm</span>
   <a href="stores.html">Change store</a>
   <a href="orderstatus.html">Order status</a>
   <a href="recycling.html">Trade-in and recycling</a>
+  <a href="customer-service.html">Customer service</a>
 </div>
 <header class="masthead">
   <a class="wordmark" href="index.html">marrowgate</a>
@@ -68,8 +78,9 @@
   <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
   <a href="departments.html#services">Services</a>
 </nav>
-<p class="crumbs">Home / Computers &amp; Tablets / Desk accessories / Norvindle mat</p>
-<div class="memberbar">Price and availability depend on the size and colour you choose. Each
+<main>
+<p class="crumbs"><a href="index.html">Home</a> / <a href="departments.html#computers">Computers &amp; Tablets</a> / <a href="desk-accessories.html">Desk accessories</a> / Norvindle mat</p>
+<div class="memberbar">Price and availability depend on the size and color you choose. Each
 combination is priced separately by the supplier.</div>
 <div class="pdp">
   <div class="hero">
@@ -84,8 +95,8 @@ combination is priced separately by the supplier.</div>
     <h1>Norvindle mat</h1>
     <p class="modelline">Supplier Norvindle &middot; Model NR-MAT &middot; Desk accessories</p>
     <p style="font-size:13px;margin:0">Recycled-felt desk mat with a stitched edge and a
-    non-slip backing. Made to order in three sizes and three colourways; the supplier prices
-    and stocks every combination independently, so pick a size and a colour to see the price
+    non-slip backing. Made to order in three sizes and three colors; the supplier prices
+    and stocks every combination independently, so pick a size and a color to see the price
     for that exact combination.</p>
     <ul class="spec">
       <li>Small 600 x 300 mm, Medium 800 x 400 mm, Large 1000 x 500 mm</li>
@@ -107,14 +118,14 @@ combination is priced separately by the supplier.</div>
       <p class="opts">Sizes: S, M, L</p>
     </div>
     <div class="pick">
-      <span class="cap">Colour</span>
-      <select id="color" aria-label="Colour">
-        <option value="">Choose a colour</option>
+      <span class="cap">Color</span>
+      <select id="color" aria-label="Color">
+        <option value="">Choose a color</option>
         <option value="Graphite">Graphite</option>
         <option value="Sand">Sand</option>
         <option value="Moss">Moss</option>
       </select>
-      <p class="opts">Colours: Graphite, Sand, Moss</p>
+      <p class="opts">Colors: Graphite, Sand, Moss</p>
     </div>
     <div class="quote">
       <p class="combo" id="combo">No combination chosen</p>
@@ -143,17 +154,23 @@ combination is priced separately by the supplier.</div>
     <p>Cut sizes are not exchangeable.</p>
   </section>
 </div>
+</main>
 <footer class="legal">
   <ul>
+    <li><a href="customer-service.html">Customer service</a></li>
     <li><a href="basket-help.html">Basket help</a></li>
     <li><a href="returns.html">Return policy</a></li>
     <li><a href="price-match.html">Price match</a></li>
-    <li><a href="accessibility.html">Accessibility</a></li>
     <li><a href="stores.html">Store directory</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="privacy.html">Privacy policy</a></li>
+    <li><a href="terms.html">Terms of sale</a></li>
   </ul>
   Supplier pricing is refreshed nightly and is confirmed at the basket. Prices shown
   exclude tax. &copy; 2026 Marrowgate Retail Group.
+  <p class="regoffice">Marrowgate Retail Group, 1200 Ferrand Boulevard, Skellbourne, MI 48000 &middot; Customer service 1-616-555-0137</p>
 </footer>
+<script src="marrowgate-chrome.js"></script>
 <script>
 const NONCE = '__SESSION_NONCE__';
 const sizeEl = document.getElementById('size');
@@ -188,17 +205,21 @@ async function quote() {
   leadEl.textContent = '';
   const query = '/api/shop/variant?product=norvindle&size=' +
     encodeURIComponent(size) + '&color=' + encodeURIComponent(color);
-  const res = await fetch(query, { headers: { 'X-Session-Nonce': NONCE } });
-  const stale = () => sizeEl.value !== size || colorEl.value !== color;
-  if (stale()) return;
-  if (!res.ok) {
+  let res = null;
+  let body = null;
+  try {
+    res = await fetch(query, { headers: { 'X-Session-Nonce': NONCE } });
+    body = await res.json().catch(() => null);
+  } catch {}
+  if (sizeEl.value !== size || colorEl.value !== color) return;
+  if (!res || !res.ok || !body) {
     priceEl.textContent = '--';
     stockEl.className = 'vstock gone';
-    stockEl.textContent = 'Not available';
+    stockEl.textContent = res && res.status === 404
+      ? 'That size and color is not made.'
+      : 'Prices could not be loaded. Choose again or reload the page.';
     return;
   }
-  const body = await res.json();
-  if (stale()) return;
   current = body;
   priceEl.textContent = '$' + Number(body.price).toFixed(2);
   stockEl.className = 'vstock ' + (body.inStock ? 'ready' : 'gone');
@@ -221,7 +242,7 @@ addEl.addEventListener('click', async () => {
   if (res.ok) {
     afterEl.className = 'after good';
     afterEl.textContent = 'Added to basket.';
-    basketLink.textContent = 'Basket · ' + body.count + ' items';
+    basketLink.textContent = 'Basket · ' + body.count + ' item' + (body.count === 1 ? '' : 's');
   } else {
     afterEl.className = 'after bad';
     afterEl.textContent = body.error;

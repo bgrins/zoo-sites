@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gadgetron | Order list</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="gadgetron.css">
 <style>
   .desk { flex: 1; padding: 10px 14px 26px; min-width: 0; }
@@ -29,8 +31,8 @@
 </style>
 </head>
 <body>
-<div class="railbar">
-  <span class="mark">Gadgetron</span>
+<header class="railbar">
+  <a class="mark" href="index.html">Gadgetron</a>
   <span class="tagline">Spec index and price engine</span>
   <form action="search.html" method="get">
     <input name="q" aria-label="Search part numbers or models" placeholder="Model, brand or part no.">
@@ -38,7 +40,7 @@
   </form>
   <span class="who">Guest &middot; <a href="signin.html">sign in</a> &middot; order list:
     <span id="order-count">0 queued</span></span>
-</div>
+</header>
 <nav class="tabs" aria-label="Sections">
   <a href="index.html">Catalog</a>
   <a href="compare.html">Compare</a>
@@ -49,7 +51,7 @@
 </nav>
 <div class="crumbline">Catalog &rsaquo; Order list &middot;
   <a href="substitutions.html">Approved substitution list</a></div>
-<div class="layout">
+<main class="layout">
   <aside class="facets" aria-label="Desk tools">
     <h2>Buying desk</h2>
     <details open>
@@ -79,8 +81,9 @@
         <input class="qty" id="qty" value="1" aria-label="Quantity">
         <button class="push" type="button" id="push">Add to order list</button>
       </div>
-      <p class="hint">Part numbers are shown in the Model column of the catalog index. A
-      sold-out part number is refused; see the approved substitution list.</p>
+      <p class="hint">Part numbers are shown in the Part no. column of the catalog index. A
+      sold-out part number is refused; see the approved substitution list. For 10 units or
+      more, ask for a <a href="bulk-quote.html">bulk quote</a>.</p>
       <div class="banner" id="banner" role="status"></div>
     </div>
     <table class="grid">
@@ -103,19 +106,33 @@
       <span id="tax">Tax at 8% 0.00</span>
       <span id="grand">Order total 0.00</span>
     </div>
+    <div class="quick" id="sendbox" style="margin-top:14px" hidden>
+      <h2>Send this list to the buying desk</h2>
+      <div class="fields">
+        <span class="cap">Work email</span>
+        <input class="part" id="sendemail" type="email" aria-label="Work email" autocomplete="email">
+        <span class="cap">PO ref.</span>
+        <input class="part" id="sendpo" aria-label="Purchase order reference (optional)" style="width:120px">
+        <button class="push" type="button" id="send">Submit list to buying desk</button>
+      </div>
+      <p class="hint">The desk confirms stock and emails a pro forma invoice within one business
+      day. Nothing ships or is charged until you pay it.</p>
+      <div class="banner" id="sendbanner" role="status"></div>
+    </div>
   </section>
-</div>
+</main>
 <footer class="legalstrip">
   <a href="warehouse-policy.html#status">Warehouse status codes</a> &middot;
   <a href="warehouse-policy.html#returns">Return window</a> &middot;
   <a href="methodology.html">Price engine methodology</a> &middot;
   <a href="seller-terms.html">Marketplace seller terms</a> &middot;
   <a href="service-status.html">Service status history</a> &middot;
+  <a href="terms.html">Terms of sale</a> &middot;
   <a href="privacy.html">Privacy notice</a> &middot;
   <a href="support.html">Support desk</a><br>
   Listings are supplied by marketplace sellers; Gadgetron is not the seller of record for
   marketplace items. Specifications are provided by the manufacturer. &copy; 2026 Gadgetron
-  Trading Co.
+  Trading Co., 4180 Halverson Way, Suite 300, Druvenport, OH 43000.
 </footer>
 <script>
 const NONCE = '__SESSION_NONCE__';
@@ -165,6 +182,7 @@ function paint(body) {
   document.getElementById('sub').textContent = 'Subtotal ' + body.subtotal.toFixed(2);
   document.getElementById('tax').textContent = 'Tax at 8% ' + body.tax.toFixed(2);
   document.getElementById('grand').textContent = 'Order total ' + body.total.toFixed(2);
+  document.getElementById('sendbox').hidden = !body.lines.length;
 }
 
 async function load() {
@@ -173,7 +191,7 @@ async function load() {
   });
   if (!res.ok) {
     banner.className = 'banner bad';
-    banner.textContent = 'Sign in to load this order list.';
+    banner.textContent = 'The order list could not be loaded. Reload the page to try again.';
     return;
   }
   paint(await res.json());
@@ -188,6 +206,12 @@ push.addEventListener('click', async () => {
   if (!part) {
     banner.className = 'banner bad';
     banner.textContent = 'Enter a part number.';
+    return;
+  }
+  const qtyText = document.getElementById('qty').value.trim();
+  if (!/^\d+$/.test(qtyText) || Number(qtyText) < 1 || Number(qtyText) > 99) {
+    banner.className = 'banner bad';
+    banner.textContent = 'Enter a quantity from 1 to 99. For more, ask for a bulk quote.';
     return;
   }
   push.disabled = true;
@@ -217,6 +241,9 @@ push.addEventListener('click', async () => {
         banner.appendChild(sub);
       }
     }
+  } catch {
+    banner.className = 'banner bad';
+    banner.textContent = 'The order list could not be reached. Try again.';
   } finally {
     push.disabled = false;
   }
@@ -242,6 +269,33 @@ if (carried.get('part')) {
   banner.className = 'banner';
   banner.textContent = 'Carried over from the catalog. Press Add to order list to queue it.';
 }
+
+document.getElementById('send').addEventListener('click', async () => {
+  const sendBanner = document.getElementById('sendbanner');
+  const send = document.getElementById('send');
+  sendBanner.className = 'banner';
+  sendBanner.textContent = '';
+  send.disabled = true;
+  try {
+    const res = await fetch('/api/gadgetron/submit-list', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nonce: NONCE,
+        email: document.getElementById('sendemail').value.trim(),
+        po: document.getElementById('sendpo').value.trim(),
+      }),
+    });
+    const body = await res.json();
+    sendBanner.className = res.ok ? 'banner good' : 'banner bad';
+    sendBanner.textContent = res.ok ? body.message : body.error;
+  } catch {
+    sendBanner.className = 'banner bad';
+    sendBanner.textContent = 'The buying desk could not be reached. Try again.';
+  } finally {
+    send.disabled = false;
+  }
+});
 
 load();
 </script>

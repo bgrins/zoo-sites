@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voltro — Sign in</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="voltro.css">
+<style>
+.signbox { background: #fff; border: 1px solid var(--rule); border-top: 3px solid var(--pine-2); padding: 14px 18px 18px; max-width: 360px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="wordmark" href="index.html">Voltro</a>
+  <form class="finder" action="search.html" method="get" role="search">
+    <input name="q" placeholder="Search Voltro" aria-label="Search Voltro">
+    <button type="submit">Search</button>
+  </form>
+  <a class="acct" href="signin.html">Sign in</a>
+  <a class="acct" href="orders.html">Orders &amp; returns</a>
+  <a id="cartlink" class="cartlink" href="cart.html">View cart</a>
+</header>
+<nav class="depts" aria-label="Departments">
+  <a href="index.html">Monitors</a>
+  <a href="search.html?q=4K">4K monitors</a>
+  <a href="desk-setup.html">Desk Setup</a>
+  <a href="sell.html">Sell on Voltro</a>
+  <a href="help.html">Help</a>
+</nav>
+<main class="page">
+  <h1>Sign in</h1>
+  <p>Voltro accounts are held by marketplace sellers, who sign in here to manage their
+  listings; <a href="sell.html">Sell on Voltro</a> explains how to open one. Shoppers do
+  not need an account: every order checks out as a guest and is tracked from
+  <a href="orders.html">Orders &amp; returns</a> with the order number and last name.</p>
+  <div class="signbox">
+    <form class="form" id="signin" novalidate>
+      <label for="email">Email address</label>
+      <input id="email" type="email" autocomplete="email">
+      <label for="pass">Password</label>
+      <input id="pass" type="password" autocomplete="current-password">
+      <button type="submit" class="btn">Sign in</button>
+      <p class="status" id="verdict" role="status"></p>
+    </form>
+  </div>
+  <p class="rev">Forgotten your password? Write to support@voltro.example from the
+  address on your account and the help desk sends a reset link.</p>
+</main>
+<footer>
+  <ul>
+    <li><a href="help.html">Help</a></li>
+    <li><a href="orders.html">Orders &amp; returns</a></li>
+    <li><a href="returns.html">Delivery &amp; returns</a></li>
+    <li><a href="sell.html">Sell on Voltro</a></li>
+    <li><a href="careers.html">Careers</a></li>
+    <li><a href="conditions.html">Terms of Use</a></li>
+    <li><a href="privacy.html">Privacy</a></li>
+    <li><a href="privacy.html#ads">Ad choices</a></li>
+  </ul>
+  <p>&copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000.
+  Prices and availability are subject to change.</p>
+</footer>
+<script src="voltro-nav.js"></script>
+<script>
+document.getElementById('signin').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const verdict = document.getElementById('verdict');
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('pass').value;
+  verdict.className = 'status bad';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    verdict.textContent = 'Enter the email address on your Voltro account.';
+    return;
+  }
+  if (!pass) {
+    verdict.textContent = 'Enter your password.';
+    return;
+  }
+  verdict.textContent =
+    'That email and password do not match a Voltro seller account. Check both and try ' +
+    'again. Shoppers do not need to sign in: checkout works as a guest.';
+});
+</script>
+</body>
+</html>

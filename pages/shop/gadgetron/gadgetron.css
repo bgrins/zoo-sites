@@ -12,8 +12,9 @@ a { color: #0d5c8a; }
 }
 .railbar .mark {
   font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: .16em;
-  color: #ffb020;
+  color: #ffb020; text-decoration: none;
 }
+.railbar a { color: #ffd27a; }
 .railbar .tagline { font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: #9aa2b1; }
 .railbar form { margin-left: auto; display: flex; gap: 0; }
 .railbar input { font: inherit; border: 1px solid #3a4152; background: #12151d; color: #e8eaef; padding: 4px 7px; width: 210px; }
@@ -89,3 +90,16 @@ button.buy[disabled] { background: #e7e9ee; border-color: #cdd1da; color: #8b93a
   font-size: 11px; padding: 14px; line-height: 1.6;
 }
 .legalstrip a { color: #cfd4de; }
+[hidden] { display: none !important; }
+@media (max-width: 700px) {
+  .railbar { flex-wrap: wrap; gap: 6px 12px; }
+  .railbar .tagline { display: none; }
+  .railbar form { margin-left: 0; order: 3; flex: 1 1 100%; }
+  .railbar input { flex: 1; width: auto; min-width: 0; }
+  .tabs { overflow-x: auto; white-space: nowrap; }
+  .layout { flex-direction: column; }
+  .facets { width: auto; border-right: 0; border-bottom: 1px solid #dcdfe6; padding-bottom: 12px; align-self: stretch; }
+  .sheet, .desk, .policy { padding: 10px 12px 22px; align-self: stretch; }
+  table.grid { display: block; overflow-x: auto; }
+  .statline label { margin-left: 0; }
+}

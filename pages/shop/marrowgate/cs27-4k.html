@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ClaritySee CS27-4K - Monitors - Marrowgate</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="marrowgate.css">
 <style>
-  .pdp { display: flex; gap: 26px; margin: 12px 22px 0; background: #fff; border: 1px solid var(--nb-rule); padding: 18px; }
+  .pdp { display: flex; gap: 26px; margin: 12px 22px 0; background: #fff; border: 1px solid var(--mg-rule); padding: 18px; }
   .pdp .hero { width: 340px; flex: none; }
   .pdp .hero svg { width: 340px; height: 200px; }
   .pdp .detail { flex: 1; min-width: 0; }
@@ -13,15 +15,15 @@
   .pdp .modelline { font-size: 13px; color: #414a5e; margin: 0 0 10px; }
   .pdp .spec { list-style: square; margin: 10px 0 0 18px; padding: 0; font-size: 13px; }
   .pdp .spec li { margin: 2px 0; }
-  .buypanel { width: 250px; flex: none; border-left: 1px dotted var(--nb-rule); padding-left: 18px; }
-  .buypanel .pricetag { color: var(--nb-price); line-height: 1; }
+  .buypanel { width: 250px; flex: none; border-left: 1px dotted var(--mg-rule); padding-left: 18px; }
+  .buypanel .pricetag { color: var(--mg-price); line-height: 1; }
   .buypanel .whole { font-size: 34px; font-weight: bold; letter-spacing: -.02em; }
   .buypanel .cur, .buypanel .frac { font-size: 16px; vertical-align: 16px; font-weight: bold; }
   .buypanel .exc { font-size: 12px; color: #5b6478; margin: 6px 0 12px; }
   .qline { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 10px; }
-  .qline input { width: 54px; font: inherit; padding: 4px; border: 1px solid var(--nb-rule); }
+  .qline input { width: 54px; font: inherit; padding: 4px; border: 1px solid var(--mg-rule); }
   .buypanel button.add {
-    display: block; width: 100%; background: var(--nb-price); color: #fff; border: 0;
+    display: block; width: 100%; background: var(--mg-price); color: #fff; border: 0;
     font: inherit; font-weight: bold; font-size: 15px; padding: 11px 0; cursor: pointer;
   }
   .buypanel .after { font-size: 12px; margin: 10px 0 0; min-height: 16px; }
@@ -29,17 +31,25 @@
   .buypanel .after.good { color: #1d5c2c; font-weight: bold; }
   .offerlink { margin: 12px 22px 0; background: #fff8d6; border: 1px solid #e4d284; padding: 9px 12px; font-size: 13px; }
   .infopanels { display: flex; gap: 18px; margin: 12px 22px 24px; }
-  .infopanels section { flex: 1; background: #fff; border: 1px solid var(--nb-rule); padding: 14px 16px; }
+  .infopanels section { flex: 1; background: #fff; border: 1px solid var(--mg-rule); padding: 14px 16px; }
   .infopanels h2 { font-size: 14px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .06em; color: #33405c; }
   .infopanels p { font-size: 13px; margin: 0 0 6px; }
+  @media (max-width: 700px) {
+    .pdp { flex-direction: column; margin: 12px; padding: 14px; gap: 14px; }
+    .pdp .hero, .pdp .hero svg { width: 100%; height: auto; }
+    .buypanel, .config { width: 100%; border-left: 0; border-top: 1px dotted var(--mg-rule); padding: 12px 0 0; }
+    .infopanels { flex-direction: column; margin: 12px; }
+    .offerlink, #missing { margin-left: 12px; margin-right: 12px; }
+  }
 </style>
 </head>
 <body>
 <div class="locstrip">
-  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <span id="mystore">Store: Riverside Commons &middot; Open until 9:00 pm</span>
   <a href="stores.html">Change store</a>
   <a href="orderstatus.html">Order status</a>
   <a href="recycling.html">Trade-in and recycling</a>
+  <a href="customer-service.html">Customer service</a>
 </div>
 <header class="masthead">
   <a class="wordmark" href="index.html">marrowgate</a>
@@ -63,7 +73,8 @@
   <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
   <a href="departments.html#services">Services</a>
 </nav>
-<p class="crumbs">Home / Computers &amp; Tablets / Monitors / ClaritySee CS27-4K</p>
+<main>
+<p class="crumbs"><a href="index.html">Home</a> / <a href="departments.html#computers">Computers &amp; Tablets</a> / <a href="index.html">Monitors</a> / ClaritySee CS27-4K</p>
 <div class="offerlink">Promotion codes can be entered in your basket. See <a href="promos.html">this week's offers</a>.</div>
 <div class="pdp">
   <div class="hero">
@@ -81,10 +92,10 @@
     <p id="blurb" style="font-size:13px;margin:0">Loading specifications.</p>
     <ul class="spec">
       <li>27 inch diagonal, matte anti-glare finish</li>
-      <li>3840 x 2160 native, 10-bit colour, 99% sRGB</li>
+      <li>3840 x 2160 native, 10-bit color, 99% sRGB</li>
       <li>Two HDMI 2.0 inputs, one DisplayPort 1.4, headphone out</li>
       <li>Height, tilt and swivel adjustable stand, 100 x 100 VESA</li>
-      <li>Three year parts and labour warranty</li>
+      <li>Three year parts and labor warranty</li>
     </ul>
   </div>
   <div class="buypanel">
@@ -108,7 +119,7 @@
   <section>
     <h2>Protection plan</h2>
     <p>Two extra years, $29.99.</p>
-    <p>Added at the review step, not here.</p>
+    <p>Offered at checkout, not here.</p>
   </section>
   <section>
     <h2>Returns</h2>
@@ -116,18 +127,24 @@
     <p>Original packaging required.</p>
   </section>
 </div>
+</main>
 <footer class="legal">
   <ul>
+    <li><a href="customer-service.html">Customer service</a></li>
     <li><a href="basket-help.html">Basket help</a></li>
     <li><a href="returns.html">Return policy</a></li>
     <li><a href="price-match.html">Price match</a></li>
-    <li><a href="accessibility.html">Accessibility</a></li>
     <li><a href="stores.html">Store directory</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="privacy.html">Privacy policy</a></li>
+    <li><a href="terms.html">Terms of sale</a></li>
   </ul>
   Prices shown exclude tax. Online prices may differ from prices in store. Marrowgate
   matches any advertised price from a qualifying local retailer within seven days of
   purchase. &copy; 2026 Marrowgate Retail Group.
+  <p class="regoffice">Marrowgate Retail Group, 1200 Ferrand Boulevard, Skellbourne, MI 48000 &middot; Customer service 1-616-555-0137</p>
 </footer>
+<script src="marrowgate-chrome.js"></script>
 <script>
 const NONCE = '__SESSION_NONCE__';
 const SKU = '6428193';
@@ -147,7 +164,7 @@ async function refreshBasket() {
   });
   if (!res.ok) return;
   const body = await res.json();
-  basketLink.textContent = 'Basket · ' + body.count + ' items';
+  basketLink.textContent = 'Basket · ' + body.count + ' item' + (body.count === 1 ? '' : 's');
 }
 
 (async () => {
@@ -186,7 +203,7 @@ document.getElementById('add').addEventListener('click', async () => {
   if (res.ok) {
     after.className = 'after good';
     after.textContent = 'Added to basket.';
-    basketLink.textContent = 'Basket · ' + body.count + ' items';
+    basketLink.textContent = 'Basket · ' + body.count + ' item' + (body.count === 1 ? '' : 's');
   } else {
     after.className = 'after bad';
     after.textContent = body.error;

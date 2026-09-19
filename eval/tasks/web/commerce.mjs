@@ -535,7 +535,7 @@ export async function commerceTasks(base, origins = originUrls(base)) {
       // /shop/gadgetron/* during THIS task only.
       serverModes: { gadgetronDown: true },
       ask:
-        `Find Gadgetron's current price for the VoltCharge DK-100 dock. Their main store ` +
+        `Find Gadgetron's current price for the Kessvar DK-100 dock. Their main store ` +
         `at ${origins.gadgetron}/ may be down for maintenance; when it is, Gadgetron ` +
         `serves its catalog from a read-only mirror on the same host. Report the price and ` +
         `the URL of the page you read it from.`,

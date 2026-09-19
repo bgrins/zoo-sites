@@ -24,14 +24,15 @@ const built = [];
 
 for (const row of GADGETRON_ROWS) {
   const tr = document.createElement('tr');
-  tr.dataset.sku = row.model;
+  tr.dataset.sku = row.part;
   tr.dataset.stock = row.stock;
   tr.innerHTML =
     `<td><input type="checkbox" aria-label="Select row for comparison"></td>` +
     `<td class="model">${row.model}</td>` +
-    `<td class="num">${row.diag}</td>` +
+    `<td class="mono part">${row.part}</td>` +
+    `<td class="num diag">${row.diag}</td>` +
     `<td class="mono">${NATIVE[row.res]}</td>` +
-    `<td>${CLASS_LABEL[row.res]}</td>` +
+    `<td class="cls">${CLASS_LABEL[row.res]}</td>` +
     `<td>IPS</td>` +
     `<td class="num">${row.res === '4K' ? '60' : '144'}</td>` +
     `<td class="num">${row.rating.toFixed(1)}</td>` +
@@ -75,7 +76,7 @@ function applyIndex() {
   );
   const mode = orderSelect.value;
   if (mode === 'Part number') {
-    visible.sort((a, b) => a.row.model.localeCompare(b.row.model));
+    visible.sort((a, b) => a.row.part.localeCompare(b.row.part));
   } else if (mode === 'Price, ascending') {
     visible.sort((a, b) => a.row.price - b.row.price);
   } else if (mode === 'Price, descending') {
@@ -126,7 +127,7 @@ function refreshCompare() {
     return;
   }
   compareNote.innerHTML =
-    chosen.length + ' rows selected: <a href="compare.html?models=' +
+    chosen.length + ' rows selected: <a href="compare.html?parts=' +
     encodeURIComponent(chosen.join('|')) + '">compare side by side</a>';
 }
 
@@ -143,7 +144,7 @@ body.addEventListener('click', (event) => {
   if (stepper) {
     const field = stepper.querySelector('input');
     const next = Number(field.value) + (target.textContent === '+' ? 1 : -1);
-    field.value = String(Math.max(1, Math.min(9, next)));
+    field.value = String(Math.max(1, Math.min(99, Number.isFinite(next) ? next : 1)));
     return;
   }
   // Only the buying desk can commit a part number, so a row's buy control hands

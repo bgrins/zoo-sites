@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Product - Monitors - Marrowgate</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="marrowgate.css">
 <style>
-  .pdp { display: flex; gap: 26px; margin: 12px 22px 0; background: #fff; border: 1px solid var(--nb-rule); padding: 18px; }
+  .pdp { display: flex; gap: 26px; margin: 12px 22px 0; background: #fff; border: 1px solid var(--mg-rule); padding: 18px; }
   .pdp .hero { width: 340px; flex: none; }
   .pdp .hero svg { width: 340px; height: 200px; }
   .pdp .detail { flex: 1; min-width: 0; }
@@ -13,30 +15,38 @@
   .pdp .modelline { font-size: 13px; color: #414a5e; margin: 0 0 10px; }
   .pdp .spec { list-style: square; margin: 10px 0 0 18px; padding: 0; font-size: 13px; }
   .pdp .spec li { margin: 2px 0; }
-  .buypanel { width: 250px; flex: none; border-left: 1px dotted var(--nb-rule); padding-left: 18px; }
-  .buypanel .pricetag { color: var(--nb-price); line-height: 1; }
+  .buypanel { width: 250px; flex: none; border-left: 1px dotted var(--mg-rule); padding-left: 18px; }
+  .buypanel .pricetag { color: var(--mg-price); line-height: 1; }
   .buypanel .whole { font-size: 34px; font-weight: bold; letter-spacing: -.02em; }
   .buypanel .cur, .buypanel .frac { font-size: 16px; vertical-align: 16px; font-weight: bold; }
   .buypanel .exc { font-size: 12px; color: #5b6478; margin: 6px 0 12px; }
   .qline { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 10px; }
-  .qline input { width: 54px; font: inherit; padding: 4px; border: 1px solid var(--nb-rule); }
+  .qline input { width: 54px; font: inherit; padding: 4px; border: 1px solid var(--mg-rule); }
   .buypanel button.add {
-    display: block; width: 100%; background: var(--nb-price); color: #fff; border: 0;
+    display: block; width: 100%; background: var(--mg-price); color: #fff; border: 0;
     font: inherit; font-weight: bold; font-size: 15px; padding: 11px 0; cursor: pointer;
   }
   .buypanel button.add[disabled] { background: #e7e9ef; color: #6b7385; cursor: default; }
   .buypanel .after { font-size: 12px; margin: 10px 0 0; min-height: 16px; }
   .buypanel .after.bad { color: #8f1220; font-weight: bold; }
   .buypanel .after.good { color: #1d5c2c; font-weight: bold; }
-  #missing { margin: 18px 22px; background: #fff; border: 1px solid var(--nb-rule); padding: 16px; font-size: 14px; }
+  #missing { margin: 18px 22px; background: #fff; border: 1px solid var(--mg-rule); padding: 16px; font-size: 14px; }
+  @media (max-width: 700px) {
+    .pdp { flex-direction: column; margin: 12px; padding: 14px; gap: 14px; }
+    .pdp .hero, .pdp .hero svg { width: 100%; height: auto; }
+    .buypanel, .config { width: 100%; border-left: 0; border-top: 1px dotted var(--mg-rule); padding: 12px 0 0; }
+    .infopanels { flex-direction: column; margin: 12px; }
+    .offerlink, #missing { margin-left: 12px; margin-right: 12px; }
+  }
 </style>
 </head>
 <body>
 <div class="locstrip">
-  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <span id="mystore">Store: Riverside Commons &middot; Open until 9:00 pm</span>
   <a href="stores.html">Change store</a>
   <a href="orderstatus.html">Order status</a>
   <a href="recycling.html">Trade-in and recycling</a>
+  <a href="customer-service.html">Customer service</a>
 </div>
 <header class="masthead">
   <a class="wordmark" href="index.html">marrowgate</a>
@@ -60,7 +70,8 @@
   <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
   <a href="departments.html#services">Services</a>
 </nav>
-<p class="crumbs">Home / Computers &amp; Tablets / Monitors / <span id="crumbname">Product</span></p>
+<main>
+<p class="crumbs"><a href="index.html">Home</a> / <a href="departments.html#computers">Computers &amp; Tablets</a> / <a href="index.html">Monitors</a> / <span id="crumbname">Product</span></p>
 <div class="pdp" id="pdp" hidden>
   <div class="hero" id="hero"></div>
   <div class="detail">
@@ -82,21 +93,27 @@
   </div>
 </div>
 <div id="missing" hidden>
-  That SKU is not carried at the Riverside store.
+  That SKU is not carried by Marrowgate.
   <a href="index.html">Back to all monitors</a>.
 </div>
+</main>
 <footer class="legal">
   <ul>
+    <li><a href="customer-service.html">Customer service</a></li>
     <li><a href="basket-help.html">Basket help</a></li>
     <li><a href="returns.html">Return policy</a></li>
     <li><a href="price-match.html">Price match</a></li>
-    <li><a href="accessibility.html">Accessibility</a></li>
     <li><a href="stores.html">Store directory</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="privacy.html">Privacy policy</a></li>
+    <li><a href="terms.html">Terms of sale</a></li>
   </ul>
   Prices shown exclude tax. Online prices may differ from prices in store. Marrowgate
   matches any advertised price from a qualifying local retailer within seven days of
   purchase. &copy; 2026 Marrowgate Retail Group.
+  <p class="regoffice">Marrowgate Retail Group, 1200 Ferrand Boulevard, Skellbourne, MI 48000 &middot; Customer service 1-616-555-0137</p>
 </footer>
+<script src="marrowgate-chrome.js"></script>
 <script>window.MARROWGATE_NONCE = '__SESSION_NONCE__';</script>
 <script src="marrowgate-feed.js"></script>
 <script>

@@ -111,7 +111,7 @@ export const DRIVERS = {
       const gadgetron = await h.evaluate(() =>
         [...document.querySelectorAll('#rows tr')].map((row) => ({
           name: row.querySelector('.model').textContent.trim(),
-          spec: row.cells[2].textContent + ' ' + row.cells[4].textContent,
+          spec: row.querySelector('td.diag').textContent + ' ' + row.querySelector('td.cls').textContent,
           price: row.querySelector('.price').dataset.price,
           inStock: row.dataset.stock === 'y',
         }))
@@ -454,6 +454,15 @@ export const DRIVERS = {
         () => document.getElementById('after')?.classList.contains('good') || false,
         'add-to-basket confirmation'
       );
+      const headerCount = await waitFor(
+        h,
+        () => /\d/.test(document.getElementById('basketlink')?.textContent ?? '') &&
+          document.getElementById('basketlink').textContent.trim(),
+        'header basket count'
+      );
+      if (!/\b1 item$/.test(headerCount)) {
+        throw new Error(`header basket count reads "${headerCount}" for one item`);
+      }
 
       await h.goto('/shop/marrowgate/promos.html');
       const terms = await h.evaluate(() => document.body.innerText);
@@ -675,7 +684,7 @@ export const DRIVERS = {
       }
       const snap = await snapshot(h);
       const sizeUid = uid(snap, /uid=(\S+) select "Size"/, 'size selector');
-      const colorUid = uid(snap, /uid=(\S+) select "Colour"/, 'colour selector');
+      const colorUid = uid(snap, /uid=(\S+) select "Colou?r"/, 'color selector');
       // fill_by_uid sends keys, which is enough to drive a <select>: there is no
       // select_option tool, but the option label typed into the closed select
       // picks it and fires change, which is what the page listens for.
@@ -835,6 +844,21 @@ export const DRIVERS = {
       );
       if (!/PF-27: sold out online/i.test(notices)) {
         throw new Error(`availability notice for PF-27 missing; read "${notices}"`);
+      }
+      // Precondition: every in-stock row's Buy it now carries a part the order
+      // list accepts. A stray session places them, so the graded one stays clean.
+      const inStockParts = await h.evaluate(() =>
+        [...document.querySelectorAll('#rows tr[data-stock="y"]')].map((r) => r.dataset.sku)
+      );
+      const desk = await straySession(h.base, '/shop/gadgetron/order-list.html');
+      const refused = [];
+      for (const part of inStockParts) {
+        const added = await desk.post('/api/shop/cart/add', { store: 'gadgetron', sku: part, qty: 1 });
+        if (!added.ok) refused.push(`${part}: ${added.error}`);
+        else await desk.post('/api/shop/cart/remove', { store: 'gadgetron', sku: added.added.sku });
+      }
+      if (refused.length) {
+        throw new Error(`${refused.length} of ${inStockParts.length} in-stock rows cannot be ordered: ${refused.join('; ')}`);
       }
       const catalogSnap = await snapshot(h);
       await h.mcp('click_by_uid', {
@@ -1005,6 +1029,11 @@ export const DRIVERS = {
       if (negative.ok) throw new Error('the voltro cart accepted a negative price');
       const huge = await probe.post('/api/voltro/cart', { product: 'x'.repeat(5000), price: 10 });
       if (huge.ok) throw new Error('the voltro cart accepted a 5,000-character product name');
+      // The store's own catalog decides price and stock, not the page.
+      const cheap = await probe.post('/api/voltro/cart', { product: 'ScreenCraft SC-27Q', price: 1 });
+      if (cheap.ok) throw new Error('the voltro cart accepted a price the listing does not carry');
+      const soldOut = await probe.post('/api/voltro/cart', { product: 'NorthLite NL27-4K Pro', price: 259.99 });
+      if (soldOut.ok) throw new Error('the voltro cart accepted the out-of-stock NorthLite NL27-4K Pro');
       let lines = 0;
       for (let i = 0; i < 60; i++) {
         const added = await probe.post('/api/voltro/cart', { product: 'ScreenCraft SC-24F', price: 99.99 });
@@ -1015,6 +1044,31 @@ export const DRIVERS = {
 
       await h.goto('/shop/voltro/');
       await waitFor(h, () => document.querySelectorAll('#grid .card button').length, 'listing cards');
+      const oosLive = await h.evaluate(() =>
+        [...document.querySelectorAll('#grid .card')]
+          .filter((c) => c.querySelector('.stock-out'))
+          .filter((c) => !c.querySelector('button')?.disabled)
+          .map((c) => c.querySelector('.name').textContent.trim())
+      );
+      if (oosLive.length) throw new Error(`out-of-stock cards still offer Add to Cart: ${oosLive.join(', ')}`);
+      // Precondition: sites/shop.mjs keeps its own copy of the listing, so every
+      // row the page renders must add at the page's price when in stock and be
+      // refused as out of stock otherwise. A stray session does the adding.
+      const rows = await h.evaluate(() =>
+        window.VOLTRO.products.map(([name, , , price, , , inStock]) => ({ name, price, inStock }))
+      );
+      const lister = await straySession(h.base, '/shop/voltro/');
+      const disagree = [];
+      for (const row of rows) {
+        const added = await lister.post('/api/voltro/cart', { product: row.name, price: row.price });
+        const agrees = row.inStock ? added.ok : !added.ok && /out of stock/i.test(added.error ?? '');
+        if (!agrees) disagree.push(`${row.name} $${row.price}: ${added.error ?? 'accepted'}`);
+      }
+      if (disagree.length) {
+        throw new Error(
+          `the voltro cart disagrees with voltro-data.js on ${disagree.length} of ${rows.length} rows: ${disagree.join('; ')}`
+        );
+      }
       // Every card's button is just "Add to Cart", so the only thing that tells
       // them apart in the snapshot is which product they sit under.
       const listing = await snapshot(h);

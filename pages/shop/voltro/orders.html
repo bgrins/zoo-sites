@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voltro — Orders & returns</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="voltro.css">
+<style>
+.lookbox { background: #fff; border: 1px solid var(--rule); border-top: 3px solid var(--pine-2); padding: 14px 18px 18px; max-width: 420px; }
+#found { margin-top: 16px; background: #fff; border: 1px solid var(--rule); padding: 12px 16px; font-size: 13px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<header>
+  <a class="wordmark" href="index.html">Voltro</a>
+  <form class="finder" action="search.html" method="get" role="search">
+    <input name="q" placeholder="Search Voltro" aria-label="Search Voltro">
+    <button type="submit">Search</button>
+  </form>
+  <a class="acct" href="signin.html">Sign in</a>
+  <a class="acct" href="orders.html">Orders &amp; returns</a>
+  <a id="cartlink" class="cartlink" href="cart.html">View cart</a>
+</header>
+<nav class="depts" aria-label="Departments">
+  <a href="index.html">Monitors</a>
+  <a href="search.html?q=4K">4K monitors</a>
+  <a href="desk-setup.html">Desk Setup</a>
+  <a href="sell.html">Sell on Voltro</a>
+  <a href="help.html">Help</a>
+</nav>
+<main class="page">
+  <h1>Orders &amp; returns</h1>
+  <p>Look up an order with the number on your confirmation (VO- for monitors, VBS- for
+  Desk Setup invoices) and the last name it ships to.</p>
+  <div class="lookbox">
+    <form class="form" id="lookup" novalidate>
+      <label for="ordno">Order number</label>
+      <input id="ordno" autocomplete="off" placeholder="VO-000000">
+      <label for="lastname">Last name</label>
+      <input id="lastname" autocomplete="family-name">
+      <button type="submit" class="btn">Find my order</button>
+      <p class="status" id="verdict" role="status"></p>
+    </form>
+  </div>
+  <div id="found" hidden></div>
+  <h2>Returns</h2>
+  <p>Monitors can be returned within 30 days of delivery. Call the help desk on
+  1-303-555-0176 with the order number, and a prepaid return label is emailed to the
+  address on the order. The full policy is in
+  <a href="returns.html">Delivery &amp; returns</a>.</p>
+</main>
+<footer>
+  <ul>
+    <li><a href="help.html">Help</a></li>
+    <li><a href="orders.html">Orders &amp; returns</a></li>
+    <li><a href="returns.html">Delivery &amp; returns</a></li>
+    <li><a href="sell.html">Sell on Voltro</a></li>
+    <li><a href="careers.html">Careers</a></li>
+    <li><a href="conditions.html">Terms of Use</a></li>
+    <li><a href="privacy.html">Privacy</a></li>
+    <li><a href="privacy.html#ads">Ad choices</a></li>
+  </ul>
+  <p>&copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000.
+  Prices and availability are subject to change.</p>
+</footer>
+<script src="voltro-nav.js"></script>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const verdict = document.getElementById('verdict');
+const found = document.getElementById('found');
+document.getElementById('lookup').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  found.hidden = true;
+  const number = document.getElementById('ordno').value.trim();
+  const lastName = document.getElementById('lastname').value.trim();
+  verdict.className = 'status bad';
+  if (!number || !lastName) {
+    verdict.textContent = 'Enter the order number and the last name it ships to.';
+    return;
+  }
+  verdict.className = 'status';
+  verdict.textContent = 'Looking up your order...';
+  let res;
+  let body;
+  try {
+    res = await fetch('/api/voltro/order-lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, number, lastName }),
+    });
+    body = await res.json();
+  } catch {
+    verdict.className = 'status bad';
+    verdict.textContent = 'Voltro could not be reached. Check your connection and try again.';
+    return;
+  }
+  if (res.status === 404) {
+    verdict.className = 'status bad';
+    verdict.textContent = body.error;
+    return;
+  }
+  if (!res.ok) {
+    verdict.className = 'status bad';
+    verdict.textContent = 'The order service did not answer. Try again in a minute.';
+    return;
+  }
+  verdict.className = 'status good';
+  verdict.textContent = 'Order found.';
+  found.replaceChildren();
+  for (const line of body.lines) {
+    const p = document.createElement('div');
+    p.textContent = line;
+    found.appendChild(p);
+  }
+  found.hidden = false;
+});
+</script>
+</body>
+</html>

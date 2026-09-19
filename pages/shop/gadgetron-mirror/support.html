@@ -2,49 +2,53 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gadgetron mirror node MB-3 | Support desk</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="mirror.css">
 </head>
 <body>
-<div class="railbar">
-  <span class="mark">Gadgetron</span>
+<header class="railbar">
+  <a class="mark" href="index.html">Gadgetron</a>
   <span class="node">Mirror node MB-3</span>
   <span class="who">Read-only &middot; support desk 1-614-555-0142</span>
-</div>
+</header>
 <nav class="tabs" aria-label="Sections">
   <a href="index.html">Departments</a>
   <a href="sync-log.html">Sync log</a>
   <a href="snapshot-policy.html">Snapshot policy</a>
   <a href="support.html" aria-current="page">Support desk</a>
 </nav>
-<div class="syncstrip">snapshot 06:40 &middot; source primary-a &middot; mode read-only &middot; incident MB-3-1174</div>
+<!--if-down--><div class="syncstrip">snapshot 03:50 &middot; source primary-a &middot; mode read-only &middot; incident MB-3-1174</div><!--/if-down-->
+<!--if-up--><div class="syncstrip standby">snapshot 03:50 &middot; source primary-a &middot; mode standby &middot; primary store online: <a href="__ORIGIN_GADGETRON__/">open the live catalog</a></div><!--/if-up-->
 <p class="crumbs"><a href="index.html">Departments</a> &middot; Support desk</p>
-<div class="sheet">
-  <div class="statline">
+<main class="sheet">
+<div class="statline">
     <h1>Support desk</h1>
     <span class="count">open 7:00 to 19:00</span>
   </div>
   <div class="notices">
     <h2>Reaching the desk</h2>
-    <p>Phone: 1-614-555-0142, 7:00 to 19:00, seven days during an incident.</p>
+    <p>Phone: 1-614-555-0142, 7:00 to 19:00, seven days during a maintenance window.</p>
     <p>Email: desk@gadgetron.example - answered within one business day.</p>
   </div>
   <div class="notices">
-    <h2>What the desk can do while the primary is down</h2>
+    <!--if-down--><h2>What the desk can do while the primary is down</h2><!--/if-down-->
+    <!--if-up--><h2>What the desk can do for mirror readers</h2><!--/if-up-->
     <p>Read a live price or stock figure out of the warehouse system by phone.</p>
     <p>Take an order over the phone against the live warehouse figure.</p>
-    <p>Check the status of an order placed before the incident opened.</p>
+    <p>Check the status of an order already confirmed.</p>
   </div>
   <div class="notices">
     <h2>What it cannot do</h2>
     <p>Queue an order list on this node: the mirror is read-only end to end.</p>
-    <p>Honour a price from an older snapshot than the one in the strip above.</p>
+    <p>Honor a price from an older snapshot than the one in the strip above.</p>
   </div>
-</div>
+</main>
 <footer class="legalstrip">
   <a href="sync-log.html#incidents">Service status history</a> &middot; <a href="legal.html#privacy">Privacy notice</a> &middot;
   <a href="legal.html#terms">Terms of sale</a> &middot; <a href="support.html">Contact the support desk</a><br>
-  Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Brantwell. &copy; 2026 Gadgetron
+  Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Druvenport, OH 43000. &copy; 2026 Gadgetron
   Trading Co. All rights reserved.
 </footer>
 </body>

@@ -2,22 +2,33 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Store directory - Marrowgate</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="marrowgate.css">
 <style>
-  .info { margin: 12px 22px 26px; background: #fff; border: 1px solid var(--nb-rule); padding: 16px 18px; max-width: 860px; }
+  .info { margin: 12px 22px 26px; background: #fff; border: 1px solid var(--mg-rule); padding: 16px 18px; max-width: 860px; }
   .info h2 { font-size: 15px; margin: 18px 0 6px; text-transform: uppercase; letter-spacing: .06em; color: #33405c; }
   .info h2:first-child { margin-top: 0; }
   .info p, .info li { font-size: 13px; margin: 0 0 7px; }
   .info ul { margin: 0 0 8px 18px; padding: 0; }
+  .storelist { list-style: none; margin: 0; padding: 0; }
+  .storelist li { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; border-bottom: 1px solid var(--mg-rule); padding: 8px 0; font-size: 13px; }
+  .storelist b { min-width: 150px; }
+  .storelist .note { flex: 1 1 100%; color: #5b6478; }
+  .storelist button { font: inherit; font-size: 12px; background: #fff; border: 1px solid var(--mg-blue); color: var(--mg-blue); padding: 3px 10px; cursor: pointer; margin-left: auto; }
+  .storelist button[disabled] { border-color: var(--mg-rule); color: #1d5c2c; font-weight: bold; cursor: default; }
+  #saved { color: #1d5c2c; font-weight: bold; min-height: 17px; }
+  @media (max-width: 700px) { .info { margin: 12px; } }
 </style>
 </head>
 <body>
 <div class="locstrip">
-  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <span id="mystore">Store: Riverside Commons &middot; Open until 9:00 pm</span>
   <a href="stores.html">Change store</a>
   <a href="orderstatus.html">Order status</a>
   <a href="recycling.html">Trade-in and recycling</a>
+  <a href="customer-service.html">Customer service</a>
 </div>
 <header class="masthead">
   <a class="wordmark" href="index.html">marrowgate</a>
@@ -41,33 +52,73 @@
   <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
   <a href="departments.html#services">Services</a>
 </nav>
-<p class="crumbs">Home / Store directory</p>
+<main>
+<p class="crumbs"><a href="index.html">Home</a> / Store directory</p>
 <div class="pagehead"><h1>Store directory</h1></div>
 <div class="info">
   <h2>Your store</h2>
-  <p>Riverside Commons, 1200 Ferrand Boulevard. Open 9:00 am to 9:00 pm daily. Curbside
-  pickup at door 4, order pickup counter inside door 2.</p>
-  <h2>Nearby stores</h2>
-  <ul>
-    <li>Riverside Commons - 1200 Ferrand Boulevard - open until 9:00 pm</li>
-    <li>Northgate Plaza - 88 Corliss Avenue - open until 8:00 pm</li>
-    <li>Harwick Crossing - 410 Delmar Parkway - open until 9:00 pm</li>
-    <li>Eastfield Centre - 26 Tolman Road - open until 7:00 pm, no monitor stock room</li>
-  </ul>
-  <p>Prices and availability on this site are shown for the Riverside Commons store.
-  Switching stores updates stock levels the next time a listing is opened.</p>
+  <p id="current"></p>
+  <p>Online prices and ship-to-home stock are the same at every store. Your store is where
+  pickup orders wait, and whose hours the strip at the top of every page shows.</p>
+  <h2>Choose a store</h2>
+  <ul class="storelist" id="storelist"></ul>
+  <p id="saved" role="status"></p>
 </div>
+</main>
 <footer class="legal">
   <ul>
+    <li><a href="customer-service.html">Customer service</a></li>
     <li><a href="basket-help.html">Basket help</a></li>
     <li><a href="returns.html">Return policy</a></li>
     <li><a href="price-match.html">Price match</a></li>
-    <li><a href="accessibility.html">Accessibility</a></li>
     <li><a href="stores.html">Store directory</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="privacy.html">Privacy policy</a></li>
+    <li><a href="terms.html">Terms of sale</a></li>
   </ul>
   Prices shown exclude tax. Online prices may differ from prices in store. Marrowgate
   matches any advertised price from a qualifying local retailer within seven days of
   purchase. &copy; 2026 Marrowgate Retail Group.
+  <p class="regoffice">Marrowgate Retail Group, 1200 Ferrand Boulevard, Skellbourne, MI 48000 &middot; Customer service 1-616-555-0137</p>
 </footer>
+<script src="marrowgate-chrome.js"></script>
+<script>
+function paintStores() {
+  const mine = window.marrowgateStore();
+  document.getElementById('current').textContent =
+    mine.name + ', ' + mine.address + '. Open until ' + mine.closes + ' today. ' + mine.note;
+  const list = document.getElementById('storelist');
+  list.replaceChildren();
+  for (const store of window.MARROWGATE_STORES) {
+    const li = document.createElement('li');
+    const name = document.createElement('b');
+    name.textContent = store.name;
+    const where = document.createElement('span');
+    where.textContent = store.address + ' · ' + store.phone + ' · open until ' + store.closes;
+    const pick = document.createElement('button');
+    pick.type = 'button';
+    pick.textContent = store.id === mine.id ? 'Your store' : 'Make this my store';
+    pick.disabled = store.id === mine.id;
+    pick.addEventListener('click', () => {
+      try {
+        localStorage.setItem('marrowgate.store', store.id);
+      } catch {
+        document.getElementById('saved').textContent = 'Your browser did not let us save the choice.';
+        return;
+      }
+      document.getElementById('mystore').textContent =
+        'Store: ' + store.name + ' · Open until ' + store.closes;
+      document.getElementById('saved').textContent = store.name + ' is now your store.';
+      paintStores();
+    });
+    const note = document.createElement('span');
+    note.className = 'note';
+    note.textContent = store.note;
+    li.append(name, where, pick, note);
+    list.appendChild(li);
+  }
+}
+paintStores();
+</script>
 </body>
 </html>

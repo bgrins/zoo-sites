@@ -2,56 +2,63 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gadgetron mirror node MB-3 | Sync log</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="mirror.css">
 </head>
 <body>
-<div class="railbar">
-  <span class="mark">Gadgetron</span>
+<header class="railbar">
+  <a class="mark" href="index.html">Gadgetron</a>
   <span class="node">Mirror node MB-3</span>
   <span class="who">Read-only &middot; support desk 1-614-555-0142</span>
-</div>
+</header>
 <nav class="tabs" aria-label="Sections">
   <a href="index.html">Departments</a>
   <a href="sync-log.html" aria-current="page">Sync log</a>
   <a href="snapshot-policy.html">Snapshot policy</a>
   <a href="support.html">Support desk</a>
 </nav>
-<div class="syncstrip">snapshot 06:40 &middot; source primary-a &middot; mode read-only &middot; incident MB-3-1174</div>
+<!--if-down--><div class="syncstrip">snapshot 03:50 &middot; source primary-a &middot; mode read-only &middot; incident MB-3-1174</div><!--/if-down-->
+<!--if-up--><div class="syncstrip standby">snapshot 03:50 &middot; source primary-a &middot; mode standby &middot; primary store online: <a href="__ORIGIN_GADGETRON__/">open the live catalog</a></div><!--/if-up-->
 <p class="crumbs"><a href="index.html">Departments</a> &middot; Sync log</p>
-<div class="sheet">
-  <div class="statline">
+<main class="sheet">
+<div class="statline">
     <h1>Sync log</h1>
-    <span class="count">snapshot 06:40</span>
+    <span class="count">snapshot 03:50</span>
   </div>
+  <div class="tablewrap">
   <table class="grid">
-    <caption>Rebuild events for the 06:40 snapshot, most recent first.</caption>
+    <caption>Rebuild events for the 03:50 snapshot, most recent first.</caption>
     <thead>
       <tr><th>Time</th><th>Event</th><th>Department</th><th>Result</th></tr>
     </thead>
     <tbody>
-      <tr><td class="mono">07:12</td><td>Department rebuild</td><td>Docks, hubs and power</td><td>Synced, 6 rows</td></tr>
-      <tr><td class="mono">07:04</td><td>Department rebuild</td><td>Monitors</td><td>Deferred: row count mismatch, retry queued</td></tr>
-      <tr><td class="mono">06:58</td><td>Department rebuild</td><td>Cables and adapters</td><td>Deferred: awaiting price feed</td></tr>
-      <tr><td class="mono">06:44</td><td>Snapshot import</td><td>All</td><td>Snapshot 06:40 received from primary-a</td></tr>
-      <tr><td class="mono">06:41</td><td>Mode change</td><td>All</td><td>Node set read-only for incident MB-3-1174</td></tr>
+      <!--if-up--><tr><td class="mono">09:30</td><td>Mode change</td><td>All</td><td>Window MB-3-1174 closed; node returned to standby</td></tr><!--/if-up-->
+      <tr><td class="mono">04:22</td><td>Department rebuild</td><td>Cables and adapters</td><td>Deferred: awaiting price feed</td></tr>
+      <tr><td class="mono">04:14</td><td>Department rebuild</td><td>Monitors</td><td>Deferred: row count mismatch, retry queued</td></tr>
+      <tr><td class="mono">04:06</td><td>Department rebuild</td><td>Docks, hubs and power</td><td>Synced, 6 rows</td></tr>
+      <tr><td class="mono">04:00</td><td>Mode change</td><td>All</td><td>Node set read-only for incident MB-3-1174</td></tr>
+      <tr><td class="mono">03:54</td><td>Snapshot import</td><td>All</td><td>Snapshot 03:50 received from primary-a</td></tr>
+      <tr><td class="mono">03:50</td><td>Snapshot taken</td><td>All</td><td>primary-a, ahead of window MB-3-1174</td></tr>
     </tbody>
   </table>
-  <p class="rowsnote">Rows 1-5 of 5. Times are node-local. Departments rebuild one at a
-  time; a deferred department has no rows in this snapshot yet.</p>
+  </div>
+  <p class="rowsnote">Times are node-local (UTC-05). Departments rebuild one at a time; a
+  deferred department has no rows in this snapshot yet.</p>
   <div class="notices" id="incidents" style="margin-top:16px">
     <h2>Service status history</h2>
-    <p>MB-3-1174 (open): primary store down for scheduled maintenance; this node serving
-    the 06:40 snapshot in read-only mode.</p>
+    <!--if-down--><p>MB-3-1174 (open): primary store down for scheduled maintenance, 04:00 to 09:30; this node serving the 03:50 snapshot in read-only mode.</p><!--/if-down-->
+    <!--if-up--><p>MB-3-1174 (closed 2026-09-06): planned maintenance on the primary store, 04:00 to 09:30; this node served the 03:50 snapshot in read-only mode, then returned to standby.</p><!--/if-up-->
     <p>MB-3-1121 (closed 2026-07-14): price feed lag on the primary; mirror was not engaged.</p>
     <p>MB-3-1087 (closed 2026-06-02): carrier outage, order confirmation emails delayed;
     mirror was not engaged.</p>
   </div>
-</div>
+</main>
 <footer class="legalstrip">
   <a href="sync-log.html#incidents">Service status history</a> &middot; <a href="legal.html#privacy">Privacy notice</a> &middot;
   <a href="legal.html#terms">Terms of sale</a> &middot; <a href="support.html">Contact the support desk</a><br>
-  Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Brantwell. &copy; 2026 Gadgetron
+  Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Druvenport, OH 43000. &copy; 2026 Gadgetron
   Trading Co. All rights reserved.
 </footer>
 </body>

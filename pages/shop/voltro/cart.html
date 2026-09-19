@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Voltro — Cart</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="checkout.css">
 </head>
 <body>
-<header><b>Voltro</b><span>Secure checkout</span><a href="index.html">Continue shopping</a></header>
+<header><a class="wordmark" href="index.html">Voltro</a><span>Secure checkout</span><a class="back" href="index.html">Continue shopping</a></header>
 <div class="steps"><b>Cart</b> › Shipping › Payment › Review</div>
 <main>
   <h1>Your cart</h1>
@@ -23,10 +25,10 @@
     <a class="btn" href="shipping.html">Proceed to shipping</a>
   </div>
   <div id="status" role="status"></div>
-  <p class="crossnote">Desk Setup accessories are kept in a separate
-    <a href="basket.html">Desk Setup basket</a> with its own checkout.</p>
+  <p class="crossnote">Desk Setup accessories are supplied by Voltro Business Supply and
+    check out from your <a href="basket.html">Desk basket</a>.</p>
 </main>
-<footer><a href="conditions.html">Conditions of Use</a> &middot; <a href="privacy.html">Privacy Notice</a> &middot; <a href="help.html#orders">Your Orders</a> &middot; <a href="help.html">Help</a> &middot; © 2026 Voltro Marketplace</footer>
+<footer><a href="conditions.html">Terms of Use</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="returns.html">Delivery &amp; returns</a> &middot; <a href="help.html">Help</a> &middot; &copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000</footer>
 <script>
 const NONCE = '__SESSION_NONCE__';
 (async () => {
@@ -36,7 +38,7 @@ const NONCE = '__SESSION_NONCE__';
     const body = await res.json();
     if (!res.ok) {
       status.className = 'error';
-      status.textContent = body.error ?? 'Could not load your cart.';
+      status.textContent = body.error ?? 'Voltro could not load your cart. Reload the page to try again.';
       return;
     }
     if (!body.items.length) {
@@ -57,7 +59,7 @@ const NONCE = '__SESSION_NONCE__';
     document.getElementById('filled').style.display = 'block';
   } catch {
     status.className = 'error';
-    status.textContent = 'Network error — reload the page.';
+    status.textContent = 'Voltro could not be reached. Reload the page to try again.';
   }
 })();
 </script>

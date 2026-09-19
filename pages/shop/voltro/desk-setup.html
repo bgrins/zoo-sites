@@ -2,50 +2,63 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Voltro — Desk Setup</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="voltro.css">
 <style>
-  .card .part { color: #565959; font-size: 12px; }
-  .card .limitnote { color: #7d5a00; font-size: 12px; }
+  .card .part { color: #56625d; font-size: 12px; }
+  .card .limitnote { color: #6b4d00; font-size: 12px; }
   .card .qtyrow { margin-top: 8px; display: flex; gap: 8px; align-items: center; font-size: 13px; }
-  .card .qtyrow input { width: 52px; padding: 4px; border: 1px solid #888; border-radius: 3px; }
+  .card .qtyrow input { width: 52px; padding: 4px; border: 1px solid #9aa6a1; border-radius: 3px; font: inherit; }
   .card .msg { margin-top: 6px; font-size: 12px; min-height: 16px; }
-  .card .msg.bad { color: #b12704; font-weight: 700; }
-  .card .msg.good { color: #007600; }
-  #basketbar { padding: 10px 16px; font-size: 13px; background: #f6f6f6; border-bottom: 1px solid #ddd; }
-  #basketbar a { color: #007185; }
-  header a.cart { color: #ffd814; font-weight: 700; text-decoration: none; }
+  .card .msg.bad { color: #9b1c3a; font-weight: 700; }
+  .card .msg.good { color: #1c7a3a; }
+  #basketbar { padding: 10px 16px; font-size: 13px; background: #eef2ef; border-bottom: 1px solid var(--rule); }
 </style>
 </head>
 <body>
 <header>
-  <b>Voltro</b>
-  <input placeholder="Search Voltro" aria-label="Search">
-  <span>Hello, sign in</span>
-  <span>Orders</span>
-  <a class="cart" id="cartlink" href="basket.html">Basket (0)</a>
+  <a class="wordmark" href="index.html">Voltro</a>
+  <form class="finder" action="search.html" method="get" role="search">
+    <input name="q" placeholder="Search Voltro" aria-label="Search Voltro">
+    <button type="submit">Search</button>
+  </form>
+  <a class="acct" href="signin.html">Sign in</a>
+  <a class="acct" href="orders.html">Orders &amp; returns</a>
+  <a id="cartlink" class="cart" href="basket.html">Desk basket</a>
 </header>
-<nav>
-  <span>All</span><span>Today's Deals</span><span>Electronics</span>
-  <span>Computers</span><span>Monitors</span><span>Desk Setup</span><span>Customer Service</span>
+<nav class="depts" aria-label="Departments">
+  <a href="index.html">Monitors</a>
+  <a href="search.html?q=4K">4K monitors</a>
+  <a href="desk-setup.html" aria-current="page">Desk Setup</a>
+  <a href="sell.html">Sell on Voltro</a>
+  <a href="help.html">Help</a>
 </nav>
-<div class="promo">Desk Setup Week: monitor arms, light bars and cable kits at reduced prices. Ends Sunday.</div>
-<div id="basketbar">Prices exclude sales tax. Tax is calculated in your <a href="basket.html">basket</a>.</div>
-<main>
-  <aside>
-    <h4>Department</h4>
-    Monitors<br>Desk Setup<br>Mounts &amp; Arms<br>Cable Management
-    <h4>Item Type</h4>
+<div class="promo">Desk Setup Week: monitor arms, light bars and cable kits at reduced prices.</div>
+<div id="basketbar">Desk Setup is supplied and invoiced by Voltro Business Supply. Prices exclude
+sales tax. Tax is calculated in your <a href="basket.html">basket</a>.</div>
+<main class="listing">
+  <aside id="facets" aria-label="Filters">
+    <h2>Department</h2>
+    <ul>
+      <li><a href="index.html">Monitors</a></li>
+      <li><a href="desk-setup.html">Desk Setup</a></li>
+    </ul>
+    <h2>Item type</h2>
     <label><input type="checkbox" data-type="monitor"> Monitors</label>
     <label><input type="checkbox" data-type="mount"> Desk mounts</label>
     <label><input type="checkbox" data-type="cable"> Cable kits</label>
     <label><input type="checkbox" data-type="light"> Lighting</label>
-    <h4>Price</h4>
-    Under $25<br>$25 to $50<br>$50 and up<br>Voltro Retail only
+    <h2>Price</h2>
+    <label><input type="checkbox" data-band="0-25"> Under $25</label>
+    <label><input type="checkbox" data-band="25-50"> $25 to $50</label>
+    <label><input type="checkbox" data-band="50-"> $50 and up</label>
   </aside>
   <section style="flex:1">
     <div id="toolbar">
       <h1>Desk Setup</h1>
+      <button type="button" id="filtersbtn" aria-controls="facets" aria-expanded="false">Filters</button>
       <span id="tally">Loading results</span>
       <label>Sort by:
         <select id="sortsel" aria-label="Sort by">
@@ -59,25 +72,42 @@
   </section>
 </main>
 <footer>
-  &copy; 2026 Voltro Marketplace, Inc. Prices and availability are subject to change.
-  · <a href="conditions.html">Conditions of Use</a> · <a href="privacy.html">Privacy Notice</a>
-  · <a href="privacy.html#ads">Interest-Based Ads</a> · <a href="sell.html">Sell on Voltro</a>
-  · <a href="careers.html">Careers</a> · <a href="help.html">Customer Service</a>
+  <ul>
+    <li><a href="help.html">Help</a></li>
+    <li><a href="orders.html">Orders &amp; returns</a></li>
+    <li><a href="returns.html">Delivery &amp; returns</a></li>
+    <li><a href="sell.html">Sell on Voltro</a></li>
+    <li><a href="careers.html">Careers</a></li>
+    <li><a href="conditions.html">Terms of Use</a></li>
+    <li><a href="privacy.html">Privacy</a></li>
+    <li><a href="privacy.html#ads">Ad choices</a></li>
+  </ul>
+  <p>&copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000.
+  Prices and availability are subject to change.</p>
 </footer>
+<script src="voltro-nav.js"></script>
 <script>
 const NONCE = '__SESSION_NONCE__';
 const grid = document.getElementById('grid');
 const tally = document.getElementById('tally');
 const cartLink = document.getElementById('cartlink');
 
-function thumb(name) {
+// Line art per item type, keyed by the part number prefix.
+const ART = {
+  'HB-': '<rect x="26" y="10" width="108" height="58" rx="3" fill="#1b1f27"/><rect x="72" y="70" width="16" height="8" fill="#444"/><rect x="54" y="78" width="52" height="4" fill="#666"/>',
+  'VAM-': '<rect x="30" y="70" width="30" height="8" fill="#555"/><path d="M45 70 V44 L92 30 L118 42" fill="none" stroke="#2e3a36" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><rect x="112" y="30" width="12" height="26" rx="2" fill="#1b1f27"/>',
+  'CRD-': '<path d="M20 60 C45 20 70 80 95 40 S130 30 142 50" fill="none" stroke="#2e3a36" stroke-width="12" stroke-linecap="round"/><path d="M20 60 C45 20 70 80 95 40 S130 30 142 50" fill="none" stroke="#8a9a92" stroke-width="2" stroke-dasharray="4 4"/>',
+  'VKL-': '<rect x="30" y="22" width="100" height="10" rx="5" fill="#1b1f27"/><rect x="36" y="32" width="88" height="3" fill="#ffd23f"/><rect x="74" y="35" width="12" height="20" fill="#444"/><rect x="40" y="55" width="80" height="20" rx="2" fill="#2e3a36" opacity=".35"/>',
+};
+function art(sku) {
+  const key = Object.keys(ART).find((prefix) => String(sku).startsWith(prefix));
+  return ART[key ?? 'HB-'];
+}
+
+function thumb(name, sku) {
   const hue = (name.length * 37 + name.charCodeAt(0) * 11) % 360;
   return `<svg viewBox="0 0 160 90" class="thumb" role="img" aria-label="${name} product photo">
-    <rect width="160" height="90" fill="hsl(${hue},18%,90%)"/>
-    <rect x="26" y="10" width="108" height="58" rx="3" fill="#1b1f27"/>
-    <rect x="72" y="70" width="16" height="8" fill="#444"/>
-    <rect x="54" y="78" width="52" height="4" fill="#666"/>
-  </svg>`;
+    <rect width="160" height="90" fill="hsl(${hue},18%,90%)"/>${art(sku)}</svg>`;
 }
 
 async function refreshCount() {
@@ -86,7 +116,7 @@ async function refreshCount() {
   });
   if (!res.ok) return;
   const body = await res.json();
-  cartLink.textContent = 'Basket (' + body.count + ')';
+  cartLink.textContent = 'Desk basket (' + body.count + ')';
 }
 
 function render(items) {
@@ -96,7 +126,7 @@ function render(items) {
     card.className = 'card';
     card.dataset.sku = item.sku;
     card.innerHTML = `
-      ${thumb(item.name)}
+      ${thumb(item.name, item.sku)}
       <div class="name"><a href="item.html?sku=${encodeURIComponent(item.sku)}">${item.name}</a></div>
       <div class="part">${item.sku} &middot; ${item.blurb}</div>
       <div class="price">$${item.price.toFixed(2)}</div>
@@ -114,9 +144,14 @@ function render(items) {
     const qty = card.querySelector('input');
     const msg = card.querySelector('.msg');
     button.addEventListener('click', async () => {
-      button.disabled = true;
       msg.className = 'msg';
       msg.textContent = '';
+      if (!/^\s*\d+\s*$/.test(qty.value) || Number(qty.value) < 1) {
+        msg.className = 'msg bad';
+        msg.textContent = 'Enter a quantity of 1 or more.';
+        return;
+      }
+      button.disabled = true;
       try {
         const res = await fetch('/api/shop/cart/add', {
           method: 'POST',
@@ -132,17 +167,17 @@ function render(items) {
         if (res.ok) {
           msg.className = 'msg good';
           msg.textContent = 'Added ' + body.added.qty + ' to basket.';
-          cartLink.textContent = 'Basket (' + body.count + ')';
+          cartLink.textContent = 'Desk basket (' + body.count + ')';
         } else {
           msg.className = 'msg bad';
           msg.textContent = body.error;
           if (typeof body.count === 'number') {
-            cartLink.textContent = 'Basket (' + body.count + ')';
+            cartLink.textContent = 'Desk basket (' + body.count + ')';
           }
         }
       } catch {
         msg.className = 'msg bad';
-        msg.textContent = 'Network error. Try again.';
+        msg.textContent = 'Voltro could not be reached. Try again.';
       } finally {
         button.disabled = false;
       }
@@ -167,14 +202,25 @@ function applyListing() {
   const types = [...document.querySelectorAll('aside [data-type]:checked')].map(
     (box) => box.dataset.type
   );
-  const items = allItems.filter((item) => !types.length || types.includes(itemType(item.sku)));
+  const bands = [...document.querySelectorAll('aside [data-band]:checked')].map((box) =>
+    box.dataset.band.split('-').map((n) => (n === '' ? Infinity : Number(n)))
+  );
+  const items = allItems.filter(
+    (item) =>
+      (!types.length || types.includes(itemType(item.sku))) &&
+      (!bands.length || bands.some(([lo, hi]) => item.price >= lo && item.price < hi))
+  );
   const mode = document.getElementById('sortsel').value;
   if (mode === 'Price: Low to High') items.sort((a, b) => a.price - b.price);
   else if (mode === 'Price: High to Low') items.sort((a, b) => b.price - a.price);
   render(items);
 }
 
-for (const box of document.querySelectorAll('aside [data-type]')) {
+document.getElementById('filtersbtn').addEventListener('click', (event) => {
+  const open = document.getElementById('facets').classList.toggle('open');
+  event.currentTarget.setAttribute('aria-expanded', String(open));
+});
+for (const box of document.querySelectorAll('aside [data-type], aside [data-band]')) {
   box.addEventListener('change', applyListing);
 }
 document.getElementById('sortsel').addEventListener('change', applyListing);

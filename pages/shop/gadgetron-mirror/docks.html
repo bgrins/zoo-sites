@@ -2,34 +2,37 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gadgetron mirror node MB-3 | Docks, hubs and power</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="mirror.css">
 </head>
 <body>
-<div class="railbar">
-  <span class="mark">Gadgetron</span>
+<header class="railbar">
+  <a class="mark" href="index.html">Gadgetron</a>
   <span class="node">Mirror node MB-3</span>
   <span class="who">Read-only &middot; support desk 1-614-555-0142</span>
-</div>
+</header>
 <nav class="tabs" aria-label="Sections">
   <a href="index.html">Departments</a>
   <a href="sync-log.html">Sync log</a>
   <a href="snapshot-policy.html">Snapshot policy</a>
   <a href="support.html">Support desk</a>
 </nav>
-<div class="syncstrip">snapshot 06:40 &middot; source primary-a &middot; mode read-only &middot; incident MB-3-1174</div>
+<!--if-down--><div class="syncstrip">snapshot 03:50 &middot; source primary-a &middot; mode read-only &middot; incident MB-3-1174</div><!--/if-down-->
+<!--if-up--><div class="syncstrip standby">snapshot 03:50 &middot; source primary-a &middot; mode standby &middot; primary store online: <a href="__ORIGIN_GADGETRON__/">open the live catalog</a></div><!--/if-up-->
 <p class="crumbs"><a href="index.html">Departments</a> &middot; Docks, hubs and power</p>
-<div class="sheet">
-  <div class="statline">
+<main class="sheet">
+<div class="statline">
     <h1>Docks, hubs and power</h1>
     <span class="count" id="matched">loading rows</span>
   </div>
   <div class="notices">
     <h2>Department notices</h2>
-    <p>Twelve-port docks now carry a full port map on their spec sheet:
-    <a href="voltcharge-dock.html">VoltCharge DK-100</a>.</p>
-    <p>Order queueing is disabled on this node. Prices are as of the 06:40 snapshot.</p>
+    <p>Each row links to the manufacturer spec sheet captured in the 03:50 snapshot.</p>
+    <p>Order queueing is disabled on this node. Prices are as of the 03:50 snapshot.</p>
   </div>
+  <div class="tablewrap">
   <table class="grid">
     <caption>Docking stations, hubs and chargers. One row per stock keeping unit.</caption>
     <thead>
@@ -45,17 +48,18 @@
     </thead>
     <tbody id="rows"></tbody>
   </table>
+  </div>
   <p class="rowsnote" id="rowsnote"></p>
-</div>
+</main>
 <footer class="legalstrip">
   <a href="sync-log.html#incidents">Service status history</a> &middot; <a href="legal.html#privacy">Privacy notice</a> &middot;
   <a href="legal.html#terms">Terms of sale</a> &middot; <a href="support.html">Contact the support desk</a><br>
-  Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Brantwell. &copy; 2026 Gadgetron
+  Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Druvenport, OH 43000. &copy; 2026 Gadgetron
   Trading Co. All rights reserved.
 </footer>
 <script>
 const NONCE = '__SESSION_NONCE__';
-const SHEETS = { 'VC-DK100': 'voltcharge-dock.html' };
+const SHEETS = {"AN-HUB7":"ampnest-hub-7.html","KB-DK9":"kelbrook-dk-9.html","MP-CHG3":"marlpoint-c3.html","TR-HUB4":"trellis-hub-4.html","KV-DK100":"kessvar-dk-100.html","ZP-DK5":"zephmark-dk-5.html"};
 
 async function load() {
   const res = await fetch('/api/mirror/catalog', { headers: { 'X-Session-Nonce': NONCE } });
