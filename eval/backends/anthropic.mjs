@@ -3,7 +3,7 @@
 //   run({ prompt, model, effort, condition, env, cwd, onMessage, onOutputTokens,
 //         mcpStdio, abortController }) ->
 //     { text, turns, input_tokens, cache_creation, cache_read, output_tokens,
-//       cost_usd, duration_ms, api_duration_ms, result_error? }
+//       cost_usd, duration_ms, api_duration_ms, stream_errors? }
 // `input_tokens` is the UNCACHED remainder only, never the total, so that
 // input_tokens + cache_creation + cache_read is total input for every backend
 // and the three columns stay additive. Anthropic's SDK already reports it that
@@ -14,10 +14,12 @@
 // onOutputTokens (optional): called with the run's output tokens so far, for
 // run.mjs's --max-output ceiling. A backend that cannot count mid-run never
 // calls it.
-// result_error (optional): set when the run ended in an error result rather
-// than an answer; run.mjs retries it when it is transient.
-// A thrown error carries `spend` (the same token and cost fields) when the
-// attempt spent anything the backend could measure, so run.mjs can report it.
+// stream_errors (optional): errors the backend recovered from before the run
+// completed, kept so they stay visible on the row.
+// A run that ends in an API error, rather than an answer, throws; run.mjs
+// retries it when the message reads transient. A thrown error carries `spend`
+// (the same token and cost fields) when the attempt spent anything the backend
+// could measure, so run.mjs can report it.
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { priceTokens } from './pricing.mjs';
@@ -41,14 +43,18 @@ const DISALLOWED_TOOLS = [
   'WebFetch', 'WebSearch', 'Task', 'Agent', 'Workflow', 'SendMessage',
   'CronCreate', 'CronDelete', 'CronList', 'ScheduleWakeup', 'Monitor', 'PushNotification',
 ];
-const ALLOWED_TOOLS = ['mcp__firefox', 'Bash'];
+// dontAsk denies every tool not allowed here, so Write and Edit need a rule or
+// each call burns a turn on a denial. An Edit rule covers Write too, and the
+// leading `//` makes the path absolute: file tools write in the attempt
+// directory only, as codex's workspace-write sandbox does.
+const allowedTools = (cwd) => ['mcp__firefox', 'Bash', ...(cwd ? [`Edit(/${cwd}/**)`] : [])];
 
 // Recorded in each run's meta, so results from before and after a policy
 // change stay distinguishable.
 export const TOOL_POLICY = {
   tools: TOOLS,
   disallowedTools: DISALLOWED_TOOLS,
-  allowedTools: ALLOWED_TOOLS,
+  allowedTools: allowedTools('/<attempt dir>'),
   permissionMode: 'dontAsk',
   settingSources: [],
   strictMcpConfig: true,
@@ -93,6 +99,7 @@ function usageTracker() {
       return false;
     },
     output: () => total('output_tokens'),
+    requests: () => byId.size,
     totals: () => ({
       input_tokens: total('input_tokens'),
       cache_creation: total('cache_creation'),
@@ -110,7 +117,7 @@ export function agentOptions({ model, effort, env, cwd, mcpStdio, abortControlle
     settingSources: TOOL_POLICY.settingSources,
     tools: TOOLS,
     disallowedTools: DISALLOWED_TOOLS,
-    allowedTools: ALLOWED_TOOLS,
+    allowedTools: allowedTools(cwd),
     strictMcpConfig: TOOL_POLICY.strictMcpConfig,
     persistSession: TOOL_POLICY.persistSession,
     // Only for the message_start/message_delta usage above; content deltas are
@@ -136,7 +143,8 @@ export async function run({
   // stream that died. The cost is priced from the observed tokens.
   const partialSpend = () => {
     const counts = tracker.totals();
-    return { ...counts, cost_usd: priceTokens(model ?? DEFAULT_MODEL, counts, 'anthropic'), cost_estimated: true };
+    const cost_usd = priceTokens(model ?? DEFAULT_MODEL, counts, 'anthropic', tracker.requests());
+    return { ...counts, cost_usd, cost_estimated: true };
   };
   // A run can emit MORE THAN ONE result message: if the agent starts a background
   // Bash task (agents do this to wait for an async page reply), its completion
@@ -146,6 +154,16 @@ export async function run({
   // last value. Keeping only the last result reports a 26-turn/2392-token run as
   // 1 turn and 53 tokens, silently understating the suite's primary metric by 45x.
   const results = [];
+  const resultSpend = () => {
+    const sum = (pick) => results.reduce((n, r) => n + (pick(r.usage ?? {}) ?? 0), 0);
+    return {
+      input_tokens: sum((u) => u.input_tokens),
+      cache_creation: sum((u) => u.cache_creation_input_tokens),
+      cache_read: sum((u) => u.cache_read_input_tokens),
+      output_tokens: sum((u) => u.output_tokens),
+      cost_usd: results.at(-1).total_cost_usd ?? null,
+    };
+  };
   try {
     for await (const message of query({ prompt, options })) {
       const counted = tracker.observe(message);
@@ -158,7 +176,10 @@ export async function run({
     }
   } catch (thrown) {
     const error = thrown instanceof Error ? thrown : new Error(String(thrown));
-    error.spend ??= partialSpend();
+    // An API failure ("API Error: 529 ...") arrives as a result flagged
+    // is_error, and the SDK throws "Claude Code returned an error result: <its
+    // text>" once the CLI exits, so that result's exact spend is already here.
+    error.spend ??= results.at(-1)?.is_error ? resultSpend() : partialSpend();
     throw error;
   }
   if (!results.length) {
@@ -167,26 +188,21 @@ export async function run({
     throw error;
   }
   const last = results.at(-1);
-  const sum = (pick) => results.reduce((n, r) => n + (pick(r.usage ?? {}) ?? 0), 0);
-  const counts = {
-    input_tokens: sum((u) => u.input_tokens),
-    cache_creation: sum((u) => u.cache_creation_input_tokens),
-    cache_read: sum((u) => u.cache_read_input_tokens),
-    output_tokens: sum((u) => u.output_tokens),
-    cost_usd: last.total_cost_usd ?? null,
-  };
-  // An API failure ("API Error: 529 ...") arrives as a result flagged is_error
-  // whose text is the error; run.mjs decides whether it is retried.
-  const resultError = last.is_error
-    ? 'agent result is_error' +
-      (last.api_error_status != null ? ` (API status ${last.api_error_status})` : '') +
-      `: ${String(last.result ?? last.errors?.join('; ') ?? last.subtype).slice(0, 300)}`
-    : null;
+  // The same failure when the CLI exits cleanly. Either way run.mjs retries it
+  // when the text reads transient.
+  if (last.is_error) {
+    const error = new Error(
+      'agent result is_error' +
+        (last.api_error_status != null ? ` (API status ${last.api_error_status})` : '') +
+        `: ${String(last.result ?? last.errors?.join('; ') ?? last.subtype).slice(0, 300)}`
+    );
+    error.spend = resultSpend();
+    throw error;
+  }
   return {
-    ...(resultError ? { result_error: resultError } : {}),
     text: last.subtype === 'success' ? last.result : `[${last.subtype}]`,
     turns: results.reduce((n, r) => n + (r.num_turns ?? 0), 0),
-    ...counts,
+    ...resultSpend(),
     duration_ms: last.duration_ms ?? Date.now() - started,
     // Time spent in API calls (vs tool execution etc.), when reported.
     api_duration_ms: last.duration_api_ms ?? null,

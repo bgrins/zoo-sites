@@ -169,13 +169,13 @@ async function extractAnthropic({ ask, answer, schema, abortController }) {
 // this repository's AGENTS.md nor the user's codex config reaches the grader.
 async function extractCodex({ ask, answer, schema, abortController }) {
   const { Codex } = await import('@openai/codex-sdk');
-  const { ISOLATED_CONFIG, isolatedCodexHome } = await import('./backends/codex.mjs');
+  const { isolatedCodexHome } = await import('./backends/codex.mjs');
   const model = process.env.EVAL_EXTRACTOR_MODEL || CODEX_EXTRACTOR_MODEL;
-  const codexHome = isolatedCodexHome(agentEnv('codex'));
+  const codexHome = await isolatedCodexHome(agentEnv('codex'));
   try {
     const codex = new Codex({
       env: codexHome.env,
-      config: { ...ISOLATED_CONFIG, approval_policy: 'never', model_reasoning_effort: 'low' },
+      config: { ...codexHome.config, approval_policy: 'never', model_reasoning_effort: 'low' },
     });
     const thread = codex.startThread({
       model,

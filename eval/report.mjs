@@ -132,7 +132,8 @@ export function markdownReport({ meta, results, totals }) {
             `the attempts it stopped count as infra` +
             (meta.unsettled
               ? `. ${meta.unsettled} attempt(s) still running when this was written are missing too`
-              : ''),
+              : '') +
+            (meta.tasks ? '. `--rerun-failed` on this run selects the missing tasks' : ''),
         ]
       : []),
     `- tasks are simulated local pages (no live web); harness: run.mjs`,
@@ -148,8 +149,9 @@ export function markdownReport({ meta, results, totals }) {
       `run are fine, since both conditions met the same cache.`,
     ...(meta.backend.includes('codex')
       ? [
-          `- cost: anthropic is SDK-reported; codex is computed from token counts ` +
-            `against genai-prices' bundled table, so the two are not measured the same way`,
+          `- cost: anthropic is SDK-reported; codex is computed from token counts, ` +
+            `spread over its estimated requests, against genai-prices' bundled table, ` +
+            `so the two are not measured the same way`,
         ]
       : []),
     '',

@@ -14,11 +14,16 @@
 // the reported token counts (codex reports no price of its own).
 
 import { Codex } from '@openai/codex-sdk';
-import { existsSync, mkdirSync, symlinkSync } from 'node:fs';
+import { execFile } from 'node:child_process';
+import { existsSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
-import { makeTempDir, removeTempDir } from '../agent-env.mjs';
+import { dirname, join } from 'node:path';
+import { promisify } from 'node:util';
+import { agentEnv, makeTempDir, removeTempDir } from '../agent-env.mjs';
 import { priceTokens } from './pricing.mjs';
+
+const execFileAsync = promisify(execFile);
 
 // Pinned explicitly (rather than deferring to ~/.codex/config.toml) so runs
 // are reproducible and the model is recorded in results.
@@ -34,13 +39,48 @@ export const TOOL_POLICY = {
   webSearch: 'disabled',
   approval: 'never',
   codexHome: 'isolated per process: the login, no config, no bundled skills',
+  subagents: 'none: multi_agent_version removed from the model catalog codex loads',
+  mcpServerEnv: 'the harness allowlist (agent-env.mjs base keys), forwarded by name',
 };
 
 // Settings every codex process gets on top of the isolated home. On first start
 // codex unpacks its bundled skills (imagegen, skill-installer and more) into
 // CODEX_HOME and lists them in the prompt; the anthropic agent loads no
 // skills, so codex loads none either.
-export const ISOLATED_CONFIG = { skills: { bundled: { enabled: false } } };
+const ISOLATED_CONFIG = { skills: { bundled: { enabled: false } } };
+
+// Codex's own launcher, resolved the way the SDK finds its binary.
+const CODEX_CLI = join(
+  dirname(createRequire(import.meta.resolve('@openai/codex-sdk')).resolve('@openai/codex/package.json')),
+  'bin',
+  'codex.js'
+);
+
+// Codex hands out a subagent team (spawn_agent, send_message, wait_agent...)
+// when the model's catalog entry names a multi_agent_version, as gpt-5.6-terra's
+// does, and features.multi_agent=false leaves those tools in the request. The
+// anthropic agent is denied Task, Agent and SendMessage, so every home gets the
+// catalog this codex would load, minus that field. Read once per process, off
+// the event loop: under a ChatGPT login `debug models` refreshes over the
+// network first, which takes seconds. A failed read is retried by the next call.
+let catalogJson = null;
+function modelCatalog(env) {
+  catalogJson ??= execFileAsync(process.execPath, [CODEX_CLI, 'debug', 'models'], {
+    env,
+    timeout: 60000,
+  })
+    .then(({ stdout }) => {
+      const catalog = JSON.parse(stdout);
+      for (const model of catalog.models) delete model.multi_agent_version;
+      return JSON.stringify(catalog);
+    })
+    .catch((error) => {
+      catalogJson = null;
+      const why = (error.stderr || error.message || '').trim().slice(0, 500);
+      throw new Error(`codex debug models failed: ${why}`);
+    });
+  return catalogJson;
+}
 
 // A codex process otherwise reads the user's whole ~/.codex: config.toml,
 // plugins, skills, MCP servers and global AGENTS.md. Stored runs opened by
@@ -50,7 +90,7 @@ export const ISOLATED_CONFIG = { skills: { bundled: { enabled: false } } };
 // lands in the real file instead of dying with the temp dir, and no copy of the
 // credential outlives a crashed run. Without an auth.json the API key env var is
 // the login, and codex exec reads it as CODEX_API_KEY.
-export function isolatedCodexHome(env) {
+export async function isolatedCodexHome(env) {
   const root = makeTempDir('zoo-codex-');
   const home = join(root, 'home');
   const tmp = join(root, 'tmp');
@@ -63,10 +103,20 @@ export function isolatedCodexHome(env) {
   } else if (!env.CODEX_API_KEY && env.OPENAI_API_KEY) {
     login.CODEX_API_KEY = env.OPENAI_API_KEY;
   }
+  const homeEnv = { ...env, ...login, CODEX_HOME: home };
+  const catalog = join(home, 'model-catalog.json');
+  try {
+    writeFileSync(catalog, await modelCatalog(homeEnv));
+  } catch (error) {
+    removeTempDir(root);
+    throw error;
+  }
   return {
     home,
     tmp,
-    env: { ...env, ...login, CODEX_HOME: home },
+    env: homeEnv,
+    // What every process started on this home runs with.
+    config: { ...ISOLATED_CONFIG, model_catalog_json: catalog },
     hasLogin: existsSync(auth) || Boolean(env.CODEX_API_KEY || env.OPENAI_API_KEY),
     close: () => removeTempDir(root),
   };
@@ -82,9 +132,11 @@ function uncachedInput(usage) {
   return Math.max(0, (usage.input_tokens ?? 0) - cached);
 }
 
-export function codexConfig({ mcpStdio, effort, shellTmp, path }) {
+// `home` is the isolatedCodexHome() the process runs on.
+export function codexConfig({ home, mcpStdio, effort, path, mcpEnvVars = [] }) {
+  const shellTmp = home.tmp;
   return {
-    ...ISOLATED_CONFIG,
+    ...home.config,
     approval_policy: 'never',
     ...(effort ? { model_reasoning_effort: effort } : {}),
     // Every condition gets the same network-enabled shell so the only
@@ -117,6 +169,11 @@ export function codexConfig({ mcpStdio, effort, shellTmp, path }) {
       firefox: {
         command: mcpStdio.command,
         args: mcpStdio.args,
+        // Codex starts a stdio server with a fixed handful of variables (HOME,
+        // PATH, USER...), not its own env, so DISPLAY, PLAYWRIGHT_BROWSERS_PATH
+        // and the proxies would reach the server under the Agent SDK only.
+        // Names, not values, so no value lands on the codex command line.
+        env_vars: mcpEnvVars,
         // Codex cancels non-read-only MCP tools under approval 'never';
         // auto-approve this server's tools instead.
         default_tools_approval_mode: 'approve',
@@ -129,13 +186,19 @@ export function codexConfig({ mcpStdio, effort, shellTmp, path }) {
 }
 
 export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio, abortController }) {
-  const codexHome = isolatedCodexHome(env ?? {});
+  const codexHome = await isolatedCodexHome(env ?? {});
   try {
     // When env is provided the SDK does not inherit process.env, so this is
     // exactly the harness allowlist plus CODEX_HOME.
     const codex = new Codex({
       env: codexHome.env,
-      config: codexConfig({ mcpStdio, effort, shellTmp: codexHome.tmp, path: env?.PATH }),
+      config: codexConfig({
+        home: codexHome,
+        mcpStdio,
+        effort,
+        path: env?.PATH,
+        mcpEnvVars: Object.keys(agentEnv(null, env ?? {})),
+      }),
     });
     const thread = codex.startThread({
       ...(model ? { model } : {}),
@@ -155,6 +218,11 @@ export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio
     let text = '';
     let toolCalls = 0;
     let failure = null;
+    // Codex also emits `error` for trouble it recovers from: every stream retry
+    // ("Reconnecting... 2/5") is one, and the turn can still complete and be
+    // paid for. Only turn.failed, or an error no turn.completed follows, fails
+    // the run; the rest ride along on the row.
+    const streamErrors = [];
     for await (const event of events) {
       onMessage?.(event);
       if (event.type === 'turn.completed') {
@@ -162,7 +230,7 @@ export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio
       } else if (event.type === 'turn.failed') {
         failure = event.error;
       } else if (event.type === 'error') {
-        failure = { message: event.message };
+        streamErrors.push(String(event.message ?? ''));
       } else if (event.type === 'item.completed') {
         const item = event.item;
         if (item.type === 'command_execution' || item.type === 'mcp_tool_call') {
@@ -172,6 +240,10 @@ export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio
         }
       }
     }
+    if (!usage && !failure && streamErrors.length) failure = { message: streamErrors.at(-1) };
+    // Codex reports one "turn" per run; approximate agent turns, and the model
+    // requests behind them, as tool-call rounds plus the final response.
+    const turns = toolCalls + 1;
     const counts = {
       // Normalized to the backend interface's uncached-remainder convention:
       // codex reports an input_tokens INCLUSIVE of both cache figures, so
@@ -182,7 +254,9 @@ export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio
       cache_read: usage?.cached_input_tokens ?? 0,
       output_tokens: usage?.output_tokens ?? 0,
     };
-    const cost_usd = usage ? priceTokens(model ?? DEFAULT_MODEL, counts, 'codex') : null;
+    // The usage sums every request of the run, and a tiered price applies per
+    // request, so it is priced as `turns` requests rather than one huge one.
+    const cost_usd = usage ? priceTokens(model ?? DEFAULT_MODEL, counts, 'codex', turns) : null;
     if (failure) {
       const error = new Error(`codex turn failed: ${failure.message}`);
       if (usage) error.spend = { ...counts, cost_usd };
@@ -190,13 +264,14 @@ export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio
     }
     return {
       text,
-      // Codex reports one "turn" per run; approximate agent turns as tool-call
-      // rounds plus the final response.
-      turns: toolCalls + 1,
+      turns,
       ...counts,
       cost_usd,
       duration_ms: Date.now() - started,
       api_duration_ms: null,
+      ...(streamErrors.length
+        ? { stream_errors: streamErrors.slice(0, 10).map((m) => m.slice(0, 300)) }
+        : {}),
     };
   } finally {
     codexHome.close();

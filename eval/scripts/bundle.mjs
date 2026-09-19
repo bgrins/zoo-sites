@@ -125,7 +125,7 @@ const bundleName = `${basename(runDir)}-bundle`;
 const root = join(staging, bundleName);
 mkdirSync(root, { recursive: true });
 
-writeFileSync(join(root, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+writeFileSync(join(root, 'manifest.json'), scrub(JSON.stringify(manifest, null, 2)) + '\n');
 writeFileSync(
   join(root, 'results.json'),
   scrub(JSON.stringify({ meta: run.meta, results: rows, totals: run.totals }, null, 2)) + '\n'

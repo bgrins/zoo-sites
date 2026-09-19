@@ -13,20 +13,36 @@ const pricingWarned = new Set();
 // (see backends/anthropic.mjs). calcPrice wants OpenAI's convention, where
 // input_tokens already includes the cached portion; it subtracts the cached
 // tokens itself and rejects a negative remainder.
-export function priceTokens(modelId, usage, label) {
+//
+// `requests` is how many model requests `usage` sums. A long-context tier
+// (gpt-5.6 doubles input past 272k) applies per request, but calcPrice picks
+// the tier from the input it is handed, so a run's summed usage priced whole
+// put 60k-token requests at the 272k rate. The usage is split evenly across the
+// requests instead, in whole tokens so the totals stay exact.
+export function priceTokens(modelId, usage, label, requests = 1) {
   if (!usage || !modelId) return null;
-  const cacheRead = usage.cache_read ?? 0;
-  const cacheWrite = usage.cache_creation ?? 0;
-  try {
-    const priced = calcPrice(
+  const n = Number.isInteger(requests) && requests > 1 ? requests : 1;
+  // n - 1 requests take the floor share, and the last one the remainder.
+  const share = (count, last) => {
+    const total = count ?? 0;
+    const each = Math.floor(total / n);
+    return last ? total - each * (n - 1) : each;
+  };
+  const price = (last) => {
+    const cacheRead = share(usage.cache_read, last);
+    const cacheWrite = share(usage.cache_creation, last);
+    return calcPrice(
       {
-        input_tokens: (usage.input_tokens ?? 0) + cacheRead + cacheWrite,
+        input_tokens: share(usage.input_tokens, last) + cacheRead + cacheWrite,
         cache_read_tokens: cacheRead,
         cache_write_tokens: cacheWrite,
-        output_tokens: usage.output_tokens ?? 0,
+        output_tokens: share(usage.output_tokens, last),
       },
       modelId
     );
+  };
+  try {
+    const priced = price(true);
     // Unknown models come back as null rather than throwing.
     if (!priced) return null;
     const matched = priced.model?.id;
@@ -34,7 +50,8 @@ export function priceTokens(modelId, usage, label) {
       pricingWarned.add(modelId);
       console.log(`[${label}] pricing "${modelId}" using the "${matched}" price entry`);
     }
-    return priced.total_price ?? null;
+    if (priced.total_price == null) return null;
+    return n > 1 ? priced.total_price + (n - 1) * price(false).total_price : priced.total_price;
   } catch {
     return null;
   }

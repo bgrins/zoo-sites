@@ -22,6 +22,10 @@ const BASE_KEYS = [
   'NODE_EXTRA_CA_CERTS', 'SSL_CERT_FILE', 'SSL_CERT_DIR',
   // A headed Firefox on Linux.
   'DISPLAY', 'WAYLAND_DISPLAY', 'XDG_RUNTIME_DIR', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS',
+  // Where state from before the run lives: the Claude CLI's profile
+  // credentials (XDG_CONFIG_HOME/anthropic) and data, and on Linux the Firefox
+  // that `playwright install` put under XDG_CACHE_HOME.
+  'XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'XDG_DATA_HOME', 'XDG_STATE_HOME',
   // The tool checkout under test, and where `playwright install` put Firefox.
   'FIREFOX_DEVTOOLS_MCP', 'PLAYWRIGHT_BROWSERS_PATH',
 ];

@@ -186,9 +186,10 @@ if (EFFORT !== 'default') {
 }
 const REPEAT = numberFlag('repeat', 1, (n) => Number.isInteger(n) && n >= 1, 'a positive integer');
 // --rerun-failed <run-dir> selects exactly the tasks that did not pass in an
-// earlier run (failures AND errored rows), so a flaky run can be topped up
-// without re-running everything or hand-copying ids out of a log. The earlier
-// run's suite is the default, since its ids match nothing in another suite.
+// earlier run (failures, errored rows, and tasks it never finished), so a flaky
+// or interrupted run can be topped up without re-running everything or
+// hand-copying ids out of a log. The earlier run's suite is the default, since
+// its ids match nothing in another suite.
 const RERUN_FAILED = flag('rerun-failed', null);
 let RERUN_IDS = null;
 let RERUN_SUITE = null;
@@ -200,14 +201,37 @@ if (RERUN_FAILED) {
   } catch (error) {
     usage(`--rerun-failed: cannot read ${priorPath}: ${error.message}`);
   }
-  RERUN_SUITE = prior.meta?.suite ?? null;
-  RERUN_IDS = [...new Set(prior.results.filter((r) => !r.success).map((r) => r.task))]
-    .filter((id) => id && id !== '(condition)');
+  const priorMeta = prior.meta ?? {};
+  RERUN_SUITE = priorMeta.suite ?? null;
+  const failed = prior.results.filter((r) => !r.success).map((r) => r.task);
+  // A run that was interrupted, crashed, or lost a whole condition has no row at
+  // all for some tasks, and a missing row cannot fail. meta.tasks names every
+  // task the run selected, so a task short of one row per cell is selected too.
+  const incomplete =
+    priorMeta.interrupted || priorMeta.failed || prior.results.some((r) => r.task === '(condition)');
+  if (incomplete && !priorMeta.tasks) {
+    usage(
+      `--rerun-failed: ${RERUN_FAILED} did not finish every task, and it predates the ` +
+        'record of which tasks it selected, so the unfinished ones cannot be named. ' +
+        'Rerun them with --task.'
+    );
+  }
+  const cells =
+    (priorMeta.backend?.split(',').length ?? 1) *
+    (priorMeta.conditions?.split(',').length ?? 1) *
+    (priorMeta.repeat ?? 1);
+  const rowsPerTask = new Map();
+  for (const r of prior.results) rowsPerTask.set(r.task, (rowsPerTask.get(r.task) ?? 0) + 1);
+  const unfinished = (priorMeta.tasks ?? []).filter((id) => (rowsPerTask.get(id) ?? 0) < cells);
+  RERUN_IDS = [...new Set([...failed, ...unfinished])].filter((id) => id && id !== '(condition)');
   if (!RERUN_IDS.length) {
     console.log(`--rerun-failed: every task passed in ${RERUN_FAILED}, nothing to do`);
     process.exit(0);
   }
-  console.log(`--rerun-failed: ${RERUN_IDS.length} task(s) from ${RERUN_FAILED}: ${RERUN_IDS.join(', ')}`);
+  console.log(
+    `--rerun-failed: ${RERUN_IDS.length} task(s) from ${RERUN_FAILED}: ${RERUN_IDS.join(', ')}` +
+      (unfinished.length ? ` (${unfinished.length} never finished)` : '')
+  );
 }
 const SUITE = flag('suite', RERUN_SUITE ?? 'basic');
 // --task takes a comma list of ids, each optionally using * as a wildcard, so a
@@ -294,9 +318,10 @@ Selecting what to run:
   --list-tasks            print the selected ids with their wall-clock tier and
                           cap, then exit without running anything. Combine with
                           --suite/--task to preview a subset for free.
-  --rerun-failed <dir>    select exactly the tasks that failed or errored in an
-                          earlier run dir (reads its results.json; overrides
-                          --task) — for topping up a run that hit flaky errors
+  --rerun-failed <dir>    select exactly the tasks that failed, errored or never
+                          finished in an earlier run dir (reads its
+                          results.json; overrides --task) — for topping up a
+                          run that hit flaky errors or was interrupted
 
 Reporting:
   --report-from <dir>     rewrite report.md from a finished run's results.json
@@ -533,8 +558,12 @@ async function preflight() {
       removeTempDir(dir);
     }
   }
-  if (BACKENDS.codex) {
-    const home = BACKENDS.codex.isolatedCodexHome(agentEnv('codex'));
+  // The first codex home of a process reads the model catalog, which can fail,
+  // so a codex extractor's is built here too rather than after the first paid
+  // agent run.
+  if (BACKENDS.codex || extractorInfo().extractor === 'codex') {
+    const { isolatedCodexHome } = BACKENDS.codex ?? (await import('./backends/codex.mjs'));
+    const home = await isolatedCodexHome(agentEnv('codex'));
     const hasLogin = home.hasLogin;
     home.close();
     if (!hasLogin) {
@@ -658,10 +687,6 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
       harnessStop: true,
     });
   }
-  // An API failure ("API Error: 529 ...") arrives as a result whose text is the
-  // error. A transient one is thrown, so the retry loop reruns it and marks it
-  // infra when it persists; any other stays the agent's graded answer.
-  if (r.result_error && TRANSIENT.test(r.result_error)) throw discard(r.result_error);
   // Structured answer extraction (docs/grading-design.md): condition-
   // blind, post-hoc, quote-gated. Usage is recorded on the row but NEVER summed
   // into the per-condition metrics; wall_s already brackets only backend.run.
@@ -755,6 +780,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     // >1 when the agent used a background task, so the run arrived as several
     // SDK result segments whose usage had to be summed (see backends/anthropic.mjs).
     ...(r.segments > 1 ? { segments: r.segments } : {}),
+    ...(r.stream_errors ? { stream_errors: r.stream_errors } : {}),
     // Grading evidence for schema tasks; excluded from every condition total.
     // The verbatim answer rides along so the row is self-contained: fields are
     // what graded, answer_full is what the agent actually said.
@@ -1101,7 +1127,7 @@ function packageVersion(name) {
 // Everything needed to reproduce the run: the flags that change what ran, the
 // code and tool versions it ran on, and the isolation it ran under. Variable
 // NAMES only, never values.
-function buildMeta(startedAt) {
+function buildMeta(startedAt, selected) {
   return {
     date: startedAt.toISOString(),
     backend: BACKEND_NAMES.join(','),
@@ -1111,6 +1137,8 @@ function buildMeta(startedAt) {
     effort: EFFORT,
     suite: SUITE,
     task: ONLY_TASK ?? undefined,
+    // What --rerun-failed needs to name the tasks an interrupt left unfinished.
+    tasks: selected.map((t) => t.id),
     rerunFailed: RERUN_FAILED ?? undefined,
     repeat: REPEAT > 1 ? REPEAT : undefined,
     conditions: CONDITIONS.join(','),
@@ -1182,7 +1210,7 @@ async function main() {
   const runDir = join(here, 'results', `run-${stamp}`);
   const transcriptsDir = join(runDir, 'transcripts');
   mkdirSync(transcriptsDir, { recursive: true });
-  const meta = buildMeta(startedAt);
+  const meta = buildMeta(startedAt, selected);
   Object.assign(LIVE, { runDir, meta, rows: [] });
   const shared = { transcriptsDir };
   const onRow = (row) => LIVE.rows.push(row);
