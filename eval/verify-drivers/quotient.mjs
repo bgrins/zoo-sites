@@ -138,6 +138,8 @@ export const DRIVERS = {
         // A qualified wrong helper, and two helpers where one is asked for.
         { throwingFunction: `Reconciler.${FIELD_HELPERS[decoy]}`, missingField: field },
         { throwingFunction: `${frame} / ${FIELD_HELPERS[decoy]}`, missingField: field },
+        // The decoy helper behind the source location a right answer may carry.
+        { throwingFunction: `${FIELD_HELPERS[decoy]}() in app.js`, missingField: field },
         // Another app.js function named as the thrower, the helper as context.
         { throwingFunction: `runReconciliation (via ${frame})`, missingField: field },
         { throwingFunction: `renderCards after ${frame}`, missingField: field },
@@ -152,6 +154,8 @@ export const DRIVERS = {
         { throwingFunction: `window.${frame}`, missingField: field },
         { throwingFunction: `Reconciler.${frame}`, missingField: field },
         { throwingFunction: `${frame} (app.js)`, missingField: field },
+        { throwingFunction: `${frame}() in app.js`, missingField: field },
+        { throwingFunction: `${frame} on line 21 of app.js`, missingField: field },
       ];
       const pageServed = (s) => Boolean(s.quotient?.batch?.servedFromPage);
       this.alsoCorrectState = [

@@ -1,6 +1,6 @@
 // The devtools suite (--suite devtools): console/network-surface tasks,
 // kept out of the web suite by owner decision. Same contract as web.mjs.
-import { eqCode, eqName, normalise, normaliseWords } from '../extract.mjs';
+import { eqCode, eqName, normalise, normaliseWords, soleCode } from '../extract.mjs';
 import { originUrls } from '../../manifest.mjs';
 
 // The first URL path a field carries is the request it names; a later path is
@@ -14,14 +14,125 @@ function firstPath(field) {
 }
 
 const REQUEST_NOUN = /^(request|requests|fetch|fetches|call|calls|xhr|api|endpoint|get)$/;
+const ARTICLE = /^(the|a|an|its|their|this|that)$/;
+const NEGATOR = /^(not|never|than|except|besides|unlike|excluding)$/;
+const FILLER = /^(s|itself|one|was|is|has|had|been|did|came|back|returned|with|status|http|code|also|still)$/;
+const WORKED = /^(fine|ok|okay|succeeded|worked|good|healthy|200)$/;
+// Success only when nothing but another success word follows: "the roster
+// loaded (successfully)", not "the roster request, loaded right after sign-in".
+const WORKED_UNLESS_MORE = /^(loaded|successful|successfully)$/;
+const works = (w) => WORKED.test(w) || WORKED_UNLESS_MORE.test(w);
 
-// Prose names a request by its first mention of the resource word. A word
-// that points elsewhere (the fallback's cache stem, the page's document)
-// before that mention names the other thing; after it, it is context only
-// when a request noun follows the resource word, as in "the roster request,
-// not the cached fallback".
-function namesInProse(field, resource, pointsElsewhere) {
-  const words = normaliseWords(field ?? '').trim().split(' ');
+const wordsOf = (s) => normaliseWords(s).trim().split(' ').filter(Boolean);
+const withoutQuery = (s) => s.replace(/\?[^\s;]*/g, ' ');
+
+// Where a field turns from naming its request to context: a semicolon, colon,
+// bracket or spaced dash, a conjunction, or a contrast. A plain comma is no
+// break, so "the roster, served from cache" stays one naming. "not", "rather"
+// and "instead" stay at the start of the clause they open, where
+// namesInProse reads them.
+const CLAUSE_BREAK =
+  /[;:()[\]]|\s-+\s|\b(?:so|then|but|because|since|while)\b|,\s*(?=not\b)|,?\s*(?=\b(?:rather|instead)\b)/;
+// A clause that opens with a contrast ends at its first comma, so in "Not the
+// sign-in POST, the roster request" the contrast governs only the sign-in.
+const OPENS_WITH_CONTRAST = /^\s*(?:not|unlike|besides|except|excluding|rather than|instead of)\b/;
+const OPENS_WITH_IDENTIFIER = /^\s*(?:(?:get|post)\s+)?(?:\/|api\/|[\w-]+\.(?:json|html?|txt|css|js)\b)/;
+const MENTIONS_REQUEST = /(?:^|[^\w.\/-])(?:\/[\w.-]|api\/)|[\w-]+\.(?:json|html?|txt|css|js)\b/;
+// What may introduce a restatement ahead of its identifier: quotes, "i.e.",
+// "for", "from", "actually", "fallback" or an article.
+const INTRODUCER =
+  /^(?:["'\s]+|(?:i\.?\s?e\.?|e\.?\s?g\.?|namely|aka|for|from|via|actually|fallback|the|its|a|an)(?![a-z0-9])[\s,.:]*)/;
+
+// The part of a field that names its request, and the clause after it. The
+// naming is its clauses up to and including the first that mentions the
+// resource word, joined by ";", from after the last earlier clause that
+// reports something working or opens with a contrast ("POST
+// /api/depot/signin returned 200; GET /api/depot/roster returned 502", "Not
+// the page document, the manifests request"). A mention of the resource word
+// that names another request and reports it working, as "GET
+// /depot/manifests.html (200 OK)" does, is passed over. Later clauses are
+// context, as in "roster load - the page fell back to the cached copy" or "the
+// roster request (after /api/depot/signin assigned shard 2)", except the next
+// one when it restates what was named, as in "the roster file (i.e.
+// /depot/data/roster-cache.json)" or "the roster (from cache)": past any
+// introducer it opens with a path, a file name or, within two words, a word
+// that points elsewhere, and it reports nothing as working, as "manifests list
+// fetch (the document itself is fine)" does.
+function namingOf(field, spec) {
+  const { resource, pointsElsewhere } = spec;
+  const clauses = normalise(field ?? '')
+    .replace(/\b[a-z][a-z0-9+.-]*:\/\/[^/\s]*/g, ' ')
+    .split(CLAUSE_BREAK)
+    .flatMap((c) => (OPENS_WITH_CONTRAST.test(c) ? c.split(/,(.*)/s).slice(0, 2) : [c]))
+    .filter((c) => c && /[a-z0-9]/.test(c));
+  const hasResource = (c) => wordsOf(c).some((w) => resource.test(w));
+  const mentions = (c) => MENTIONS_REQUEST.test(c) || hasResource(c);
+  const saysWorked = (c) =>
+    wordsOf(c).some((w, k, ws) => works(w) && !/^(not|never|t)$/.test(ws[k - 1] ?? ''));
+  // What a clause reports runs on through the clauses after it that mention
+  // no request, as in "GET /depot/manifests.html (loaded fine)".
+  const reportsWorking = (j) => {
+    for (let k = j; k < clauses.length && (k === j || !mentions(clauses[k])); k++) {
+      if (saysWorked(clauses[k])) return true;
+    }
+    return false;
+  };
+  const i = clauses.findIndex(
+    (c, j) => hasResource(c) && !(reportsWorking(j) && !namedIn(c, spec))
+  );
+  if (i === -1) return { naming: clauses.join(' ; '), tail: '' };
+  const start =
+    clauses.slice(0, i).findLastIndex((c) => saysWorked(c) || OPENS_WITH_CONTRAST.test(c)) + 1;
+  const next = clauses[i + 1] ?? '';
+  let lead = next;
+  for (let m; (m = lead.match(INTRODUCER)) && m[0]; ) lead = lead.slice(m[0].length);
+  const words = wordsOf(lead);
+  const restates =
+    !wordsOf(next).some(works) &&
+    (OPENS_WITH_IDENTIFIER.test(lead) || words.slice(0, 2).some((_, j) => pointsElsewhere(words, j)));
+  const end = restates ? i + 2 : i + 1;
+  return { naming: clauses.slice(start, end).join(' ; '), tail: clauses[end] ?? '' };
+}
+
+// A naming that sets its resource against another request ("the sign-in
+// request, not the live roster fetch", "rather than the roster", "as opposed
+// to the roster", "not the fetch of the roster", "not /api/depot/roster"),
+// reports it as working ("the roster loaded fine", "roster: 200 OK") or denies
+// it failed ("the roster was not the problem", "the roster was never fetched")
+// names it as a request that did not fail. What the field says of the
+// resource runs on into the clause after the naming.
+function setAgainst(naming, tail, resource) {
+  const words = wordsOf(withoutQuery(naming));
+  const at = words.findIndex((w) => resource.test(w));
+  if (at === -1) return false;
+  const opening = wordsOf(naming.split(';').find((c) => wordsOf(c).some((w) => resource.test(w))));
+  const before = words.slice(0, at).filter((w) => !ARTICLE.test(w));
+  while (before.at(-1) === 'of' && REQUEST_NOUN.test(before.at(-2) ?? '')) before.splice(-2);
+  const contrasted =
+    NEGATOR.test(opening[0] ?? '') ||
+    /^(rather than|instead of)$/.test(opening.slice(0, 2).join(' ')) ||
+    NEGATOR.test(before.at(-1) ?? '') ||
+    /^(instead of|opposed to)$/.test(before.slice(-2).join(' '));
+  const said = words.slice(at + 1).concat(wordsOf(withoutQuery(tail)));
+  const from = said.findIndex((w) => !REQUEST_NOUN.test(w) && !FILLER.test(w));
+  const rest = from === -1 ? [] : said.slice(from);
+  const worked =
+    WORKED.test(rest[0] ?? '') ||
+    (WORKED_UNLESS_MORE.test(rest[0] ?? '') && (rest.length === 1 || works(rest[1])));
+  const denied =
+    /^(?:(?:not|never) (?:the |a )?(?:problem|issue|cause|culprit|affected|involved|fail|failed)\b(?! with)|never (?:fetched|fired|sent|requested|called|made|issued)$|went through$)/.test(
+      rest.join(' ')
+    );
+  return contrasted || worked || denied;
+}
+
+// Prose names a request by its first mention of the resource word. A word that
+// points elsewhere (the fallback's cache stem, the page's document) before
+// that mention names the other thing; after it, it is context only when a
+// request noun follows the resource word, as in "the roster fetch that should
+// have replaced the cached roster".
+function namesInProse(naming, resource, pointsElsewhere) {
+  const words = wordsOf(naming);
   const at = words.findIndex((w) => resource.test(w));
   if (at === -1) return false;
   const elsewhere = words.map((_, j) => j).filter((j) => pointsElsewhere(words, j));
@@ -30,6 +141,33 @@ function namesInProse(field, resource, pointsElsewhere) {
     (elsewhere.length === 0 || REQUEST_NOUN.test(words[at + 1] ?? ''))
   );
 }
+
+// Whether a naming names the request at `want`: by its first path, else in
+// prose by `resource`, where a `fileNames` match anywhere names another file.
+function namedIn(naming, { want, resource, pointsElsewhere, fileNames }) {
+  const path = firstPath(naming);
+  if (path) return path === want;
+  return !fileNames.test(normaliseWords(naming)) && namesInProse(naming, resource, pointsElsewhere);
+}
+
+// Whether a failedRequest field names the request at `want`. Prose that fails
+// without naming another file is graded on the field's first path, as in "the
+// cached roster was shown; the failure was GET /api/depot/roster".
+function namesRequest(field, spec) {
+  const { naming, tail } = namingOf(field, spec);
+  if (setAgainst(naming, tail, spec.resource)) return false;
+  return (
+    namedIn(naming, spec) ||
+    (!firstPath(naming) &&
+      !spec.fileNames.test(normaliseWords(naming)) &&
+      firstPath(field) === spec.want)
+  );
+}
+
+// The task's own status code is no second code: "MR-1A2B3C4D (from the 507
+// response body)" names one ref.
+const withoutStatus = (v, code) =>
+  typeof v === 'string' ? v.replace(new RegExp(`(?<![\\w-])${code}(?![\\w-])`, 'g'), ' ') : v;
 
 export async function devtoolsTasks(base, origins = originUrls(base)) {
   return [
@@ -67,25 +205,25 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
         const sessions = [...ctx.pages.state.sessions.values()].filter(
           (s) => s.depot?.signedIn
         );
-        const graded =
-          sessions.find((s) => eqCode(fields?.traceId, s.depot.trace)) ?? sessions[0];
+        // "X-Depot-Trace: DT-1A2B3C4D" names the trace it labels.
+        const claimed = soleCode(withoutStatus(fields?.traceId, 502), /DT-[0-9A-F]{8}/);
+        const graded = sessions.find((s) => eqCode(claimed, s.depot.trace)) ?? sessions[0];
         const d = graded?.depot;
         // The failing request must be the roster fetch, not the sign-in POST
         // and not the cached-roster fallback file (which also contains the
-        // word "roster" but succeeded with a 200). A field that carries a
-        // path is graded on its first one. Prose must name the roster, and
-        // not by the fallback's file name or as the cached one; "non-cached"
-        // points at the live request.
+        // word "roster" but succeeded with a 200). A field whose naming
+        // carries a path is graded on its first one. Prose must name the
+        // roster, and not by the fallback's file name, as a JSON file or as
+        // the cached one; "non-cached" points at the live request, and "the
+        // roster JSON fetch" at no file.
         const request = normalise(fields?.failedRequest ?? '');
-        const path = firstPath(request);
-        const namesRoster = path
-          ? path === '/api/depot/roster'
-          : !normaliseWords(request).includes(' json ') &&
-            namesInProse(
-              request,
-              /^roster$/,
-              (w, j) => /^cach(e|ed|ing)$/.test(w[j]) && !/^(non|not)$/.test(w[j - 1] ?? '')
-            );
+        const namesRoster = namesRequest(request, {
+          want: '/api/depot/roster',
+          resource: /^roster$/,
+          pointsElsewhere: (w, j) =>
+            /^cach(e|ed|ing)$/.test(w[j]) && !/^(non|not)$/.test(w[j - 1] ?? ''),
+          fileNames: / (cache json|json files?) /,
+        });
         // The page requests only the shard sign-in assigned, so a named shard
         // must be that one; a shard-less naming stands.
         const shardsNamed = [...request.matchAll(/\bshard\s*(?:[=:#-]|no\.?|number)?\s*(\d+)/g)].map(
@@ -95,7 +233,7 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
         return {
           pass:
             Boolean(d) &&
-            eqCode(fields?.traceId, d.trace) &&
+            eqCode(claimed, d.trace) &&
             fields?.statusCode === 502 &&
             namesRoster &&
             shardOk,
@@ -152,29 +290,39 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
         const sessions = [...ctx.pages.state.sessions.values()].filter(
           (s) => (s.depot?.manifestHits ?? 0) > 0
         );
+        // "Support ref MR-1A2B3C4D" names the ref it labels.
+        const claimed = soleCode(withoutStatus(fields?.supportRef, 507), /MR-[0-9A-F]{8}/);
         const graded =
-          sessions.find((s) => eqCode(fields?.supportRef, s.depot.manifestRef)) ??
-          sessions[0];
+          sessions.find((s) => eqCode(claimed, s.depot.manifestRef)) ?? sessions[0];
         const d = graded?.depot;
-        // A field that carries a path is graded on its first one. Otherwise
-        // singular and plural prose namings both count, but the page document
-        // (manifests.html, a 200) and the intake page's manifest data file
-        // (manifest-dm2116.txt, a 200) must not: their file names fail
-        // anywhere, the word "document" only where it names the thing.
+        // A field whose naming carries a path is graded on its first one.
+        // Otherwise singular and plural prose namings both count, but the page
+        // document (manifests.html, a 200) and the intake page's manifest data
+        // file (manifest-dm2116.txt, a 200) must not: their file names fail
+        // anywhere in the naming, the word "document" only where it names the
+        // thing.
         const request = normalise(fields?.failedRequest ?? '');
-        const path = firstPath(request);
-        const namesManifests = path
-          ? path === '/api/depot/manifests'
-          : !/ (html|txt|dm2116) /.test(normaliseWords(request)) &&
-            namesInProse(request, /^manifests?$/, (w, j) => w[j] === 'document');
+        const namesManifests = namesRequest(request, {
+          want: '/api/depot/manifests',
+          resource: /^manifests?$/,
+          pointsElsewhere: (w, j) => w[j] === 'document',
+          fileNames: / (html|txt|dm2116) /,
+        });
         // A stated ref is an identifier: a token that mixes letters and
-        // digits, carries an underscore, or is the MR prefix. "N/A" and "not
-        // recoverable (body not exposed)" state none and pass like null;
-        // "manifest_store_locked" is the body's error code claimed as the ref.
+        // digits, the MR prefix, or the body's error code manifest_store_locked
+        // (in any underscored spelling, such as ERR_MANIFEST_STORE_LOCKED)
+        // claimed as the ref. "N/A", "not recoverable (body not exposed)" and
+        // an explanation naming a network tool (get_network_request) state
+        // none and pass like null.
         const refStated = String(fields?.supportRef ?? '')
           .split(/[^a-z0-9_]+/i)
-          .some((t) => /^mr$/i.test(t) || t.includes('_') || (/\d/.test(t) && /[a-z]/i.test(t)));
-        const refFound = Boolean(d) && eqCode(fields?.supportRef, d.manifestRef);
+          .some(
+            (t) =>
+              /^mr$/i.test(t) ||
+              (t.includes('_') && t.split('_').some((p) => /^(manifests?|store|locked?)$/i.test(p))) ||
+              (/\d/.test(t) && /[a-z]/i.test(t))
+          );
+        const refFound = Boolean(d) && eqCode(claimed, d.manifestRef);
         return {
           pass:
             Boolean(d) &&
@@ -289,10 +437,11 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
           [flat(got), flat(got).replace(/^(batch|payload|response|data|json)/, '')].includes(
             flat(want)
           );
-        // "applyFxRate()", "window.applyFxRate" and "applyFxRate (app.js:21)"
-        // all name the helper: a dotted qualifier may precede it and only its
-        // source location may follow. "the caller of applyFxRate" and
-        // "renderCards after applyFxRate" name some other function.
+        // "applyFxRate()", "window.applyFxRate", "applyFxRate (app.js:21)" and
+        // "applyFxRate() in app.js" all name the helper: a dotted qualifier may
+        // precede it and only its source location may follow. "the caller of
+        // applyFxRate" and "renderCards after applyFxRate" name some other
+        // function.
         const namesHelper = (got, helper) => {
           if (typeof got !== 'string' || !helper) return false;
           if (eqName(got, helper)) return true;
@@ -304,7 +453,7 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
             m[1]
               .split(/[^a-z0-9_$]+/)
               .filter(Boolean)
-              .every((t) => /^(app|js|at|line|\d+)$/.test(t))
+              .every((t) => /^(app|js|at|in|from|of|on|line|\d+)$/.test(t))
           );
         };
         const sessions = [...ctx.pages.state.sessions.values()].filter((s) => s.quotient?.batch);
