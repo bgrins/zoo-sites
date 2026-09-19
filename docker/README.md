@@ -165,12 +165,17 @@ each once against the_zoo's proxy, in a real browser pointed at the zoo.
 1. **Cookies are per-domain.** Interact on voltro.zoo, then check in devtools
    that its `sid` cookie is NOT sent to marrowgate.zoo. Every origin mints its
    own session, and that separation is the zoo-mode model.
-2. **Host and sec-fetch metadata pass through.** The gov navigation gates and
-   several provenance signals read `sec-fetch-dest`, `sec-fetch-mode` and
-   `sec-fetch-site`. Open `http://civic-revenue.zoo/gov/legacy/rv3` and follow
-   the notice it returns: the redirect-loop escape (`?v=2`) should serve the
-   archived copy on a real browser navigation and refuse a plain `curl` of the
-   same URL. A proxy that strips sec-fetch headers breaks that refusal first.
+2. **Host and navigation metadata pass through.** The navigation gates read
+   `sec-fetch-dest` and `sec-fetch-mode`. A browser sends those only to an https
+   or loopback origin, so over plain `http://<brand>.zoo` it sends none, and the
+   server falls back to the `Accept` header for any request whose Host is not
+   loopback (see `navOf` in `server.mjs`). Open
+   `http://civic-revenue.zoo/gov/legacy/rv3` and follow the notice it returns:
+   the redirect-loop escape (`?v=2`) should serve the archived copy on a real
+   browser navigation and refuse a plain `curl` of the same URL. Repeat over
+   `https://`. A proxy that rewrites Host to a loopback name breaks the
+   plain-http escape first, because the server then expects sec-fetch headers
+   the browser never sent.
 3. **No response caching.** Sessions substitute a per-session nonce into every
    HTML body, so a cached page would hand one session's nonce to another. Two
    fresh browser profiles loading the same page must see different `window.NONCE`

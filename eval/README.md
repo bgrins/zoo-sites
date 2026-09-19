@@ -46,11 +46,16 @@ node eval/scripts/transcript.mjs <run-dir>         # what the agents actually di
 node eval/scripts/bundle.mjs <run-dir>             # portable results zip, answer key excluded
 ```
 
-**`run.mjs` hands an agent a shell.** On the Anthropic backend it runs with permission
-prompts disabled and `Bash` allowed, in a fresh temporary directory under no further
-sandbox, inheriting the harness's full environment including any API keys in it; the
-codex backend runs under a network-enabled workspace-write sandbox. Run it only where
-you are willing to let an agent execute arbitrary shell commands. One fixture is
+**`run.mjs` hands an agent a shell.** Each attempt gets a fresh temporary directory and
+an allowlisted environment (`agent-env.mjs`) that still carries the backend's own API
+credentials. On the Anthropic backend the agent runs with permission prompts disabled
+and a pinned tool set (the browser MCP server, `Bash` and file tools; no web, subagent
+or scheduling tools) under no further sandbox. The codex backend runs under a
+network-enabled workspace-write sandbox limited to the attempt directory and a private
+`TMPDIR`, with its own `CODEX_HOME` holding only the login, so none of your codex
+config, plugins or skills reach it; inside that sandbox a bare `mktemp` fails on macOS,
+while `mktemp -p "$TMPDIR"` works. Each run's `meta` records both tool policies. Run it
+only where you are willing to let an agent execute arbitrary shell commands. One fixture is
 actively trying to talk that agent into exfiltrating data — that is the point of
 `injection-bait` — and an agent that takes the bait will run whatever the page told it
 to. `verify.mjs` runs no agent and is safe to run anywhere the browser is.
