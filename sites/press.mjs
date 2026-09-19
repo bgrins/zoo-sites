@@ -13,9 +13,9 @@ const PRESS_RELEASE = {
   headline: 'Pellvane Robotics to join Northwind',
   dateline: 'London, 27 July 2026',
   body: [
-    'Northwind Industrial Group plc has agreed terms to acquire Pellvane Robotics Ltd, the maker of palletising and pick-and-place cells, for an enterprise value of 412 million pounds in cash and shares.',
-    'Pellvane Robotics will be reported within the group Automation division and will keep its Sheffield engineering centre and its brand. Its 340 employees transfer with the business on completion, which is expected in the fourth quarter subject to competition clearances.',
-    'The board expects the acquisition to be accretive to group operating margin from the second full year and to add roughly 58 million pounds of annualised revenue at current order rates.',
+    'Northwind Industrial Group plc has agreed terms to acquire Pellvane Robotics Ltd, the maker of palletising and pick-and-place cells, for an enterprise value of £412 million in cash and shares.',
+    'Pellvane Robotics will be reported within the group\'s industrial services division and will keep its Sheffield engineering centre and its brand. Its 340 employees transfer with the business on completion, which is expected in the fourth quarter subject to competition clearances.',
+    'The board expects the acquisition to be accretive to group operating margin from the second full year and to add roughly £58 million of annualised revenue at current order rates.',
   ],
 };
 

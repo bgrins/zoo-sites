@@ -313,6 +313,26 @@ export const DRIVERS = {
       // The front page's "14 replies" counts nested replies too; only the
       // un-nested .remark children of #thread are top-level.
       if (info.roots !== 5) throw new Error(`expected 5 top-level comments, saw ${info.roots}`);
+      // A submission nobody has answered says so, and a sponsored listing, which
+      // takes no replies, never asks for a thread at all.
+      await goto('/news/item.html?id=38');
+      const quiet = await until('the unanswered submission to settle', () =>
+        evaluate(() => document.querySelector('#thread .threadnote')?.textContent ?? null)
+      );
+      if (!/^No replies yet/.test(quiet)) throw new Error(`an unanswered submission reads: ${quiet}`);
+      await goto('/news/item.html?id=23');
+      const listing = await until('the sponsored listing to settle', () =>
+        evaluate(() =>
+          document.querySelector('#thread .threadnote')
+            ? {
+                threadFetched: performance
+                  .getEntriesByType('resource')
+                  .some((e) => /threads\/item-23\.json/.test(e.name)),
+              }
+            : null
+        )
+      );
+      if (listing.threadFetched) throw new Error('a sponsored listing requested a reply thread');
       const fields = { postTitle: info.title, topLevelCommentCount: info.roots };
       // The front page's reply-inclusive figure is the decoy.
       this.wrongFields = [

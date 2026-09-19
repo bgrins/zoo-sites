@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Millrace</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="millrace.css">
 <style>
   #cmpveil { position: fixed; inset: 0; background: rgba(28, 20, 52, 0.72); z-index: 90; }
@@ -181,18 +182,18 @@
 
 <header id="masthead">
   <div class="masthead-in">
-    <a class="wordmark" href="/news/">millrace</a>
+    <a class="wordmark" href="./">millrace</a>
     <span class="tagline">a working stream for people who build things</span>
-    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+    <span class="acct"><a href="signin.html">sign in</a><a class="ghost" href="signin.html#register">open an account</a></span>
   </div>
 </header>
 <nav id="tabs" aria-label="Sections">
   <div class="tabs-in">
-    <a class="tab on" href="/news/consent.html">Stream</a>
-    <a class="tab" href="/news/?sort=fresh">Fresh</a>
-    <a class="tab" href="/news/?view=threads">Threads</a>
-    <a class="tab" href="/news/?tag=build">Build logs</a>
-    <a class="tab" href="/news/submit.html">Submit a link</a>
+    <a class="tab on" href="consent.html">Stream</a>
+    <a class="tab" href="./?sort=fresh">Fresh</a>
+    <a class="tab" href="./?view=threads">Threads</a>
+    <a class="tab" href="./?tag=build">Build logs</a>
+    <a class="tab" href="submit.html">Submit a link</a>
   </div>
 </nav>
 <div id="wrap" hidden>
@@ -203,14 +204,14 @@
       <button type="button" id="prefslink" hidden>Change cookie choices</button>
     </div>
     <ol id="stream"></ol>
-    <p class="pager"><a href="/news/?p=2">next 30 submissions</a></p>
+    <p class="pager"><a href="./?p=2">next 30 submissions</a></p>
   </main>
   <aside id="rail">
     <div class="card">
       <h2>About millrace</h2>
       <p>Forty-one thousand people who build software, hardware and other stubborn
         things, reading each other's work.</p>
-      <p class="meta"><a href="/news/about.html">How the ranking works</a></p>
+      <p class="meta"><a href="about.html">How the ranking works</a></p>
     </div>
     <div class="card">
       <h2>House rules</h2>
@@ -218,23 +219,23 @@
         <li>Reply to the strongest version of the argument.</li>
         <li>Say who you work for when it is relevant.</li>
       </ul>
-      <p class="meta"><a href="/news/guidelines.html">Full guidelines</a></p>
+      <p class="meta"><a href="guidelines.html">Full guidelines</a></p>
     </div>
   </aside>
 </div>
 <footer id="footer">
   <div class="footer-in">
     <p class="footer-nav">
-      <a href="/news/about.html">About</a> &middot;
-      <a href="/news/guidelines.html">Guidelines</a> &middot;
-      <a href="/news/feeds.html">Feeds</a> &middot;
-      <a href="/news/privacy.html">Privacy</a> &middot;
-      <a href="/news/terms.html">Terms</a> &middot;
+      <a href="about.html">About</a> &middot;
+      <a href="guidelines.html">Guidelines</a> &middot;
+      <a href="feeds.html">Feeds</a> &middot;
+      <a href="privacy.html">Privacy</a> &middot;
+      <a href="terms.html">Terms</a> &middot;
       <button class="footlink" type="button" id="reopen">Cookie preferences</button>
     </p>
     <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
       Ashvale, VT 05412. Moderation questions go to
-      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      <a href="contact.html">stewards@millrace.example</a>; everything else to
       help@millrace.example.</p>
     <p>Submissions and replies remain the work of their authors. Copyright 2026
       Weirgate Collective LLC.</p>
@@ -364,12 +365,12 @@
       const origin = item.site ? ' <span class="origin">' + item.site + '</span>' : '';
       return (
         '<li class="entry" data-slot="' + item.rank + '">' +
-        '<a class="tally" href="/news/consent.html" title="Vote this up">' +
+        '<a class="tally" href="consent.html" title="Vote this up">' +
         item.points + '<span class="unit">points</span></a>' +
         '<p class="headline"><span class="slot">' + item.rank + '</span>' +
         '<a href="' + itemUrl + '">' + item.title + '</a>' + origin + '</p>' +
-        '<p class="byline"><a class="who" href="/news/consent.html">' + item.author +
-        '</a> &middot; ' + item.age + ' &middot; <a class="topic" href="/news/?tag=' +
+        '<p class="byline"><a class="who" href="consent.html">' + item.author +
+        '</a> &middot; ' + item.age + ' &middot; <a class="topic" href="./?tag=' +
         item.tag + '">' + item.tag + '</a> &middot; <a href="' + itemUrl + '">' +
         item.comments + '&nbsp;replies</a></p></li>'
       );
@@ -380,15 +381,23 @@
       document.getElementById('wrap').hidden = false;
       if (rendered) return Promise.resolve();
       rendered = true;
+      const stream = document.getElementById('stream');
       return fetch('items.json')
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error('stream answered ' + r.status);
+          return r.json();
+        })
         .then((items) => {
-          const stream = document.getElementById('stream');
           for (const item of items.slice(0, 10)) {
             stream.insertAdjacentHTML('beforeend', entryHtml(item));
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          const holder = document.createElement('li');
+          holder.className = 'empty';
+          holder.textContent = 'The stream did not load. Reload the page to try again.';
+          stream.replaceChildren(holder);
+        });
     }
 
     function noteFor(optionalOn) {

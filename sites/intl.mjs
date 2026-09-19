@@ -56,6 +56,11 @@ const INTL_NOTICES = {
   },
 };
 
+// Destinations the Authority publishes an advisory for but has issued no
+// supplementary notice about. Kept out of INTL_NOTICES so intlState() mints no
+// reference for them and the validator's decoy set stays the two above.
+const INTL_QUIET_DESTS = ['neruva-highlands', 'tamsir-basin'];
+
 // Every destination's reference is minted up front, distinct from the others, so
 // the validator can always tell "quoted the other destination's reference" apart
 // from "quoted the right one" — a reference minted lazily on release would leave
@@ -101,6 +106,7 @@ export function routes(ctx) {
       // list here would let a mistyped slug read as an authoritative "nothing
       // applies", which is the one wrong answer this task must not hand out.
       if (!notice) {
+        if (INTL_QUIET_DESTS.includes(dest)) return json(res, 200, { locale, dest, notices: [] });
         return json(res, 404, { error: 'unknown destination' });
       }
       if (locale === 'en' || !notice.published.includes(locale)) {

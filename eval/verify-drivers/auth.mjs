@@ -672,6 +672,19 @@ export const DRIVERS = {
         document.getElementById('releaseHeadline')?.textContent ?? ''
       );
       if (!headline) throw new Error('the release published without a headline');
+      // Once the release is out the page must stop presenting itself as
+      // embargoed: no "Embargoed" heading or tab title, no dead status button.
+      const after = await read(h, () => {
+        const check = document.getElementById('check');
+        return {
+          heading: document.querySelector('h1')?.textContent ?? '',
+          title: document.title,
+          deadButton: !!check && check.offsetParent !== null,
+        };
+      });
+      if (!after || /embargo/i.test(after.heading + after.title) || after.deadButton) {
+        throw new Error(`the published release still reads as embargoed: ${JSON.stringify(after)}`);
+      }
       const fields = { headline, referenceCode: reference };
       this.wrongFields = [
         { headline, referenceCode: bumpCode(reference) },

@@ -149,6 +149,27 @@ const localeNotice = {
     }, 'the Arabic Ashkar Coast notice');
     const ashkarRef = ashkar.match(/المرجع: (QTA-2026-[0-9A-F]{4})/)[1];
 
+    // Every destination on the list is published, so one with no supplementary
+    // notice reads as an empty list in any edition, never as a load failure;
+    // only a slug the Authority does not publish is refused, and the page says
+    // so instead of quietly showing Port Vasiri.
+    await goto('/intl/ja/advisory.html?dest=tamsir-basin');
+    const tamsir = await untilSnapshot(
+      (s) => /この渡航先に対する補足告知はありません|告知を読み込めませんでした/.test(s),
+      'the Japanese Tamsir Basin notices panel'
+    );
+    if (!/この渡航先に対する補足告知はありません/.test(tamsir)) {
+      throw new Error('a published destination with no notices reported a load failure');
+    }
+    await goto('/intl/advisory.html?dest=port-vasri');
+    const unknown = await untilSnapshot(
+      (s) => /Destination not found|Port Vasiri/.test(s),
+      'the advisory page for a mistyped destination'
+    );
+    if (!/Destination not found/.test(unknown) || /Level 2/.test(unknown)) {
+      throw new Error('a mistyped destination rendered an advisory instead of saying it was not found');
+    }
+
     // A wrong answer of exactly the right shape, guaranteed distinct from the
     // reference this session was actually issued; and the real reference put to
     // the one claim this task must never accept, that nothing further applies.

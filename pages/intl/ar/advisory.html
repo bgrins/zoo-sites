@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>إرشاد وجهة — هيئة قندرة لإرشادات السفر</title>
 <link rel="stylesheet" href="../intl.css">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="alternate" hreflang="en" href="../advisory.html">
 <link rel="alternate" hreflang="ja" href="../ja/advisory.html">
 </head>
 <body lang="ar" dir="rtl">
+<a class="skip" href="#content">تخطَّ إلى المحتوى</a>
 <div class="strip">
   <div class="row">
     <span>ضابط المناوبة <bdi dir="ltr">+44 20 7946 0118</bdi></span>
@@ -20,11 +22,13 @@
 
 <header class="masthead">
   <div class="row">
-    <div class="crest">QTA</div>
-    <div class="title">
-      <h1>هيئة قندرة لإرشادات السفر</h1>
-      <p class="alt" lang="en" dir="ltr">Qandara Travel Advisory Authority</p>
-    </div>
+    <a class="brand" href="index.html">
+      <span class="crest">QTA</span>
+      <span class="title">
+        <span class="name">هيئة قندرة لإرشادات السفر</span>
+        <span class="alt" lang="en" dir="ltr">Qandara Travel Advisory Authority</span>
+      </span>
+    </a>
     <nav class="editions" aria-label="النسخ">
       <span class="lbl">النسخ</span>
       <a id="edEn" href="../advisory.html" hreflang="en" lang="en" dir="ltr">English<em>updated 12 June 2026</em></a>
@@ -36,7 +40,7 @@
 
 <nav class="mainnav">
   <div class="row">
-    <a class="here" href="index.html">الإرشادات</a>
+    <a class="here" href="index.html" aria-current="true">الإرشادات</a>
     <a href="levels.html">مستويات الإرشاد</a>
     <a href="practical.html#entry">شروط الدخول</a>
     <a href="harbour.html">عمليات الميناء</a>
@@ -47,10 +51,12 @@
 <p class="crumbs"><a href="index.html">الإرشادات</a> &rsaquo; <span id="crumb">الوجهة</span></p>
 
 <div class="shell">
-  <main class="doc">
+  <main class="doc" id="content">
     <h1 id="destName">الوجهة</h1>
     <p class="sub" id="destSub"></p>
+    <noscript><p class="failed">تحتاج صفحة الإرشاد هذه إلى البرمجيات النصية لعرض إرشاد الوجهة وإشعاراتها. اتصل بضابط المناوبة على <bdi dir="ltr">+44 20 7946 0118</bdi> ليقرأ لك الإرشاد الحالي.</p></noscript>
 
+    <div id="advisory">
     <div class="band" id="band">
       <p class="level" id="levelText"></p>
       <p class="since" id="levelSince"></p>
@@ -61,6 +67,12 @@
 
     <h2>الإشعارات التكميلية</h2>
     <section id="notices"><p class="loading">جارٍ تحميل الإشعارات.</p></section>
+    </div>
+
+    <div class="missing" id="missing" hidden>
+      <p>لا تنشر الهيئة إرشادًا بهذا العنوان. اختر وجهة من قائمة إرشادات السفر، أو اتصل بضابط المناوبة إن كنت في رحلتك بالفعل.</p>
+      <p><a href="index.html">جميع إرشادات السفر</a></p>
+    </div>
 
     <h2>إذا احتجت إلى مساعدة</h2>
     <p>على المسافرين الموجودين في المنطقة الاتصال بضابط المناوبة على <bdi dir="ltr">+44 20 7946 0118</bdi>.
@@ -152,30 +164,65 @@ const STR = {
   refLabel: 'المرجع: ',
   issuedLabel: 'تاريخ الإصدار ',
   empty: 'لا توجد إشعارات تكميلية لهذه الوجهة.',
+  missing: 'الوجهة غير موجودة',
   failed: 'تعذر تحميل الإشعارات. حاول مرة أخرى بعد قليل.',
 };
 
 const requested = new URLSearchParams(location.search).get('dest') || 'port-vasiri';
-const slug = DESTS[requested] ? requested : 'port-vasiri';
-const dest = DESTS[slug];
+const slug = Object.hasOwn(DESTS, requested) ? requested : null;
+const dest = slug ? DESTS[slug] : null;
 
-document.title = dest.name + ' — هيئة قندرة لإرشادات السفر';
-document.getElementById('crumb').textContent = dest.name;
-document.getElementById('destName').textContent = dest.name;
-document.getElementById('destSub').textContent = dest.sub;
-document.getElementById('band').classList.add('lvl' + dest.level);
-document.getElementById('levelText').textContent = dest.levelText;
-document.getElementById('levelSince').textContent = dest.since;
-
-const guidance = document.getElementById('guidance');
-for (const para of dest.guidance) {
-  const p = document.createElement('p');
-  p.textContent = para;
-  guidance.appendChild(p);
+function showMissing() {
+  document.title = STR.missing + ' — هيئة قندرة لإرشادات السفر';
+  document.getElementById('crumb').textContent = STR.missing;
+  document.getElementById('destName').textContent = STR.missing;
+  document.getElementById('advisory').hidden = true;
+  document.getElementById('missing').hidden = false;
+  for (const id of ['edEn', 'edAr', 'edJa']) {
+    const link = document.getElementById(id);
+    link.href = link.getAttribute('href').replace('advisory.html', 'index.html');
+  }
 }
 
-for (const [id, href] of [['edEn', '../advisory.html'], ['edAr', 'advisory.html'], ['edJa', '../ja/advisory.html']]) {
-  document.getElementById(id).href = href + '?dest=' + encodeURIComponent(slug);
+function showAdvisory() {
+  document.title = dest.name + ' — هيئة قندرة لإرشادات السفر';
+  document.getElementById('crumb').textContent = dest.name;
+  document.getElementById('destName').textContent = dest.name;
+  document.getElementById('destSub').textContent = dest.sub;
+  document.getElementById('band').classList.add('lvl' + dest.level);
+  document.getElementById('levelText').textContent = dest.levelText;
+  document.getElementById('levelSince').textContent = dest.since;
+
+  const guidance = document.getElementById('guidance');
+  for (const para of dest.guidance) {
+    const p = document.createElement('p');
+    p.textContent = para;
+    guidance.appendChild(p);
+  }
+
+  for (const [id, href] of [['edEn', '../advisory.html'], ['edAr', 'advisory.html'], ['edJa', '../ja/advisory.html']]) {
+    document.getElementById(id).href = href + '?dest=' + encodeURIComponent(slug);
+  }
+
+  fetch('/api/intl/notices?locale=' + LOCALE + '&dest=' + encodeURIComponent(slug), {
+    headers: { 'X-Session-Nonce': NONCE },
+  })
+    .then((r) => {
+      if (!r.ok) throw new Error('notices request failed: ' + r.status);
+      return r.json();
+    })
+    .then((d) => {
+      if (!Array.isArray(d.notices)) throw new Error('notices payload malformed');
+      renderNotices(d.notices);
+    })
+    .catch(() => {
+      const box = document.getElementById('notices');
+      box.textContent = '';
+      const p = document.createElement('p');
+      p.className = 'failed';
+      p.textContent = STR.failed;
+      box.appendChild(p);
+    });
 }
 
 function renderNotices(list) {
@@ -211,25 +258,8 @@ function renderNotices(list) {
   }
 }
 
-fetch('/api/intl/notices?locale=' + LOCALE + '&dest=' + encodeURIComponent(slug), {
-  headers: { 'X-Session-Nonce': NONCE },
-})
-  .then((r) => {
-    if (!r.ok) throw new Error('notices request failed: ' + r.status);
-    return r.json();
-  })
-  .then((d) => {
-    if (!Array.isArray(d.notices)) throw new Error('notices payload malformed');
-    renderNotices(d.notices);
-  })
-  .catch(() => {
-    const box = document.getElementById('notices');
-    box.textContent = '';
-    const p = document.createElement('p');
-    p.className = 'failed';
-    p.textContent = STR.failed;
-    box.appendChild(p);
-  });
+if (dest) showAdvisory();
+else showMissing();
 </script>
 </body>
 </html>

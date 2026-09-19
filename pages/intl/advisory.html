@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Destination advisory — Qandara Travel Advisory Authority</title>
 <link rel="stylesheet" href="intl.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="alternate" hreflang="ar" href="ar/advisory.html">
 <link rel="alternate" hreflang="ja" href="ja/advisory.html">
 </head>
 <body lang="en" dir="ltr">
+<a class="skip" href="#content">Skip to content</a>
 <div class="strip">
   <div class="row">
     <span>Duty officer +44 20 7946 0118</span>
@@ -20,11 +22,13 @@
 
 <header class="masthead">
   <div class="row">
-    <div class="crest">QTA</div>
-    <div class="title">
-      <h1>Qandara Travel Advisory Authority</h1>
-      <p class="alt" lang="ar" dir="rtl">هيئة قندرة لإرشادات السفر</p>
-    </div>
+    <a class="brand" href="index.html">
+      <span class="crest">QTA</span>
+      <span class="title">
+        <span class="name">Qandara Travel Advisory Authority</span>
+        <span class="alt" lang="ar" dir="rtl">هيئة قندرة لإرشادات السفر</span>
+      </span>
+    </a>
     <nav class="editions" aria-label="Editions">
       <span class="lbl">Editions</span>
       <a class="on" id="edEn" href="advisory.html" hreflang="en">English<em>updated 12 June 2026</em></a>
@@ -36,7 +40,7 @@
 
 <nav class="mainnav">
   <div class="row">
-    <a class="here" href="index.html">Advisories</a>
+    <a class="here" href="index.html" aria-current="true">Advisories</a>
     <a href="levels.html">Advisory levels</a>
     <a href="practical.html#entry">Entry requirements</a>
     <a href="harbour.html">Harbour operations</a>
@@ -47,10 +51,12 @@
 <p class="crumbs"><a href="index.html">Advisories</a> &rsaquo; <span id="crumb">Destination</span></p>
 
 <div class="shell">
-  <main class="doc">
+  <main class="doc" id="content">
     <h1 id="destName">Destination</h1>
     <p class="sub" id="destSub"></p>
+    <noscript><p class="failed">This advisory page needs scripts to show the destination guidance and its notices. Call the duty officer on +44 20 7946 0118 to have the current advisory read to you.</p></noscript>
 
+    <div id="advisory">
     <div class="band" id="band">
       <p class="level" id="levelText"></p>
       <p class="since" id="levelSince"></p>
@@ -61,6 +67,12 @@
 
     <h2>Supplementary notices</h2>
     <section id="notices"><p class="loading">Loading notices.</p></section>
+    </div>
+
+    <div class="missing" id="missing" hidden>
+      <p>The Authority publishes no advisory under that address. Choose a destination from the list of travel advisories, or call the duty officer if you are already travelling.</p>
+      <p><a href="index.html">All travel advisories</a></p>
+    </div>
 
     <h2>If you need help</h2>
     <p>Travellers already in the region should call the duty officer on +44 20 7946 0118.
@@ -154,30 +166,65 @@ const STR = {
   refLabel: 'Reference: ',
   issuedLabel: 'Issued ',
   empty: 'No supplementary notices in the English edition.',
+  missing: 'Destination not found',
   failed: 'Notices could not be loaded. Try again shortly.',
 };
 
 const requested = new URLSearchParams(location.search).get('dest') || 'port-vasiri';
-const slug = DESTS[requested] ? requested : 'port-vasiri';
-const dest = DESTS[slug];
+const slug = Object.hasOwn(DESTS, requested) ? requested : null;
+const dest = slug ? DESTS[slug] : null;
 
-document.title = dest.name + ' — Qandara Travel Advisory Authority';
-document.getElementById('crumb').textContent = dest.name;
-document.getElementById('destName').textContent = dest.name;
-document.getElementById('destSub').textContent = dest.sub;
-document.getElementById('band').classList.add('lvl' + dest.level);
-document.getElementById('levelText').textContent = dest.levelText;
-document.getElementById('levelSince').textContent = dest.since;
-
-const guidance = document.getElementById('guidance');
-for (const para of dest.guidance) {
-  const p = document.createElement('p');
-  p.textContent = para;
-  guidance.appendChild(p);
+function showMissing() {
+  document.title = STR.missing + ' — Qandara Travel Advisory Authority';
+  document.getElementById('crumb').textContent = STR.missing;
+  document.getElementById('destName').textContent = STR.missing;
+  document.getElementById('advisory').hidden = true;
+  document.getElementById('missing').hidden = false;
+  for (const id of ['edEn', 'edAr', 'edJa']) {
+    const link = document.getElementById(id);
+    link.href = link.getAttribute('href').replace('advisory.html', 'index.html');
+  }
 }
 
-for (const [id, href] of [['edEn', 'advisory.html'], ['edAr', 'ar/advisory.html'], ['edJa', 'ja/advisory.html']]) {
-  document.getElementById(id).href = href + '?dest=' + encodeURIComponent(slug);
+function showAdvisory() {
+  document.title = dest.name + ' — Qandara Travel Advisory Authority';
+  document.getElementById('crumb').textContent = dest.name;
+  document.getElementById('destName').textContent = dest.name;
+  document.getElementById('destSub').textContent = dest.sub;
+  document.getElementById('band').classList.add('lvl' + dest.level);
+  document.getElementById('levelText').textContent = dest.levelText;
+  document.getElementById('levelSince').textContent = dest.since;
+
+  const guidance = document.getElementById('guidance');
+  for (const para of dest.guidance) {
+    const p = document.createElement('p');
+    p.textContent = para;
+    guidance.appendChild(p);
+  }
+
+  for (const [id, href] of [['edEn', 'advisory.html'], ['edAr', 'ar/advisory.html'], ['edJa', 'ja/advisory.html']]) {
+    document.getElementById(id).href = href + '?dest=' + encodeURIComponent(slug);
+  }
+
+  fetch('/api/intl/notices?locale=' + LOCALE + '&dest=' + encodeURIComponent(slug), {
+    headers: { 'X-Session-Nonce': NONCE },
+  })
+    .then((r) => {
+      if (!r.ok) throw new Error('notices request failed: ' + r.status);
+      return r.json();
+    })
+    .then((d) => {
+      if (!Array.isArray(d.notices)) throw new Error('notices payload malformed');
+      renderNotices(d.notices);
+    })
+    .catch(() => {
+      const box = document.getElementById('notices');
+      box.textContent = '';
+      const p = document.createElement('p');
+      p.className = 'failed';
+      p.textContent = STR.failed;
+      box.appendChild(p);
+    });
 }
 
 function renderNotices(list) {
@@ -213,25 +260,8 @@ function renderNotices(list) {
   }
 }
 
-fetch('/api/intl/notices?locale=' + LOCALE + '&dest=' + encodeURIComponent(slug), {
-  headers: { 'X-Session-Nonce': NONCE },
-})
-  .then((r) => {
-    if (!r.ok) throw new Error('notices request failed: ' + r.status);
-    return r.json();
-  })
-  .then((d) => {
-    if (!Array.isArray(d.notices)) throw new Error('notices payload malformed');
-    renderNotices(d.notices);
-  })
-  .catch(() => {
-    const box = document.getElementById('notices');
-    box.textContent = '';
-    const p = document.createElement('p');
-    p.className = 'failed';
-    p.textContent = STR.failed;
-    box.appendChild(p);
-  });
+if (dest) showAdvisory();
+else showMissing();
 </script>
 </body>
 </html>

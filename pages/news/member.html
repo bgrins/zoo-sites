@@ -4,26 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Member | Millrace</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="millrace.css">
 </head>
 <body>
 <header id="masthead">
   <div class="masthead-in">
-    <a class="wordmark" href="/news/">millrace</a>
+    <a class="wordmark" href="./">millrace</a>
     <span class="tagline">a working stream for people who build things</span>
-    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+    <span class="acct"><a href="signin.html">sign in</a><a class="ghost" href="signin.html#register">open an account</a></span>
   </div>
 </header>
 <nav id="tabs" aria-label="Sections">
   <div class="tabs-in">
-    <a class="tab" href="/news/">Stream</a>
-    <a class="tab" href="/news/?sort=fresh">Fresh</a>
-    <a class="tab" href="/news/?view=threads">Threads</a>
-    <a class="tab" href="/news/?tag=asks">Asks</a>
-    <a class="tab" href="/news/?tag=build">Build logs</a>
-    <a class="tab" href="/news/?tag=jobs">Hiring</a>
-    <a class="tab" href="/news/submit.html">Submit a link</a>
-    <form class="seek" action="/news/" method="get" role="search">
+    <a class="tab" href="./">Stream</a>
+    <a class="tab" href="./?sort=fresh">Fresh</a>
+    <a class="tab" href="./?view=threads">Threads</a>
+    <a class="tab" href="./?tag=asks">Asks</a>
+    <a class="tab" href="./?tag=build">Build logs</a>
+    <a class="tab" href="./?tag=jobs">Hiring</a>
+    <a class="tab" href="submit.html">Submit a link</a>
+    <form class="seek" action="./" method="get" role="search">
       <input type="search" name="q" aria-label="Search the stream" placeholder="Search the stream">
       <button type="submit">Go</button>
     </form>
@@ -31,7 +32,7 @@
 </nav>
 <div id="wrap">
   <main id="main">
-    <p class="crumbs"><a href="/news/">stream</a> &rsaquo; member</p>
+    <p class="crumbs"><a href="./">stream</a> &rsaquo; member</p>
     <div class="doc" id="profile">
       <h1 id="memname">Member</h1>
       <p id="memsummary"></p>
@@ -44,7 +45,7 @@
       <p>A member page shows what is attributable on the current stream:
         submissions still on the front pages and their scores. Replies, votes and
         anything that has dropped off the stream are not indexed here.</p>
-      <p class="meta"><a href="/news/about.html">How the ranking works</a></p>
+      <p class="meta"><a href="about.html">How the ranking works</a></p>
     </div>
     <div class="card">
       <h2>House rules</h2>
@@ -52,26 +53,27 @@
         <li>Reply to the strongest version of the argument.</li>
         <li>One account per person, one vote per submission.</li>
       </ul>
-      <p class="meta"><a href="/news/guidelines.html">Full guidelines</a></p>
+      <p class="meta"><a href="guidelines.html">Full guidelines</a></p>
     </div>
   </aside>
 </div>
 <footer id="footer">
   <div class="footer-in">
     <p class="footer-nav">
-      <a href="/news/about.html">About</a> &middot;
-      <a href="/news/guidelines.html">Guidelines</a> &middot;
-      <a href="/news/moderation.html">Moderation log</a> &middot;
-      <a href="/news/feeds.html">Feeds</a> &middot;
-      <a href="/news/status.html">Status</a> &middot;
-      <a href="/news/advertise.html">Sponsor a day</a> &middot;
-      <a href="/news/privacy.html">Privacy</a> &middot;
-      <a href="/news/terms.html">Terms</a> &middot;
-      <a href="/news/contact.html">Contact</a>
+      <a href="about.html">About</a> &middot;
+      <a href="guidelines.html">Guidelines</a> &middot;
+      <a href="moderation.html">Moderation log</a> &middot;
+      <a href="feeds.html">Feeds</a> &middot;
+      <a href="status.html">Status</a> &middot;
+      <a href="advertise.html">Sponsor a day</a> &middot;
+      <a href="privacy.html">Privacy</a> &middot;
+      <a href="terms.html">Terms</a> &middot;
+      <a href="consent.html">Cookie preferences</a> &middot;
+      <a href="contact.html">Contact</a>
     </p>
     <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
       Ashvale, VT 05412. Moderation questions go to
-      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      <a href="contact.html">stewards@millrace.example</a>; everything else to
       help@millrace.example.</p>
     <p>Submissions and replies remain the work of their authors. Copyright 2026
       Weirgate Collective LLC.</p>
@@ -87,7 +89,7 @@
       title.textContent = 'No member named';
       summary.innerHTML =
         'This address needs a username, like the ones on every byline. ' +
-        '<a href="/news/">Back to the stream</a>.';
+        '<a href="./">Back to the stream</a>.';
       return;
     }
     document.title = name + ' | Millrace';

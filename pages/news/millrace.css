@@ -3,7 +3,7 @@
   --panel: #ffffff;
   --ink: #241f33;
   --dim: #6d6688;
-  --faint: #8b83a3;
+  --faint: #6f6790;
   --line: #ded8ee;
   --line-soft: #ebe6f7;
   --deep: #33265f;
@@ -735,4 +735,84 @@ fieldset.plain[disabled] textarea {
 
 #footer a {
   color: #cfc6ee;
+}
+
+h1.headline {
+  font-weight: 400;
+}
+
+@media (max-width: 760px) {
+  .masthead-in,
+  .tabs-in,
+  #wrap,
+  .footer-in {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .masthead-in {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .tagline {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .acct a {
+    white-space: nowrap;
+  }
+
+  .tabs-in {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tab {
+    white-space: nowrap;
+  }
+
+  .seek input {
+    width: 130px;
+  }
+
+  #wrap {
+    flex-direction: column;
+    align-items: stretch;
+    padding-top: 14px;
+  }
+
+  #rail {
+    flex: none;
+  }
+
+  .streamhead {
+    flex-wrap: wrap;
+  }
+
+  .entry,
+  #lede {
+    grid-template-columns: 44px minmax(0, 1fr);
+    column-gap: 10px;
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+
+  .origin {
+    white-space: normal;
+  }
+
+  .nest {
+    margin-left: 6px;
+    padding-left: 8px;
+  }
+
+  .doc {
+    padding: 14px 14px 18px;
+  }
+
+  .loglist li {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

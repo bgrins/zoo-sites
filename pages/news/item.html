@@ -4,26 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Millrace</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="millrace.css">
 </head>
 <body>
 <header id="masthead">
   <div class="masthead-in">
-    <a class="wordmark" href="/news/">millrace</a>
+    <a class="wordmark" href="./">millrace</a>
     <span class="tagline">a working stream for people who build things</span>
-    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+    <span class="acct"><a href="signin.html">sign in</a><a class="ghost" href="signin.html#register">open an account</a></span>
   </div>
 </header>
 <nav id="tabs" aria-label="Sections">
   <div class="tabs-in">
-    <a class="tab" href="/news/">Stream</a>
-    <a class="tab" href="/news/?sort=fresh">Fresh</a>
-    <a class="tab" href="/news/?view=threads">Threads</a>
-    <a class="tab" href="/news/?tag=asks">Asks</a>
-    <a class="tab" href="/news/?tag=build">Build logs</a>
-    <a class="tab" href="/news/?tag=jobs">Hiring</a>
-    <a class="tab" href="/news/submit.html">Submit a link</a>
-    <form class="seek" action="/news/" method="get" role="search">
+    <a class="tab" href="./">Stream</a>
+    <a class="tab" href="./?sort=fresh">Fresh</a>
+    <a class="tab" href="./?view=threads">Threads</a>
+    <a class="tab" href="./?tag=asks">Asks</a>
+    <a class="tab" href="./?tag=build">Build logs</a>
+    <a class="tab" href="./?tag=jobs">Hiring</a>
+    <a class="tab" href="submit.html">Submit a link</a>
+    <form class="seek" action="./" method="get" role="search">
       <input type="search" name="q" aria-label="Search the stream" placeholder="Search the stream">
       <button type="submit">Go</button>
     </form>
@@ -31,15 +32,15 @@
 </nav>
 <div id="wrap">
   <main id="main">
-    <p class="crumbs"><a href="/news/">stream</a> &rsaquo; <span id="crumbtag">submission</span> &rsaquo; discussion</p>
+    <p class="crumbs"><a href="./">stream</a> &rsaquo; <span id="crumbtag">submission</span> &rsaquo; discussion</p>
     <article id="lede"></article>
     <div class="threadhead">
       <h2>Discussion</h2>
       <span class="sortby">sorted by score, replies nested under their parent</span>
     </div>
     <section id="thread"></section>
-    <p id="replybar">Replying needs an account. <a href="/news/signin.html">Sign in</a> or
-      <a href="/news/signin.html#register">open one</a> &mdash; new accounts can reply immediately and can
+    <p id="replybar">Replying needs an account. <a href="signin.html">Sign in</a> or
+      <a href="signin.html#register">open one</a> &mdash; new accounts can reply immediately and can
       submit links after their first week.</p>
   </main>
   <aside id="rail">
@@ -54,27 +55,28 @@
         <li>Say who you work for when it is relevant.</li>
         <li>Flag rather than argue with spam.</li>
       </ul>
-      <p class="meta"><a href="/news/guidelines.html">Full guidelines</a> &middot;
-        <a href="/news/moderation.html">Moderation log</a></p>
+      <p class="meta"><a href="guidelines.html">Full guidelines</a> &middot;
+        <a href="moderation.html">Moderation log</a></p>
     </div>
   </aside>
 </div>
 <footer id="footer">
   <div class="footer-in">
     <p class="footer-nav">
-      <a href="/news/about.html">About</a> &middot;
-      <a href="/news/guidelines.html">Guidelines</a> &middot;
-      <a href="/news/moderation.html">Moderation log</a> &middot;
-      <a href="/news/feeds.html">Feeds</a> &middot;
-      <a href="/news/status.html">Status</a> &middot;
-      <a href="/news/advertise.html">Sponsor a day</a> &middot;
-      <a href="/news/privacy.html">Privacy</a> &middot;
-      <a href="/news/terms.html">Terms</a> &middot;
-      <a href="/news/contact.html">Contact</a>
+      <a href="about.html">About</a> &middot;
+      <a href="guidelines.html">Guidelines</a> &middot;
+      <a href="moderation.html">Moderation log</a> &middot;
+      <a href="feeds.html">Feeds</a> &middot;
+      <a href="status.html">Status</a> &middot;
+      <a href="advertise.html">Sponsor a day</a> &middot;
+      <a href="privacy.html">Privacy</a> &middot;
+      <a href="terms.html">Terms</a> &middot;
+      <a href="consent.html">Cookie preferences</a> &middot;
+      <a href="contact.html">Contact</a>
     </p>
     <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
       Ashvale, VT 05412. Moderation questions go to
-      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      <a href="contact.html">stewards@millrace.example</a>; everything else to
       help@millrace.example.</p>
     <p>Submissions and replies remain the work of their authors. Copyright 2026
       Weirgate Collective LLC.</p>
@@ -92,12 +94,12 @@
     wrap.id = 'r-' + ++remarkSeq;
     const paragraphs = remark.text
       .split('\n\n')
-      .map((p) => `<p>${p}</p>`)
+      .map((p) => `<p>${p.replace(/\*([^*\s][^*]*?)\*/g, '<i>$1</i>')}</p>`)
       .join('');
     wrap.innerHTML =
       `<div class="remark-head"><a class="who" href="member.html?u=${remark.author}">${remark.author}</a> ` +
-      `&middot; ${remark.age} &middot; <a href="/news/signin.html">reply</a> &middot; ` +
-      `<a href="#${parentAnchor}">parent</a> &middot; <a href="/news/signin.html">flag</a></div>` +
+      `&middot; ${remark.age} &middot; <a href="signin.html">reply</a> &middot; ` +
+      `<a href="#${parentAnchor}">parent</a> &middot; <a href="signin.html">flag</a></div>` +
       `<div class="remark-body">${paragraphs}</div>`;
     const replies = remark.replies ?? [];
     if (replies.length) {
@@ -124,22 +126,42 @@
     document.getElementById('thread').appendChild(note);
   }
 
+  // A 404 means the thread file has not been written yet; anything else that
+  // goes wrong is a failed request, which the reader is told apart.
+  function loadThread() {
+    return fetch(`threads/item-${id}.json`)
+      .then((r) =>
+        r.ok
+          ? r.json().then((thread) => ({ thread }))
+          : { thread: null, failed: r.status !== 404 }
+      )
+      .catch(() => ({ thread: null, failed: true }));
+  }
   Promise.all([
-    fetch('items.json').then((r) => r.json()),
-    fetch('items2.json').then((r) => (r.ok ? r.json() : [])).catch(() => []),
-    fetch(`threads/item-${id}.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
-  ]).then(([front, older, thread]) => {
-    const item = front.concat(older).find((entry) => entry.rank === id);
+    fetch('items.json').then((r) => {
+      if (!r.ok) throw new Error('stream request failed: ' + r.status);
+      return r.json();
+    }),
+    fetch('items2.json')
+      .then((r) => {
+        if (r.status === 404) return [];
+        if (!r.ok) throw new Error('older stream request failed: ' + r.status);
+        return r.json();
+      })
+      .catch(() => null),
+  ]).then(([front, older]) => {
+    const item = front.concat(older ?? []).find((entry) => entry.rank === id);
+    if (!item && older === null) throw new Error('submission may be on the older stream');
     if (!item) {
       document.title = 'Submission not found | Millrace';
       document.getElementById('crumbtag').textContent = 'not found';
       document.getElementById('lede').innerHTML =
-        '<div class="gone"><p class="headline">This submission is not on the stream.</p>' +
+        '<div class="gone"><h1 class="headline">This submission is not on the stream.</h1>' +
         '<p class="byline">It may have dropped off after its couple of days on the front ' +
         'pages, been withdrawn by its author, or the address may simply be wrong.</p>' +
-        '<p class="byline"><a href="/news/">Back to the stream</a> &middot; ' +
-        '<a href="/news/?p=2">older submissions</a> &middot; ' +
-        '<a href="/news/contact.html">report a broken link</a></p></div>';
+        '<p class="byline"><a href="./">Back to the stream</a> &middot; ' +
+        '<a href="./?p=2">older submissions</a> &middot; ' +
+        '<a href="contact.html">report a broken link</a></p></div>';
       hide(document.querySelector('.threadhead'));
       hide(document.getElementById('replybar'));
       hide(document.getElementById('facts').closest('.card'));
@@ -153,23 +175,24 @@
     const lead =
       item.type === 'job'
         ? '<span class="chip">hiring</span>'
-        : `<a class="tally" href="/news/signin.html" title="Vote this up">${item.points}` +
+        : `<a class="tally" href="signin.html" title="Vote this up">${item.points}` +
           `<span class="unit">points</span></a>`;
     const byline =
       item.type === 'job'
         ? `sponsored listing &middot; posted ${item.age}`
         : `<a class="who" href="member.html?u=${item.author}">${item.author}</a> &middot; ${item.age} &middot; ` +
-          `<a class="topic" href="/news/?tag=${item.tag}">${item.tag}</a> &middot; ` +
-          `${item.comments}&nbsp;replies &middot; <a href="/news/signin.html">flag</a> ` +
-          `&middot; <a href="/news/signin.html">save</a>`;
+          `<a class="topic" href="./?tag=${item.tag}">${item.tag}</a> &middot; ` +
+          `${item.comments ? item.comments + (item.comments === 1 ? "&nbsp;reply" : "&nbsp;replies") : "no replies yet"} &middot; ` +
+          `<a href="signin.html">flag</a> ` +
+          `&middot; <a href="signin.html">save</a>`;
     document.getElementById('lede').innerHTML =
       `${lead}` +
-      `<p class="headline"><a href="${itemUrl}">${item.title}</a>${origin}</p>` +
+      `<h1 class="headline"><a href="${itemUrl}">${item.title}</a>${origin}</h1>` +
       `<p class="byline">${byline}</p>`;
 
     const facts = [
       `<li>Position on the stream: <strong>${item.rank}</strong></li>`,
-      `<li>Tag: <a class="topic" href="/news/?tag=${tag}">${tag}</a></li>`,
+      `<li>Tag: <a class="topic" href="./?tag=${tag}">${tag}</a></li>`,
       `<li>Submitted <span class="meta">${item.age}</span></li>`,
     ];
     if (item.type !== 'job') {
@@ -189,21 +212,37 @@
       hide(document.getElementById('replybar'));
       return;
     }
-    if (!thread) {
-      threadNote(
-        `The ${item.comments} ${item.comments === 1 ? 'reply' : 'replies'} on this thread ` +
-          'have not reached the reading archive yet. Replies land here a few minutes ' +
-          'after they are posted; this thread is still settling. Check back shortly.'
-      );
+    if (!item.comments) {
+      threadNote('No replies yet. Signed-in members see a reply box here.');
       return;
     }
-    const container = document.getElementById('thread');
-    for (const remark of thread.comments) {
-      container.appendChild(renderRemark(remark, 'lede'));
-    }
-    if (!thread.comments.length) {
-      threadNote('No replies yet. Signed-in members see a reply box here.');
-    }
+    return loadThread().then(({ thread, failed }) => {
+      if (failed) {
+        threadNote('The discussion could not be loaded. Reload the page to try again.');
+        return;
+      }
+      if (!thread) {
+        threadNote(
+          `The ${item.comments} ${item.comments === 1 ? 'reply' : 'replies'} on this thread ` +
+            'have not reached the reading archive yet. Replies land here a few minutes ' +
+            'after they are posted; this thread is still settling. Check back shortly.'
+        );
+        return;
+      }
+      const container = document.getElementById('thread');
+      for (const remark of thread.comments) {
+        container.appendChild(renderRemark(remark, 'lede'));
+      }
+      if (!thread.comments.length) {
+        threadNote('No replies yet. Signed-in members see a reply box here.');
+      }
+    });
+  }).catch(() => {
+    document.title = 'Millrace';
+    document.getElementById('lede').innerHTML =
+      '<div class="gone"><h1 class="headline">This submission could not be loaded.</h1>' +
+      '<p class="byline">The stream did not answer. Reload the page to try again.</p></div>';
+    hide(document.querySelector('.threadhead'));
   });
 </script>
 </body>

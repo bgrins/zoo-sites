@@ -1,76 +1,76 @@
 {
   "version": "https://jsonfeed.org/version/1.1",
   "title": "Millrace: the stream",
-  "home_page_url": "/news/",
-  "feed_url": "/news/feed.json",
+  "home_page_url": "./",
+  "feed_url": "feed.json",
   "description": "The top of the millrace stream, re-ranked every ten minutes. This feed carries the current top ten; open a submission's thread for the discussion.",
   "items": [
     {
       "id": "millrace-item-1",
-      "url": "/news/item.html?id=1",
+      "url": "item.html?id=1",
       "title": "I built a spreadsheet that compiles to WebAssembly",
       "external_url": "https://gridlock.example",
       "authors": [{ "name": "mlemvik" }]
     },
     {
       "id": "millrace-item-2",
-      "url": "/news/item.html?id=2",
+      "url": "item.html?id=2",
       "title": "Postgres 19 released",
       "external_url": "https://postgresql.example.org",
       "authors": [{ "name": "tuplewrangler" }]
     },
     {
       "id": "millrace-item-3",
-      "url": "/news/item.html?id=3",
+      "url": "item.html?id=3",
       "title": "The forgotten history of the trackball",
       "external_url": "https://inputdevices.example.com",
       "authors": [{ "name": "quietcursor" }]
     },
     {
       "id": "millrace-item-4",
-      "url": "/news/item.html?id=4",
+      "url": "item.html?id=4",
       "title": "Why our startup moved back to bare metal",
       "external_url": "https://ferrostack.example",
       "authors": [{ "name": "rackmounted" }]
     },
     {
       "id": "millrace-item-5",
-      "url": "/news/item.html?id=5",
+      "url": "item.html?id=5",
       "title": "A deep dive into how sleep pressure works",
       "external_url": "https://somnolog.example.net",
       "authors": [{ "name": "circadian" }]
     },
     {
       "id": "millrace-item-6",
-      "url": "/news/item.html?id=6",
+      "url": "item.html?id=6",
       "title": "Rust in the kernel: a status report",
       "external_url": "https://kernelnotes.example.org",
       "authors": [{ "name": "ringzero" }]
     },
     {
       "id": "millrace-item-7",
-      "url": "/news/item.html?id=7",
+      "url": "item.html?id=7",
       "title": "Terminal hex editor with structure templates",
       "external_url": "https://hexactly.example",
       "authors": [{ "name": "nybblenibble" }]
     },
     {
       "id": "millrace-item-8",
-      "url": "/news/item.html?id=8",
+      "url": "item.html?id=8",
       "title": "The economics of vending machines",
       "external_url": "https://sidehustlemath.example.com",
       "authors": [{ "name": "coinop" }]
     },
     {
       "id": "millrace-item-9",
-      "url": "/news/item.html?id=9",
+      "url": "item.html?id=9",
       "title": "Reverse engineering my dishwasher's serial protocol",
       "external_url": "https://suds.example",
       "authors": [{ "name": "rinseaid" }]
     },
     {
       "id": "millrace-item-10",
-      "url": "/news/item.html?id=10",
+      "url": "item.html?id=10",
       "title": "What's your favorite underrated paper?",
       "authors": [{ "name": "bibliophage" }]
     }
