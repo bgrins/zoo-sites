@@ -100,6 +100,11 @@ curl -so /dev/null -w '%{http_code}\n' http://127.0.0.1:8163/shop/voltro/basket.
 # A foreign site's path on the wrong origin must 404:
 curl -so /dev/null -w '%{http_code}\n' http://127.0.0.1:8163/gov/
 
+# Every origin answers robots.txt (200), and a directory without its slash
+# redirects to the slash form (301, Location: ./departments/):
+curl -so /dev/null -w '%{http_code}\n' http://127.0.0.1:8111/robots.txt
+curl -so /dev/null -w '%{http_code} %{redirect_url}\n' http://127.0.0.1:8111/departments
+
 # API dispatch works on every origin's port (403 = the nonce gate answered,
 # which is the route working):
 curl -so /dev/null -w '%{http_code}\n' http://127.0.0.1:8163/api/shop/catalog?store=voltro
@@ -179,9 +184,10 @@ each once against the_zoo's proxy, in a real browser pointed at the zoo.
    plain-http escape first, because the server then expects sec-fetch headers
    the browser never sent.
 3. **No response caching.** Sessions substitute a per-session nonce into every
-   HTML body, so a cached page would hand one session's nonce to another. Two
-   fresh browser profiles loading the same page must see different `window.NONCE`
-   values (view-source and compare).
+   HTML body, so a cached page would hand one session's nonce to another. HTML goes
+   out with `Cache-Control: no-cache, private`, which a proxy has to honour. Two
+   fresh browser profiles loading the same page must see different
+   `window.NONCE` values (view-source and compare).
 4. **The one cross-origin link resolves.** The maintenance splash comes from the
    gadgetron outage mode, a per-task server mode that is off by default, so this
    check runs against the tree rather than the container. Start the server in

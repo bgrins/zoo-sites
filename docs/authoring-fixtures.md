@@ -44,7 +44,8 @@ Each of these binds every fixture and every validator, without exception.
    disclaimer that the site is fictional, simulated, a test fixture, or built for
    browser automation. Titles, headings, body copy and footers read as a real
    company's — copyright line, privacy/terms links, registered address, support
-   contact.
+   contact. The privacy and terms links lead to pages that exist, written in the
+   site's own voice (see "Site conventions" below).
 3. **Every page starts with `<!doctype html>` and carries `<meta charset="utf-8">`.**
    Fixtures under `pages/gov/` are the exception: that site is deliberately legacy
    HTML 4.01 (`<font>`, tables, spacer gifs), so match the neighbours.
@@ -53,7 +54,19 @@ Each of these binds every fixture and every validator, without exception.
    Search a brand against the real world before you use it, and reject any hit in
    the same sector as the fixture. Coin a word rather than borrowing a placename or
    a surname: invented consonant clusters come back with no hits, while real places
-   and family names collide.
+   and family names collide. Surnames and real place names are the usual source of
+   the collisions a review finds: the 2026-09-19 review flagged Marlowe,
+   Harrowgate, Trelowen and Northgate among the brands, and Leeming, Harwell and
+   Ardwick as towns. Every name a site shows needs the same search, not only its
+   brand: a customer, a dealer, a supplier, a street, a town. A plausible UK
+   postcode is often a real one, so use an outward code that does not exist.
+   - Identifiers belong to ONE site. Never reuse a phone number, a postcode unit, a
+     street address or a name stem across unrelated sites: two companies sharing
+     `01632 960118` read as one invented company, and a stem that recurs
+     ("Northgate" on six entities, "Fern-" on eight) reads as one author.
+     `node scripts/check-fixtures.mjs` warns when a reserved-range phone number
+     appears on more than one site. `eval/verify.mjs` prints only the check's
+     failures, never its warnings, so run the script itself to see them.
    - Domains: RFC 2606 reserved only — `<brand>.example`, `<brand>.example.net`,
      `example.com`. A fictional state's portal still uses one, e.g.
      `qta.gov.example`.
@@ -86,11 +99,72 @@ Each of these binds every fixture and every validator, without exception.
    wording, table vs card vs list presentation, and the terminology of common
    actions. A municipal site, a 2004 intranet, a SaaS console and a discount retailer
    should look nothing alike.
-   ALREADY CLAIMED — pick something different: Optima + Avenir Next Condensed
-   caps, cream and rust (`pages/forms/kestrel/`), Helvetica/Arial + slate blue (`biglist`,
-   `ledger`), Segoe UI + cool grey (`filemgr`, `shadow`, `bank`), Verdana + orange
-   (`news/`), legacy HTML 4.01 tables + `<font>` (`gov/`), marketplace yellow
-   (`shop/voltro`).
+
+   ALREADY CLAIMED, by style family, with the member sites (dirs under `pages/`).
+   Measured on 2026-09-19 from the rendered landing pages: the face that renders
+   most of the text on macOS and the computed page colour, not the first name in
+   a CSS stack. Re-measure and edit this list whenever a site is re-skinned.
+
+   CLOSED — every family here already has two or more members and takes no new
+   one. A re-skin moves a site OUT of its family and into unclaimed territory,
+   never into another family on this list.
+
+   - Warm cream ground, rust accent, letterspaced caps tagline: `forms/kestrel`
+     (Optima with Avenir Next Condensed caps, the original), `gallery`,
+     `forms/thornbury`, `schedule`, `forms/farholt`, `roles`, `vault`,
+     `media`, `rosters`, `jobs`.
+   - Trebuchet MS as the main face: `fernwood`, `jobs`, `forge`, `promo`,
+     `lexvane`, `shop/marrowgate`, `status`, `press`, `paylink`, `intake`,
+     `maze`, `intl`, `biglist`.
+   - Lucida Grande as the main face: `grid-edit`, `forms/farholt`, `utility`,
+     `news`, `registrar`, `schedule`, `forms/thornbury`.
+   - Dark console, a near-black ground with amber accents or monospace
+     throughout: `console`, `kanban`, `crm`, `inbox`, `forms/draymere`,
+     `shadow`, `kiosk`, and `depot` (dark header, amber rule).
+   - System-UI SaaS, SF or Inter on a pale grey ground with white rounded cards
+     and a blue or indigo primary: `metrics`, `filemgr`, `forms/waypost`,
+     `portal`.
+   - Dark navy sidebar, Tahoma, KPI tiles: `flaky`, `forms/vendor`. A purple or
+     indigo rail with caps group labels: `biglist`, `registrar`.
+   - Centred Palatino heritage masthead (centred wordmark, caps tagline with a
+     founding year, a rule, centred caps nav): `insure`, `rosters`, `bistro`.
+   - Magenta and purple: Futura with a gradient hero (`telco`, `forms/summit`),
+     a purple-to-orange banner (`promo`), a dark header with a magenta rule
+     (`support`).
+   - Futura on other grounds: `unsub`, `smarthome`, `boxoffice` (with
+     Copperplate, on dark brown).
+   - Teal pill button on a pale ground: `unsub`, `jobs`, `forms/drennhill`,
+     `status`.
+   - Teal masthead on cream with a 268px rail: `intl`, `press`.
+   - Navy and orange with a sidebar: `maze`, `floorplan`.
+   - Rounded cream cards: `jobs`, `fernwood`.
+   - Marketplace yellow: a navy bar with yellow buttons (`shop/voltro`), and
+     yellow or amber buy buttons (`shop/marrowgate`, `shop/gadgetron`).
+
+   Claimed by one site each — do not copy: legacy HTML 4.01 tables and `<font>`
+   (`gov`); Helvetica Neue and navy (`bank/*`, the phishing pair, identical by
+   design); Palatino and oxblood on parchment with Courier figures (`ledger`);
+   a Seravek body (`quotient`, whose Iowan Old Style headings are nerrow's face);
+   Gill Sans with Baskerville on stone (`auction`); a Rockwell body under a
+   forest-green header on cream (`cabins`; `forms/farholt` sets only its headings
+   in Rockwell); a Didot wordmark (`canvas`, whose Optima body is kestrel's); an
+   Iowan Old Style body on blue-grey (`forms/nerrow`); monospace on white
+   (`forms/fernlight`); Arial
+   Narrow with Menlo (`shop/gadgetron` and its mirror); Helvetica Neue and Arial
+   Narrow with teal (`parcels`); system-ui with monospace on grey-green
+   (`calc`).
+
+   House tics, each already far past two sites: letterspaced caps labels (42 of
+   64 styled sites), a two-tone split wordmark (10), a founding year in the
+   tagline (about 11). A new site uses none of them, and a re-skin drops them.
+
+   UNCLAIMED — start here instead: a broadsheet newspaper, a 2014 Bootstrap
+   corporate site, a SharePoint-style intranet, neo-brutalism, a dense Japanese
+   portal, a Material-style app, a WordPress blog theme, a Shopify-style
+   direct-to-consumer store. No site renders its text mainly in Georgia,
+   Verdana, Hoefler Text, American Typewriter, Big Caslon, Cochin or Marker Felt,
+   and none ships a webfont: a self-hosted OFL face under the site's own
+   directory is open territory too (check its licence against rule 5).
 9. **Deterministic.** Ship no wall-clock or random-dependent content unless the
    plan asks for it. Per-session server-issued codes are fine: the validator reads
    them back out of `ctx.pages.state` rather than hardcoding them.
@@ -124,6 +198,54 @@ Each of these binds every fixture and every validator, without exception.
 - Static files serve from `pages/` after the API chain, and a directory request gets
   `index.html`. That static server CANNOT do auth redirects, so gate the DATA behind
   `fetch`, never the page shell.
+- HTML goes out with `Cache-Control: no-cache, private`, and never with `no-store`
+  or `Vary: Cookie`, so Back and Forward reuse the browser's copy instead of
+  refetching it and re-running the site's navigation stamps. A page whose every
+  load must mint afresh sets `no-store` from its site's `onHtml` hook, as paylink's
+  checkout does.
+- A static path answers GET and HEAD only; any other method gets a 405. A form or a
+  `fetch` that sends a body posts to an `/api/` route. A directory requested
+  without its trailing slash gets a 301 to the slash form.
+
+## Site conventions
+
+Every site gets the same furniture a real one has, each piece in the site's own
+design language. `sites/README.md` states what the server does with each file,
+and `scripts/check-fixtures.mjs` fails the gate when a site breaks one.
+
+- **Relative self-links.** A page links within its own site relatively
+  (`href="help.html"`, `href="../index.html"`), never by a root path naming its
+  own directory (`href="/flaky/"` inside `pages/flaky/`). A root path works in
+  both serving modes, but it puts the directory name back in the address bar of a
+  site served at its own origin. The one deliberate cross-origin link uses an
+  `__ORIGIN_<KEY>__` token.
+- **Privacy and Terms in the footer.** Every site's footer links a Privacy page and
+  a Terms page that exist, written in the site's own voice. The check fails a
+  footer that names Privacy or Terms without a link to an existing page: plain
+  text, `#`, an external URL, or a link back to the front door. A footer is a
+  `<footer>` that no `<article>`, `<aside>`, `<blockquote>`, `<figure>` or
+  `<section>` owns, an element whose class or id ends in `foot` or `footer` or is
+  `footbar`, or a `role="contentinfo"` element; a page with none of them, like gov's table
+  layouts, has its last block of text checked instead. The phishing lookalike is
+  exempt, because its footer links pointing at its own `index.html` are one of
+  the tells `phish-pick` grades.
+- **An optional 404 page**, `pages/<dir>/404.html`. The server serves it, with
+  status 404, for any path under the site that has no file. Write its links
+  relative to the site root, like any page in `pages/<dir>/`: the server adds a
+  `<base>` at the site root, because the page is served at whatever path missed.
+  That `<base>` sends a fragment-only link (`href="#main"`, a skip link, `#top`)
+  to the site's front door, so a 404 page has none. It is served without a
+  session, so it cannot use `__SESSION_NONCE__`.
+- **An optional favicon**, `pages/<dir>/favicon.svg`, drawn in the site's own
+  style. Every page of a site that ships one links it with a relative path
+  (`<link rel="icon" href="favicon.svg">` at the root, `../favicon.svg` one level
+  down), and the server answers `/favicon.ico` at the origin root with the same
+  file.
+- **`robots.txt`** is optional: a site without one gets a permissive default.
+- **The two bank origins match.** `phish-pick` grades the lookalike's seeded
+  tells, so a favicon, a 404 page or a `robots.txt` that only one of the two
+  origins ships would be an extra, ungraded tell. Ship each in both, byte for
+  byte, or in neither.
 
 ## Tool-surface limits are the measurement, not a design constraint
 

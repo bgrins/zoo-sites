@@ -17,6 +17,9 @@
 // - Gated JSON APIs require the session cookie and X-Session-Nonce header.
 // - Anything a site does to its own HTML loads (a navigation stamp, a token
 //   minted into the body) lives in that site's `documents` hook, not here.
+// - HTML goes out with Cache-Control: no-cache, private. What the static
+//   branch does with a miss (a site's 404.html, favicon.svg, robots.txt), a
+//   directory without its slash (301) and a non-GET (405) is in sites/README.md.
 
 import http from 'node:http';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
@@ -36,7 +39,20 @@ const TYPES = {
   '.pdf': 'application/pdf',
   '.txt': 'text/plain; charset=utf-8',
   '.gif': 'image/gif',
+  '.ico': 'image/x-icon',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.woff2': 'font/woff2',
+  '.xml': 'application/xml',
 };
+
+// What /robots.txt answers for a site that ships none of its own.
+const ROBOTS_TXT = 'User-agent: *\nDisallow:\n';
+
+// Manifest dirs longest first, so /shop/gadgetron-mirror/ is never read as
+// belonging to shop/gadgetron.
+const SITE_DIRS = ORIGINS.map((o) => o.dir).sort((a, b) => b.length - a.length);
 
 const BODY_CAP = 65536;
 
@@ -212,6 +228,51 @@ function readBodyPrefix(req, keep) {
 function json(res, status, obj) {
   res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(obj));
+}
+
+// The server's own minimal styled error page, for a path no site claims: a bare
+// text/plain body would be the one page in the tree with no design language.
+function errorPage(title, message) {
+  return (
+    '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+    `<title>${title}</title>` +
+    '<style>body{font-family:Georgia,serif;margin:12vh auto;max-width:34rem;padding:0 1.5rem;color:#2c2a26}' +
+    'h1{font-size:1.6rem;border-bottom:2px solid #2c2a26;padding-bottom:.4rem}p{color:#5d584f}</style>' +
+    `</head><body><h1>${title}</h1><p>${message}</p></body></html>`
+  );
+}
+
+// A site's 404.html is served at whatever path missed, where its relative links
+// would resolve against the wrong directory. A <base> at the site root makes
+// them resolve as they do from pages/<dir>/404.html itself.
+function withBase(html, href) {
+  if (/<base\b/i.test(html)) return html;
+  const tag = `<base href="${href}">`;
+  const at = /<head\b[^>]*>/i.exec(html) ?? /^\s*<!doctype[^>]*>/i.exec(html);
+  if (!at) return tag + html;
+  const end = at.index + at[0].length;
+  return html.slice(0, end) + tag + html.slice(end);
+}
+
+// The file's bytes, or null when nothing is there to read. Any other failure
+// throws, so it surfaces as the core handler's logged 500.
+async function readOptional(file) {
+  try {
+    return await readFile(file);
+  } catch (error) {
+    if (error?.code === 'ENOENT' || error?.code === 'EISDIR' || error?.code === 'ENOTDIR') return null;
+    throw error;
+  }
+}
+
+// Static paths answer GET and HEAD only. Every route that takes a request body
+// lives under /api/ or in a site hook, and both run before the static lookup.
+function allowStaticMethod(req, res) {
+  if (req.method === 'GET' || req.method === 'HEAD') return true;
+  res.writeHead(405, { Allow: 'GET, HEAD', 'Content-Type': TYPES['.html'] });
+  res.end(errorPage('Method not allowed', 'This address can only be read, not submitted to.'));
+  return false;
 }
 
 // The parsed JSON body, or undefined after answering 400 with `error` when the
@@ -437,6 +498,22 @@ export async function startPagesServer({
     return originDir && !isGlobalPath && !alreadyPrefixed ? `/${originDir}${path}` : path;
   }
 
+  // The manifest dir of the site a sitePath-form `pathname` belongs to: the
+  // origin's own in origin mode, else the longest dir prefixing the path.
+  function siteDirOf(req, pathname) {
+    const originDir = originDirs.get(req.socket.localPort);
+    if (originDir) return originDir;
+    const lower = pathname.toLowerCase();
+    return SITE_DIRS.find((dir) => lower === `/${dir}` || lower.startsWith(`/${dir}/`)) ?? null;
+  }
+
+  function substituteOrigins(text) {
+    for (const [token, value] of originTokens) {
+      if (text.includes(token)) text = text.replaceAll(token, value);
+    }
+    return text;
+  }
+
   // The Referer's path in sitePath form, or '' without a parseable Referer. It
   // is resolved against the origin the request arrived on, so it is meaningful
   // for a same-origin Referer, which is the only kind the sites test for.
@@ -616,6 +693,7 @@ export async function startPagesServer({
       return;
     }
     let data;
+    let missing = null;
     try {
       data = await readFile(file);
     } catch (error) {
@@ -626,25 +704,37 @@ export async function startPagesServer({
       if (error?.code !== 'ENOENT' && error?.code !== 'EISDIR' && error?.code !== 'ENOTDIR') {
         throw error;
       }
-      // A minimal styled 404: a bare text/plain "not found" would be the one page
-      // in the tree with no design language at all.
-      res.writeHead(404, { 'Content-Type': TYPES['.html'] });
-      res.end(
-        '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
-          '<meta name="viewport" content="width=device-width, initial-scale=1">' +
-          '<title>Page not found</title>' +
-          '<style>body{font-family:Georgia,serif;margin:12vh auto;max-width:34rem;padding:0 1.5rem;color:#2c2a26}' +
-          'h1{font-size:1.6rem;border-bottom:2px solid #2c2a26;padding-bottom:.4rem}p{color:#5d584f}</style>' +
-          '</head><body><h1>Page not found</h1>' +
-          '<p>The address you followed does not match anything on this server. ' +
-          'Check the link, or go back and try again.</p></body></html>'
-      );
+      missing = error.code;
+    }
+    if (
+      missing === 'EISDIR' &&
+      !url.pathname.endsWith('/') &&
+      (await readOptional(join(file, 'index.html')))
+    ) {
+      if (!allowStaticMethod(req, res)) return;
+      // Relative, so it lands on the same directory in either serving mode,
+      // and "./" so a segment holding a colon is never read as a scheme.
+      const segment = url.pathname.slice(url.pathname.lastIndexOf('/') + 1);
+      res.writeHead(301, { Location: `./${segment}/${url.search}` });
+      res.end();
       return;
     }
+    if (missing) {
+      await notFound(req, res, pathname0, pathname);
+      return;
+    }
+    if (!allowStaticMethod(req, res)) return;
     const headers = {
       'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream',
     };
     if (extname(file) === '.html') {
+      // The body carries this session's nonce, so no shared cache may hand it to
+      // another session. The browser still reuses its copy on Back and Forward.
+      // no-store would refetch it, and so would Vary: Cookie whenever the cookie
+      // changed since the fetch, as it has for a session's first page. A refetch
+      // re-runs onHtml's navigation stamps. A site hook that needs no-store sets
+      // it itself.
+      headers['Cache-Control'] = 'no-cache, private';
       let found = getSession(req);
       if (!found) found = mintSession(headers);
       // Every HTML GET this session makes, counted by path. A beacon says a
@@ -664,9 +754,7 @@ export async function startPagesServer({
       // gadgetron maintenance splash pointing at the mirror node) resolve
       // per serving mode via __ORIGIN_<KEY>__ tokens.
       if (text.includes('__ORIGIN_')) {
-        for (const [token, value] of originTokens) {
-          if (text.includes(token)) text = text.replaceAll(token, value);
-        }
+        text = substituteOrigins(text);
         substituted = true;
       }
       for (const hook of hooksFor(pathname)) {
@@ -682,6 +770,46 @@ export async function startPagesServer({
     }
     res.writeHead(200, headers);
     res.end(data);
+  }
+
+  // A path the static tree has no file for. At a site's root, /favicon.ico
+  // answers with the site's favicon.svg and /robots.txt with a default; anything
+  // else gets the site's own 404.html when it ships one. That page is served
+  // as-is: no session, no nonce, no document hooks. API paths and paths no site
+  // claims keep the server's generic page.
+  async function notFound(req, res, pathname0, pathname) {
+    const siteDir = pathname0.startsWith('/api/') ? null : siteDirOf(req, pathname);
+    const atRoot = (name) =>
+      siteDir ? pathname.toLowerCase() === `/${siteDir}/${name}` : pathname === `/${name}`;
+    if (siteDir && atRoot('favicon.ico')) {
+      const icon = await readOptional(join(root, siteDir, 'favicon.svg'));
+      if (icon) {
+        if (!allowStaticMethod(req, res)) return;
+        res.writeHead(200, { 'Content-Type': TYPES['.svg'] });
+        res.end(icon);
+        return;
+      }
+    }
+    if (atRoot('robots.txt')) {
+      if (!allowStaticMethod(req, res)) return;
+      res.writeHead(200, { 'Content-Type': TYPES['.txt'] });
+      res.end(ROBOTS_TXT);
+      return;
+    }
+    const page = siteDir ? await readOptional(join(root, siteDir, '404.html')) : null;
+    res.writeHead(404, { 'Content-Type': TYPES['.html'] });
+    if (page) {
+      const base = originDirs.has(req.socket.localPort) ? '/' : `/${siteDir}/`;
+      res.end(withBase(substituteOrigins(page.toString('utf8')), base));
+      return;
+    }
+    res.end(
+      errorPage(
+        'Page not found',
+        'The address you followed does not match anything on this server. ' +
+          'Check the link, or go back and try again.'
+      )
+    );
   }
 
   // 0.0.0.0 is a bind address, not a reachable one: self-links must name a host

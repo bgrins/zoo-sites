@@ -78,3 +78,44 @@ Rules:
 Registry: `index.mjs` exports `SITES`, an array of `routes` factories in dispatch
 order, and `DOCUMENTS`, the `documents` factories. Order matters only where
 prefixes overlap, and they should not.
+
+## Static serving
+
+After the API chain and each matching `beforeStatic` hook, `server.mjs` serves the
+file under `pages/`. The site a path belongs to is the origin's dir in origin mode,
+and in single-origin mode the manifest dir that prefixes the path.
+
+- **HTML** gets `Cache-Control: no-cache, private`, because its body carries the
+  session's nonce. It gets no `Vary: Cookie`: a response fetched under another
+  cookie, as a session's first page always is, would then be refetched on Back,
+  re-running `onHtml`'s navigation stamps. `onHtml` runs after the header is set, so
+  its `{ headers }` can override it: paylink's checkout sends `no-store`.
+- **Methods.** A static path answers GET and HEAD only. Any other method gets 405
+  with `Allow: GET, HEAD`, before a session is minted or `onHtml` runs, so a route
+  that takes a body lives under `/api/` or in a `beforeStatic` hook, which runs
+  first.
+- **A directory without its trailing slash** gets a 301 to the slash form when it
+  has an `index.html`. The `Location` is relative (`./departments/`), so it lands
+  on the same directory in both serving modes.
+- **A miss** under a site gets that site's `pages/<dir>/404.html` with status 404
+  when the site ships one, and the server's generic page otherwise. The page goes
+  out as-is: no session, no nonce, no document hooks, `__ORIGIN_<KEY>__` tokens
+  substituted, and a `<base href>` at the site root (`/<dir>/` in single-origin
+  mode, `/` in origin mode) inserted into its `<head>`, so its relative links
+  resolve from any depth. The `<base>` also re-bases a fragment-only link, so
+  `href="#main"` leads to the site's front door; `scripts/check-fixtures.mjs`
+  rejects one in a 404 page. An `/api/` path that no handler claimed keeps the
+  generic page.
+- **`/favicon.ico` at a site root** (`/<dir>/favicon.ico` in single-origin mode)
+  answers with `pages/<dir>/favicon.svg` as `image/svg+xml` when the site ships
+  one and has no `favicon.ico` of its own. In single-origin mode the server root
+  belongs to no site, so a browser's automatic `/favicon.ico` there still 404s,
+  which is why every page links its icon explicitly.
+- **`/robots.txt` at a site root** answers with `pages/<dir>/robots.txt` when the
+  site ships one, and otherwise with an allow-all default.
+- A read that fails for any reason other than a missing file, the 404 page's
+  and the favicon's included, throws, and the core handler logs it as a 500.
+
+`docs/authoring-fixtures.md`, "Site conventions", is the page-side half: relative
+self-links, footer Privacy and Terms links, and what goes in the 404 page and the
+favicon. `scripts/check-fixtures.mjs` enforces it.

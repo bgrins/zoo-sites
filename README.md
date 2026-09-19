@@ -59,8 +59,9 @@ Anyone exposing these servers, in a container or otherwise, accepts that they:
 - **accept credentials into forms that go nowhere**, styled to look like they mean it;
 - are **built to look convincing**, including the phishing lookalike, so a human who
   reaches one by accident has no in-page signal that it is fake;
-- serve **no-cache HTML carrying a per-session nonce**, so a caching proxy in front of
-  them will hand one session's nonce to another.
+- serve **HTML carrying a per-session nonce**. It goes out with `Cache-Control:
+  no-cache, private`, but a caching proxy in front of them that ignores that header
+  will hand one session's nonce to another.
 
 Keep them on loopback, or on a private network you control whose users know what they
 are. `sites/bank.mjs` authenticates nothing and never records a password — it stores
