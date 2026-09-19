@@ -10,7 +10,8 @@
 // port unless --single-origin. --headed shows Firefox.
 // Two conditions ship by default: 'firefox-devtools-mcp' and 'playwright-mcp'
 // (the vendored @playwright/mcp). --mcp-command replaces the former with any
-// stdio MCP server, and --conditions selects which run.
+// stdio MCP server, --devtools-build adds one firefox-devtools-mcp@<label>
+// condition per build of the tool, and --conditions selects which run.
 // Results land in results/ (gitignored) as JSON plus a shareable
 // markdown report.
 //
@@ -49,23 +50,27 @@
 // viewport and colour scheme (BROWSER_PINS in mcp-stdio.mjs).
 
 import { spawn, spawnSync } from 'node:child_process';
+import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import {
   createWriteStream, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync,
 } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startPagesServer } from '../server.mjs';
 import { ORIGINS, originUrls } from '../manifest.mjs';
 import { basicTasks } from './tasks/basic.mjs';
 import { webTasks } from './tasks/web.mjs';
 import { devtoolsTasks } from './tasks/devtools.mjs';
-import { agentEnv, attemptDownloads, makeTempDir, removeAllTempDirs, removeTempDir } from './agent-env.mjs';
+import {
+  agentEnv, attemptDownloads, makeTempDir, removeAllTempDirs, removeTempDir, writeStateFile,
+} from './agent-env.mjs';
 import { extractFields, extractorInfo, isSentinel } from './extract.mjs';
 import {
   BROWSER_PINS, PINNED_PREFS, devtoolsMcpEntry, devtoolsMcpInfo, downloadPrefs, prefArgs, startMcpServer,
 } from './mcp-stdio.mjs';
+import { createCallRecorder, readTapLog, tapSpec, tapToolStats, toolsListInfo } from './mcp-tap.mjs';
 import { envDrift, markdownReport, totalsByCondition } from './report.mjs';
 import { transcriptName } from './run-files.mjs';
 import { createReachRecorder, gradedValues, mintedValues } from './surface-reach.mjs';
@@ -97,11 +102,17 @@ for (let i = 0; i < args.length - 1; i++) {
 // task, so paired conditions and repeat runs face the same shapes.
 // Identifier mints (codes, refs, nonces) stay on randomBytes regardless - a
 // seeded run is reproducible, never forgeable.
+// Every run is seeded: without --seed the seed is the run's own stamp, so the
+// arms of a run always face the same draws, and `--seed none` opts out.
+// Unseeded arms drew different puzzles in stored runs (a seat-picker plan, a
+// pr-review defect), which widened every paired difference.
 const seedIdx = args.indexOf('--seed');
-const RUN_SEED = seedIdx !== -1 ? args[seedIdx + 1] ?? null : null;
-if (seedIdx !== -1 && (!RUN_SEED || RUN_SEED.startsWith('--'))) {
+const SEED_ARG = seedIdx !== -1 ? args[seedIdx + 1] ?? null : undefined;
+if (seedIdx !== -1 && (!SEED_ARG || SEED_ARG.startsWith('--'))) {
   usage('--seed requires a value');
 }
+// Set in main(), once the run stamp exists; null only under `--seed none`.
+let RUN_SEED = null;
 
 const flag = (name, fallback) => {
   const i = args.indexOf(`--${name}`);
@@ -203,6 +214,7 @@ const RERUN_FAILED = flag('rerun-failed', null);
 let RERUN_IDS = null;
 let RERUN_SUITE = null;
 let RERUN_SERVING = null;
+let RERUN_SEED;
 let RERUN_PRIOR_ENV = null;
 if (RERUN_FAILED) {
   const priorPath = join(RERUN_FAILED.replace(/\/results\.json$/, ''), 'results.json');
@@ -216,10 +228,16 @@ if (RERUN_FAILED) {
   RERUN_SUITE = priorMeta.suite ?? null;
   // A run that records no serving mode predates per-origin serving.
   RERUN_SERVING = priorMeta.serving ?? 'single-origin';
+  // The same seed gives the top-up the same draws as the rows it joins, and a
+  // run recorded under --seed none (seed: null) is topped up unseeded. A run
+  // without the key predates default seeding, so its top-up gets its own stamp.
+  if (typeof priorMeta.seed === 'string' || priorMeta.seed === null) RERUN_SEED = priorMeta.seed;
   // Unlike its serving, a run's browser environment cannot be restored, so a
   // top-up records how its own differs.
   RERUN_PRIOR_ENV = { env: priorMeta.env, envPins: priorMeta.envPins };
-  const failed = prior.results.filter((r) => !r.success).map((r) => r.task);
+  // An invalid row passed or failed without measuring the surface, so it is
+  // rerun like a failure.
+  const failed = prior.results.filter((r) => !r.success || r.invalid).map((r) => r.task);
   // A run that was interrupted, crashed, or lost a whole condition has no row at
   // all for some tasks, and a missing row cannot fail. meta.tasks names every
   // task the run selected, so a task short of one row per cell is selected too.
@@ -254,9 +272,18 @@ const SUITE = flag('suite', RERUN_SUITE ?? 'basic');
 // container's shape. 'single-origin' serves every site under its pages/
 // directory on one port, so every URL an agent sees names that directory
 // (/flaky/slow.html, /maze/), and it is how every run before 2026-09-19 was
-// served. A rerun keeps the serving of the run it tops up, since a top-up is
-// read together with that run.
-const SERVING = args.includes('--single-origin') ? 'single-origin' : RERUN_SERVING ?? 'origins';
+// served. 'vhosts' serves every site on one port under its own host name,
+// <key>.localhost, so sites differ by host rather than by port. A rerun keeps
+// the serving of the run it tops up, since a top-up is read together with that
+// run.
+if (args.includes('--single-origin') && args.includes('--vhosts')) {
+  usage('--single-origin and --vhosts are two serving modes; pick one');
+}
+const SERVING = args.includes('--single-origin')
+  ? 'single-origin'
+  : args.includes('--vhosts')
+    ? 'vhosts'
+    : RERUN_SERVING ?? 'origins';
 // --task takes a comma list of ids, each optionally using * as a wildcard, so a
 // few tasks can be run without the whole suite:
 //   --task ledger-sum                     one task
@@ -272,6 +299,22 @@ const LIST_TASKS = args.includes('--list-tasks');
 // Re-render report.md from a finished run's results.json, so a reporting change
 // can be applied to runs that already cost money to produce.
 const REPORT_FROM = flag('report-from', null);
+// --ab A,B adds eval/ab.mjs's paired comparison of two of that run's
+// conditions, and --control A,A2 an A/A pair whose spread is the noise floor
+// the A/B is read against.
+const pairFlag = (name) => {
+  const raw = flag(name, null);
+  if (raw === null) return null;
+  const pair = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  if (pair.length !== 2 || pair[0] === pair[1]) {
+    usage(`--${name} takes two different conditions, <A>,<B>; got "${raw}"`);
+  }
+  return pair;
+};
+const AB = pairFlag('ab');
+const CONTROL = pairFlag('control');
+if ((AB || CONTROL) && !REPORT_FROM) usage('--ab and --control apply only with --report-from <dir>');
+if (CONTROL && !AB) usage('--control is the noise floor for an --ab comparison, so it needs --ab');
 // Wall-clock budget tiers. Real work is not uniformly sized: a smoke page is
 // seconds, a rate-limited or embargoed flow has an unavoidable floor, and a
 // fog-of-war maze is long-horizon by design. A task declares `tier` and gets
@@ -354,14 +397,19 @@ Serving:
                           port, as every run before 2026-09-19 was. Default:
                           every site on its own loopback port with its
                           directory at '/', so no task prompt names a
-                          directory. The two modes are separate
-                          measurement epochs; meta records which one a run
-                          used
+                          directory. The modes are separate measurement
+                          epochs; meta records which one a run used
+  --vhosts                serve every site on one port under its own host
+                          name, http://<key>.localhost:<port>
 
 Reporting:
   --report-from <dir>     rewrite report.md from a finished run's results.json
                           and exit; runs no agents, so reporting changes can be
                           applied to runs you already paid for
+  --ab <A>,<B>            with --report-from: also write ab--<A>--<B>.md, the
+                          paired comparison of conditions A and B (eval/ab.mjs)
+  --control <A>,<A2>      with --ab: an A/A pair of that run (the same build
+                          under two labels) whose spread is the noise floor
 
 Limits and reliability:
   --retries <n>           retry a task on transient API/infra errors
@@ -403,16 +451,30 @@ Conditions and models:
                           harness affects it.
                           Warns if you vary both axes at once.
   --conditions <list>     comma list of firefox-devtools-mcp, playwright-mcp
-                          (default: both — @mozilla/firefox-devtools-mcp and
-                          the vendored @playwright/mcp, both over stdio driving
-                          their own Firefox. --mcp-command replaces the former)
+                          and any firefox-devtools-mcp@<label> (default: both —
+                          @mozilla/firefox-devtools-mcp and the vendored
+                          @playwright/mcp, both over stdio driving their own
+                          Firefox. --mcp-command replaces the former; with
+                          --devtools-build, the default is every build)
+  --devtools-build <label>=<root|dep>
+                          add condition firefox-devtools-mcp@<label>, which
+                          runs the build at <root> (a built checkout's repo
+                          root) or, for dep, the @mozilla/firefox-devtools-mcp
+                          dependency. Repeatable; the same root under two
+                          labels is an A/A pair, e.g.
+                            --devtools-build base=dep --devtools-build aa=dep
+                            --devtools-build caps=../firefox-devtools-mcp
+                          meta.builds records each build's version, hashes and
+                          tool list
   --mode <key=value>      pin a server mode for every task in the run
                           (repeatable), e.g. --mode forgeDefect=cache-key
                           --mode auctionDraw=decline for comparable repeats
-  --seed <string>         deterministic difficulty draws (auction rungs, forge
+  --seed <string>|none    deterministic difficulty draws (auction rungs, forge
                           variant and pads, schedule week): paired conditions
-                          and repeats face the same shapes. Codes and refs
-                          stay random - seeded runs are never forgeable
+                          and repeats face the same shapes. Default: the run's
+                          own stamp, so every run is seeded; 'none' draws at
+                          random. Codes and refs stay random - seeded runs are
+                          never forgeable
   --mcp-command "<cmd>"   custom stdio MCP server for the firefox-devtools-mcp
                           condition, e.g.
                           "npx @playwright/mcp@latest --browser firefox";
@@ -426,6 +488,15 @@ Execution:
   --parallel-tasks <n>    run up to n tasks concurrently within each condition
                           (each worker gets its own browser + pages server;
                           wall timings gain contention noise)
+  --interleave            one queue for every condition instead of one per
+                          condition: a block per (task, repeat), every
+                          condition in the block in a seeded order, so the
+                          arms of a comparison run side by side in time.
+                          Workers: --parallel-tasks, times the conditions
+                          under --parallel
+  --no-tap                run each MCP server without mcp-tap.mjs, the
+                          passthrough that logs per-call latency and sizes;
+                          rows then carry no latency
   --help                  show this help
 
 Before any paid work, each condition's MCP server is started once, must list
@@ -438,8 +509,12 @@ saves downloads into downloads/ in the attempt's directory, and the row records
 them as downloads [{name, bytes, sha256}].
 
 Results land in results/run-<timestamp>/ (gitignored): results.json,
-report.md (shareable), and transcripts/*.jsonl (full agent message streams,
-one per attempt). An interrupt (Ctrl-C, SIGTERM) stops the agents, waits up to
+report.md (shareable), transcripts/*.jsonl (full agent message streams,
+one per attempt), tool-calls/*.jsonl (the tap's per-call log, one per
+attempt), and states/*.json.gz (the server state each row was graded on, for
+regrading; it holds the minted answers, so never share it). A row that never
+called its own browser server is marked invalid and left out of the pass
+rates and totals. An interrupt (Ctrl-C, SIGTERM) stops the agents, waits up to
 ${INTERRUPT_GRACE_MS / 1000}s for the rows of the attempts it stopped, and writes every row that
 finished; a second interrupt exits at once.
 Render transcripts with: node scripts/transcript.mjs [run-dir] [--task <id>] [--md]
@@ -454,6 +529,8 @@ only under --parallel.`);
 
 const HEADED = args.includes('--headed');
 const PARALLEL = args.includes('--parallel');
+const INTERLEAVE = args.includes('--interleave');
+const TAP = !args.includes('--no-tap');
 // Tasks-within-a-condition concurrency; each worker gets an isolated env (own
 // pages server and state dir), and every agent launches its own browser through
 // its own MCP server.
@@ -477,19 +554,58 @@ if (COMPARE && !['surfaces', 'backends'].includes(COMPARE)) {
   usage(`--compare must be surfaces or backends, got "${COMPARE}"`);
 }
 
-const KNOWN_CONDITIONS = ['firefox-devtools-mcp', 'playwright-mcp'];
+// --devtools-build <label>=<root|dep> (repeatable): label -> the checkout root,
+// or null for the dependency. Labels become part of transcript names, which
+// split on '--', so a label is one word of letters, digits, '.', '_' and single
+// hyphens.
+const DEVTOOLS = 'firefox-devtools-mcp';
+const DEVTOOLS_BUILDS = new Map();
+for (let i = 0; i < args.length; i++) {
+  if (args[i] !== '--devtools-build') continue;
+  const value = args[i + 1];
+  if (value === undefined || value.startsWith('--')) usage('--devtools-build requires <label>=<root|dep>');
+  const eq = value.indexOf('=');
+  const label = eq > 0 ? value.slice(0, eq) : '';
+  const where = eq > 0 ? value.slice(eq + 1) : '';
+  if (!label || !where) usage(`--devtools-build takes <label>=<root|dep>, got "${value}"`);
+  if (!/^[A-Za-z0-9._]+(?:-[A-Za-z0-9._]+)*$/.test(label)) {
+    usage(`--devtools-build label "${label}" must be letters, digits, '.', '_' and single hyphens`);
+  }
+  if (DEVTOOLS_BUILDS.has(label)) usage(`--devtools-build label "${label}" is given twice`);
+  const root = where === 'dep' ? null : resolve(where);
+  try {
+    devtoolsMcpEntry(root);
+  } catch (error) {
+    usage(`--devtools-build ${value}: ${error.message}`);
+  }
+  DEVTOOLS_BUILDS.set(label, root);
+}
+const BUILD_CONDITIONS = [...DEVTOOLS_BUILDS.keys()].map((label) => `${DEVTOOLS}@${label}`);
+const isDevtools = (c) => c === DEVTOOLS || c.startsWith(`${DEVTOOLS}@`);
+// A build condition's root; undefined for plain firefox-devtools-mcp, which
+// resolves FIREFOX_DEVTOOLS_MCP or the dependency as it always has.
+const devtoolsRootFor = (c) => (c === DEVTOOLS ? undefined : DEVTOOLS_BUILDS.get(c.slice(DEVTOOLS.length + 1)));
+
+const KNOWN_CONDITIONS = [DEVTOOLS, 'playwright-mcp', ...BUILD_CONDITIONS];
 const CONDITIONS = flag(
   'conditions',
-  COMPARE === 'backends' ? 'firefox-devtools-mcp' : 'firefox-devtools-mcp,playwright-mcp'
+  BUILD_CONDITIONS.length
+    ? BUILD_CONDITIONS.join(',')
+    : COMPARE === 'backends' ? DEVTOOLS : `${DEVTOOLS},playwright-mcp`
 )
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 for (const c of CONDITIONS) {
   if (!KNOWN_CONDITIONS.includes(c)) {
-    usage(`unknown condition "${c}" (known: ${KNOWN_CONDITIONS.join(', ')})`);
+    usage(
+      `unknown condition "${c}" (known: ${KNOWN_CONDITIONS.join(', ')}` +
+        (c.startsWith(`${DEVTOOLS}@`) ? `; add it with --devtools-build ${c.slice(DEVTOOLS.length + 1)}=<root|dep>` : '') +
+        ')'
+    );
   }
 }
+if (new Set(CONDITIONS).size !== CONDITIONS.length) usage('--conditions names a condition twice');
 if (BACKEND_NAMES.length > 1 && CONDITIONS.length > 1) {
   console.log(
     `warning: this run varies BOTH axes (${BACKEND_NAMES.length} harnesses x ` +
@@ -518,6 +634,10 @@ It has no browser-automation command in it — the MCP tools are how you drive t
 // much as a word between them. It carries no strategy advice.
 const MCP_INTRO = `You control a web browser via the connected "firefox" MCP tools.
 ${SHELL_NOTE}`;
+// The name both backends register every condition's browser server under. A
+// row's calls to it are its surface calls; a call to any other MCP server (a
+// codex home that leaked the operator's servers, say) is foreign.
+const SURFACE_SERVER = 'firefox';
 
 function taskPrompt(task) {
   return `${MCP_INTRO}\n\nTask: ${task.ask}\nAnswer concisely with the requested information.`;
@@ -589,8 +709,14 @@ async function awaitGridBrowsers(ms = 15000) {
 }
 
 // `downloadsDir` is where the browser saves downloads; `profileDir` is a
-// profile seeded with a headed window's grid cell.
-function mcpStdioFor(condition, { downloadsDir, profileDir = null }) {
+// profile seeded with a headed window's grid cell; `tapLog`, when set, runs the
+// server through mcp-tap.mjs logging there.
+function mcpStdioFor(condition, { downloadsDir, profileDir = null, tapLog = null }) {
+  const spec = serverSpecFor(condition, { downloadsDir, profileDir });
+  return spec && tapLog ? tapSpec(spec, tapLog) : spec;
+}
+
+function serverSpecFor(condition, { downloadsDir, profileDir }) {
   if (condition === 'playwright-mcp') {
     return {
       command: process.execPath,
@@ -611,15 +737,16 @@ function mcpStdioFor(condition, { downloadsDir, profileDir = null }) {
       ],
     };
   }
-  if (condition === 'firefox-devtools-mcp') {
-    return CUSTOM_MCP
+  if (isDevtools(condition)) {
+    return condition === DEVTOOLS && CUSTOM_MCP
       ? { command: CUSTOM_MCP[0], args: CUSTOM_MCP.slice(1) }
       : {
           command: process.execPath,
           args: [
-            // One resolver, shared with verify: FIREFOX_DEVTOOLS_MCP for a local
-            // checkout, otherwise the @mozilla/firefox-devtools-mcp dependency.
-            devtoolsMcpEntry(),
+            // One resolver, shared with verify: a --devtools-build root, else
+            // FIREFOX_DEVTOOLS_MCP for a local checkout, otherwise the
+            // @mozilla/firefox-devtools-mcp dependency.
+            devtoolsMcpEntry(devtoolsRootFor(condition)),
             '--enable-script',
             ...(HEADED ? [] : ['--headless', '--viewport', DEVTOOLS_WINDOW]),
             ...(profileDir ? ['--profile-path', profileDir] : []),
@@ -700,9 +827,12 @@ async function measureEnv(server, tools, probe, path) {
 // agent with only Bash, and the run grades that as the surface. The server gets
 // the agents' environment, an empty cwd and the flags an attempt gets, and its
 // browser loads one loopback page, so the environment it reports is the one
-// every attempt of the condition runs in. Returns that environment by condition.
+// every attempt of the condition runs in. The server runs through the tap as an
+// attempt's does, so a tap that breaks a server fails here too. Returns that
+// environment, and what identifies each condition's tool list, by condition.
 async function preflight() {
   const env = {};
+  const tools = {};
   const probe = await startProbeServer();
   try {
     for (const condition of CONDITIONS) {
@@ -715,19 +845,30 @@ async function preflight() {
           GRID && POSITIONABLE.includes(condition)
             ? GRID.seed(gridProfileDir(), slotFor(BACKEND_NAMES[0], condition, 0))
             : null;
-        const spec = mcpStdioFor(condition, { downloadsDir, profileDir });
+        const tapLog = TAP ? join(dir, 'tap.jsonl') : null;
+        const spec = mcpStdioFor(condition, { downloadsDir, profileDir, tapLog });
         server = await startMcpServer({
           command: spec.command,
           args: spec.args,
           baseEnv: agentEnvFor(null),
           cwd: dir,
         });
-        const { tools } = await server.listTools();
-        if (!tools?.length) throw new Error('the server listed no tools');
-        env[condition] = await measureEnv(server, tools, probe, `/${condition}`);
+        const listed = (await server.listTools()).tools;
+        if (!listed?.length) throw new Error('the server listed no tools');
+        tools[condition] = toolsListInfo(listed);
+        env[condition] = await measureEnv(server, listed, probe, `/${condition}`);
         const e = env[condition];
+        // The tap writes each record before it hands the reply on, so the log
+        // already holds the tools/list reply the client received.
+        if (tapLog) {
+          const wire = readTapLog(tapLog).find((r) => r.type === 'tools/list');
+          if (!wire) throw new Error('mcp-tap.mjs logged no tools/list reply');
+          if (JSON.stringify(toolsListInfo(wire.tools).names) !== JSON.stringify(tools[condition].names)) {
+            throw new Error('the tools/list reply mcp-tap.mjs logged names other tools than the client received');
+          }
+        }
         console.log(
-          `(preflight: ${condition} lists ${tools.length} tools; ` +
+          `(preflight: ${condition} lists ${listed.length} tools; ` +
             (e.unmeasured
               ? `environment unmeasured: ${e.unmeasured})`
               : `Firefox ${e.firefox}, ${e.locale}, ${e.timeZone}, ${e.viewport}, ${e.colorScheme})`)
@@ -760,11 +901,35 @@ async function preflight() {
       );
     }
   }
-  return env;
+  return { env, tools };
 }
 
 // Every running attempt's stop function, so an interrupt can end the agents.
 const ACTIVE_STOPS = new Set();
+
+// What a row records about its tool calls. The message stream says which
+// server each call went to and what the results meant; the tap's log, when the
+// server ran through one, supplies the tools map, because only the wire has
+// latency. A row that never called its own browser server measured nothing
+// about the surface, whatever its grade, so it is marked invalid.
+function callTelemetry(recorder, tapLog) {
+  const s = recorder.summary();
+  const tapped = tapLog ? readTapLog(tapLog).filter((r) => r.type === 'call') : null;
+  return {
+    surface_calls: s.surface_calls,
+    foreign_tools: s.foreign_tools,
+    ...(s.foreign_tools ? { foreign_servers: s.foreign_servers } : {}),
+    ...(s.surface_calls === 0 ? { invalid: 'no-surface-calls' } : {}),
+    tools: tapped ? tapToolStats(tapped) : s.tools,
+    // A call the agent saw start but the tap never saw answered (an aborted
+    // attempt), or the reverse, which would mean the two disagree.
+    ...(tapped && tapped.length !== s.surface_calls
+      ? { tap_mismatch: { tap: tapped.length, stream: s.surface_calls } }
+      : {}),
+    snapshot: s.snapshot,
+    friction: s.friction,
+  };
+}
 
 async function runTask(backendName, condition, label, task, ctx, rep = 1, attempt = 0) {
   const backend = BACKENDS[backendName];
@@ -775,6 +940,15 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   const attemptDir = makeTempDir('zoo-eval-attempt-');
   const downloadsDir = join(attemptDir, 'downloads');
   mkdirSync(downloadsDir);
+  const transcript = transcriptName({
+    label,
+    task: task.id,
+    rep: REPEAT > 1 ? rep : null,
+    attempt: attempt + 1,
+  });
+  // The tap logs into the run directory rather than the attempt's, which is
+  // the agent's cwd, so tapped and untapped agents see the same directory.
+  const tapLog = ctx.toolCallsDir ? join(ctx.toolCallsDir, transcript) : null;
   // A headed window's profile is seeded per attempt, outside the agent's cwd:
   // a profile kept per worker would hand one task's cookies and storage to the
   // next.
@@ -782,6 +956,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   const mcpStdio = mcpStdioFor(condition, {
     downloadsDir,
     profileDir: profileRoot ? GRID.seed(profileRoot, ctx.gridSlot) : null,
+    tapLog,
   });
   const spec = {
     prompt: taskPrompt(task),
@@ -794,12 +969,6 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   };
   // Stream the raw agent transcript (thinking, tool calls, results) to disk
   // as it happens rather than buffering.
-  const transcript = transcriptName({
-    label,
-    task: task.id,
-    rep: REPEAT > 1 ? rep : null,
-    attempt: attempt + 1,
-  });
   let transcriptStream = null;
   if (ctx.transcriptsDir) {
     transcriptStream = createWriteStream(join(ctx.transcriptsDir, transcript));
@@ -810,8 +979,10 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   // Which graded values actually reached the agent. Runs whether or not
   // transcripts are being written, because the answer belongs in the result row.
   const reach = createReachRecorder();
+  const calls = createCallRecorder(SURFACE_SERVER);
   spec.onMessage = (message) => {
     reach.observe(message);
+    calls.observe(message);
     if (transcriptStream) transcriptStream.write(JSON.stringify(message) + '\n');
   };
   // Runaway guards. There is deliberately no turn limit: a "turn" means
@@ -841,11 +1012,13 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     }
   };
 
-  const wallStart = Date.now();
+  const startedAt = new Date();
+  const wallStart = startedAt.getTime();
   let r;
   let wallEnd;
   let failed = null;
   let downloads = [];
+  let telemetry = null;
   try {
     r = await backend.run(spec);
   } catch (error) {
@@ -867,9 +1040,15 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     clearTimeout(wallTimer);
     ACTIVE_STOPS.delete(stopFor);
     transcriptStream?.end();
+    // Never allowed to cost the attempt its row: telemetry is not the grade.
+    try {
+      telemetry = callTelemetry(calls, tapLog);
+    } catch (error) {
+      telemetry = { telemetry_error: String(error?.message ?? error) };
+    }
     // Hashing a large download stays out of the attempt's wall time.
     downloads = await attemptDownloads(downloadsDir);
-    if (failed) failed.downloads = downloads;
+    if (failed) Object.assign(failed, { downloads, telemetry, startedAt });
     removeTempDir(attemptDir);
     if (profileRoot) {
       // Whatever this misses goes with the parent directory at exit.
@@ -890,6 +1069,8 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
       },
       transcript,
       downloads,
+      telemetry,
+      startedAt,
       ...extra,
     });
   // A run that finished past the cap fails like one stopped at it. Codex
@@ -906,12 +1087,15 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   // reading of an error marker.
   let fields = null;
   let extraction = null;
+  // The extractor's pairs before the quote gate, so a quote-gate fix can be
+  // re-applied to a stored row.
+  let extractionRaw = null;
   let extractionFailed = null;
   if (task.answerSchema && !isSentinel(r.text)) {
     let lastError;
     for (let attempt = 0; attempt < 3 && !extraction; attempt++) {
       try {
-        ({ fields, extraction } = await extractFields({
+        ({ fields, extraction, raw: extractionRaw } = await extractFields({
           ask: task.ask,
           answer: r.text,
           schema: task.answerSchema,
@@ -972,6 +1156,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     condition: label,
     task: task.id,
     ...(REPEAT > 1 ? { rep } : {}),
+    ...taskTags(task),
     model: modelFor(backendName) || '(backend default)',
     success: verdict.pass,
     detail: verdict.detail,
@@ -979,6 +1164,8 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     // Absent alone is ambiguous (a derived total was never printed either), but
     // truncated is not: it means the page rendered the value and the surface cut it.
     ...(surface ? { surface } : {}),
+    ...telemetry,
+    started_at: startedAt.toISOString(),
     answer: r.text.slice(0, 160).replace(/\n/g, ' '),
     turns: r.turns,
     input_tokens: r.input_tokens,
@@ -997,7 +1184,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     // The verbatim answer rides along so the row is self-contained: fields are
     // what graded, answer_full is what the agent actually said.
     ...(task.answerSchema
-      ? { grading: 'fields', fields, extraction, answer_full: r.text }
+      ? { grading: 'fields', fields, extraction, extraction_raw: extractionRaw, answer_full: r.text }
       : {}),
     ...(extractionFailed ? { extraction_failed: extractionFailed } : {}),
     ...(downloads.length ? { downloads } : {}),
@@ -1053,8 +1240,13 @@ async function buildTasks(base, origins = undefined) {
 // --- headed window grid ---------------------------------------------------
 // Conditions whose windows we can position via a seeded profile (see
 // window-grid.mjs; playwright-mcp has no window-position knob).
-const POSITIONABLE = CONDITIONS.filter((c) => c === 'firefox-devtools-mcp');
-const TOTAL_SLOTS = BACKEND_NAMES.length * POSITIONABLE.length * PARALLEL_TASKS;
+const POSITIONABLE = CONDITIONS.filter(isDevtools);
+// Under --interleave one queue feeds every worker and a worker runs every
+// condition, so a worker owns one grid cell whatever it runs.
+const INTERLEAVE_WORKERS = PARALLEL_TASKS * (PARALLEL ? BACKEND_NAMES.length * CONDITIONS.length : 1);
+const TOTAL_SLOTS = INTERLEAVE
+  ? INTERLEAVE_WORKERS
+  : BACKEND_NAMES.length * POSITIONABLE.length * PARALLEL_TASKS;
 let GRID = null;
 
 // Deterministic slot per (backend, condition, worker) keeps a condition's
@@ -1077,6 +1269,67 @@ function errorRow({ backend, label, task, rep, error, ...extra }) {
     error: String(error?.message ?? error),
     ...extra,
   };
+}
+
+// The task's family module and capability areas, for per-family and per-area
+// breakdowns. Null on a task that declares neither.
+const taskTags = (task) => ({ family: task.family ?? null, areas: task.areas ?? null });
+
+// A request ledger reduced to what a row can carry. `documents` are page and
+// frame loads, `scripted` are a page's own fetch/XHR/beacon calls, and
+// `non_browser` are requests without the browser's Fetch Metadata, which on
+// these loopback origins only a client outside the page sends (a shell's
+// curl). The server's own `route` and `client` readings are used where a row
+// has them, and Sec-Fetch-Dest otherwise. Every entry since the attempt's reset
+// is the attempt's, because each worker's pages server serves one attempt at a
+// time. `byStatus` counts a request still in flight as 'none'.
+const DOCUMENT_DESTS = new Set(['document', 'iframe', 'frame']);
+function ledgerSummary(ledger) {
+  const byStatus = {};
+  const sids = new Set();
+  let documents = 0;
+  let scripted = 0;
+  let nonBrowser = 0;
+  for (const e of ledger) {
+    const status = String(e.status ?? 'none');
+    byStatus[status] = (byStatus[status] ?? 0) + 1;
+    if (e.route ? e.route === 'document' || e.route === 'frame' : DOCUMENT_DESTS.has(e.dest)) documents++;
+    else if (e.route ? e.route === 'fetch' : e.dest === 'empty') scripted++;
+    if (e.client ? e.client !== 'browser' : !e.dest) nonBrowser++;
+    if (e.sid) sids.add(e.sid);
+  }
+  return { requests: ledger.length, documents, scripted, non_browser: nonBrowser, sessions: sids.size, byStatus };
+}
+
+// What the server saw during a row's attempt, read before the next reset() wipes
+// it: the ledger summary, the difficulty draws, and a copy of the whole state
+// for regrading. A server without a ledger or a draw log (one older than them)
+// leaves those null rather than absent, so every row has the same keys.
+function serverRecord(env, transcript, statesDir) {
+  const state = env.pages.state;
+  let draws = null;
+  if (Array.isArray(state.draws)) {
+    try {
+      draws = structuredClone(Array.from(state.draws));
+    } catch {
+      draws = JSON.parse(JSON.stringify(Array.from(state.draws)));
+    }
+  }
+  const out = {
+    ledger: Array.isArray(state.ledger) ? ledgerSummary(state.ledger) : null,
+    draws,
+    state_file: null,
+  };
+  if (statesDir && transcript) {
+    const name = `${transcript.replace(/\.jsonl$/, '')}.json.gz`;
+    try {
+      writeStateFile(join(statesDir, name), state, { base: env.pages.url, origins: env.origins ?? null });
+      out.state_file = `states/${name}`;
+    } catch (error) {
+      out.state_file_error = String(error?.message ?? error);
+    }
+  }
+  return out;
 }
 
 // One isolated execution environment: a pages server and its state. Sequential
@@ -1134,21 +1387,30 @@ process.on('SIGINT', () => onSignal('SIGINT'));
 process.on('SIGTERM', () => onSignal('SIGTERM'));
 process.on('exit', removeAllTempDirs);
 
-async function makeEnv(backendName, condition, label, workerIndex = 0) {
+// A server.mjs that predates host routing ignores `vhosts` and would serve
+// single-origin while every ask named an origin it never bound.
+const routesByHost = (pages) =>
+  Boolean(pages.origins?.length) && pages.origins.every((o) => /^http:\/\/[a-z0-9-]+\.localhost:\d+$/.test(o.url));
+const NO_VHOSTS = '--vhosts: this server.mjs does not route by host (startPagesServer returned no <key>.localhost origins)';
+
+// `gridSlot` is the grid cell this env's headed windows tile into (stdio MCP
+// servers launch their own Firefox and get the geometry via --profile-path).
+async function makeEnv(gridSlot = null) {
   // Each env gets its own pages server so validator state (sessions/beacons)
   // never mixes across concurrent agents.
   const pages = await startPagesServer({
     modes: RUN_MODES,
     seed: RUN_SEED,
-    origins: SERVING === 'origins' ? ORIGINS : null,
+    ...(SERVING === 'origins' ? { origins: ORIGINS } : SERVING === 'vhosts' ? { vhosts: true } : {}),
   });
+  if (SERVING === 'vhosts' && !routesByHost(pages)) {
+    await pages.close();
+    throw new Error(NO_VHOSTS);
+  }
   const env = {
     pages,
-    origins: SERVING === 'origins' ? originUrls(pages.url, pages.origins) : undefined,
-    // The grid cell this worker's headed windows tile into (stdio MCP servers
-    // launch their own Firefox and get the geometry via --profile-path).
-    gridSlot:
-      GRID && POSITIONABLE.includes(condition) ? slotFor(backendName, condition, workerIndex) : null,
+    origins: SERVING === 'single-origin' ? undefined : originUrls(pages.url, pages.origins),
+    gridSlot,
     async close() {
       ACTIVE_ENVS.delete(env);
       await pages.close();
@@ -1158,159 +1420,245 @@ async function makeEnv(backendName, condition, label, workerIndex = 0) {
   return env;
 }
 
-// `onRow` sees each row as it finishes, for the partial results an interrupt
-// writes; the return value is every row in suite order.
-async function runCondition(backendName, condition, shared, onRow) {
-  const label = labelFor(backendName, condition);
-  console.log(`[${label}] starting (model: ${modelFor(backendName) || '(backend default)'})`);
+// One arm of the run, as the queues hand it around.
+const armOf = (backendName, condition) => ({ backendName, condition, label: labelFor(backendName, condition) });
 
-  async function runOne(env, item) {
-    // Task asks embed the env's pages URLs, so rebuild against this env.
-    const task = (await buildTasks(env.pages.url, env.origins)).find((t) => t.id === item.id);
-    const tag = REPEAT > 1 ? `${item.id} (r${item.rep})` : item.id;
-    // Every failed attempt's spend. `unknown` counts attempts whose backend
-    // could not say what they spent (codex reports usage only at turn end).
-    const discarded = { cost_usd: 0, output_tokens: 0, attempts: 0, unknown: 0 };
-    const discardedFields = () =>
-      discarded.attempts
-        ? {
-            discarded_attempts: discarded.attempts,
-            discarded_cost_usd: Math.round(discarded.cost_usd * 10000) / 10000,
-            discarded_output_tokens: discarded.output_tokens,
-            ...(discarded.unknown ? { discarded_unknown: discarded.unknown } : {}),
-          }
-        : {};
-    for (let attempt = 0; ; attempt++) {
-      // Fresh server state per attempt, so a retry is graded on its own run.
-      env.pages.state.reset();
-      // Per-task page-serving modes (mirror-reroute takes the gadgetron store
-      // offline for its own run only). reset() above restored the server's
-      // defaults, so a mode can never leak into the next task in this process.
-      Object.assign(env.pages.state.modes, task.serverModes ?? {});
-      try {
-        const ctx = { ...shared, pages: env.pages, gridSlot: env.gridSlot };
-        const r = await runTask(backendName, condition, label, task, ctx, item.rep, attempt);
+async function runOne({ backendName, condition, label }, env, item, shared) {
+  // Task asks embed the env's pages URLs, so rebuild against this env.
+  const task = (await buildTasks(env.pages.url, env.origins)).find((t) => t.id === item.id);
+  const tag = REPEAT > 1 ? `${item.id} (r${item.rep})` : item.id;
+  // Every failed attempt's spend. `unknown` counts attempts whose backend
+  // could not say what they spent (codex reports usage only at turn end).
+  const discarded = { cost_usd: 0, output_tokens: 0, attempts: 0, unknown: 0 };
+  const discardedFields = () =>
+    discarded.attempts
+      ? {
+          discarded_attempts: discarded.attempts,
+          discarded_cost_usd: Math.round(discarded.cost_usd * 10000) / 10000,
+          discarded_output_tokens: discarded.output_tokens,
+          ...(discarded.unknown ? { discarded_unknown: discarded.unknown } : {}),
+        }
+      : {};
+  for (let attempt = 0; ; attempt++) {
+    // Fresh server state per attempt, so a retry is graded on its own run.
+    env.pages.state.reset();
+    // Per-task page-serving modes (mirror-reroute takes the gadgetron store
+    // offline for its own run only). reset() above restored the server's
+    // defaults, so a mode can never leak into the next task in this process.
+    Object.assign(env.pages.state.modes, task.serverModes ?? {});
+    try {
+      const ctx = {
+        ...shared,
+        pages: env.pages,
+        gridSlot: POSITIONABLE.includes(condition) ? env.gridSlot : null,
+      };
+      const r = await runTask(backendName, condition, label, task, ctx, item.rep, attempt);
+      console.log(
+        `[${label}] ${tag}: ${r.success ? 'PASS' : 'FAIL'} turns=${r.turns} ` +
+          `in=${r.input_tokens} cacheW=${r.cache_creation} cacheR=${r.cache_read} ` +
+          `out=${r.output_tokens} $${r.cost_usd?.toFixed?.(4) ?? '?'} ` +
+          `wall=${r.wall_s}s api=${r.api_s ?? '?'}s` +
+          (r.invalid ? ` INVALID (${r.invalid})` : '') +
+          (r.detail ? ` (${r.detail})` : '') +
+          (attempt ? ` [after ${attempt} retry]` : '')
+      );
+      return {
+        ...r,
+        ...(attempt ? { retries: attempt } : {}),
+        ...discardedFields(),
+        ...serverRecord(env, r.transcript, shared.statesDir),
+      };
+    } catch (error) {
+      const spend = error?.spend;
+      if (spend) {
+        discarded.attempts += 1;
+        discarded.cost_usd += spend.cost_usd ?? 0;
+        discarded.output_tokens += spend.output_tokens ?? 0;
+        if (spend.unknown || spend.cost_usd == null) discarded.unknown += 1;
+      }
+      const { retry, infra } = classify(error);
+      if (retry && attempt < RETRIES && !interrupting) {
         console.log(
-          `[${label}] ${tag}: ${r.success ? 'PASS' : 'FAIL'} turns=${r.turns} ` +
-            `in=${r.input_tokens} cacheW=${r.cache_creation} cacheR=${r.cache_read} ` +
-            `out=${r.output_tokens} $${r.cost_usd?.toFixed?.(4) ?? '?'} ` +
-            `wall=${r.wall_s}s api=${r.api_s ?? '?'}s` +
-            (r.detail ? ` (${r.detail})` : '') +
-            (attempt ? ` [after ${attempt} retry]` : '')
+          `[${label}] ${tag}: transient error, retrying ` +
+            `(${attempt + 1}/${RETRIES}): ${String(error?.message).slice(0, 90)}`
         );
-        return { ...r, ...(attempt ? { retries: attempt } : {}), ...discardedFields() };
-      } catch (error) {
-        const spend = error?.spend;
-        if (spend) {
-          discarded.attempts += 1;
-          discarded.cost_usd += spend.cost_usd ?? 0;
-          discarded.output_tokens += spend.output_tokens ?? 0;
-          if (spend.unknown || spend.cost_usd == null) discarded.unknown += 1;
-        }
-        const { retry, infra } = classify(error);
-        if (retry && attempt < RETRIES && !interrupting) {
-          console.log(
-            `[${label}] ${tag}: transient error, retrying ` +
-              `(${attempt + 1}/${RETRIES}): ${String(error?.message).slice(0, 90)}`
-          );
-          continue;
-        }
-        console.log(`[${label}] ${tag}: ERROR ${error?.message}`);
-        // `infra` separates "we never got a graded attempt" from "the agent
-        // failed the task", and is deliberately NARROWER than a retry: what
-        // is worth retrying is not the same as what is worth excusing. An API or
-        // transport error is the former. A harness limit stop is the latter even
-        // though we retry it, because an agent that exhausts every retry on the
-        // wall clock really was too slow, and excusing that inflates the pass
-        // rate. A backend that exits non-zero also stays a failure, since we
-        // cannot show it was not the agent's doing.
-        return errorRow({
-          backend: backendName,
-          label,
-          task: item.id,
-          rep: item.rep,
-          error,
-          ...(infra ? { infra: true } : {}),
-          ...(attempt ? { retries: attempt } : {}),
-          ...discardedFields(),
-          ...(error?.downloads?.length ? { downloads: error.downloads } : {}),
-          ...(error?.transcript ? { transcript: error.transcript } : {}),
-        });
+        continue;
       }
+      console.log(`[${label}] ${tag}: ERROR ${error?.message}`);
+      // An infra row already sits outside the pass rate, in its own column; an
+      // API error before the first tool call is not a contaminated row.
+      const { invalid, ...telemetry } = error?.telemetry ?? {};
+      // `infra` separates "we never got a graded attempt" from "the agent
+      // failed the task", and is deliberately NARROWER than a retry: what
+      // is worth retrying is not the same as what is worth excusing. An API or
+      // transport error is the former. A harness limit stop is the latter even
+      // though we retry it, because an agent that exhausts every retry on the
+      // wall clock really was too slow, and excusing that inflates the pass
+      // rate. A backend that exits non-zero also stays a failure, since we
+      // cannot show it was not the agent's doing.
+      return errorRow({
+        backend: backendName,
+        label,
+        task: item.id,
+        rep: item.rep,
+        error,
+        ...taskTags(task),
+        ...(infra ? { infra: true } : {}),
+        ...(attempt ? { retries: attempt } : {}),
+        ...discardedFields(),
+        ...(error?.downloads?.length ? { downloads: error.downloads } : {}),
+        ...(error?.transcript ? { transcript: error.transcript } : {}),
+        ...telemetry,
+        ...(invalid && !infra ? { invalid } : {}),
+        ...(error?.startedAt ? { started_at: error.startedAt.toISOString() } : {}),
+        ...serverRecord(env, error?.transcript, shared.statesDir),
+      });
     }
   }
-  const settle = (env, item) => {
-    const settled = (async () => {
-      let row;
+}
+
+// Runs one item and hands its row to `onRow` as soon as it exists, for the
+// partial results an interrupt writes.
+function settle(arm, env, item, shared, onRow) {
+  const settled = (async () => {
+    let row;
+    try {
+      row = await runOne(arm, env, item, shared);
+    } catch (error) {
+      row = errorRow({ backend: arm.backendName, label: arm.label, task: item.id, rep: item.rep, error });
+    }
+    onRow(row);
+    return row;
+  })();
+  SETTLING.add(settled);
+  settled.finally(() => SETTLING.delete(settled));
+  return settled;
+}
+
+// Workers pulling `queue` in order until it is empty, each on its own env. A
+// worker that cannot start or a task that escapes runOne must not sink the
+// pool: completed rows stay, and every item left once no worker could take it
+// becomes an error row. Returns the rows in the order the items finished.
+async function drainQueue(queue, workerCount, gridSlotFor, shared, onRow, name = null) {
+  const rows = [];
+  const startErrors = [];
+  await Promise.all(
+    Array.from({ length: Math.min(workerCount, queue.length) }, async (_, workerIndex) => {
+      let env;
       try {
-        row = await runOne(env, item);
+        env = await makeEnv(gridSlotFor(workerIndex));
       } catch (error) {
-        row = errorRow({ backend: backendName, label, task: item.id, rep: item.rep, error });
+        console.error(`${name ? `[${name}] ` : ''}worker ${workerIndex} could not start: ${error.message}`);
+        startErrors.push(error);
+        return;
       }
-      onRow(row);
-      return row;
-    })();
-    SETTLING.add(settled);
-    settled.finally(() => SETTLING.delete(settled));
-    return settled;
-  };
-
-  const items = (await buildTasks('http://placeholder')).flatMap((t) =>
-    Array.from({ length: REPEAT }, (_, i) => ({ id: t.id, rep: i + 1 }))
+      try {
+        while (queue.length && !interrupting) {
+          const item = queue.shift();
+          rows.push(await settle(item.arm, env, item, shared, onRow));
+        }
+      } finally {
+        await env.close().catch(() => {});
+      }
+    })
   );
-  if (PARALLEL_TASKS > 1) {
-    const queue = [...items];
-    const done = new Map();
-    const keyOf = (item) => `${item.id}#${item.rep}`;
-    const workerCount = Math.min(PARALLEL_TASKS, queue.length);
-    const startErrors = [];
-    await Promise.all(
-      Array.from({ length: workerCount }, async (_, workerIndex) => {
-        // A worker that cannot start or a task that escapes runOne must not
-        // sink the pool: completed rows stay, the failure becomes its row.
-        let env;
-        try {
-          env = await makeEnv(backendName, condition, label, workerIndex);
-        } catch (error) {
-          console.error(`[${label}] worker ${workerIndex} could not start: ${error.message}`);
-          startErrors.push(error);
-          return;
-        }
-        try {
-          while (queue.length && !interrupting) {
-            const item = queue.shift();
-            done.set(keyOf(item), await settle(env, item));
-          }
-        } finally {
-          await env.close().catch(() => {});
-        }
-      })
-    );
-    // A task an interrupt kept from starting gets no row, as in a sequential run.
-    if (!interrupting) {
-      for (const item of queue) {
-        const why = startErrors[0]?.message ?? 'unknown';
-        const row = errorRow({
-          backend: backendName, label, task: item.id, rep: item.rep, error: `no worker started: ${why}`,
-        });
-        onRow(row);
-        done.set(keyOf(item), row);
-      }
+  // A task an interrupt kept from starting gets no row, as in a sequential run.
+  if (!interrupting) {
+    for (const item of queue.splice(0)) {
+      const why = startErrors[0]?.message ?? 'unknown';
+      const row = errorRow({
+        backend: item.arm.backendName, label: item.arm.label, task: item.id, rep: item.rep,
+        error: `no worker started: ${why}`,
+      });
+      onRow(row);
+      rows.push(row);
     }
-    return items.map((item) => done.get(keyOf(item))).filter(Boolean);
   }
+  return rows;
+}
 
-  const env = await makeEnv(backendName, condition, label);
+// The (task, repeat) items of one arm, in suite order.
+async function suiteItems(arm) {
+  return (await buildTasks('http://placeholder')).flatMap((t) =>
+    Array.from({ length: REPEAT }, (_, i) => ({ arm, id: t.id, rep: i + 1 }))
+  );
+}
+const itemKey = (item) => `${item.arm.label}|${item.id}#${item.rep}`;
+const rowKey = (row) => `${row.condition}|${row.task}#${row.rep ?? 1}`;
+
+// Every row in suite order, from one condition's own pool or env.
+async function runCondition(backendName, condition, shared, onRow) {
+  const arm = armOf(backendName, condition);
+  console.log(`[${arm.label}] starting (model: ${modelFor(backendName) || '(backend default)'})`);
+  const items = await suiteItems(arm);
+  const slot = (workerIndex) =>
+    GRID && POSITIONABLE.includes(condition) ? slotFor(backendName, condition, workerIndex) : null;
+  if (PARALLEL_TASKS > 1) {
+    const rows = new Map(
+      (await drainQueue([...items], PARALLEL_TASKS, slot, shared, onRow, arm.label)).map((row) => [rowKey(row), row])
+    );
+    return items.map((item) => rows.get(itemKey(item))).filter(Boolean);
+  }
+  const env = await makeEnv(slot(0));
   try {
     const results = [];
     for (const item of items) {
       if (interrupting) break;
-      results.push(await settle(env, item));
+      results.push(await settle(arm, env, item, shared, onRow));
     }
     return results;
   } finally {
     await env.close().catch(() => {});
   }
+}
+
+// `n` indices in an order drawn from `key`: a seeded run's order is fixed by
+// its seed, and an unseeded run's is random.
+function drawnOrder(n, key) {
+  const order = Array.from({ length: n }, (_, i) => i);
+  const bytes = key == null ? randomBytes(4 * n) : Buffer.alloc(0);
+  for (let i = n - 1; i > 0; i--) {
+    const word =
+      key == null
+        ? bytes.readUInt32BE(4 * i)
+        : createHash('sha256').update(`${key}:${i}`).digest().readUInt32BE(0);
+    const j = word % (i + 1);
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
+
+// --interleave: one queue of blocks, one block per (task, repeat), each holding
+// every arm in a drawn order. Repeat r of every task comes before repeat r+1,
+// so a task's repeats spread across the run rather than sitting together, and
+// the arms of a block run side by side in time. Every row in the same order a
+// per-condition run gives.
+async function runInterleaved(runs, shared, onRow) {
+  const arms = runs.map(([b, c]) => armOf(b, c));
+  for (const arm of arms) {
+    console.log(`[${arm.label}] queued (model: ${modelFor(arm.backendName) || '(backend default)'})`);
+  }
+  const perArm = await Promise.all(arms.map(suiteItems));
+  const byKey = new Map(perArm.flat().map((item) => [itemKey(item), item]));
+  const tasks = perArm[0].filter((item) => item.rep === 1).map((item) => item.id);
+  const queue = [];
+  for (let rep = 1; rep <= REPEAT; rep++) {
+    for (const id of tasks) {
+      const order = drawnOrder(arms.length, RUN_SEED == null ? null : `${RUN_SEED}:interleave:${id}:r${rep}`);
+      for (const i of order) queue.push(byKey.get(itemKey({ arm: arms[i], id, rep })));
+    }
+  }
+  console.log(
+    `(interleaved: ${queue.length} items in ${tasks.length * REPEAT} blocks of ${arms.length}, ` +
+      `${Math.min(INTERLEAVE_WORKERS, queue.length)} worker(s))\n`
+  );
+  const rows = new Map(
+    (await drainQueue(queue, INTERLEAVE_WORKERS, (w) => (GRID ? w : null), shared, onRow)).map((row) => [
+      rowKey(row),
+      row,
+    ])
+  );
+  return perArm.flat().map((item) => rows.get(itemKey(item))).filter(Boolean);
 }
 
 // The commit and dirty flag of a git work tree, read now rather than whenever
@@ -1337,8 +1685,38 @@ function packageVersion(name) {
 // Everything needed to reproduce the run: the flags that change what ran, the
 // code and tool versions it ran on, and the isolation it ran under. Variable
 // NAMES only, never values.
-// `env` is what each condition's browser reported in the preflight.
-function buildMeta(startedAt, selected, env) {
+// `env` is what each condition's browser reported in the preflight, and `tools`
+// what identifies each condition's tool list there.
+function buildMeta(startedAt, selected, env, tools) {
+  const custom = (c) => c === DEVTOOLS && MCP_COMMAND;
+  const surfaces = Object.fromEntries(
+    CONDITIONS.map((c) => [
+      c,
+      {
+        ...(c === 'playwright-mcp'
+          ? { source: 'dependency', version: packageVersion('@playwright/mcp') }
+          : custom(c)
+            ? { source: '--mcp-command', command: MCP_COMMAND }
+            : devtoolsMcpInfo(devtoolsRootFor(c))),
+        tools: tools[c] ?? null,
+      },
+    ])
+  );
+  // Each firefox-devtools-mcp build the run measured, identified by content
+  // rather than by name, so two runs of "the same" build can be told apart.
+  const builds = CONDITIONS.filter((c) => isDevtools(c) && !custom(c)).map((c) => {
+    const { version, sha256, walkerSha256, commit, dirty } = surfaces[c];
+    return {
+      label: c === DEVTOOLS ? null : c.slice(DEVTOOLS.length + 1),
+      condition: c,
+      root: resolve(devtoolsMcpEntry(devtoolsRootFor(c)), '..', '..'),
+      version,
+      sha256,
+      walkerSha256,
+      ...(commit !== undefined ? { commit, dirty } : {}),
+      tools: tools[c] ?? null,
+    };
+  });
   return {
     date: startedAt.toISOString(),
     backend: BACKEND_NAMES.join(','),
@@ -1366,7 +1744,12 @@ function buildMeta(startedAt, selected, env) {
     mcpCommand: MCP_COMMAND ?? undefined,
     parallel: PARALLEL || undefined,
     parallelTasks: PARALLEL_TASKS > 1 ? PARALLEL_TASKS : undefined,
-    seed: RUN_SEED ?? undefined,
+    interleave: INTERLEAVE || undefined,
+    // Null only under --seed none. A run without the key predates default
+    // seeding, and was seeded only if it said so.
+    seed: RUN_SEED,
+    seedSource:
+      SEED_ARG === 'none' ? 'none' : SEED_ARG ? '--seed' : RERUN_SEED !== undefined ? '--rerun-failed' : 'run stamp',
     modes: Object.keys(RUN_MODES).length ? RUN_MODES : undefined,
     retries: RETRIES,
     maxWall: MAX_WALL_OVERRIDE || undefined,
@@ -1374,16 +1757,11 @@ function buildMeta(startedAt, selected, env) {
     maxOutput: MAX_OUTPUT || undefined,
     extractor: extractorInfo(),
     git: gitState(join(here, '..')),
-    surfaces: Object.fromEntries(
-      CONDITIONS.map((c) => [
-        c,
-        c === 'playwright-mcp'
-          ? { source: 'dependency', version: packageVersion('@playwright/mcp') }
-          : MCP_COMMAND
-            ? { source: '--mcp-command', command: MCP_COMMAND }
-            : devtoolsMcpInfo(),
-      ])
-    ),
+    surfaces,
+    builds,
+    // Whether each MCP server ran through mcp-tap.mjs, the only source of the
+    // rows' per-tool latency.
+    tap: TAP,
     sdks: Object.fromEntries(BACKEND_NAMES.map((n) => [n, packageVersion(SDK_PACKAGES[n])])),
     isolation: {
       scratch: 'fresh directory per attempt',
@@ -1396,14 +1774,48 @@ function buildMeta(startedAt, selected, env) {
   };
 }
 
+// --ab on --report-from: eval/ab.mjs renders the comparison, written beside the
+// run's report.md. The bootstrap is seeded so a re-render reproduces its
+// intervals: from --seed, else the run's own seed.
+function checkAbConditions(dir, prior) {
+  const present = [...new Set(prior.results.map((r) => r.condition))];
+  for (const c of [...AB, ...(CONTROL ?? [])]) {
+    if (!present.includes(c)) usage(`--ab/--control: ${dir} has no condition "${c}" (it has ${present.join(', ')})`);
+  }
+}
+
+async function writeAbReport(dir, prior) {
+  let abReport;
+  try {
+    ({ abReport } = await import('./ab.mjs'));
+  } catch (error) {
+    usage(`--ab needs eval/ab.mjs: ${error.message}`);
+  }
+  const [a, b] = AB;
+  const markdown = abReport(prior.results, {
+    a,
+    b,
+    control: CONTROL,
+    seed: SEED_ARG === 'none' ? null : SEED_ARG ?? prior.meta?.seed ?? null,
+    meta: prior.meta,
+    // Rows older than the telemetry fields are read from their transcripts.
+    runDir: dir,
+  });
+  const name = `ab--${a}--${b}.md`.replaceAll('/', '--');
+  writeFileSync(join(dir, name), markdown);
+  console.log(`wrote ${join(dir, name)}`);
+}
+
 async function main() {
   if (REPORT_FROM) {
     const dir = REPORT_FROM.replace(/\/results\.json$/, '');
     const prior = JSON.parse(readFileSync(join(dir, 'results.json'), 'utf8'));
+    if (AB) checkAbConditions(dir, prior);
     const totals = totalsByCondition(prior.results);
     const path = join(dir, 'report.md');
     writeFileSync(path, markdownReport({ ...prior, totals }));
     console.log(`rewrote ${path} (${prior.results.length} rows)`);
+    if (AB) await writeAbReport(dir, prior);
     return;
   }
   const selected = await buildTasks('http://placeholder');
@@ -1418,7 +1830,11 @@ async function main() {
     );
     console.log(
       `\n${selected.length} task(s) selected from suite '${SUITE}', served ` +
-        (SERVING === 'origins' ? 'one origin per site' : 'single-origin')
+        (SERVING === 'origins'
+          ? 'one origin per site'
+          : SERVING === 'vhosts'
+            ? 'one host name per site on one port'
+            : 'single-origin')
     );
     return;
   }
@@ -1428,10 +1844,18 @@ async function main() {
         'fails an over-cap codex run then instead of stopping it\n'
     );
   }
-  if (RERUN_FAILED && SERVING !== 'origins' && !args.includes('--single-origin')) {
-    console.log(`note: serving single-origin, as ${RERUN_FAILED} was\n`);
+  if (
+    RERUN_FAILED && SERVING !== 'origins' && !args.includes('--single-origin') && !args.includes('--vhosts')
+  ) {
+    console.log(`note: serving ${SERVING}, as ${RERUN_FAILED} was\n`);
   }
 
+  if (SERVING === 'vhosts') {
+    const pages = await startPagesServer({ vhosts: true });
+    const ok = routesByHost(pages);
+    await pages.close();
+    if (!ok) throw new Error(NO_VHOSTS);
+  }
   // The preflight loads a page in every condition's browser, so Playwright's
   // Firefox has to be installed and the headed grid laid out before it.
   if (CONDITIONS.includes('playwright-mcp')) {
@@ -1440,14 +1864,17 @@ async function main() {
   if (HEADED) {
     GRID = windowGrid(TOTAL_SLOTS, detectScreen(flag('screen', null)));
   }
-  const env = await preflight();
+  const { env, tools } = await preflight();
 
   const startedAt = new Date();
   const stamp = startedAt.toISOString().replace(/[:.]/g, '-');
+  RUN_SEED = SEED_ARG === 'none' ? null : SEED_ARG ?? (RERUN_SEED === undefined ? stamp : RERUN_SEED);
   const runDir = join(here, 'results', `run-${stamp}`);
   const transcriptsDir = join(runDir, 'transcripts');
   mkdirSync(transcriptsDir, { recursive: true });
-  const meta = buildMeta(startedAt, selected, env);
+  const toolCallsDir = TAP ? join(runDir, 'tool-calls') : null;
+  if (toolCallsDir) mkdirSync(toolCallsDir);
+  const meta = buildMeta(startedAt, selected, env, tools);
   if (RERUN_PRIOR_ENV) {
     meta.rerunEnvDrift = envDrift(RERUN_PRIOR_ENV, meta);
     if (meta.rerunEnvDrift.length) {
@@ -1458,12 +1885,18 @@ async function main() {
     }
   }
   Object.assign(LIVE, { runDir, meta, rows: [] });
-  const shared = { transcriptsDir };
+  const shared = { transcriptsDir, statesDir: join(runDir, 'states'), toolCallsDir };
   const onRow = (row) => LIVE.rows.push(row);
 
   const runs = BACKEND_NAMES.flatMap((backendName) =>
     CONDITIONS.map((condition) => [backendName, condition])
   );
+  if (!RUN_SEED && runs.length > 1) {
+    console.log(
+      'warning: --seed none with several arms: each arm draws its own difficulty ' +
+        '(layouts, variants, weeks), so paired differences include the draws\n'
+    );
+  }
   // One condition's failure (a pages server or env that would not start) must
   // not discard the rows every other condition produced.
   const conditionFailed = (b, c, reason) => {
@@ -1473,7 +1906,13 @@ async function main() {
     return row;
   };
   let results = [];
-  if (PARALLEL) {
+  if (INTERLEAVE) {
+    try {
+      results = await runInterleaved(runs, shared, onRow);
+    } catch (error) {
+      results = runs.map(([b, c]) => conditionFailed(b, c, error));
+    }
+  } else if (PARALLEL) {
     console.log('(parallel mode: runs execute side by side; wall timings may include contention)\n');
     // allSettled so one condition's failure still lets the others finish and
     // tear down their instances/servers.
@@ -1503,9 +1942,19 @@ async function main() {
   LIVE.runDir = null;
   console.log('\n=== totals per condition ===');
   console.table(totals);
+  const invalid = results.filter((r) => r.invalid);
+  if (invalid.length) {
+    console.log(`\n${invalid.length} invalid row(s), left out of the pass rates and sums above:`);
+    for (const r of invalid) {
+      console.log(
+        `  ${r.condition}/${r.task}${r.rep ? ` (r${r.rep})` : ''}: ${r.invalid}` +
+          (r.foreign_tools ? `, ${r.foreign_tools} call(s) to ${Object.keys(r.foreign_servers ?? {}).join(', ')}` : '')
+      );
+    }
+  }
   console.log(`\nrun dir: ${runDir}\nreport:  ${mdPath}`);
 
-  const failed = results.filter((r) => !r.success).length;
+  const failed = results.filter((r) => !r.success || r.invalid).length;
   process.exitCode = failed ? 1 : 0;
   await awaitGridBrowsers();
 }

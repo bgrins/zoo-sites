@@ -1,5 +1,6 @@
-// What an agent process inherits from the harness, and the temporary
-// directories each attempt owns.
+// What an agent process inherits from the harness, the temporary directories
+// each attempt owns, and what an attempt leaves behind: its downloads, and the
+// pages server's state it was graded on.
 //
 // Agents used to inherit all of process.env. Under a parent Claude Code session
 // that carried its control channels (CLAUDE_CODE_MESSAGING_SOCKET and _TOKEN,
@@ -10,9 +11,13 @@
 // authenticate against their API, and launch a browser.
 
 import { createHash } from 'node:crypto';
-import { chmodSync, createReadStream, lstatSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import {
+  chmodSync, createReadStream, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { gunzipSync, gzipSync } from 'node:zlib';
 
 const BASE_KEYS = [
   // Process basics. USER is also how Claude Code finds its macOS keychain login.
@@ -159,4 +164,60 @@ export async function attemptDownloads(dir) {
     }
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// A pages server's state as a validator read it, so a row can be regraded after
+// a validator fix without paying for the run again. The copy is the one
+// verify.mjs's cloneState makes: every data member, the logs as plain arrays,
+// and the methods dropped, since they close over the live state. It is JSON
+// with Map, Set, Date and byte values tagged, gzipped. `extra` rides along at
+// the top level (the origins the attempt's task URLs used).
+const TAG = '$zooType';
+export function writeStateFile(path, state, extra = {}) {
+  const methods = Object.keys(state).filter((k) => typeof state[k] === 'function');
+  const data = Object.fromEntries(
+    Object.entries(state)
+      .filter(([k]) => !methods.includes(k))
+      .map(([k, v]) => [k, Array.isArray(v) ? Array.from(v) : v])
+  );
+  // `this[key]` is the value before toJSON, which has already turned a Date
+  // into a string and a Buffer into {type, data} by the time `value` arrives.
+  const json = JSON.stringify({ version: 1, ...extra, methods, state: data }, function (key, value) {
+    const raw = this[key];
+    if (raw instanceof Map) return { [TAG]: 'Map', value: [...raw] };
+    if (raw instanceof Set) return { [TAG]: 'Set', value: [...raw] };
+    if (raw instanceof Date) {
+      return { [TAG]: 'Date', value: Number.isNaN(raw.getTime()) ? null : raw.toISOString() };
+    }
+    if (ArrayBuffer.isView(raw)) {
+      return { [TAG]: 'Bytes', value: Buffer.from(raw.buffer, raw.byteOffset, raw.byteLength).toString('base64') };
+    }
+    return value;
+  });
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, gzipSync(json));
+}
+
+// The file writeStateFile wrote, with `state` rebuilt the way cloneState
+// rebuilds one: its data plus beaconsOf. `methods` names what the live state
+// had, so a validator that needs another method fails naming it.
+export function readStateFile(path) {
+  const file = JSON.parse(gunzipSync(readFileSync(path)).toString('utf8'), (key, value) => {
+    if (value === null || typeof value !== 'object' || typeof value[TAG] !== 'string') return value;
+    switch (value[TAG]) {
+      case 'Map':
+        return new Map(value.value);
+      case 'Set':
+        return new Set(value.value);
+      case 'Date':
+        return new Date(value.value ?? NaN);
+      case 'Bytes':
+        return Buffer.from(value.value, 'base64');
+      default:
+        return value;
+    }
+  });
+  const state = file.state;
+  state.beaconsOf = (kind) => (state.beacons ?? []).filter((b) => b.kind === kind);
+  return { ...file, state };
 }

@@ -4,7 +4,8 @@
 // gate cannot leak detached Firefox instances.
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -12,7 +13,8 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 const CALL_TIMEOUT_MS = 120000;
 
-// The firefox-devtools-mcp server entry. Two sources, in order:
+// The firefox-devtools-mcp server entry. `root` picks the build: a checkout's
+// repo root, null for the dependency, or undefined for the default order:
 //   FIREFOX_DEVTOOLS_MCP  a local checkout of the tool, for the iterate-on-the-
 //                         tool loop and for working inside the tool's own repo
 //   the dependency        @mozilla/firefox-devtools-mcp, the normal case
@@ -21,14 +23,14 @@ const CALL_TIMEOUT_MS = 120000;
 // existence here rather than at connect time: the server is spawned as a child
 // with its stderr captured, so a missing entry would otherwise surface as an
 // opaque "MCP error -32000: Connection closed" naming neither path nor cause.
-export function devtoolsMcpEntry() {
-  const fromEnv = process.env.FIREFOX_DEVTOOLS_MCP
-    ? join(process.env.FIREFOX_DEVTOOLS_MCP, 'dist', 'index.js')
-    : null;
-  if (fromEnv) {
-    if (existsSync(fromEnv)) return fromEnv;
+export function devtoolsMcpEntry(root = undefined) {
+  const fromEnv = root === undefined && Boolean(process.env.FIREFOX_DEVTOOLS_MCP);
+  const checkout = root === undefined ? process.env.FIREFOX_DEVTOOLS_MCP || null : root;
+  if (checkout) {
+    const entry = join(checkout, 'dist', 'index.js');
+    if (existsSync(entry)) return entry;
     throw new Error(
-      `FIREFOX_DEVTOOLS_MCP is set but ${fromEnv} does not exist. ` +
+      `${fromEnv ? 'FIREFOX_DEVTOOLS_MCP is set but ' : ''}${entry} does not exist. ` +
         'Point it at a checkout of firefox-devtools-mcp that has been built (npm run build).'
     );
   }
@@ -52,27 +54,48 @@ export function devtoolsMcpEntry() {
   return resolved;
 }
 
+function sha256File(path) {
+  try {
+    return createHash('sha256').update(readFileSync(path)).digest('hex');
+  } catch {
+    return null;
+  }
+}
+
 // Which firefox-devtools-mcp build a run measured, for its meta: the version
-// alone cannot tell a local checkout's working tree from the release.
-export function devtoolsMcpInfo() {
-  const entry = devtoolsMcpEntry();
-  const root = join(entry, '..', '..');
+// alone cannot tell a local checkout's working tree from the release, and a
+// commit cannot tell an uncommitted edit from it, so the entry and the snapshot
+// walker it injects into every page are hashed too. `root` as for
+// devtoolsMcpEntry.
+export function devtoolsMcpInfo(root = undefined) {
+  const entry = devtoolsMcpEntry(root);
+  const dir = join(entry, '..', '..');
   let version = null;
   try {
-    version = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version ?? null;
+    version = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')).version ?? null;
   } catch {}
-  if (!process.env.FIREFOX_DEVTOOLS_MCP) return { source: 'dependency', version };
+  const hashes = {
+    sha256: sha256File(entry),
+    walkerSha256: sha256File(join(entry, '..', 'snapshot.injected.global.js')),
+  };
+  const checkout = root === undefined ? process.env.FIREFOX_DEVTOOLS_MCP || null : root;
+  if (!checkout) return { source: 'dependency', version, ...hashes };
   const git = (gitArgs) => {
-    const r = spawnSync('git', ['-C', root, ...gitArgs], { encoding: 'utf8' });
+    const r = spawnSync('git', ['-C', dir, ...gitArgs], { encoding: 'utf8' });
     return r.status === 0 ? r.stdout.trim() : null;
   };
-  const status = git(['status', '--porcelain']);
+  // A build copied into some other repository would otherwise report that
+  // repository's commit as its own.
+  const top = git(['rev-parse', '--show-toplevel']);
+  const ownRepo = top != null && realpathSync(top) === realpathSync(dir);
+  const status = ownRepo ? git(['status', '--porcelain']) : null;
   return {
-    source: 'FIREFOX_DEVTOOLS_MCP',
-    path: root,
+    source: root === undefined ? 'FIREFOX_DEVTOOLS_MCP' : 'checkout',
+    path: dir,
     version,
-    commit: git(['rev-parse', 'HEAD']),
+    commit: ownRepo ? git(['rev-parse', 'HEAD']) : null,
     dirty: status == null ? null : status !== '',
+    ...hashes,
   };
 }
 
