@@ -92,13 +92,62 @@ const ROLES_CLIENTS = [
 ];
 
 const ROLES_SUMMARIES = {
-  structural: 'Frame design and assessment across a mixed commercial and civic workload.',
-  geotechnical: 'Ground investigation, slope stability and foundation advice on live sites.',
-  highways: 'Junction improvement and active travel schemes from feasibility to handover.',
-  services: 'Mechanical and electrical design for refurbishment and new-build schemes.',
-  environmental: 'Discharge permitting, flood risk and consenting for infrastructure clients.',
-  fire: 'Fire strategy, means of escape and smoke control on complex existing buildings.',
+  structural: [
+    'Frame design and assessment across a mixed commercial and civic workload.',
+    'Steel and concrete design for education and healthcare buildings, with regular site visits.',
+    'Appraisal and strengthening of existing structures ahead of refurbishment and change of use.',
+  ],
+  geotechnical: [
+    'Ground investigation, slope stability and foundation advice on live sites.',
+    'Scoping and supervising site investigations, then writing the interpretive reports.',
+    'Earthworks and retaining wall design for highway and rail embankment schemes.',
+  ],
+  highways: [
+    'Junction improvement and active travel schemes from feasibility to handover.',
+    'Highway design and road safety audit for developer-funded and council schemes.',
+    'Drainage and carriageway renewal design on a long-running maintenance framework.',
+  ],
+  services: [
+    'Mechanical and electrical design for refurbishment and new-build schemes.',
+    'Low-carbon heating and ventilation design, from concept stage to commissioning.',
+    'Electrical design and coordination on laboratory and data-heavy buildings.',
+  ],
+  environmental: [
+    'Discharge permitting, flood risk and consenting for infrastructure clients.',
+    'Environmental impact assessment coordination and consent applications.',
+    'Flood risk assessment and drainage strategy for residential and mixed-use sites.',
+  ],
+  fire: [
+    'Fire strategy, means of escape and smoke control on complex existing buildings.',
+    'Fire engineering design for tall residential blocks, through to building control approval.',
+    'Fire risk appraisal of external walls and compartmentation on occupied buildings.',
+  ],
 };
+
+// Display detail for a vacancy record, chosen from the posting's own drawn
+// fields rather than from the draw stream, so a seeded run reproduces it
+// without shifting any later draw.
+const ROLES_REQUIREMENTS = {
+  structural: ['Structural analysis and design to current codes, in steel, concrete or timber.', 'Confident producing calculations and marked-up drawings for checking.'],
+  geotechnical: ['Experience scoping and supervising ground investigation.', 'Able to write an interpretive report a client can act on.'],
+  highways: ['Working knowledge of current highway design standards.', 'Experience taking a scheme through a road safety audit.'],
+  services: ['Mechanical or electrical design experience on buildings of comparable scale.', 'Comfortable coordinating services with the architect and structural engineer.'],
+  environmental: ['Experience preparing permit or planning consent applications.', 'Able to explain flood risk findings to a non-specialist client.'],
+  fire: ['Experience writing fire strategies for occupied or complex buildings.', 'Familiar with approval routes through building control.'],
+};
+
+const ROLES_CONSULTANTS = [
+  'Rhian Doulton', 'Joel Ashdown', 'Priti Sandhar', 'Martin Kelsall', 'Esther Obi',
+];
+
+function rolesHash(text) {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
 
 // The client's ceiling always overshoots the winning band and lands inside the
 // LABEL of the band above it without reaching that band's cheapest advert, so
@@ -157,8 +206,10 @@ function rolesBuildDesk(draw) {
       salaryMin,
       salaryMax,
       posted: 1 + rolesInt(27),
-      summary: ROLES_SUMMARIES[d],
+      summary: '',
     };
+    const seed = rolesHash([d, l, c, b, salaryMin, salaryMax, posting.title, posting.employer, posting.posted].join('|'));
+    posting.summary = ROLES_SUMMARIES[d][seed % ROLES_SUMMARIES[d].length];
     postings.push(posting);
     return posting;
   };
@@ -319,6 +370,20 @@ function rolesBuildDesk(draw) {
   };
 }
 
+function rolesRequirements(posting) {
+  const seed = rolesHash(posting.title + '|' + posting.employer + '|' + posting.salaryMin);
+  const senior = ['b3', 'b4', 'b5'].includes(posting.band);
+  return [
+    senior
+      ? 'Chartered with a relevant professional institution.'
+      : 'Chartered, or working towards chartership with a relevant institution.',
+    ...ROLES_REQUIREMENTS[posting.discipline],
+    seed % 3 === 0
+      ? 'The client cannot offer visa sponsorship for this post.'
+      : 'The client will consider candidates who need a skilled worker visa.',
+  ];
+}
+
 function rolesState(session, draw) {
   return (session.roles ??= rolesBuildDesk(draw));
 }
@@ -466,12 +531,8 @@ export function routes(ctx) {
           row.summary,
           'The desk holds the full pack. Candidates are put forward by the consultant named below.',
         ],
-        requirements: [
-          'Chartered or working towards chartership with a relevant institution.',
-          `Recent ${row.discipline.toLowerCase()} experience on comparable schemes.`,
-          'Right to work in the UK without sponsorship.',
-        ],
-        consultant: 'Rhian Doulton, Alderpost desk',
+        requirements: rolesRequirements(posting),
+        consultant: `${ROLES_CONSULTANTS[rolesHash(posting.employer) % ROLES_CONSULTANTS.length]}, Alderpost desk`,
       });
     }
 

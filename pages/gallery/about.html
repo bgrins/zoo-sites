@@ -5,43 +5,91 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Northmarsh Outfitters — About us</title>
 <link rel="stylesheet" href="gallery.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
+<p class="strap">Free returns for 60 days &middot; Free collection from all four depots</p>
 <header>
-  <img src="img/logo-mark.png" width="40" height="40" alt="Northmarsh Outfitters mark">
-  <span class="brand">NORTHMARSH OUTFITTERS</span>
-  <span class="tag">Field-tested kit since 1974 · Free returns for 60 days</span>
+  <a class="home" href="./"><img src="favicon.svg" width="40" height="40" alt=""><span class="brand">Northmarsh <span>Outfitters</span></span></a>
+  <span class="tag">Field-tested kit since 1974</span>
   <a class="basket" href="basket.html">Basket (<span id="bcount">0</span>)</a>
 </header>
-<nav>
+<nav class="shop" aria-label="Shop">
+  <a href="index.html">Summer Trail</a>
   <a href="index.html?cat=packs">Packs</a>
   <a href="index.html?cat=shelters">Shelters</a>
-  <a href="index.html" class="here">Summer Trail</a>
-  <a href="index.html?cat=footwear">Footwear</a>
+  <a href="index.html?cat=sleep">Sleep</a>
+  <a href="index.html?cat=cook">Cook</a>
   <a href="index.html?cat=layers">Layers</a>
+  <a href="index.html?cat=footwear">Footwear</a>
+  <a href="index.html?cat=accessories">Accessories</a>
   <a href="clearance.html">Clearance</a>
 </nav>
-<p class="crumbs">Home &mdash; About us</p>
-<main>
-  <section class="results" style="max-width: 62rem;">
-
+<p class="crumbs"><a href="./">Home</a> &rsaquo; About us</p>
+<main class="page">
     <h1>About Northmarsh</h1>
-    <p class="count">A chandlery, then a walking shop, now four depots and a workshop.</p>
-    <ul id="grid">
-      <li class="card"><h3>Where we started</h3><p class="blurb">Northmarsh Outfitters opened in 1974 in a former chandlery on Quay Lane, selling oilskins to the estuary boats and, before long, to the walkers who came through the town on the coast path. The wader boot was the first thing we had made to our own pattern, because nothing on sale locally stood up to a season in the salt. Quay Lane is still the head office, still the workshop, and still the depot where the awkward jobs land.</p></li>
-      <li class="card"><h3>How we choose kit</h3><p class="blurb">Nothing goes into the catalogue until the counter staff have used it. Shelters are pitched on the gravel behind the Askern Vale yard and left out through a winter; packs go on the hill loaded with plates; stoves are run in wind until we can say honestly whether they hold a simmer. Where a sample fails, we tell the maker what failed and how, and we do not list it in the meantime. Some things have taken three seasons to reach the shelf.</p></li>
-      <li class="card"><h3>Repair, then replace</h3><p class="blurb">The workshop was set up in 1989 to re-proof shells and re-cord tent poles, and it now turns round most jobs in ten working days. We would rather sell one pack that lasts fifteen years than three that last five, which is why the repairs counter is at the front of every depot and not behind the stockroom.</p></li>
-      <li class="card"><h3>The depots</h3><p class="blurb">Quay Lane, Askern Vale, Duncrieff and the seasonal mill shop at Wrenfold. Each keeps its own stock rather than drawing from a single warehouse, so what is available depends on where you are standing. The counter can see the whole network and will move an item between depots for collection at no charge.</p></li>
-      <li class="card"><h3>Ownership</h3><p class="blurb">Northmarsh Outfitters Ltd is owned by the people who work here, through an employee trust that took over from the founding family in 2011. Company number 00000000, registered at Quay Lane, Northmarsh. Nobody outside the trust has a claim on the profits, which is the main reason the repairs workshop still exists.</p></li>
-      <li class="card"><h3>Talk to us</h3><p class="blurb">General enquiries: hello@northmarsh.example, or the Quay Lane counter on 01632 960477, Monday to Saturday. Trade and group orders go to trade@northmarsh.example. Press and supplier approaches are read once a week, so allow a few days.</p></li>
-    </ul>
-    <p class="count">Our kit is used by mountain rescue teams and outdoor centres across the region. We do not pay for endorsements and never have.</p>
-    <p class="count"><a href="depots.html">Depot hours</a> · <a href="trade.html">Trade accounts</a> · <a href="delivery.html">Delivery and returns</a></p>
-  </section>
+    <p class="lede">A chandlery, then a walking shop, now four depots and a workshop.</p>
+    <div class="panels">
+      <section class="panel">
+        <h2>Where we started</h2>
+        <p>Northmarsh Outfitters opened in 1974 in a former chandlery on Quay Lane, selling oilskins to the estuary boats and, before long, to the walkers who came through the town on the coast path. The wader boot was the first thing we had made to our own pattern, because nothing on sale locally stood up to a season in the salt. Quay Lane is still the head office, still the workshop, and still the depot where the awkward jobs land.</p>
+      </section>
+      <section class="panel">
+        <h2>How we choose kit</h2>
+        <p>Nothing goes into the catalogue until the counter staff have used it. Shelters are pitched on the gravel behind the Thrandle Vale yard and left out through a winter; packs go on the hill loaded with plates; stoves are run in wind until we can say honestly whether they hold a simmer. Where a sample fails, we tell the maker what failed and how, and we do not list it in the meantime. Some things have taken three seasons to reach the shelf.</p>
+      </section>
+      <section class="panel">
+        <h2>Repair, then replace</h2>
+        <p>The workshop was set up in 1989 to re-proof shells and re-cord tent poles, and it now turns round most jobs in ten working days. We would rather sell one pack that lasts fifteen years than three that last five, which is why the repairs counter is at the front of every depot and not behind the stockroom.</p>
+      </section>
+      <section class="panel">
+        <h2>The depots</h2>
+        <p>Quay Lane, Thrandle Vale, Duncrieff and the seasonal mill shop at Wrenfold. Each keeps its own stock rather than drawing from a single warehouse, so what is available depends on where you are standing. The counter can see the whole network and will move an item between depots for collection at no charge.</p>
+      </section>
+      <section class="panel">
+        <h2>Ownership</h2>
+        <p>Northmarsh Outfitters Ltd is owned by the people who work here, through an employee trust that took over from the founding family in 2011. Company number 00000000, registered at Quay Lane, Northmarsh. Nobody outside the trust has a claim on the profits, which is the main reason the repairs workshop still exists.</p>
+      </section>
+      <section class="panel">
+        <h2>Talk to us</h2>
+        <p>General enquiries: hello@northmarsh.example, or the Quay Lane counter on 01632 960477, Monday to Saturday. Trade and group orders go to trade@northmarsh.example. Press and supplier approaches are read once a week, so allow a few days.</p>
+      </section>
+    </div>
+    <p class="note">Our kit is used by mountain rescue teams and outdoor centres across the region. We do not pay for endorsements and never have.</p>
+    <p class="note"><a href="depots.html">Depot hours</a> · <a href="trade.html">Trade accounts</a> · <a href="delivery.html">Delivery and returns</a></p>
 </main>
 <footer>
-  <p>Prices include VAT. Stock is held across the Northmarsh depot network and can change between page loads. &copy; Northmarsh Outfitters Ltd, Quay Lane, Northmarsh.</p>
-  <p><a href="depots.html">Depot hours</a> · <a href="repairs.html">Repairs and re-proofing</a> · <a href="trade.html">Trade accounts</a> · <a href="clearance.html">Catalogue archive</a> · <a href="sizing.html">Sizing, fit and care</a> · <a href="delivery.html">Delivery and returns</a> · <a href="about.html">About Northmarsh</a></p>
+  <div class="cols">
+    <div>
+      <h2>Shop</h2>
+      <ul>
+        <li><a href="index.html">Summer Trail collection</a></li>
+        <li><a href="clearance.html">End-of-line clearance</a></li>
+        <li><a href="trade.html">Trade accounts</a></li>
+        <li><a href="basket.html">Your basket</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Help</h2>
+      <ul>
+        <li><a href="delivery.html">Delivery and returns</a></li>
+        <li><a href="sizing.html">Sizing, fit and care</a></li>
+        <li><a href="repairs.html">Repairs and re-proofing</a></li>
+        <li><a href="depots.html">Depot hours</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Northmarsh</h2>
+      <ul>
+        <li><a href="about.html">About Northmarsh</a></li>
+        <li>hello@northmarsh.example</li>
+        <li>01632 960477, Monday to Saturday</li>
+      </ul>
+    </div>
+  </div>
+  <p class="legal">Prices include VAT. Stock is held across the Northmarsh depot network and can change between page loads.<br>
+  &copy; 2026 Northmarsh Outfitters Ltd, Quay Lane, Northmarsh NM1 4QL. Registered in England and Wales, company number 00000000. VAT 000 0000 00.<br>
+  <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of sale</a> &middot; <a href="cookies.html">Cookies</a></p>
 </footer>
 <script>window.NONCE = '__SESSION_NONCE__';</script>
 <script src="shopfront.js"></script>

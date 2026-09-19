@@ -45,6 +45,7 @@ a { color: var(--oxblood); }
 
 .brand {
   font-family: var(--chrome);
+  text-decoration: none;
   font-size: 25px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -413,3 +414,18 @@ a { color: var(--oxblood); }
 
 .sitefoot p { margin: 0 0 4px; }
 .sitefoot a { color: var(--dim); }
+
+.record .vmeta { padding-left: 0; }
+
+@media (max-width: 720px) {
+  .brandline { flex-wrap: wrap; gap: 2px 12px; }
+  .deskbar { margin-left: 0; flex-basis: 100%; }
+  .mainnav { gap: 18px; flex-wrap: wrap; }
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 14px; padding-top: 16px; }
+  .results { display: contents; }
+  .brief { order: 1; }
+  .filters { order: 2; }
+  .chips, .resulthead, .empty, .vacancies, .pager { order: 3; }
+  .brief-list { grid-template-columns: minmax(0, 1fr); }
+  .record { padding: 16px; }
+}

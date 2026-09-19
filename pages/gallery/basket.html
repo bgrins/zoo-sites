@@ -5,74 +5,222 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Northmarsh Outfitters — Basket</title>
 <link rel="stylesheet" href="gallery.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<script src="catalogue.js"></script>
 </head>
 <body>
+<p class="strap">Free returns for 60 days &middot; Free collection from all four depots</p>
 <header>
-  <img src="img/logo-mark.png" width="40" height="40" alt="Northmarsh Outfitters mark">
-  <span class="brand">NORTHMARSH OUTFITTERS</span>
-  <span class="tag">Field-tested kit since 1974 · Free returns for 60 days</span>
+  <a class="home" href="./"><img src="favicon.svg" width="40" height="40" alt=""><span class="brand">Northmarsh <span>Outfitters</span></span></a>
+  <span class="tag">Field-tested kit since 1974</span>
   <a class="basket" href="basket.html">Basket (<span id="bcount">0</span>)</a>
 </header>
-<nav>
+<nav class="shop" aria-label="Shop">
+  <a href="index.html">Summer Trail</a>
   <a href="index.html?cat=packs">Packs</a>
   <a href="index.html?cat=shelters">Shelters</a>
-  <a href="index.html" class="here">Summer Trail</a>
-  <a href="index.html?cat=footwear">Footwear</a>
+  <a href="index.html?cat=sleep">Sleep</a>
+  <a href="index.html?cat=cook">Cook</a>
   <a href="index.html?cat=layers">Layers</a>
+  <a href="index.html?cat=footwear">Footwear</a>
+  <a href="index.html?cat=accessories">Accessories</a>
   <a href="clearance.html">Clearance</a>
 </nav>
-<p class="crumbs">Home &mdash; Basket</p>
-<main>
-  <section class="results" style="max-width: 62rem;">
+<p class="crumbs"><a href="./">Home</a> &rsaquo; Basket</p>
+<main class="page">
+  <h1>Your basket</h1>
+  <p class="lede" id="bstate">Loading your basket&hellip;</p>
+  <ul class="basket-lines" id="lines"></ul>
+  <p class="status" id="line-note" role="status"></p>
 
-    <h1>Your basket</h1>
-    <p class="count" id="bstate">Loading your basket…</p>
-    <ul id="grid"></ul>
-    <p class="count">Collection is free from any depot. Courier delivery is quoted at the counter while the autumn rate card is settled.</p>
-    <script>
-      (async () => {
-        const NONCE = '__SESSION_NONCE__';
-        const NAMES = {
-          'HR-4182': ['Halberd Ridge 45L Pack', 168.0], 'CP-2290': ['Cinderpost Camp Stove', 74.5],
-          'TW-6035': ['Thornwick Rain Shell', 212.0], 'ML-1174': ['Moorlight Trail Lantern', 38.0],
-          'SM-5417': ['Saltmarsh Wader Boot', 146.0], 'GB-5310': ['Grimsby Fleece Midlayer', 89.0],
-          'RG-7726': ['Ravensgill Dome Tent', 395.0], 'PT-3049': ['Ptarmigan Down Quilt', 259.0],
-          'QS-5761': ['Quarrystone Water Filter', 52.0], 'AG-2673': ['Ashgrove Trekking Poles', 96.0],
-          'FG-5528': ['Fellgate Summit Gloves', 64.0], 'WN-1806': ['Withernsea Dry Bag', 29.0],
-        };
-        const state = document.getElementById('bstate');
-        const grid = document.getElementById('grid');
-        try {
-          const r = await fetch('/api/gallery/basket', { headers: { 'X-Session-Nonce': NONCE } });
-          const body = await r.json();
-          if (!body.items.length) {
-            state.textContent = 'Your basket is empty. The Summer Trail collection is one click back.';
-            return;
-          }
-          let total = 0;
-          for (const it of body.items) {
-            const [name, price] = NAMES[it.sku] ?? [it.sku, 0];
-            total += price * it.qty;
-            const li = document.createElement('li');
-            li.className = 'card';
-            li.innerHTML = '<h3>' + name + '</h3><p class="sku">SKU ' + it.sku +
-              '</p><p class="price">' + (price * it.qty).toFixed(2) + '</p>' +
-              '<p class="blurb">Quantity ' + it.qty + '</p>';
-            grid.append(li);
-          }
-          state.textContent = body.items.length + ' line(s) · total ' + total.toFixed(2) + ' including VAT';
-        } catch {
-          state.textContent = 'The basket service did not answer. Try again in a moment.';
-        }
-      })();
-    </script>
+  <section class="reserve" id="reserve" hidden>
+    <h2>Reserve for collection</h2>
+    <p class="note">Collection is free from any depot. We pick your order, hold it for fourteen
+    days, and take payment when you collect. Courier delivery is quoted at the counter while
+    the autumn rate card is settled.</p>
+    <label for="r-name">Name for the order</label>
+    <input id="r-name" type="text" autocomplete="name">
+    <label for="r-phone">Telephone</label>
+    <input id="r-phone" type="tel" autocomplete="tel">
+    <label for="depot">Collect from</label>
+    <select id="depot">
+      <option value="quay-lane">Quay Lane, Northmarsh</option>
+      <option value="thrandle-vale">Thrandle Vale</option>
+      <option value="duncrieff">Duncrieff</option>
+      <option value="wrenfold-mill">Wrenfold Mill (seasonal)</option>
+    </select>
+    <button type="button" class="primary" id="reserve-go">Reserve for collection</button>
+    <p class="status" id="reserve-note" role="status"></p>
+  </section>
+
+  <section class="reserve" id="reserved" hidden>
+    <h2>Reserved for collection</h2>
+    <p>Your order number is</p>
+    <p class="order-no" id="order-no"></p>
+    <p id="order-when"></p>
+    <p class="note">Bring the order number to the collection counter. <a href="depots.html">Depot hours</a>.</p>
   </section>
 </main>
 <footer>
-  <p>Prices include VAT. Stock is held across the Northmarsh depot network and can change between page loads. &copy; Northmarsh Outfitters Ltd, Quay Lane, Northmarsh.</p>
-  <p><a href="depots.html">Depot hours</a> · <a href="repairs.html">Repairs and re-proofing</a> · <a href="trade.html">Trade accounts</a> · <a href="clearance.html">Catalogue archive</a> · <a href="sizing.html">Sizing, fit and care</a> · <a href="delivery.html">Delivery and returns</a> · <a href="about.html">About Northmarsh</a></p>
+  <div class="cols">
+    <div>
+      <h2>Shop</h2>
+      <ul>
+        <li><a href="index.html">Summer Trail collection</a></li>
+        <li><a href="clearance.html">End-of-line clearance</a></li>
+        <li><a href="trade.html">Trade accounts</a></li>
+        <li><a href="basket.html">Your basket</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Help</h2>
+      <ul>
+        <li><a href="delivery.html">Delivery and returns</a></li>
+        <li><a href="sizing.html">Sizing, fit and care</a></li>
+        <li><a href="repairs.html">Repairs and re-proofing</a></li>
+        <li><a href="depots.html">Depot hours</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Northmarsh</h2>
+      <ul>
+        <li><a href="about.html">About Northmarsh</a></li>
+        <li>hello@northmarsh.example</li>
+        <li>01632 960477, Monday to Saturday</li>
+      </ul>
+    </div>
+  </div>
+  <p class="legal">Prices include VAT. Stock is held across the Northmarsh depot network and can change between page loads.<br>
+  &copy; 2026 Northmarsh Outfitters Ltd, Quay Lane, Northmarsh NM1 4QL. Registered in England and Wales, company number 00000000. VAT 000 0000 00.<br>
+  <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of sale</a> &middot; <a href="cookies.html">Cookies</a></p>
 </footer>
 <script>window.NONCE = '__SESSION_NONCE__';</script>
 <script src="shopfront.js"></script>
+<script>
+  (() => {
+    const NONCE = '__SESSION_NONCE__';
+    const CATALOGUE = window.NORTHMARSH_CATALOGUE;
+    const state = document.getElementById('bstate');
+    const lines = document.getElementById('lines');
+    const lineNote = document.getElementById('line-note');
+    const reserve = document.getElementById('reserve');
+    const money = (n) => '£' + n.toFixed(2);
+
+    function render(items) {
+      lines.textContent = '';
+      if (!items.length) {
+        state.innerHTML = 'Your basket is empty. The <a href="index.html">Summer Trail collection</a> is one click back.';
+        reserve.hidden = true;
+        return;
+      }
+      let total = 0;
+      let count = 0;
+      for (const it of items) {
+        const item = CATALOGUE[it.sku] ?? { name: it.sku, price: 0 };
+        const label = it.size ? item.name + ', size ' + it.size : item.name;
+        total += item.price * it.qty;
+        count += it.qty;
+        const li = document.createElement('li');
+        const name = document.createElement('span');
+        name.className = 'name';
+        const link = document.createElement('a');
+        link.href = 'product.html?sku=' + encodeURIComponent(it.sku);
+        link.textContent = item.name;
+        const sku = document.createElement('span');
+        sku.className = 'sku';
+        sku.textContent = 'SKU ' + it.sku + (it.size ? ' · Size ' + it.size : '') + ' · ' + money(item.price) + ' each';
+        name.append(link, sku);
+        const qty = document.createElement('input');
+        qty.type = 'number';
+        qty.min = '1';
+        qty.max = '9';
+        qty.value = String(it.qty);
+        qty.setAttribute('aria-label', 'Quantity of ' + label);
+        qty.addEventListener('change', () => update(it, Number(qty.value)));
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'linkish';
+        remove.textContent = 'Remove';
+        remove.setAttribute('aria-label', 'Remove ' + label);
+        remove.addEventListener('click', () => update(it, 0));
+        const lineTotal = document.createElement('span');
+        lineTotal.className = 'line-total';
+        lineTotal.textContent = money(item.price * it.qty);
+        li.append(name, qty, remove, lineTotal);
+        lines.append(li);
+      }
+      state.textContent = count + (count === 1 ? ' item' : ' items') + ' · total ' + money(total) + ' including VAT';
+      reserve.hidden = false;
+      document.getElementById('bcount').textContent = String(count);
+    }
+
+    async function update({ sku, size }, qty) {
+      lineNote.textContent = '';
+      try {
+        const r = await fetch('/api/gallery/basket', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nonce: NONCE, sku, size, qty }),
+        });
+        const body = await r.json();
+        if (!r.ok) {
+          lineNote.textContent = body.error || 'That change was not saved.';
+          return load();
+        }
+        render(body.items);
+        document.getElementById('bcount').textContent = String(body.items.reduce((n, i) => n + i.qty, 0));
+      } catch {
+        lineNote.textContent = 'The basket service did not answer, so that change was not saved.';
+      }
+    }
+
+    async function load() {
+      try {
+        const r = await fetch('/api/gallery/basket', { headers: { 'X-Session-Nonce': NONCE } });
+        if (!r.ok) throw new Error(String(r.status));
+        render((await r.json()).items);
+      } catch {
+        state.textContent = 'The basket service did not answer. Try again in a moment.';
+      }
+    }
+
+    document.getElementById('reserve-go').addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      const note = document.getElementById('reserve-note');
+      button.disabled = true;
+      note.textContent = '';
+      try {
+        const r = await fetch('/api/gallery/reserve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nonce: NONCE,
+            depot: document.getElementById('depot').value,
+            name: document.getElementById('r-name').value,
+            phone: document.getElementById('r-phone').value,
+          }),
+        });
+        const body = await r.json();
+        if (!r.ok) {
+          note.textContent = body.error || 'The reservation did not go through.';
+          button.disabled = false;
+          return;
+        }
+        lines.textContent = '';
+        reserve.hidden = true;
+        state.textContent = 'Your basket has been reserved.';
+        document.getElementById('bcount').textContent = '0';
+        document.getElementById('order-no').textContent = body.order;
+        document.getElementById('order-when').textContent = 'Ready at ' + body.depot + ' ' + body.ready + '.';
+        document.getElementById('reserved').hidden = false;
+      } catch {
+        note.textContent = 'The depot network did not answer. Nothing has been reserved; try again in a moment.';
+        button.disabled = false;
+      }
+    });
+
+    load();
+  })();
+</script>
 </body>
 </html>

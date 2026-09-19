@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Operator guide - Kelsmere CRM</title>
 <link rel="stylesheet" href="crm.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="topbar">
-  <span class="brand">Kelsmere CRM</span>
+  <a class="brand" href="./"><span class="mark" aria-hidden="true">K</span>Kelsmere CRM</a>
   <span class="ws">wkspc northfield-supply &middot; fiscal 2026 &middot; role: analyst</span>
   <span class="who">dana.kessler@northfield.example</span>
 </header>
@@ -39,11 +40,11 @@
     </section>
     <section class="card">
       <h2>Sort and column state</h2>
-      <p>The v3 grid engine keeps column widths and sort order per operator, so a
-      colleague opening the same page sees their own arrangement rather than yours.
-      State is written when you leave the page.</p>
+      <p>Click a column heading to sort by it, and again to reverse it. The v3 grid
+      engine keeps sort order per operator, so a colleague opening the same page sees
+      their own arrangement rather than yours.</p>
       <p class="muted">On a shared workspace link there is nowhere to write it, so the
-      arrangement lasts the session only.</p>
+      arrangement lasts the browser session only.</p>
     </section>
     <section class="card">
       <h2>What the snapshot means</h2>
@@ -55,19 +56,17 @@
     </section>
     <section class="card">
       <h2>Shared workspace links</h2>
-      <p>A shared link opens the workspace read-only. Saved views cannot be written,
-      CSV export is unavailable, report delivery is disabled, and workflow tasks cannot
-      be completed. Filter controls on a grid will accept input and then tell you the
-      view is read-only rather than pretending to run.</p>
+      <p>A shared link can read, sort and filter every grid, but it cannot write.
+      Saved views cannot be stored, CSV export and report delivery are unavailable,
+      and workflow tasks cannot be completed.</p>
       <p class="muted">There is no operator-side setting that lifts this. Link policy
       belongs to the workspace owner.</p>
     </section>
     <section class="card">
       <h2>Getting figures out</h2>
       <p>Ask an owner to run the report you need from the catalogue under
-      <a href="reports.html">Reports</a>. Where the report has been retired, the
-      figures have to be compiled from the grids that still publish them, and the
-      compiled working should be attached to whatever it was needed for.</p>
+      <a href="reports.html">Reports</a>, and attach any working you compile yourself
+      to whatever it was needed for.</p>
       <p class="muted">Do not circulate a screenshot of a grid as a figure of record.</p>
     </section>
     <section class="card">
@@ -83,10 +82,14 @@
   <a href="notices.html">service notices</a>.</p>
 </main>
 <footer class="siteftr">
-  Kelsmere CRM &middot; workspace data is confidential to northfield-supply.
-  Support: help.kelsmerecrm.example &middot; Status &middot; Keyboard shortcuts &middot;
-  Terms &middot; Privacy &middot; <a href="guide.html">Operator guide</a> &middot;
-  <a href="glossary.html">Glossary</a> &middot; <a href="notices.html">Service notices</a>
+  Kelsmere CRM &middot; workspace data is confidential to northfield-supply &middot;
+  &copy; 2026 Kelsmere Software, Inc.<br>
+  Support: <a href="mailto:support@kelsmerecrm.example">support@kelsmerecrm.example</a> &middot;
+  <a href="status.html">Status</a> &middot; <a href="shortcuts.html">Keyboard shortcuts</a> &middot;
+  <a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  <a href="guide.html">Operator guide</a> &middot; <a href="glossary.html">Glossary</a> &middot;
+  <a href="notices.html">Service notices</a>
 </footer>
+<script src="crm.js"></script>
 </body>
 </html>

@@ -1,11 +1,12 @@
 :root {
-  --paper: #f3ecdb;
-  --card: #fbf7ec;
-  --ink: #12303f;
-  --rule: #b9ac8e;
-  --rule-soft: #d8cdb2;
-  --muted: #5f6a63;
-  --rust: #a4441f;
+  --paper: #e3e9ec;
+  --card: #f4f7f8;
+  --ink: #102734;
+  --rule: #93a6b1;
+  --rule-soft: #c3d0d7;
+  --muted: #4f6470;
+  --signal: #8a4d00;
+  --signal-bright: #f2a516;
 }
 
 * {
@@ -31,11 +32,13 @@ a {
 }
 
 a:hover {
-  color: var(--rust);
+  color: var(--signal);
 }
 
 .masthead {
-  border-bottom: 3px double var(--ink);
+  background: var(--ink);
+  color: var(--card);
+  border-bottom: 4px solid var(--signal-bright);
   padding: 14px 26px 10px;
 }
 
@@ -46,12 +49,21 @@ a:hover {
   font-weight: 700;
 }
 
+.masthead .callsign a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.masthead .callsign a:hover {
+  color: var(--signal-bright);
+}
+
 .masthead .strap {
   margin: 2px 0 0;
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #a9bcc6;
 }
 
 nav.bar {
@@ -67,9 +79,9 @@ nav.bar a {
   text-decoration: none;
 }
 
-nav.bar a[aria-current="page"] {
-  color: var(--rust);
-  border-bottom: 2px solid var(--rust);
+nav.bar a[aria-current] {
+  color: var(--signal);
+  border-bottom: 2px solid var(--signal);
   padding-bottom: 3px;
 }
 
@@ -108,7 +120,7 @@ nav.bar a[aria-current="page"] {
 }
 
 .rail li.now {
-  color: var(--rust);
+  color: var(--signal);
   font-weight: 700;
 }
 
@@ -184,8 +196,8 @@ button {
 }
 
 button:hover {
-  background: var(--rust);
-  border-color: var(--rust);
+  background: var(--signal);
+  border-color: var(--signal);
 }
 
 button[disabled] {
@@ -214,10 +226,17 @@ button.chapter .tc {
   margin-top: 2px;
 }
 
+button.chapter.current {
+  border-color: var(--signal);
+  border-left-width: 4px;
+  padding-left: 9px;
+  background: var(--card);
+}
+
 button.chapter:hover {
-  border-color: var(--rust);
+  border-color: var(--signal);
   background: transparent;
-  color: var(--rust);
+  color: var(--signal);
 }
 
 .tc {
@@ -240,6 +259,8 @@ button.chapter:hover {
 
 #transcript .cue .tc {
   flex: 0 0 52px;
+  margin: 0;
+  line-height: 1.55;
 }
 
 #transcript .line {
@@ -256,11 +277,11 @@ button.chapter:hover {
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--rust);
+  color: var(--signal);
 }
 
 .notice {
-  border-left: 3px solid var(--rust);
+  border-left: 3px solid var(--signal);
   padding: 4px 0 4px 12px;
   color: var(--muted);
   font-size: 12.5px;
@@ -320,4 +341,63 @@ footer a {
 
 footer p {
   margin: 0 0 4px;
+}
+
+.area-list .k {
+  display: block;
+  width: auto;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.area-list p {
+  margin: 0 0 12px;
+}
+
+@media (max-width: 720px) {
+  .masthead,
+  nav.bar,
+  footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .masthead .callsign {
+    font-size: 22px;
+    letter-spacing: 0.24em;
+  }
+
+  nav.bar a {
+    display: inline-block;
+    margin: 2px 16px 2px 0;
+  }
+
+  .frame {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .rail {
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+    padding: 16px 16px 8px;
+  }
+
+  main {
+    padding: 18px 16px 36px;
+  }
+
+  .listing li {
+    flex-wrap: wrap;
+    gap: 2px 14px;
+  }
+
+  .listing .when {
+    flex: 1 0 100%;
+  }
+
+  .facts .k {
+    display: block;
+    width: auto;
+  }
 }

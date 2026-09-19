@@ -89,7 +89,9 @@ export function routes(ctx) {
       });
       return json(res, 200, {
         ok: true,
-        next: step === 1 ? '/unsub/step2.html' : '/unsub/step3.html',
+        // Relative, so the page lands on the same origin's copy in both
+        // serving modes rather than on a /unsub/ prefix.
+        next: step === 1 ? 'step2.html' : 'step3.html',
       });
     }
 

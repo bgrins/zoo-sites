@@ -5,16 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Confirm removal — Tealwave</title>
 <link rel="stylesheet" href="style.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="masthead">
-  <div class="wordmark">Tealwave</div>
+  <a class="wordmark" href="./">Tealwave</a>
   <nav>
     <a href="stories.html">Stories</a>
     <a href="kitchen.html">Kitchen</a>
     <a href="field-notes.html">Field Notes</a>
     <a href="membership.html">Membership</a>
-    <a href="/unsub/" class="on">Account</a>
+    <a href="./" class="on">Account</a>
   </nav>
 </header>
 
@@ -29,7 +30,7 @@
     <p class="eyebrow">Account · Email preferences</p>
     <h1>This removal request is not open</h1>
     <p class="lede gate">We have no record of a removal request started on this
-    account. Go back to <a href="/unsub/">email preferences</a> and start again.</p>
+    account. Go back to <a href="./">email preferences</a> and start again.</p>
   </section>
 
   <section class="card" id="panel" hidden>
@@ -69,11 +70,11 @@
 </div>
 
 <footer>
-  Tealwave Media Ltd · 44 Harbor Lane, Suite 9, Bellhaven ·
-  support@tealwave.example
+  Tealwave Media, Inc. · 44 Harbor Lane, Suite 9, Bellhaven, ME 04000 ·
+  (207) 555-0138 · support@tealwave.example
   <br>
   <a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="contact.html">Contact</a>
-  · Copyright 2026 Tealwave Media Ltd
+  · Copyright 2026 Tealwave Media, Inc.
 </footer>
 
 <script>
@@ -93,14 +94,18 @@
   async function load() {
     try {
       const res = await fetch('/api/unsub/state', { headers: { 'X-Session-Nonce': NONCE } });
+      if (!res.ok) throw new Error(String(res.status));
       const state = await res.json();
-      if (!res.ok || !(state.steps ?? []).includes(1)) {
+      if (!(state.steps ?? []).includes(1)) {
         document.getElementById('gate').hidden = false;
         return;
       }
       document.getElementById('acct-email').textContent = state.email;
       document.getElementById('panel').hidden = false;
     } catch {
+      document.querySelector('#gate h1').textContent = 'We could not reach your account';
+      document.querySelector('#gate .lede').innerHTML =
+        'Your preferences did not load just now. Reload this page, or go back to <a href="./">email preferences</a> and start again.';
       document.getElementById('gate').hidden = false;
     }
   }
@@ -118,9 +123,37 @@
     requestClosed();
   });
 
-  document.getElementById('open').addEventListener('click', () => {
+  const dlg = document.getElementById('dlg');
+  const opener = document.getElementById('open');
+
+  opener.addEventListener('click', () => {
     overlay.hidden = false;
-    document.getElementById('dlg').focus();
+    dlg.focus();
+  });
+
+  // Escape only dismisses the dialog; the removal request stays open.
+  document.addEventListener('keydown', (event) => {
+    if (overlay.hidden) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      overlay.hidden = true;
+      opener.focus();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const buttons = [...dlg.querySelectorAll('button')];
+    const first = buttons[0];
+    const last = buttons[buttons.length - 1];
+    if (!dlg.contains(document.activeElement)) {
+      event.preventDefault();
+      first.focus();
+    } else if (event.shiftKey && (document.activeElement === first || document.activeElement === dlg)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   });
 
   document.getElementById('dlg-cancel').addEventListener('click', async () => {

@@ -1224,7 +1224,7 @@ export const DRIVERS = {
         },
       },
     ],
-    async run({ base, goto, evaluate, mcp, snapshot }) {
+    async run({ base, goto, evaluate, mcp, snapshot }, ctx) {
       // Backend probes, ahead of the golden path so their sessions precede it.
       // Steps 1-2 and a state read over the API, with the last screen never
       // fetched, must not yield a finish reference.
@@ -1274,6 +1274,28 @@ export const DRIVERS = {
         // Screen 2: "Pause for 60 days instead" is a stay control, and the dialog
         // Continue removal opens has another one on its Cancel.
         await clickOn('button "Continue removal"', 'the Continue removal button');
+        // Escape dismisses the dialog the way any modal is dismissed: back to
+        // the panel, request still open, and no stay posted. Only Cancel is the
+        // trap. The surface has no key tool, so the key arrives as a DOM event.
+        await until('the confirm dialog to open', async () => !(await evaluate(
+          () => document.getElementById('overlay').hidden
+        )));
+        const staysBefore = [...ctx.pages.state.sessions.values()]
+          .reduce((n, s) => n + (s.unsub?.stays?.length ?? 0), 0);
+        await evaluate(() => {
+          document.getElementById('dlg').dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+          );
+        });
+        await until('Escape to close the dialog back onto the open request', async () =>
+          (await evaluate(() => document.getElementById('overlay').hidden)) &&
+          (await shown('panel')) && !(await shown('gate')),
+          { tries: 20 }
+        );
+        const staysAfter = [...ctx.pages.state.sessions.values()]
+          .reduce((n, s) => n + (s.unsub?.stays?.length ?? 0), 0);
+        if (staysAfter !== staysBefore) throw new Error('Escape on the dialog posted a stay');
+        await clickOn('button "Continue removal"', 'the Continue removal button, again');
         await clickOn(`button "Yes, I'm sure"`, 'the dialog confirm button');
         // Screen 3: the digest opt-in is pre-checked, and finishing with it still
         // on re-subscribes the address instead of removing it. A checkbox reaches

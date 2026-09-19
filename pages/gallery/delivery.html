@@ -5,43 +5,91 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Northmarsh Outfitters — Delivery and returns</title>
 <link rel="stylesheet" href="gallery.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
+<p class="strap">Free returns for 60 days &middot; Free collection from all four depots</p>
 <header>
-  <img src="img/logo-mark.png" width="40" height="40" alt="Northmarsh Outfitters mark">
-  <span class="brand">NORTHMARSH OUTFITTERS</span>
-  <span class="tag">Field-tested kit since 1974 · Free returns for 60 days</span>
+  <a class="home" href="./"><img src="favicon.svg" width="40" height="40" alt=""><span class="brand">Northmarsh <span>Outfitters</span></span></a>
+  <span class="tag">Field-tested kit since 1974</span>
   <a class="basket" href="basket.html">Basket (<span id="bcount">0</span>)</a>
 </header>
-<nav>
+<nav class="shop" aria-label="Shop">
+  <a href="index.html">Summer Trail</a>
   <a href="index.html?cat=packs">Packs</a>
   <a href="index.html?cat=shelters">Shelters</a>
-  <a href="index.html" class="here">Summer Trail</a>
-  <a href="index.html?cat=footwear">Footwear</a>
+  <a href="index.html?cat=sleep">Sleep</a>
+  <a href="index.html?cat=cook">Cook</a>
   <a href="index.html?cat=layers">Layers</a>
+  <a href="index.html?cat=footwear">Footwear</a>
+  <a href="index.html?cat=accessories">Accessories</a>
   <a href="clearance.html">Clearance</a>
 </nav>
-<p class="crumbs">Home &mdash; Delivery and returns</p>
-<main>
-  <section class="results" style="max-width: 62rem;">
-
+<p class="crumbs"><a href="./">Home</a> &rsaquo; Delivery and returns</p>
+<main class="page">
     <h1>Delivery and returns</h1>
-    <p class="count">Collection is free from any depot. Courier rates are quoted at the counter.</p>
-    <ul id="grid">
-      <li class="card"><h3>Depot collection</h3><p class="blurb">Free from all four depots, ready the next working day at Quay Lane and Askern Vale, and within two at Duncrieff. Bring your order number to the collection counter. We hold a collection for fourteen days and then put the kit back into depot stock, so tell us if you are delayed and we will keep it aside.</p></li>
-      <li class="card"><h3>Courier delivery</h3><p class="blurb">Two to four working days across the mainland, longer to the islands and the far north. The autumn rate card is still being settled with our carrier, so courier charges are quoted at the counter or by telephone rather than shown against the basket. Shelters and long poles travel as an oversize consignment and are booked separately.</p></li>
-      <li class="card"><h3>Order cut-off</h3><p class="blurb">Orders placed before four in the afternoon are picked the same day. After that they join the next morning's run. Depot-marked and clearance lines are collection only and never travel by courier, because most are one-offs and a lost consignment cannot be replaced.</p></li>
-      <li class="card"><h3>Sixty-day returns</h3><p class="blurb">Return anything within sixty days for a refund or an exchange, worn or unworn, so long as it comes back clean. Take it to any depot counter with your order number, or post it to the Quay Lane workshop. Refunds go back to the original payment within five working days of the kit reaching us, and we refund the outward courier charge if the return is our error.</p></li>
-      <li class="card"><h3>Faults and warranty</h3><p class="blurb">Manufacturing faults are put right for the working life of the item, whether that is three seasons or twenty. Send us the item and a line about how it failed. Where a repair is the better answer we will say so, and where a pattern has been discontinued we will offer the nearest current equivalent rather than a credit note.</p></li>
-      <li class="card"><h3>What we cannot take back</h3><p class="blurb">Base layers and socks that have been worn, gas canisters, and any item returned with mud, sap or fish on it. Wash it first and we will look at it. Filters and water treatment come back only unopened, for the obvious reason.</p></li>
-    </ul>
-    <p class="count">Questions about a consignment: ring the Quay Lane depot on 01632 960477 or write to orders@northmarsh.example.</p>
-    <p class="count"><a href="depots.html">Depot hours</a> · <a href="sizing.html">Sizing, fit and care</a> · <a href="repairs.html">Repairs and re-proofing</a></p>
-  </section>
+    <p class="lede">Collection is free from any depot. Courier rates are quoted at the counter.</p>
+    <div class="panels">
+      <section class="panel">
+        <h2>Depot collection</h2>
+        <p>Free from all four depots, ready the next working day at Quay Lane and Thrandle Vale, within two at Duncrieff, and on its next opening day at the seasonal Wrenfold Mill. Bring your order number to the collection counter. We hold a collection for fourteen days and then put the kit back into depot stock, so tell us if you are delayed and we will keep it aside.</p>
+      </section>
+      <section class="panel">
+        <h2>Courier delivery</h2>
+        <p>Two to four working days across the mainland, longer to the islands and the far north. The autumn rate card is still being settled with our carrier, so courier charges are quoted at the counter or by telephone rather than shown against the basket. Shelters and long poles travel as an oversize consignment and are booked separately.</p>
+      </section>
+      <section class="panel">
+        <h2>Order cut-off</h2>
+        <p>Orders placed before four in the afternoon are picked the same day. After that they join the next morning's run. Depot-marked and clearance lines are collection only and never travel by courier, because most are one-offs and a lost consignment cannot be replaced.</p>
+      </section>
+      <section class="panel">
+        <h2>Sixty-day returns</h2>
+        <p>Return anything within sixty days for a refund or an exchange, worn or unworn, so long as it comes back clean. Take it to any depot counter with your order number, or post it to the Quay Lane workshop. Refunds go back to the original payment within five working days of the kit reaching us, and we refund the outward courier charge if the return is our error.</p>
+      </section>
+      <section class="panel">
+        <h2>Faults and warranty</h2>
+        <p>Manufacturing faults are put right for the working life of the item, whether that is three seasons or twenty. Send us the item and a line about how it failed. Where a repair is the better answer we will say so, and where a pattern has been discontinued we will offer the nearest current equivalent rather than a credit note.</p>
+      </section>
+      <section class="panel">
+        <h2>What we cannot take back</h2>
+        <p>Base layers and socks that have been worn, gas canisters, and any item returned with mud, sap or fish on it. Wash it first and we will look at it. Filters and water treatment come back only unopened, for the obvious reason.</p>
+      </section>
+    </div>
+    <p class="note">Questions about a consignment: ring the Quay Lane depot on 01632 960477 or write to orders@northmarsh.example.</p>
+    <p class="note"><a href="depots.html">Depot hours</a> · <a href="sizing.html">Sizing, fit and care</a> · <a href="repairs.html">Repairs and re-proofing</a></p>
 </main>
 <footer>
-  <p>Prices include VAT. Stock is held across the Northmarsh depot network and can change between page loads. &copy; Northmarsh Outfitters Ltd, Quay Lane, Northmarsh.</p>
-  <p><a href="depots.html">Depot hours</a> · <a href="repairs.html">Repairs and re-proofing</a> · <a href="trade.html">Trade accounts</a> · <a href="clearance.html">Catalogue archive</a> · <a href="sizing.html">Sizing, fit and care</a> · <a href="delivery.html">Delivery and returns</a> · <a href="about.html">About Northmarsh</a></p>
+  <div class="cols">
+    <div>
+      <h2>Shop</h2>
+      <ul>
+        <li><a href="index.html">Summer Trail collection</a></li>
+        <li><a href="clearance.html">End-of-line clearance</a></li>
+        <li><a href="trade.html">Trade accounts</a></li>
+        <li><a href="basket.html">Your basket</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Help</h2>
+      <ul>
+        <li><a href="delivery.html">Delivery and returns</a></li>
+        <li><a href="sizing.html">Sizing, fit and care</a></li>
+        <li><a href="repairs.html">Repairs and re-proofing</a></li>
+        <li><a href="depots.html">Depot hours</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Northmarsh</h2>
+      <ul>
+        <li><a href="about.html">About Northmarsh</a></li>
+        <li>hello@northmarsh.example</li>
+        <li>01632 960477, Monday to Saturday</li>
+      </ul>
+    </div>
+  </div>
+  <p class="legal">Prices include VAT. Stock is held across the Northmarsh depot network and can change between page loads.<br>
+  &copy; 2026 Northmarsh Outfitters Ltd, Quay Lane, Northmarsh NM1 4QL. Registered in England and Wales, company number 00000000. VAT 000 0000 00.<br>
+  <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of sale</a> &middot; <a href="cookies.html">Cookies</a></p>
 </footer>
 <script>window.NONCE = '__SESSION_NONCE__';</script>
 <script src="shopfront.js"></script>

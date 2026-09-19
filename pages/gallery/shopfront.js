@@ -9,18 +9,21 @@
 
   const catBoxes = [...document.querySelectorAll('input[name=cat]')];
   const priceBoxes = [...document.querySelectorAll('input[name=price]')];
+  const availBoxes = [...document.querySelectorAll('input[name=avail]')];
 
   function apply() {
     const cats = catBoxes.filter((b) => b.checked).map((b) => b.value);
     const bands = priceBoxes
       .filter((b) => b.checked)
       .map((b) => b.value.split('-').map(Number));
+    const avail = availBoxes.filter((b) => b.checked).map((b) => b.value);
     let shown = 0;
     for (const card of cards) {
       const okCat = !cats.length || cats.includes(card.dataset.cat);
       const price = Number(card.dataset.price);
       const okPrice = !bands.length || bands.some(([lo, hi]) => price >= lo && price <= hi);
-      const on = okCat && okPrice;
+      const okAvail = !avail.length || avail.some((a) => card.dataset[a] === 'yes');
+      const on = okCat && okPrice && okAvail;
       card.style.display = on ? '' : 'none';
       if (on) shown += 1;
     }
@@ -34,15 +37,21 @@
       pager.textContent = `Showing ${shown ? 1 : 0} to ${shown} of ${shown} · Page 1 of 1`;
     }
   }
-  for (const box of [...catBoxes, ...priceBoxes]) box.addEventListener('change', apply);
+  for (const box of [...catBoxes, ...priceBoxes, ...availBoxes]) box.addEventListener('change', apply);
 
-  // Nav deep links: index.html?cat=packs pre-ticks the matching facet.
+  // Nav deep links: index.html?cat=packs pre-ticks the matching facet and
+  // marks that department as the current one.
   const preset = new URLSearchParams(location.search).get('cat');
-  if (preset) {
-    const box = catBoxes.find((b) => b.value === preset);
-    if (box) {
-      box.checked = true;
-      apply();
+  const box = preset && catBoxes.find((b) => b.value === preset);
+  if (box) {
+    box.checked = true;
+    apply();
+    const link = document.querySelector('nav.shop a[href="index.html?cat=' + preset + '"]');
+    if (link) {
+      document.querySelector('nav.shop a[aria-current]')?.removeAttribute('aria-current');
+      link.setAttribute('aria-current', 'page');
+      const crumb = document.getElementById('crumb-here');
+      if (crumb) crumb.textContent = link.textContent;
     }
   }
 
@@ -74,6 +83,9 @@
         if (r.ok) {
           button.textContent = 'Added to basket';
           await refreshCount();
+        } else if (r.status === 409 && (await r.json()).chooseSize) {
+          location.href = 'product.html?sku=' + encodeURIComponent(sku);
+          return;
         } else {
           button.textContent = 'Could not add';
         }

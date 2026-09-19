@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Northmarsh Outfitters — Product</title>
+<link rel="stylesheet" href="gallery.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<script src="catalogue.js"></script>
+</head>
+<body>
+<p class="strap">Free returns for 60 days &middot; Free collection from all four depots</p>
+<header>
+  <a class="home" href="./"><img src="favicon.svg" width="40" height="40" alt=""><span class="brand">Northmarsh <span>Outfitters</span></span></a>
+  <span class="tag">Field-tested kit since 1974</span>
+  <a class="basket" href="basket.html">Basket (<span id="bcount">0</span>)</a>
+</header>
+<nav class="shop" aria-label="Shop">
+  <a href="index.html">Summer Trail</a>
+  <a href="index.html?cat=packs">Packs</a>
+  <a href="index.html?cat=shelters">Shelters</a>
+  <a href="index.html?cat=sleep">Sleep</a>
+  <a href="index.html?cat=cook">Cook</a>
+  <a href="index.html?cat=layers">Layers</a>
+  <a href="index.html?cat=footwear">Footwear</a>
+  <a href="index.html?cat=accessories">Accessories</a>
+  <a href="clearance.html">Clearance</a>
+</nav>
+<p class="crumbs"><a href="./">Home</a> &rsaquo; <a href="index.html" id="crumb-cat">Catalogue</a> &rsaquo; <span id="crumb-here">Product</span></p>
+<main class="page">
+  <article class="product" id="product">
+    <div class="product-media"><img class="thumb" id="p-img" alt=""></div>
+    <div class="product-info">
+      <h1 id="p-name">Loading&hellip;</h1>
+      <p class="sku" id="p-sku"></p>
+      <p class="price" id="p-price"></p>
+      <p id="p-summary"></p>
+      <label for="p-size" id="p-size-label">Size</label>
+      <select id="p-size"></select>
+      <button type="button" class="primary" id="p-add">Add to basket</button>
+      <p class="status" id="p-note" role="status"></p>
+      <h2>Stock by depot</h2>
+      <table class="sizes" id="p-stock">
+        <thead><tr><th>Depot</th><th>In stock</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="note" id="p-ships"></p>
+      <h2>Specification</h2>
+      <table class="sizes" id="p-specs"><tbody></tbody></table>
+      <p class="note"><a href="sizing.html">Sizing, fit and care</a> &middot; <a href="delivery.html">Delivery and returns</a> &middot; <a href="repairs.html">Repairs</a></p>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="cols">
+    <div>
+      <h2>Shop</h2>
+      <ul>
+        <li><a href="index.html">Summer Trail collection</a></li>
+        <li><a href="clearance.html">End-of-line clearance</a></li>
+        <li><a href="trade.html">Trade accounts</a></li>
+        <li><a href="basket.html">Your basket</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Help</h2>
+      <ul>
+        <li><a href="delivery.html">Delivery and returns</a></li>
+        <li><a href="sizing.html">Sizing, fit and care</a></li>
+        <li><a href="repairs.html">Repairs and re-proofing</a></li>
+        <li><a href="depots.html">Depot hours</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Northmarsh</h2>
+      <ul>
+        <li><a href="about.html">About Northmarsh</a></li>
+        <li>hello@northmarsh.example</li>
+        <li>01632 960477, Monday to Saturday</li>
+      </ul>
+    </div>
+  </div>
+  <p class="legal">Prices include VAT. Stock is held across the Northmarsh depot network and can change between page loads.<br>
+  &copy; 2026 Northmarsh Outfitters Ltd, Quay Lane, Northmarsh NM1 4QL. Registered in England and Wales, company number 00000000. VAT 000 0000 00.<br>
+  <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of sale</a> &middot; <a href="cookies.html">Cookies</a></p>
+</footer>
+<script>window.NONCE = '__SESSION_NONCE__';</script>
+<script src="shopfront.js"></script>
+<script>
+  (() => {
+    const NONCE = '__SESSION_NONCE__';
+    const sku = (new URLSearchParams(location.search).get('sku') || '').toUpperCase();
+    const item = window.NORTHMARSH_CATALOGUE[sku];
+    const cell = (tag, text) => {
+      const el = document.createElement(tag);
+      el.textContent = text;
+      return el;
+    };
+    if (!item) {
+      document.getElementById('p-name').textContent = 'This product is no longer listed';
+      document.getElementById('p-summary').innerHTML =
+        'It may have sold out for the season or moved to <a href="clearance.html">clearance</a>. The <a href="index.html">Summer Trail collection</a> has everything we are stocking now.';
+      document.querySelector('.product-media').hidden = true;
+      for (const id of ['p-size-label', 'p-size', 'p-add', 'p-stock', 'p-specs']) document.getElementById(id).hidden = true;
+      for (const h of document.querySelectorAll('.product-info h2')) h.hidden = true;
+      return;
+    }
+    document.title = item.name + ' — Northmarsh Outfitters';
+    const img = document.getElementById('p-img');
+    img.src = item.img;
+    img.alt = item.alt;
+    document.getElementById('p-name').textContent = item.name;
+    document.getElementById('p-sku').textContent = 'SKU ' + sku;
+    document.getElementById('p-price').textContent = '£' + item.price.toFixed(2);
+    document.getElementById('p-summary').textContent = item.summary;
+    document.getElementById('crumb-here').textContent = item.name;
+    const catLink = document.getElementById('crumb-cat');
+    catLink.textContent = item.cat;
+    catLink.href = 'index.html?cat=' + item.cat.toLowerCase();
+    const size = document.getElementById('p-size');
+    for (const s of item.sizes) size.append(cell('option', s));
+    const stock = document.querySelector('#p-stock tbody');
+    for (const [depot, n] of Object.entries(item.stock)) {
+      const tr = document.createElement('tr');
+      tr.append(cell('td', depot), cell('td', n ? (n <= 2 ? 'Low, ' + n + ' left' : String(n)) : 'None'));
+      stock.append(tr);
+    }
+    document.getElementById('p-ships').textContent = item.ships
+      ? 'Courier orders placed before four in the afternoon ship within 48 hours.'
+      : 'This item travels as an oversize consignment or is short in the warehouse, so courier delivery is booked separately. Depot collection is free.';
+    const specs = document.querySelector('#p-specs tbody');
+    for (const [k, v] of item.specs) {
+      const tr = document.createElement('tr');
+      tr.append(cell('th', k), cell('td', v));
+      specs.append(tr);
+    }
+    const add = document.getElementById('p-add');
+    const note = document.getElementById('p-note');
+    add.addEventListener('click', async () => {
+      add.disabled = true;
+      note.textContent = '';
+      try {
+        const r = await fetch('/api/gallery/basket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nonce: NONCE, sku, size: size.value }),
+        });
+        const body = await r.json();
+        if (r.ok) {
+          note.innerHTML = (item.sizes.length > 1 ? 'Added, size ' + size.value + '.' : 'Added.') + ' <a href="basket.html">View your basket</a>.';
+          document.getElementById('bcount').textContent = String(body.items.reduce((n, i) => n + i.qty, 0));
+        } else {
+          note.textContent = body.error || 'That item could not be added.';
+        }
+      } catch {
+        note.textContent = 'The basket service did not answer. Try again in a moment.';
+      }
+      add.disabled = false;
+    });
+  })();
+</script>
+</body>
+</html>

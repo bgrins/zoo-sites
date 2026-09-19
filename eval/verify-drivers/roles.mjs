@@ -18,7 +18,7 @@ import { randomBytes } from 'node:crypto';
 import { addSession, esc, findSession, snapText, uidOf, until } from './lib.mjs';
 
 const PATH = '/roles/';
-const CHROME_LINKS = /a "(Vacancy search|Clients|Desk notes|Back to vacancy search)"/;
+const CHROME_LINKS = /a "(Alderpost|Vacancy search|Clients|Desk notes|Back to vacancy search)"/;
 
 const snapshot = (mcp) => snapText(mcp, { maxLines: 500 });
 

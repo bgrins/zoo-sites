@@ -5,14 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Coastal forecast 0535 UTC - Skerrow Coastal Radio</title>
 <link rel="stylesheet" href="station.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="masthead">
-  <p class="callsign">SKERROW</p>
+  <p class="callsign"><a href="./">SKERROW</a></p>
   <p class="strap">Coastal Radio &middot; Station SKW &middot; Marine safety broadcast service</p>
 </header>
 <nav class="bar">
-  <a href="index.html">Recorded bulletins</a>
+  <a href="index.html" aria-current="true">Recorded bulletins</a>
   <a href="areas.html">Sea areas</a>
   <a href="schedule.html">Transmission times</a>
 </nav>
@@ -62,7 +63,7 @@
   <p>Skerrow Coastal Radio, Harbour Station, Cape Ardnoy Road, Skerrow ARD 2LX.</p>
   <p>Duty desk 0117 496 0261 &middot; <a href="mailto:duty@skerrowcoastal.example">duty@skerrowcoastal.example</a></p>
   <p><a href="listen.html">How to listen</a> &middot; <a href="about.html">About the station</a> &middot; <a href="contact.html">Contact us</a></p>
-  <p><a href="index.html">Privacy notice</a> &middot; <a href="index.html">Terms of use</a> &middot; <a href="index.html">Accessibility</a></p>
+  <p><a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of use</a> &middot; <a href="accessibility.html">Accessibility</a></p>
   <p>Copyright 2026 Skerrow Coastal Radio. Forecast material reproduced under marine safety licence MS-114.</p>
 </footer>
 
@@ -159,9 +160,25 @@ async function passCue(cue) {
   writeCue(cue, text || 'Waiting on the log', !text);
 }
 
+let currentChapter = 0;
+
+function markChapter(at) {
+  const chapter = chapters.find((c) => at >= c.start && at < c.end);
+  const n = chapter ? chapter.n : 0;
+  if (n === currentChapter) return;
+  currentChapter = n;
+  for (const button of chaptersBox.children) {
+    const on = Number(button.dataset.n) === n;
+    button.classList.toggle('current', on);
+    if (on) button.setAttribute('aria-current', 'true');
+    else button.removeAttribute('aria-current');
+  }
+}
+
 function sweep() {
   const at = tape.currentTime;
   playhead.textContent = clock(at) + ' / ' + clock(duration);
+  markChapter(at);
   for (const cue of cues) {
     if (cue.start <= at + 0.2 && (cue.start > writtenTo || unresolved(cue.index))) passCue(cue);
   }
@@ -209,6 +226,7 @@ function drawChapters() {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'chapter';
+    button.dataset.n = String(chapter.n);
     const title = document.createElement('span');
     title.textContent = String(chapter.n).padStart(2, '0') + ' ' + chapter.title;
     const tc = document.createElement('span');

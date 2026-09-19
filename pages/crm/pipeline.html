@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pipeline - Kelsmere CRM</title>
 <link rel="stylesheet" href="crm.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="topbar">
-  <span class="brand">Kelsmere CRM</span>
+  <a class="brand" href="./"><span class="mark" aria-hidden="true">K</span>Kelsmere CRM</a>
   <span class="ws">wkspc northfield-supply &middot; fiscal 2026 &middot; role: analyst</span>
   <span class="who">dana.kessler@northfield.example</span>
 </header>
@@ -35,7 +36,8 @@
     <div class="tile"><span class="tk">Proposal</span><span class="tv">3</span></div>
     <div class="tile"><span class="tk">Negotiation</span><span class="tv">1</span></div>
   </div>
-  <table class="grid">
+  <div class="gridwrap">
+  <table class="grid" data-sort="pipeline">
     <thead>
       <tr><th>Opportunity</th><th>Account</th><th>Stage</th><th>Owner</th><th>Expected close</th></tr>
     </thead>
@@ -51,13 +53,18 @@
       <tr><td>OP-3109</td><td>Orrick Bearings</td><td>Prospecting</td><td>M. Okonkwo</td><td>2026-11-06</td></tr>
     </tbody>
   </table>
+  </div>
   <p class="muted">rows 9/9 &middot; stage changes sync to the warehouse at the nightly 02:00 rebuild.</p>
 </main>
 <footer class="siteftr">
-  Kelsmere CRM &middot; workspace data is confidential to northfield-supply.
-  Support: help.kelsmerecrm.example &middot; Status &middot; Keyboard shortcuts &middot;
-  Terms &middot; Privacy &middot; <a href="guide.html">Operator guide</a> &middot;
-  <a href="glossary.html">Glossary</a> &middot; <a href="notices.html">Service notices</a>
+  Kelsmere CRM &middot; workspace data is confidential to northfield-supply &middot;
+  &copy; 2026 Kelsmere Software, Inc.<br>
+  Support: <a href="mailto:support@kelsmerecrm.example">support@kelsmerecrm.example</a> &middot;
+  <a href="status.html">Status</a> &middot; <a href="shortcuts.html">Keyboard shortcuts</a> &middot;
+  <a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  <a href="guide.html">Operator guide</a> &middot; <a href="glossary.html">Glossary</a> &middot;
+  <a href="notices.html">Service notices</a>
 </footer>
+<script src="crm.js"></script>
 </body>
 </html>
