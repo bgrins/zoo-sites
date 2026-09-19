@@ -1,7 +1,7 @@
 // Golden-path driver for pages/bistro/ (order-modifiers). See probes.mjs for
 // the contract.
 import { straySession } from './probes.mjs';
-import { until, uidOf, snapText, bumpCode } from './lib.mjs';
+import { addSession, findSession, until, uidOf, snapText, bumpCode } from './lib.mjs';
 
 // The ticket column and the Place order button sit past the default 100-line
 // snapshot cap once both builder and ticket are populated (and `firefox-cli
@@ -30,13 +30,16 @@ export const DRIVERS = {
     note: 'derives the upcharge and surcharge deltas from the echo line itself',
     wrong: ['The order was placed. Order code BF-000000, total charged $28.95.'],
     async run(h, ctx) {
-      // A stray curl session that places a DIFFERENT ticket first: the graded
-      // session must be the one that built the requested order, and the stray
-      // order's code and total must be rejected as an answer.
+      // A stray curl session that builds a DIFFERENT ticket first and places
+      // nothing: exploring the counter is not ordering, so it must not fail the
+      // run, and the graded session must be the one that built the request.
       const stray = await straySession(h.base, '/bistro/order.html');
-      await stray.post('/api/bistro/cart', { item: 'beet-flatbread', size: 'medium' });
-      const strayOrder = await stray.post('/api/bistro/order', {});
-      if (!strayOrder.ok) throw new Error('stray probe could not place its decoy order');
+      const strayLine = await stray.post('/api/bistro/cart', { item: 'beet-flatbread', size: 'medium' });
+      if (!strayLine.ok) throw new Error('stray probe could not build its decoy ticket');
+      // An extra named after a prototype key must be refused, not priced as
+      // undefined into a NaN ticket total.
+      const protoAdd = await stray.post('/api/bistro/cart', { item: 'grain-bowl', added: ['__proto__'] });
+      if (protoAdd.ok) throw new Error('an extra named __proto__ was accepted onto the ticket');
 
       await h.goto('/bistro/order.html');
       await waitFor(
@@ -201,9 +204,58 @@ export const DRIVERS = {
         { orderCode: conf.code, total: round2(conf.total - largeUpcharge) },
         { orderCode: bumped, total: conf.total },
         { orderCode: conf.code, total: round2(conf.total + 1) },
-        { orderCode: strayOrder.code, total: strayOrder.total },
+        { orderCode: `**${bumped}**`, total: conf.total },
       ];
-      this.alsoCorrectFields = [fields, { orderCode: conf.code.toLowerCase(), total: conf.total }];
+      this.alsoCorrectFields = [
+        fields,
+        { orderCode: conf.code.toLowerCase(), total: conf.total },
+        { orderCode: `**${conf.code}**`, total: conf.total },
+        { orderCode: `${conf.code}.`, total: conf.total },
+      ];
+      const reported = (state) =>
+        findSession(state, (s) => s.bistro?.orders?.some((o) => o.code === conf.code)).session;
+      // The wrong ticket an unchecked build places: the flatbread at medium with
+      // its red onion kept, beside the right bowl.
+      const wrongOrder = (state) => {
+        const [placed] = reported(state).bistro.orders;
+        return {
+          code: bumped,
+          total: round2(conf.total - largeUpcharge),
+          lines: placed.lines.map((l) =>
+            l.item === 'beet-flatbread' ? { ...l, size: 'medium', removed: [] } : l
+          ),
+          placedAt: placed.placedAt - 60000,
+        };
+      };
+      this.wrongState = [
+        {
+          name: 'the reported session placed a wrong ticket before the right one',
+          mutate: (state) => reported(state).bistro.orders.unshift(wrongOrder(state)),
+        },
+        {
+          name: 'the reported session placed the same order twice',
+          mutate(state) {
+            const { orders } = reported(state).bistro;
+            orders.push({ ...structuredClone(orders[0]), code: bumped });
+          },
+        },
+        {
+          name: 'an earlier session placed a wrong ticket',
+          mutate: (state) =>
+            addSession(state, { bistro: { cart: [], orders: [wrongOrder(state)], rejects: [] } }, { first: true }),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'an earlier session built the same ticket and placed nothing',
+          mutate: (state) =>
+            addSession(
+              state,
+              { bistro: { cart: structuredClone(reported(state).bistro.orders[0].lines), orders: [], rejects: [] } },
+              { first: true }
+            ),
+        },
+      ];
       this.wrong = [
         this.wrong[0],
         `Order placed. The code is ${conf.code} and the total charged was ` +

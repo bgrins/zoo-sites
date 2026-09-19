@@ -66,6 +66,13 @@ function voltroDealRecord(session) {
 // two never share state.
 const SHOP_TAX_RATE = 0.08;
 
+// The /api/voltro/cart line comes from the listing page, name and price
+// included, so the endpoint bounds what it stores rather than trusting it:
+// serve.mjs keeps sessions for the life of the process.
+const VOLTRO_CART_MAX = 50;
+const VOLTRO_NAME_MAX = 120;
+const VOLTRO_PRICE_MAX = 100000;
+
 const SHOP_LEVY_PER_MONITOR = 4.5;
 
 // Every basket read appends to shopTotalsLog, and serve.mjs never resets a
@@ -160,7 +167,9 @@ const SHOP_CATALOG = {
 // pages/shop/marrowgate/promos.html states the fine print; the arithmetic and the
 // eligibility checks run only here. Exactly one code (NEX10) is valid for a
 // single ClaritySee CS27-4K order, and it beats the runner-up (FIVEOFF) by
-// $22.45 — asserted in answers.mjs at load time.
+// $22.45 — asserted in answers.mjs at load time. No offer period is enforced:
+// SAVE30 is refused on its explicit expired flag, and the page prints no end
+// date for the live codes, so page and server agree whatever the clock says.
 const SHOP_COUPONS = {
   SAVE30: { store: 'marrowgate', flat: 30, monitorsOnly: true, expired: true,
     expiresOn: '2026-06-30' },
@@ -565,10 +574,13 @@ export function routes(ctx) {
       if (!found) return;
       const product = String(payload.product ?? '').trim();
       const price = Number(payload.price);
-      if (!product || !Number.isFinite(price)) {
+      if (!product || product.length > VOLTRO_NAME_MAX || !(price > 0 && price < VOLTRO_PRICE_MAX)) {
         return json(res, 400, { error: 'bad item' });
       }
       const cart = (found.session.voltroCart ??= []);
+      if (cart.length >= VOLTRO_CART_MAX) {
+        return json(res, 409, { error: `A cart holds at most ${VOLTRO_CART_MAX} items.` });
+      }
       cart.push({ product, price });
       return json(res, 200, { ok: true, count: cart.length });
     }
@@ -617,7 +629,9 @@ export function routes(ctx) {
             error: 'Enter a 16-digit card number, expiry, and CVV.',
           });
         }
-        checkout.payment = { last4: card.slice(-4), exp };
+        // Kept whole on the session so the validator can grade the card the ask
+        // dictated; the review step still shows only the last four digits.
+        checkout.payment = { last4: card.slice(-4), exp, card, cvv };
         return json(res, 200, { ok: true, next: 'review' });
       }
       return json(res, 400, { error: 'unknown step' });

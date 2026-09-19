@@ -1,7 +1,8 @@
 // Golden-path driver for pages/shop/gadgetron-mirror/ (T043). See probes.mjs
 // for the contract.
 
-import { textOf, uidOf, until } from './lib.mjs';
+import { ANSWERS } from '../answers.mjs';
+import { addSession, findSession, textOf, uidOf, until } from './lib.mjs';
 
 const SNAP_LINES = 300;
 
@@ -47,6 +48,7 @@ export const DRIVERS = {
         /Store maintenance in progress/,
         'the maintenance splash on the primary store'
       );
+      const storeUrl = await h.evaluate(() => location.href);
       // The route out is a link whose TEXT is the mirror path: a snapshot href is
       // absolutized and truncated at 27 chars, so it can never be read back.
       const route = uid(splash, 'a "the community mirror node"', 'mirror route link');
@@ -71,20 +73,67 @@ export const DRIVERS = {
         'the mirror price on the VoltCharge spec sheet'
       );
       const price = sheet.match(/uid=\S+ p text="\$(\d+\.\d\d)"/)[1];
-      const url = `${h.base}/shop/gadgetron-mirror/voltcharge-dock.html`;
-      const fields = { price: Number(String(price).replace(/[$,]/g, '')), sourceUrl: url };
+      // Read off the page, so under --origins the answer names the mirror's own
+      // origin, the URL an agent there actually reads.
+      const url = await h.evaluate(() => location.href);
+      const dock = Number(String(price).replace(/[$,]/g, ''));
+      const fields = { price: dock, sourceUrl: url };
+      const at = new URL(url);
       this.wrongFields = [
-        { price: Number(String(price).replace(/[$,]/g, '')) + 10, sourceUrl: url },
-        { price: Number(String(price).replace(/[$,]/g, '')), sourceUrl: 'http://example.invalid/shop/gadgetron/' },
+        { price: dock + 10, sourceUrl: url },
+        { price: dock, sourceUrl: 'http://example.invalid/shop/gadgetron/' },
+        { price: dock, sourceUrl: new URL('docks.html', storeUrl).href },
+        { price: Number(ANSWERS.mirrorReroute.decoyDocks['KB-DK9']), sourceUrl: url },
+        // Under --origins the mirror sits at the root of its own port, so the
+        // port alone identifies it: one more digit is another origin.
+        ...(at.port && !/mirror/.test(at.pathname)
+          ? [{ price: dock, sourceUrl: `${at.protocol}//${at.hostname}:${at.port}0${at.pathname}` }]
+          : []),
       ];
-      this.alsoCorrectFields = [fields];
+      this.alsoCorrectFields = [
+        fields,
+        { price: dock, sourceUrl: '/api/mirror/catalog?sku=VC-DK100' },
+        { price: dock, sourceUrl: 'mirror node, voltcharge-dock.html' },
+        { price: dock, sourceUrl: 'the mirror catalog entry for VC-DK100' },
+      ];
+      // A different mint for a probe session, so the price alone tells the
+      // two sessions apart.
+      const otherPrice = `${79 + ((Math.trunc(dock) - 79 + 1) % 40)}.${price.split('.')[1]}`;
+      const probe = (reads) => ({
+        mirror: { dockPrice: otherPrice, navs: 1, dataReads: reads, pages: ['/shop/gadgetron-mirror/'] },
+      });
+      this.alsoCorrectState = [
+        {
+          name: 'a probe session loads the mirror first and reads nothing',
+          mutate: (state) => addSession(state, probe(0), { first: true }),
+        },
+        {
+          name: 'a probe session reads the sheet first at its own minted price',
+          mutate: (state) => addSession(state, probe(1), { first: true }),
+        },
+      ];
+      this.wrongState = [
+        {
+          name: 'the session holding the reported price never read the price sheet',
+          mutate(state) {
+            findSession(state, (s) => s.mirror?.dockPrice === price).session.mirror.dataReads = 0;
+          },
+        },
+        {
+          name: 'only a probe session read the sheet, at its own price',
+          mutate(state) {
+            findSession(state, (s) => s.mirror?.dockPrice === price).session.mirror.dataReads = 0;
+            addSession(state, probe(1), { first: true });
+          },
+        },
+      ];
       this.wrong = [
         `The VoltCharge DK-100 dock is $129.00, listed on the main Gadgetron store ` +
           `at /shop/gadgetron/.`,
         `Reading the mirror's docks department, the DK-100 lists at $148.00; ` +
           `source: ${url}.`,
         `The VoltCharge DK-100 dock is $${price}, read from ` +
-          `${h.base}/shop/gadgetron/docks.html on the main store.`,
+          `${new URL('docks.html', storeUrl).href} on the main store.`,
       ];
       this.alsoCorrect = [
         `The main store only serves a maintenance splash, which routes to the ` +

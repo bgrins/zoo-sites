@@ -189,6 +189,8 @@ async function quote() {
   const query = '/api/shop/variant?product=norvindle&size=' +
     encodeURIComponent(size) + '&color=' + encodeURIComponent(color);
   const res = await fetch(query, { headers: { 'X-Session-Nonce': NONCE } });
+  const stale = () => sizeEl.value !== size || colorEl.value !== color;
+  if (stale()) return;
   if (!res.ok) {
     priceEl.textContent = '--';
     stockEl.className = 'vstock gone';
@@ -196,6 +198,7 @@ async function quote() {
     return;
   }
   const body = await res.json();
+  if (stale()) return;
   current = body;
   priceEl.textContent = '$' + Number(body.price).toFixed(2);
   stockEl.className = 'vstock ' + (body.inStock ? 'ready' : 'gone');

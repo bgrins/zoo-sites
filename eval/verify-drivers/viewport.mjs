@@ -1,7 +1,7 @@
 // Golden-path driver for the responsive-layout task on pages/shop/voltro/.
 // See probes.mjs for the contract.
 
-import { bumpCode, snapText, uidOf, until } from './lib.mjs';
+import { addSession, bumpCode, findSession, snapText, uidOf, until } from './lib.mjs';
 
 const SNAP_LINES = 500;
 // The store's own mobile breakpoint; the driver asserts the layout really
@@ -94,8 +94,47 @@ export const DRIVERS = {
           throw new Error(`snapshot read ${snapCode} but the page holds ${deal.code}`);
         }
         const fields = { dealCode: deal.code };
-        this.wrongFields = [{ dealCode: 'DEAL-0000' }];
-        this.alsoCorrectFields = [fields, { dealCode: deal.code.toLowerCase() }];
+        this.wrongFields = [
+          { dealCode: 'DEAL-0000' },
+          { dealCode: bumpCode(deal.code) },
+          { dealCode: `(${bumpCode(deal.code)})` },
+          { dealCode: deal.code.slice(5) + '0' },
+        ];
+        this.alsoCorrectFields = [
+          fields,
+          { dealCode: deal.code.toLowerCase() },
+          { dealCode: deal.code.replace('-', '\u2013') },
+          { dealCode: `**${deal.code}**` },
+          { dealCode: `${deal.code}.` },
+          { dealCode: deal.code.replace('-', '-\u200b') },
+        ];
+        const minted = (state) => findSession(state, (s) => s.voltroDeal?.code === deal.code).session;
+        this.wrongState = [
+          {
+            name: 'the reported code was minted without a narrow load the server saw',
+            mutate: (state) => (minted(state).voltroDeal.issuedNarrow = false),
+          },
+        ];
+        this.alsoCorrectState = [
+          {
+            name: 'a probe session met the deals page at desktop width first',
+            mutate: (state) =>
+              addSession(
+                state,
+                {
+                  voltroDeal: {
+                    ...structuredClone(minted(state).voltroDeal),
+                    code: null,
+                    issuedWidth: null,
+                    issuedNarrow: false,
+                    widths: [1366],
+                    navBanner: { phone: 0, wide: 1 },
+                  },
+                },
+                { first: true }
+              ),
+          },
+        ];
         this.wrong = [
           this.wrong[0],
           `At ${width}px the menu revealed the deals page, but the code had rotated ` +

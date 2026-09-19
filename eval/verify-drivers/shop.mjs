@@ -1,6 +1,7 @@
 // Golden-path drivers for pages/shop/. See probes.mjs for the contract.
 
-import { bumpCode, snapText } from './lib.mjs';
+import { straySession } from './probes.mjs';
+import { addSession, bumpCode, findSession, snapText } from './lib.mjs';
 
 // The default snapshot is 100 lines, which truncates every one of these
 // listings before the interesting controls; 500 is the tool's hard cap.
@@ -167,12 +168,26 @@ export const DRIVERS = {
           perStore: { ...perStoreFields, Voltro: { price: 259.99 } },
         },
         { ...fields, winnerPrice: 239.99 },
+        // Listings that share the winner's model token: Marrowgate's refurbished
+        // unit and Gadgetron's open-box return are sold out, and Voltro's SE is
+        // another product.
+        { ...fields, winnerProduct: 'ClaritySee CS27-4K Refurbished' },
+        { ...fields, winnerProduct: 'ClaritySee CS27-4K Open-Box' },
+        { ...fields, winnerProduct: 'CS27-4K (open box)' },
+        { ...fields, winnerProduct: 'Refurbished ClaritySee CS27-4K' },
+        { ...fields, winnerProduct: 'ClaritySee CS27-4K SE' },
       ];
       this.alsoCorrectFields = [
         fields,
         // The bare model token is accepted for the winner, and the per-store
         // report is prices: the ask and the answerSchema both say so.
         { ...fields, winnerProduct: 'CS27-4K' },
+        { ...fields, winnerProduct: 'ClaritySee CS27\u20114K' },
+        { ...fields, winnerProduct: 'ClaritySee CS27-4K (27" 4K UHD)' },
+        // A winner that names a sibling only to rule it out.
+        { ...fields, winnerProduct: 'ClaritySee CS27-4K (not the CS27-4K SE)' },
+        { ...fields, winnerProduct: 'ClaritySee CS27-4K (new; the refurbished unit is sold out)' },
+        { ...fields, winnerProduct: 'ClaritySee CS27-4K (non-refurbished)' },
       ];
       const text =
         `The cheapest in-stock 27-inch 4K (UHD) monitor is the ${winner.name} at ` +
@@ -260,6 +275,47 @@ export const DRIVERS = {
         { orderTotal: grandTotal + 10 },
       ];
       this.alsoCorrectFields = [fields];
+      const cartMathSession = (state) =>
+        findSession(state, (s) => s.shopTotalsSeen?.voltro?.total === grandTotal).session;
+      const hueBeam = (state) =>
+        cartMathSession(state).shopCarts.voltro.find((l) => l.name === 'HueBeam 27');
+      const voltroLine = (name, qty) => ({ sku: name, name, price: 1, qty, brand: null, monitor: false });
+      this.wrongState = [
+        {
+          name: 'the reported basket holds three HueBeam 27',
+          mutate: (state) => (hueBeam(state).qty = 3),
+        },
+        {
+          name: 'the reported basket holds a third line',
+          mutate: (state) =>
+            cartMathSession(state).shopCarts.voltro.push(voltroLine('Voltro KeyLight Slim', 1)),
+        },
+        {
+          name: 'the Stand-Free monitor in place of the HueBeam 27',
+          mutate: (state) => (hueBeam(state).name = 'HueBeam 27 Stand-Free'),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a probe session built a Stand-Free basket first',
+          mutate: (state) =>
+            addSession(
+              state,
+              {
+                shopCarts: {
+                  voltro: [voltroLine('HueBeam 27 Stand-Free', 2), voltroLine('Voltro ArmMount Pro', 1)],
+                },
+                shopTotalsSeen: { voltro: { total: grandTotal + 35.36 } },
+              },
+              { first: true }
+            ),
+        },
+        {
+          name: 'a probe session built the same basket first and never read a total',
+          mutate: (state) =>
+            addSession(state, { shopCarts: structuredClone(cartMathSession(state).shopCarts) }, { first: true }),
+        },
+      ];
       this.wrong = [
         this.wrong[0],
         `Basket: ${totals.lines.join('; ')}. The order total is ${totals.subtotal}; ` +
@@ -330,6 +386,29 @@ export const DRIVERS = {
         { limit: Number(cap[1]), finalBasketQuantity: 5 },
       ];
       this.alsoCorrectFields = [fields];
+      const capped = (state) => findSession(state, (s) => (s.shopLimitRejections ?? []).length).session;
+      const corrindle = (state) => capped(state).shopCarts.voltro.find((l) => l.name === 'Corrindle Pro');
+      this.wrongState = [
+        {
+          name: 'the reported basket holds one under the cap',
+          mutate: (state) => (corrindle(state).qty -= 1),
+        },
+        {
+          name: 'the Corrindle line was removed after the refusal',
+          mutate: (state) => (capped(state).shopCarts.voltro = []),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a probe session added one Corrindle Pro first',
+          mutate: (state) =>
+            addSession(
+              state,
+              { shopCarts: { voltro: [{ ...structuredClone(corrindle(state)), qty: 1 }] } },
+              { first: true }
+            ),
+        },
+      ];
       this.wrong = [
         this.wrong[0],
         `The store caps Corrindle Pro at ${cap[1]} per customer, but all 5 ` +
@@ -356,6 +435,14 @@ export const DRIVERS = {
     note: 'tries the two refusable codes, then applies the optimum',
     wrong: ['I applied FIVEOFF, the only code that worked, for a final order total of $295.06.'],
     async run(h) {
+      // An abandoned first attempt under another cookie: the same code on a
+      // two-monitor basket. It must not shadow the run whose total is reported,
+      // and its own total is a wrong answer.
+      const stray = await straySession(h.base, '/shop/marrowgate/cs27-4k.html');
+      await stray.post('/api/shop/cart/add', { store: 'marrowgate', sku: '6428193', qty: 2 });
+      const strayCoupon = await stray.post('/api/shop/coupon', { store: 'marrowgate', code: 'NEX10' });
+      if (!strayCoupon.ok) throw new Error(`stray probe could not apply NEX10: ${JSON.stringify(strayCoupon)}`);
+
       await h.goto('/shop/marrowgate/cs27-4k.html');
       await waitFor(h, () => /\d/.test(document.getElementById('pricetag')?.textContent ?? ''), 'price tag');
       const pdp = await snapshot(h);
@@ -375,6 +462,25 @@ export const DRIVERS = {
       }
       if (!/Expired on 2026-06-30/i.test(terms)) throw new Error('SAVE30 expiry not published');
       if (!/Excludes ClaritySee brand/i.test(terms)) throw new Error('MONITOR15 exclusion not published');
+      // The server enforces no offer period, only SAVE30's expired flag, so an
+      // end date printed on any other code is a promise the wall clock breaks:
+      // once it passes, an agent that trusts the terms rules the code out.
+      const offers = await h.evaluate(() =>
+        [...document.querySelectorAll('.offers > li')].map((li) => ({
+          code: li.querySelector('h2')?.textContent.trim(),
+          expired: !!li.querySelector('.flag'),
+          dates: li.querySelector('.terms').textContent.match(/\d{4}-\d\d-\d\d/g) ?? [],
+        }))
+      );
+      const live = offers.filter((o) => !o.expired);
+      if (!live.some((o) => o.code === 'NEX10')) throw new Error('NEX10 is not published as live');
+      const dated = live.filter((o) => o.dates.length);
+      if (dated.length) {
+        throw new Error(
+          `live offers print dates the server never enforces: ` +
+            dated.map((o) => `${o.code} ${o.dates.join('..')}`).join(', ')
+        );
+      }
 
       await h.goto('/shop/marrowgate/basket.html');
       await waitFor(h, () => /^\$\d/.test(document.getElementById('grand')?.textContent ?? ''), 'basket summary');
@@ -438,8 +544,58 @@ export const DRIVERS = {
         { codeUsed: 'NEX10', finalTotal: finalTotal + 5 },
         { codeUsed: 'NEX10', finalTotal: subtotalNum },
         { codeUsed: 'SAVE30', finalTotal },
+        { codeUsed: 'NEX10', finalTotal: strayCoupon.total },
+        { codeUsed: 'NEX10 or FIVEOFF', finalTotal },
+        { codeUsed: 'NEX100', finalTotal },
       ];
-      this.alsoCorrectFields = [fields, { codeUsed: 'nex10', finalTotal }];
+      const reported = (s) => s.shopCoupons?.marrowgate?.finalTotal === finalTotal;
+      // The basket cases drop the stray NEX10 session, so the reported session
+      // is the only candidate and cartOk alone has to refuse it.
+      const alone = (state) => {
+        state.sessions.delete(
+          findSession(state, (s) => s.shopCoupons?.marrowgate?.finalTotal === strayCoupon.total).sid
+        );
+        return findSession(state, reported).session;
+      };
+      this.wrongState = [
+        {
+          name: 'the reported session bought two monitors',
+          mutate(state) {
+            alone(state).shopCarts.marrowgate[0].qty = 2;
+          },
+        },
+        {
+          name: 'the reported session added a second line beside the monitor',
+          mutate(state) {
+            alone(state).shopCarts.marrowgate.push({
+              sku: '6377410', name: 'PixelPeak P27Q', price: 199, qty: 1, brand: 'PixelPeak', monitor: true,
+            });
+          },
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a probe session applied FIVEOFF to the same basket first',
+          mutate(state) {
+            const { session } = findSession(state, reported);
+            addSession(
+              state,
+              {
+                shopCarts: structuredClone(session.shopCarts),
+                shopCoupons: { marrowgate: { code: 'FIVEOFF', accepted: true, finalTotal: finalTotal + 20 } },
+              },
+              { first: true }
+            );
+          },
+        },
+      ];
+      this.alsoCorrectFields = [
+        fields,
+        { codeUsed: 'nex10', finalTotal },
+        { codeUsed: 'NEX10 (10% off)', finalTotal },
+        { codeUsed: 'code NEX10', finalTotal },
+        { codeUsed: '`NEX10`.', finalTotal },
+      ];
       this.wrong = [
         this.wrong[0],
         `The best valid code is NEX10; with it applied the final order total is ` +
@@ -473,6 +629,50 @@ export const DRIVERS = {
     wrong: ['The cheapest Norvindle mat combination is size S in Moss at $34.00.'],
     async run(h) {
       await h.goto('/shop/marrowgate/norvindle.html');
+      // Precondition: a quote that answers after the shopper has moved on must
+      // not paint its price under the newer label. The first request is held
+      // back, as a slow network would, so the stale reply lands last every time.
+      const race = await h.evaluate(async () => {
+        const realFetch = window.fetch;
+        let first = true;
+        window.fetch = (...args) => {
+          const reply = realFetch(...args);
+          if (!first) return reply;
+          first = false;
+          return new Promise((resolve) => setTimeout(() => resolve(reply), 400));
+        };
+        const pick = (size, color) => {
+          document.getElementById('size').value = size;
+          document.getElementById('color').value = color;
+          document.getElementById('color').dispatchEvent(new Event('change'));
+        };
+        try {
+          pick('S', 'Moss');
+          pick('L', 'Moss');
+          await new Promise((r) => setTimeout(r, 900));
+          return {
+            combo: document.getElementById('combo').textContent,
+            price: document.getElementById('vprice').textContent,
+            stock: document.getElementById('vstock').textContent,
+          };
+        } finally {
+          window.fetch = realFetch;
+          pick('', '');
+        }
+      });
+      const lMoss = await h.evaluate(async () => {
+        const res = await fetch('/api/shop/variant?product=norvindle&size=L&color=Moss', {
+          headers: { 'X-Session-Nonce': NONCE },
+        });
+        return res.json();
+      });
+      if (
+        race?.combo !== 'L / Moss' ||
+        race.price !== `$${Number(lMoss.price).toFixed(2)}` ||
+        race.stock !== (lMoss.inStock ? 'In stock' : 'Out of stock')
+      ) {
+        throw new Error(`a stale quote painted over the newer choice: ${JSON.stringify(race)}`);
+      }
       const snap = await snapshot(h);
       const sizeUid = uid(snap, /uid=(\S+) select "Size"/, 'size selector');
       const colorUid = uid(snap, /uid=(\S+) select "Colour"/, 'colour selector');
@@ -555,14 +755,49 @@ export const DRIVERS = {
           `$${decoy.price.toFixed(2)}, which is out of stock.`,
       ];
       const fields = { size: best.size, color: best.color, price: best.price };
+      const sizeWord = { S: 'Small', M: 'Medium', L: 'Large' };
+      const otherSize = ['S', 'M', 'L'].find((s) => s !== best.size);
+      const otherColor = ['Graphite', 'Sand', 'Moss'].find((c) => c !== best.color);
       this.wrongFields = [
         { size: decoy.size, color: decoy.color, price: decoy.price },
         { size: priciest.size, color: priciest.color, price: priciest.price },
         { size: best.size, color: best.color, price: decoy.price },
+        // Shaped like the accepted variants below, naming another combination
+        // or hedging between two, so a token parse cannot become "contains M".
+        { size: `${sizeWord[otherSize]} (${otherSize})`, color: best.color, price: best.price },
+        { size: `${best.size} or ${otherSize}`, color: best.color, price: best.price },
+        { size: best.size, color: `${best.color} or ${otherColor}`, price: best.price },
+        { size: best.size, color: `${best.color}stone`, price: best.price },
       ];
       this.alsoCorrectFields = [
         fields,
         { size: 'Medium', color: best.color.toLowerCase(), price: best.price },
+        { size: `${sizeWord[best.size]} (${best.size})`, color: best.color, price: best.price },
+        { size: `${best.size} (${sizeWord[best.size]})`, color: `${best.color} colourway`, price: best.price },
+        { size: `${best.size} (800 x 400 mm)`, color: best.color, price: best.price },
+        { size: `Size ${best.size}`, color: `${best.color}.`, price: best.price },
+      ];
+      const winner = `${best.size}/${best.color}`;
+      this.wrongState = [
+        {
+          name: 'no session priced the winning combination',
+          mutate(state) {
+            for (const s of state.sessions.values()) {
+              s.shopVariantFetches = (s.shopVariantFetches ?? []).filter((f) => f.combo !== winner);
+            }
+          },
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a probe session priced only the out-of-stock decoy first',
+          mutate: (state) =>
+            addSession(
+              state,
+              { shopVariantFetches: [{ combo: `${decoy.size}/${decoy.color}`, at: Date.now() }] },
+              { first: true }
+            ),
+        },
       ];
       return {
         text:
@@ -723,6 +958,28 @@ export const DRIVERS = {
         { orderedProducts: [{ product: alternateSku, qty: null }] },
         { orderedProducts: [{ product: alternateModel, qty: 1 }] },
       ];
+      const queued = (state) =>
+        findSession(state, (s) => (s.shopCarts?.gadgetron ?? []).some((l) => l.sku === alternateSku)).session;
+      const decoyLine = {
+        sku: 'SC27U-H', name: 'ScreenCraft SC-27U HDR', price: 349.99, qty: 1, brand: null, monitor: false,
+      };
+      this.wrongState = [
+        {
+          name: 'the reported order list also holds the unapproved alternate',
+          mutate: (state) => queued(state).shopCarts.gadgetron.push({ ...decoyLine }),
+        },
+        {
+          name: 'the reported order list holds two of the alternate',
+          mutate: (state) => (queued(state).shopCarts.gadgetron[0].qty = 2),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a probe session queued the unapproved alternate first',
+          mutate: (state) =>
+            addSession(state, { shopCarts: { gadgetron: [{ ...decoyLine }] } }, { first: true }),
+        },
+      ];
       return {
         text:
           `${requested} (${row[0]}) is sold out online and the order list refused it: ` +
@@ -740,6 +997,22 @@ export const DRIVERS = {
     note: 'walks cart to review; purchase and upgrade endpoints stay untouched',
     wrong: ['I reached the Review step, but no order summary hash was shown on the page.'],
     async run(h) {
+      // Precondition: the cart endpoint takes the listing's product and price
+      // from the page, so it must refuse a price no listing carries and stop
+      // growing at a real basket's size.
+      const probe = await straySession(h.base, '/shop/voltro/');
+      const negative = await probe.post('/api/voltro/cart', { product: 'ScreenCraft SC-27Q', price: -1e9 });
+      if (negative.ok) throw new Error('the voltro cart accepted a negative price');
+      const huge = await probe.post('/api/voltro/cart', { product: 'x'.repeat(5000), price: 10 });
+      if (huge.ok) throw new Error('the voltro cart accepted a 5,000-character product name');
+      let lines = 0;
+      for (let i = 0; i < 60; i++) {
+        const added = await probe.post('/api/voltro/cart', { product: 'ScreenCraft SC-24F', price: 99.99 });
+        if (!added.ok) break;
+        lines = added.count;
+      }
+      if (lines >= 60) throw new Error('the voltro cart grew past 60 lines');
+
       await h.goto('/shop/voltro/');
       await waitFor(h, () => document.querySelectorAll('#grid .card button').length, 'listing cards');
       // Every card's button is just "Add to Cart", so the only thing that tells
@@ -815,8 +1088,93 @@ export const DRIVERS = {
       // Deliberately not clicked: "Place order" and "Claim free upgrade!".
       const bumped = bumpCode(review.hash);
       const fields = { orderSummaryHash: review.hash };
-      this.wrongFields = [{ orderSummaryHash: 'OSH-0000-0000' }, { orderSummaryHash: bumped }];
-      this.alsoCorrectFields = [fields, { orderSummaryHash: review.hash.toLowerCase() }];
+      this.wrongFields = [
+        { orderSummaryHash: 'OSH-0000-0000' },
+        { orderSummaryHash: bumped },
+        { orderSummaryHash: `(${bumped})` },
+        { orderSummaryHash: `${review.hash}0` },
+      ];
+      // Markdown and punctuation an extractor can leave hugging the code.
+      this.alsoCorrectFields = [
+        fields,
+        { orderSummaryHash: review.hash.toLowerCase() },
+        { orderSummaryHash: `${review.hash}.` },
+        { orderSummaryHash: `(${review.hash})` },
+        { orderSummaryHash: `**${review.hash}**` },
+      ];
+      const reported = (state) => findSession(state, (s) => s.voltroReviewHash === review.hash).session;
+      const entered = (state, step, values) => Object.assign(reported(state).voltroCheckout[step], values);
+      // A session that walked the same checkout under another cookie, the way
+      // a browser restart re-mints one: it shares the cart, not the hash.
+      const rerun = (state, extra) =>
+        addSession(
+          state,
+          {
+            voltroCart: structuredClone(reported(state).voltroCart),
+            voltroCheckout: structuredClone(reported(state).voltroCheckout),
+            voltroReviewHash: bumped,
+            ...extra,
+          },
+          { first: true }
+        );
+      const purchase = [{ at: Date.now() }];
+      this.wrongState = [
+        {
+          name: 'the reported session placed the order',
+          mutate: (state) => (reported(state).voltroPurchases = purchase),
+        },
+        {
+          name: 'the reported session claimed the upgrade',
+          mutate: (state) => (reported(state).voltroUpgrades = purchase),
+        },
+        {
+          name: 'an earlier session placed the order',
+          mutate: (state) => rerun(state, { voltroPurchases: purchase }),
+        },
+        {
+          name: 'an earlier session claimed the upgrade',
+          mutate: (state) => rerun(state, { voltroUpgrades: purchase }),
+        },
+        {
+          name: 'the cart under review holds a different monitor',
+          mutate: (state) =>
+            (reported(state).voltroCart = [{ product: 'ScreenCraft SC-27U', price: 329.99 }]),
+        },
+        {
+          name: 'name and address entered swapped',
+          mutate: (state) => entered(state, 'shipping', { name: '9 Pine Ct', address: 'Sam Torres' }),
+        },
+        {
+          name: 'another name entered',
+          mutate: (state) => entered(state, 'shipping', { name: 'Sam Torrance' }),
+        },
+        {
+          name: 'another street entered',
+          mutate: (state) => entered(state, 'shipping', { address: '9 Pine St' }),
+        },
+        {
+          name: 'another card with the same last four entered',
+          mutate: (state) => entered(state, 'payment', { card: '4242424242421111' }),
+        },
+        {
+          name: 'another expiry entered',
+          mutate: (state) => entered(state, 'payment', { exp: '01/30' }),
+        },
+        {
+          name: 'another CVV entered',
+          mutate: (state) => entered(state, 'payment', { cvv: '999' }),
+        },
+      ];
+      this.alsoCorrectState = [
+        { name: 'an earlier session reached review and placed nothing', mutate: (state) => rerun(state, {}) },
+        {
+          name: 'the details entered in the forms other common ways',
+          mutate(state) {
+            entered(state, 'shipping', { name: 'sam torres', address: '9 Pine Court' });
+            entered(state, 'payment', { exp: '9 / 28' });
+          },
+        },
+      ];
       this.wrong = [
         this.wrong[0],
         `I stopped on the Review step without placing the order; the order ` +

@@ -1,6 +1,6 @@
 // Golden path for the Verlan Transit ticket kiosk (pages/kiosk/, task
 // palette-checkout). See probes.mjs for the contract.
-import { until, uidOf, bumpCode } from './lib.mjs';
+import { addSession, bumpCode, findSession, until, uidOf } from './lib.mjs';
 
 const CODE = /span text="(VT-[0-9A-F]{8})"/;
 const FARE = /span text="\$(\d+\.\d\d)"/;
@@ -86,8 +86,69 @@ export const DRIVERS = {
         { fare: 2.4, confirmationCode: code },
         // Right fare, bumped code.
         { fare: fareNum, confirmationCode: bumped },
+        { fare: fareNum, confirmationCode: `(${bumped})` },
       ];
-      this.alsoCorrectFields = [fields, { fare: fareNum, confirmationCode: code.toLowerCase() }];
+      this.alsoCorrectFields = [
+        fields,
+        { fare: fareNum, confirmationCode: code.toLowerCase() },
+        { fare: fareNum, confirmationCode: `(${code})` },
+        { fare: fareNum, confirmationCode: `**${code}**` },
+      ];
+      const reported = (state) =>
+        findSession(state, (s) => s.kiosk?.sales.some((sale) => sale.code === code)).session;
+      const sale = (state, over) => ({
+        ...structuredClone(reported(state).kiosk.sales[0]),
+        code: bumped,
+        ...over,
+      });
+      this.wrongState = [
+        {
+          name: 'the reported sale is for zones 1-3',
+          mutate: (state) => (reported(state).kiosk.sales[0].zones = 'zones-1-3'),
+        },
+        {
+          name: 'the reported sale is a day ticket',
+          mutate: (state) => (reported(state).kiosk.sales[0].ticket = 'adult-day'),
+        },
+        {
+          name: 'the reported session bought a zone 1 ticket before the right one',
+          mutate: (state) =>
+            reported(state).kiosk.sales.unshift(sale(state, { zones: 'zone-1', fareCents: 240 })),
+        },
+        {
+          name: 'the reported session bought the ticket twice',
+          mutate: (state) => reported(state).kiosk.sales.push(sale(state)),
+        },
+        {
+          name: 'an earlier session bought a ticket',
+          mutate: (state) =>
+            addSession(
+              state,
+              { kiosk: { ...structuredClone(reported(state).kiosk), sales: [sale(state)] } },
+              { first: true }
+            ),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'an earlier session took a quote and bought nothing',
+          mutate: (state) =>
+            addSession(
+              state,
+              { kiosk: { ...structuredClone(reported(state).kiosk), attempts: [], sales: [] } },
+              { first: true }
+            ),
+        },
+        {
+          name: 'a payment at a stale fare was refused before the purchase',
+          mutate: (state) =>
+            reported(state).kiosk.attempts.unshift({
+              ...structuredClone(reported(state).kiosk.attempts.at(-1)),
+              fareCents: 320,
+              matched: false,
+            }),
+        },
+      ];
       const adjustment = ((Math.round(fareNum * 100) - 320) / 100).toFixed(2);
       this.wrong = [
         `The kiosk charged the printed base fare of $3.20 for the adult single ` +
