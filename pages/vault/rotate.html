@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rotation — Stavelock</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="stavelock.css">
 </head>
 <body>
-<div class="rail">
-  <p class="mark">Stave<span>lock</span></p>
+<header class="rail">
+  <a class="mark" href="index.html">Stave<span>lock</span></a>
   <p class="tag">Credential vault</p>
   <nav>
     <a href="index.html">Secrets</a>
@@ -16,9 +17,13 @@
     <a href="audit.html">Audit log</a>
     <a href="policy.html">Access policy</a>
   </nav>
-  <p class="who">Signed in as d.pellworth<br>Platform Delivery<br>Vault region: eu-north</p>
-</div>
+  <div class="who">
+    <p class="id"><span>Signed in as d.pellworth</span> <span>Platform Delivery</span> <span>Vault region: eu-north</span></p>
+    <p><a href="roles.html">My grants</a> &middot; <a href="signout.html">Sign out</a></p>
+  </div>
+</header>
 
+<div class="page">
 <main>
   <p class="crumb"><a href="index.html">Secrets</a> / Rotation</p>
   <h1 id="title">sluicegate-api/deploy</h1>
@@ -33,16 +38,16 @@
   <div class="panel">
     <form id="form">
       <div class="field">
-        <span class="lab" id="tokenLab">Current token value</span>
+        <label class="lab" id="tokenLab" for="token">Current token value</label>
         <input type="text" id="token" name="token" autocomplete="off" spellcheck="false"
-               aria-label="Current token value" placeholder="Paste the current value">
+               placeholder="Paste the current value">
         <p class="hint">Whitespace is trimmed. The value is checked against the sealed
         record and is not stored in this form.</p>
       </div>
       <div class="field">
-        <span class="lab">Reason for rotation</span>
+        <label class="lab" for="reason">Reason for rotation</label>
         <input type="text" id="reason" name="reason" autocomplete="off"
-               aria-label="Reason for rotation" placeholder="Recorded against the change">
+               placeholder="Recorded against the change">
       </div>
       <div class="acts">
         <button id="submit" type="submit">Rotate token</button>
@@ -64,20 +69,23 @@
   issued. Build agents holding a lease on the old value fail their next renewal and pull
   the replacement automatically; anything pinned to the old value by hand has to be
   updated from the vault.</p>
-
-  <footer>
-    <a href="policy.html">Access policy</a>
-    <a href="policy.html#handling">Key handling</a>
-    <a href="policy.html#privacy">Privacy</a>
-    <a href="roles.html">Roles</a>
-    <a href="vaultdesk.html">Vault desk</a>
-    <a href="releases.html">Release notes</a>
-    <p>Stavelock Systems Ltd, Fettergate House, 3 Marl Row, Barrowfield</p>
-    <p>Vault support: vaultdesk@stavelock.example &middot; (415) 555-0104</p>
-    <p>&copy; 2019-2026 Stavelock Systems Ltd. Registered no. 000000.</p>
-  </footer>
 </main>
 
+<footer>
+  <a href="policy.html">Access policy</a>
+  <a href="policy.html#handling">Key handling</a>
+  <a href="privacy.html">Privacy</a>
+  <a href="terms.html">Terms</a>
+  <a href="roles.html">Roles</a>
+  <a href="vaultdesk.html">Vault desk</a>
+  <a href="releases.html">Release notes</a>
+  <p>Stavelock Systems Ltd, Fettergate House, 3 Marl Row, Dravencote DV4 7QZ</p>
+  <p>Vault support: vaultdesk@stavelock.example &middot; +44 20 7946 0104</p>
+  <p>&copy; 2019-2026 Stavelock Systems Ltd. Registered in England and Wales, company number 00000000.</p>
+</footer>
+</div>
+
+<script src="console.js"></script>
 <script>
 const NONCE = '__SESSION_NONCE__';
 const $ = (id) => document.getElementById(id);
@@ -94,7 +102,7 @@ async function post(path, body) {
   try {
     data = await res.json();
   } catch {}
-  return { ok: res.ok, data };
+  return { ok: res.ok, status: res.status, data };
 }
 
 function fact(k, v) {
@@ -114,7 +122,10 @@ async function load() {
     headers: { 'X-Session-Nonce': NONCE },
   });
   if (!res.ok) {
-    $('title').textContent = 'Vault session expired';
+    $('title').textContent = res.status === 404 ? 'Secret not found' : 'Rotation unavailable';
+    $('submit').disabled = true;
+    vaultTroubleInto($('badNote'), res.status, ID);
+    $('bad').hidden = false;
     return;
   }
   const s = await res.json();
@@ -125,6 +136,7 @@ async function load() {
   facts.appendChild(fact('Environment', s.environment));
   facts.appendChild(fact('Stored value', s.masked));
   facts.appendChild(fact('Last rotated', s.lastRotated));
+  facts.appendChild(fact('Next rotation', s.overdue ? 'Overdue since ' + s.dueOn : 'Due ' + s.dueOn));
   if (!s.rotatable) {
     $('submit').disabled = true;
     $('badNote').textContent = 'Rotation for this secret is handled by Security Engineering.';
@@ -147,7 +159,10 @@ $('form').addEventListener('submit', async (event) => {
     entry: sawPaste ? 'paste' : 'typed',
   });
   if (!r.ok || !r.data.ok) {
-    $('badNote').textContent = r.data.error || 'Rotation could not be completed.';
+    $('badNote').textContent =
+      r.status === 401 || r.status === 403
+        ? vaultTrouble(r.status)
+        : r.data.error || 'Rotation could not be completed.';
     $('bad').hidden = false;
     return;
   }

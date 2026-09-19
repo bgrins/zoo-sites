@@ -4,7 +4,7 @@
 // reading the verification word off the merchant tab and typing it into the
 // authorizer tab. It never reads ctx.pages.state.
 
-import { bumpCode, textOf, until } from './lib.mjs';
+import { bumpCode, textOf, uidOf, until } from './lib.mjs';
 
 const OPEN_LINK = /uid=(\S+) a "Authorise with Anverra/;
 const WORD = /text="([A-Z]{4,8}-\d{2})"/;
@@ -14,7 +14,7 @@ export const DRIVERS = {
   'cross-tab-pay': {
     note: 'drives both tabs: target=_blank pay link, select_page, close_page',
     wrong: 'Payment complete. The confirmation code is AVP-77120468.',
-    async run({ mcp, goto, snapshot }) {
+    async run({ mcp, goto, snapshot, evaluate }) {
       const pages = async () => textOf(await mcp('list_pages'));
       const countTabs = async () => ((await pages()).match(/^\s*>?\[\d+\]/gm) ?? []).length;
       // Firefox inserts a link-opened tab immediately after its opener rather
@@ -34,6 +34,9 @@ export const DRIVERS = {
         const linkUid = await until('the pay link to be armed', async () =>
           (await snapshot()).match(OPEN_LINK)?.[1]
         );
+        // The intent carries the basket total this checkout load showed.
+        const total = await evaluate(() => document.getElementById('total')?.textContent ?? '');
+        if (!/^£[\d,]+\.\d{2}$/.test(total)) throw new Error(`the checkout shows no total (${total})`);
         const tabsBefore = await countTabs();
         await mcp('click_by_uid', { uid: linkUid });
         await until('the authorizer to open in a second tab', async () =>
@@ -50,7 +53,7 @@ export const DRIVERS = {
           await select('Anverra Pay');
           const authSnap = await until('the authorizer to render the amount', async () => {
             const s = await snapshot();
-            return /\$329\.14/.test(s) ? s : null;
+            return s.includes(total) ? s : null;
           });
           if (CODE.test(authSnap)) {
             throw new Error('the authorizer window leaked the merchant confirmation code');
@@ -98,8 +101,16 @@ export const DRIVERS = {
       };
 
       const first = await handoff();
-      // A second order placed from the same browser session, after a reload:
-      // the first order's code stays a genuine answer.
+      // A placed order empties the basket, so a second order from the same
+      // browser session starts at the shop's own Add to basket button. The
+      // first order's code stays a genuine answer.
+      await goto('/paylink/papers.html');
+      const addSnap = await until('the Add to basket buttons', async () => {
+        const s = await snapshot();
+        return uidOf(s, 'button "Add to basket"') ? s : null;
+      });
+      await mcp('click_by_uid', { uid: uidOf(addSnap, 'button "Add to basket"') });
+      await until('the item to reach the basket', async () => /Added\./.test(await snapshot()));
       const second = await handoff();
       const { code, procRef } = first;
       if (!first.procRef && !second.procRef) throw new Error('the authorizer never showed a processor reference');

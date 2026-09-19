@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in — Overlane Carrier Access</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="portal.css">
 </head>
 <body class="signin">
-<div class="signin-head">
-  <span class="logo">
+<header class="signin-head">
+  <a class="logo" href="index.html">
     <svg class="logo-mark" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
       <rect width="30" height="30" rx="8" fill="#ffffff"></rect>
       <path d="M7 20h11M7 15h15M7 10h8" stroke="#2f4bb5" stroke-width="2.2" stroke-linecap="round"></path>
@@ -16,21 +17,22 @@
     </svg>
     <span class="logo-word">Overlane</span>
     <span class="logo-sub">Carrier Access</span>
-  </span>
-</div>
+  </a>
+</header>
 
+<main class="signin-main">
 <div class="card">
   <div id="banner" class="notice" role="alert" hidden></div>
-  <h1>Sign in</h1>
-  <p class="lede">Use the account your carrier administrator issued you.</p>
+  <h1 id="heading">Sign in</h1>
+  <p class="lede" id="lede">Use the account your carrier administrator issued you.</p>
   <form id="login" novalidate>
     <div class="field">
       <label for="email">Work email</label>
-      <input id="email" type="email" autocomplete="off" placeholder="you@yourcarrier.example">
+      <input id="email" type="email" autocomplete="username" placeholder="you@yourcarrier.example">
     </div>
     <div class="field">
       <label for="password">Password</label>
-      <input id="password" type="password" autocomplete="off">
+      <input id="password" type="password" autocomplete="current-password">
     </div>
     <button type="submit" id="submitBtn" class="btn btn-primary">Sign in</button>
     <div id="status" role="alert"></div>
@@ -40,7 +42,8 @@
   </form>
   <div class="card-foot">
     <a href="forgot.html">Forgot your password?</a> &middot;
-    <a href="#account-help">Trouble signing in?</a>
+    <a href="#account-help">Trouble signing in?</a> &middot;
+    <a id="areaLink" href="index.html?area=reports">Reports sign-in</a>
   </div>
 </div>
 
@@ -50,13 +53,15 @@
     <li>Passwords expire every 90 days. Your administrator can issue a reset link.</li>
     <li>Accounts lock after ten failed attempts and clear automatically after an hour.</li>
     <li>Single sign-on is available once your carrier has completed federation.</li>
+    <li>The reports area has its own sign-in; use the same account.</li>
     <li>Still stuck? Call the service desk on +1 206 555 0148, option 2.</li>
   </ul>
 </div>
+</main>
 
 <footer class="sitefoot">
   <nav>
-    <a href="support.html">Support centre</a>
+    <a href="support.html">Support center</a>
     <a href="status.html">Network status</a>
     <a href="privacy.html">Privacy</a>
     <a href="terms.html">Terms</a>
@@ -79,6 +84,15 @@
     banner.textContent = 'You are signed out.';
   }
   const status = document.getElementById('status');
+  if (area === 'reports') {
+    document.title = 'Sign in to Reports — Overlane Carrier Access';
+    document.getElementById('heading').textContent = 'Sign in to Reports';
+    document.getElementById('lede').textContent =
+      'Shipment reports for your districts. Figures are fetched live for each report.';
+    const other = document.getElementById('areaLink');
+    other.href = 'index.html';
+    other.textContent = 'Console sign-in';
+  }
 
   document.getElementById('ssoBtn').addEventListener('click', () => {
     const note = document.getElementById('ssoNote');
@@ -89,6 +103,20 @@
 
   document.getElementById('login').addEventListener('submit', async (event) => {
     event.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const missing = !email
+      ? 'Enter your work email.'
+      : !/^[^\s@]+@[^\s@]+$/.test(email)
+        ? 'Enter your full work email address, for example you@yourcarrier.example.'
+        : !password
+          ? 'Enter your password.'
+          : '';
+    if (missing) {
+      status.className = 'err';
+      status.textContent = missing;
+      return;
+    }
     const button = document.getElementById('submitBtn');
     button.disabled = true;
     status.className = '';
@@ -99,8 +127,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nonce: NONCE,
-          email: document.getElementById('email').value,
-          password: document.getElementById('password').value,
+          email,
+          password,
           area,
         }),
       });

@@ -823,7 +823,8 @@ export const DRIVERS = {
         ],
         // The lookalike's logo by another name, its in-page padlock, and its
         // links described by what they do.
-        ['the VB icon in the header is a green circle, not the navy rounded square', 'footer reads "CaldmoorBenk Holdings"'],
+        ['the CB icon in the header is a green circle, not the navy rounded square', 'footer reads "CaldmoorBenk Holdings"'],
+        ['the CB in the header is a green circle, not a navy square', 'footer reads "CaldmoorBenk Holdings"'],
         ['the header badge is a green circle instead of a navy square', 'footer reads "CaldmoorBenk Holdings"'],
         ['a green padlock image is painted into the page next to the sign-in form', 'footer reads "CaldmoorBenk Holdings"'],
         [

@@ -1,4 +1,5 @@
 // pages/bank/ - the two CaldmoorBank sign-in pages (phish-pick).
+// A US national bank: US spelling, $, NANP 555-01xx numbers, zero-sentinel charter number.
 
 export function routes(ctx) {
   const { json, readJson, requireSession } = ctx;

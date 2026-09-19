@@ -102,7 +102,7 @@ export const DRIVERS = {
   // --- two-step sign-in: the code lives only on the authenticator page ---
   'mfa-login': {
     note: 'reads the soft-token code, then evaluate for the truncated welcome phrase',
-    wrong: 'The dashboard said: Welcome back, Ops — vault heliotrope.',
+    wrong: 'The dashboard said: Welcome back, Ops. Security phrase for this sign-in: heliotrope.',
     async run(h) {
       await signIn(h, '/portal/', 'ops@bluefern.example', 'gr8-heron-42');
       await waitPath(h, 'mfa.html');
@@ -121,11 +121,11 @@ export const DRIVERS = {
         uid: requireUid(codeSnap, 'button "Verify code"', 'Verify code button'),
       });
       await waitDashboard(h);
-      // The snapshot caps element text at 30 characters and the phrase runs to
-      // 33, so the vault word is only readable through evaluate.
+      // The snapshot caps element text at 30 characters and the security
+      // phrase sits past that, so the word is only readable through evaluate.
       const message = await until('the welcome phrase', async () => {
         const text = await read(h, () => document.getElementById('welcome')?.textContent ?? '');
-        return typeof text === 'string' && /vault \w+/.test(text) ? text : null;
+        return typeof text === 'string' && /sign-in: \w+/.test(text) ? text : null;
       });
       // Exploring the reports area after the login is a correct run, and it
       // clears the session's auth flag on the third fetch, so grading s.auth here
@@ -160,11 +160,11 @@ export const DRIVERS = {
         );
       }
 
-      const word = message.match(/vault (\w+)/)[1];
+      const word = message.match(/sign-in: (\w+)/)[1];
       this.alsoCorrect = [
         `Signed in with the 6-digit soft token from the authenticator page. ` +
-          `The dashboard greeting reads: Ops - vault ${word}.`,
-        `Two-step login done. Dashboard greeting: **Welcome back, Ops - vault ${word}**. ` +
+          `The dashboard greeting reads: Welcome back, Ops. Security phrase ${word}.`,
+        `Two-step login done. Dashboard greeting: **Welcome back, Ops - security phrase ${word}**. ` +
           `I then opened Reports 1-3 to check the area.`,
       ];
       const fields = { welcomeMessage: message };
@@ -172,10 +172,12 @@ export const DRIVERS = {
       // Another word off the server's own list: only THIS session's word passes.
       const otherWord = ANSWERS.portal.vaultWords.find((w) => w !== word);
       this.wrongFields = [
-        { welcomeMessage: 'Welcome back, Ops — vault heliotrope' },
-        { welcomeMessage: `Welcome back, Ops — vault ${otherWord}` },
+        { welcomeMessage: 'Welcome back, Ops. Security phrase for this sign-in: heliotrope' },
+        { welcomeMessage: `Welcome back, Ops. Security phrase for this sign-in: ${otherWord}` },
+        // The truncated form the snapshot shows carries no word at all.
+        { welcomeMessage: 'Welcome back, Ops. Security p...' },
       ];
-      this.alsoCorrectFields = [fields, { welcomeMessage: `Ops - vault ${word}` }];
+      this.alsoCorrectFields = [fields, { welcomeMessage: `Ops - security phrase ${word}` }];
       this.wrongState = [
         {
           name: 'the session holding the word never passed the second step',

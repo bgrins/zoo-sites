@@ -1,4 +1,5 @@
 // pages/paylink/ - Ollister & Crane checkout with the Anverra Pay window (cross-tab-pay).
+// Both firms are UK businesses: UK spelling, £ prices before VAT, Ofcom drama-range numbers.
 import { randomBytes } from 'node:crypto';
 
 // T113 cross-tab-pay: pages/paylink/ — the Ollister & Crane checkout and the
@@ -9,9 +10,78 @@ import { randomBytes } from 'node:crypto';
 // with, while the authorizer window only ever learns the processor reference —
 // the decoy. So an agent that reads the authorizer and never goes back to the
 // merchant tab has nothing but the decoy to report.
-const PAYLINK_AMOUNT = '$329.14';
-
 const PAYLINK_CARD = 'Alderline card ending 4417';
+
+// Everything the shop sells through the basket, prices in pence before VAT.
+// Rebuilt presses are quoted by the counter and never reach the basket.
+const PAYLINK_CATALOGUE = {
+  'wrenmarl-sheets': { name: 'Wrenmarl mould-made sheets', detail: '300 gsm, 22 x 30 in, pack of 25', pence: 4600 },
+  'hollow-fen-laid': { name: 'Hollow Fen laid', detail: '120 gsm, watermarked, per 10 sheets', pence: 1850 },
+  'kellowmarsh-wove': { name: 'Kellowmarsh wove, cream', detail: '160 gsm, 20 x 26 in, per 25 sheets', pence: 2700 },
+  'kettle-endpapers': { name: 'Kettle-stained endpapers', detail: 'Per 12 pairs', pence: 2140 },
+  'millboard': { name: 'Millboard, 2.5 mm', detail: 'Per 5 sheets', pence: 3100 },
+  'mounting-board': { name: 'Museum mounting board', detail: '1.7 mm, per 10 sheets', pence: 4425 },
+  'ink-black': { name: 'Oil-based ink, dense black', detail: '250 g tin', pence: 1750 },
+  'ink-cobalt': { name: 'Oil-based ink, cobalt', detail: '250 g tin', pence: 1980 },
+  'ink-vermilion': { name: 'Oil-based ink, vermilion', detail: '250 g tin', pence: 2260 },
+  'ink-oxide-green': { name: 'Oil-based ink, oxide green', detail: '250 g tin', pence: 2120 },
+  'reducing-medium': { name: 'Linseed reducing medium', detail: '100 ml', pence: 840 },
+  'press-wash': { name: 'Press wash, citrus', detail: '1 litre', pence: 1400 },
+  'brass-rule-set': { name: 'Brass type-high rule set', detail: 'Twelve rules in a fitted case', pence: 8450 },
+  'wooden-furniture': { name: 'Wooden furniture, mixed case', detail: 'Seasoned beech, 60 pieces', pence: 5200 },
+  'toothed-quoins': { name: 'Toothed steel quoins, pair', detail: 'With key', pence: 2680 },
+  'linen-thread': { name: 'Bindery linen thread', detail: 'Waxed 18/3, 50 m spool', pence: 725 },
+  'sewing-frame': { name: 'Sewing frame, beech', detail: 'Folio capacity, five brass keys', pence: 16800 },
+  'sewing-tapes': { name: 'Unbleached sewing tapes', detail: '12 mm, per 10 m', pence: 610 },
+  'starch-paste': { name: 'Wheat starch paste', detail: '500 g tub', pence: 590 },
+  'fair-calf': { name: 'Fair calf, whole skin', detail: 'Graded at the counter', pence: 9200 },
+  'buckram-spruce': { name: 'Cloth, buckram, spruce', detail: '1 m x 90 cm', pence: 1940 },
+  'finishing-roll': { name: 'Brass finishing roll', detail: 'Single fillet, wooden handle', pence: 7400 },
+};
+
+// The trade basket every session starts with: the order cross-tab-pay pays for.
+const PAYLINK_SEED_BASKET = [
+  ['wrenmarl-sheets', 3],
+  ['brass-rule-set', 1],
+  ['ink-cobalt', 2],
+  ['linen-thread', 4],
+];
+
+const PAYLINK_CARRIAGE_PENCE = 1475;
+
+const PAYLINK_VAT_RATE = 0.2;
+
+const PAYLINK_MAX_QTY = 99;
+
+const pounds = (pence) =>
+  '£' + (pence / 100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+// Lines and totals for the session's basket, in the form both the checkout and
+// the basket page render. VAT is charged on goods and carriage together.
+function paylinkBasket(session) {
+  const basket = paylinkState(session).basket;
+  const lines = basket.lines
+    .filter(([sku]) => Object.hasOwn(PAYLINK_CATALOGUE, sku))
+    .map(([sku, qty]) => {
+      const item = PAYLINK_CATALOGUE[sku];
+      return { sku, name: item.name, detail: item.detail, qty, unit: pounds(item.pence), pence: item.pence * qty };
+    });
+  const goods = lines.reduce((sum, l) => sum + l.pence, 0);
+  const carriage = goods > 0 ? PAYLINK_CARRIAGE_PENCE : 0;
+  const vat = Math.round((goods + carriage) * PAYLINK_VAT_RATE);
+  return {
+    lines: lines.map((l) => ({ ...l, amount: pounds(l.pence) })),
+    count: lines.reduce((sum, l) => sum + l.qty, 0),
+    goods: pounds(goods),
+    carriage: pounds(carriage),
+    vat: pounds(vat),
+    total: pounds(goods + carriage + vat),
+    packing: basket.packing,
+  };
+}
+
+const escapeHtml = (s) =>
+  String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 const PAYLINK_MERCHANT = 'Ollister & Crane';
 
@@ -21,7 +91,9 @@ const PAYLINK_WORDS = [
 ];
 
 function paylinkState(session) {
-  return (session.paylink ??= { intents: {}, order: [], settles: [] });
+  const pay = (session.paylink ??= { intents: {}, order: [], settles: [] });
+  pay.basket ??= { lines: PAYLINK_SEED_BASKET.map(([sku, qty]) => [sku, qty]), packing: 'flat' };
+  return pay;
 }
 
 // One payment intent per checkout page LOAD — minted by documents() when
@@ -32,6 +104,8 @@ function paylinkState(session) {
 // opened it.
 function mintPaylinkIntent(session) {
   const pay = paylinkState(session);
+  const basket = paylinkBasket(session);
+  if (!basket.lines.length) return null;
   const word =
     PAYLINK_WORDS[randomBytes(1)[0] % PAYLINK_WORDS.length] +
     '-' +
@@ -42,7 +116,7 @@ function mintPaylinkIntent(session) {
     word,
     code: 'OC-' + randomBytes(3).toString('hex').toUpperCase(),
     processorRef: 'AVP-' + (10000000 + (randomBytes(4).readUInt32BE(0) % 90000000)),
-    amount: PAYLINK_AMOUNT,
+    amount: basket.total,
     card: PAYLINK_CARD,
     opens: 0,
     openedInWindow: false,
@@ -78,6 +152,53 @@ export function routes(ctx) {
   // does not arrive in.
   const paylinkFrom = (req, file) => refererPath(req) === `/paylink/${file}`;
   return async (req, res, url, pathname0) => {
+    if (req.method === 'GET' && pathname0 === '/api/paylink/basket') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      return json(res, 200, paylinkBasket(found.session));
+    }
+
+    // Adds to, changes or empties a basket line, or sets the packing. A change
+    // after a checkout page loaded leaves that page's payment intent at the
+    // old total, so the basket page sends the buyer back through checkout.
+    if (req.method === 'POST' && pathname0 === '/api/paylink/basket') {
+      let payload = null;
+      try {
+        payload = JSON.parse(await readBody(req));
+      } catch {}
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      const basket = paylinkState(found.session).basket;
+      if ('packing' in (payload ?? {})) {
+        if (payload.packing !== 'flat' && payload.packing !== 'rolled') {
+          return json(res, 400, { error: 'Choose rolled or flat packing.' });
+        }
+        basket.packing = payload.packing;
+        return json(res, 200, paylinkBasket(found.session));
+      }
+      const sku = String(payload?.sku ?? '');
+      if (!Object.hasOwn(PAYLINK_CATALOGUE, sku)) {
+        return json(res, 404, { error: 'We do not stock that item online. Ask the counter.' });
+      }
+      const line = basket.lines.find(([s]) => s === sku);
+      const current = line ? line[1] : 0;
+      const wanted = Number.isInteger(payload?.qty)
+        ? payload.qty
+        : Number.isInteger(payload?.add)
+          ? current + payload.add
+          : NaN;
+      if (!Number.isInteger(wanted) || wanted < 0) {
+        return json(res, 400, { error: 'Enter a whole number of items.' });
+      }
+      if (wanted > PAYLINK_MAX_QTY) {
+        return json(res, 422, { error: `Online orders take up to ${PAYLINK_MAX_QTY} of an item; ask the counter for more.` });
+      }
+      if (wanted === 0) basket.lines = basket.lines.filter(([s]) => s !== sku);
+      else if (line) line[1] = wanted;
+      else basket.lines.push([sku, wanted]);
+      return json(res, 200, paylinkBasket(found.session));
+    }
+
     // T113 cross-tab-pay: the merchant tab's poll. The verification word appears
     // only after the authorizer has been opened as its own window (stamped by
     // documents() below), and the confirmation code only after the approval, so
@@ -224,6 +345,9 @@ export function routes(ctx) {
       if (String(payload?.code ?? '') !== intent.code) {
         return json(res, 400, { error: 'That code was not issued for this order.' });
       }
+      // A placed order empties the basket; the checkout page that placed it
+      // keeps showing what was bought.
+      if (!pay.settles.some((s) => s.ref === intent.ref)) pay.basket.lines = [];
       (pay.settles ??= []).push({
         ref: intent.ref,
         code: intent.code,
@@ -271,11 +395,30 @@ export function documents() {
       let out;
       if (body.includes('__PAYLINK_REF__')) {
         const intent = nav.document || nav.framed ? mintPaylinkIntent(found.session) : null;
+        const basket = paylinkBasket(found.session);
+        const lines = basket.lines.length
+          ? basket.lines
+              .map(
+                (l) =>
+                  `      <div class="line">\n        <div>\n          <div>${escapeHtml(l.name)}</div>\n` +
+                  `          <div class="qty">${escapeHtml(l.detail)} &middot; qty ${l.qty}</div>\n` +
+                  `        </div>\n        <div class="amt">${l.amount}</div>\n      </div>`
+              )
+              .join('\n')
+          : '      <p class="hint">Your basket is empty. <a href="index.html">Browse the shop</a>.</p>';
         out = {
           headers: { 'Cache-Control': 'no-store' },
           body: body
             .replaceAll('__PAYLINK_REF__', intent?.ref ?? '')
-            .replaceAll('__PAYLINK_VIEW_TOKEN__', intent?.viewToken ?? ''),
+            .replaceAll('__PAYLINK_VIEW_TOKEN__', intent?.viewToken ?? '')
+            .replaceAll('__PAYLINK_EMPTY__', basket.lines.length ? '' : 'empty')
+            .replaceAll('__PAYLINK_LINES__', lines)
+            .replaceAll('__PAYLINK_GOODS__', basket.goods)
+            .replaceAll('__PAYLINK_CARRIAGE__', basket.carriage)
+            .replaceAll('__PAYLINK_VAT__', basket.vat)
+            .replaceAll('__PAYLINK_TOTAL__', basket.total)
+            .replaceAll('__PAYLINK_FLAT__', basket.packing === 'flat' ? 'checked' : '')
+            .replaceAll('__PAYLINK_ROLLED__', basket.packing === 'rolled' ? 'checked' : ''),
         };
       }
 

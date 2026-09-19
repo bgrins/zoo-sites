@@ -4,25 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Inks — Ollister &amp; Crane</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="ollister.css">
 </head>
 <body>
-<div class="masthead">
-  <p class="wordmark">Ollister <span>&amp;</span> Crane</p>
+<header class="masthead">
+  <a class="wordmark" href="index.html">Ollister <span>&amp;</span> Crane</a>
   <p class="estd">Letterpress and bindery supply since 1979</p>
-  <nav class="shopnav">
+  <nav class="shopnav" aria-label="Shop">
     <a href="papers.html">Papers</a>
     <a href="inks.html">Inks</a>
     <a href="presses.html">Presses</a>
     <a href="bindery.html">Bindery</a>
     <a href="trade.html">Trade accounts</a>
-    <a href="checkout.html">Basket</a>
+    <a href="basket.html">Basket <span class="count" id="basketCount"></span></a>
   </nav>
-</div>
+</header>
 
 <main>
   <h1>Oil-based letterpress inks</h1>
-  <p class="crumb">Shop / Inks</p>
+  <p class="crumb"><a href="index.html">Shop</a> / Inks</p>
 
   <div class="plate">
     <p>Ground for letterpress, stiff enough to hold a fine serif without filling in.
@@ -35,22 +36,26 @@
     <div class="good">
       <h3>Oil-based ink, dense black</h3>
       <p>Carbon black in a linseed vehicle. 250 g tin.</p>
-      <p class="price">$17.50</p>
+      <p class="price">£17.50</p>
+      <p class="addline"><button type="button" class="add" data-sku="ink-black">Add to basket</button> <span class="addnote" role="status"></span></p>
     </div>
     <div class="good">
       <h3>Oil-based ink, cobalt</h3>
       <p>Litho-grade pigment in a 250 g tin.</p>
-      <p class="price">$19.80</p>
+      <p class="price">£19.80</p>
+      <p class="addline"><button type="button" class="add" data-sku="ink-cobalt">Add to basket</button> <span class="addnote" role="status"></span></p>
     </div>
     <div class="good">
       <h3>Oil-based ink, vermilion</h3>
       <p>Warm red, opaque on dark stock. 250 g tin.</p>
-      <p class="price">$22.60</p>
+      <p class="price">£22.60</p>
+      <p class="addline"><button type="button" class="add" data-sku="ink-vermilion">Add to basket</button> <span class="addnote" role="status"></span></p>
     </div>
     <div class="good">
       <h3>Oil-based ink, oxide green</h3>
       <p>Muted bookplate green. 250 g tin.</p>
-      <p class="price">$21.20</p>
+      <p class="price">£21.20</p>
+      <p class="addline"><button type="button" class="add" data-sku="ink-oxide-green">Add to basket</button> <span class="addnote" role="status"></span></p>
     </div>
   </div>
 
@@ -59,12 +64,14 @@
     <div class="good">
       <h3>Linseed reducing medium</h3>
       <p>Slackens a stiff tin without greying it. 100 ml.</p>
-      <p class="price">$8.40</p>
+      <p class="price">£8.40</p>
+      <p class="addline"><button type="button" class="add" data-sku="reducing-medium">Add to basket</button> <span class="addnote" role="status"></span></p>
     </div>
     <div class="good">
       <h3>Press wash, citrus</h3>
       <p>Low-odour wash-up for rollers and stone. 1 litre.</p>
-      <p class="price">$14.00</p>
+      <p class="price">£14.00</p>
+      <p class="addline"><button type="button" class="add" data-sku="press-wash">Add to basket</button> <span class="addnote" role="status"></span></p>
     </div>
   </div>
 
@@ -79,11 +86,15 @@
 <footer>
   <a href="policies.html#shipping">Shipping</a>
   <a href="policies.html#returns">Returns</a>
-  <a href="policies.html#privacy">Privacy</a>
-  <a href="policies.html">Trade terms</a>
-  <p class="addr">Ollister &amp; Crane Ltd, Tolbridge Yard, 14 Gullet Lane, Ravensmoor</p>
-  <p>Counter enquiries: counter@ollistercrane.example &middot; (617) 555-0120</p>
-  <p>&copy; 1979-2026 Ollister &amp; Crane Ltd. Registered in the county of Ravensmoor, no. 000000.</p>
+  <a href="privacy.html">Privacy</a>
+  <a href="policies.html">Terms of sale</a>
+  <p class="addr">Ollister &amp; Crane Ltd, Tolbridge Yard, 14 Gullet Lane, Kellowmarsh KX4 9TZ</p>
+  <p>Counter enquiries: counter@ollistercrane.example &middot; 0113 496 0120</p>
+  <p>&copy; 1979-2026 Ollister &amp; Crane Ltd. Registered in England and Wales, company number 00000000. VAT registration 000 0000 00.</p>
 </footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+</script>
+<script src="shop.js"></script>
 </body>
 </html>

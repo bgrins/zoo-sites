@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Report 1 — Overlane Carrier Access</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../portal.css">
 </head>
 <body>
@@ -20,11 +21,12 @@
   <div class="account">
     <span>Reporting desk</span>
     <span class="avatar">RD</span>
+    <button type="button" id="logoutBtn" class="btn btn-quiet" hidden>Log out</button>
   </div>
 </header>
 <div class="shell">
   <nav class="side">
-    <div class="side-title">Series 26-Q3</div>
+    <div class="side-title">Series 26-Q2</div>
     <a href="1.html" aria-current="page">Report 1</a>
     <a href="2.html">Report 2</a>
     <a href="3.html">Report 3</a>
@@ -34,9 +36,9 @@
     between views.</div>
   </nav>
   <main class="main">
-    <div class="crumb">Reports / Series 26-Q3 / Report 1</div>
+    <div class="crumb">Reports / Series 26-Q2 / Report 1</div>
     <h1>Report 1</h1>
-    <p class="sub">Outbound volume for the reporting window ending 30 September.</p>
+    <p class="sub">Outbound volume for the reporting window ending 30 June.</p>
     <div id="status" role="status">Loading report…</div>
     <div id="report" hidden>
       <div class="panel">
@@ -56,13 +58,15 @@
     </div>
     <div id="expired" class="notice" role="alert" hidden>
       <span id="expiredMsg"></span>
-      <a href="/portal/?area=reports&amp;expired=1">Log in again</a>
+      <a href="../index.html?area=reports&amp;expired=1">Log in again</a>
     </div>
   </main>
 </div>
 <footer class="appfoot">
   Overlane Logistics Group &middot; report series are retained for six quarters &middot;
-  <a href="../support.html">Support centre</a> &middot;
+  <a href="../support.html">Support center</a> &middot;
+  <a href="../privacy.html">Privacy</a> &middot;
+  <a href="../terms.html">Terms</a> &middot;
   corrections go to reporting@overlane.example
 </footer>
 <script>
@@ -75,6 +79,11 @@
       const res = await fetch('/api/portal/report?n=' + N, {
         headers: { 'X-Session-Nonce': NONCE },
       });
+      if (res.status !== 401 && res.status !== 403 && !res.ok) {
+        status.textContent =
+          'The report service did not answer (HTTP ' + res.status + '). Reload the page to try again.';
+        return;
+      }
       const body = await res.json();
       status.textContent = '';
       if (!res.ok) {
@@ -88,10 +97,31 @@
       document.getElementById('label').textContent = body.label;
       document.getElementById('total').textContent = body.total;
       document.getElementById('report').hidden = false;
+      document.getElementById('logoutBtn').hidden = false;
     } catch {
       status.textContent = 'Network error — reload the page.';
     }
   })();
+
+  document.getElementById('logoutBtn').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      const res = await fetch('/api/portal/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        button.disabled = false;
+        return;
+      }
+      location.href = '../' + (body.next ?? 'index.html?signedout=1');
+    } catch {
+      button.disabled = false;
+    }
+  });
 </script>
 </body>
 </html>

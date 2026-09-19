@@ -1,4 +1,5 @@
 // pages/vault/ - Stavelock credential vault (token-rotate).
+// A UK company: UK spelling, 020 7946 0xxx numbers, UK time.
 import { randomBytes } from 'node:crypto';
 
 // pages/vault/ — Stavelock, a team credential vault (token-rotate). Every secret's
@@ -15,6 +16,22 @@ const VAULT_ROTATED_ON = '27 July 2026';
 
 const VAULT_AUDIT_DAY = '27 Jul';
 
+// The console's "today", which the rotation-due list is worked out against.
+const VAULT_TODAY = '2026-07-27';
+
+const VAULT_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December'];
+
+// '2026-02-14' plus a policy's days, written the way the console writes dates.
+function vaultDue(iso, days) {
+  const at = new Date(iso + 'T00:00:00Z');
+  at.setUTCDate(at.getUTCDate() + days);
+  return {
+    iso: at.toISOString().slice(0, 10),
+    text: `${at.getUTCDate()} ${VAULT_MONTHS[at.getUTCMonth()]} ${at.getUTCFullYear()}`,
+  };
+}
+
 const VAULT_SECRETS = [
   {
     id: 'sluicegate-deploy',
@@ -25,6 +42,8 @@ const VAULT_SECRETS = [
     owner: 'Platform Delivery',
     issued: '14 February 2026',
     lastRotated: '14 February 2026',
+    rotatedIso: '2026-02-14',
+    policyDays: 90,
     policy: 'Rotate every 90 days',
     fingerprint: 'a4:1c:9e:33:07:bd',
     copyable: true,
@@ -39,6 +58,8 @@ const VAULT_SECRETS = [
     owner: 'Platform Delivery',
     issued: '03 January 2026',
     lastRotated: '19 June 2026',
+    rotatedIso: '2026-06-19',
+    policyDays: 180,
     policy: 'Rotate every 180 days',
     fingerprint: '7c:20:b8:41:ee:09',
     copyable: false,
@@ -53,6 +74,8 @@ const VAULT_SECRETS = [
     owner: 'Edge Platform',
     issued: '22 November 2025',
     lastRotated: '11 May 2026',
+    rotatedIso: '2026-05-11',
+    policyDays: 180,
     policy: 'Rotate every 180 days',
     fingerprint: 'd1:6f:34:aa:52:97',
     copyable: false,
@@ -67,6 +90,8 @@ const VAULT_SECRETS = [
     owner: 'Payments',
     issued: '08 April 2026',
     lastRotated: '08 April 2026',
+    rotatedIso: '2026-04-08',
+    policyDays: 90,
     policy: 'Rotate every 90 days',
     fingerprint: '2b:95:c7:18:6d:40',
     copyable: false,
@@ -81,6 +106,8 @@ const VAULT_SECRETS = [
     owner: 'Security Engineering',
     issued: '30 September 2025',
     lastRotated: '02 March 2026',
+    rotatedIso: '2026-03-02',
+    policyDays: 365,
     policy: 'Rotate every 365 days',
     fingerprint: '5e:83:0c:79:b1:2f',
     copyable: false,
@@ -121,7 +148,15 @@ function vaultState(session) {
     copyFail: 0,
     copyAt: 0,
     rejected: 0,
+    signedOut: false,
   });
+}
+
+// Where a secret stands against its rotation cadence for this session.
+function vaultCadence(vault, secret) {
+  const rotated = !!vault.rotated[secret.id];
+  const due = vaultDue(rotated ? VAULT_TODAY : secret.rotatedIso, secret.policyDays);
+  return { dueOn: due.text, overdue: due.iso < VAULT_TODAY };
 }
 
 export function routes(ctx) {
@@ -130,7 +165,27 @@ export function routes(ctx) {
   // forbidden header name for fetch()/XHR but `curl -H` sets it freely, so this is
   // route telemetry for `detail`, never a pass condition.
   const vaultFromPage = fromPage('/vault/');
+  // Signing out of the console holds every vault route until the session signs
+  // back in through the SSO button on the signed-out page.
+  const signedOut = (res, vault) => {
+    if (!vault.signedOut) return false;
+    json(res, 401, { error: 'signed out' });
+    return true;
+  };
   return async (req, res, url, pathname0) => {
+    if (req.method === 'POST' && (pathname0 === '/api/vault/signout' || pathname0 === '/api/vault/signin')) {
+      let payload;
+      try {
+        payload = JSON.parse((await readBody(req)) || '{}');
+      } catch {
+        return json(res, 400, { error: 'Malformed request body.' });
+      }
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      vaultState(found.session).signedOut = pathname0 === '/api/vault/signout';
+      return json(res, 200, { ok: true });
+    }
+
     // Stavelock vault (token-rotate). The secret list and each secret's masked form
     // are the only representations of a value the console ever renders; /copy is the
     // one route that returns a value in full, and it exists so the Copy button can
@@ -143,6 +198,7 @@ export function routes(ctx) {
       const found = requireSession(req, res);
       if (!found) return;
       const vault = vaultState(found.session);
+      if (signedOut(res, vault)) return;
       return json(res, 200, {
         team: 'Platform Delivery',
         secrets: VAULT_SECRETS.map((s) => ({
@@ -151,6 +207,8 @@ export function routes(ctx) {
           environment: s.environment,
           purpose: s.purpose,
           lastRotated: vault.rotated[s.id] ? VAULT_ROTATED_ON : s.lastRotated,
+          rotatable: s.rotatable,
+          ...vaultCadence(vault, s),
         })),
       });
     }
@@ -159,8 +217,9 @@ export function routes(ctx) {
       const found = requireSession(req, res);
       if (!found) return;
       const secret = VAULT_SECRETS.find((s) => s.id === url.searchParams.get('id'));
-      if (!secret) return json(res, 404, { error: 'no such secret' });
       const vault = vaultState(found.session);
+      if (signedOut(res, vault)) return;
+      if (!secret) return json(res, 404, { error: 'no such secret' });
       const rotation = vault.rotated[secret.id] ?? null;
       return json(res, 200, {
         id: secret.id,
@@ -177,6 +236,7 @@ export function routes(ctx) {
         rotatable: secret.rotatable,
         masked: VAULT_MASK(vault.tokens[secret.id]),
         receipt: rotation ? rotation.receipt : null,
+        ...vaultCadence(vault, secret),
       });
     }
 
@@ -191,6 +251,7 @@ export function routes(ctx) {
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
       const secret = VAULT_SECRETS.find((s) => s.id === payload?.id);
+      if (signedOut(res, vaultState(found.session))) return;
       if (!secret) return json(res, 404, { error: 'no such secret' });
       if (!secret.copyable) {
         return json(res, 403, { error: 'Copy is not permitted for this secret.' });
@@ -236,8 +297,9 @@ export function routes(ctx) {
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
       const secret = VAULT_SECRETS.find((s) => s.id === payload?.id);
-      if (!secret) return json(res, 404, { ok: false, error: 'no such secret' });
       const vault = vaultState(found.session);
+      if (signedOut(res, vault)) return;
+      if (!secret) return json(res, 404, { ok: false, error: 'no such secret' });
       if (!secret.rotatable) {
         return json(res, 403, {
           ok: false,
@@ -287,6 +349,7 @@ export function routes(ctx) {
       const found = requireSession(req, res);
       if (!found) return;
       const vault = vaultState(found.session);
+      if (signedOut(res, vault)) return;
       const entries = [];
       for (const record of [...vault.receipts].reverse()) {
         const secret = VAULT_SECRETS.find((s) => s.id === record.id);

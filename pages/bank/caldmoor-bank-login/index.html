@@ -4,17 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CaldmoorBank — Secure Sign-in</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="bank.css">
 </head>
 <body>
 <header class="top">
   <div class="bar">
+    <a class="brand" href="index.html" aria-label="CaldmoorBank home">
     <svg width="34" height="34" viewBox="0 0 34 34" role="img" aria-label="CaldmoorBank logo">
       <circle cx="17" cy="17" r="17" fill="#2fb457"></circle>
-      <text x="17" y="23" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">VB</text>
+      <text x="17" y="23" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">CB</text>
     </svg>
     <span class="wordmark">CaldmoorBank</span>
-    <nav>
+    </a>
+    <nav aria-label="Main">
       <a href="index.html">Personal</a>
       <a href="index.html">Business</a>
       <a href="index.html">Wealth</a>
@@ -22,7 +25,7 @@
     </nav>
   </div>
 </header>
-<div class="strip"><div>Branches and contact centre open 7:00 to 20:00, Monday to Saturday.</div></div>
+<div class="strip"><div>Branches and the contact center are open 7 a.m. to 8 p.m., Monday through Saturday.</div></div>
 
 <main>
   <div class="col-a">
@@ -40,7 +43,7 @@
         </svg>
         <span>Verified Secure Connection — SiteTrust Seal, 256-bit checked</span>
       </div>
-      <h2>Sign in to Online Banking</h2>
+      <h1>Sign in to Online Banking</h1>
       <p style="margin:4px 0 0;font-size:13px;color:#5a6675;">Enrolled customers can view balances, move money and download statements.</p>
       <form id="login" novalidate>
         <label for="user">Username</label>
@@ -53,8 +56,8 @@
       </form>
       <ul class="links">
         <li><a href="index.html">Forgot username or password?</a></li>
-        <li><a href="index.html">Enrol in Online Banking</a></li>
-        <li><a href="index.html">Find a branch or cash machine</a></li>
+        <li><a href="index.html">Enroll in Online Banking</a></li>
+        <li><a href="index.html">Find a branch or ATM</a></li>
       </ul>
     </div>
     <div class="notice">
@@ -69,43 +72,43 @@
   <div class="col-b">
     <div class="card">
       <h3>Current rates</h3>
-      <p style="margin:0;font-size:13px;color:#5a6675;">Effective for new accounts opened this statement period.</p>
+      <p style="margin:0;font-size:13px;color:#5a6675;">Rates effective September 1, 2026, for accounts opened from that date.</p>
       <table class="rates">
         <tr><th>Product</th><th>Term</th><th class="num">Rate</th></tr>
-        <tr><td>Everyday Saver</td><td>Instant access</td><td class="num">2.15%</td></tr>
-        <tr><td>Fixed Saver</td><td>12 months</td><td class="num">3.40%</td></tr>
-        <tr><td>Fixed Saver</td><td>24 months</td><td class="num">3.55%</td></tr>
-        <tr><td>Junior Saver</td><td>Instant access</td><td class="num">2.80%</td></tr>
-        <tr><td>Residential mortgage</td><td>5-year fixed</td><td class="num">4.62%</td></tr>
+        <tr><td>Everyday Savings</td><td>No fixed term</td><td class="num">2.15% APY</td></tr>
+        <tr><td>Certificate of Deposit</td><td>12 months</td><td class="num">3.40% APY</td></tr>
+        <tr><td>Certificate of Deposit</td><td>24 months</td><td class="num">3.55% APY</td></tr>
+        <tr><td>Young Savers</td><td>No fixed term</td><td class="num">2.80% APY</td></tr>
+        <tr><td>Home mortgage</td><td>30-year fixed</td><td class="num">6.12% APR</td></tr>
       </table>
-      <p style="margin:10px 0 0;font-size:12px;color:#5a6675;">Rates are illustrative and shown before any product fee.</p>
+      <p style="margin:10px 0 0;font-size:12px;color:#5a6675;">APY is the annual percentage yield. Savings rates are variable and may change after the account is opened; fees may reduce earnings.</p>
     </div>
     <div class="tiles">
-      <div><strong>Move money</strong>Send a payment to someone new, or set up a standing order in about two minutes.</div>
+      <div><strong>Move money</strong>Send money to someone new, or set up a recurring transfer in about two minutes.</div>
       <div><strong>Card frozen?</strong>Freeze and unfreeze a debit card yourself from the Cards tab.</div>
     </div>
     <div class="notice">
       <h3>Service status</h3>
       <p style="margin:0;">All Online Banking services are running normally. Scheduled maintenance
-      for the payments platform takes place on the second Sunday of each month between 02:00
-      and 04:00, when transfers may be queued rather than sent immediately.</p>
+      for the payments platform takes place on the second Sunday of each month between 2 and 4 a.m.
+      Eastern, when transfers may be queued rather than sent immediately.</p>
     </div>
   </div>
 </main>
 
 <footer>
   <div class="inner">
-    <nav>
+    <nav aria-label="Legal">
       <a href="index.html">Privacy</a>
       <a href="index.html">Cookies</a>
       <a href="index.html">Terms of use</a>
-      <a href="index.html">Security centre</a>
+      <a href="index.html">Security Center</a>
       <a href="index.html">Accessibility</a>
     </nav>
-    <p>CaldmoorBenk Holdings, N.A. Registered office: 44 Larkspur Way, Ashfield.
-    Member, Interstate Deposit Guarantee Board. Lending subject to status.</p>
-    <p>Authorised by the State Banking Commission and on the register under
-    firm reference 000000. Calls may be monitored or recorded. &copy; 2026 CaldmoorBank.</p>
+    <p>CaldmoorBenk Holdings, N.A. Main office: 44 Larkspur Way, Caldmoor.
+    Member, Interstate Deposit Guarantee Board. Loans subject to credit approval.</p>
+    <p>Chartered and supervised by the State Banking Commission, charter number
+    000000. Calls may be monitored or recorded. &copy; 2026 CaldmoorBank.</p>
   </div>
 </footer>
 

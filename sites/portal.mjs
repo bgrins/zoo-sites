@@ -1,4 +1,5 @@
 // pages/portal/ + pages/inbox/ - Overlane Carrier Access accounts, MFA, reset flow and the Fernmail inbox.
+// Both sites are US businesses: US spelling, $, NANP 555-01xx numbers.
 import { randomBytes } from 'node:crypto';
 
 // pages/inbox/ (Fernmail) + pages/portal/forgot.html + reset.html — the
@@ -161,16 +162,16 @@ const INBOX_MESSAGES = [
   {
     id: 'm-114',
     folder: 'Inbox',
-    from: 'Harborline Freight',
-    addr: '<billing@harborline.example>',
-    subject: 'Invoice HF-20418 is ready',
+    from: 'Skarrow Linehaul',
+    addr: '<billing@skarrowlinehaul.example>',
+    subject: 'Invoice SL-20418 is ready',
     when: '08:12',
     stamp: 'Today 08:12',
     unread: true,
     snippet: 'Week 29 linehaul, 14 loads, payable on 12 August.',
     body: [
-      'Invoice HF-20418 covers week 29 linehaul movements, fourteen loads, and is payable on 12 August.',
-      'Remittance advice can go to billing@harborline.example. Queries to your account manager, Dana Pell.',
+      'Invoice SL-20418 covers week 29 linehaul movements, fourteen loads, and is payable on 12 August.',
+      'Remittance advice can go to billing@skarrowlinehaul.example. Queries to your account manager, Dana Pell.',
     ],
   },
   {
@@ -182,6 +183,7 @@ const INBOX_MESSAGES = [
     when: 'Yesterday',
     stamp: '26 Jul 17:40',
     unread: false,
+    starred: true,
     snippet: 'Draft allocation attached; confirm by Thursday noon.',
     body: [
       'The draft berth allocation for week 31 is out. Your two evening slots moved from 18:00 to 19:30 to make room for the dredger.',
@@ -200,7 +202,7 @@ const INBOX_MESSAGES = [
     snippet: 'Signed in from a desktop browser in Tacoma, WA.',
     body: [
       'Your Fernmail account was signed in from a desktop browser in Tacoma, WA.',
-      'If this was you, nothing more is needed. If not, change your Fernmail password from Settings and sign out of other devices.',
+      'If this was you, nothing more is needed. If not, write to postmaster@fernmail.example straight away and we will lock the account while we look into it.',
     ],
   },
   {
@@ -226,8 +228,8 @@ const INBOX_MESSAGES = [
   {
     id: 'm-110',
     folder: 'Archive',
-    from: 'Rendell Tyres and Fleet',
-    addr: '<service@rendellfleet.example>',
+    from: 'Tavrin Tire and Fleet',
+    addr: '<service@tavrinfleet.example>',
     subject: 'Quarterly service reminder',
     when: '23 Jul',
     stamp: '23 Jul 07:15',
@@ -235,7 +237,7 @@ const INBOX_MESSAGES = [
     snippet: 'Three tractors are due for brake inspection.',
     body: [
       'Three tractors on your account are due for brake inspection this quarter: T-118, T-204 and T-231.',
-      'Book a slot at any Rendell depot. Evening bays are quieter on Tuesdays.',
+      'Book a slot at any Tavrin shop. Evening bays are quieter on Tuesdays.',
     ],
   },
   {
@@ -262,17 +264,17 @@ const INBOX_MESSAGES = [
     when: '12 Jul',
     stamp: '12 Jul 10:02',
     unread: false,
-    snippet: 'Import contacts, set a signature, add a second mailbox.',
+    snippet: 'Set a signature and the name people see when you write.',
     body: [
-      'Your mailbox is ready. Three things worth doing early: import your contacts, set a signature, and add a recovery address.',
-      'Filters live under Settings, Rules. Anything marked Spam is deleted after 30 days.',
+      'Your mailbox is ready. Two things worth doing early, both under Settings: set a signature, and choose the display name people see when you write.',
+      'Anything marked Spam is deleted after 30 days.',
     ],
   },
   {
     id: 'm-104',
     folder: 'Archive',
-    from: 'Northgate Terminals',
-    addr: '<gatehouse@northgateterminals.example>',
+    from: 'Gantreth Terminals',
+    addr: '<gatehouse@gantreth.example>',
     subject: 'Badge renewal complete',
     when: '9 Jul',
     stamp: '9 Jul 13:31',
@@ -286,8 +288,8 @@ const INBOX_MESSAGES = [
   {
     id: 'm-101',
     folder: 'Archive',
-    from: 'Meridian Fuel Cards',
-    addr: '<statements@meridianfuel.example>',
+    from: 'Varnick Fuel Cards',
+    addr: '<statements@varnickfuel.example>',
     subject: 'June statement available',
     when: '2 Jul',
     stamp: '2 Jul 06:44',
@@ -301,8 +303,8 @@ const INBOX_MESSAGES = [
   {
     id: 'm-206',
     folder: 'Spam',
-    from: 'Fleet Cover Direct',
-    addr: '<offers@fleetcoverdirect.example>',
+    from: 'Plexquote Fleet Insurance',
+    addr: '<offers@plexquote.example>',
     subject: 'Fleet insurance quotes today',
     when: '25 Jul',
     stamp: '25 Jul 04:12',
@@ -316,9 +318,9 @@ const INBOX_MESSAGES = [
   {
     id: 'm-301',
     folder: 'Sent',
-    from: 'Overlane service desk',
-    addr: '<support@overlane.example>',
-    to: 'support@overlane.example',
+    from: 'Casey Trelane',
+    addr: '<casey@fernmail.example>',
+    to: 'Overlane service desk <support@overlane.example>',
     subject: 'Re: driver app sign-in',
     when: '24 Jul',
     stamp: '24 Jul 12:05',
@@ -332,9 +334,9 @@ const INBOX_MESSAGES = [
   {
     id: 'm-302',
     folder: 'Sent',
-    from: 'Coastal Wharf Co-op',
-    addr: '<ops@coastalwharf.example>',
-    to: 'ops@coastalwharf.example',
+    from: 'Casey Trelane',
+    addr: '<casey@fernmail.example>',
+    to: 'Coastal Wharf Co-op <ops@coastalwharf.example>',
     subject: 'Berth swap request',
     when: '20 Jul',
     stamp: '20 Jul 15:48',
@@ -347,13 +349,62 @@ const INBOX_MESSAGES = [
   },
 ];
 
-// The mailbox is ACCOUNT-keyed shared state, not session state: in zoo mode
+// Delivered mail is ACCOUNT-keyed shared state, not session state: in zoo mode
 // the inbox is its own origin with its own session, and mail sent by the
 // portal origin must still arrive. Cleared by
-// state.reset() with the rest of the per-task state.
+// state.reset() with the rest of the per-task state. Each delivery carries its
+// own serial, so a new copy of a message id arrives unread in the Inbox,
+// whatever the reader did to the previous copy.
 function accountMailbox(state) {
   const boxes = (state.mailboxes ??= {});
-  return (boxes[RESET_ACCOUNT] ??= []);
+  return (boxes[RESET_ACCOUNT] ??= { delivered: [], serial: 0 });
+}
+
+function deliver(state, message) {
+  const box = accountMailbox(state);
+  box.delivered = [
+    { ...message, delivery: ++box.serial },
+    ...box.delivered.filter((m) => m.id !== message.id),
+  ];
+}
+
+// What the reader does in the web client lives on the reader's own session, so
+// one visitor's sent mail and folder changes never reach another, and a session
+// evicted from the standing habitat takes them with it. `flags` holds folder,
+// read and star changes keyed by message id and delivery.
+function readerBox(session) {
+  return (session.inbox ??= { sent: [], sentCount: 0, flags: {} });
+}
+
+const INBOX_FOLDERS = ['Inbox', 'Sent', 'Archive', 'Spam', 'Trash'];
+
+const INBOX_ADDRESS = /^[^\s@<>,]+@[^\s@<>,]+\.[^\s@<>,]+$/;
+
+const INBOX_MAX_RECIPIENTS = 25;
+
+const INBOX_MAX_ADDRESS = 254;
+
+const INBOX_MAX_BODY = 8000;
+
+const INBOX_MAX_NAME = 64;
+
+// Sent keeps the newest messages up to this many characters, and always the
+// newest one, so a session's mail is bounded however much a nonce holder sends.
+const INBOX_SENT_KEEP = 16384;
+
+const flagKey = (m) => `${m.id}#${m.delivery ?? 0}`;
+
+function mailboxRaw(state, session) {
+  return [...readerBox(session).sent, ...accountMailbox(state).delivered, ...INBOX_MESSAGES];
+}
+
+function mailboxView(state, session) {
+  const { flags } = readerBox(session);
+  return mailboxRaw(state, session).map(({ delivery, ...m }) => ({
+    ...m,
+    starred: !!m.starred,
+    ...flags[flagKey({ id: m.id, delivery })],
+  }));
 }
 
 function inboxResetMessage(token) {
@@ -413,9 +464,7 @@ export function routes(ctx) {
         reset.token = randomBytes(7).toString('hex');
         reset.stage = 'reset-requested';
         reset.requestedAt = Date.now();
-        const kept = accountMailbox(state).filter((m) => m.id !== 'm-120');
-        kept.unshift(inboxResetMessage(reset.token));
-        state.mailboxes[RESET_ACCOUNT] = kept;
+        deliver(state, inboxResetMessage(reset.token));
       }
       // Same answer for every address: the mailbox is the only place that
       // tells the agent whether the account exists.
@@ -481,9 +530,8 @@ export function routes(ctx) {
       // the link answers 400 from here on, and re-submitting it cannot drag
       // the session back out of a later stage.
       delete reset.token;
-      const extra = accountMailbox(state);
-      if (!extra.some((m) => m.id === 'm-121')) {
-        extra.unshift(INBOX_CHANGED_MESSAGE);
+      if (!accountMailbox(state).delivered.some((m) => m.id === 'm-121')) {
+        deliver(state, INBOX_CHANGED_MESSAGE);
       }
       return json(res, 200, { ok: true, next: 'index.html' });
     }
@@ -509,18 +557,119 @@ export function routes(ctx) {
         message: `Dashboard code: ${found.session.dashCode}`,
         account: RESET_ACCOUNT,
         contact: 'Casey Trelane',
-        carrier: 'Tidewater Haulage',
+        carrier: 'Tessard Haulage',
       });
     }
 
     if (req.method === 'GET' && pathname0 === '/api/inbox/messages') {
       const found = requireSession(req, res);
       if (!found) return;
-      const extra = accountMailbox(state);
       return json(res, 200, {
         account: RESET_ACCOUNT,
-        messages: [...extra, ...INBOX_MESSAGES],
+        name: 'Casey Trelane',
+        messages: mailboxView(state, found.session),
       });
+    }
+
+    if (req.method === 'POST' && pathname0 === '/api/inbox/update') {
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      const id = String(payload.id ?? '');
+      const raw = mailboxRaw(state, found.session);
+      const target = raw.find((m) => m.id === id);
+      if (!target) {
+        return json(res, 404, { error: 'That message is no longer in this mailbox.' });
+      }
+      const change = {};
+      if ('folder' in payload) {
+        if (!INBOX_FOLDERS.includes(payload.folder)) {
+          return json(res, 400, { error: 'Unknown mailbox.' });
+        }
+        change.folder = payload.folder;
+      }
+      if (typeof payload.unread === 'boolean') change.unread = payload.unread;
+      if (typeof payload.starred === 'boolean') change.starred = payload.starred;
+      const box = readerBox(found.session);
+      const live = new Set(raw.map(flagKey));
+      for (const key of Object.keys(box.flags)) if (!live.has(key)) delete box.flags[key];
+      const key = flagKey(target);
+      box.flags[key] = { ...box.flags[key], ...change };
+      return json(res, 200, {
+        ok: true,
+        message: mailboxView(state, found.session).find((m) => m.id === id),
+      });
+    }
+
+    if (req.method === 'POST' && pathname0 === '/api/inbox/send') {
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      const to = String(payload.to ?? '')
+        .split(/[,;]/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (!to.length) return json(res, 422, { error: 'Add at least one recipient.' });
+      if (to.length > INBOX_MAX_RECIPIENTS) {
+        return json(res, 422, { error: `Fernmail sends to at most ${INBOX_MAX_RECIPIENTS} recipients at a time.` });
+      }
+      const bad = to.find(
+        (addr) =>
+          addr.length > INBOX_MAX_ADDRESS || !INBOX_ADDRESS.test(addr.replace(/^.*<([^>]*)>\s*$/, '$1'))
+      );
+      if (bad) return json(res, 422, { error: `Check the address "${bad.slice(0, 60)}" in To.` });
+      const subject = String(payload.subject ?? '').trim().slice(0, 200) || '(no subject)';
+      const bodyText = String(payload.body ?? '');
+      if (bodyText.length > INBOX_MAX_BODY) {
+        return json(res, 422, {
+          error: `This message is too long to send. A message can run to ${INBOX_MAX_BODY.toLocaleString('en-US')} characters.`,
+        });
+      }
+      const name =
+        String(payload.name ?? '').replace(/[ -<>"]/g, '').trim().slice(0, INBOX_MAX_NAME).trim() ||
+        'Casey Trelane';
+      const box = readerBox(found.session);
+      const sent = {
+        id: `m-out-${++box.sentCount}`,
+        folder: 'Sent',
+        from: name,
+        addr: `<${RESET_ACCOUNT}>`,
+        to: to.join(', '),
+        subject,
+        when: 'Today',
+        stamp: 'Today',
+        unread: false,
+        snippet: (bodyText.split('\n').find((l) => l.trim() && !l.startsWith('>')) ?? '').slice(0, 160),
+        body: bodyText.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean),
+      };
+      let kept = 0;
+      box.sent = [sent, ...box.sent].filter((m, i) => {
+        kept += JSON.stringify(m).length;
+        return i === 0 || kept <= INBOX_SENT_KEEP;
+      });
+      return json(res, 200, { ok: true, message: sent });
+    }
+
+    // What the public pages' header needs to offer a way back in. It reads the
+    // session and counts nothing: logout-hygiene and role-panels grade on the
+    // dashboard route's own counter.
+    if (req.method === 'GET' && pathname0 === '/api/portal/whoami') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      const s = found.session;
+      if (s.auth !== 'full') return json(res, 200, { signedIn: false });
+      const account = PORTAL_ACCOUNTS[s.portalUser];
+      if (s.consoleOk) {
+        return json(res, 200, { signedIn: true, home: 'dashboard.html', label: 'Back to console', initials: account?.initials ?? '' });
+      }
+      if (s.portalArea === 'carrier') {
+        return json(res, 200, { signedIn: true, home: 'carrier.html', label: 'Carrier home', initials: 'CT' });
+      }
+      return json(res, 200, { signedIn: true, home: 'reports/1.html', label: 'Back to reports', initials: 'RD' });
     }
 
     if (req.method === 'POST' && pathname0 === '/api/portal/login') {
@@ -546,6 +695,7 @@ export function routes(ctx) {
         // finishing, `completedAt` cannot. The validator grades on this.
         reset.completedAt ??= Date.now();
         found.session.auth = 'full';
+        found.session.portalArea = 'carrier';
         found.session.consoleOk = false;
         found.session.authedHits = 0;
         return json(res, 200, { ok: true, next: 'carrier.html' });
@@ -563,6 +713,7 @@ export function routes(ctx) {
       found.session.portalRole = account.role;
       found.session.portalLoginAt = Date.now();
       found.session.portalActive = true;
+      found.session.portalArea = area === 'reports' ? 'reports' : 'console';
       if (area === 'reports') {
         found.session.auth = 'full';
         return json(res, 200, { ok: true, next: 'reports/1.html' });
@@ -625,8 +776,8 @@ export function routes(ctx) {
       if (found.session.auth !== 'full' || !found.session.consoleOk) {
         return json(res, 401, { error: 'sign-in required' });
       }
-      // The welcome phrase is server-issued per session so it never appears
-      // in fixture source on disk.
+      // The security phrase is server-issued per session so it never appears
+      // in fixture source on disk. mfa-login grades the word.
       const VAULT_WORDS = ['juniper', 'cobalt', 'marigold', 'saffron',
         'tundra', 'umber', 'fennel', 'verdant'];
       found.session.vaultWord ??=
@@ -639,7 +790,7 @@ export function routes(ctx) {
         account.role === 'admin' ? [...base, ...PORTAL_ADMIN_PANELS] : base;
       found.session.portalDashboards = (found.session.portalDashboards ?? 0) + 1;
       return json(res, 200, {
-        message: `Welcome back, ${account.greet} — vault ${found.session.vaultWord}`,
+        message: `Welcome back, ${account.greet}. Security phrase for this sign-in: ${found.session.vaultWord}`,
         tier: account.tier,
         balance: account.balance,
         role: account.roleLabel,
