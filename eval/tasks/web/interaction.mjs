@@ -5,7 +5,31 @@
 
 import { originUrls } from '../../../manifest.mjs';
 import { ANSWERS } from '../../answers.mjs';
-import { eqCode, eqEnum, normaliseWords } from '../../extract.mjs';
+import { eqCode, eqEnum, normalise, normaliseWords } from '../../extract.mjs';
+
+// The earliest-won game whose guess count the answer reports, else the
+// earliest-won game, else the first game; and how many guesses every session
+// spent on the same puzzle up to and including that win. The budget is counted
+// across sessions in time order, so a fresh cookie that farmed feedback before
+// the win buys nothing, while a probe made after an honest win, even one that
+// replays it to the same count, cannot spoil it.
+function lexvaneGraded(games, reportsCount) {
+  const winAt = (g) => g.guesses.at(-1)?.at ?? Infinity;
+  const earliest = (list) => list.reduce((a, g) => (a && winAt(a) <= winAt(g) ? a : g), null);
+  const won = games.filter((g) => g.won);
+  const game = earliest(won.filter(reportsCount)) ?? earliest(won) ?? games[0] ?? null;
+  const wonAt = game?.won ? winAt(game) : Infinity;
+  const spent =
+    (game?.guesses.length ?? 0) +
+    games
+      .filter((g) => g !== game)
+      .reduce((n, g) => n + g.guesses.filter((p) => p.at < wonAt).length, 0);
+  return { game, spent };
+}
+
+// A server-minted PREFIX-HEX code, quoted with or without its constant prefix.
+const eqMinted = (got, want, prefix) =>
+  eqCode(got, want) || (typeof got === 'string' && eqCode(`${prefix}${got}`, want));
 
 export async function interactionTasks(base, origins = originUrls(base)) {
   return [
@@ -24,26 +48,32 @@ export async function interactionTasks(base, origins = originUrls(base)) {
       },
       validate: (rawText, ctx, fields) => {
         // Server-observed, exactly like lexvane-hard: the day-0 word is held in
-        // server.mjs and every guess goes through /api/lexvane/guess, so a solve
-        // has to be played. Grade the session that actually won, so a stray curl
-        // probe cannot shadow the real run. The word is an ordinary English
-        // adjective, so an unanchored regex over the answer text with no server
-        // gate would pass "the autumn air was crisp".
+        // sites/lexvane.mjs and every guess goes through /api/lexvane/guess, so
+        // a solve has to be played. Grade the won game the answer's count
+        // describes, so a stray curl probe cannot shadow the real run. The word
+        // is an ordinary English adjective, so an unanchored regex over the
+        // answer text with no server gate would pass "the autumn air was crisp".
         const games = [...ctx.pages.state.sessions.values()]
           .map((s) => s.lexvaneEasy?.[0])
           .filter(Boolean);
-        const game = games.find((g) => g.won) ?? games[0];
+        const { game, spent } = lexvaneGraded(
+          games,
+          (g) => g.guesses.length === fields?.guessesUsed
+        );
         const won = game?.won === true;
         const used = game?.guesses.length ?? 0;
+        // The ask promises six guesses, and a fresh cookie gets six more on the
+        // same fixed word. 6 = LEXVANE_EASY_TRIES.
+        const withinBudget = spent <= 6;
         // won === true is the real gate; the word and count are graded as
         // fields because the ask asks for them.
         const wordOk = eqEnum(fields?.answerWord, ANSWERS.lexvane.day0Word);
         const countOk = used > 0 && fields?.guessesUsed === used;
         return {
-          pass: won && wordOk && countOk,
+          pass: won && wordOk && countOk && withinBudget,
           detail:
-            `sessions=${games.length} won=${won} used=${used} ` +
-            `wordOk=${wordOk} countOk=${countOk} ` +
+            `sessions=${games.length} won=${won} used=${used} spent=${spent} ` +
+            `withinBudget=${withinBudget} wordOk=${wordOk} countOk=${countOk} ` +
             `guesses=${(game?.guesses ?? []).map((g) => g.guess).join(',') || 'none'} ` +
             `fields=${JSON.stringify(fields)}`,
         };
@@ -70,27 +100,29 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (rawText, ctx, fields) => {
-        // Grade the session that actually played day 3 through the gated
-        // endpoint, so a stray curl probe cannot shadow the real run. The
-        // server refuses rule-breaking guesses outright, so every counted
-        // guess in a won game obeyed hard mode.
+        // Grade the won day-3 game the answer's count describes, so a stray
+        // curl probe cannot shadow the real run. The server refuses
+        // rule-breaking guesses outright, so every counted guess in a won game
+        // obeyed hard mode. The count is either the counted guesses or
+        // counted-plus-refused ("5 attempts, 2 refused").
         const games = [...ctx.pages.state.sessions.values()]
           .map((s) => s.lexvaneHard?.[3])
           .filter(Boolean);
-        const game = games.find((g) => g.won) ?? games[0];
+        const { game, spent: totalUsed } = lexvaneGraded(games, (g) =>
+          [g.guesses.length, g.guesses.length + g.violations.length].includes(
+            fields?.finalGuessNumber
+          )
+        );
         const won = game?.won === true;
         const used = game?.guesses.length ?? 0;
         const refused = game?.violations.length ?? 0;
         // The five-try cap is the whole point, so it is enforced across ALL
         // sessions: minting fresh cookies to farm feedback on the same word and
-        // then winning in one guess spends more than five counted guesses in
-        // total. A legitimate run reuses one cookie (a reload included), and a
-        // session that never posts a guess adds nothing. 5 = LEXVANE_HARD_TRIES.
-        const totalUsed = games.reduce((sum, g) => sum + g.guesses.length, 0);
+        // then winning in one guess spends more than five counted guesses. A
+        // legitimate run reuses one cookie (a reload included), and a session
+        // that never posts a guess adds nothing. 5 = LEXVANE_HARD_TRIES.
         const withinBudget = totalUsed <= 5;
         const wordOk = eqEnum(fields?.answerWord, ANSWERS.lexvane.hardDay3);
-        // Either the counted guesses or counted-plus-refused ("5 attempts, 2
-        // refused"), because won === true is the real gate.
         const countOk = used > 0 && [used, used + refused].includes(fields?.finalGuessNumber);
         return {
           pass: won && wordOk && countOk && withinBudget,
@@ -188,9 +220,8 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         const runs = [...ctx.pages.state.sessions.values()]
           .map((s) => s.maze)
           .filter((m) => m && typeof m.drives === 'number');
-        const flat = text.replace(/[*_~`]+/g, '');
-        // MZ, any punctuation a model might use as the separator (including en/em
-        // dashes and a colon), then the four hex digits, which may be spaced out.
+        // Case, whitespace and the separator's dash style (hyphen, en or em
+        // dash, or none) do not matter; any other character does.
         const reports = (code) => eqCode(fields?.extractionCode, code);
         // Grade a session that actually reached the pad, preferring one whose code
         // the agent reported: a curl probe or a re-minted cookie must not shadow
@@ -223,13 +254,13 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (rawText, ctx, fields) => {
-        const text = rawText.replace(/[*_~`]+/g, '');
         const want = ANSWERS.floorplan;
         const openedBy = (s) => (s.roomClicks ?? []).map((c) => c.id);
-        // Server-observed gate: only a same-origin GET /api/floorplan/room
-        // appends to session.roomClicks, and it 403s (recording nothing)
-        // without the session cookie plus nonce, so neither a forged
-        // /api/beacon nor an off-page shell probe can fake it.
+        // Server-observed gate: only a GET /api/floorplan/room carrying the
+        // session cookie plus nonce AND a page provenance header appends to
+        // session.roomClicks, so a forged /api/beacon cannot fake it and a plain
+        // shell probe does not count. The header is legibility, never proof:
+        // curl sets Referer and sec-fetch-site freely.
         // Grade the session that opened the NE corner record, so a stray curl
         // probe or a re-minted cookie cannot shadow the real run.
         const sessions = [...ctx.pages.state.sessions.values()].filter(
@@ -239,7 +270,12 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         const ids = session ? openedBy(session) : [];
         const opened = ids.includes(want.room);
         const name = String(fields?.occupantName ?? '');
-        const roomCited = want.roomPattern.test(String(fields?.roomCode ?? ''));
+        // Dashes are folded first, because a model may write NE‑4 with a
+        // non-breaking hyphen.
+        const roomCode = normalise(fields?.roomCode ?? '');
+        const roomCited = want.roomPattern.test(roomCode);
+        // A code naming some other room of the plan contradicts the claim.
+        const otherRoom = !roomCited && /\b(?:ne|nw|se|sw)[\s-]?\d\b/.test(roomCode);
         // The surname is unguessable, so it is always required; the first name
         // may be dropped or initialled when the room code pins the answer down.
         // The field is the claimed occupant, so asserting a decoy as the
@@ -249,11 +285,18 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         const decoyClaimed = [want.decoyNeOccupant, want.decoySeOccupant, want.vacated].filter(
           (n) => new RegExp(`\\b${n.split(' ').pop()}\\b`, 'i').test(name)
         );
+        // Telemetry, never a gate: record reads that carried no page
+        // provenance, across every session, so a shell route stays legible.
+        const offPageReads = [...ctx.pages.state.sessions.values()].reduce(
+          (n, s) => n + (s.roomReadsOffPage ?? 0),
+          0
+        );
         return {
-          pass: opened && named && decoyClaimed.length === 0,
+          pass: opened && named && !otherRoom && decoyClaimed.length === 0,
           detail:
             `sessions=${sessions.length} opened=[${ids.join(',')}] ne4=${opened} ` +
             `ne3=${ids.includes(want.decoyNeRoom)} named=${named} roomCited=${roomCited} ` +
+            `otherRoom=${otherRoom} offPageReads=${offPageReads} ` +
             `decoyClaimed=[${decoyClaimed.join(', ')}] fields=${JSON.stringify(fields)}`,
         };
       },
@@ -318,8 +361,7 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         `Terminal 3. Move every work order tagged Urgent into the Done lane and every ` +
         `work order tagged Blocked into the Backlog lane; leave the Routine ones where ` +
         `they are. Then click Save board. Report the board revision the page shows once ` +
-        `it has saved, and say whether you moved the cards by dragging them between ` +
-        `lanes or by using the move buttons on each card.`,
+        `it has saved.`,
       answerSchema: {
         type: 'object',
         properties: {
@@ -327,7 +369,6 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (rawText, ctx, fields) => {
-        const text = rawText.replace(/[*_~`]+/g, '');
         const LANES = ['backlog', 'doing', 'done'];
         // The board is minted per session, so a curl probe and the browser run
         // carry different tag assignments and different revisions. Grade the
@@ -338,49 +379,52 @@ export async function interactionTasks(base, origins = originUrls(base)) {
           for (const lane of LANES) for (const id of layout.columns[lane] ?? []) where.set(id, lane);
           return where;
         };
-        const triaged = (s) => {
-          const last = s.kanban.layouts.at(-1);
-          if (!last) return false;
-          const where = placement(last);
-          return (
-            s.kanban.urgent.every((id) => where.get(id) === 'done') &&
-            s.kanban.blocked.every((id) => where.get(id) === 'backlog')
-          );
+        // "Leave the Routine ones where they are" is graded against the dealt
+        // columns frozen at mint (kb.startCols): a save that shuffles a routine
+        // card fails even though every urgent/blocked card landed correctly.
+        const offTarget = (kb, layout) => {
+          const where = layout ? placement(layout) : new Map();
+          const tagged = new Set([...kb.urgent, ...kb.blocked]);
+          return {
+            urgent: kb.urgent.filter((id) => where.get(id) !== 'done'),
+            blocked: kb.blocked.filter((id) => where.get(id) !== 'backlog'),
+            routine: Object.entries(kb.startCols ?? {})
+              .filter(([id, col]) => !tagged.has(id) && where.size > 0 && where.get(id) !== col)
+              .map(([id]) => id),
+          };
         };
-        // Any revision the server issued to that session counts: saving twice and
-        // quoting the first one is still a report of a save that happened. The
-        // separator is loose because "CM 8D5495" and "cm-8d5495" are the same id,
-        // and the `CM` prefix is optional because "returned revision 8D5495" quotes
-        // the minted value exactly, minus a constant the fixture chose.
-        const quoted = (s) =>
-          s.kanban.layouts.filter(
-            (l) =>
-              eqCode(fields?.boardRevision, l.revision) ||
-              eqCode(`CM-${fields?.boardRevision ?? ''}`, l.revision)
-          );
+        const layoutOk = (kb, layout) => {
+          if (!layout) return false;
+          const off = offTarget(kb, layout);
+          return !off.urgent.length && !off.blocked.length && !off.routine.length;
+        };
+        // The separator is loose because "CM 8D5495" and "cm-8d5495" are the
+        // same id, and the `CM` prefix is optional because "returned revision
+        // 8D5495" quotes the minted value exactly, minus a constant the fixture
+        // chose.
+        const quotedOf = (s) =>
+          s.kanban.layouts.find((l) => eqMinted(fields?.boardRevision, l.revision, 'CM-')) ?? null;
+        // The quoted revision has to be one the server issued for a triaged
+        // board, and the last save has to be triaged too. Saving twice and
+        // quoting the first correct save is still a report of that save; quoting
+        // the revision of the dealt board saved before triage is not, and a
+        // correct save followed by a bad one leaves the board wrong.
+        const complete = (s) =>
+          layoutOk(s.kanban, quotedOf(s)) && layoutOk(s.kanban, s.kanban.layouts.at(-1));
         const graded =
-          sessions.find((s) => triaged(s) && quoted(s).length) ??
-          sessions.find((s) => quoted(s).length) ??
-          sessions.find(triaged) ??
+          sessions.find(complete) ??
+          sessions.find(quotedOf) ??
+          sessions.find((s) => layoutOk(s.kanban, s.kanban.layouts.at(-1))) ??
           sessions.filter((s) => s.kanban.layouts.length).at(-1) ??
           sessions.at(-1) ??
           null;
         const kb = graded?.kanban ?? null;
         const last = kb?.layouts.at(-1) ?? null;
-        const where = last ? placement(last) : new Map();
-        const misplacedUrgent = (kb?.urgent ?? []).filter((id) => where.get(id) !== 'done');
-        const misplacedBlocked = (kb?.blocked ?? []).filter((id) => where.get(id) !== 'backlog');
-        // "Leave the Routine ones where they are" is graded against the dealt
-        // columns frozen at mint (kb.startCols): a save that shuffles a routine
-        // card fails even though every urgent/blocked card landed correctly.
-        const taggedIds = new Set([...(kb?.urgent ?? []), ...(kb?.blocked ?? [])]);
-        const routineOffStart = Object.entries(kb?.startCols ?? {})
-          .filter(([id]) => !taggedIds.has(id))
-          .filter(([id, col]) => where.size > 0 && where.get(id) !== col)
-          .map(([id]) => id);
-        const savedOk =
-          !!last && !misplacedUrgent.length && !misplacedBlocked.length && !routineOffStart.length;
-        const revisionOk = !!kb && quoted(graded).length > 0;
+        const quoted = graded ? quotedOf(graded) : null;
+        const off = kb ? offTarget(kb, last) : { urgent: [], blocked: [], routine: [] };
+        const savedOk = !!kb && layoutOk(kb, last);
+        const revisionOk = !!quoted;
+        const quotedOk = !!kb && layoutOk(kb, quoted);
         // Route telemetry: which affordance actually produced the moves. The page
         // reports it, so it is diagnostic only and never part of the decision —
         // `drag_by_uid_to_uid` has no task anywhere else in the suite, and this is
@@ -393,13 +437,15 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         const detail =
           `route=${route}; saves=${kb?.layouts.length ?? 0}; ` +
           `moves=${(kb?.layouts ?? []).flatMap((l) => l.moves).length}; ` +
-          `layoutOk=${savedOk}; revisionQuoted=${revisionOk}; ` +
-          `urgentOffTarget=${misplacedUrgent.join(',') || 'none'}; ` +
-          `blockedOffTarget=${misplacedBlocked.join(',') || 'none'}; ` +
+          `layoutOk=${savedOk}; revisionQuoted=${revisionOk}; quotedLayoutOk=${quotedOk}; ` +
+          `quotedSave=${quoted ? kb.layouts.indexOf(quoted) + 1 : 'none'}; ` +
+          `urgentOffTarget=${off.urgent.join(',') || 'none'}; ` +
+          `blockedOffTarget=${off.blocked.join(',') || 'none'}; ` +
+          `routineOffStart=${off.routine.join(',') || 'none'}; ` +
           `routineMoved=${movedRoutine.join(',') || 'none'}; ` +
           `boardReads=${kb?.reads ?? 0}; offPageReads=${kb?.offPageReads ?? 0}; ` +
           `sessions=${sessions.length}`;
-        return { pass: savedOk && revisionOk, detail };
+        return { pass: savedOk && revisionOk && quotedOk, detail };
       },
     },
     {
@@ -423,10 +469,6 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         const idents = ANSWERS.prReview.identifiers;
         const looseRe = (key) => new RegExp(idents[key].loose, 'i');
         const strictRe = (key) => new RegExp(idents[key].match, 'i');
-        // A line number in prose: leading zeros are fine and so is a comma or a
-        // full stop right before it ("quote.js,35"), but a digit — or a separator
-        // that is itself inside a number — is not, so 1336.5 never satisfies 13.
-        const lineRe = (n) => new RegExp(`(?<!\\d)(?<!\\d[.,])0*${n}(?![\\d])`);
         const sessions = [...ctx.pages.state.sessions.values()].filter(
           (s) => s.forge?.defect && (s.forge.reviews ?? []).length > 0
         );
@@ -474,7 +516,9 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         };
         // Each session draws its own defect, so a Bash probe and the browser run
         // can be graded against different ground truths. Pick the session the
-        // answer is actually about, and only fall back to recency.
+        // answer is actually about, and only fall back to recency. A described
+        // session that falls short is graded on what it lacks, rather than a
+        // qualifying session it does not describe on the line it misses.
         const describes = (s) =>
           looseRe(s.forge.defect.key).test(String(fields?.identifier ?? '')) &&
           fields?.lineNumber === s.forge.defect.line;
@@ -482,10 +526,10 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         const withHit = sessions.filter((s) => hitOf(s));
         const graded =
           good.find(describes) ??
-          good.at(-1) ??
           withHit.find(describes) ??
-          withHit.at(-1) ??
           sessions.find(describes) ??
+          good.at(-1) ??
+          withHit.at(-1) ??
           sessions.at(-1) ??
           null;
         const defect = graded?.forge?.defect ?? null;
@@ -530,9 +574,10 @@ export async function interactionTasks(base, origins = originUrls(base)) {
             `addresses=${graded ? addressesOf(graded).size : 0} ` +
             `namedInReview=${namedInReview} namedInAnswer=${namedInAnswer} ` +
             `alsoNamed=${alsoNamed.join('+') || 'none'} lineInAnswer=${lineInAnswer} ` +
+            `fileInAnswer=${fileInAnswer} ` +
             `offPage=${graded?.forge?.offPage ?? 0} ` +
             `diffFetches=${graded?.forge?.diffFetches ?? 0} ` +
-            `checkFetches=${graded?.forge?.checkFetches ?? 0}`,
+            `checkFetches=${graded?.forge?.checkFetches ?? 0} fields=${JSON.stringify(fields)}`,
         };
       },
     },
@@ -553,21 +598,23 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (rawText, ctx, fields) => {
-        // Markdown emphasis and typographic dashes must not break the checksum or
-        // cell-reference regexes ("**E14**", "RC‑828D95").
-        const text = rawText
-          .replace(/[*_~`]+/g, '')
-          .replace(/[‐-―−]/g, '-');
         const sheets = [...ctx.pages.state.sessions.values()].map((s) => s.calc).filter(Boolean);
         // The workbook prints the checksum as RC-XXXXXX; accept the bare hex, a
         // space instead of the hyphen, and any letter case, but never a prefix of
         // it and never a longer token that merely contains it.
-        // The workbook prints RC-XXXXXX; the bare hex also counts, and the
-        // cell may be quoted absolute ($E$14).
-        const hasCode = (code) =>
-          eqCode(fields?.checksum, code) || eqCode(`RC-${fields?.checksum ?? ''}`, code);
+        const hasCode = (code) => eqMinted(fields?.checksum, code, 'RC-');
+        // The cell may be quoted absolute ($E$14), behind a sheet name
+        // ('Q3 Recovery'!E14, Sheet1!E14) or in a phrase ("cell E14."), but it
+        // has to name exactly one cell of the sheet's A-E columns: "E14 or C14"
+        // commits to nothing.
+        const refField = String(fields?.cellReference ?? '')
+          .replace(/^.*!/, '')
+          .replace(/\$/g, '');
+        const refTokens = new Set(
+          [...refField.toUpperCase().matchAll(/\b([A-E]\d{1,2})\b/g)].map((m) => m[1])
+        );
         const hasRef = (ref) =>
-          eqCode(String(fields?.cellReference ?? '').replace(/\$/g, ''), ref);
+          eqCode(refField, ref) || (refTokens.size === 1 && refTokens.has(ref));
         // Every session gets its own sheet, its own defect and its own checksum,
         // so grade the reconciled session this ANSWER is about — the one whose
         // checksum it quotes and whose defect cell it actually repaired —
@@ -599,21 +646,44 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         // that, by requiring the answer to name it — so `culpritRead` below
         // reports which route was taken rather than gating on it.
         const reads = session?.formulaReads ?? [];
-        const repair = accepted.find((e) => e.ref === culprit) ?? null;
+        // The repair is the last accepted culprit edit up to the moment the
+        // sheet first reconciled, not the first: a wrong but accepted attempt,
+        // then a read, then the fix is an honest solve.
+        const repair =
+          accepted.filter((e) => e.ref === culprit && e.at <= (session?.reconciledAt ?? -1)).at(-1) ??
+          null;
         const before = (r) => repair && r.at <= repair.at;
         const targeted = reads.some((r) => r.ref === culprit && before(r));
         const viaBulk = reads.some((r) => r.bulk && before(r));
         const inspected = targeted || viaBulk;
         const culpritRead = targeted ? 'targeted' : viaBulk ? 'bulk' : 'none';
+        // `reconciled` latches when the sheet first agrees; the sheet has to
+        // still agree now, or a run that repaired the cell and then broke it
+        // again reports a checksum the workbook no longer shows.
+        const reconciledNow = session?.reconciledNow === true;
         // Reported, never gated: whether the run blamed one of the seven correct
         // but oddly-spelled cells the formula audit also flags, how many formulas
-        // it opened, and whether it took the one bulk Show formulas read.
+        // it opened, whether it took the one bulk Show formulas read, and how
+        // many correct flagged cells it rewrote before the repair (a
+        // rewrite-every-flag sweep; the ask does not forbid editing them).
         const namedDecoy = ANSWERS.calc.auditDecoys.filter((ref) => hasRef(ref));
+        const decoysRewritten = new Set(
+          accepted
+            .filter((e) => repair && e.at <= repair.at && ANSWERS.calc.auditDecoys.includes(e.ref))
+            .map((e) => e.ref)
+        ).size;
         return {
-          pass: session?.reconciled === true && fixedCulprit && inspected && codeOk && refOk,
+          pass:
+            session?.reconciled === true &&
+            reconciledNow &&
+            fixedCulprit &&
+            inspected &&
+            codeOk &&
+            refOk,
           detail:
             `sessions=${sheets.length} culprit=${culprit ?? 'none'} ` +
-            `reconciled=${session?.reconciled === true} fixedCulprit=${fixedCulprit} ` +
+            `reconciled=${session?.reconciled === true} reconciledNow=${reconciledNow} ` +
+            `fixedCulprit=${fixedCulprit} decoysRewritten=${decoysRewritten} ` +
             `inspected=${inspected} culpritRead=${culpritRead} ` +
             `refOk=${refOk} codeOk=${codeOk} ` +
             `checksum=${checksum ?? 'none'} ` +

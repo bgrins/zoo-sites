@@ -16,7 +16,7 @@ export const ANSWERS = {
     lanes: ['backlog', 'doing', 'done'],
     laneNames: { backlog: 'Backlog', doing: 'Doing', done: 'Done' },
     // The triage rule the ask states, and what the validator therefore enforces.
-    rule: { urgent: 'done', blocked: 'backlog', routine: 'unchecked' },
+    rule: { urgent: 'done', blocked: 'backlog', routine: 'its dealt lane' },
     revisionPrefix: 'CM-',
     // Two urgent, two blocked, four routine, and every tagged card is dealt into a
     // lane it does not belong in, so exactly four cards always have to move.
@@ -797,10 +797,13 @@ export const ANSWERS = {
   // toward and is what decides whether the right site was named.
   prReview: {
     identifiers: {
+      // SOFT_TTL_RATIO is a different identifier on a different line of the
+      // same file, so a trailing "ratio" rules the match out.
       'cache-ttl': {
         name: 'softTtlMs',
-        match: 'soft[\\s_.\\-]*ttl(?:[\\s_.\\-]*ms)?',
-        loose: 'soft[\\s_.\\-]*ttl(?:[\\s_.\\-]*ms)?|half[^.\\n]{0,24}(?:ttl|window|ratio)',
+        match: 'soft[\\s_.\\-]*ttl(?:[\\s_.\\-]*ms)?(?![\\s_.\\-]*ratio)',
+        loose:
+          'soft[\\s_.\\-]*ttl(?:[\\s_.\\-]*ms)?(?![\\s_.\\-]*ratio)|half[^.\\n]{0,24}(?:ttl|window|ratio)',
       },
       'cache-key': {
         name: 'tariffClass',

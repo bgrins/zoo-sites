@@ -277,7 +277,9 @@ function calcEval(ast, get) {
       }
       if (node.name === 'ROUND') {
         if (!flat.length) throw new Error('ROUND needs a value');
-        const digits = flat.length > 1 ? Math.trunc(flat[1]) : 0;
+        // Past 15 digits either way a double has nothing left to round, and
+        // 10 ** 400 overflows to Infinity, which would leave NaN on the sheet.
+        const digits = flat.length > 1 ? Math.max(-15, Math.min(15, Math.trunc(flat[1]))) : 0;
         const factor = 10 ** digits;
         return Math.round(flat[0] * factor) / factor;
       }
@@ -285,7 +287,9 @@ function calcEval(ast, get) {
     }
     throw new Error('bad formula');
   }
-  return scalar(ast);
+  const result = scalar(ast);
+  if (!Number.isFinite(result)) throw new Error('the result is not a finite number');
+  return result;
 }
 
 function calcRefsOf(ast) {
@@ -429,12 +433,16 @@ function calcState(session, draw) {
     audit,
     jitterRow,
     // Every formula the session has pulled into the formula bar, in order, and
-    // every commit it has attempted. Neither gates anything; both are reported
-    // in the validator's detail so a sweep can tell a formula-bar solve from a
-    // brute-force one.
+    // every commit it has attempted. The validator requires a read of the
+    // culprit (or the bulk view) before the commit that repaired it, and
+    // reports the rest in its detail so a sweep can tell a formula-bar solve
+    // from a brute-force one.
     formulaReads: [],
     edits: [],
+    // `reconciled` latches the first time the sheet agrees; `reconciledNow` is
+    // whether it still does, since an accepted edit can break it again.
     reconciled: false,
+    reconciledNow: false,
     reconciledAt: null,
     checksum: null,
     sheetFetches: 0,
@@ -502,6 +510,8 @@ function calcCheck(calc) {
 // separately.
 function calcPayload(calc, withFormulas = false) {
   const check = calcCheck(calc);
+  // Every accepted edit ends in this payload, so this tracks the live sheet.
+  calc.reconciledNow = check.reconciled;
   if (check.reconciled && !calc.reconciled) {
     calc.reconciled = true;
     calc.reconciledAt = Date.now();

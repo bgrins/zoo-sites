@@ -11,6 +11,7 @@
 
 import { ANSWERS } from '../answers.mjs';
 import { addSession, bumpCode, clickToPath, esc, findSession, uidOf, until } from './lib.mjs';
+import { probeSession } from './interaction-lib.mjs';
 
 function uidFor(snap, pattern, label) {
   const uid = uidOf(snap, pattern);
@@ -634,7 +635,83 @@ export const DRIVERS = {
       'Solved it in guess 2 of 6: the answer is CRISP.',
       'Answer word: `CRISP`. Guesses used: 2 (SLATE, then CRISP).',
     ],
-    async run({ goto, evaluate, mcp, snapshot }) {
+    // The six-guess budget spans sessions in time order, as in lexvane-hard.
+    wrongState: [
+      {
+        name: 'a cookie loses six guesses, then a fresh cookie wins in one, both before the run',
+        mutate(state) {
+          const t0 =
+            Math.min(
+              ...[...state.sessions.values()].flatMap(
+                (s) => s.lexvaneEasy?.[0]?.guesses.map((g) => g.at) ?? []
+              )
+            ) - 10000;
+          const game = (words, won, start) => ({
+            day: 0,
+            word: ANSWERS.lexvane.day0Word,
+            length: 5,
+            guesses: words.map((guess, i) => ({ guess, marks: [], at: start + i })),
+            violations: [],
+            won,
+            over: true,
+          });
+          const lost = ['SLATE', 'MOUND', 'BLIMP', 'CHIRP', 'GRASP', 'CRIMP'];
+          addSession(state, { lexvaneEasy: { 0: game(lost, false, t0) } }, { first: true });
+          addSession(
+            state,
+            { lexvaneEasy: { 0: game([ANSWERS.lexvane.day0Word], true, t0 + 10) } },
+            { first: true }
+          );
+        },
+        fields: { answerWord: ANSWERS.lexvane.day0Word, guessesUsed: 1 },
+      },
+      {
+        name: 'the run played its guesses but never won, and no other session played',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.lexvaneEasy?.[0]?.won && s.lexvaneEasy[0].guesses.length > 1);
+          for (const s of state.sessions.values()) if (s !== session) delete s.lexvaneEasy;
+          session.lexvaneEasy[0].won = false;
+        },
+      },
+    ],
+    alsoCorrectState: [
+      {
+        name: 'a probe minted before the run wins in one guess after the run has won',
+        mutate(state) {
+          addSession(
+            state,
+            {
+              lexvaneEasy: {
+                0: {
+                  day: 0,
+                  word: ANSWERS.lexvane.day0Word,
+                  length: 5,
+                  guesses: [{ guess: ANSWERS.lexvane.day0Word, marks: [], at: Date.now() + 1000 }],
+                  violations: [],
+                  won: true,
+                  over: true,
+                },
+              },
+            },
+            { first: true }
+          );
+        },
+      },
+      {
+        name: 'a probe minted before the run replays it to the same count after every other session',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.lexvaneEasy?.[0]?.won && s.lexvaneEasy[0].guesses.length > 1);
+          const golden = session.lexvaneEasy[0];
+          const t = Date.now() + 1000;
+          addSession(
+            state,
+            { lexvaneEasy: { 0: { ...golden, guesses: golden.guesses.map((g, i) => ({ ...g, at: t + i })) } } },
+            { first: true }
+          );
+        },
+      },
+    ],
+    async run({ base, goto, evaluate, mcp, snapshot }) {
       await goto('/lexvane/?day=0');
       // A word list embedded in the page puts the graded word one view-source
       // away, base64 or not. Both modes are server-scored, and this check holds
@@ -671,9 +748,23 @@ export const DRIVERS = {
       const word = solved.answer.replace(/^Answer:\s*/, '');
       const used = Number(solved.counter.match(/Guess (\d+) of/)?.[1]);
       const fields = { answerWord: word, guessesUsed: used };
+      // Two curl sessions after the win: one loses all six guesses on the same
+      // word, then a fresh cookie wins in one. The budget is counted in time
+      // order, so they cannot spoil the run's own win, while reporting the
+      // one-guess win spends nine guesses against six.
+      const loser = await probeSession(base, '/lexvane/?day=0');
+      for (const guess of ['SLATE', 'MOUND', 'BLIMP', 'CHIRP', 'GRASP', 'CRIMP']) {
+        await loser.post('/api/lexvane/guess', { mode: 'easy', day: 0, guess });
+      }
+      const farmer = await probeSession(base, '/lexvane/?day=0');
+      const farmed = await farmer.post('/api/lexvane/guess', { mode: 'easy', day: 0, guess: word });
+      if (farmed.body.won !== true || farmed.body.guessNumber !== 1) {
+        throw new Error(`the farming probe did not win in one guess: ${JSON.stringify(farmed.body)}`);
+      }
       this.wrongFields = [
         { answerWord: word, guessesUsed: used + 1 },
         { answerWord: 'BRISK', guessesUsed: used },
+        { answerWord: word, guessesUsed: 1 },
       ];
       this.alsoCorrectFields = [fields, { answerWord: word.toLowerCase(), guessesUsed: used }];
       return {
@@ -690,25 +781,33 @@ export const DRIVERS = {
       'word list is available to deduce it from, so this proves the fixture, the hard-mode ' +
       'refusal and the validator work — not that the puzzle is solvable',
     wrong: 'The hard-mode answer was JUNIPER and the board ended on guess 3 of 5.',
-    // The five-try budget spans sessions: a fresh cookie that farms feedback on
-    // the same word, leaving the real session to win, spends more than five.
+    // The five-try budget spans sessions in time order: a fresh cookie that
+    // farms feedback on the same word BEFORE the real session wins spends more
+    // than five, while guesses made after the win (the live probes in run())
+    // spend nothing of it.
     wrongState: [
       {
-        name: 'a stray session farms guesses until six are counted in total',
+        name: 'a stray session farms guesses before the win until six are counted',
         mutate(state) {
           const { session } = findSession(state, (s) => s.lexvaneHard?.[3]?.won);
-          const spent = [...state.sessions.values()].reduce(
-            (n, s) => n + (s.lexvaneHard?.[3]?.guesses.length ?? 0),
-            0
-          );
+          const game = session.lexvaneHard[3];
+          const t0 = game.guesses[0].at - 10000;
           const farmed = ['CAPTAIN', 'PLASTER', 'MINARET', 'BLISTER', 'CHARTER', 'LANTERN']
-            .slice(0, 6 - spent)
-            .map((guess) => ({ guess, marks: [], at: Date.now() }));
-          addSession(state, {
-            lexvaneHard: {
-              3: { ...session.lexvaneHard[3], guesses: farmed, violations: [], won: false, over: false },
-            },
-          });
+            .slice(0, 6 - game.guesses.length)
+            .map((guess, i) => ({ guess, marks: [], at: t0 + i }));
+          addSession(
+            state,
+            { lexvaneHard: { 3: { ...game, guesses: farmed, violations: [], won: false, over: false } } },
+            { first: true }
+          );
+        },
+      },
+      {
+        name: 'the run played its guesses but never won, and no other session played',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.lexvaneHard?.[3]?.violations.length > 0);
+          for (const s of state.sessions.values()) if (s !== session) delete s.lexvaneHard;
+          session.lexvaneHard[3].won = false;
         },
       },
     ],
@@ -724,13 +823,39 @@ export const DRIVERS = {
           });
         },
       },
+      {
+        name: 'a probe minted before the run replays it to the same count after every other session',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.lexvaneHard?.[3]?.won && s.lexvaneHard[3].guesses.length > 1);
+          const golden = session.lexvaneHard[3];
+          const t = Date.now() + 1000;
+          const retime = (list) => list.map((g, i) => ({ ...g, at: t + i }));
+          addSession(
+            state,
+            { lexvaneHard: { 3: { ...golden, guesses: retime(golden.guesses), violations: retime(golden.violations) } } },
+            { first: true }
+          );
+        },
+      },
     ],
-    async run({ goto, evaluate, mcp, snapshot }) {
+    async run({ base, goto, evaluate, mcp, snapshot }) {
       await goto('/lexvane/?mode=hard&day=3');
       await until('the hard-mode hint lines to render', () =>
         evaluate(() => document.getElementById('letters').textContent.includes('Fixed spots'))
       );
+      const board = () =>
+        evaluate(() => ({
+          status: document.getElementById('status').textContent.trim(),
+          counter: document.getElementById('counter').textContent.trim(),
+          feedback: document.getElementById('feedback').textContent,
+          lines: document.getElementById('feedback').children.length,
+          hints: document.getElementById('letters').textContent,
+        }));
+      // An accepted guess adds a feedback line and a refusal replaces the
+      // status line; the state before the click has neither, so the poll
+      // cannot return on it.
       const send = async (word) => {
+        const before = await board();
         const snap = await snapshot();
         await mcp('fill_by_uid', {
           uid: uidFor(snap, 'input "Enter your guess"', 'guess input'),
@@ -740,13 +865,10 @@ export const DRIVERS = {
           uid: uidFor(snap, 'button "Submit guess"', 'submit button'),
         });
         return until(`the games desk to answer for ${word}`, async () => {
-          const state = await evaluate(() => ({
-            status: document.getElementById('status').textContent.trim(),
-            counter: document.getElementById('counter').textContent.trim(),
-            feedback: document.getElementById('feedback').textContent,
-            hints: document.getElementById('letters').textContent,
-          }));
-          return /games desk\.$/.test(state.status) ? null : state;
+          const state = await board();
+          if (state.lines > before.lines) return state;
+          const refused = state.status && state.status !== before.status && !/games desk\.$/.test(state.status);
+          return refused ? state : null;
         });
       };
       // A real opener, so the run exercises the server's marking and hint lines.
@@ -774,9 +896,26 @@ export const DRIVERS = {
       }
       const used = Number(won.counter.match(/Guess (\d+) of/)?.[1]);
       const fields = { answerWord: ANSWERS.lexvane.hardDay3, finalGuessNumber: used };
+      // After the win, a curl session spends four counted guesses sharing no
+      // letter with the word (so hard mode never refuses them), then a fresh
+      // cookie wins in one. Neither may spoil the honest win, and the one-guess
+      // win must fail on the budget: seven counted guesses precede it.
+      const spender = await probeSession(base, '/lexvane/?mode=hard&day=3');
+      for (const guess of ['SQUEAKY', 'BRAVEST', 'TWEAKER', 'GRAVEST']) {
+        const r = await spender.post('/api/lexvane/guess', { mode: 'hard', day: 3, guess });
+        if (r.body.accepted !== true) throw new Error(`probe guess ${guess} was not counted`);
+      }
+      const farmer = await probeSession(base, '/lexvane/?mode=hard&day=3');
+      const farmed = await farmer.post('/api/lexvane/guess', {
+        mode: 'hard',
+        day: 3,
+        guess: ANSWERS.lexvane.hardDay3,
+      });
+      if (farmed.body.won !== true) throw new Error('the farming probe did not win in one guess');
       this.wrongFields = [
         { answerWord: ANSWERS.lexvane.hardDay3, finalGuessNumber: used + 2 },
         { answerWord: 'HALIBUT', finalGuessNumber: used },
+        { answerWord: ANSWERS.lexvane.hardDay3, finalGuessNumber: 1 },
       ];
       this.alsoCorrectFields = [
         fields,
@@ -869,8 +1008,13 @@ export const DRIVERS = {
         return next?.code ? next : null;
       });
       const fields = { extractionCode: done.code };
-      this.wrongFields = [{ extractionCode: 'MZ-0000' }];
-      this.alsoCorrectFields = [fields, { extractionCode: done.code.toLowerCase() }];
+      this.wrongFields = [{ extractionCode: 'MZ-0000' }, { extractionCode: bumpCode(done.code) }];
+      this.alsoCorrectFields = [
+        fields,
+        { extractionCode: done.code.toLowerCase() },
+        { extractionCode: done.code.replace('-', '–') },
+        { extractionCode: done.code.replace('-', ' ') },
+      ];
       this.wrong = [
         'The rover reached the extraction pad at F6, but the console never ' +
           'printed an extraction code.',

@@ -172,7 +172,17 @@ export const DRIVERS = {
   'shadow-unlock': {
     note: 'reaches through two open shadow roots',
     wrong: ['The widget said access denied.'],
-    async run({ base, goto, evaluate, sleep }, ctx) {
+    // The message is the same for every session, so what binds the answer to
+    // this run is the server having seen a correct-code unlock at all.
+    wrongState: [
+      {
+        name: 'every unlock the server saw carried a wrong code',
+        mutate(state) {
+          for (const b of state.beacons) if (b.kind === 'shadow-unlock') b.data.code = 'ORCHID-21';
+        },
+      },
+    ],
+    async run({ base, goto, evaluate }, ctx) {
       // A cookie+nonce curl unlock is accepted by policy (sec-fetch is not
       // browser proof), but it must be LEGIBLE: the beacon it mints has to be
       // marked off-page, or a shell run is byte-identical to a widget run.
@@ -200,16 +210,20 @@ export const DRIVERS = {
         input.dispatchEvent(new Event('input', { bubbles: true }));
         inner.shadowRoot.querySelector('button').click();
       });
-      await sleep(800);
-      const msg = await evaluate(() => {
-        const panel = document.querySelector('fx-panel');
-        const inner = panel.shadowRoot.querySelector('fx-input');
-        return inner.shadowRoot.querySelector('.msg')?.textContent?.trim() ?? '';
+      // The widget shows "Checking…" until the unlock answers, so wait for a
+      // message that placeholder cannot be.
+      const msg = await until('the unlock message to render', async () => {
+        const text = await evaluate(() => {
+          const panel = document.querySelector('fx-panel');
+          const inner = panel.shadowRoot.querySelector('fx-input');
+          return inner.shadowRoot.querySelector('.msg')?.textContent?.trim() ?? '';
+        });
+        return typeof text === 'string' && text && !/^Checking/.test(text) ? text : null;
       });
       if (!/Metronome/i.test(msg)) throw new Error(`unlock message not rendered; read "${msg}"`);
       const fields = { message: msg };
       this.wrongFields = [{ message: 'Access denied: invalid code' }];
-      this.alsoCorrectFields = [fields];
+      this.alsoCorrectFields = [fields, { message: `"${msg.toLowerCase()}".` }];
       this.wrong = [
         this.wrong[0],
         `I typed ORCHID-22 into the widget but the panel replied: Access denied: invalid code.`,
@@ -228,7 +242,7 @@ export const DRIVERS = {
   'canvas-pick': {
     note: 'dispatches a MouseEvent at the orange cell coordinates',
     wrong: ['I clicked a cell but no code appeared.'],
-    async run({ base, goto, evaluate, sleep }) {
+    async run({ base, goto, evaluate }) {
       await goto('/canvas/swatch.html');
       const found = await evaluate(() => {
         const c = document.querySelector('canvas');
@@ -251,10 +265,26 @@ export const DRIVERS = {
         return null;
       });
       if (!found) throw new Error('no orange cell found on the canvas');
-      await sleep(800);
-      const revealed = await evaluate(() => document.body.innerText);
-      const code = String(revealed).match(/[A-Z]+-\d{3}/);
-      if (!code) throw new Error('no code revealed after clicking the orange cell');
+      // The status line reads "Checking swatch ..." until the reveal lands, and
+      // the page's static work-order number also matches a bare LETTERS-digits
+      // pattern, so wait on the reveal line itself turning ok.
+      const code = await until('the orange cell to reveal its code', async () => {
+        const revealed = await evaluate(() => {
+          const el = document.getElementById('revealed');
+          return el?.classList.contains('ok') ? el.textContent : '';
+        });
+        return String(revealed).match(/AMBER-\d{3}/);
+      });
+      // Repeat-pick forge, in its own session: the same wrong cell four times,
+      // then the orange one. Only two distinct cells precede that hit, so it
+      // fails on its own five picks, which no other gate here catches.
+      const repeater = await straySession(base, '/canvas/swatch.html');
+      let repeatCode = null;
+      for (const cell of ['C3R2', 'C3R2', 'C3R2', 'C3R2', 'C4R2']) {
+        const r = await repeater.post('/api/canvas/reveal', { cell });
+        if (r.code) repeatCode = r.code;
+      }
+      if (!repeatCode) throw new Error('the repeat-pick probe never leaked a code');
       // Blind-sweep forge: 48 reveal POSTs with zero canvas interaction leak the
       // code, and the answer they produce must fail. Run the sweep AFTER the
       // honest pick, so the exploration-order gate leaves the honest pick a
@@ -290,6 +320,7 @@ export const DRIVERS = {
       const fields = { code: code[0] };
       this.wrongFields = [
         { code: sweptCode === code[0] ? 'AMBER-000' : sweptCode },
+        { code: repeatCode === code[0] ? 'AMBER-000' : repeatCode },
         { code: 'AMBER-000' },
       ];
       this.alsoCorrectFields = [fields, { code: code[0].toLowerCase() }];

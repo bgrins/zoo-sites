@@ -37,20 +37,22 @@ export function routes(ctx) {
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/floorplan/room') {
       // 403 before anything is recorded: a request without the session cookie
-      // and nonce is never logged, so only real console clicks count.
+      // and nonce is never logged.
       const found = requireSession(req, res);
       if (!found) return;
       const id = String(url.searchParams.get('id') ?? '').trim().toUpperCase();
       const room = Object.hasOwn(FLOORPLAN_ROOMS, id) ? FLOORPLAN_ROOMS[id] : null;
       if (!room) return json(res, 404, { error: 'unknown room' });
-      // Only a same-origin fetch from the sheet writes the graded click log
-      // (same idea as /api/parcels/track): a shell probe holding a live cookie
-      // still gets the record, it just does not count as a region click.
+      // Only a fetch that looks same-origin from the sheet writes the graded
+      // click log (same idea as /api/parcels/track): a shell probe holding a
+      // live cookie still gets the record, it just does not count as a region
+      // click. Legibility, never proof: curl sets these headers freely.
       // Per-session (unlike a beacon, not forgeable through /api/beacon).
       const fromPage =
         req.headers['sec-fetch-site'] === 'same-origin' ||
         /\/floorplan\/(?:index\.html)?(?:[?#]|$)/.test(req.headers.referer ?? '');
       if (fromPage) (found.session.roomClicks ??= []).push({ id, at: Date.now() });
+      else found.session.roomReadsOffPage = (found.session.roomReadsOffPage ?? 0) + 1;
       return json(res, 200, { id, ...room });
     }
 

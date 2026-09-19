@@ -14,6 +14,7 @@
 //     invalidates every uid, so a four-card triage costs a snapshot per card.
 
 import { snapText, until } from './lib.mjs';
+import { probeSession } from './interaction-lib.mjs';
 
 const PATH = '/kanban/';
 const LANES = { backlog: 'Backlog', doing: 'Doing', done: 'Done' };
@@ -45,7 +46,7 @@ const wantedLane = (card) =>
 export const DRIVERS = {
   'kanban-triage': {
     note: 'the only driver that calls drag_by_uid_to_uid; drags all four cards',
-    async run({ goto, mcp }) {
+    async run({ base, goto, mcp }) {
       await goto(PATH);
       const snapshot = () => snapText(mcp, { maxLines: 400 });
 
@@ -108,8 +109,43 @@ export const DRIVERS = {
           `the page reported revision ${revision.slice(3)}.`,
         `Saved by drag-and-drop between lanes; the board revision is ${revision.toLowerCase()}.`,
       ];
+      // Curl sessions that save their own boards: one saves the dealt board
+      // untouched, one triages but also shifts a Routine card, and one saves the
+      // dealt board before triaging and saving again. Each revision is real, so
+      // each must fail on the layout it was issued for.
+      const probeBoard = async () => {
+        const probe = await probeSession(base, PATH);
+        const { body } = await probe.get('/api/kanban/board');
+        if (!Array.isArray(body.cards)) throw new Error('probe could not read its board');
+        const save = async (place) => {
+          const columns = { backlog: [], doing: [], done: [] };
+          for (const card of body.cards) columns[place(card)].push(card.id);
+          const r = await probe.post('/api/kanban/layout', { columns, moves: [] });
+          if (!r.body.ok) throw new Error(`probe save refused: ${JSON.stringify(r.body)}`);
+          return r.body.revision;
+        };
+        const triaged = (card) =>
+          card.tag === 'urgent' ? 'done' : card.tag === 'blocked' ? 'backlog' : card.col;
+        return { cards: body.cards, save, triaged };
+      };
+      const untouched = await probeBoard();
+      const untouchedRevision = await untouched.save((card) => card.col);
+      const shuffled = await probeBoard();
+      const nudged = shuffled.cards.find((card) => card.tag === 'routine');
+      const routineRevision = await shuffled.save((card) =>
+        card === nudged ? (card.col === 'doing' ? 'done' : 'doing') : shuffled.triaged(card)
+      );
+      const twice = await probeBoard();
+      const staleRevision = await twice.save((card) => card.col);
+      await twice.save(twice.triaged);
+
       const fields = { boardRevision: revision };
-      this.wrongFields = [{ boardRevision: 'CM-000000' }];
+      this.wrongFields = [
+        { boardRevision: 'CM-000000' },
+        { boardRevision: untouchedRevision },
+        { boardRevision: routineRevision },
+        { boardRevision: staleRevision },
+      ];
       this.alsoCorrectFields = [
         fields,
         { boardRevision: String(revision).replace(/^CM-/i, '') },

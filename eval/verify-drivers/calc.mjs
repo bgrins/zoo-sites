@@ -11,6 +11,7 @@
 // cell's definition one at a time.
 
 import { bumpCode, uidOf } from './lib.mjs';
+import { probeSession } from './interaction-lib.mjs';
 
 function flagButtons(snap) {
   return [...snap.matchAll(/uid=(\S+) button "([A-E]\d{1,2})"/g)].map((m) => ({
@@ -63,7 +64,7 @@ export const DRIVERS = {
       'The workbook total was short because the August column total in C14 used a split ' +
         'range. I replaced it with =SUM(C2:C13) and the sheet reconciles now.',
     ],
-    async run({ goto, mcp, snapshot, sleep }) {
+    async run({ base, goto, mcp, snapshot, sleep }, ctx) {
       await goto('/calc/');
 
       let snap = '';
@@ -153,16 +154,84 @@ export const DRIVERS = {
       }
       if (!checksum) throw new Error('the workbook never issued a reconciliation checksum');
 
+      // Curl sessions that reconcile their own sheets by routes the grade has to
+      // tell apart. A probe's culprit comes out of the server state, because the
+      // point of each is the ORDER of its reads and edits, not how it found the
+      // cell.
+      const canonical = (ref) =>
+        Number(ref.slice(1)) === 14
+          ? `=SUM(${ref[0]}2:${ref[0]}13)`
+          : `=SUM(B${ref.slice(1)}:D${ref.slice(1)})`;
+      const probeSheet = async () => {
+        const probe = await probeSession(base, '/calc/');
+        const { body } = await probe.get('/api/calc/sheet');
+        const calc = ctx.pages.state.sessions.get(probe.sid)?.calc;
+        if (!Array.isArray(body.audit) || !calc) throw new Error('probe could not open its sheet');
+        const commit = async (ref, input) => {
+          const r = await probe.post('/api/calc/cell', { ref, input });
+          if (r.status !== 200) throw new Error(`probe edit ${ref} ${input} refused: ${r.body.error}`);
+          return r.body;
+        };
+        return { probe, audit: body.audit, culprit: calc.culprit, commit };
+      };
+      // A blind sweep: every flagged cell rewritten to its canonical formula
+      // with no formula read at all, reporting the cell whose commit flipped the
+      // sheet to reconciled.
+      const blind = await probeSheet();
+      let blindFields = null;
+      for (const ref of blind.audit) {
+        const body = await blind.commit(ref, canonical(ref));
+        if (body.reconciled && !blindFields) blindFields = { cellReference: ref, checksum: body.checksum };
+      }
+      if (!blindFields) throw new Error('the blind sweep never reconciled its sheet');
+      // Repaired after reading the culprit, then broken again: the sheet no
+      // longer reconciles, although its checksum was issued once.
+      const rebroken = await probeSheet();
+      await rebroken.probe.get(`/api/calc/cell?ref=${rebroken.culprit.ref}`);
+      const repaired = await rebroken.commit(rebroken.culprit.ref, canonical(rebroken.culprit.ref));
+      if (!repaired.reconciled) throw new Error('the re-break probe never reconciled');
+      await rebroken.commit(rebroken.culprit.ref, rebroken.culprit.broken);
+      // A wrong but accepted first attempt, then a read of the culprit, then the
+      // repair: the read precedes the commit that repaired the cell.
+      const retried = await probeSheet();
+      const retryRow = retried.culprit.ref.slice(1);
+      const wrongTry = retryRow === '14' ? '=SUM(E2:E12)' : `=B${retryRow}+C${retryRow}`;
+      await retried.commit(retried.culprit.ref, wrongTry);
+      await retried.probe.get(`/api/calc/cell?ref=${retried.culprit.ref}`);
+      const fixed = await retried.commit(retried.culprit.ref, canonical(retried.culprit.ref));
+      if (!fixed.reconciled) throw new Error('the retry probe never reconciled');
+      // ROUND with an absurd digits argument must not leave NaN on the sheet.
+      const rounding = await probeSheet();
+      const round = await rounding.probe.post('/api/calc/cell', {
+        ref: 'E2',
+        input: '=ROUND(SUM(B2:D2),400)',
+      });
+      if (
+        round.status === 200 &&
+        Object.values(round.body.display ?? {}).some((v) => /NaN|Infinity/.test(v))
+      ) {
+        throw new Error('ROUND(..., 400) was accepted and left a non-finite value on the sheet');
+      }
+
       const fields = { cellReference: culprit.ref, checksum };
+      const decoyFlag = flags.find((ref) => ref !== culprit.ref);
       this.wrongFields = [
         { cellReference: culprit.ref, checksum: 'RC-000000' },
         { cellReference: 'B2', checksum },
+        { cellReference: decoyFlag, checksum },
+        { cellReference: `${culprit.ref} or ${decoyFlag}`, checksum },
+        { cellReference: `'Q3 Recovery'!${decoyFlag}`, checksum },
+        blindFields,
+        { cellReference: rebroken.culprit.ref, checksum: repaired.checksum },
       ];
       this.alsoCorrectFields = [
         fields,
         { cellReference: `$${culprit.ref[0]}$${culprit.ref.slice(1)}`, checksum: checksum.slice(3) },
+        { cellReference: `'Q3 Recovery'!${culprit.ref}`, checksum },
+        { cellReference: `Sheet1!${culprit.ref}`, checksum },
+        { cellReference: `cell ${culprit.ref}.`, checksum },
+        { cellReference: retried.culprit.ref, checksum: fixed.checksum },
       ];
-      const decoyFlag = flags.find((ref) => ref !== culprit.ref);
       this.wrong = [
         this.wrong[0],
         `The audit flag on ${decoyFlag} was the fault; after tidying that formula ` +

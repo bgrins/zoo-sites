@@ -23,7 +23,42 @@ const SIGNATURES = [
   [/total: round2\(units \* rate\.perTonne\),/, 'perTonne', /per-unit rate/i],
 ];
 
-import { clickToPath, snapText, textOf, uidOf, until } from './lib.mjs';
+import { addSession, clickToPath, findSession, snapText, textOf, uidOf, until } from './lib.mjs';
+
+// The session the golden path reviewed, and its one on-line review.
+const reviewed = (state) => {
+  const { session } = findSession(state, (s) => (s.forge?.reviews ?? []).length > 0);
+  const hit = session.forge.reviews.find((r) =>
+    r.comments.some((c) => c.file === session.forge.defect.file && c.line === session.forge.defect.line)
+  );
+  return { forge: session.forge, hit };
+};
+
+// A second session whose drawn defect is cache-ttl, reviewed correctly, at a
+// line the golden session cannot have drawn. Its answer is graded twice: with
+// the at-fault identifier, and with SOFT_TTL_RATIO, a different identifier
+// that shares its first two words.
+const TTL_LINE = 999;
+const plantTtlReview = (state) => {
+  const { forge, hit } = reviewed(state);
+  const defect = { file: 'src/tariff/cache.js', line: TTL_LINE, identifier: 'softTtlMs', key: 'cache-ttl' };
+  addSession(state, {
+    forge: {
+      ...forge,
+      key: 'cache-ttl',
+      defect,
+      diffFetches: 1,
+      reviews: [
+        {
+          ...hit,
+          verdict: 'changes',
+          comments: [{ file: defect.file, line: defect.line, body: 'softTtlMs is wrong here: the hard TTL applies.' }],
+        },
+      ],
+    },
+  });
+};
+const ttlFields = (identifier) => ({ file: 'src/tariff/cache.js', lineNumber: TTL_LINE, identifier });
 
 export const DRIVERS = {
   'pr-review': {
@@ -31,6 +66,89 @@ export const DRIVERS = {
     wrong:
       'The failing check is caused by the new round2 helper, which rounds the ' +
       'total before the levy is applied. I approved the pull request.',
+    // Each server-state conjunct, broken on the session the answer describes
+    // while the answer stays right.
+    wrongState: [
+      {
+        name: 'the on-line review was submitted as Comment, not Request changes',
+        mutate(state) {
+          reviewed(state).hit.verdict = 'comment';
+        },
+      },
+      {
+        name: 'the on-line comment names no identifier',
+        mutate(state) {
+          reviewed(state).hit.comments[0].body = 'This line looks wrong to me.';
+        },
+      },
+      {
+        name: 'the on-line review also carries a second line comment',
+        mutate(state) {
+          const { forge, hit } = reviewed(state);
+          hit.comments.push({ file: forge.defect.file, line: forge.defect.line + 1, body: 'and here' });
+        },
+      },
+      {
+        name: 'the session sprayed two more addresses in another review',
+        mutate(state) {
+          const { forge } = reviewed(state);
+          forge.reviews.push({
+            id: 'RV-0000',
+            verdict: 'comment',
+            summary: '',
+            comments: [1, 2].map((d) => ({ file: forge.defect.file, line: forge.defect.line + d, body: 'here?' })),
+            fromPage: true,
+            at: Date.now(),
+          });
+        },
+      },
+      {
+        name: 'the session never fetched the diff',
+        mutate(state) {
+          reviewed(state).forge.diffFetches = 0;
+        },
+      },
+      {
+        name: 'a cache-ttl review answered with SOFT_TTL_RATIO',
+        mutate: plantTtlReview,
+        fields: ttlFields('SOFT_TTL_RATIO'),
+      },
+    ],
+    alsoCorrectState: [
+      {
+        name: 'a clarifying Comment review on the same line after the real one',
+        mutate(state) {
+          const { forge, hit } = reviewed(state);
+          forge.reviews.push({ ...hit, id: 'RV-0001', verdict: 'comment', at: Date.now() });
+        },
+      },
+      {
+        name: 'a stray session left a Comment review on its own defect line',
+        mutate(state) {
+          const { forge, hit } = reviewed(state);
+          const defect = { ...forge.defect, line: forge.defect.line + 7 };
+          addSession(state, {
+            forge: {
+              ...forge,
+              defect,
+              reviews: [
+                {
+                  ...hit,
+                  verdict: 'comment',
+                  comments: [{ ...hit.comments[0], line: defect.line }],
+                  at: Date.now(),
+                },
+              ],
+            },
+          });
+        },
+      },
+      {
+        name: 'the same cache-ttl review answered with this.softTtlMs',
+        mutate: plantTtlReview,
+        fields: ttlFields('this.softTtlMs'),
+      },
+    ],
     async run({ goto, evaluate, mcp }) {
       const snap = (maxLines = 500) => snapText(mcp, { maxLines });
 
@@ -194,6 +312,7 @@ export const DRIVERS = {
         { ...fields, identifier: rivalId },
         { ...fields, lineNumber: defect.line + 1 },
         { ...fields, file: 'src/tariff/other.js' },
+        { ...fields, identifier: 'round2' },
       ];
       this.alsoCorrectFields = [
         fields,

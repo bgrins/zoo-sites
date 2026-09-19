@@ -1,5 +1,6 @@
 // Golden paths for pages/floorplan/ (T069). See probes.mjs for the contract.
 
+import { ANSWERS } from '../answers.mjs';
 import { uidOf } from './lib.mjs';
 
 export const DRIVERS = {
@@ -7,6 +8,18 @@ export const DRIVERS = {
   'floorplan-room': {
     note: 'clicks SVG <rect> regions by uid; snapshot names them only because they carry aria-label',
     wrong: 'The north-east corner office on Level 04 is occupied by Tobin Radleigh.',
+    // The occupant is the same for every session, so what binds the answer to
+    // this run is a session having opened the NE-4 record from the plan.
+    wrongState: [
+      {
+        name: 'no session opened the NE-4 record, only its neighbour',
+        mutate(state) {
+          for (const s of state.sessions.values()) {
+            if (s.roomClicks) s.roomClicks = s.roomClicks.filter((c) => c.id !== ANSWERS.floorplan.room);
+          }
+        },
+      },
+    ],
     async run({ goto, snapshot, mcp, sleep }) {
       await goto('/floorplan/');
       // The sheet is drawn with plan north to the LEFT, and the snapshot carries
@@ -63,10 +76,16 @@ export const DRIVERS = {
       this.wrongFields = [
         { occupantName: ne3.occupant, roomCode: 'NE-3' },
         { occupantName: ne3.occupant, roomCode: 'NE-4' },
+        { occupantName: ANSWERS.floorplan.decoySeOccupant, roomCode: 'SE-7' },
+        { occupantName: ANSWERS.floorplan.vacated, roomCode: 'NE-4' },
+        { occupantName: ne4.occupant, roomCode: 'SE-7' },
+        { occupantName: initialled, roomCode: 'NE-3' },
       ];
       this.alsoCorrectFields = [
         fields,
         { occupantName: initialled, roomCode: 'NE-4' },
+        { occupantName: initialled, roomCode: 'NE‑4' },
+        { occupantName: ne4.occupant, roomCode: null },
       ];
       this.wrong = [
         `The north-east corner office on Level 04 is occupied by ${ne3.occupant}.`,
