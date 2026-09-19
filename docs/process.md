@@ -237,8 +237,9 @@ and only a late adversarial pass catches it.
    deliberately design around is the most common false positive here.
 
 Those assertions accumulate into the gate's memory. All 91 drivers carry them, and a
-full run exercises 242 wrong answers that must all fail and 187 accepted variants
-that must all pass, so a change that re-breaks one fails the run and names it. Read
+full run exercises 542 wrong answers and 136 wrong server states that must all fail,
+and 390 accepted variants and 98 accepted states that must all pass, so a change that
+re-breaks one fails the run and names it. Read
 the current counts off `node eval/verify.mjs`, which prints them per task and totals
 them in its `cases exercised` line.
 
