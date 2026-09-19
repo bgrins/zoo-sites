@@ -4,23 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vehicle roster — Draymere Depot Console</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --shell: #0e1216; --panel: #161c22; --panel-2: #1d252d;
     --edge: #2b353f; --ink: #dfe6ec; --dim: #8c9aa6;
-    --amber: #f0a02c; --amber-dim: #b0761f; --green: #56b98a;
+    --amber: #f0a02c; --frost: #6cc9e0; --frost-dim: #2e7f96; --green: #56b98a;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--shell); color: var(--ink);
     font-family: "IBM Plex Sans", "Fira Sans", "Noto Sans", "Liberation Sans", sans-serif;
     font-size: 14px; line-height: 1.5; }
-  a { color: var(--amber); text-decoration: none; }
+  a { color: var(--frost); text-decoration: none; }
   a:hover { text-decoration: underline; }
   .mono { font-family: "IBM Plex Mono", "Fira Mono", "DejaVu Sans Mono", monospace; }
-  header.strip { background: #090c0f; border-bottom: 2px solid var(--amber-dim);
+  header.strip { background: #090c0f; border-bottom: 2px solid var(--frost-dim);
     display: flex; align-items: center; gap: 18px; padding: 10px 20px; }
   .mark { font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #fff; }
-  .mark span { color: var(--amber); }
+  .mark span { color: var(--frost); }
   .unit { font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--dim);
     border-left: 1px solid var(--edge); padding-left: 18px; }
   header.strip .who { margin-left: auto; font-size: 12px; color: var(--dim);
@@ -29,7 +30,7 @@
   nav.tabs a { color: var(--dim); font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
     padding: 11px 16px; border-bottom: 2px solid transparent; }
   nav.tabs a:hover { color: var(--ink); text-decoration: none; }
-  nav.tabs a.on { color: var(--amber); border-bottom-color: var(--amber); }
+  nav.tabs a.on { color: var(--frost); border-bottom-color: var(--frost); }
   .crumbs { padding: 10px 20px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #6f7d89; }
   .crumbs .at { color: var(--dim); }
   main { max-width: 1080px; margin: 0 auto; padding: 6px 20px 40px; }
@@ -45,18 +46,33 @@
   .log td { border-bottom: 1px solid #212a32; padding: 7px 8px; color: #b9c5cf; }
   .log td.warn { color: var(--amber); }
   footer.foot { border-top: 1px solid var(--edge); margin-top: 10px; padding: 18px 20px 30px;
-    color: #66727c; font-size: 11px; }
+    color: #8a97a2; font-size: 11px; }
   footer.foot .links { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
-  footer.foot .links a { color: #8c9aa6; }
+  footer.foot .links a { color: #b9c5cf; }
+  a.mark, a.mark:hover { text-decoration: none; }
+  .crumbs a { color: var(--dim); }
+  .mark, .unit, nav.tabs a, .card > h1, .card > h2, .inner h3, .log th {
+    font-family: "DIN Alternate", "DIN Condensed", Bahnschrift, "D-DIN", "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+  }
+  @media (max-width: 720px) {
+    header.strip { flex-wrap: wrap; gap: 6px 14px; padding: 10px 14px; }
+    header.strip .who { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; gap: 4px 14px; }
+    nav.tabs { overflow-x: auto; padding: 0 8px; }
+    nav.tabs a { padding: 11px 10px; white-space: nowrap; }
+    .crumbs { padding: 10px 14px; }
+    main { padding: 6px 12px 32px; }
+    .log { display: block; overflow-x: auto; white-space: nowrap; }
+    footer.foot { padding: 16px 14px 26px; }
+  }
 </style>
 </head>
 <body>
 
 <header class="strip">
-  <div class="mark">Dray<span>mere</span></div>
+  <a class="mark" href="index.html">Dray<span>mere</span></a>
   <div class="unit">Cold Chain Operations</div>
   <div class="who">
-    <span>Depot 41 &middot; Kettleworth</span>
+    <span>Depot 41 &middot; Skarnley</span>
     <span class="mono">op.hedlund</span>
     <a href="signout.html">Sign out</a>
   </div>
@@ -67,11 +83,11 @@
   <a href="receiving.html">Receiving</a>
   <a href="inventory.html">Inventory</a>
   <a href="queue.html">Attestations</a>
-  <a href="vehicles.html" class="on">Vehicles</a>
+  <a href="vehicles.html" class="on" aria-current="page">Vehicles</a>
   <a href="reports.html">Reports</a>
 </nav>
 
-<div class="crumbs">Vehicles &rsaquo; <span class="at">Roster</span></div>
+<div class="crumbs"><a href="index.html">Depot 41</a> &rsaquo; <span class="at">Vehicles</span></div>
 
 <main>
   <section class="card">
@@ -81,15 +97,15 @@
         at the start of shift; units with open safety defects must not be planned onto runs.</p>
       <table class="log">
         <thead>
-          <tr><th>Unit</th><th>Type</th><th>MOT date</th><th>Defect notes</th></tr>
+          <tr><th>Unit</th><th>Type</th><th>MOT due</th><th>Defect notes</th></tr>
         </thead>
         <tbody>
-          <tr><td class="mono">TRC-102</td><td>Tractor unit</td><td>14 Mar 2026</td><td>None open</td></tr>
+          <tr><td class="mono">TRC-102</td><td>Tractor unit</td><td>14 Mar 2027</td><td>None open</td></tr>
           <tr><td class="mono">TRC-105</td><td>Tractor unit</td><td>02 Nov 2026</td><td class="warn">Nearside mirror cracked, booked for 28 Jul</td></tr>
-          <tr><td class="mono">TRL-201</td><td>Refrigerated trailer</td><td>21 Jan 2026</td><td>None open</td></tr>
+          <tr><td class="mono">TRL-201</td><td>Refrigerated trailer</td><td>21 Jan 2027</td><td>None open</td></tr>
           <tr><td class="mono">TRL-206</td><td>Refrigerated trailer</td><td>09 Sep 2026</td><td class="warn">Fridge unit intermittent fault, under observation</td></tr>
-          <tr><td class="mono">TRL-208</td><td>Refrigerated trailer</td><td>17 Apr 2026</td><td>None open</td></tr>
-          <tr><td class="mono">TRL-214</td><td>Refrigerated trailer</td><td>30 Jun 2026</td><td>None open</td></tr>
+          <tr><td class="mono">TRL-208</td><td>Refrigerated trailer</td><td>17 Apr 2027</td><td>None open</td></tr>
+          <tr><td class="mono">TRL-214</td><td>Refrigerated trailer</td><td>30 Jun 2027</td><td>None open</td></tr>
           <tr><td class="mono">TRL-219</td><td>Refrigerated trailer</td><td>12 Dec 2026</td><td>None open</td></tr>
           <tr><td class="mono">TRL-222</td><td>Refrigerated trailer</td><td>25 Aug 2026</td><td>None open</td></tr>
           <tr><td class="mono">VAN-310</td><td>Chilled van</td><td>08 Oct 2026</td><td>None open</td></tr>
@@ -110,8 +126,8 @@
     <a href="status.html">Service status</a>
   </div>
   <div>Copyright 2026 Draymere Cold Chain Limited. Registered in England and Wales,
-    company 00000000. Registered office: Unit 12, Kettleworth Distribution Park,
-    Kettleworth KW7 3RN. Support: support@draymere.example</div>
+    company 00000000. Registered office: Unit 12, Skarnley Distribution Park,
+    Skarnley DK7 3RN. Support: support@draymere.example</div>
 </footer>
 
 </body>

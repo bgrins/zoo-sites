@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kestrel Peak Trailers — Models</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --char: #17140f;
     --cream: #f6f1e7;
     --sand: #cfc3ae;
     --rust: #9c4a2f;
-    --stone: #7a7266;
+    --stone: #6d6559;
   }
   * { box-sizing: border-box; }
   body {
@@ -65,12 +67,25 @@
   .specs li span:first-child { text-transform: uppercase; letter-spacing: 1.6px; font-size: 11px; color: var(--stone); }
   footer { background: var(--char); color: var(--sand); padding: 30px 34px; font-size: 12.5px; }
   footer .cols { display: flex; flex-wrap: wrap; gap: 6px 40px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; }
+  nav.top a.word { color: #fff; }
+  footer a { color: var(--sand); }
+  @media (max-width: 720px) {
+    nav.top { flex-wrap: wrap; gap: 6px 18px; padding: 10px 18px; }
+    nav.top .word { flex-basis: 100%; }
+    nav.top .tel { margin-left: 0; }
+    .hero { min-height: 260px; padding: 0 18px 26px; }
+    .hero h1 { font-size: 40px; }
+    .strip { padding: 12px 18px; gap: 4px 22px; }
+    .layout { padding: 30px 18px 50px; gap: 30px; }
+    .grid { grid-template-columns: 1fr; }
+    footer { padding: 24px 18px; }
+  }
 </style>
 </head>
 <body>
 <nav class="top">
-  <span class="word">Kestrel Peak</span>
-  <a href="models.html" class="on">Models</a>
+  <a class="word" href="index.html">Kestrel Peak</a>
+  <a href="models.html" class="on" aria-current="page">Models</a>
   <a href="build.html">Build yours</a>
   <a href="owners.html">Owners</a>
   <a href="dealers.html">Dealers</a>
@@ -87,13 +102,13 @@
 </header>
 
 <div class="strip">
-  <span>Aluminium monocoque</span>
+  <span>Aluminum monocoque</span>
   <span>Three chassis lengths</span>
   <span>Six-year frame warranty</span>
   <span>Made in Oregon</span>
 </div>
 
-<div class="layout">
+<main class="layout">
   <p class="lede">Every Kestrel Peak trailer starts on the same jig. Pick a length,
   then work through the option groups on the build page. All three chassis carry
   200 W of solar as standard, with a 400 W upgrade available.</p>
@@ -122,7 +137,7 @@
 
   <section class="model">
     <h2>Cirque 14</h2>
-    <p class="sub">The fourteen-foot flagship. A fold-down bunk over the footwell sleeps a third traveller.</p>
+    <p class="sub">The fourteen-foot flagship. A fold-down bunk over the footwell sleeps a third traveler.</p>
     <ul class="specs">
       <li><span>Dry weight</span><span>1,940 lb</span></li>
       <li><span>Sleeps</span><span>Two adults plus a bunk</span></li>
@@ -130,18 +145,22 @@
       <li><span>Lead time</span><span>18 – 22 weeks from deposit</span></li>
     </ul>
   </section>
-</div>
+</main>
 
 <footer>
   <div class="cols">
     <span>Showroom open Tue–Sat</span>
-    <span>1180 Switchback Rd, Bldg C</span>
+    <span>1180 Switchback Rd, Bldg C, Galtrow, Oregon</span>
     <span>541-555-0142</span>
   </div>
   © 2026 Kestrel Peak Trailers, Inc. ·
-  <a href="parts.html" style="color:var(--sand)">Service and parts</a> ·
-  <a href="accessibility.html" style="color:var(--sand)">Accessibility</a> ·
-  <a href="contact.html" style="color:var(--sand)">Contact</a>
+  <a href="owners.html#warranty">Warranty</a> ·
+  <a href="privacy.html">Privacy</a> ·
+  <a href="terms.html">Terms of sale</a> ·
+  <a href="dealers.html">Dealer locator</a> ·
+  <a href="parts.html">Service and parts</a> ·
+  <a href="accessibility.html">Accessibility</a> ·
+  <a href="contact.html">Contact</a>
 </footer>
 </body>
 </html>

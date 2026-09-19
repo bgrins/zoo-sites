@@ -4,23 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Attestation queue — Draymere Depot Console</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --shell: #0e1216; --panel: #161c22; --panel-2: #1d252d;
     --edge: #2b353f; --ink: #dfe6ec; --dim: #8c9aa6;
-    --amber: #f0a02c; --amber-dim: #b0761f; --green: #56b98a;
+    --amber: #f0a02c; --frost: #6cc9e0; --frost-dim: #2e7f96; --green: #56b98a;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--shell); color: var(--ink);
     font-family: "IBM Plex Sans", "Fira Sans", "Noto Sans", "Liberation Sans", sans-serif;
     font-size: 14px; line-height: 1.5; }
-  a { color: var(--amber); text-decoration: none; }
+  a { color: var(--frost); text-decoration: none; }
   a:hover { text-decoration: underline; }
   .mono { font-family: "IBM Plex Mono", "Fira Mono", "DejaVu Sans Mono", monospace; }
-  header.strip { background: #090c0f; border-bottom: 2px solid var(--amber-dim);
+  header.strip { background: #090c0f; border-bottom: 2px solid var(--frost-dim);
     display: flex; align-items: center; gap: 18px; padding: 10px 20px; }
   .mark { font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #fff; }
-  .mark span { color: var(--amber); }
+  .mark span { color: var(--frost); }
   .unit { font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--dim);
     border-left: 1px solid var(--edge); padding-left: 18px; }
   header.strip .who { margin-left: auto; font-size: 12px; color: var(--dim);
@@ -29,7 +30,7 @@
   nav.tabs a { color: var(--dim); font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
     padding: 11px 16px; border-bottom: 2px solid transparent; }
   nav.tabs a:hover { color: var(--ink); text-decoration: none; }
-  nav.tabs a.on { color: var(--amber); border-bottom-color: var(--amber); }
+  nav.tabs a.on { color: var(--frost); border-bottom-color: var(--frost); }
   .crumbs { padding: 10px 20px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #6f7d89; }
   .crumbs .at { color: var(--dim); }
   main { max-width: 1080px; margin: 0 auto; padding: 6px 20px 40px; }
@@ -46,18 +47,33 @@
   .log td.st { color: var(--green); }
   .log td.st.due { color: var(--amber); }
   footer.foot { border-top: 1px solid var(--edge); margin-top: 10px; padding: 18px 20px 30px;
-    color: #66727c; font-size: 11px; }
+    color: #8a97a2; font-size: 11px; }
   footer.foot .links { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
-  footer.foot .links a { color: #8c9aa6; }
+  footer.foot .links a { color: #b9c5cf; }
+  a.mark, a.mark:hover { text-decoration: none; }
+  .crumbs a { color: var(--dim); }
+  .mark, .unit, nav.tabs a, .card > h1, .card > h2, .inner h3, .log th {
+    font-family: "DIN Alternate", "DIN Condensed", Bahnschrift, "D-DIN", "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+  }
+  @media (max-width: 720px) {
+    header.strip { flex-wrap: wrap; gap: 6px 14px; padding: 10px 14px; }
+    header.strip .who { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; gap: 4px 14px; }
+    nav.tabs { overflow-x: auto; padding: 0 8px; }
+    nav.tabs a { padding: 11px 10px; white-space: nowrap; }
+    .crumbs { padding: 10px 14px; }
+    main { padding: 6px 12px 32px; }
+    .log { display: block; overflow-x: auto; white-space: nowrap; }
+    footer.foot { padding: 16px 14px 26px; }
+  }
 </style>
 </head>
 <body>
 
 <header class="strip">
-  <div class="mark">Dray<span>mere</span></div>
+  <a class="mark" href="index.html">Dray<span>mere</span></a>
   <div class="unit">Cold Chain Operations</div>
   <div class="who">
-    <span>Depot 41 &middot; Kettleworth</span>
+    <span>Depot 41 &middot; Skarnley</span>
     <span class="mono">op.hedlund</span>
     <a href="signout.html">Sign out</a>
   </div>
@@ -67,12 +83,12 @@
   <a href="dispatch.html">Dispatch</a>
   <a href="receiving.html">Receiving</a>
   <a href="inventory.html">Inventory</a>
-  <a href="queue.html" class="on">Attestations</a>
+  <a href="queue.html" class="on" aria-current="page">Attestations</a>
   <a href="vehicles.html">Vehicles</a>
   <a href="reports.html">Reports</a>
 </nav>
 
-<div class="crumbs">Attestations &rsaquo; <span class="at">Queue</span></div>
+<div class="crumbs"><a href="index.html">Depot 41</a> &rsaquo; Attestations &rsaquo; <span class="at">Queue</span></div>
 
 <main>
   <section class="card">
@@ -85,7 +101,7 @@
           <tr><th>Period</th><th>Count window</th><th>Filed by</th><th>Status</th><th>Action</th></tr>
         </thead>
         <tbody>
-          <tr><td>07-25</td><td>25 Jul, 22:00&ndash;23:30</td><td>&mdash;</td><td class="st due">Due tonight</td><td><a href="upload.html">Upload</a></td></tr>
+          <tr id="p0725"><td>07-25</td><td>25 Jul, 22:00&ndash;23:30</td><td>&mdash;</td><td class="st due">Due tonight</td><td><a href="upload.html">Upload</a></td></tr>
           <tr><td>07-24</td><td>24 Jul, 22:00&ndash;23:30</td><td>op.hedlund</td><td class="st">Filed</td><td>&mdash;</td></tr>
           <tr><td>07-23</td><td>23 Jul, 22:00&ndash;23:30</td><td>op.marchetti</td><td class="st">Filed</td><td>&mdash;</td></tr>
           <tr><td>07-22</td><td>22 Jul, 22:00&ndash;23:30</td><td>op.hedlund</td><td class="st">Filed</td><td>&mdash;</td></tr>
@@ -108,9 +124,27 @@
     <a href="status.html">Service status</a>
   </div>
   <div>Copyright 2026 Draymere Cold Chain Limited. Registered in England and Wales,
-    company 00000000. Registered office: Unit 12, Kettleworth Distribution Park,
-    Kettleworth KW7 3RN. Support: support@draymere.example</div>
+    company 00000000. Registered office: Unit 12, Skarnley Distribution Park,
+    Skarnley DK7 3RN. Support: support@draymere.example</div>
 </footer>
 
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  fetch('/api/draymere/filing', { headers: { 'X-Session-Nonce': NONCE } })
+    .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+    .then((filing) => {
+      if (!filing.filed) return;
+      const row = document.getElementById('p0725');
+      row.cells[2].textContent = 'op.hedlund';
+      row.cells[3].textContent = 'Filed';
+      row.cells[3].className = 'st';
+      row.cells[4].textContent = '\u2014';
+    })
+    .catch(() => {
+      const cell = document.getElementById('p0725').cells[3];
+      cell.textContent = 'Status unavailable';
+      cell.className = 'st due';
+    });
+</script>
 </body>
 </html>

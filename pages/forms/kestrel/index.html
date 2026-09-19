@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kestrel Peak Trailers — Handbuilt Teardrop and Off-Road Trailers</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --char: #17140f;
     --cream: #f6f1e7;
     --sand: #cfc3ae;
     --rust: #9c4a2f;
-    --stone: #7a7266;
+    --stone: #6d6559;
   }
   * { box-sizing: border-box; }
   body {
@@ -90,11 +92,25 @@
   footer { background: var(--char); color: var(--sand); padding: 30px 34px; font-size: 12.5px; }
   footer .cols { display: flex; flex-wrap: wrap; gap: 6px 40px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; }
   @media (max-width: 880px) { .story { grid-template-columns: 1fr; } }
+  .card a { color: var(--rust); }
+  nav.top a.word { color: #fff; }
+  footer a { color: var(--sand); }
+  @media (max-width: 720px) {
+    nav.top { flex-wrap: wrap; gap: 6px 18px; padding: 10px 18px; }
+    nav.top .word { flex-basis: 100%; }
+    nav.top .tel { margin-left: 0; }
+    .hero { min-height: 260px; padding: 0 18px 26px; }
+    .hero h1 { font-size: 40px; }
+    .strip { padding: 12px 18px; gap: 4px 22px; }
+    .layout { padding: 30px 18px 50px; gap: 30px; }
+    .grid { grid-template-columns: 1fr; }
+    footer { padding: 24px 18px; }
+  }
 </style>
 </head>
 <body>
 <nav class="top">
-  <span class="word">Kestrel Peak</span>
+  <a class="word" href="index.html">Kestrel Peak</a>
   <a href="models.html">Models</a>
   <a href="build.html">Build yours</a>
   <a href="owners.html">Owners</a>
@@ -114,13 +130,13 @@
 </header>
 
 <div class="strip">
-  <span>Aluminium monocoque</span>
+  <span>Aluminum monocoque</span>
   <span>Three chassis lengths</span>
   <span>Six-year frame warranty</span>
   <span>Made in Oregon</span>
 </div>
 
-<div class="layout">
+<main class="layout">
   <p class="lede">Kestrel Peak builds towable trailers light enough to sit behind an
   ordinary vehicle and stiff enough to be trusted on a gravel road at the far end of
   a forest map. Every one of them is welded, wired and finished by hand at the
@@ -157,12 +173,12 @@
   <h2>How we build</h2>
   <div class="story">
     <div>
-      <p>A Kestrel Peak trailer begins as a folded aluminium monocoque, cut on a jig
+      <p>A Kestrel Peak trailer begins as a folded aluminum monocoque, cut on a jig
       we made ourselves and welded in one piece. Nothing structural is bolted on
       afterwards, which is why the frame carries a six-year warranty and why a
       fifteen-year-old shell still closes squarely on its hinges.</p>
       <p>The cabins are finished in birch, sealed rather than laminated, so a scuff
-      sands out instead of peeling. Wiring runs in labelled looms behind removable
+      sands out instead of peeling. Wiring runs in labeled looms behind removable
       panels, and the diagram that matches your build sheet ships with the trailer.
       Owners who service their own trailers tell us that this is the part they
       notice second, after the tow manners.</p>
@@ -176,7 +192,7 @@
       <li><span>Sleeps</span><span>Two adults, or two plus a bunk</span></li>
       <li><span>Solar</span><span>200 W standard, 400 W optional</span></li>
       <li><span>Lead time</span><span>14 – 22 weeks from deposit</span></li>
-      <li><span>Built</span><span>Switchback Rd, Oregon</span></li>
+      <li><span>Built</span><span>Galtrow, Oregon</span></li>
     </ul>
   </div>
 
@@ -191,23 +207,27 @@
     </section>
     <section class="card">
       <h3>Visit the shop</h3>
-      <p>The showroom at 1180 Switchback Rd, Bldg C is open Tuesday to Saturday.
+      <p>The showroom at 1180 Switchback Rd, Bldg C, in Galtrow, is open Tuesday to Saturday.
       Call ahead and we will have a trailer hitched and open when you arrive.</p>
       <a class="cta" href="dealers.html">Showroom details</a>
     </section>
   </div>
-</div>
+</main>
 
 <footer>
   <div class="cols">
     <span>Showroom open Tue–Sat</span>
-    <span>1180 Switchback Rd, Bldg C</span>
+    <span>1180 Switchback Rd, Bldg C, Galtrow, Oregon</span>
     <span>541-555-0142</span>
   </div>
-  © 2026 Kestrel Peak Trailers, Inc. · Warranty · Privacy · Dealer locator ·
-  <a href="parts.html" style="color:var(--sand)">Service and parts</a> ·
-  <a href="accessibility.html" style="color:var(--sand)">Accessibility</a> ·
-  <a href="contact.html" style="color:var(--sand)">Contact</a>
+  © 2026 Kestrel Peak Trailers, Inc. ·
+  <a href="owners.html#warranty">Warranty</a> ·
+  <a href="privacy.html">Privacy</a> ·
+  <a href="terms.html">Terms of sale</a> ·
+  <a href="dealers.html">Dealer locator</a> ·
+  <a href="parts.html">Service and parts</a> ·
+  <a href="accessibility.html">Accessibility</a> ·
+  <a href="contact.html">Contact</a>
 </footer>
 </body>
 </html>

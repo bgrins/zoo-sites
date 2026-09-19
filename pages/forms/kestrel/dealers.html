@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kestrel Peak Trailers — Dealers</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --char: #17140f;
     --cream: #f6f1e7;
     --sand: #cfc3ae;
     --rust: #9c4a2f;
-    --stone: #7a7266;
+    --stone: #6d6559;
   }
   * { box-sizing: border-box; }
   body {
@@ -63,15 +65,32 @@
   .dealer .tel { color: var(--stone); }
   footer { background: var(--char); color: var(--sand); padding: 30px 34px; font-size: 12.5px; }
   footer .cols { display: flex; flex-wrap: wrap; gap: 6px 40px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; }
+  nav.top a.word { color: #fff; }
+  footer a { color: var(--sand); }
+  @media (max-width: 720px) {
+    nav.top { flex-wrap: wrap; gap: 6px 18px; padding: 10px 18px; }
+    nav.top .word { flex-basis: 100%; }
+    nav.top .tel { margin-left: 0; }
+    .hero { min-height: 260px; padding: 0 18px 26px; }
+    .hero h1 { font-size: 40px; }
+    .strip { padding: 12px 18px; gap: 4px 22px; }
+    .layout { padding: 30px 18px 50px; gap: 30px; }
+    .grid { grid-template-columns: 1fr; }
+    footer { padding: 24px 18px; }
+  }
+  .season { margin: 44px 0 10px; font-size: 24px; text-transform: uppercase; letter-spacing: -0.2px; }
+  .days { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--sand); max-width: 680px; }
+  .days li { display: flex; justify-content: space-between; gap: 20px; padding: 9px 0; border-bottom: 1px solid var(--sand); font-size: 14.5px; }
+  .days li span:first-child { text-transform: uppercase; letter-spacing: 1.6px; font-size: 11px; color: var(--stone); padding-top: 3px; }
 </style>
 </head>
 <body>
 <nav class="top">
-  <span class="word">Kestrel Peak</span>
+  <a class="word" href="index.html">Kestrel Peak</a>
   <a href="models.html">Models</a>
   <a href="build.html">Build yours</a>
   <a href="owners.html">Owners</a>
-  <a href="dealers.html" class="on">Dealers</a>
+  <a href="dealers.html" class="on" aria-current="page">Dealers</a>
   <a href="brochure.html">Brochure</a>
   <span class="tel">541-555-0142</span>
 </nav>
@@ -85,13 +104,13 @@
 </header>
 
 <div class="strip">
-  <span>Aluminium monocoque</span>
+  <span>Aluminum monocoque</span>
   <span>Three chassis lengths</span>
   <span>Six-year frame warranty</span>
   <span>Made in Oregon</span>
 </div>
 
-<div class="layout">
+<main class="layout">
   <p>Every trailer is built at the Switchback Road shop. Our dealers stock
   demonstrators of all three chassis, handle warranty inspections, and can
   arrange delivery of a factory build.</p>
@@ -99,52 +118,76 @@
   <div class="grid">
     <section class="dealer factory">
       <h2>Factory showroom</h2>
-      <p class="where">Oregon</p>
+      <p class="where">Galtrow, Oregon</p>
       <p>1180 Switchback Rd, Bldg C</p>
       <p>Open Tue–Sat</p>
       <p class="tel">541-555-0142</p>
     </section>
     <section class="dealer">
-      <h2>Basin Overland Supply</h2>
+      <h2>Kellvane Trail Supply</h2>
       <p class="where">Bend, Oregon</p>
       <p>2240 Juniper Flat Ave</p>
       <p>Open Mon–Sat</p>
       <p class="tel">541-555-0178</p>
     </section>
     <section class="dealer">
-      <h2>Sawtooth Trailer Co.</h2>
+      <h2>Tamsrock Overland</h2>
       <p class="where">Boise, Idaho</p>
       <p>815 Packline Way</p>
       <p>Open Tue–Sat</p>
       <p class="tel">208-555-0134</p>
     </section>
     <section class="dealer">
-      <h2>Granite Ridge Outfitters</h2>
+      <h2>Quarrivale Outfitters</h2>
       <p class="where">Reno, Nevada</p>
       <p>4410 Talus Loop</p>
       <p>Open Mon–Fri</p>
       <p class="tel">775-555-0191</p>
     </section>
     <section class="dealer">
-      <h2>Front Range Teardrops</h2>
+      <h2>Skellbrook Teardrops</h2>
       <p class="where">Fort Collins, Colorado</p>
       <p>127 Moraine Ct</p>
       <p>Open Wed–Sun</p>
       <p class="tel">970-555-0126</p>
     </section>
+    <section class="dealer">
+      <h2>Ottavrin Trailer Works</h2>
+      <p class="where">Missoula, Montana</p>
+      <p>3090 Larchpole Rd</p>
+      <p>Open Tue–Sat</p>
+      <p class="tel">406-555-0157</p>
+    </section>
   </div>
-</div>
+
+  <h2 class="season" id="open-shop">Open-shop days, fall 2026</h2>
+  <p>Each dealer opens its demonstrators for a day each season: bring your own
+  trailer for a free hitch and bearing check, or sit in all three chassis
+  side by side. No booking needed.</p>
+  <ul class="days">
+    <li><span>Saturday, September 26</span><span>Kellvane Trail Supply, Bend</span></li>
+    <li><span>Saturday, October 3</span><span>Tamsrock Overland, Boise</span></li>
+    <li><span>Sunday, October 11</span><span>Skellbrook Teardrops, Fort Collins</span></li>
+    <li><span>Saturday, October 17</span><span>Quarrivale Outfitters, Reno</span></li>
+    <li><span>Saturday, October 24</span><span>Ottavrin Trailer Works, Missoula</span></li>
+    <li><span>Saturday, October 31</span><span>Factory showroom, Galtrow</span></li>
+  </ul>
+</main>
 
 <footer>
   <div class="cols">
     <span>Showroom open Tue–Sat</span>
-    <span>1180 Switchback Rd, Bldg C</span>
+    <span>1180 Switchback Rd, Bldg C, Galtrow, Oregon</span>
     <span>541-555-0142</span>
   </div>
   © 2026 Kestrel Peak Trailers, Inc. ·
-  <a href="parts.html" style="color:var(--sand)">Service and parts</a> ·
-  <a href="accessibility.html" style="color:var(--sand)">Accessibility</a> ·
-  <a href="contact.html" style="color:var(--sand)">Contact</a>
+  <a href="owners.html#warranty">Warranty</a> ·
+  <a href="privacy.html">Privacy</a> ·
+  <a href="terms.html">Terms of sale</a> ·
+  <a href="dealers.html">Dealer locator</a> ·
+  <a href="parts.html">Service and parts</a> ·
+  <a href="accessibility.html">Accessibility</a> ·
+  <a href="contact.html">Contact</a>
 </footer>
 </body>
 </html>

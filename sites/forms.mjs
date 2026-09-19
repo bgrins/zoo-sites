@@ -151,6 +151,47 @@ export function routes(ctx) {
       });
     }
 
+    // The rest of the Draymere console reads tonight's filing back from the
+    // session. The receipt is deliberately absent: upload.html stays the one
+    // place it is shown.
+    if (req.method === 'GET' && pathname0 === '/api/draymere/filing') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      const attempts = (found.session.uploads ?? []).map((u) => ({
+        file: u.filename,
+        bytes: u.bytes,
+        accepted: u.accepted,
+      }));
+      return json(res, 200, { period: '07-25', filed: attempts.some((a) => a.accepted), attempts });
+    }
+
+    // Draymere sign-in. Operator PINs live on the depot handhelds, so no web
+    // visitor holds one: every well-formed attempt is refused, recorded on the
+    // session, and the third refusal locks sign-in for the session.
+    if (req.method === 'POST' && pathname0 === '/api/draymere/signin') {
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      const operator = String(payload.operator ?? '').trim().toLowerCase();
+      if (!operator) return json(res, 422, { ok: false, error: 'Enter your operator code.' });
+      if (!/^\d{4}$/.test(String(payload.pin ?? ''))) {
+        return json(res, 422, { ok: false, error: 'The PIN is four digits.' });
+      }
+      const attempts = (found.session.draymereSignins ??= []);
+      attempts.push(operator);
+      if (attempts.length >= 3) {
+        return json(res, 423, {
+          ok: false,
+          error:
+            'Sign-in is locked after three failed attempts. The depot manager ' +
+            'resets PINs during office hours.',
+        });
+      }
+      return json(res, 401, { ok: false, error: 'Operator code or PIN not recognised.' });
+    }
+
     // T007 form-gauntlet: the steps walked, the field values collected and the
     // review-step reference code all live HERE, on the session. The code is
     // minted from randomBytes: composed in page script as 'MD-' + (4000 + 921)
@@ -230,6 +271,28 @@ export function routes(ctx) {
       return json(res, 200, {
         ok: true,
         confirmation: found.session.registerCode,
+      });
+    }
+
+    // pages/forms/vendor/credentials.html. The answer is the same whether or
+    // not a partner record holds the username, as a real reset desk's is.
+    if (req.method === 'POST' && pathname0 === '/api/vendor/credential-reset') {
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      if (!String(payload.username ?? '').trim()) {
+        return json(res, 422, {
+          ok: false,
+          error: 'Enter the username on your partner credentials.',
+        });
+      }
+      return json(res, 200, {
+        ok: true,
+        message:
+          'If that username belongs to a partner record, a reset link is on its way to ' +
+          'the registered work email. The link expires after 24 hours.',
       });
     }
 

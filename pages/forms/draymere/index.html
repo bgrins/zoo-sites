@@ -4,23 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shift home — Draymere Depot Console</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --shell: #0e1216; --panel: #161c22; --panel-2: #1d252d;
     --edge: #2b353f; --ink: #dfe6ec; --dim: #8c9aa6;
-    --amber: #f0a02c; --amber-dim: #b0761f; --green: #56b98a;
+    --amber: #f0a02c; --frost: #6cc9e0; --frost-dim: #2e7f96; --green: #56b98a;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--shell); color: var(--ink);
     font-family: "IBM Plex Sans", "Fira Sans", "Noto Sans", "Liberation Sans", sans-serif;
     font-size: 14px; line-height: 1.5; }
-  a { color: var(--amber); text-decoration: none; }
+  a { color: var(--frost); text-decoration: none; }
   a:hover { text-decoration: underline; }
   .mono { font-family: "IBM Plex Mono", "Fira Mono", "DejaVu Sans Mono", monospace; }
-  header.strip { background: #090c0f; border-bottom: 2px solid var(--amber-dim);
+  header.strip { background: #090c0f; border-bottom: 2px solid var(--frost-dim);
     display: flex; align-items: center; gap: 18px; padding: 10px 20px; }
   .mark { font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #fff; }
-  .mark span { color: var(--amber); }
+  .mark span { color: var(--frost); }
   .unit { font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--dim);
     border-left: 1px solid var(--edge); padding-left: 18px; }
   header.strip .who { margin-left: auto; font-size: 12px; color: var(--dim);
@@ -39,7 +40,7 @@
   .lede { margin: 0 0 16px; color: var(--dim); max-width: 62ch; }
   .note { font-size: 12px; color: #77848f; margin: 14px 0 0; }
   .inner h3 { margin: 18px 0 6px; font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase;
-    color: var(--amber); }
+    color: var(--frost); }
   .inner h3:first-of-type { margin-top: 0; }
   .inner p, .inner li { font-size: 13px; color: #b9c5cf; max-width: 68ch; }
   .log { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -54,18 +55,33 @@
   ul.sections .sname { font-weight: 600; letter-spacing: 0.3px; }
   ul.sections p { margin: 4px 0 0; }
   footer.foot { border-top: 1px solid var(--edge); margin-top: 10px; padding: 18px 20px 30px;
-    color: #66727c; font-size: 11px; }
+    color: #8a97a2; font-size: 11px; }
   footer.foot .links { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
-  footer.foot .links a { color: #8c9aa6; }
+  footer.foot .links a { color: #b9c5cf; }
+  a.mark, a.mark:hover { text-decoration: none; }
+  .crumbs a { color: var(--dim); }
+  .mark, .unit, nav.tabs a, .card > h1, .card > h2, .inner h3, .log th {
+    font-family: "DIN Alternate", "DIN Condensed", Bahnschrift, "D-DIN", "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+  }
+  @media (max-width: 720px) {
+    header.strip { flex-wrap: wrap; gap: 6px 14px; padding: 10px 14px; }
+    header.strip .who { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; gap: 4px 14px; }
+    nav.tabs { overflow-x: auto; padding: 0 8px; }
+    nav.tabs a { padding: 11px 10px; white-space: nowrap; }
+    .crumbs { padding: 10px 14px; }
+    main { padding: 6px 12px 32px; }
+    .log { display: block; overflow-x: auto; white-space: nowrap; }
+    footer.foot { padding: 16px 14px 26px; }
+  }
 </style>
 </head>
 <body>
 
 <header class="strip">
-  <div class="mark">Dray<span>mere</span></div>
+  <a class="mark" href="index.html">Dray<span>mere</span></a>
   <div class="unit">Cold Chain Operations</div>
   <div class="who">
-    <span>Depot 41 &middot; Kettleworth</span>
+    <span>Depot 41 &middot; Skarnley</span>
     <span class="mono">op.hedlund</span>
     <a href="signout.html">Sign out</a>
   </div>
@@ -84,7 +100,7 @@
 
 <main>
   <section class="card">
-    <h1>Shift home &mdash; depot 41, 26 July 2026</h1>
+    <h1>Shift home &mdash; depot 41, 25 July 2026</h1>
     <div class="inner">
       <p class="lede">Signed in as <span class="mono">op.hedlund</span> on the night shift.
         This console covers depot 41 only; regional and multi-depot work is done from the
@@ -94,8 +110,8 @@
           <tr><th>Open item</th><th>Where</th><th>Owner</th><th>State</th></tr>
         </thead>
         <tbody>
-          <tr><td>Nightly count attestation, period 07-25</td><td><a href="queue.html">Attestations</a></td><td>Supervisor on shift</td><td class="st due">Due tonight</td></tr>
-          <tr><td>Run <span class="mono">RUN-0726-05</span> held at dock</td><td><a href="dispatch.html">Dispatch</a></td><td>Shift supervisor</td><td class="st due">Awaiting release</td></tr>
+          <tr id="open-0725"><td>Nightly count attestation, period 07-25</td><td><a href="queue.html">Attestations</a></td><td>Supervisor on shift</td><td class="st due">Due tonight</td></tr>
+          <tr><td>Run <span class="mono">RUN-0725-05</span> held at dock</td><td><a href="dispatch.html">Dispatch</a></td><td>Shift supervisor</td><td class="st due">Awaiting release</td></tr>
           <tr><td>Quarantined inbound from Depot 30 &middot; Ferris Vale</td><td><a href="receiving.html">Receiving</a></td><td>Regional ops desk</td><td class="st due">Awaiting disposition</td></tr>
           <tr><td>Trailer <span class="mono">TRL-206</span> fridge unit fault</td><td><a href="vehicles.html">Vehicles</a></td><td>Transport office</td><td class="st due">Under observation</td></tr>
         </tbody>
@@ -191,9 +207,24 @@
     <a href="status.html">Service status</a>
   </div>
   <div>Copyright 2026 Draymere Cold Chain Limited. Registered in England and Wales,
-    company 00000000. Registered office: Unit 12, Kettleworth Distribution Park,
-    Kettleworth KW7 3RN. Support: support@draymere.example</div>
+    company 00000000. Registered office: Unit 12, Skarnley Distribution Park,
+    Skarnley DK7 3RN. Support: support@draymere.example</div>
 </footer>
 
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  fetch('/api/draymere/filing', { headers: { 'X-Session-Nonce': NONCE } })
+    .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+    .then((filing) => {
+      if (!filing.filed) return;
+      const cell = document.getElementById('open-0725').cells[3];
+      cell.textContent = 'Filed';
+      cell.className = 'st';
+    })
+    .catch(() => {
+      const cell = document.getElementById('open-0725').cells[3];
+      cell.textContent = 'Status unavailable';
+    });
+</script>
 </body>
 </html>

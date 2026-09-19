@@ -1,7 +1,7 @@
-// pages/forms/office-finder.html - the branch tree is served only through the cascading endpoints.
+// pages/forms/farholt/ - the branch tree, served only through the cascading endpoints, and the settlement-account sign-in.
 import { randomBytes } from 'node:crypto';
 
-// pages/forms/office-finder.html — the branch tree is served only through the
+// pages/forms/farholt/office-finder.html — the branch tree is served only through the
 // session-gated /api/offices endpoint, so no branch code ever appears in
 // fixture source on disk or in client JS.
 const OFFICE_TREE = {
@@ -182,6 +182,37 @@ export function routes(ctx) {
         office: branch.label,
         province: OFFICE_TREE[country].provinces[province].label,
         country: OFFICE_TREE[country].label,
+      });
+    }
+
+    // pages/forms/farholt/account.html. Settlement accounts are opened at a
+    // branch counter, so no web visitor holds one: a well-formed sign-in is
+    // refused as unrecognised, and the third refusal locks the session.
+    if (req.method === 'POST' && pathname0 === '/api/farholt/settlement-session') {
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      const acct = String(payload.acct ?? '').replace(/\s+/g, '');
+      const pass = String(payload.pass ?? '');
+      const errors = {};
+      if (!acct) errors.acct = 'Enter the account number.';
+      else if (!/^\d{8}$/.test(acct)) errors.acct = 'Account numbers are eight digits.';
+      if (!pass) errors.pass = 'Enter the counter passphrase.';
+      if (Object.keys(errors).length) return json(res, 422, { ok: false, errors });
+      const refused = (found.session.farholtSignins = (found.session.farholtSignins ?? 0) + 1);
+      if (refused >= 3) {
+        return json(res, 423, {
+          ok: false,
+          error:
+            'Online sign-in is closed for this session after three failed attempts. ' +
+            'Any branch counter can reissue your passphrase.',
+        });
+      }
+      return json(res, 401, {
+        ok: false,
+        error: 'Account number or passphrase not recognised.',
       });
     }
 

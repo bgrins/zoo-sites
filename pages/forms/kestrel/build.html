@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kestrel Peak Trailers — Build Yours</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --char: #17140f;
     --cream: #f6f1e7;
     --sand: #cfc3ae;
     --rust: #9c4a2f;
-    --stone: #7a7266;
+    --stone: #6d6559;
   }
   * { box-sizing: border-box; }
   body {
@@ -63,13 +65,26 @@
   ol.steps li { margin: 0 0 10px; }
   footer { background: var(--char); color: var(--sand); padding: 30px 34px; font-size: 12.5px; }
   footer .cols { display: flex; flex-wrap: wrap; gap: 6px 40px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; }
+  nav.top a.word { color: #fff; }
+  footer a { color: var(--sand); }
+  @media (max-width: 720px) {
+    nav.top { flex-wrap: wrap; gap: 6px 18px; padding: 10px 18px; }
+    nav.top .word { flex-basis: 100%; }
+    nav.top .tel { margin-left: 0; }
+    .hero { min-height: 260px; padding: 0 18px 26px; }
+    .hero h1 { font-size: 40px; }
+    .strip { padding: 12px 18px; gap: 4px 22px; }
+    .layout { padding: 30px 18px 50px; gap: 30px; }
+    .grid { grid-template-columns: 1fr; }
+    footer { padding: 24px 18px; }
+  }
 </style>
 </head>
 <body>
 <nav class="top">
-  <span class="word">Kestrel Peak</span>
+  <a class="word" href="index.html">Kestrel Peak</a>
   <a href="models.html">Models</a>
-  <a href="build.html" class="on">Build yours</a>
+  <a href="build.html" class="on" aria-current="page">Build yours</a>
   <a href="owners.html">Owners</a>
   <a href="dealers.html">Dealers</a>
   <a href="brochure.html">Brochure</a>
@@ -85,13 +100,13 @@
 </header>
 
 <div class="strip">
-  <span>Aluminium monocoque</span>
+  <span>Aluminum monocoque</span>
   <span>Three chassis lengths</span>
   <span>Six-year frame warranty</span>
   <span>Made in Oregon</span>
 </div>
 
-<div class="layout">
+<main class="layout">
   <p>Start from any of the three chassis on the models page, then work through
   the four option groups below with a build specialist. Most owners settle a
   spec in a single phone call.</p>
@@ -138,18 +153,22 @@
     <li>The spec can be revised until your frame is cut, roughly three weeks before the build week.</li>
     <li>Balance is due at pickup from the Switchback Road shop, or before dealer delivery.</li>
   </ol>
-</div>
+</main>
 
 <footer>
   <div class="cols">
     <span>Showroom open Tue–Sat</span>
-    <span>1180 Switchback Rd, Bldg C</span>
+    <span>1180 Switchback Rd, Bldg C, Galtrow, Oregon</span>
     <span>541-555-0142</span>
   </div>
   © 2026 Kestrel Peak Trailers, Inc. ·
-  <a href="parts.html" style="color:var(--sand)">Service and parts</a> ·
-  <a href="accessibility.html" style="color:var(--sand)">Accessibility</a> ·
-  <a href="contact.html" style="color:var(--sand)">Contact</a>
+  <a href="owners.html#warranty">Warranty</a> ·
+  <a href="privacy.html">Privacy</a> ·
+  <a href="terms.html">Terms of sale</a> ·
+  <a href="dealers.html">Dealer locator</a> ·
+  <a href="parts.html">Service and parts</a> ·
+  <a href="accessibility.html">Accessibility</a> ·
+  <a href="contact.html">Contact</a>
 </footer>
 </body>
 </html>

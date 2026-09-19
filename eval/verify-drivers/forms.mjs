@@ -74,7 +74,7 @@ export const DRIVERS = {
     // MD-4921 is what page script can compute ('MD-' + (4000 + 921)), so it is
     // readable off disk, and it takes zero fields filled, so it must fail.
     wrong: GAUNTLET_WRONG,
-    async run({ goto, snapshot, mcp, base }) {
+    async run({ goto, snapshot, mcp, evaluate, base }) {
       // Stray sessions ahead of the browser run, each stopping at review
       // without pressing Submit: a wrong phone, a note typed into the optional
       // box, the off-screen Fax honeypot filled. None of their codes may pass,
@@ -138,8 +138,52 @@ export const DRIVERS = {
         },
       ];
 
+      // The review step prints back what the visitor typed, so markup in a
+      // field must arrive there as text. This walk shares the browser session
+      // with the graded one below, whose step 3 overwrites the data it records.
       await goto('/forms/drennhill/');
       let snap = await snapshot();
+      await act(mcp, 'fill_form_by_uid', {
+        elements: [
+          { uid: uidOf(snap, 'input "Full name', 'full name'), value: 'Ada <i>Brook</i>' },
+          { uid: uidOf(snap, 'input "Email address', 'email'), value: 'ada.brook@example.com' },
+          { uid: uidOf(snap, 'input "Phone number', 'phone'), value: '312-555-0100' },
+        ],
+      });
+      await act(mcp, 'click_by_uid', {
+        uid: uidOf(snap, 'button "Continue to visit details"', 'step-1 continue'),
+      });
+      snap = await untilSnap(snapshot, (s) => /select "Service/.test(s), 'markup walk step 2');
+      const hostileNote = '<img src="x" onerror="window.__reviewInjected = true">';
+      const pick = (pattern, what) => uidOf(snap, pattern, what);
+      await act(mcp, 'fill_by_uid', { uid: pick('select "Service', 'service'), value: 'Cleaning' });
+      await act(mcp, 'fill_by_uid', {
+        uid: pick('select "Insurance', 'insurance'),
+        value: 'Self-pay',
+      });
+      await act(mcp, 'click_by_uid', { uid: pick('input value="No"', 'new-patient No') });
+      await act(mcp, 'fill_by_uid', {
+        uid: pick('input "Preferred date', 'preferred date'),
+        value: '2026-08-12',
+      });
+      await act(mcp, 'fill_by_uid', { uid: pick('textarea', 'notes'), value: hostileNote });
+      await act(mcp, 'click_by_uid', { uid: uidOf(snap, 'input value="on"', 'consent') });
+      await act(mcp, 'click_by_uid', {
+        uid: uidOf(snap, 'button "Continue to review"', 'step-2 continue'),
+      });
+      await untilSnap(snapshot, (s) => /button "Submit request"/.test(s), 'markup walk review');
+      const review = await evaluate(() => ({
+        elements: document.querySelectorAll('#review *:not(dt):not(dd)').length,
+        text: document.getElementById('review').textContent,
+        ran: window.__reviewInjected === true,
+      }));
+      const asText = review.text.includes('Ada <i>Brook</i>') && review.text.includes(hostileNote);
+      if (review.elements || review.ran || !asText) {
+        throw new Error(`the review step rendered typed markup: ${JSON.stringify(review)}`);
+      }
+
+      await goto('/forms/drennhill/');
+      snap = await snapshot();
       await act(mcp, 'fill_form_by_uid', {
         elements: [
           { uid: uidOf(snap, 'input "Full name', 'full name'), value: 'Maya Okafor' },

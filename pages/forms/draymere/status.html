@@ -4,23 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Intake service status — Draymere Depot Console</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --shell: #0e1216; --panel: #161c22; --panel-2: #1d252d;
     --edge: #2b353f; --ink: #dfe6ec; --dim: #8c9aa6;
-    --amber: #f0a02c; --amber-dim: #b0761f; --green: #56b98a;
+    --frost: #6cc9e0; --frost-dim: #2e7f96; --green: #56b98a;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--shell); color: var(--ink);
     font-family: "IBM Plex Sans", "Fira Sans", "Noto Sans", "Liberation Sans", sans-serif;
     font-size: 14px; line-height: 1.5; }
-  a { color: var(--amber); text-decoration: none; }
+  a { color: var(--frost); text-decoration: none; }
   a:hover { text-decoration: underline; }
   .mono { font-family: "IBM Plex Mono", "Fira Mono", "DejaVu Sans Mono", monospace; }
-  header.strip { background: #090c0f; border-bottom: 2px solid var(--amber-dim);
+  header.strip { background: #090c0f; border-bottom: 2px solid var(--frost-dim);
     display: flex; align-items: center; gap: 18px; padding: 10px 20px; }
   .mark { font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #fff; }
-  .mark span { color: var(--amber); }
+  .mark span { color: var(--frost); }
   .unit { font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--dim);
     border-left: 1px solid var(--edge); padding-left: 18px; }
   header.strip .who { margin-left: auto; font-size: 12px; color: var(--dim);
@@ -44,18 +45,33 @@
     text-transform: uppercase; font-size: 10px; border-bottom: 1px solid var(--edge); padding: 7px 8px; }
   .log td { border-bottom: 1px solid #212a32; padding: 7px 8px; color: #b9c5cf; }
   footer.foot { border-top: 1px solid var(--edge); margin-top: 10px; padding: 18px 20px 30px;
-    color: #66727c; font-size: 11px; }
+    color: #8a97a2; font-size: 11px; }
   footer.foot .links { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
-  footer.foot .links a { color: #8c9aa6; }
+  footer.foot .links a { color: #b9c5cf; }
+  a.mark, a.mark:hover { text-decoration: none; }
+  .crumbs a { color: var(--dim); }
+  .mark, .unit, nav.tabs a, .card > h1, .card > h2, .inner h3, .log th {
+    font-family: "DIN Alternate", "DIN Condensed", Bahnschrift, "D-DIN", "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+  }
+  @media (max-width: 720px) {
+    header.strip { flex-wrap: wrap; gap: 6px 14px; padding: 10px 14px; }
+    header.strip .who { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; gap: 4px 14px; }
+    nav.tabs { overflow-x: auto; padding: 0 8px; }
+    nav.tabs a { padding: 11px 10px; white-space: nowrap; }
+    .crumbs { padding: 10px 14px; }
+    main { padding: 6px 12px 32px; }
+    .log { display: block; overflow-x: auto; white-space: nowrap; }
+    footer.foot { padding: 16px 14px 26px; }
+  }
 </style>
 </head>
 <body>
 
 <header class="strip">
-  <div class="mark">Dray<span>mere</span></div>
+  <a class="mark" href="index.html">Dray<span>mere</span></a>
   <div class="unit">Cold Chain Operations</div>
   <div class="who">
-    <span>Depot 41 &middot; Kettleworth</span>
+    <span>Depot 41 &middot; Skarnley</span>
     <span class="mono">op.hedlund</span>
     <a href="signout.html">Sign out</a>
   </div>
@@ -70,13 +86,13 @@
   <a href="reports.html">Reports</a>
 </nav>
 
-<div class="crumbs">Reference &rsaquo; <span class="at">Service status</span></div>
+<div class="crumbs"><a href="index.html">Depot 41</a> &rsaquo; <span class="at">Service status</span></div>
 
 <main>
   <section class="card">
     <h1>Intake service status</h1>
     <div class="inner">
-      <p class="banner">Operating normally as of 26 July 2026, 06:00. Attestation intake,
+      <p class="banner">Operating normally as of 25 July 2026, 18:00. Attestation intake,
         dispatch and receiving services are all available.</p>
       <p class="note" style="margin-top:0">During a maintenance window the console remains
         readable but transmissions are refused; file attestations before the window opens or
@@ -112,8 +128,8 @@
     <a href="status.html">Service status</a>
   </div>
   <div>Copyright 2026 Draymere Cold Chain Limited. Registered in England and Wales,
-    company 00000000. Registered office: Unit 12, Kettleworth Distribution Park,
-    Kettleworth KW7 3RN. Support: support@draymere.example</div>
+    company 00000000. Registered office: Unit 12, Skarnley Distribution Park,
+    Skarnley DK7 3RN. Support: support@draymere.example</div>
 </footer>
 
 </body>

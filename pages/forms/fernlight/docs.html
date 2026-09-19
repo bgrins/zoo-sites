@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fernlight Atlas 3 — Documentation</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --ink: #16161a;
@@ -43,11 +45,22 @@
     border-top: 1px solid var(--hair); margin-top: 44px; padding: 16px 22px;
     font-size: 12px; color: var(--dim);
   }
+  header.bar a.brand { color: var(--ink); text-decoration: none; }
+  footer a { color: var(--dim); }
+  @media (max-width: 640px) {
+    header.bar { flex-wrap: wrap; row-gap: 4px; padding: 10px 16px; }
+    header.bar nav, header.bar nav.links { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; gap: 2px 16px; }
+    main { padding: 22px 16px 48px; }
+    footer { padding: 16px; }
+  }
+  ul { margin: 0 0 14px; padding-left: 22px; }
+  li { margin: 0 0 6px; }
+  .toc { font-size: 12.5px; color: var(--dim); }
 </style>
 </head>
 <body>
 <header class="bar">
-  <span class="brand">fernlight/atlas</span>
+  <a class="brand" href="index.html">fernlight/atlas</a>
   <span class="ver">beta 3.0.0-rc4</span>
   <nav>
     <a href="docs.html" aria-current="page">docs</a>
@@ -58,9 +71,22 @@
 </header>
 
 <main>
-<p class="crumbs">docs / index</p>
+<p class="crumbs"><a href="index.html">atlas</a> / docs</p>
 <h1>Atlas 3 documentation</h1>
 <p class="tagline">Field mapping and survey tooling for small crews.</p>
+
+<p class="toc">On this page: <a href="#requirements">requirements</a> ·
+<a href="#getting-started">getting started</a> · <a href="#workspaces">workspaces</a> ·
+<a href="#survey-import">survey import</a> · <a href="#interchange">interchange</a> ·
+<a href="#telemetry">telemetry</a> · <a href="#cli">cli</a></p>
+
+<h2 id="requirements">System requirements</h2>
+<ul>
+  <li>64-bit Windows 10 or later, macOS 13 or later, or a current LTS release of Ubuntu or Fedora.</li>
+  <li>8 GB of memory; 16 GB for projects with more than a million observations.</li>
+  <li>A GPU with OpenGL 4.1 or Metal support for the 3D view. The 2D workspace runs without one.</li>
+  <li>2 GB of free disk for the client, plus room for base layers cached for offline use.</li>
+</ul>
 
 <h2 id="getting-started">Getting started</h2>
 <p>When your seat opens we email an install link and a workspace key. Run the
@@ -94,11 +120,25 @@ counts. Under settings, telemetry can be set to <code>full</code> or
 <code>reduced</code>; the reduced level drops timing samples and usage counts
 but keeps crash traces for the duration of the beta. Payloads are viewable
 locally with <code>atlas telemetry show</code> before they are sent.</p>
+
+<h2 id="cli">Command line</h2>
+<ul>
+  <li><code>atlas auth login --key</code> activates the workspace key we sent.</li>
+  <li><code>atlas import &lt;path&gt;</code> loads observation files into the open project.</li>
+  <li><code>atlas export --interchange &lt;project&gt;</code> writes an interchange archive.</li>
+  <li><code>atlas doctor</code> checks GPU support, disk headroom and connectivity.</li>
+  <li><code>atlas telemetry show</code> prints the payloads queued for sending.</li>
+</ul>
+<p>Anything not covered here goes to <a href="mailto:beta@fernlight.example">beta@fernlight.example</a>.</p>
 </main>
 
 <footer>
-  Fernlight Software — 42 Alder Row, Suite 5 · Support Mon–Fri ·
-  beta@fernlight.example · Atlas is a trademark of Fernlight Software Ltd.
+  Fernlight Software Ltd · 42 Marrask Row, Suite 5, Pellowick PW4 7AL · Registered in England and Wales,
+  company number 00000000 · Support Mon–Fri ·
+  <a href="mailto:beta@fernlight.example">beta@fernlight.example</a><br>
+  <a href="beta-terms.html">Beta terms</a> · <a href="privacy.html">Privacy</a> ·
+  <a href="security.html">Security</a> · <a href="status.html">Status</a> ·
+  Atlas is a trademark of Fernlight Software Ltd.
 </footer>
 </body>
 </html>
