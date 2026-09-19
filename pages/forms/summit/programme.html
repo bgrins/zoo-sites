@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>Programme — Solstice Leadership Summit</title>
 <style>
   :root {
@@ -55,11 +57,21 @@
   footer { background: var(--ink); color: #b9a9d6; padding: 26px 32px; font-size: 12.5px; }
   footer .cols { display: flex; flex-wrap: wrap; gap: 8px 40px; margin-bottom: 12px; }
   footer b { color: #fff; text-transform: uppercase; letter-spacing: 1.4px; font-size: 11px; }
+  footer a { color: #ffd6ec; }
+  footer .legal { display: block; margin-top: 8px; color: #8f80ad; }
+  @media (max-width: 700px) {
+    .tabs { flex-wrap: wrap; gap: 6px 18px; padding: 10px 18px; }
+    .tabs .logo { flex-basis: 100%; }
+    .hero { padding: 30px 18px 28px; }
+    .hero h1 { font-size: 32px; letter-spacing: -0.5px; }
+    main { padding: 26px 18px 56px; }
+    footer { padding: 22px 18px; }
+  }
 </style>
 </head>
 <body>
 <nav class="tabs">
-  <span class="logo">Solstice Summit</span>
+  <a class="logo" href="index.html">Solstice Summit</a>
   <a href="programme.html" class="here">Programme</a>
   <a href="speakers.html">Speakers</a>
   <a href="venue.html">Venue</a>
@@ -71,7 +83,7 @@
   <h1>Programme</h1>
   <div class="facts">
     <span><b>Dates</b> 14–16 October 2026</span>
-    <span><b>Venue</b> Harborview Exhibition Halls</span>
+    <span><b>Venue</b> Tarnmouth Exhibition Halls</span>
   </div>
 </header>
 
@@ -87,7 +99,7 @@ in the Main Auditorium.</p>
   <div class="slot"><div class="time">11:00</div><div class="what"><b>Hiring for resilience</b><span>Tobias Renn — Hall A, Leading Teams</span></div></div>
   <div class="slot"><div class="time">11:00</div><div class="what"><b>Change without churn</b><span>Ingrid Solano — Hall B, Leading Change</span></div></div>
   <div class="slot"><div class="time">14:00</div><div class="what"><b>Workshop: Feedback that lands</b><span>Celeste Marrow — Hall A</span></div></div>
-  <div class="slot"><div class="time">16:30</div><div class="what"><b>Welcome reception</b><span>Harborview Terrace</span></div></div>
+  <div class="slot"><div class="time">16:30</div><div class="what"><b>Welcome reception</b><span>Quay Terrace</span></div></div>
 </div>
 
 <h2>Day two — Thursday 15 October</h2>
@@ -111,13 +123,17 @@ in the Main Auditorium.</p>
 <footer>
   <div class="cols">
     <span><b>Organiser</b> Solstice Conference Services</span>
-    <span><b>Delegation desk</b> groups@solstice-events.example</span>
+    <span><b>Delegation desk</b> <a href="mailto:groups@solstice-events.example">groups@solstice-events.example</a> · 01632 960391</span>
     <span><b>Badge collection</b> Hall C, from 08:00</span>
   </div>
   © 2026 Solstice Conference Services.
-  <a href="registration.html" style="color:#ffd6ec">Registration</a> ·
-  <a href="conduct.html" style="color:#ffd6ec">Code of conduct</a> ·
-  <a href="sponsors.html" style="color:#ffd6ec">Sponsors</a>
+  <a href="registration.html">Registration</a> ·
+  <a href="conduct.html">Code of conduct</a> ·
+  <a href="sponsors.html">Sponsors</a> ·
+  <a href="privacy.html">Privacy notice</a> ·
+  <a href="terms.html">Booking terms</a>
+  <span class="legal">Solstice Conference Services Ltd, 4 Quay Road, Tarnmouth TH3 8QR.
+  Registered in England and Wales, company number 00000000. VAT 000 0000 00.</span>
 </footer>
 </body>
 </html>

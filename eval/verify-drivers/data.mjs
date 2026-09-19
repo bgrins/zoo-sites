@@ -510,11 +510,16 @@ export const DRIVERS = {
       // Having read the list, compare the other path: choosing Employee
       // afterwards must not cost the contractor answer already served.
       await goto('/intake/');
+      // The page says it keeps the selection for the session, so a reload
+      // shows the stored Contractor path before anything is clicked.
+      await until('the stored Contractor choice to be restored', async () =>
+        /Path saved: Contractor/.test(await snapshot())
+      );
       await mcp('click_by_uid', {
         uid: uidFor(await snapshot(), 'button "Choose Employee path"', 'Employee path button'),
       });
       await until('the Employee choice to be saved', async () =>
-        /Path saved: employee/.test(await snapshot())
+        /Path saved: Employee/.test(await snapshot())
       );
       const fields = { requiredDocuments: docs };
       this.wrongFields = [

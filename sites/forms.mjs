@@ -81,6 +81,45 @@ function formGauntletRecord(session) {
   });
 }
 
+// T055 draft-resume: the Round 14 rules the guidance states, checked when a draft
+// is queued. The budget is parsed exactly as the draft-resume validator parses it,
+// and the duration is normalised as its normaliseWords does, except that a decimal
+// point between digits survives, so no value the validator grades as correct is
+// refused here.
+const DRAFT_BUDGET_CAP = 12000;
+const DRAFT_MAX_MONTHS = 24;
+const NUMBER_WORDS = [
+  'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
+  'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen',
+  'nineteen', 'twenty', 'twenty one', 'twenty two', 'twenty three', 'twenty four',
+];
+
+function draftMonths(text) {
+  const words = String(text).toLowerCase().replace(/[*_~`]+/g, '').replace(/[^a-z0-9.]+/g, ' ')
+    .replace(/(?<!\d)\.|\.(?!\d)/g, ' ').replace(/\s+/g, ' ').trim();
+  const m = /^(\d+(?:\.\d+)?|an?|[a-z]+(?: [a-z]+)?) ?(months?|mos?|weeks?|wks?|years?|yrs?)$/.exec(words);
+  if (!m) return null;
+  const count = /^\d/.test(m[1]) ? Number(m[1]) : /^an?$/.test(m[1]) ? 1 : NUMBER_WORDS.indexOf(m[1]) + 1;
+  if (!(count > 0)) return null;
+  if (/^w/.test(m[2])) return count / 4.345;
+  if (/^y/.test(m[2])) return count * 12;
+  return count;
+}
+
+function draftRuleErrors(draft) {
+  const errors = {};
+  const budget = Number(String(draft.budget).replace(/[^\d.]/g, ''));
+  if (!(budget > 0)) errors.budget = 'Give the requested budget as a figure in whole pounds, for example 4800.';
+  else if (budget % 1 !== 0) errors.budget = 'Give the requested budget in whole pounds.';
+  else if (budget > DRAFT_BUDGET_CAP) {
+    errors.budget = 'Round 14 caps awards at £12,000. Budgets over the cap are returned unassessed.';
+  }
+  const months = draftMonths(draft.duration);
+  if (months === null) errors.duration = 'Give the project duration in months, for example 9 months.';
+  else if (months > DRAFT_MAX_MONTHS) errors.duration = 'Work must conclude within 24 months of the award.';
+  return errors;
+}
+
 export function routes(ctx) {
   const { state, json, readJson, requireSession, refererPath } = ctx;
   return async (req, res, url, pathname0) => {
@@ -349,6 +388,18 @@ export function routes(ctx) {
           error: 'Enter all three dimensions and the weight as positive numbers.',
         });
       }
+      // Standard's published limits: an over-limit parcel is referred to freight
+      // and never priced, and is kept out of shippingQuotes, which unit-quote grades.
+      if (kg > 32 || Math.max(l, w, h) > 200) {
+        (found.session.freightReferrals ??= []).push({ l, w, h, kg, at: Date.now() });
+        return json(res, 200, {
+          ok: true,
+          freight: true,
+          message:
+            'Over the Standard limits of 32 kg and 200 cm on any side. An account manager ' +
+            'prices this parcel as a freight booking.',
+        });
+      }
       // Tariff IVL-7 lives here only, never in fixture source: chargeable
       // weight is the greater of gross and volumetric (L*W*H / 5000), billed
       // at $2.40/kg on top of a $12.50 handling base, plus a $1.20/kg fuel
@@ -378,7 +429,11 @@ export function routes(ctx) {
       if (!found) return;
       const session = found.session;
       session.draft ??= {};
-      return json(res, 200, { fields: session.draft });
+      return json(res, 200, {
+        fields: session.draft,
+        status: session.draftRefCode ? 'queued' : 'draft',
+        reference: session.draftRefCode ?? null,
+      });
     }
 
     if (req.method === 'POST' && pathname0 === '/api/draft-save') {
@@ -415,6 +470,10 @@ export function routes(ctx) {
       const missing = DRAFT_FIELDS.filter((f) => !draft[f]);
       if (missing.length) {
         return json(res, 422, { error: 'Sections are still empty.', missing });
+      }
+      const errors = draftRuleErrors(draft);
+      if (Object.keys(errors).length) {
+        return json(res, 422, { error: 'Some sections need correcting.', errors });
       }
       // Minted from randomBytes, not from the page nonce, so nothing the page
       // exposes lets an agent derive the reference code.

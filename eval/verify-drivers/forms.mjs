@@ -718,7 +718,7 @@ export const DRIVERS = {
       'The draft survived the reload and I completed the remaining sections, ' +
         'but the review page showed no reference code.',
     ],
-    async run({ goto, snapshot, mcp, base }) {
+    async run({ goto, snapshot, mcp, evaluate, base }) {
       await goto('/forms/thornbury/draft.html');
       await untilSnap(snapshot, (s) => /input "Principal applicant"/.test(s), 'the form');
       // Autosave fires per field on input/change/blur, so filling the sections
@@ -744,7 +744,7 @@ export const DRIVERS = {
         (s) => /text="Draft restored: 3 of 5/.test(s),
         'the restored-draft banner'
       );
-      await fill('Requested budget (USD)', '4800');
+      await fill('Requested budget (GBP)', '4800');
       await fill('Project duration', '6 months');
       const ready = await untilSnap(
         snapshot,
@@ -756,6 +756,18 @@ export const DRIVERS = {
       });
       const done = await untilSnap(snapshot, (s) => /DR-[0-9A-F]{4}/.test(s), 'the reference code');
       const code = done.match(/DR-[0-9A-F]{4}/)[0];
+      // A queued draft stays open for correction: a reload shows its reference
+      // above the five sections, still editable, rather than a read-only panel.
+      // The reference sits in an inline <strong> the snapshot drops, so it is
+      // read back with evaluate.
+      await goto('/forms/thornbury/draft.html');
+      await untilSnap(
+        snapshot,
+        (s) => /In the review queue as/.test(s) && /input "Requested budget \(GBP\)"/.test(s),
+        'the queued notice above the editable form'
+      );
+      const queuedRef = await evaluate(() => document.getElementById('queuedref')?.textContent);
+      if (queuedRef !== code) throw new Error(`the reloaded draft shows ${queuedRef}, not ${code}`);
       const bumped = bumpCode(code);
       // A stray that saves all five sections and completes with no reload in
       // between: a fetch is never a document navigation, so it cannot mint a
@@ -769,6 +781,36 @@ export const DRIVERS = {
         unreloaded = (await stray.post('/api/draft-complete', {})).reference;
       }
       if (!unreloaded || unreloaded === code) throw new Error('no distinct unreloaded stray code');
+      // The guidance returns an over-cap budget or an open-ended duration
+      // unassessed, so the queue refuses both instead of issuing a reference.
+      const overCap = await formsStray(base, '/forms/thornbury/draft.html');
+      for (const [field, value] of Object.entries({ ...DRAFT_ASKED, budget: '950000', duration: 'forever' })) {
+        await overCap.post('/api/draft-save', { field, value });
+      }
+      const refused = await overCap.post('/api/draft-complete', {});
+      if (refused.reference || !refused.errors?.budget || !refused.errors?.duration) {
+        throw new Error(`the review queue took an over-cap, open-ended draft: ${JSON.stringify(refused)}`);
+      }
+      // The asked values in forms the validator accepts must still queue, and the
+      // portal must then report the draft as queued under that reference.
+      const formatted = await formsStray(base, '/forms/thornbury/draft.html');
+      for (const [field, value] of Object.entries({ ...DRAFT_ASKED, budget: '£4,800', duration: 'six months' })) {
+        await formatted.post('/api/draft-save', { field, value });
+      }
+      const formattedRef = (await formatted.post('/api/draft-complete', {})).reference;
+      if (!formattedRef) throw new Error('the review queue refused £4,800 over six months');
+      for (const duration of ['6. months', '6 months ..']) {
+        const punctuated = await formsStray(base, '/forms/thornbury/draft.html');
+        for (const [field, value] of Object.entries({ ...DRAFT_ASKED, duration })) {
+          await punctuated.post('/api/draft-save', { field, value });
+        }
+        const r = await punctuated.post('/api/draft-complete', {});
+        if (!r.reference) throw new Error(`the review queue refused "${duration}": ${JSON.stringify(r)}`);
+      }
+      const portal = await formatted.get('/api/draft');
+      if (portal.status !== 'queued' || portal.reference !== formattedRef) {
+        throw new Error(`a queued draft reads back as ${JSON.stringify(portal)}`);
+      }
       const graded = (state) => findSession(state, (s) => s.draftRefCode === code).session;
       const drafted = (mutate) => (state) => mutate(graded(state));
       const at = Date.now();
@@ -816,6 +858,7 @@ export const DRIVERS = {
         { referenceCode: 'DR-0000' },
         { referenceCode: bumped },
         { referenceCode: unreloaded },
+        ...(formattedRef !== code ? [{ referenceCode: formattedRef }] : []),
       ];
       this.alsoCorrectFields = [fields, { referenceCode: code.toLowerCase() }];
       this.wrong = [
@@ -1000,6 +1043,19 @@ export const DRIVERS = {
       if ([rough, kgWrong, cmWrong].some((p) => p === price || p === exact)) {
         throw new Error('a wrong conversion quotes the same price as a correct one');
       }
+      // The page says Standard carries nothing over 32 kg or 200 cm a side, so an
+      // over-limit parcel is referred to freight instead of being priced.
+      const oversize = await snapshot();
+      await act(mcp, 'fill_form_by_uid', {
+        elements: [
+          { uid: uidOf(oversize, 'input "Length \\(cm\\)"', 'length'), value: '500' },
+          { uid: uidOf(oversize, 'input "Width \\(cm\\)"', 'width'), value: '400' },
+          { uid: uidOf(oversize, 'input "Height \\(cm\\)"', 'height'), value: '300' },
+          { uid: uidOf(oversize, 'input "Gross weight \\(kg\\)"', 'weight'), value: '900' },
+        ],
+      });
+      await act(mcp, 'click_by_uid', { uid: uidOf(oversize, 'button "Calculate rate"', 'calculate') });
+      await untilSnap(snapshot, (s) => /Freight booking required/.test(s), 'the freight referral');
       const numeric = dollars(price);
       const fields = { quotedPrice: numeric };
       this.wrongFields = [

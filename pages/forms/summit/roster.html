@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>Summit Group Registration — Solstice Conference Services</title>
 <style>
   :root {
@@ -91,6 +93,10 @@
   }
   input:focus { outline: none; border-bottom-color: var(--pink); }
   .error:not(:empty) { color: #c2185b; font-size: 12.5px; margin-top: 6px; font-weight: 700; }
+  #submit-error:not(:empty) {
+    margin-top: 16px; padding: 12px 16px; font-size: 14px; border-radius: 12px;
+    background: #fff0f6; border: 2px solid var(--pink);
+  }
   #add {
     width: 100%; background: #fff; color: var(--violet);
     border: 2px dashed #c3b4e2; border-radius: 999px; padding: 12px;
@@ -120,11 +126,21 @@
   }
   footer .cols { display: flex; flex-wrap: wrap; gap: 8px 40px; margin-bottom: 12px; }
   footer b { color: #fff; text-transform: uppercase; letter-spacing: 1.4px; font-size: 11px; }
+  footer a { color: #ffd6ec; }
+  footer .legal { display: block; margin-top: 8px; color: #8f80ad; }
+  @media (max-width: 700px) {
+    .tabs { flex-wrap: wrap; gap: 6px 18px; padding: 10px 18px; }
+    .tabs .logo { flex-basis: 100%; }
+    .hero { padding: 30px 18px 28px; }
+    .hero h1 { font-size: 32px; letter-spacing: -0.5px; }
+    main { padding: 26px 18px 56px; }
+    footer { padding: 22px 18px; }
+  }
 </style>
 </head>
 <body>
 <nav class="tabs">
-  <span class="logo">Solstice Summit</span>
+  <a class="logo" href="index.html">Solstice Summit</a>
   <a href="programme.html">Programme</a>
   <a href="speakers.html">Speakers</a>
   <a href="venue.html">Venue</a>
@@ -136,7 +152,7 @@
   <h1>Solstice Leadership Summit</h1>
   <div class="facts">
     <span><b>Dates</b> 14–16 October 2026</span>
-    <span><b>Venue</b> Harborview Exhibition Halls</span>
+    <span><b>Venue</b> Tarnmouth Exhibition Halls</span>
     <span><b>Track</b> Group / delegation intake</span>
   </div>
 </header>
@@ -153,6 +169,7 @@ badges are printed from exactly what you type here. Fields marked
     <button type="button" id="add">Add attendee</button>
   </fieldset>
   <button type="submit" id="submit">Submit registration</button>
+  <div class="error" id="submit-error" role="alert"></div>
 </form>
 
 <div id="confirm" hidden>
@@ -164,14 +181,18 @@ badges are printed from exactly what you type here. Fields marked
 <footer>
   <div class="cols">
     <span><b>Organiser</b> Solstice Conference Services</span>
-    <span><b>Delegation desk</b> groups@solstice-events.example</span>
+    <span><b>Delegation desk</b> <a href="mailto:groups@solstice-events.example">groups@solstice-events.example</a> · 01632 960391</span>
     <span><b>Badge collection</b> Hall C, from 08:00</span>
   </div>
   © 2026 Solstice Conference Services. Group codes are issued once the delegation is
   submitted and cannot be reissued; keep yours for the badge desk.
-  <a href="registration.html" style="color:#ffd6ec">Registration</a> ·
-  <a href="conduct.html" style="color:#ffd6ec">Code of conduct</a> ·
-  <a href="sponsors.html" style="color:#ffd6ec">Sponsors</a>
+  <a href="registration.html">Registration</a> ·
+  <a href="conduct.html">Code of conduct</a> ·
+  <a href="sponsors.html">Sponsors</a> ·
+  <a href="privacy.html">Privacy notice</a> ·
+  <a href="terms.html">Booking terms</a>
+  <span class="legal">Solstice Conference Services Ltd, 4 Quay Road, Tarnmouth TH3 8QR.
+  Registered in England and Wales, company number 00000000. VAT 000 0000 00.</span>
 </footer>
 
 <script>
@@ -229,14 +250,22 @@ badges are printed from exactly what you type here. Fields marked
       ok = ok && !!name && emailOk;
       attendees.push({ name, email });
     }
+    const failed = document.getElementById('submit-error');
+    failed.textContent = '';
     if (!ok) return;
-    const res = await fetch('/api/roster-submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nonce: NONCE, attendees, added }),
-    });
+    let res;
+    try {
+      res = await fetch('/api/roster-submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, attendees, added }),
+      });
+    } catch {
+      failed.textContent = 'The delegation desk could not be reached. Nothing was submitted; try again.';
+      return;
+    }
     if (!res.ok) {
-      alert('Submission failed — try again.');
+      failed.textContent = 'The delegation desk did not accept this submission. Reload the page and submit again.';
       return;
     }
     const body = await res.json();

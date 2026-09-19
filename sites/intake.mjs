@@ -17,6 +17,14 @@ export function routes(ctx) {
       return json(res, 200, { ok: true, choice });
     }
 
+    // Read-back for the intake page's own display only. It must not log
+    // intakeServed: that log is what grades a served checklist.
+    if (req.method === 'GET' && pathname0 === '/api/intake/choice') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      return json(res, 200, { choice: found.session.intakeChoice ?? null });
+    }
+
     if (req.method === 'GET' && pathname0 === '/api/intake/requirements') {
       const found = requireSession(req, res);
       if (!found) return;

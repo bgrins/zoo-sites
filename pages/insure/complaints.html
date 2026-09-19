@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>Complaints &amp; Appeals — Cresthaven Mutual Insurance</title>
 <style>
   * { box-sizing: border-box; }
@@ -14,24 +15,28 @@
   }
   .util {
     background: #12284b; color: #c8d2e2; font-size: 12.5px;
-    padding: 5px 24px; display: flex; justify-content: space-between; letter-spacing: 0.3px;
+    padding: 5px 24px; display: flex; flex-wrap: wrap; justify-content: space-between;
+    gap: 2px 18px; letter-spacing: 0.3px;
   }
   .util span b { color: #fff; font-weight: normal; }
-  header { text-align: center; padding: 26px 24px 0; background: #fff; }
-  .wordmark { font-size: 30px; letter-spacing: 1px; color: #12284b; margin: 0; font-weight: normal; }
-  .wordmark .est { display: block; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #7a8397; margin-top: 2px; }
-  nav {
-    background: #fff; margin-top: 18px; border-top: 1px solid #12284b;
-    border-bottom: 3px double #12284b; text-align: center;
+  header { background: #fff; border-bottom: 1px solid #cfd3c9; box-shadow: 0 2px 0 #9d2c1e; }
+  .mast {
+    max-width: 1040px; margin: 0 auto; padding: 14px 24px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 30px;
   }
+  .wordmark { display: flex; align-items: center; gap: 12px; color: #12284b; text-decoration: none; }
+  .wordmark img { display: block; width: 34px; height: 40px; }
+  .wordmark .name { display: block; font-size: 25px; line-height: 1.1; letter-spacing: 0.4px; }
+  .wordmark .est { display: block; font-size: 12px; font-style: italic; color: #7a8397; }
+  nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 4px; }
   nav a {
-    display: inline-block; padding: 10px 22px; color: #12284b; text-decoration: none;
-    font-size: 12.5px; letter-spacing: 2.2px; text-transform: uppercase;
+    display: block; padding: 7px 14px; color: #12284b; text-decoration: none;
+    font-size: 15px; border: 1px solid transparent;
   }
-  nav a.here { border-bottom: 3px solid #9d2c1e; margin-bottom: -3px; }
-  nav a:hover { color: #9d2c1e; }
+  nav a.here { background: #12284b; color: #fff; }
+  nav a:hover { border-color: #12284b; }
   .sheet { max-width: 760px; margin: 0 auto; padding: 40px 24px 70px; }
-  h2 { font-size: 26px; font-weight: normal; color: #12284b; margin: 0 0 4px; }
+  h1, h2 { font-size: 26px; font-weight: normal; color: #12284b; margin: 0 0 4px; }
   .sub { color: #7a8397; font-size: 14px; margin: 0 0 26px; }
   .stage { display: flex; gap: 18px; background: #fff; border: 1px solid #cfd3c9; padding: 20px 24px; margin: 0 0 16px; }
   .stage .n {
@@ -59,17 +64,19 @@
   <span>Complaints are logged on the day received</span>
 </div>
 <header>
-  <h1 class="wordmark">Cresthaven Mutual<span class="est">Insurance Company · Est. 1911</span></h1>
-  <nav>
-    <a href="/insure/">Home</a>
-    <a href="/insure/quote.html">Get a quote</a>
-    <a href="/insure/coverage.html">Coverage</a>
-    <a href="/insure/claims.html">Claims</a>
-  </nav>
+  <div class="mast">
+    <a class="wordmark" href="./"><img src="favicon.svg" alt="" width="34" height="40"><span><span class="name">Cresthaven Mutual</span> <span class="est">Insurance Company</span></span></a>
+    <nav aria-label="Main">
+      <a href="./">Home</a>
+      <a href="quote.html">Get a quote</a>
+      <a href="coverage.html">Coverage</a>
+      <a href="claims.html">Claims</a>
+    </nav>
+  </div>
 </header>
 
-<div class="sheet">
-  <h2>Complaints and appeals</h2>
+<main class="sheet">
+  <h1>Complaints and appeals</h1>
   <p class="sub">Three stages, each with a stated clock, and an appeal that does not go
   back to the person who decided.</p>
 
@@ -90,7 +97,7 @@
     <div>
       <h3>Ask for review by the policyholder advocate</h3>
       <p>Write to the Office of the Policyholder Advocate at 400 Assay Court, Harmon
-      Falls, or by electronic mail to policyholders@cresthaven-mutual.example. The
+      Falls, NE 69517, or by electronic mail to policyholders@cresthaven-mutual.example. The
       advocate reports to the board, not to claims or underwriting, and reviews the
       file independently of whoever decided it.</p>
       <p>State the outcome you are seeking. An appeal that says only that the decision
@@ -122,22 +129,24 @@
 
   <div class="hotline">
     A complaint never suspends cover. Premium remains due while a complaint is open,
-    and a policy is not cancelled or non-renewed because a policyholder complained. If
+    and a policy is not canceled or non-renewed because a policyholder complained. If
     you believe a renewal decision followed a complaint, say so to the advocate and the
     review is escalated to stage three at once.
   </div>
-</div>
+</main>
 
 <footer>
-  Cresthaven Mutual Insurance Company · 400 Assay Court, Harmon Falls ·
-  policyholders@cresthaven-mutual.example<br>
-  <a href="/insure/coverage.html">Coverage summaries</a> ·
-  <a href="/insure/claims.html">Claims service</a> ·
-  <a href="/insure/quote.html">Quotation desk</a><br>
-  <a href="/insure/underwriting.html">Underwriting</a> ·
-  <a href="/insure/complaints.html">Complaints &amp; appeals</a> ·
-  <a href="/insure/privacy.html">Privacy notice</a><br>
-  Coverage subject to underwriting and to the terms of the issued policy. &copy; Cresthaven Mutual Insurance Company.
+  Cresthaven Mutual Insurance Company · 400 Assay Court, Harmon Falls, NE 69517 ·
+  <a href="mailto:policyholders@cresthaven-mutual.example">policyholders@cresthaven-mutual.example</a><br>
+  <a href="coverage.html">Coverage summaries</a> ·
+  <a href="claims.html">Claims service</a> ·
+  <a href="quote.html">Quotation desk</a><br>
+  <a href="underwriting.html">Underwriting</a> ·
+  <a href="complaints.html">Complaints &amp; appeals</a> ·
+  <a href="privacy.html">Privacy notice</a> ·
+  <a href="terms.html">Terms of use</a><br>
+  A mutual insurance company domiciled in Nebraska · NAIC company code 00000 ·
+  Coverage subject to underwriting and to the terms of the issued policy. &copy; 2026 Cresthaven Mutual Insurance Company.
 </footer>
 </body>
 </html>

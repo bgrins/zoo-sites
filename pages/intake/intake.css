@@ -39,7 +39,10 @@ body {
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: #d9c7e6;
+  text-decoration: none;
 }
+
+.masthead a.org:hover { color: #fff; }
 
 .mast-links a {
   color: #efe4f6;
@@ -107,6 +110,20 @@ p { margin: 0 0 16px; }
 }
 
 .choice p { font-size: 17px; color: var(--muted); min-height: 108px; }
+
+.choice.picked { border-color: var(--mustard); border-left-color: var(--mustard); box-shadow: 0 0 0 2px var(--mustard); }
+
+.choice .picked-tag {
+  float: right;
+  background: var(--mustard);
+  color: var(--plum-dark);
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
 
 button {
   font-family: inherit;
@@ -244,4 +261,19 @@ footer {
   padding: 16px 24px 0;
   font-size: 14px;
   line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .masthead, .sitenav, footer { padding-left: 18px; padding-right: 18px; }
+  .mast-links a { margin: 0 16px 0 0; }
+  .masthead h1 { font-size: 23px; }
+  .sitenav a { padding: 10px 12px 8px; font-size: 15px; }
+  .sitenav a:first-child { margin-left: -12px; }
+  .wrap { padding: 0 18px 48px; }
+  .lead { font-size: 18px; }
+  .paths { grid-template-columns: 1fr; }
+  .choice p { min-height: 0; }
+  .sheet { padding: 20px 18px 24px; }
+  .footgrid { grid-template-columns: 1fr; padding: 0; }
+  .footlegal { padding: 16px 0 0; }
 }
