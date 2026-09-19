@@ -13,7 +13,7 @@ const ARCHIVE_REQUEUE_MS = 2000;
 const ARCHIVE_VOLUME = 'ZA-CS3';
 
 export function routes(ctx) {
-  const { json, requireSession, fromPage } = ctx;
+  const { json, requireSession, fromPage, refererPath } = ctx;
   const reportFromPage = fromPage('/flaky/');
   return async (req, res, url, pathname0) => {
     // T039 timeout-vs-slow: the restore genuinely occupies the connection for
@@ -36,7 +36,7 @@ export function routes(ctx) {
       // transcript.
       const fromPage =
         req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/flaky\/slow\.html(?:[?#]|$)/.test(req.headers.referer ?? '');
+        /^\/flaky\/slow\.html$/.test(refererPath(req));
       archive.requests += 1;
       if (!fromPage) archive.offPage += 1;
       // Asking again while a job is still mounting re-queues the media behind it,

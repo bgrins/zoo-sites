@@ -33,7 +33,7 @@ const FLOORPLAN_ROOMS = {
 };
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readBody, getSession, requireSession, fromPage, refererPath } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/floorplan/room') {
       // 403 before anything is recorded: a request without the session cookie
@@ -50,7 +50,7 @@ export function routes(ctx) {
       // Per-session (unlike a beacon, not forgeable through /api/beacon).
       const fromPage =
         req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/floorplan\/(?:index\.html)?(?:[?#]|$)/.test(req.headers.referer ?? '');
+        /^\/floorplan\/(?:index\.html)?$/.test(refererPath(req));
       if (fromPage) (found.session.roomClicks ??= []).push({ id, at: Date.now() });
       else found.session.roomReadsOffPage = (found.session.roomReadsOffPage ?? 0) + 1;
       return json(res, 200, { id, ...room });

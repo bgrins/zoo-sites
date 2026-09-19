@@ -103,9 +103,9 @@ const auctionRoomPaddle = (a) => AUCTION_ROOM_PADDLES[a.paddleIdx];
 // a pass with no browser in it is legible in the results row rather than only in
 // a transcript — which matters here because the whole point of the fixture is
 // what a browser-side wait costs.
-const auctionFromPage = (req) =>
+const auctionFromPage = (req, refererPath) =>
   req.headers['sec-fetch-site'] === 'same-origin' ||
-  /\/auction\/lot-418\.html(?:[?#]|$)/.test(req.headers.referer ?? '');
+  refererPath(req) === '/auction/lot-418.html';
 
 // Once the online bidder holds the lot the auctioneer knocks it down quickly;
 // on the room's own top bid he waits far longer for an advance.
@@ -185,7 +185,7 @@ function auctionView(a, now) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage, draw } = ctx;
+  const { state, json, readBody, getSession, requireSession, fromPage, draw, refererPath } = ctx;
   return async (req, res, url, pathname0) => {
     // T116 live-auction: Marlstone Salerooms lot 418. Both handlers tick the
     // per-session clock before answering, so the figure the page renders and the
@@ -205,7 +205,7 @@ export function routes(ctx) {
       auctionOpen(auction, now);
       auctionTick(auction, now);
       auction.reads += 1;
-      if (!auctionFromPage(req)) auction.offPage += 1;
+      if (!auctionFromPage(req, refererPath)) auction.offPage += 1;
       return json(res, 200, auctionView(auction, now));
     }
 
@@ -223,7 +223,7 @@ export function routes(ctx) {
       const now = Date.now();
       auctionOpen(auction, now);
       auctionTick(auction, now);
-      if (!auctionFromPage(req)) auction.offPage += 1;
+      if (!auctionFromPage(req, refererPath)) auction.offPage += 1;
       // One bid at a time. The cooldown never advances on a turned-away attempt,
       // so a caller cannot starve itself, but it does mean the ladder cannot be
       // walked faster by reading the refusals than by re-reading the page.

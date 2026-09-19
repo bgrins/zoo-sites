@@ -21,7 +21,7 @@ const PARCEL_SHIPMENTS = {
 };
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readBody, getSession, requireSession, fromPage, refererPath } = ctx;
   return async (req, res, url, pathname0) => {
     // Rate-limited tracking lookups: the cooldown window advances on every
     // accepted request (hit or miss) and 429s never advance it, so a caller
@@ -39,7 +39,7 @@ export function routes(ctx) {
       // does not count as pacing lookups through the UI.
       const fromPage =
         req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/parcels\/(?:index\.html)?(?:[?#]|$)/.test(req.headers.referer ?? '');
+        /^\/parcels\/(?:index\.html)?$/.test(refererPath(req));
       const track = (found.session.parcels ??= {
         lookups: [], violations: 0, lastAt: 0, offPage: 0,
       });
