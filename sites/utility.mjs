@@ -11,21 +11,17 @@ const UTILITY_ACCOUNT = '44-58291-03';
 const UTILITY_METER = 'GW-0042117-B';
 const UTILITY_FORMAT = /^[A-Z]{2}-\d{7}-[A-Z]$/;
 
-export function utilityState(session) {
+function utilityState(session) {
   return (session.utility ??= { transfers: [], rejects: [] });
 }
 
 export function routes(ctx) {
-  const { json, readBody, requireSession, fromPage } = ctx;
+  const { json, readJson, requireSession, fromPage } = ctx;
   const utilityFromPage = fromPage('/utility/');
   return async (req, res, url, pathname0) => {
     if (req.method === 'POST' && pathname0 === '/api/utility/transfer') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

@@ -1,9 +1,10 @@
 // pages/depot/ - Marlowe Depot Systems warehouse ops console (devtools suite:
 // shard-forensics, body-only-ref, partial-import). Every graded value is minted
-// server-side from randomBytes and exists in exactly one HTTP response: the
-// failing roster shard and its X-Depot-Trace header, the manifest store ref
-// (body only, never a header or the DOM), and the intake rejects + diag code
-// (streamed line results only). pages/ holds the menu, never the answers.
+// server-side (the shard and reject picks from ctx.draw, every code from
+// randomBytes) and exists in exactly one HTTP response: the failing roster
+// shard and its X-Depot-Trace header, the manifest store ref (body only, never
+// a header or the DOM), and the intake rejects + diag code (streamed line
+// results only). pages/ holds the menu, never the answers.
 import { randomBytes } from 'node:crypto';
 
 const DEPOT_OPERATOR = { id: 'm.osei', pin: '4417' };
@@ -101,7 +102,7 @@ function depotState(session) {
 }
 
 // Rejection-sampled so the per-session draws carry no modulo bias.
-function depotDraw(n, draw = (_scope, n) => randomBytes(n)) {
+function depotDraw(n, draw) {
   for (;;) {
     const b = draw('depot', 1)[0];
     if (b < 256 - (256 % n)) return b % n;
@@ -127,15 +128,11 @@ async function depotManifestKeys(ctx) {
 }
 
 export function routes(ctx) {
-  const { json, readBody, getSession, requireSession, draw } = ctx;
+  const { json, readJson, getSession, requireSession, draw } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'POST' && pathname0 === '/api/depot/signin') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -148,8 +145,8 @@ export function routes(ctx) {
       const d = depotState(found.session);
       d.signins += 1;
       d.signedIn = true;
-      // The shard draw and the trace are minted once per session, from
-      // randomBytes rather than the page-exposed nonce, so a re-signin (the
+      // The shard draw (ctx.draw) and the trace (randomBytes) are minted once
+      // per session, never from the page-exposed nonce, so a re-signin (the
       // recovery path for a surface whose network log died at navigation)
       // re-serves the SAME failure with the SAME trace.
       if (d.shard === null) {
@@ -206,12 +203,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/depot/intake') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -258,12 +251,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/depot/incident') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

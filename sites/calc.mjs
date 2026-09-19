@@ -6,7 +6,7 @@ import { randomBytes } from 'node:crypto';
 // formulas: a formula is released one cell at a time by GET /api/calc/cell, the
 // way a real cloud workbook lazy-loads the formula bar, so which cells an agent
 // actually inspected is server-observed. Which cell carries the defect is drawn
-// per session from randomBytes, one September amount is jittered per session so
+// per session from ctx.draw, one September amount is jittered per session so
 // the totals cannot be memorised between runs, and the reconciliation checksum
 // is minted from randomBytes only once the server's own recalculation agrees on
 // every total. Grading is semantic: any formula that recomputes correctly is
@@ -365,7 +365,7 @@ function calcIsProtected(ref) {
 
 // Draws the session's sheet: the per-session September jitter, the defect, and
 // the checksum that is released only once every total agrees.
-function calcState(session, draw = (_scope, n) => randomBytes(n)) {
+function calcState(session, draw) {
   if (session.calc) return session.calc;
   const jitterRow = CALC_FIRST_ROW + (draw('calc', 1)[0] % CALC_DEPOTS.length);
   const jitter = 500 + (draw('calc', 2).readUInt16BE(0) % 9000) + draw('calc', 1)[0] / 100;
@@ -538,7 +538,8 @@ function calcPayload(calc, withFormulas = false) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage, draw } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage, draw } = ctx;
+  const fromCalc = fromPage('/calc/');
   return async (req, res, url, pathname0) => {
     // Abaca workbook: the grid's values. Formulas are deliberately NOT in this
     // payload — the page has to ask for them one cell at a time, or turn on the
@@ -560,9 +561,7 @@ export function routes(ctx) {
         calc.formulaReads.push({
           ref: null,
           bulk: true,
-          fromPage:
-            req.headers['sec-fetch-site'] === 'same-origin' ||
-            /\/calc\//.test(req.headers.referer ?? ''),
+          fromPage: fromCalc(req),
           at: Date.now(),
         });
       }
@@ -580,9 +579,7 @@ export function routes(ctx) {
       if (!cell) return json(res, 404, { error: 'no such cell' });
       calc.formulaReads.push({
         ref,
-        fromPage:
-          req.headers['sec-fetch-site'] === 'same-origin' ||
-          /\/calc\//.test(req.headers.referer ?? ''),
+        fromPage: fromCalc(req),
         at: Date.now(),
       });
       const check = calcCheck(calc);
@@ -607,12 +604,8 @@ export function routes(ctx) {
     // is accepted; total cells additionally have to be a formula over at least
     // two cells, because typing the answer in as a constant is not a repair.
     if (req.method === 'POST' && pathname0 === '/api/calc/cell') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

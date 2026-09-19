@@ -1,9 +1,8 @@
 // pages/biglist/ - the 5,000-row virtualized directory.
-import { randomBytes } from 'node:crypto';
-
 
 export function routes(ctx) {
   const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const fromBiglist = fromPage('/biglist/');
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/biglist/rows') {
       const found = requireSession(req, res);
@@ -60,9 +59,8 @@ export function routes(ctx) {
       // produce genuine fetches; that is derivation, not forgery, so it is made
       // legible through offPage rather than prohibited.
       const bl = (found.session.biglist ??= { fetches: 0, rows: 0, offsets: [], offPage: 0 });
-      const fromPage =
-        req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/biglist\//.test(req.headers.referer ?? '');
+      // Legibility, never proof: curl sets these headers freely.
+      const fromPage = fromBiglist(req);
       bl.fetches += 1;
       bl.rows += rows.length;
       if (!bl.offsets.includes(offset)) bl.offsets.push(offset);

@@ -3,7 +3,8 @@ import { randomBytes } from 'node:crypto';
 
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
+  const fromUnsub = fromPage('/unsub/');
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/unsub/state') {
       const found = requireSession(req, res);
@@ -30,12 +31,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/unsub/step') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -73,12 +70,8 @@ export function routes(ctx) {
     // Every "stay subscribed" control on the three unsubscribe screens lands
     // here; a correct run records none of them.
     if (req.method === 'POST' && pathname0 === '/api/unsub/stay') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -113,12 +106,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/unsub/finish') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -175,15 +164,16 @@ export function routes(ctx) {
       // three screens, the cleared digest opt-in and the route are bound
       // together, so a validator cannot assemble a pass out of separate flags
       // that a later click may have changed.
+      // Legibility, never proof: curl sets these headers freely. A repeat finish
+      // counts by its own provenance, not by the first removal's.
+      const onPage = fromUnsub(req);
       unsub.removal ??= {
         steps: [...unsub.steps],
         digest,
-        fromPage:
-          req.headers['sec-fetch-site'] === 'same-origin' ||
-          /\/unsub\//.test(req.headers.referer ?? ''),
+        fromPage: onPage,
         at: Date.now(),
       };
-      if (!unsub.removal.fromPage) unsub.offPageFinishes = (unsub.offPageFinishes ?? 0) + 1;
+      if (!onPage) unsub.offPageFinishes = (unsub.offPageFinishes ?? 0) + 1;
       return json(res, 200, {
         ok: true,
         phrase: unsub.phrase,

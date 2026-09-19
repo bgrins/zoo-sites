@@ -4,6 +4,7 @@
 // refuses any session whose machine has not reached 'ready'. Rates and the
 // quote code live only here, never in fixture source.
 import { randomBytes } from 'node:crypto';
+import { round2 } from './lib.mjs';
 
 const INSURE_STEPS = {
   'dwelling': ['detached', 'rowhouse', 'condo'],
@@ -17,8 +18,6 @@ const INSURE_HEAT = { gas: 5.1, electric: 1.8, heatpump: 0, oil: 17.7 };
 const INSURE_TANK = { basement: 3.6, outdoor: 6.2, underground: 14.4 };
 const INSURE_COVER = { essential: 0.8, standard: 1.0, broad: 1.35 };
 
-const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
-
 function insureSequence(answers) {
   const seq = ['dwelling', 'heating'];
   if (answers['heating'] === 'oil') seq.push('fuel-storage');
@@ -30,7 +29,7 @@ function insureCurrent(answers) {
   return insureSequence(answers).find((id) => !answers[id]) ?? 'ready';
 }
 
-export function insureState(session) {
+function insureState(session) {
   return (session.insure ??= { answers: {}, quotes: [], violations: 0 });
 }
 
@@ -45,7 +44,7 @@ function insureStatus(record) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
   const insureFromPage = fromPage('/insure/');
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/insure/state') {
@@ -55,12 +54,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/insure/step') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -95,12 +90,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/insure/quote') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

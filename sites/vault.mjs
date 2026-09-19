@@ -106,15 +106,6 @@ const VAULT_STAMP = (at) => {
   return `${VAULT_AUDIT_DAY} ${pad(when.getHours())}:${pad(when.getMinutes())}`;
 };
 
-// Did this read come from the console, or from a shell? Sec-Fetch-Site is a
-// forbidden header name for fetch()/XHR but `curl -H` sets it freely, so this is
-// route telemetry for `detail`, never a pass condition.
-function vaultFromPage(req) {
-  return (
-    req.headers['sec-fetch-site'] === 'same-origin' || /\/vault\//.test(req.headers.referer ?? '')
-  );
-}
-
 function vaultState(session) {
   return (session.vault ??= {
     tokens: VAULT_SECRETS.reduce((acc, s) => {
@@ -135,6 +126,10 @@ function vaultState(session) {
 
 export function routes(ctx) {
   const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  // Did this read come from the console, or from a shell? Sec-Fetch-Site is a
+  // forbidden header name for fetch()/XHR but `curl -H` sets it freely, so this is
+  // route telemetry for `detail`, never a pass condition.
+  const vaultFromPage = fromPage('/vault/');
   return async (req, res, url, pathname0) => {
     // Stavelock vault (token-rotate). The secret list and each secret's masked form
     // are the only representations of a value the console ever renders; /copy is the
@@ -193,7 +188,6 @@ export function routes(ctx) {
         return json(res, 400, { error: 'Malformed request body.' });
       }
       if (!payload || typeof payload !== 'object') payload = {};
-      if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
       const secret = VAULT_SECRETS.find((s) => s.id === payload?.id);
@@ -217,7 +211,6 @@ export function routes(ctx) {
       } catch {
         return json(res, 400, { error: 'Malformed request body.' });
       }
-      if (!payload || typeof payload !== 'object') payload = {};
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

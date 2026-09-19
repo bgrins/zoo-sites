@@ -23,7 +23,7 @@ function baseCentsFor(ticket, zones) {
   return row && Object.hasOwn(row, zones) ? row[zones] : null;
 }
 
-export function kioskState(session) {
+function kioskState(session) {
   return (session.kiosk ??= {
     adjustmentCents: mintAdjustmentCents(),
     quotes: [],
@@ -33,7 +33,7 @@ export function kioskState(session) {
 }
 
 export function routes(ctx) {
-  const { json, readBody, requireSession, fromPage } = ctx;
+  const { json, readJson, requireSession, fromPage } = ctx;
   const fromKiosk = fromPage('/kiosk/');
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/kiosk/fare') {
@@ -50,12 +50,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/kiosk/purchase') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

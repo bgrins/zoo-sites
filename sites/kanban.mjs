@@ -1,9 +1,10 @@
 // pages/kanban/ - Coppermast Dispatch triage board (kanban-triage).
 import { randomBytes } from 'node:crypto';
+import { lcg } from './lib.mjs';
 
 // pages/kanban/ — Coppermast Dispatch's Terminal 3 shift triage board
 // (kanban-triage). Which work orders carry the Urgent and Blocked tags, and which
-// lane each one starts in, are drawn per session from randomBytes and released
+// lane each one starts in, are drawn per session from ctx.draw and released
 // only through the gated board read below, so the two sets the validator grades
 // exist nowhere under pages/. Every tagged card is dealt into a lane it does not
 // belong in, so a correct board is never handed out for free. The saved layout is
@@ -25,13 +26,9 @@ const KANBAN_COLS = ['backlog', 'doing', 'done'];
 
 const KANBAN_TAG_LABEL = { urgent: 'Urgent', blocked: 'Blocked', routine: 'Routine' };
 
-function kanbanState(session, draw = (_scope, n) => randomBytes(n)) {
+function kanbanState(session, draw) {
   if (!session.kanban) {
-    let seed = draw('kanban', 4).readUInt32BE(0);
-    const rand = () => {
-      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-      return seed / 4294967296;
-    };
+    const rand = lcg(draw('kanban', 4));
     const shuffle = (list) => {
       for (let i = list.length - 1; i > 0; i--) {
         const j = Math.floor(rand() * (i + 1));

@@ -5,6 +5,7 @@
 // total are checkable only against what this session actually built and was
 // charged.
 import { randomBytes } from 'node:crypto';
+import { round2 } from './lib.mjs';
 
 const BISTRO_MENU = {
   'beet-flatbread': {
@@ -77,9 +78,7 @@ const BISTRO_MENU = {
 
 const BISTRO_SIZES = ['medium', 'large'];
 
-const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
-
-export function bistroState(session) {
+function bistroState(session) {
   return (session.bistro ??= { cart: [], orders: [], rejects: [] });
 }
 
@@ -106,7 +105,7 @@ function bistroCartPayload(record) {
 }
 
 export function routes(ctx) {
-  const { json, readBody, requireSession } = ctx;
+  const { json, readJson, requireSession } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/bistro/menu') {
       const found = requireSession(req, res);
@@ -139,12 +138,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/bistro/cart') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -170,14 +165,14 @@ export function routes(ctx) {
       ];
       const added = norm(payload.added);
       const removed = norm(payload.removed);
-      const badAdd = added.find((mid) => !item.extras[mid]);
-      if (badAdd) {
+      const badAdd = added.find((mid) => !Object.hasOwn(item.extras, mid));
+      if (badAdd !== undefined) {
         return json(res, 400, {
           error: `"${badAdd}" is not offered as an extra on the ${item.name}.`,
         });
       }
-      const badRemove = removed.find((mid) => !item.comesWith[mid]);
-      if (badRemove) {
+      const badRemove = removed.find((mid) => !Object.hasOwn(item.comesWith, mid));
+      if (badRemove !== undefined) {
         return json(res, 400, {
           error: `"${badRemove}" does not come on the ${item.name}, so it cannot be left off.`,
         });
@@ -193,12 +188,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/bistro/cart/remove') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -212,12 +203,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/bistro/order') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

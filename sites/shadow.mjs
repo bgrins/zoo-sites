@@ -1,17 +1,12 @@
 // pages/shadow/ - facility access console (shadow-unlock). The success message is server-issued so it never appears in fixture source on disk.
-import { randomBytes } from 'node:crypto';
-
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
+  const fromShadow = fromPage('/shadow/');
   return async (req, res, url, pathname0) => {
     if (req.method === 'POST' && pathname0 === '/api/shadow/unlock') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -19,9 +14,7 @@ export function routes(ctx) {
       // fromPage is legibility, never proof (sec-fetch and referer are
       // curl-spoofable): a shell-driven unlock stays visible in the results
       // row instead of reading byte-identical to a widget-driven one.
-      const fromPage =
-        req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/shadow\//.test(req.headers.referer ?? '');
+      const fromPage = fromShadow(req);
       state.beacons.push({
         sid: found.sid,
         kind: 'shadow-unlock',

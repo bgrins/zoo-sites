@@ -46,8 +46,8 @@ const QUOTIENT_ROWS = [
 ];
 
 // A fresh, complete batch object per call, so deleting the omitted field can
-// never mutate shared state. Exported for the fault-matrix self-test.
-export function quotientBatchBody() {
+// never mutate shared state.
+function quotientBatchBody() {
   return {
     batchId: 'REC-2026-07',
     ledger: 'Supplier ledger',
@@ -88,13 +88,13 @@ const QUOTIENT_LANES = {
 // rounded total always spans at least 12 candidate rates on the 0.0001 grid,
 // and total / base can never single out the minted rate - even for an agent
 // that prices an unasked-for shipment to sharpen the division.
-export const QUOTIENT_WEIGHT_MIN = 1;
-export const QUOTIENT_WEIGHT_MAX = 200;
+const QUOTIENT_WEIGHT_MIN = 1;
+const QUOTIENT_WEIGHT_MAX = 200;
 const QUOTIENT_RATE_MIN = 10500; // 1.0500, in 1e-4 units
 const QUOTIENT_RATE_MAX = 14999; // 1.4999
 const QUOTIENT_MIN_COLLISIONS = 2;
 
-export function quotientBaseFor(laneId, weight) {
+function quotientBaseFor(laneId, weight) {
   const lane = Object.hasOwn(QUOTIENT_LANES, String(laneId ?? '')) ? QUOTIENT_LANES[laneId] : null;
   return Math.round((lane.perKg * weight + lane.terminal) * 100) / 100;
 }
@@ -114,7 +114,7 @@ function quotientCollisions(base, rateUnits) {
 // width >= 1/800 dollars of rate at the largest base, i.e. >= 12 grid
 // points), so the redraw loop only ever rejects edge-of-bucket draws; the
 // deterministic scan is a safety net, not the expected path.
-export function quotientMintRate(base) {
+function quotientMintRate(base) {
   const span = QUOTIENT_RATE_MAX - QUOTIENT_RATE_MIN + 1;
   let units = QUOTIENT_RATE_MIN + (randomBytes(2).readUInt16BE(0) % span);
   for (let i = 0; i < 40; i += 1) {
@@ -130,13 +130,13 @@ export function quotientMintRate(base) {
   return units / 10000;
 }
 
-export function quotientState(session) {
+function quotientState(session) {
   session.quotient ??= { batch: null, quotes: [], offPageQuotes: 0 };
   return session.quotient;
 }
 
 export function routes(ctx) {
-  const { json, readBody, requireSession, fromPage } = ctx;
+  const { json, readJson, requireSession, fromPage } = ctx;
   const fromQuotient = fromPage('/quotient/');
   return async (req, res, url, pathname0) => {
     // The reconciliation batch, one shot per session. The first request draws
@@ -189,12 +189,8 @@ export function routes(ctx) {
     // else - the page multiplies, rounds to the dollar, shows the total and
     // drops the rate on the floor.
     if (req.method === 'POST' && pathname0 === '/api/quotient/quote') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

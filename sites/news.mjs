@@ -3,15 +3,12 @@ import { randomBytes } from 'node:crypto';
 
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
+  const fromNews = fromPage('/news/');
   return async (req, res, url, pathname0) => {
     if (req.method === 'POST' && pathname0 === '/api/dialog-event') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -24,12 +21,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/modal-shown') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -43,11 +36,9 @@ export function routes(ctx) {
       modal.shownCount += 1;
       modal.lastShownAt = Date.now();
       // Off-page provenance is LEGIBILITY, not proof: sec-fetch and referer
-      // are curl-spoofable (see the note above isNavigation), so nothing
-      // gates on it, but a shell-driven run shows up in the results row.
-      const fromPage =
-        req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/news\//.test(req.headers.referer ?? '');
+      // are curl-spoofable, so nothing gates on it, but a shell-driven run
+      // shows up in the results row.
+      const fromPage = fromNews(req);
       if (!fromPage) modal.offPage += 1;
       // Pass-granting dismissals must echo this per-show token. It travels
       // via the page that announced the show, so the generic beacon route and
@@ -60,12 +51,8 @@ export function routes(ctx) {
     // (button/esc), an ignored backdrop click, or the MutationObserver's report
     // that the node was detached without being dismissed.
     if (req.method === 'POST' && pathname0 === '/api/modal-dismiss') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -75,9 +62,8 @@ export function routes(ctx) {
       }
       const method = String(payload.method ?? '');
       const at = Date.now();
-      const fromPage =
-        req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/news\//.test(req.headers.referer ?? '');
+      // Legibility, never proof: curl sets these headers freely.
+      const fromPage = fromNews(req);
       if (!fromPage) modal.offPage += 1;
       if (method === 'button' || method === 'esc') {
         // Only the pass-granting methods demand the token: `removed` is the
@@ -100,12 +86,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/subscribe') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

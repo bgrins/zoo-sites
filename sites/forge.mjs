@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 // pages/forge/ — Kettleforge pull request 482 in hollowmill/brine-gateway. The
 // unified diff and the failing check's assertion log are NOT in fixture source:
 // the page fetches both from session-gated endpoints, and which of four seeded
-// sites carries the defect is drawn per session from randomBytes, so the
+// sites carries the defect is drawn per session from ctx.draw, so the
 // at-fault file, new-side line number and identifier all differ run to run.
 // Every site not drawn is emitted in its CORRECT form, which is what makes the
 // other three identifiers plausible decoys rather than dead giveaways. A second
@@ -496,7 +496,7 @@ function forgeDiffFor(defectKey, pads = []) {
   return { files, defect };
 }
 
-function forgeState(session, modes = {}, draw = (_scope, n) => randomBytes(n)) {
+function forgeState(session, modes = {}, draw) {
   if (!session.forge) {
     // One draw per session: which of the four sites is served in its buggy form,
     // and how many filler lines each file carries ahead of its seeded rows.
@@ -525,6 +525,7 @@ function forgeState(session, modes = {}, draw = (_scope, n) => randomBytes(n)) {
 
 export function routes(ctx) {
   const { state, json, readBody, getSession, requireSession, fromPage, draw } = ctx;
+  const fromForge = fromPage('/forge/pulls/482/');
   return async (req, res, url, pathname0) => {
     // Kettleforge PR 482. The diff and the failing check's assertion log are
     // released only through these session-gated reads, so neither the at-fault
@@ -609,9 +610,8 @@ export function routes(ctx) {
           error: 'A review that is not an approval needs a summary or at least one line comment.',
         });
       }
-      const fromPage =
-        req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/forge\/pulls\/482\//.test(req.headers.referer ?? '');
+      // Legibility, never proof: curl sets these headers freely.
+      const fromPage = fromForge(req);
       if (!fromPage) forge.offPage += 1;
       const review = {
         id: 'RV-' + randomBytes(2).toString('hex').toUpperCase(),

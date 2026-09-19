@@ -8,7 +8,7 @@ const GALLERY_SKUS = new Set([
 ]);
 
 export function routes(ctx) {
-  const { json, readBody, getSession, requireSession } = ctx;
+  const { json, readJson, getSession, requireSession } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/gallery/basket') {
       const found = getSession(req);
@@ -19,12 +19,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/gallery/basket') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

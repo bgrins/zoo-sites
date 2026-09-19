@@ -1,17 +1,11 @@
 // pages/intake/ - onboarding portal (intake-carryover). Document lists are server-issued, keyed off the stored path choice.
-import { randomBytes } from 'node:crypto';
-
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'POST' && pathname0 === '/api/intake/choice') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

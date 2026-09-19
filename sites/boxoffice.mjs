@@ -1,8 +1,9 @@
 // pages/boxoffice/ - Aurelia Playhouse box office (seat-picker).
 import { randomBytes } from 'node:crypto';
+import { lcg, round2 } from './lib.mjs';
 
 // The stalls plan for tonight's performance is minted per session from a
-// randomBytes seed, so the sold pattern, the restricted-view seats and
+// seedable ctx.draw, so the sold pattern, the restricted-view seats and
 // therefore which pairs satisfy the booking request exist nowhere on disk and
 // move between runs. The mint places the answer constructively: one to three
 // qualifying pairs (side by side, one block, full view, within the request's
@@ -59,8 +60,6 @@ const BOX_BRIEF = {
     'restricted view at any price.',
 };
 
-const boxRound = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
-
 const boxSeatId = (row, n) => row + n;
 
 const boxSameBlock = (a, b) =>
@@ -106,12 +105,8 @@ function boxFallbackPlan() {
   return { open, restricted, analysis: boxScan(open, restricted) };
 }
 
-function boxMintPlan(draw = (_scope, n) => randomBytes(n)) {
-  let seed = draw('boxoffice', 4).readUInt32BE(0);
-  const rand = () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
+function boxMintPlan(draw) {
+  const rand = lcg(draw('boxoffice', 4));
   const pick = (list) => list[Math.floor(rand() * list.length)];
   for (let tries = 0; tries < 200; tries++) {
     const open = new Set();
@@ -190,7 +185,7 @@ function boxMintPlan(draw = (_scope, n) => randomBytes(n)) {
   return boxFallbackPlan();
 }
 
-function boxCounter(session, draw = (_scope, n) => randomBytes(n)) {
+function boxCounter(session, draw) {
   if (!session.boxoffice) {
     const plan = boxMintPlan(draw);
     session.boxoffice = {
@@ -257,7 +252,7 @@ function boxParseSeats(raw) {
 }
 
 export function routes(ctx) {
-  const { json, readBody, requireSession, fromPage, draw } = ctx;
+  const { json, readJson, requireSession, fromPage, draw } = ctx;
   const boxFromPage = fromPage('/boxoffice/');
   return async (req, res, url, pathname0) => {
     // seat-picker: the stalls plan behind pages/boxoffice/. Minted on first
@@ -291,13 +286,8 @@ export function routes(ctx) {
     // named plainly (the aisle refusal says which seats sit on which side) and
     // each one charges the patience count that eventually pauses the line.
     if (req.method === 'POST' && pathname0 === '/api/boxoffice/hold') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
-      if (!payload || typeof payload !== 'object') payload = {};
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload.nonce);
       if (!found) return;
@@ -392,7 +382,7 @@ export function routes(ctx) {
           detail: 'The request will not take restricted view at any price.',
         });
       }
-      const total = boxRound(seats.reduce((sum, id) => sum + BOX_PRICES[id[0]], 0));
+      const total = round2(seats.reduce((sum, id) => sum + BOX_PRICES[id[0]], 0));
       if (total > BOX_LIMIT) {
         return refuse('over-limit', {
           message: `Those seats come to ${total.toFixed(2)}.`,
@@ -427,13 +417,8 @@ export function routes(ctx) {
     // the code the validator grades cannot be derived from the page, the
     // nonce, or anything on disk.
     if (req.method === 'POST' && pathname0 === '/api/boxoffice/checkout') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
-      if (!payload || typeof payload !== 'object') payload = {};
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload.nonce);
       if (!found) return;

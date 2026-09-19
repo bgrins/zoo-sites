@@ -1,5 +1,4 @@
 // pages/grid-edit/ - the warehouse cycle-count sheet.
-import { randomBytes } from 'node:crypto';
 
 // pages/grid-edit/ — cycle-count sheet. Rows and the corrections memo are
 // served per session so neither the planted errors nor the corrected
@@ -26,7 +25,7 @@ const GRID_EDIT_MEMO = [
 ];
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/grid-edit') {
       const found = requireSession(req, res);
@@ -40,12 +39,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/grid-edit') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

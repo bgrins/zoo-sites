@@ -1,5 +1,4 @@
 // pages/floorplan/ - Ostmark House level 04 (floorplan-room).
-import { randomBytes } from 'node:crypto';
 
 // pages/floorplan/ — Ostmark House level 04. Occupant names, roles and space
 // types exist only here and are released one room at a time through the

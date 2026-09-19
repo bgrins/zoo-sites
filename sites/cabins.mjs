@@ -1,8 +1,9 @@
 // pages/cabins/ - Tamarack Hollow, a one-cabin rental lodge (cabin-dates).
 import { randomBytes } from 'node:crypto';
+import { lcg } from './lib.mjs';
 
 // The blackout layout and the nightly rate are drawn per session from a
-// randomBytes seed, so which September 2026 Friday can host a four-night stay
+// seedable ctx.draw, so which September 2026 Friday can host a four-night stay
 // exists nowhere on disk and moves between runs. Every draw makes each Friday
 // before the target unbookable in one of two ways: the Friday cell itself is a
 // blackout date (visible at a glance), or the cell is open but a blackout falls
@@ -44,12 +45,8 @@ function cabinsShort(n) {
   return `${CABINS_MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCDate()}`;
 }
 
-function cabinsMint(draw = (_scope, n) => randomBytes(n)) {
-  let seed = draw('cabins', 4).readUInt32BE(0);
-  const rand = () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
+function cabinsMint(draw) {
+  const rand = lcg(draw('cabins', 4));
   const pick = (list) => list[Math.floor(rand() * list.length)];
   const rate = pick(CABINS_RATES);
   const targetIndex = 1 + Math.floor(rand() * (CABINS_FRIDAYS.length - 1));
@@ -104,7 +101,7 @@ function cabinsMint(draw = (_scope, n) => randomBytes(n)) {
   };
 }
 
-function cabinsState(session, draw = (_scope, n) => randomBytes(n)) {
+function cabinsState(session, draw) {
   if (!session.cabins) {
     const minted = cabinsMint(draw);
     session.cabins = {
@@ -124,7 +121,7 @@ function cabinsState(session, draw = (_scope, n) => randomBytes(n)) {
 }
 
 export function routes(ctx) {
-  const { json, readBody, requireSession, draw } = ctx;
+  const { json, readJson, requireSession, draw } = ctx;
   return async (req, res, url, pathname0) => {
     // T053 cabin-dates: the availability sheet behind pages/cabins/. The layout
     // is minted on first read and pinned to the session, so state.reset()
@@ -153,13 +150,8 @@ export function routes(ctx) {
     // booking terms) and mints a fresh reference, so the validator grades the
     // reservation the session finally holds.
     if (req.method === 'POST' && pathname0 === '/api/cabins/book') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
-      if (!payload || typeof payload !== 'object') payload = {};
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload.nonce);
       if (!found) return;

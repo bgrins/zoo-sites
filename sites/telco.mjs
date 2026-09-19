@@ -3,6 +3,7 @@
 // posts a draft on every change event, so select-typeahead churn is
 // server-visible telemetry; the live configuration and its server-computed
 // monthly total are what the validator grades.
+import { round2 } from './lib.mjs';
 
 const TELCO_PLANS = {
   'sig': { name: 'Signal', perLine: 31.5 },
@@ -12,14 +13,12 @@ const TELCO_PLANS = {
 const TELCO_LINE_CREDIT = 6.5;
 const TELCO_MAX_LINES = 5;
 
-const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
-
-export function telcoState(session) {
+function telcoState(session) {
   return (session.telco ??= { drafts: [], current: null, currentSeq: -1, violations: 0 });
 }
 
 export function routes(ctx) {
-  const { json, readBody, requireSession, fromPage } = ctx;
+  const { json, readJson, requireSession, fromPage } = ctx;
   const telcoFromPage = fromPage('/telco/');
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/telco/draft') {
@@ -32,12 +31,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/telco/draft') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

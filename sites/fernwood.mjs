@@ -60,7 +60,7 @@ function fernwoodMintRefs(n) {
   return [...refs];
 }
 
-function fernwoodState(session, draw = (_scope, n) => randomBytes(n)) {
+function fernwoodState(session, draw) {
   if (!session.fernwood) {
     const bytes = draw('fernwood', 4);
     const needleCount = 300 + (bytes[0] * 256 + bytes[1]) % 200;

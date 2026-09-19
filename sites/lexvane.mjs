@@ -1,5 +1,4 @@
 // pages/lexvane/ - both modes scored server-side; the words live only here.
-import { randomBytes } from 'node:crypto';
 
 // pages/lexvane/index.html — BOTH modes are scored server-side. The word
 // lists, the two-pass marking and the hard-mode reuse rule live here only: the
@@ -140,7 +139,7 @@ function lexvaneView(game, mode) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/lexvane/state') {
       const found = requireSession(req, res);
@@ -151,12 +150,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/lexvane/guess') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

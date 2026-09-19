@@ -5,9 +5,9 @@ import { randomBytes } from 'node:crypto';
 // advances on a per-session SERVER clock: auctionTick() replays every advance
 // from the room that has fallen due before any read or bid is answered, so
 // stopping page JS cannot freeze the figure and a bid is judged against the
-// same clock the page renders. The opening bid, the room's limit and the paddle
-// code are drawn from randomBytes, live only on the session (so state.reset()
-// clears them) and appear in no fixture file on disk.
+// same clock the page renders. The opening bid and the room's limit are drawn
+// from ctx.draw and the paddle code from randomBytes; all three live only on the
+// session (so state.reset() clears them) and appear in no fixture file on disk.
 const AUCTION_INCREMENT = 100;
 
 // The room advances every TICK while it is still bidding. Once it has reached
@@ -46,7 +46,7 @@ const AUCTION_LOT = {
 
 const auctionFig = (n) => Number(n).toLocaleString('en-GB');
 
-function auctionState(session, modes = {}, draw = (_scope, n) => randomBytes(n)) {
+function auctionState(session, modes = {}, draw) {
   if (!session.auction) {
     const bytes = draw('auction', 4);
     // modes.auctionDraw pins the per-session draw for testability: 'decline'

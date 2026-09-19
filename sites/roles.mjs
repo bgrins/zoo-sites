@@ -1,16 +1,16 @@
 // pages/roles/ - the Alderpost vacancy desk (faceted-search).
 import { randomBytes } from 'node:crypto';
 
-// pages/roles/ — the Alderpost vacancy desk (faceted-search). The catalogue,
-// the client brief and every vacancy reference are minted per session from
-// randomBytes and hang off session.roles, so state.reset() clears them and no
-// fixture file on disk carries a vacancy, a facet count or a reference. The
-// draw guarantees the properties the task rests on: exactly one vacancy carries
-// all four of the brief's facet values; NO vacancy carries the brief's
-// discipline, base and contract in the salary band ABOVE the brief's ceiling,
-// so an agent that over-reads the ceiling lands in a genuinely empty result
-// set; no vacancy at all sits in the brief's secondary town on that discipline
-// and contract, which is the second dead end; and the winning
+// pages/roles/ — the Alderpost vacancy desk (faceted-search). The catalogue and
+// the client brief are drawn per session from ctx.draw, every vacancy reference
+// from randomBytes, and all of it hangs off session.roles, so state.reset()
+// clears them and no fixture file on disk carries a vacancy, a facet count or a
+// reference. The draw guarantees the properties the task rests on: exactly one
+// vacancy carries all four of the brief's facet values; NO vacancy carries the
+// brief's discipline, base and contract in the salary band ABOVE the brief's
+// ceiling, so an agent that over-reads the ceiling lands in a genuinely empty
+// result set; no vacancy at all sits in the brief's secondary town on that
+// discipline and contract, which is the second dead end; and the winning
 // discipline/location/contract cluster is one of FOUR clusters of the same
 // shape and size, so the brief — not the shape of the catalogue — is the only
 // thing that picks the answer out. Facet counts are computed here, drill-down
@@ -110,7 +110,7 @@ function rolesCeilings(target, trap) {
   return out;
 }
 
-function rolesBuildDesk(draw = (_scope, n) => randomBytes(n)) {
+function rolesBuildDesk(draw) {
   // The desk's whole difficulty draw runs through these, so a seeded run
   // (--seed) reproduces the vacancy board; identifiers stay on randomBytes.
   const rolesInt = (n) => draw('roles', 4).readUInt32BE(0) % n;
@@ -319,7 +319,7 @@ function rolesBuildDesk(draw = (_scope, n) => randomBytes(n)) {
   };
 }
 
-function rolesState(session, draw = (_scope, n) => randomBytes(n)) {
+function rolesState(session, draw) {
   return (session.roles ??= rolesBuildDesk(draw));
 }
 
@@ -371,15 +371,6 @@ function rolesRow(posting) {
   };
 }
 
-// Same shape as consoleFromPage: a fetch the desk itself made carries a
-// same-origin Sec-Fetch-Site or a /roles/ Referer, so a shell call that holds a
-// cookie it minted is separable in the telemetry.
-function rolesFromPage(req) {
-  return (
-    req.headers['sec-fetch-site'] === 'same-origin' || /\/roles\//.test(req.headers.referer ?? '')
-  );
-}
-
 // A hand-edited address bar is a real document load, so the Referer the BROWSER
 // puts on the desk's first fetch carries the filters. Corroborates the
 // page-reported `via`, which page script could otherwise say anything about.
@@ -394,6 +385,10 @@ function rolesRefererFiltered(req) {
 
 export function routes(ctx) {
   const { state, json, readBody, getSession, requireSession, fromPage, draw } = ctx;
+  // A fetch the desk itself made carries a same-origin Sec-Fetch-Site or a
+  // /roles/ Referer, so a shell call that holds a cookie it minted is separable
+  // in the telemetry. Legibility, never proof: curl sets these headers freely.
+  const rolesFromPage = fromPage('/roles/');
   return async (req, res, url, pathname0) => {
     // pages/roles/ — the Alderpost refine panel. Every search is answered here:
     // the page holds no catalogue, so the result rows AND the drill-down facet
@@ -408,7 +403,6 @@ export function routes(ctx) {
       } catch {
         return json(res, 400, { error: 'Malformed request body.' });
       }
-      if (!payload || typeof payload !== 'object') payload = {};
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

@@ -47,14 +47,6 @@ const MEDIA_SCRIPT = [
   { chapter: 4, start: 45, text: 'Identifier __IDENTIFIER__ ends transmission.' },
 ];
 
-// Did this request come from the player page, or from a shell? Same idiom as
-// the console fixture's `offPageReads`: Sec-Fetch-Site is a forbidden header
-// name for fetch()/XHR and the media element sets it too, but `curl -H` sets it
-// freely, so this is a counter and a route label, never a gate.
-const mediaFromPage = (req) =>
-  req.headers['sec-fetch-site'] === 'same-origin' ||
-  /\/media\//.test(req.headers.referer ?? '');
-
 // One tone per chapter with a short gap at each boundary, so the recording is
 // audible in QA and the chapter edges can be heard. Built once and reused: the
 // bytes are identical for every session, and nothing about them is graded.
@@ -129,6 +121,11 @@ function mediaCueText(media, cue) {
 
 export function routes(ctx) {
   const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  // Did this request come from the player page, or from a shell? Same idiom as
+  // the console fixture's `offPageReads`: Sec-Fetch-Site is a forbidden header
+  // name for fetch()/XHR and the media element sets it too, but `curl -H` sets it
+  // freely, so this is a counter and a route label, never a gate.
+  const mediaFromPage = fromPage('/media/');
   return async (req, res, url, pathname0) => {
     // pages/media/ — the Skerrow 0535 recording (media-transcript). The cue list
     // is the only place the bulletin text exists, and the chapter-3 line is not
@@ -211,7 +208,6 @@ export function routes(ctx) {
       } catch {
         return json(res, 400, { error: 'bad json' });
       }
-      if (!payload || typeof payload !== 'object') payload = {};
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

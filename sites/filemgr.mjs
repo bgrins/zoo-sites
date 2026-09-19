@@ -1,9 +1,7 @@
 // pages/filemgr/ - Working files and the locked rename (rename-rollback).
-import { randomBytes } from 'node:crypto';
-
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/files') {
       const found = requireSession(req, res);
@@ -28,12 +26,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/files/rename') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
