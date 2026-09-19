@@ -30,8 +30,9 @@ Rules:
   bare `return` after an error response both count as handled. A module returns
   `false` only when no route matched, and the dispatcher tries the next module.
 - Site constants, per-session state initialisers (`fooState(session)`) and
-  helpers move WITH their routes. Anything two sites share belongs on ctx, or
-  does not exist yet.
+  helpers move WITH their routes. Anything two sites share belongs on ctx when
+  it needs request or session plumbing (`ctx.readJson(req, res)` parses a body
+  or answers 400), and in `lib.mjs` when it is a pure function (`round2`).
 - `ctx.fromPage(prefix)` is the provenance helper: sec-fetch same-origin, or a
   referer under the prefix. It buys legibility, never proof, and the comment at
   each use site says so and must keep saying so.

@@ -205,12 +205,23 @@ function json(res, status, obj) {
   res.end(JSON.stringify(obj));
 }
 
+// The parsed JSON body, or undefined after answering 400 with `error` when the
+// body is malformed or over BODY_CAP. JSON.parse never yields undefined, so the
+// caller's `if (body === undefined) return;` is unambiguous.
+async function readJson(req, res, error = { error: 'bad json' }) {
+  try {
+    return JSON.parse(await readBody(req));
+  } catch {
+    json(res, 400, error);
+    return undefined;
+  }
+}
 
 
 
 
 
-const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+
 
 
 
@@ -405,7 +416,7 @@ export async function startPagesServer({
   // false. server.mjs keeps the core: sessions, static serving, the generic
   // beacon, and any site not yet extracted.
   const ctx = {
-    state, json, readBody, getSession, requireSession, fromPage, TYPES,
+    state, json, readBody, readJson, getSession, requireSession, fromPage, TYPES,
     isDocumentNav: isGovDocumentNav,
     root, readFile, join, draw,
   };
