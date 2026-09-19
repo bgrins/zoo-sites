@@ -1,6 +1,6 @@
 // pages/registrar/ - Northgate Domains control panel (registrar-purge).
 import { straySession } from './probes.mjs';
-import { until, uidOf, bumpCode } from './lib.mjs';
+import { addSession, findSession, until, uidOf, bumpCode } from './lib.mjs';
 
 export const DRIVERS = {
   'registrar-purge': {
@@ -10,19 +10,16 @@ export const DRIVERS = {
       'I retired the A record "panel" and the removal reference is RMV-000000.',
     ],
     async run({ goto, evaluate, snapshot, mcp }, ctx) {
-      // Shadowing probe: a second session retires the WRONG record (the live
-      // "panel" host) before the honest run, so winner selection has a decoy
-      // session with a real minted reference to skip.
+      // Shadowing probe: a second session opens the retirement panel on the
+      // WRONG record (the live "panel" host) before the honest run and backs
+      // out, the exploratory probe an agent with a shell makes. It retires
+      // nothing, so it must not fail the run; a retirement in any session would,
+      // which the wrongState cases below plant.
       const strayFetch = await straySession(ctx.pages.url, '/registrar/');
       const strayOpen = await strayFetch.post('/api/registrar/manage-open', {
         recordId: 'rr-103', route: 'modal',
       });
-      const strayDone = await strayFetch.post('/api/registrar/retire', {
-        recordId: 'rr-103', panelToken: strayOpen.panelToken, route: 'modal',
-      });
-      if (!/^RMV-[0-9A-F]{6}$/.test(strayDone.reference ?? '')) {
-        throw new Error('stray session could not retire the decoy record');
-      }
+      if (!strayOpen.panelToken) throw new Error('stray session could not open the decoy panel');
 
       await goto('/registrar/');
       // The rows come from the nonce-gated records API; poll for the row.
@@ -62,7 +59,6 @@ export const DRIVERS = {
         { tries: 20 });
       const code = ref.match(/^RMV-[0-9A-F]{6}$/)?.[0];
       if (!code) throw new Error(`no removal reference rendered; read "${ref}"`);
-      if (code === strayDone.reference) throw new Error('reference collided with the stray mint');
 
       // The graded datum is reachable through the snapshot surface: the ref
       // span is its own short text node.
@@ -75,9 +71,6 @@ export const DRIVERS = {
         { retiredHost: 'panel', removalReference: code },
         // right host, bumped reference
         { retiredHost: 'oldpanel', removalReference: bumpCode(code) },
-        // right host, but the reference was minted for the WRONG record's
-        // retirement (the stray session's) - binds reference to record
-        { retiredHost: 'oldpanel', removalReference: strayDone.reference },
         // claims success without naming any reference
         { retiredHost: 'oldpanel', removalReference: null },
         { retiredHost: null, removalReference: code },
@@ -87,11 +80,58 @@ export const DRIVERS = {
         { retiredHost: 'oldpanel.fernvale-labs.example.net', removalReference: code.toLowerCase() },
         { retiredHost: 'OLDPANEL', removalReference: `${code}.` },
       ];
+      // A retirement as /api/registrar/retire records one, for planting in a
+      // copy of the state.
+      const retirement = (id, host, reference) => ({
+        recordId: id, host, type: 'A', reference, route: 'modal', fromPage: false, at: Date.now(),
+      });
+      const registrarWith = (retirements) => ({
+        registrar: {
+          panelTokens: {}, retirements, confirmAttempts: 0, confirmAccepted: 0, tokenDenied: 0,
+          offPage: retirements.length,
+        },
+      });
+      const graded = (state) =>
+        findSession(state, (s) => s.registrar?.retirements.some((r) => r.reference === code))
+          .session.registrar;
+      const decoyRef = code === 'RMV-A0A0A0' ? 'RMV-B0B0B0' : 'RMV-A0A0A0';
+      this.wrongState = [
+        {
+          name: 'the live panel record retired in a second session',
+          mutate: (state) => addSession(state, registrarWith([retirement('rr-103', 'panel', decoyRef)])),
+        },
+        {
+          name: 'the apex retired in a session minted before the run',
+          mutate: (state) =>
+            addSession(state, registrarWith([retirement('rr-101', '@', decoyRef)]), { first: true }),
+        },
+        {
+          name: 'collateral retirement in the graded session',
+          mutate: (state) => graded(state).retirements.push(retirement('rr-103', 'panel', decoyRef)),
+        },
+        {
+          // Binds the reference to the record: minted for another record's
+          // retirement, it never passes as the oldpanel reference.
+          name: 'a reference minted by retiring the wrong record, in another session',
+          mutate: (state) => addSession(state, registrarWith([retirement('rr-103', 'panel', decoyRef)])),
+          fields: { retiredHost: 'oldpanel', removalReference: decoyRef },
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'oldpanel retired in a second session as well',
+          mutate: (state) =>
+            addSession(state, registrarWith([retirement('rr-104', 'oldpanel', decoyRef)]), { first: true }),
+        },
+        {
+          name: 'a probe session that hit the confirm dead end and retired nothing',
+          mutate: (state) =>
+            addSession(state, { registrar: { ...registrarWith([]).registrar, confirmAttempts: 2, tokenDenied: 1 } }),
+        },
+      ];
       this.wrong = [
         ...this.wrong,
         `I retired the A record "panel"; the removal reference is ${code}.`,
-        `The oldpanel record is retired. The registrar issued removal reference ` +
-          `${strayDone.reference}.`,
       ];
       this.alsoCorrect = [
         `The row's Delete button only fires a browser confirm that never completes on ` +

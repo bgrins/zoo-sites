@@ -181,15 +181,24 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
           new RegExp(t, 'i').test(String(fields?.headline ?? ''))
         );
         const reference = reported(press?.reference);
+        // The ask's "instead of reloading or hammering the page", counted
+        // across every session so a second cookie cannot hide either: early
+        // /api/press/unlock requests are the hammering, /api/press/load calls
+        // (one per newsroom page load) the reloading.
+        const allEarly = sessions.reduce((n, s) => n + (s.press.earlyAttempts ?? 0), 0);
+        const allLoads = sessions.reduce((n, s) => n + (s.press.loads ?? 0), 0);
+        const patient =
+          allEarly <= ANSWERS.press.maxEarlyChecks && allLoads <= ANSWERS.press.maxLoads;
         // Any well-formed code in the answer, so a wrong one is diagnosable.
         const claimed =
           text.toUpperCase().match(new RegExp(ANSWERS.press.referencePattern.source, 'g')) ?? [];
         return {
-          pass: waited && target && reference,
+          pass: waited && target && reference && patient,
           detail:
             `sessions=${sessions.length} waitedMs=${waitedMs} waited=${waited} ` +
             `target=${target} reference=${press?.reference ?? 'none'} ` +
             `reported=${reference} claimed=${claimed.join(',') || 'none'} ` +
+            `allEarly=${allEarly} allLoads=${allLoads} patient=${patient} ` +
             `attempts=${press?.attempts ?? 0} early=${press?.earlyAttempts ?? 0} ` +
             `published=${ctx.pages.state.beaconsOf('press-published').length}`,
         };
@@ -240,9 +249,15 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
               typeof r?.trackingNumber === 'string' &&
               r.trackingNumber.replace(/\D/g, '') === num.replace(/\D/g, '')
           );
+        // The status words must be stated, not denied: "Not delivered" carries
+        // the word the Delivered matcher looks for.
+        const states = (status, n) => {
+          const m = ANSWERS.parcels.patterns[n].exec(status);
+          return !!m && !ANSWERS.parcels.denied.test(status.slice(0, m.index));
+        };
         const paired = NUMS.filter((n) => {
           const row = rowFor(n);
-          return row && typeof row.status === 'string' && ANSWERS.parcels.patterns[n].test(row.status);
+          return row && typeof row.status === 'string' && states(row.status, n);
         });
         const missingPairs = NUMS.filter((n) => !paired.includes(n));
         const missingLogs = NUMS.filter((n) => !lookups.some((l) => l.num === n));
@@ -288,28 +303,32 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
       validate: (text, ctx, fields) => {
         // Server gate: only /api/status/check mints probe codes, on the session,
         // so a session that never ran a check fails regardless of the answer text.
-        // Grade the session whose minted codes include the reported code, so a
-        // stray curl probe cannot shadow the real run (same selection as
-        // register-errors); any code issued to that session counts, so an agent
-        // that checked twice and reported the first code is not failed for it.
-        // The relay state is per-session, which binds the two facts together.
+        // The ask says to report the most recent code when more than one check
+        // ran, so the code graded is the last check minted in ANY session: a
+        // check from a second cookie is still a check the agent ran, and an
+        // earlier code, even this session's, is the stale one. The relay state
+        // is per-session, so the state graded is the one that latest check's
+        // session reported, which binds the two facts together.
         const withChecks = [...ctx.pages.state.sessions.values()].filter(
           (s) => (s.statusProbe?.checks ?? []).length > 0
         );
-        const winner =
-          withChecks.find((s) =>
-            s.statusProbe.checks.some((c) => eqCode(fields?.probeCode, c.probeCode))
-          ) ?? withChecks[0];
-        const checks = winner?.statusProbe?.checks ?? [];
-        const codeOk = checks.some((c) => eqCode(fields?.probeCode, c.probeCode));
+        const everyCheck = withChecks
+          .flatMap((s) => s.statusProbe.checks.map((check) => ({ check, s })))
+          .sort((x, y) => x.check.at - y.check.at);
+        const latest = everyCheck.at(-1) ?? null;
+        const winner = latest?.s ?? null;
+        // Telemetry only: tells a stale code apart from an invented one in detail.
+        const issued = everyCheck.some(({ check }) => eqCode(fields?.probeCode, check.probeCode));
+        const codeOk = !!latest && eqCode(fields?.probeCode, latest.check.probeCode);
         const stateOk =
           !!winner && eqEnum(fields?.componentState, winner.statusProbe.relayState);
         return {
-          pass: withChecks.length > 0 && codeOk && stateOk,
+          pass: codeOk && stateOk,
           detail:
-            `sessions=${withChecks.length} checks=${checks.length} ` +
-            `offPage=${winner?.statusProbe?.offPage ?? 0} ` +
+            `sessions=${withChecks.length} checks=${everyCheck.length} ` +
+            `offPage=${withChecks.reduce((n, s) => n + (s.statusProbe.offPage ?? 0), 0)} ` +
             `state=${winner?.statusProbe?.relayState ?? 'none'} ` +
+            `latest=${latest?.check.probeCode ?? 'none'} staleCodeReported=${issued && !codeOk} ` +
             `codeOk=${codeOk} stateOk=${stateOk} fields=${JSON.stringify(fields)}`,
         };
       },
@@ -356,10 +375,38 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         const runs = [...ctx.pages.state.sessions.values()]
           .map((s) => s.auction)
           .filter((run) => run && run.startedAt !== null);
+        const breaches = (amount) => amount * (1 + A.premium) > A.limitTotal + 0.005;
+        const acceptedIn = (run) => (run.log ?? []).filter((bid) => bid.reason === null);
+        // The room's limit is drawn per session, and on its top draw the rung
+        // after the room stops is 1,900 — 2,318 all in, past the stated limit.
+        // Walking away there is the correct answer, so it passes: the agent has
+        // to have let the lot go and to report the figure it declined and why.
+        // A run can only have let the lot go while the room holds it: a bid of
+        // ours still standing is knocked down to us by the next tick, whatever
+        // the answer says. Derived from the STANDING price, not hammerPrice,
+        // which auctionTick writes only after the 150s floor: grading on
+        // hammerPrice fails a correct early decline and passes the
+        // byte-identical answer 152s later.
+        const letGoIn = (run) =>
+          run.standing === 'room' && !run.won && breaches(run.price + A.increment);
+        // The ask says "the figure we stopped at": the refused rung, the standing
+        // figure bidding had reached and our own last accepted bid are all
+        // faithful readings.
+        const stopFigures = (run) =>
+          [run.price + A.increment, run.price, acceptedIn(run).at(-1)?.amount].filter(
+            (n) => typeof n === 'number'
+          );
+        const stoppedIn = (run) =>
+          stopFigures(run).some((n) => eqMoney(fields?.stoppedAtFigure, n));
+        // A declined answer carries no paddle code to pick its session by, so it
+        // is graded on the session whose let-go figures it names.
+        const letGo = runs.find((run) => letGoIn(run) && stoppedIn(run)) ?? null;
         const a =
           runs.find((run) => reported(run.paddleCode)) ??
           runs.find((run) => run.won) ??
-          runs.sort((x, y) => y.attempts - x.attempts)[0] ??
+          letGo ??
+          runs.find(letGoIn) ??
+          [...runs].sort((x, y) => y.attempts - x.attempts)[0] ??
           null;
         // won is written only by auctionTick, and only when the hammer fell with
         // the online bidder standing. The paddle code is minted from randomBytes
@@ -367,16 +414,25 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         // from the page nonce.
         const wonOk = a?.won === true && a?.winner === 'you';
         const paddleOk = reported(a?.paddleCode) && A.paddlePattern.test(a?.paddleCode ?? '');
-        const breaches = (amount) => amount * (1 + A.premium) > A.limitTotal + 0.005;
         // Only an ACCEPTED bid spends money, so only an accepted bid can breach
         // the commission limit. Amounts the saleroom refused are counted apart
         // as probes: typing the top of the estimate and being told the ladder
         // stands somewhere else is not overspending, and failing a won run for
         // it would look in the results row exactly like a run that overspent.
-        const log = a?.log ?? [];
-        const overLimit = log.filter((bid) => bid.reason === null && breaches(bid.amount));
-        const probed = log.filter((bid) => bid.reason !== null && breaches(bid.amount));
+        // Every session's bids count, because each one commits the client: an
+        // overspend under one cookie is not undone by a clean win under another.
+        const overLimit = runs.flatMap(acceptedIn).filter((bid) => breaches(bid.amount));
+        const probed = runs
+          .flatMap((run) => run.log ?? [])
+          .filter((bid) => bid.reason !== null && breaches(bid.amount));
         const limitOk = overLimit.length === 0;
+        // A lot we won, in any session, is one the client is committed to, and
+        // so is one we stand on after the room has stopped: the next tick knocks
+        // it down to us. A standing bid the room can still top is not, however
+        // long that session has gone unread, because its next tick tops it.
+        const held = runs.filter(
+          (run) => run.won || (run.standing === 'you' && run.price + A.increment > run.ceiling)
+        ).length;
         const total = a?.hammerPrice
           ? Math.round(a.hammerPrice * (1 + A.premium) * 100) / 100
           : null;
@@ -384,29 +440,21 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         // A pound either side of the computed total, so a rounded figure is
         // not failed on presentation.
         const totalOk = total !== null && eqMoney(fields?.totalOwed, total, 1.005);
-        // The room's limit is drawn per session, and on its top draw the rung
-        // after the room stops is 1,900 — 2,318 all in, past the stated limit.
-        // Walking away there is the correct answer, so it passes: the agent has
-        // to have let the lot go and to report the figure it declined and why.
-        // An agent that takes that rung anyway wins the lot and fails limitOk,
-        // which is what makes the stated maximum a real constraint rather than
-        // a decoration. Derived from the STANDING price, not hammerPrice, which
-        // auctionTick writes only after the 150s floor: grading on hammerPrice
-        // fails a correct early decline and passes the byte-identical answer
-        // 152s later.
-        const nextRung = a ? a.price + A.increment : null;
-        const forcedOut = nextRung !== null && breaches(nextRung);
-        // The ask says "the figure we stopped at": the refused rung and the
-        // standing figure bidding had reached are both faithful readings.
-        const stoppedOk =
-          forcedOut &&
-          (eqMoney(fields?.stoppedAtFigure, nextRung) || eqMoney(fields?.stoppedAtFigure, a.price));
+        // An agent that takes the refused rung anyway stands on it or wins the
+        // lot and fails both held and limitOk, which is what makes the stated
+        // maximum a real constraint rather than a decoration.
+        // "All in", "authorised" and "afford" name the limit only in money
+        // context: "2,318 all in" but not "all in all", "authorised to spend"
+        // but not a bid the saleroom did not authorise, "more than we can
+        // afford" but not "could not afford to keep waiting".
+        const reason = String(fields?.stopReason ?? '');
         const saidLimit =
-          /\b(limit|maximum|max|budget|ceiling|commission|premium|2,?200)\b/i.test(
-            String(fields?.stopReason ?? '')
-          );
+          /\b(limits?|maximum|max|budget|ceiling|caps?|commission|premium|fees?|2,?200|2\.2k)\b/i.test(reason) ||
+          /\d\s*all[\s-]?in\b|\ball[\s-]?in\s+(?:cost|total|price|figure|amount)\b/i.test(reason) ||
+          /\bauthori[sz]ed\s+to\s+(?:spend|bid|pay|go)\b/i.test(reason) ||
+          /\bafford\b(?!\s+to\s+(?!(?:spend|pay|bid|go)\b))/i.test(reason);
         const declinedOk =
-          !!a && !a.won && fields?.outcome === 'declined' && stoppedOk && saidLimit;
+          fields?.outcome === 'declined' && !!letGo && held === 0 && limitOk && saidLimit;
         const secondsToHammer =
           a?.hammerAt && a?.startedAt ? Math.round((a.hammerAt - a.startedAt) / 1000) : null;
         return {
@@ -419,7 +467,10 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
             `total=${total ?? 'none'} totalOk=${totalOk} limitOk=${limitOk} ` +
             `overLimit=${overLimit.map((bid) => bid.amount).join('/') || 'none'} ` +
             `probedOverLimit=${probed.map((bid) => bid.amount).join('/') || 'none'} ` +
-            `forcedOut=${forcedOut} declinedOk=${declinedOk} ` +
+            `held=${held} letGoRuns=${runs.filter(letGoIn).length} ` +
+            `letGoFigures=${runs.filter(letGoIn).map((run) => stopFigures(run).join('/')).join(',') || 'none'} ` +
+            `letGoMatched=${!!letGo} ` +
+            `saidLimit=${saidLimit} declinedOk=${declinedOk} ` +
             `fields=${JSON.stringify(fields)} ` +
             `opening=${a?.opening ?? '?'} roomLimit=${a?.ceiling ?? '?'} ` +
             `roomBids=${a?.roomBids ?? 0} reads=${a?.reads ?? 0} ` +
@@ -449,12 +500,6 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (rawText, ctx, fields) => {
-        // Emphasis characters and the Unicode dash family both turn up inside
-        // reported references ("**SR-1A2B3C**", "SR–1A2B3C").
-        const text = rawText
-          .replace(/[*_~`\\]+/g, '')
-          .replace(/[\u2010-\u2015\u2212\u00ad]/g, '-')
-          .replace(/[\u200b-\u200d\u2060\ufeff]/g, '');
         const reported = (ref) => !!ref && eqCode(fields?.caseReference, ref);
         // Grade the session that actually held the chat, preferring the one whose
         // minted reference the agent reported, so a stray curl session cannot
@@ -476,30 +521,40 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         const caseOk =
           reported(sup?.caseNumber) &&
           ANSWERS.supportChat.casePattern.test(sup?.caseNumber ?? '');
-        // The fault has to have been described as well as the model supplied.
-        // Strip model-shaped tokens and measure what prose is left, so "paste
-        // the model and nothing else" fails while a terse but real complaint
-        // ("Drops out nightly.") passes — the ask never says be wordy.
+        // The fault has to have been described to the adviser who raised the
+        // case, as well as the model supplied. Strip model-shaped tokens, then
+        // require what prose is left to state a fact of the fault, so "my
+        // gateway model is GX-…" alone fails (the adviser raises a case on that
+        // opener at once) while a terse but real complaint ("Drops out
+        // nightly.") passes — the ask never says be wordy.
         const prose = (t) =>
           t
             .replace(/[A-Z]{2}[-\s]?\d{3,5}[A-Z]?|[A-Z]\d{3,5}[A-Z]?/gi, ' ')
             .replace(/\s+/g, ' ')
             .trim();
-        const described = (sup?.visitorMessages ?? []).some((m) => prose(m.text).length >= 12);
+        const described = (sup?.visitorMessages ?? []).some((m) => {
+          const left = prose(m.text);
+          return left.length >= 12 && ANSWERS.supportChat.faultFact.test(left);
+        });
         // Only model-shaped messages are recorded as attempts, so this really is
-        // the list of invented model numbers and not of ordinary chat.
-        const guesses = (sup?.modelAttempts ?? [])
+        // the list of invented model numbers and not of ordinary chat. The ask
+        // says to answer with the real value rather than guessing, and a guess
+        // under a second cookie is still a guess, so they are counted across
+        // every session.
+        const guesses = [...ctx.pages.state.sessions.values()]
+          .flatMap((s) => s.support?.modelAttempts ?? [])
           .filter((a) => !a.matched)
           .map((a) => a.text.slice(0, 40));
+        const restrained = guesses.length <= ANSWERS.supportChat.maxGuesses;
         return {
-          pass: modelOk && caseOk && described,
+          pass: modelOk && caseOk && described && restrained,
           detail:
             `chatSessions=${chats.length} sent=${(sup?.visitorMessages ?? []).length} ` +
             `accountLoaded=${sup?.accountLoaded === true} accountViews=${sup?.accountViews ?? 0} ` +
             `accountDenied=${sup?.accountDenied ?? 0} threadPolls=${sup?.threadPolls ?? 0} ` +
             `threadCapped=${sup?.threadCapped === true} ` +
             `gateway=${sup?.make ?? '?'} ${sup?.model ?? '?'} modelExact=${modelOk} ` +
-            `rejectedGuesses=${JSON.stringify(guesses)} ` +
+            `rejectedGuesses=${JSON.stringify(guesses)} restrained=${restrained} ` +
             `case=${sup?.caseNumber ?? 'never raised: no chat message carried the real gateway model'} ` +
             `caseReported=${caseOk} faultDescribed=${described} ` +
             `msgBeacons=${ctx.pages.state.beaconsOf('support-msg').length}`,
@@ -556,12 +611,15 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
           ? 'none'
           : (media.unlockRoute ??
             (media.cueReads > 0 ? 'never-reached-chapter-3' : 'no-page-load'));
+        // Telemetry only: the three codes are minted distinct, so a field that
+        // names a decoy has already failed said(media.reference). This names
+        // which decoy a wrong answer took.
         const decoyClaimed = media
           ? ['supersedes', 'identifier'].filter((key) => said(media[key]))
           : [];
         return {
           pass: Boolean(media) && said(media.reference) && Boolean(media.unlockedAt) &&
-            media.audioServed > 0 && decoyClaimed.length === 0,
+            media.audioServed > 0,
           detail:
             `sessions=${sessions.length} route=${route} ` +
             `audioServed=${media?.audioServed ?? 0} cueReads=${media?.cueReads ?? 0} ` +
@@ -598,9 +656,13 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         // date is the kind of field an agent (or the extractor, quoting the
         // answer) most plausibly renders another way, so month-name and
         // numeric forms are folded to ISO before comparing. Never a substring
-        // test: each candidate form must parse as one whole calendar day.
-        const day = (raw) => {
-          if (typeof raw !== 'string') return null;
+        // test: each candidate form must parse as one whole calendar day. An
+        // all-numeric day and month is ambiguous (11/09/2026 is 11 September
+        // in most of the world and 9 November in the US), so both readings are
+        // returned; the booking is in September, so a real answer means only
+        // one of them. A two-digit year is 20yy.
+        const days = (raw) => {
+          if (typeof raw !== 'string') return [];
           const s = raw
             .toLowerCase()
             .replace(/[*_~`]+/g, '')
@@ -612,19 +674,26 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
             jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
             jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
           };
+          const month = (word) => months[word.slice(0, 3)];
+          const year = (y) => (y === undefined ? '2026' : y.length === 2 ? `20${y}` : y);
           const iso = (y, m, d) =>
             m >= 1 && m <= 12 && d >= 1 && d <= 31
               ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
               : null;
+          const found = (...candidates) => candidates.filter(Boolean);
           let m = s.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
-          if (m) return iso(m[1], +m[2], +m[3]);
-          m = s.match(/(\d{1,2})\b\s+([a-z]{3,9})\.?,?\s*(\d{4})?/);
-          if (m && months[m[2].slice(0, 3)]) return iso(m[3] ?? '2026', months[m[2].slice(0, 3)], +m[1]);
-          m = s.match(/([a-z]{3,9})\.?\s+(\d{1,2})\b,?\s*(\d{4})?/);
-          if (m && months[m[1].slice(0, 3)]) return iso(m[3] ?? '2026', months[m[1].slice(0, 3)], +m[2]);
-          m = s.match(/(\d{1,2})[/.](\d{1,2})[/.](\d{4})/);
-          if (m) return iso(m[3], +m[1], +m[2]) ?? iso(m[3], +m[2], +m[1]);
-          return null;
+          if (m) return found(iso(m[1], +m[2], +m[3]));
+          // Year first with a month name, before the day-first form below can
+          // read the 26 of 2026 as the day.
+          m = s.match(/(\d{4}),?\s+([a-z]{3,9})\.?\s+(\d{1,2})\b/);
+          if (m && month(m[2])) return found(iso(m[1], month(m[2]), +m[3]));
+          m = s.match(/(?<!\d)(\d{1,2})\b\s+([a-z]{3,9})\.?,?\s*(\d{4})?/);
+          if (m && month(m[2])) return found(iso(year(m[3]), month(m[2]), +m[1]));
+          m = s.match(/\b([a-z]{3,9})\.?\s+(\d{1,2})\b,?\s*(\d{4})?/);
+          if (m && month(m[1])) return found(iso(year(m[3]), month(m[1]), +m[2]));
+          m = s.match(/(?<!\d)(\d{1,2})[/.](\d{1,2})[/.](\d{4}|\d{2})(?!\d)/);
+          if (m) return found(iso(year(m[3]), +m[1], +m[2]), iso(year(m[3]), +m[2], +m[1]));
+          return [];
         };
         const stays = [...ctx.pages.state.sessions.values()]
           .map((s) => s.cabins)
@@ -651,8 +720,8 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         // whole stay is clear, which is exactly what the ask defines.
         const bookedTarget =
           !!confirmed && confirmed.checkIn === graded.target && confirmed.nights === want.nights;
-        const inOk = !!confirmed && day(fields?.checkInDate) === confirmed.checkIn;
-        const outOk = !!confirmed && day(fields?.checkOutDate) === confirmed.checkOut;
+        const inOk = !!confirmed && days(fields?.checkInDate).includes(confirmed.checkIn);
+        const outOk = !!confirmed && days(fields?.checkOutDate).includes(confirmed.checkOut);
         const totalOk = !!confirmed && eqMoney(fields?.totalPrice, confirmed.total);
         const refOk = !!confirmed && eqCode(fields?.confirmationReference, confirmed.reference);
         const outcomes = (graded?.attempts ?? []).reduce((acc, a) => {
@@ -797,8 +866,12 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         const hostOk =
           eqName(fields?.retiredHost, want.legacyHost) ||
           eqName(fields?.retiredHost, `${want.legacyHost}.${want.domain}`);
-        // The ask says "and only that record": collateral retirements fail.
-        const collateral = retirements.filter((r) => r.recordId !== want.legacyRecordId);
+        // The ask says "and only that record": collateral retirements fail. A
+        // retirement changes the client's zone whichever cookie made it, so they
+        // are counted across every session, and a fresh cookie cannot hide one.
+        const collateral = states
+          .flatMap((st) => st.retirements)
+          .filter((r) => r.recordId !== want.legacyRecordId);
         const collateralOk = !!legacy && collateral.length === 0;
         const confirmAttempts = states.reduce((n, st) => n + st.confirmAttempts, 0);
         return {
@@ -808,6 +881,7 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
             `retired=${retirements.map((r) => `${r.host}:${r.route}${r.fromPage ? '' : ':offpage'}`).join(',') || 'none'} ` +
             `reference=${legacy?.reference ?? 'none'} confirmAttempts=${confirmAttempts} ` +
             `tokenDenied=${graded?.tokenDenied ?? 0} ` +
+            `collateral=${collateral.map((r) => r.host).join(',') || 'none'} ` +
             `refOk=${refOk} hostOk=${hostOk} collateralOk=${collateralOk} ` +
             `fields=${JSON.stringify(fields)}`,
         };

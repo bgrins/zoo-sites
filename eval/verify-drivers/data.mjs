@@ -593,6 +593,31 @@ export const DRIVERS = {
         { renamePersisted: null, currentFileName: 'draft-old' },
       ];
       this.alsoCorrectFields = [fields, { renamePersisted: false, currentFileName: "'draft-old'" }];
+      // The answer is the same on every run, so the refused rename on the
+      // server is all that separates a run from a recited answer.
+      const attempts = (state) =>
+        findSession(state, (s) => (s.renameAttempts ?? []).length > 0).session.renameAttempts;
+      this.wrongState = [
+        {
+          name: 'no rename was ever attempted',
+          mutate: (state) => {
+            for (const s of state.sessions.values()) delete s.renameAttempts;
+          },
+        },
+        {
+          name: 'only a different file was renamed',
+          mutate: (state) =>
+            attempts(state).splice(0, Infinity, {
+              id: 1, from: 'q3-budget.xlsx', to: ANSWERS.filemgr.targetName, accepted: true, at: Date.now(),
+            }),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a probe session that listed the files and renamed nothing',
+          mutate: (state) => addSession(state, { files: [] }, { first: true }),
+        },
+      ];
       this.wrong = [
         'The rename went through, and the file is now called draft-final.',
         `The rename persisted: after a refresh the list still shows ` +

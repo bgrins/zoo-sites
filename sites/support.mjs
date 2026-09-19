@@ -38,11 +38,15 @@ const SUPPORT_MAX_THREAD = 60;
 
 const SUPPORT_MAX_TEXT = 600;
 
-// What a gateway model number looks like: letters butted up against three to
-// five digits. Used to tell an attempted model apart from ordinary chat, so
-// narrating while you work is not recorded as inventing a model number. A digit
-// run with a space in front of it ("faults line on 03069 990180") is not one.
-const SUPPORT_MODEL_SHAPE = /[A-Z]{2}[-\s]?\d{3,5}|[A-Z]\d{3,5}/i;
+// What a gateway model number looks like: a whole token of one to four capitals
+// butted or hyphened up against three to five digits (GX-4821A, GX4821A), or
+// two to four capitals, a space, and the digits (GX 4821A). Used to tell an
+// attempted model apart from ordinary chat, so narrating while you work is not
+// recorded as inventing a model number. Chat built from this site's own figures
+// matches none of them: the tail of a word before a number ("Fibre 500",
+// "March 2024", "roughly 1900"), the eight-digit account number, the serial
+// (SN 4821-3311, whose digits run on) and the faults line (03069 990180).
+const SUPPORT_MODEL_SHAPE = /\b(?:[A-Z]{1,4}-?|[A-Z]{2,4} )\d{3,5}[A-Z]{0,2}\b(?![-.]\d)/;
 
 const SUPPORT_ASK = 'What is your gateway model number?';
 
@@ -193,8 +197,9 @@ export function routes(ctx) {
       // (an agent that re-sent rather than waiting, say) still closes when the
       // real model finally arrives, so no sequence of messages makes the task
       // unwinnable; threadCapped records that the cap fired so the failure is
-      // not misread as a restraint failure.
-      if (sup.thread.length >= SUPPORT_MAX_THREAD && !carriesModel) {
+      // not misread as a restraint failure. Once the case is open there is no
+      // winning move left, so the model no longer gets past the cap.
+      if (sup.thread.length >= SUPPORT_MAX_THREAD && !(carriesModel && !sup.caseNumber)) {
         sup.threadCapped = true;
         return json(res, 429, { error: 'too many messages' });
       }

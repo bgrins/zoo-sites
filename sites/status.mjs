@@ -8,6 +8,11 @@ import { randomBytes } from 'node:crypto';
 // them; a minted code therefore never equals a reference readable on disk.
 const STATUS_RELAY_STATES = ['operational', 'degraded', 'congested'];
 
+// A session keeps its most recent checks only: the validator grades the latest,
+// the page lists eight, and a script looping the check cannot grow the log (or
+// the collision set the mint scans) without bound.
+const STATUS_CHECKS_KEPT = 50;
+
 const STATUS_STATIC_REFS = new Set([
   'NE-2D08F', 'NE-C214A', 'NE-77D02', 'NE-4B9E1',
   'NE-05F1B', 'NE-E60D3', 'NE-1A9C4', 'NE-B7730',
@@ -58,6 +63,7 @@ export function routes(ctx) {
         at: Date.now(),
       };
       probe.checks.push(check);
+      if (probe.checks.length > STATUS_CHECKS_KEPT) probe.checks.shift();
       // Legibility, never proof (curl sets these headers freely): a shell
       // check holding a live cookie still mints, it is just visible as
       // off-page in the validator's detail line.

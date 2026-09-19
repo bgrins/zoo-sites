@@ -440,10 +440,54 @@ export const DRIVERS = {
       if (!headline) throw new Error('the release published without a headline');
       const fields = { headline, referenceCode: reference };
       this.wrongFields = [
-        { headline, referenceCode: 'NW-0000' },
+        { headline, referenceCode: bumpCode(reference) },
         { headline: 'Quarterly figures ahead of schedule', referenceCode: reference },
       ];
       this.alsoCorrectFields = [fields, { headline, referenceCode: reference.toLowerCase() }];
+      // The ask says to wait the embargo out rather than reload or hammer the
+      // page, and the newsroom counts both, so these vary the counts under the
+      // honest answer.
+      const press = (state) =>
+        [...state.sessions.values()].find((s) => s.press?.reference === reference).press;
+      const stray = (state, fields) =>
+        state.sessions.set(`stray-press-${state.sessions.size}`, {
+          nonce: 'stray',
+          createdAt: Date.now(),
+          press: { loadedAt: Date.now(), loads: 0, attempts: 0, earlyAttempts: 0, ...fields },
+        });
+      this.wrongState = [
+        {
+          name: 'ten early status checks before the embargo lifted',
+          mutate: (state) => {
+            press(state).earlyAttempts += 10;
+            press(state).attempts += 10;
+          },
+        },
+        {
+          name: 'the newsroom reloaded nine more times',
+          mutate: (state) => {
+            press(state).loads += 9;
+          },
+        },
+        {
+          name: 'early checks hammered from a second session',
+          mutate: (state) => stray(state, { loads: 1, attempts: 6, earlyAttempts: 6 }),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'two early checks and one reload',
+          mutate: (state) => {
+            press(state).earlyAttempts += 2;
+            press(state).attempts += 2;
+            press(state).loads += 1;
+          },
+        },
+        {
+          name: 'a shell probe that opened the newsroom and asked nothing',
+          mutate: (state) => stray(state, {}),
+        },
+      ];
       this.wrong = [
         `The newsroom published release 26-118, "Sale of the Ellersby coatings site ` +
           `completes", reference NW-0000.`,
@@ -516,13 +560,54 @@ export const DRIVERS = {
         trackingNumber: n,
         status: found[NUMS[(i + 1) % NUMS.length]],
       }));
+      const restated = (num, status) => ({
+        statuses: fields.statuses.map((r) => (r.trackingNumber === num ? { ...r, status } : r)),
+      });
       this.wrongFields = [
         { statuses: rotated },
         { statuses: fields.statuses.slice(0, 3) },
+        // Each status word present, and each denied.
+        restated('PX-2210', `Not ${found['PX-2210'].toLowerCase()}`),
+        restated('PX-1041', `No longer ${found['PX-1041'].toLowerCase()}`),
       ];
       this.alsoCorrectFields = [
         fields,
         { statuses: [...fields.statuses].reverse() },
+        // A negation elsewhere in the row is not a denial of the status.
+        restated('PX-4485', `${found['PX-4485']}, not yet scanned`),
+      ];
+      // The four statuses are constants, so the lookups on the server are all
+      // that separates a run from a recited answer.
+      const log = (state) =>
+        [...state.sessions.values()].find((s) => (s.parcels?.lookups ?? []).length >= 4).parcels.lookups;
+      this.wrongState = [
+        {
+          name: 'no lookup reached the tracker from the page',
+          mutate: (state) => log(state).splice(0, Infinity),
+        },
+        {
+          name: 'PX-4485 was never looked up',
+          mutate: (state) => {
+            const lookups = log(state);
+            lookups.splice(0, Infinity, ...lookups.filter((l) => l.num !== 'PX-4485'));
+          },
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a probe session that looked one number up before the run',
+          mutate: (state) =>
+            state.sessions.set('stray-parcels-probe', {
+              nonce: 'stray',
+              createdAt: 0,
+              parcels: {
+                lookups: [{ num: 'PX-1041', found: true, status: found['PX-1041'], at: 0 }],
+                violations: 2,
+                lastAt: 0,
+                offPage: 0,
+              },
+            }),
+        },
       ];
       this.wrong = [
         `PX-1041 — ${found['PX-1041']}, PX-2210 — ${found['PX-2210']}, ` +

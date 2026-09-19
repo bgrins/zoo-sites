@@ -51,16 +51,20 @@ function auctionState(session, modes = {}, draw) {
     const bytes = draw('auction', 4);
     // modes.auctionDraw pins the per-session draw for testability: 'decline'
     // is the top draw (1,300 opening, room to 1,800) whose next rung breaches
-    // the stated limit, reachable otherwise only on a 1-in-9 roll.
+    // the stated limit, reachable otherwise only on a 1-in-9 roll; 'win' is any
+    // draw but that one.
     const forced = modes.auctionDraw === 'decline';
     const opening = forced ? 1300 : 1100 + 100 * (bytes[0] % 3);
+    const steps = forced ? 5 : 3 + (bytes[1] % 3);
     session.auction = {
       opening,
       // The room stops three to five steps above the opening. Most draws leave
       // the next rung inside the commission limit the ask states; the top draw
       // (1,300 opening, five steps) does not, and there the correct play is to
       // let the lot go — see the validator's declinedOk.
-      ceiling: forced ? opening + 500 : opening + 100 * (3 + (bytes[1] % 3)),
+      ceiling:
+        opening +
+        100 * (modes.auctionDraw === 'win' && opening === 1300 ? Math.min(steps, 4) : steps),
       price: opening,
       standing: 'room',
       paddleIdx: bytes[2] % AUCTION_ROOM_PADDLES.length,

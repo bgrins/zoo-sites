@@ -149,6 +149,20 @@ export const DRIVERS = {
           totalPrice: total,
           confirmationReference: reference,
         },
+        // The same Saturday in the year-first and day-first numeric forms the
+        // accepted variants below use, so their folding stays exact.
+        {
+          checkInDate: `2026 September ${target + 1}`,
+          checkOutDate: `2026 September ${target + 5}`,
+          totalPrice: total,
+          confirmationReference: reference,
+        },
+        {
+          checkInDate: `${target + 1}/09/2026`,
+          checkOutDate: `${target + 5}/09/2026`,
+          totalPrice: total,
+          confirmationReference: reference,
+        },
       ];
       this.alsoCorrectFields = [
         fields,
@@ -165,6 +179,59 @@ export const DRIVERS = {
           checkOutDate: `2026/09/${String(target + 4).padStart(2, '0')}`,
           totalPrice: total,
           confirmationReference: reference,
+        },
+        // Year first with a month name, which must not read the 26 of 2026
+        // as the day.
+        {
+          checkInDate: `2026 September ${target}`,
+          checkOutDate: `2026 Sep ${target + 4} (${days[target + 4].dow})`,
+          totalPrice: total,
+          confirmationReference: reference,
+        },
+        // Day first, as most of the world writes it: 11/09/2026 is 11 September.
+        {
+          checkInDate: `${target}/09/2026`,
+          checkOutDate: `${target + 4}/09/2026`,
+          totalPrice: total,
+          confirmationReference: reference,
+        },
+        // Month first with a two-digit year.
+        {
+          checkInDate: `9/${target}/26`,
+          checkOutDate: `9/${target + 4}/26`,
+          totalPrice: total,
+          confirmationReference: reference,
+        },
+      ];
+      // The day-first case above is ambiguous only when the day is 12 or under,
+      // which on this draw it may not be, so a stay on the 11th is planted to
+      // read 11/09/2026 as 11 September on every run.
+      this.alsoCorrectState = [
+        {
+          name: 'a stay on the 11th written day first',
+          mutate: (state) => {
+            for (const s of state.sessions.values()) {
+              if (!s.cabins?.confirmed) continue;
+              s.cabins.target = '2026-09-11';
+              s.cabins.targetCheckOut = '2026-09-15';
+              s.cabins.confirmed.checkIn = '2026-09-11';
+              s.cabins.confirmed.checkOut = '2026-09-15';
+            }
+          },
+          fields: {
+            checkInDate: '11/09/2026',
+            checkOutDate: '15/09/2026',
+            totalPrice: total,
+            confirmationReference: reference,
+          },
+        },
+      ];
+      this.wrongState = [
+        {
+          name: 'the stay was never confirmed',
+          mutate: (state) => {
+            for (const s of state.sessions.values()) if (s.cabins) s.cabins.confirmed = null;
+          },
         },
       ];
       this.wrong = [

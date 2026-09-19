@@ -332,20 +332,34 @@ export const DRIVERS = {
   'flaky-retry': {
     note: 'clicks Load/Retry until the report renders',
     wrong: ['The report never loaded, so there is no revenue figure.'],
-    async run({ goto, evaluate, snapshot, mcp, sleep }) {
+    async run({ goto, evaluate, snapshot, mcp }, ctx) {
       await goto('/flaky/');
+      // Each click waits for its own answer: the server's request count has to
+      // grow past what it was before the click, and the page has to have
+      // re-enabled the button, which it does only once that answer is drawn.
+      const asked = () =>
+        Math.max(0, ...[...ctx.pages.state.sessions.values()].map((s) => s.reportAttempts ?? 0));
       let figure = '';
       for (let attempt = 0; attempt < 6 && !figure; attempt++) {
+        const before = asked();
         const snap = await snapshot();
         const m = snap.match(/uid=(\S+) button "(?:Load Report|Retry)"/i);
         if (!m) throw new Error('no Load Report / Retry button in the snapshot');
         await mcp('click_by_uid', { uid: m[1] });
-        await sleep(700);
-        figure = await evaluate(() => {
-          const t = document.body.innerText;
-          const m2 = t.match(/\$[\d,]{5,}/);
-          return m2 ? m2[0] : '';
-        });
+        figure = await until(
+          `the answer to report request ${attempt + 1}`,
+          async () => {
+            if (asked() <= before) return null;
+            const page = await evaluate(() => ({
+              busy: document.getElementById('load').disabled,
+              figure: document.body.innerText.match(/\$[\d,]{5,}/)?.[0] ?? '',
+            }));
+            return page.busy ? null : { figure: page.figure };
+          },
+          { tries: 40 }
+        )
+          .then((r) => r.figure)
+          .catch(() => '');
       }
       if (!figure) throw new Error('report never rendered after 6 attempts');
       const numeric = Number(String(figure).replace(/[$,]/g, ''));
@@ -368,6 +382,25 @@ export const DRIVERS = {
         { q3Revenue: receivablesNum },
       ];
       this.alsoCorrectFields = [fields];
+      // The figure is a constant, so the retry is the only thing a memorised
+      // answer lacks; these vary the state under the honest figure.
+      this.wrongState = [
+        {
+          name: 'the report never retried in any session',
+          mutate: (state) => {
+            for (const s of state.sessions.values()) if (s.reportAttempts) s.reportAttempts = 1;
+          },
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a shell probe that failed once in its own session',
+          mutate: (state) =>
+            state.sessions.set('stray-report-probe', {
+              nonce: 'stray', createdAt: Date.now(), reportAttempts: 1, reportOffPage: 1,
+            }),
+        },
+      ];
       this.wrong = [
         this.wrong[0],
         `The report loaded after two failures. Q3 total revenue is ` +
