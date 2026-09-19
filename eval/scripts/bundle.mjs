@@ -7,11 +7,11 @@
 // what the numbers do and do not support. Local absolute paths are rewritten to
 // `~` unless --keep-paths is given.
 //
-// The bundle deliberately excludes the answer key (answers.mjs) and the
-// validators: a recipient can see every task's prompt and every agent's full
-// transcript, but not the grading key.
+// The bundle deliberately excludes the answer key (answers.mjs), the
+// validators and the run's states/ directory, whose per-attempt server state
+// holds every code the server minted: a recipient can see every task's prompt
+// and every agent's full transcript, but not the grading key.
 
-import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import {
   existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
@@ -53,8 +53,9 @@ Usage: node bundle.mjs [run-dir] [options]
 
 Contents: manifest.json (what ran, and in what environment), results.json,
 report.md, tasks.json (every task's prompt), transcripts/, and a README that
-explains the metrics and their known caveats. The answer key and validators are
-excluded by design.`);
+explains the metrics and their known caveats. The answer key, the validators
+and states/ (the server state each attempt was graded on) are excluded by
+design.`);
   process.exit(0);
 }
 
@@ -110,14 +111,13 @@ const manifest = {
       gitDirty: (sh('git', ['status', '--porcelain']) ?? '') !== '',
     },
   },
+  // What the run recorded, and null where it recorded nothing: the version
+  // installed when the bundle is made is not the one an older run measured.
   versions: {
-    playwrightMcp:
-      run.meta?.surfaces?.['playwright-mcp']?.version ??
-      (() => {
-        const p = createRequire(import.meta.url).resolve('@playwright/mcp/package.json');
-        return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')).version : null;
-      })(),
+    playwrightMcp: run.meta?.surfaces?.['playwright-mcp']?.version ?? null,
   },
+  surfaces: run.meta?.surfaces ?? null,
+  builds: run.meta?.builds ?? null,
   totals: run.totals ?? null,
 };
 
@@ -173,6 +173,8 @@ if (promptless.length) {
 }
 writeFileSync(join(root, 'tasks.json'), JSON.stringify(tasks, null, 2) + '\n');
 
+// Only transcripts/ is copied out of the run directory. states/ stays behind
+// (see the header), and a row's state_file names a file the bundle leaves out.
 if (!NO_TRANSCRIPTS && existsSync(join(runDir, 'transcripts'))) {
   const dest = join(root, 'transcripts');
   mkdirSync(dest, { recursive: true });
@@ -214,7 +216,8 @@ Runs served differently are separate measurement epochs.${
   thought, tool call, tool result, and final answer. A row's \`transcript\`
   names the file of the attempt it reports.
 
-The grading key and validator source are excluded by design.
+The grading key, the validator source and the per-attempt server state
+(\`states/\`, which holds every code the server minted) are excluded by design.
 
 ## Reading the numbers
 

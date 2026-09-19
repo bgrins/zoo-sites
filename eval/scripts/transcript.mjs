@@ -1,7 +1,6 @@
 // Render eval run transcripts (transcripts/*.jsonl) into a readable digest:
 // per task, per condition, the tool-call sequence with thinking/text snippets
-// and the final answer. Normalizes both backend event shapes (Claude Agent SDK
-// messages, Codex ThreadEvents).
+// and the final answer. Both backend event shapes are read through events.mjs.
 //
 //   node transcript.mjs [run-dir] [--task <id>] [--full] [--md]
 //
@@ -11,6 +10,7 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { latestRun, parseTranscriptName } from '../run-files.mjs';
+import { normalize, readEvents } from './events.mjs';
 
 const args = process.argv.slice(2);
 const FULL = args.includes('--full');
@@ -33,117 +33,6 @@ const trunc = (s, n) => {
   const one = String(s ?? '').replace(/\s+/g, ' ').trim();
   return FULL || one.length <= n ? one : one.slice(0, n) + '…';
 };
-
-function contentText(content) {
-  if (typeof content === 'string') return content;
-  if (Array.isArray(content)) {
-    return content
-      .filter((c) => c.type === 'text')
-      .map((c) => c.text)
-      .join('\n');
-  }
-  return '';
-}
-
-// Normalize one jsonl transcript into steps:
-// {kind: 'tool'|'tool_result'|'thinking'|'text'|'final', ...}
-function normalize(lines) {
-  const steps = [];
-  for (const line of lines) {
-    let e;
-    try {
-      e = JSON.parse(line);
-    } catch {
-      continue;
-    }
-    // --- Claude Agent SDK messages ---
-    if (e.type === 'assistant' && Array.isArray(e.message?.content)) {
-      for (const block of e.message.content) {
-        if (block.type === 'thinking' && block.thinking?.trim()) {
-          steps.push({ kind: 'thinking', text: block.thinking });
-        } else if (block.type === 'text' && block.text?.trim()) {
-          steps.push({ kind: 'text', text: block.text });
-        } else if (block.type === 'tool_use') {
-          const name = block.name.replace(/^mcp__[^_]+__/, 'mcp:');
-          let detail;
-          if (block.name === 'Bash') {
-            detail = block.input?.command ?? '';
-          } else if (block.name === 'ToolSearch') {
-            detail = block.input?.query ?? '';
-          } else {
-            detail = JSON.stringify(block.input ?? {});
-          }
-          steps.push({ kind: 'tool', name, detail, id: block.id });
-        }
-      }
-    } else if (e.type === 'user' && Array.isArray(e.message?.content)) {
-      for (const block of e.message.content) {
-        if (block.type === 'tool_result') {
-          steps.push({
-            kind: 'tool_result',
-            text: contentText(block.content),
-            isError: block.is_error ?? false,
-          });
-        }
-      }
-    } else if (e.type === 'result') {
-      const u = e.usage ?? {};
-      steps.push({
-        kind: 'final',
-        text: e.result ?? '',
-        info:
-          `turns=${e.num_turns} in=${u.input_tokens ?? '?'} ` +
-          `cacheW=${u.cache_creation_input_tokens ?? '?'} cacheR=${u.cache_read_input_tokens ?? '?'} ` +
-          `out=${u.output_tokens ?? '?'} cost=$${e.total_cost_usd?.toFixed?.(4) ?? '?'}`,
-      });
-    }
-    // --- Codex ThreadEvents ---
-    else if (e.type === 'item.completed' && e.item) {
-      const item = e.item;
-      if (item.type === 'agent_message' && item.text?.trim()) {
-        steps.push({ kind: 'text', text: item.text });
-      } else if (item.type === 'reasoning' && item.text?.trim()) {
-        steps.push({ kind: 'thinking', text: item.text });
-      } else if (item.type === 'command_execution') {
-        steps.push({
-          kind: 'tool',
-          name: 'shell',
-          detail: item.command?.replace(/^\/bin\/\w+ -lc /, '') ?? '',
-        });
-        if (item.aggregated_output) {
-          steps.push({
-            kind: 'tool_result',
-            text: item.aggregated_output,
-            isError: item.exit_code != null && item.exit_code !== 0,
-          });
-        }
-      } else if (item.type === 'mcp_tool_call') {
-        steps.push({
-          kind: 'tool',
-          name: `mcp:${item.tool}`,
-          detail: JSON.stringify(item.arguments ?? {}),
-        });
-        const resultText = contentText(item.result?.content);
-        if (resultText || item.error) {
-          steps.push({
-            kind: 'tool_result',
-            text: item.error?.message ?? resultText,
-            isError: !!item.error,
-          });
-        }
-      }
-    } else if (e.type === 'turn.completed' && e.usage) {
-      steps.push({
-        kind: 'final',
-        text: '',
-        info:
-          `in=${e.usage.input_tokens} cacheW=${e.usage.cache_write_input_tokens ?? '?'} ` +
-          `cacheR=${e.usage.cached_input_tokens} out=${e.usage.output_tokens}`,
-      });
-    }
-  }
-  return steps;
-}
 
 // The row a transcript belongs to. A row names its graded attempt's transcript
 // (or, in older runs, is matched by label, task and rep); any other attempt of
@@ -213,12 +102,9 @@ for (const task of orderedTasks) {
       `${label}${rep ? ` (r${rep})` : ''}${attempt > 1 ? ` [attempt ${attempt}]` : ''}` +
       metaFor(file, label, task, rep, attempt);
     out.push('', `### ${heading}`, '');
-    const lines = readFileSync(join(transcriptsDir, file), 'utf8').trim().split('\n');
-    let n = 0;
-    for (const step of normalize(lines)) {
+    for (const step of normalize(readEvents(join(transcriptsDir, file)))) {
       if (step.kind === 'tool') {
-        n += 1;
-        out.push(`${String(n).padStart(3)}. ${step.name}: ${trunc(step.detail, 140)}`);
+        out.push(`${String(step.n).padStart(3)}. ${step.label}: ${trunc(step.detail, 140)}`);
       } else if (step.kind === 'tool_result') {
         const mark = step.isError ? 'x' : '->';
         out.push(`       ${mark} ${trunc(step.text, 120)}`);

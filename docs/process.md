@@ -321,6 +321,42 @@ work:
   snapshot-only path existed.** An agent looks cheap there largely because it stops
   snapshotting and starts scripting — a fact about the path it took, not about the
   surface it took it through.
+- **A row that did not measure its surface is not a data point.** A row that never
+  called its own browser server is marked `invalid`, and report.md keeps it out of
+  every total. A row that called any other MCP server measured a mix of tools. Every
+  stored codex run predates `CODEX_HOME` isolation (b9ff01d) and is contaminated as a
+  whole: in the 172-row sweep of 2026-08-18, 170 transcripts read the operator's
+  `~/.codex`, 144 rows called its MCP servers, and 9 never called their own. Quote
+  none of those figures as a measurement; they name defects, not sizes.
+- **Compare tools inside one run, as a paired A/B.** Put both builds in one seeded,
+  interleaved run as conditions, and read `eval/ab.mjs`. Across runs, cost never
+  compares and prompt caches differ, so `eval/scripts/compare.mjs` refuses two runs
+  whose backend, model, effort, seed or eval commit differ. An unseeded run gives each
+  arm its own difficulty draws, so its paired difference carries draw noise too.
+- **Quote the geometric-mean ratio with its interval, never a ratio of sums.** A few
+  long tasks dominate a sum: the 2026-08-18 sweep gives 1.336 as a ratio of sums and
+  1.209 as a geometric mean over tasks.
+- **A difference counts only once it clears the noise between identical arms.** Run
+  an A/A pair, two conditions of one build, in the same run until its noise is known,
+  and read the minimum detectable effect the A/B report prints before claiming a
+  change smaller than it.
+- **Read a pass flip through its triage before counting it.** In the 2026-08-18
+  sweep, 10 of the 11 discordant pairs came from rows that never called their surface
+  or from quote-gate nulls of a value the answer held; one (mfa-login) was the tool.
+  `eval/scripts/triage.mjs` names the class of every failure.
+- **Regrade before comparing across a validator change.** A run that kept its server
+  state can be re-graded for free with today's validators (`eval/scripts/regrade.mjs`);
+  a run that did not belongs to its own grading epoch.
+
+## Measuring a tool change
+
+A firefox-devtools-mcp build is judged by what it changes in agent runs, and the eval
+measures that in a fixed order of cost: the free gate twice, the free spikes and
+snapshot census, then a targeted paid A/B of the candidate against the baseline and an
+A/A copy of the baseline, in one seeded run. The steps, the commands, the sample sizes
+and the ship rule are in `eval/README.md`, "Measuring a tool change", in one copy.
+Those steps rest on the rules above: nothing quoted from a contaminated run, nothing
+compared across runs, and no difference inside the A/A band.
 
 ## Standing decisions
 
