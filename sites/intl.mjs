@@ -60,7 +60,7 @@ const INTL_NOTICES = {
 // the validator can always tell "quoted the other destination's reference" apart
 // from "quoted the right one" — a reference minted lazily on release would leave
 // the decoy field vacuously false for any agent that never opened the decoy.
-export function intlState(session) {
+function intlState(session) {
   return (session.intl ??= {
     refs: Object.keys(INTL_NOTICES).reduce((refs, dest) => {
       let ref;
@@ -77,12 +77,12 @@ export function intlState(session) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { json, requireSession } = ctx;
   return async (req, res, url, pathname0) => {
     // The notices panel of a destination advisory. Locale-gated: the English
     // edition never carried these notices, so `en` is answered with an empty list
     // whoever asks. A translated edition is served only to a session that really
-    // navigated into that edition (stamped in the static handler below), so an
+    // navigated into that edition (stamped by documents() below), so an
     // agent that never left the English pages cannot pull a reference out of the
     // API, and the release is recorded on the session — that record, not a beacon,
     // is what the validator grades.
@@ -126,5 +126,32 @@ export function routes(ctx) {
     }
 
     return false;
+  };
+}
+
+export function documents() {
+  return {
+    prefix: '/intl/',
+
+    // T118 locale-notice: an edition counts as opened only on a real document
+    // navigation into it. An in-page fetch() cannot set the sec-fetch-* headers,
+    // so /api/intl/notices cannot hand a translated notice to a session that only
+    // ever loaded the English pages. Framed loads count, like the other framed nav
+    // stamps, so the preview contact sheet still renders a live edition.
+    // The path is lowercased first because the fixture tree is served off a
+    // case-insensitive filesystem: /INTL/AR/advisory.html serves the Arabic
+    // page, and a case-sensitive test here would leave that load unstamped and
+    // the page reporting "no notices" for a reason the agent cannot see.
+    onHtml({ pathname, found, nav }) {
+      const intlPath = pathname.toLowerCase();
+      if (intlPath.startsWith('/intl/') && (nav.document || nav.framed)) {
+        const edition = intlPath.startsWith('/intl/ar/')
+          ? 'ar'
+          : intlPath.startsWith('/intl/ja/')
+            ? 'ja'
+            : 'en';
+        intlState(found.session).editionNavs[edition] += 1;
+      }
+    },
   };
 }

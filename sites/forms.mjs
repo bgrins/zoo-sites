@@ -68,10 +68,10 @@ function parseMultipart(body, boundary) {
 }
 
 // T007 form-gauntlet: per-session record for the three-step appointment form.
-// Two places write it — the static handler stamps a real document navigation to
-// the form, and /api/form-step records each step, the collected field values and
+// Two places write it — documents() stamps a real document navigation to the
+// form, and /api/form-step records each step, the collected field values and
 // the review-step reference code — so the shape lives in one helper.
-export function formGauntletRecord(session) {
+function formGauntletRecord(session) {
   return (session.formGauntlet ??= {
     opens: 0,
     steps: [],
@@ -82,7 +82,7 @@ export function formGauntletRecord(session) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, requireSession, refererPath } = ctx;
   return async (req, res, url, pathname0) => {
     // T052 file-upload: the depot attestation intake. Every graded fact is
     // server-observed — the received filename, byte count and content are kept
@@ -117,7 +117,7 @@ export function routes(ctx) {
       // that a browser did it — the validator reports it either way.
       const fromPage =
         req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/forms\/upload\.html(?:[?#]|$)/.test(req.headers.referer ?? '');
+        refererPath(req) === '/forms/draymere/upload.html';
       let error = null;
       if (!filename) error = 'Attach an attestation file.';
       else if (!/\.txt$/i.test(filename)) error = 'Refused: plain .txt files only.';
@@ -158,12 +158,8 @@ export function routes(ctx) {
     // arbitrary kind from the page nonce alone, so a 'form-progress' beacon
     // cannot be the interaction gate.
     if (req.method === 'POST' && pathname0 === '/api/form-step') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -188,12 +184,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/register') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -242,12 +234,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/roster-submit') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -273,12 +261,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/shipping-quote') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -319,7 +303,7 @@ export function routes(ctx) {
     // is what the validator grades — unlike a beacon kind, that log cannot be
     // faked through the generic /api/beacon endpoint. It hangs off the session
     // object, so state.reset() clears it between tasks. The `pageload` half of
-    // the log is NOT written here; see the static-HTML hunk below.
+    // the log is NOT written here; see documents() below.
     if (req.method === 'GET' && pathname0 === '/api/draft') {
       const found = requireSession(req, res);
       if (!found) return;
@@ -329,12 +313,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/draft-save') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -355,12 +335,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/draft-complete') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -379,12 +355,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/abstract') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -415,12 +387,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/brochure-submit') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -434,12 +402,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/beta-signup') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -465,5 +429,30 @@ export function routes(ctx) {
     }
 
     return false;
+  };
+}
+
+export function documents() {
+  return {
+    prefix: '/forms/',
+
+    onHtml({ pathname, found, nav }) {
+      // T055 draft-resume: the graded `pageload` event is minted here, on a
+      // real document navigation, and nowhere else. Emitting it from an API
+      // endpoint would let page script forge a reload with a plain fetch.
+      // Framed loads do not count.
+      if (pathname === '/forms/thornbury/draft.html' && nav.document) {
+        (found.session.draftEvents ??= []).push({ type: 'pageload', at: Date.now() });
+      }
+
+      // T007 form-gauntlet: opening the appointment form on a real document
+      // navigation, like the draft-resume pageload above. This one is route
+      // telemetry printed in `detail`, deliberately NOT a gate: `curl -H` can
+      // set the same headers (see isDocumentNav in server.mjs), so gating on it
+      // would only look like browser proof. Framed loads do not count.
+      if (pathname === '/forms/drennhill/index.html' && nav.document) {
+        formGauntletRecord(found.session).opens += 1;
+      }
+    },
   };
 }

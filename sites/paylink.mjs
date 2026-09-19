@@ -24,27 +24,13 @@ function paylinkState(session) {
   return (session.paylink ??= { intents: {}, order: [], settled: null });
 }
 
-// Which of the two pages a fetch() came from. This is NOT a security boundary:
-// fetch()'s `referrer` init member accepts any same-origin URL, so page script in
-// either window can claim to be the other one (measured in Firefox, not assumed),
-// and `curl -e` sets Referer freely like every other Referer gate in this file.
-// What actually keeps the two halves apart is the view token, which is minted
-// into the checkout document body by the static handler and therefore only ever
-// reaches a real top-level load of checkout.html. The Referer test stays as the
-// ordinary "which page is calling" routing it looks like, and the settle record
-// keeps the request's Sec-Fetch-Site and User-Agent for the validator to report.
-function paylinkFrom(req, file) {
-  const pattern = '/paylink/' + file.replace(/\./g, '\\.') + '(?:[?#]|$)';
-  return new RegExp(pattern).test(req.headers.referer ?? '');
-}
-
-// One payment intent per checkout page LOAD — minted in the static handler when
+// One payment intent per checkout page LOAD — minted by documents() when
 // checkout.html is served as a top-level document, never by an endpoint. The
 // view token is what binds the intent to that load: a merchant page that reloads
 // (or a second tab pointed at the checkout) gets its own intent and cannot poll
 // an older one, so an approved intent can only be read out by the page load that
 // opened it.
-export function mintPaylinkIntent(session) {
+function mintPaylinkIntent(session) {
   const pay = paylinkState(session);
   const word =
     PAYLINK_WORDS[randomBytes(1)[0] % PAYLINK_WORDS.length] +
@@ -78,14 +64,26 @@ export function mintPaylinkIntent(session) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { json, readBody, requireSession, refererPath } = ctx;
+  // Which of the two pages a fetch() came from. This is NOT a security boundary:
+  // fetch()'s `referrer` init member accepts any same-origin URL, so page script in
+  // either window can claim to be the other one (measured in Firefox, not assumed),
+  // and `curl -e` sets Referer freely like every other Referer gate in this file.
+  // What actually keeps the two halves apart is the view token, which is minted
+  // into the checkout document body by documents() and therefore only ever
+  // reaches a real top-level load of checkout.html. The Referer test stays as the
+  // ordinary "which page is calling" routing it looks like, and the settle record
+  // keeps the request's Sec-Fetch-Site and User-Agent for the validator to report.
+  // refererPath() puts the Referer in /paylink/ form, which in origin mode it
+  // does not arrive in.
+  const paylinkFrom = (req, file) => refererPath(req) === `/paylink/${file}`;
   return async (req, res, url, pathname0) => {
     // T113 cross-tab-pay: the merchant tab's poll. The verification word appears
-    // only after the authorizer has been opened as its own window (stamped in
-    // the static handler), and the confirmation code only after the approval, so
+    // only after the authorizer has been opened as its own window (stamped by
+    // documents() below), and the confirmation code only after the approval, so
     // both graded strings exist for this session only once the handoff really
-    // happened. The gate that matters is the intent's view token, which the
-    // static handler mints into a top-level checkout document and nowhere else —
+    // happened. The gate that matters is the intent's view token, which
+    // documents() mints into a top-level checkout document and nowhere else —
     // the authorizer window has no way to obtain one. There is deliberately no
     // endpoint that hands a view token out: fetch({referrer}) would let the
     // authorizer window claim a checkout Referer and mint itself one.
@@ -244,5 +242,59 @@ export function routes(ctx) {
     }
 
     return false;
+  };
+}
+
+export function documents() {
+  return {
+    prefix: '/paylink/',
+
+    onHtml({ url, pathname, found, nav, body }) {
+      // T113 cross-tab-pay: the payment intent for a checkout page load is
+      // minted HERE and its ref and view token are substituted into the body,
+      // like the __SESSION_NONCE__ substitution the static handler makes on
+      // every page. There is no endpoint that hands a view token out, because
+      // there could not be a safe one: fetch()'s `referrer` init member lets
+      // page script claim any same-origin Referer, so a "mint from the checkout
+      // page" endpoint would let the authorizer window bootstrap the merchant
+      // half of the flow in a single tab. Sec-Fetch-Dest is a forbidden header
+      // name, so only a real navigation to checkout.html learns a view token —
+      // a fetch() of the same URL gets a body with the placeholders blanked.
+      // Framed navigations count, like the other framed nav stamps, so the
+      // preview contact sheet still renders a live checkout; a frame only
+      // ever mints its OWN intent, and that intent still needs a top-level
+      // authorizer load before anything can be approved. `no-store` keeps a
+      // back-navigation or an HTTP cache from re-serving one body — and so one
+      // view token — to two page loads.
+      let out;
+      if (body.includes('__PAYLINK_REF__')) {
+        const intent = nav.document || nav.framed ? mintPaylinkIntent(found.session) : null;
+        out = {
+          headers: { 'Cache-Control': 'no-store' },
+          body: body
+            .replaceAll('__PAYLINK_REF__', intent?.ref ?? '')
+            .replaceAll('__PAYLINK_VIEW_TOKEN__', intent?.viewToken ?? ''),
+        };
+      }
+
+      // The Anverra Pay authorizer counts as "opened" only when it is loaded as
+      // a top-level document naming a payment intent. An iframe load
+      // (Sec-Fetch-Dest: iframe) and a fetch() of the same URL do not qualify,
+      // so a one-tab rig that embeds the authorizer instead of opening it can
+      // neither unlock the merchant's verification word nor approve. Stamping
+      // this from /api/paylink/authorizer-view instead would let a single
+      // fetch() claim a window that never existed.
+      if (pathname === '/paylink/authorize.html' && nav.document) {
+        const intents = found.session.paylink?.intents;
+        const ref = url.searchParams.get('ref') ?? '';
+        const intent = intents && Object.hasOwn(intents, ref) ? intents[ref] : null;
+        if (intent) {
+          intent.opens += 1;
+          intent.openedInWindow = true;
+          intent.openedAt ??= Date.now();
+        }
+      }
+      return out;
+    },
   };
 }

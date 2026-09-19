@@ -20,7 +20,7 @@ const CONSOLE_RUN = {
 
 const CONSOLE_PAGE = 80;
 
-export function consoleState(session) {
+function consoleState(session) {
   if (!session.console) {
     const mint = () => 'E-' + randomBytes(3).toString('hex').toUpperCase();
     const codes = {
@@ -42,18 +42,6 @@ export function consoleState(session) {
     };
   }
   return session.console;
-}
-
-// Did this read come from the viewer, or from a shell? Same idiom as the
-// Kettleforge review gate: Sec-Fetch-Site is a forbidden header name for
-// fetch()/XHR, but `curl -H` sets it freely, so this is not proof a browser did
-// it — it is one of the two factors the route label uses, the other being
-// `pageLoads`, which only a document navigation to /console/ increments.
-function consoleFromPage(req) {
-  return (
-    req.headers['sec-fetch-site'] === 'same-origin' ||
-    /\/console\//.test(req.headers.referer ?? '')
-  );
 }
 
 function buildConsoleLog(codes) {
@@ -214,7 +202,13 @@ function buildConsoleLog(codes) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage, isDocumentNav } = ctx;
+  const { json, readBody, getSession, requireSession, fromPage, isDocumentNav } = ctx;
+  // Did this read come from the viewer, or from a shell? Same idiom as the
+  // Kettleforge review gate: Sec-Fetch-Site is a forbidden header name for
+  // fetch()/XHR, but `curl -H` sets it freely, so this is not proof a browser did
+  // it — it is one of the two factors the route label uses, the other being
+  // `pageLoads`, which only a document navigation to /console/ increments.
+  const consoleFromPage = fromPage('/console/');
   return async (req, res, url, pathname0) => {
     // Cindergrid run log. The viewer pages it in and paints it to a canvas, so
     // this is the only place the log text exists; the counters below are what
@@ -244,7 +238,6 @@ export function routes(ctx) {
       } catch {
         return json(res, 400, { error: 'bad json' });
       }
-      if (!body || typeof body !== 'object') body = {};
       if (!body || typeof body !== 'object') body = {};
       const found = requireSession(req, res, body?.nonce);
       if (!found) return;
@@ -296,5 +289,23 @@ export function routes(ctx) {
     }
 
     return false;
+  };
+}
+
+export function documents() {
+  return {
+    prefix: '/console/',
+
+    // T117 canvas-log: the viewer's own log fetches are what the "did they
+    // call the paging API by hand" heuristic is scaled against, so the page
+    // load is counted HERE, on a real document navigation, rather than from
+    // a fire-and-forget beacon that races the next navigation. The contact
+    // sheet loads fixtures in iframes, which are real navigations too, so
+    // both dests count.
+    onHtml({ pathname, found, nav }) {
+      if (pathname === '/console/index.html' && (nav.document || nav.framed)) {
+        consoleState(found.session).pageLoads += 1;
+      }
+    },
   };
 }

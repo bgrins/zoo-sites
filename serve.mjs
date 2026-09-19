@@ -27,7 +27,10 @@ console.log(`zoo-sites: ${ORIGINS.length} origins up (shared state, one process)
 for (const o of srv.origins) {
   console.log(`  ${o.domain.padEnd(24)} ${o.url}  <- pages/${o.dir}`);
 }
-process.on('SIGINT', async () => {
-  await srv.close();
-  process.exit(0);
-});
+// SIGTERM is what `docker stop` sends PID 1, which then waits 10s for SIGKILL.
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, async () => {
+    await srv.close();
+    process.exit(0);
+  });
+}

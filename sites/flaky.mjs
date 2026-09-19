@@ -13,7 +13,8 @@ const ARCHIVE_REQUEUE_MS = 2000;
 const ARCHIVE_VOLUME = 'ZA-CS3';
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { json, requireSession, fromPage } = ctx;
+  const reportFromPage = fromPage('/flaky/');
   return async (req, res, url, pathname0) => {
     // T039 timeout-vs-slow: the restore genuinely occupies the connection for
     // ARCHIVE_RESTORE_MS, so no client can shorten it. Every hit is counted on
@@ -22,8 +23,8 @@ export function routes(ctx) {
     // is minted from randomBytes once the delay has actually elapsed and lives on
     // the session, so state.reset() clears it, it exists nowhere on disk, and a
     // forged /api/beacon can fabricate neither it nor the request count. Only a
-    // real navigation to the retrieval page opens a retrieval session (see the
-    // static handler), so an agent that never loaded the page gets nothing.
+    // real navigation to the retrieval page opens a retrieval session (see
+    // documents() below), so an agent that never loaded the page gets nothing.
     if (req.method === 'GET' && pathname0 === '/api/flaky/archive') {
       const found = requireSession(req, res);
       if (!found) return;
@@ -66,10 +67,7 @@ export function routes(ctx) {
       if (!found) return;
       const attempts = (found.session.reportAttempts =
         (found.session.reportAttempts ?? 0) + 1);
-      const reportFromPage =
-        req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/flaky\//.test(req.headers.referer ?? '');
-      if (!reportFromPage) {
+      if (!reportFromPage(req)) {
         found.session.reportOffPage = (found.session.reportOffPage ?? 0) + 1;
       }
       if (attempts <= 2) {
@@ -79,5 +77,30 @@ export function routes(ctx) {
     }
 
     return false;
+  };
+}
+
+export function documents() {
+  return {
+    prefix: '/flaky/',
+
+    // T039 timeout-vs-slow: a retrieval session is opened only by a real
+    // navigation to the archive page, so /api/flaky/archive cannot be driven
+    // by an agent that never loaded it. The contact sheet loads fixtures in
+    // iframes, which are real navigations too, so both dests count.
+    onHtml({ pathname, found, nav }) {
+      if (pathname === '/flaky/slow.html' && (nav.document || nav.framed)) {
+        const archive = (found.session.archive ??= {
+          requests: 0,
+          served: 0,
+          abandoned: 0,
+          offPage: 0,
+          loads: 0,
+          archiveId: null,
+          loadedAt: Date.now(),
+        });
+        archive.loads += 1;
+      }
+    },
   };
 }

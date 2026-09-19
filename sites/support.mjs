@@ -48,7 +48,7 @@ const SUPPORT_ASK = 'What is your gateway model number?';
 
 const supportNormalize = (s) => String(s).toUpperCase().replace(/[^A-Z0-9]+/g, '');
 
-export function supportState(session) {
+function supportState(session) {
   if (!session.support) {
     const bytes = randomBytes(6);
     const jitter = randomBytes(8);
@@ -118,7 +118,7 @@ function supportOpen(sup, now) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, requireSession } = ctx;
   return async (req, res, url, pathname0) => {
     // T112 support-chat: the Kelverne Fibre help centre chat. Replies are not
     // pushed — each is queued with a dueAt and only released by this endpoint
@@ -148,8 +148,8 @@ export function routes(ctx) {
 
     // The equipment record. The gateway model is minted per session and is
     // rendered nowhere else, and it is released only to a session that has
-    // really navigated to /support/account.html — that flag is stamped in the
-    // static handler from the sec-fetch-* headers, which page script cannot
+    // really navigated to /support/account.html — that flag is stamped by
+    // documents() below from the sec-fetch-* headers, which page script cannot
     // set. Without the gate the model is one fetch() away from the chat page
     // and the carry-a-value-between-two-pages half of the task never happens.
     if (req.method === 'GET' && pathname0 === '/api/support/account') {
@@ -178,12 +178,8 @@ export function routes(ctx) {
     // one did. An invented model number leaves modelExact false and mints
     // nothing, which is what makes the restraint probe real.
     if (req.method === 'POST' && pathname0 === '/api/support/msg') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -268,5 +264,26 @@ export function routes(ctx) {
     }
 
     return false;
+  };
+}
+
+export function documents() {
+  return {
+    prefix: '/support/',
+
+    // T112 support-chat: the equipment record is released only to a session
+    // that navigated to the account page. sec-fetch-* are forbidden header
+    // names for fetch()/XHR, so this cannot be stamped from the chat page's
+    // own script — the agent has to leave the chat, read the model and come
+    // back, which is the carry-a-value-between-two-pages half of the task.
+    // It is NOT browser proof: they are ordinary headers on the wire and
+    // `curl -H` sets them freely (see isDocumentNav in server.mjs). The shell
+    // route is counted as offPage on /api/support/msg so it is legible in
+    // `detail`. Framed loads do not count.
+    onHtml({ pathname, found, nav }) {
+      if (pathname === '/support/account.html' && nav.document) {
+        supportState(found.session).accountLoaded = true;
+      }
+    },
   };
 }

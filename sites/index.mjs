@@ -105,3 +105,15 @@ export const SITES = [
   jobs.routes,
   kiosk.routes,
 ];
+
+export const DOCUMENTS = [
+  intl.documents,
+  gov.documents,
+  shop.documents,
+  flaky.documents,
+  press.documents,
+  support.documents,
+  paylink.documents,
+  console.documents,
+  forms.documents,
+];
