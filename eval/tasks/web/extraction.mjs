@@ -19,6 +19,7 @@ export async function extractionTasks(base, origins = originUrls(base)) {
   return [
     {
       id: 'ledger-sum',
+      truth: { kind: 'static', reason: 'published ledger; its server reads are route telemetry only' },
       ask:
         `Open ${origins.trelowen}/ — a 7-page transaction ledger. Sum the 'amount' ` +
         `column for every transaction tagged 'hardware' across all pages. ` +
@@ -119,6 +120,7 @@ export async function extractionTasks(base, origins = originUrls(base)) {
     },
     {
       id: 'crm-join',
+      truth: { kind: 'static', reason: 'the orders and the directory are published page content' },
       ask:
         `Open ${origins.kelsmere}/ — a small CRM with an orders list and a customer ` +
         `directory. Every order names the account id it belongs to, and every ` +
@@ -153,6 +155,7 @@ export async function extractionTasks(base, origins = originUrls(base)) {
     },
     {
       id: 'roster-diff',
+      truth: { kind: 'static', reason: 'both rosters are published page content' },
       ask:
         `Open ${origins.ferncliff}/ — an institute that publishes a staff roster for ` +
         `each programme year. Compare the 2025 roster with the 2026 roster and ` +
@@ -260,6 +263,7 @@ export async function extractionTasks(base, origins = originUrls(base)) {
     },
     {
       id: 'dead-images',
+      truth: { kind: 'static', reason: 'which photos are broken is fixed catalogue content' },
       ask:
         `Open ${origins.northmarsh}/ — an outdoor gear catalogue page listing 12 products. ` +
         `Exactly three of the product photos fail to load. Report the names of the ` +
@@ -484,6 +488,7 @@ export async function extractionTasks(base, origins = originUrls(base)) {
     },
     {
       id: 'news-extract',
+      truth: { kind: 'static', reason: 'the front page is published content (pages/news/items.json)' },
       ask:
         `Open ${origins.millrace}/ — a link-aggregator front page. Extract the top 20 posts ` +
         `and output a markdown table with columns: rank, title, points, comments.`,

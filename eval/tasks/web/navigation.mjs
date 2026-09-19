@@ -79,6 +79,7 @@ export async function navigationTasks(base, origins = originUrls(base)) {
   return [
     {
       id: 'gov-lookup',
+      truth: { kind: 'static', reason: 'the deadline and instructions URL are published page content' },
       ask:
         `Open ${origins['civic-revenue']}/ — a government agency site. Find the annual filing deadline ` +
         `for Form RV-7 and the URL of the RV-7 instructions page. Report both.`,
@@ -110,6 +111,7 @@ export async function navigationTasks(base, origins = originUrls(base)) {
     },
     {
       id: 'fee-schedule',
+      truth: { kind: 'static', reason: 'the fee table is published page content' },
       ask:
         `Open ${origins['civic-revenue']}/fee-schedule.html — an agency fee schedule. According to the ` +
         `schedule, what is the total fee in dollars for filing Form RV-7 two months ` +
@@ -378,6 +380,7 @@ export async function navigationTasks(base, origins = originUrls(base)) {
     },
     {
       id: 'handbook',
+      truth: { kind: 'static', reason: 'section 22 is published page content' },
       ask:
         `Open ${origins['civic-revenue']}/handbook.html — an agency's 30-section compliance handbook. ` +
         `Per section 22, what is the retention period for FIELD AUDIT LOGS? Report the period.`,
@@ -397,6 +400,7 @@ export async function navigationTasks(base, origins = originUrls(base)) {
     },
     {
       id: 'iframe-schedule',
+      truth: { kind: 'static', reason: 'the embedded schedule is published page content' },
       ask:
         `Open ${origins['civic-revenue']}/offices.html — an agency's office locations page, which embeds ` +
         `a weekly schedule widget. What are the THURSDAY hours of the Harborview satellite ` +

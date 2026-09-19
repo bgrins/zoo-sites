@@ -16,7 +16,7 @@ eval.
 ## The gate
 
 ```sh
-node eval/verify.mjs                              # full gate, ~4 min, no API budget
+node eval/verify.mjs                              # full gate, under 2 min, no API budget
 node eval/verify.mjs --task cart-math,pr-review   # narrow while iterating
 node eval/verify.mjs --list                       # every task, and its driver kind
 node eval/verify.mjs --origins                    # every site on its own port, the container's shape
@@ -126,8 +126,9 @@ and a golden-path driver.
    module contract in `sites/README.md`. The graded value is minted here.
 3. **Task entry** in the family module under `eval/tasks/web/` (or
    `eval/tasks/devtools.mjs`): `{ id, ask, answerSchema, validate }`, with the answer
-   key in `eval/answers.mjs`. `eval/tasks/web.mjs` concatenates the families, so it needs no
-   edit unless the task starts a new one. Build URLs from the `origins.<key>`
+   key in `eval/answers.mjs`. A pure-extraction task adds `truth: { kind: 'static',
+   reason }` (see "Fixing a defect", rule 1). `eval/tasks/web.mjs` concatenates the
+   families, so it needs no edit unless the task starts a new one. Build URLs from the `origins.<key>`
    templates; a new origin is a `manifest.mjs` entry keyed by domain, with its
    `dir` under `pages/`. Per-task turn limits are deliberately absent: runaway
    protection lives in `--max-wall` and `--max-output`.
@@ -182,13 +183,21 @@ not. Only a deliberate capability spike distinguishes those.
 
 So drive a capability through the tool surface before you build a task on it, and
 spike the tools no task exercises. A tool that reports success while doing nothing
-is the failure mode to expect, and `drag_by_uid_to_uid` is the standing example.
-`set_viewport_size` silently clamps, `evaluate_script` caps at 5s, `fill` on
-`type=date` and `type=range` silently no-ops, and a wrapping label does not name an
-input; design around each rather than discovering it mid-build. A task built on a
-capability that does not work grades the tool's bug instead of the agent. Keyboard
-input, scroll, `select_option` and coordinate clicks are the standing examples of
-unexercised surface.
+is the failure mode to expect, and `drag_by_uid_to_uid` is the standing example: it
+sends only untrusted dragstart and drop events, so a pointer-driven list does not
+move while the tool reports a drag. `set_viewport_size` silently clamps,
+`evaluate_script` caps at 5s, and a wrapping label does not name an input. `fill` on
+`type=range` silently keeps the old value. On `type=date` it takes an ISO value and
+silently leaves the field empty for the locale's typed order (03/04/2027), and on
+`datetime-local` it is the reverse: an ISO value silently stores a wrong date, and
+only the locale's typed order lands. On `select[multiple]` it leaves one option selected. Design around each
+rather than discovering it mid-build. A task built on a capability that does not work
+grades the tool's bug instead of the agent.
+
+The spikes live in `eval/spikes/`, one script per capability, each keyed to the tool
+versions it was measured on; `eval/spikes/README.md` lists what each measured and
+how to rerun them all after a version bump. No spike covers scroll or coordinate
+clicks yet, and `eval/spikes/tools.mjs` lists every devtools tool no driver calls.
 
 ## Fixing a defect
 
@@ -215,6 +224,24 @@ and only a late adversarial pass catches it.
    `fields`. `addSession`, `findSession` and `addBeacon` in
    `eval/verify-drivers/lib.mjs` cover the common plants, and the `lexvane-hard`
    driver is the worked example.
+
+   The gate also grades every task against three generic state mutants, so a state
+   half that reads nothing fails without anyone writing a case for it. Each mutant
+   is a copy of the state, graded with the driver's own fields. `empty` is the state as `reset()`
+   left it before the driver ran, `fresh` adds one session that never acted, and
+   `shadow` is the golden state with an unused session minted ahead of the run's, the
+   one a curl probe leaves. A task's truth is minted by default: `empty` and `fresh`
+   must fail, and `shadow` must pass. A pure-extraction task whose answer is published
+   page content (hard rule 1 in `docs/authoring-fixtures.md`) declares
+   `truth: { kind: 'static', reason }` on its task entry instead (`{ kind: 'minted' }`
+   states the default). The gate exempts a static task from the mutants and names it
+   after the totals, but checks the declaration twice: the task must still pass
+   `empty`, so a declaration the validator has outgrown fails, and its golden answer
+   must carry no code the server minted into session state, so a holed validator
+   cannot hide behind one. That second check sees only code-shaped values
+   (`mintedValues` in `eval/surface-reach.mjs`), so never declare a task static to
+   silence a mutant when the server mints its answer: there a surviving mutant is a
+   validator hole.
 2. **Serialise edits to `eval/run.mjs`, `eval/answers.mjs` and `server.mjs`.** Parallel agents
    cannot speed up a single-writer resource; they can only add a spec-then-integrate
    indirection, and that indirection is its own defect source — wrong line numbers,
@@ -239,9 +266,11 @@ and only a late adversarial pass catches it.
 Those assertions accumulate into the gate's memory. All 91 drivers carry them, and a
 full run exercises 542 wrong answers and 136 wrong server states that must all fail,
 and 390 accepted variants and 98 accepted states that must all pass, so a change that
-re-breaks one fails the run and names it. Read
-the current counts off `node eval/verify.mjs`, which prints them per task and totals
-them in its `cases exercised` line.
+re-breaks one fails the run and names it. The generic mutants add 158 erased states
+that must fail and 79 shadow sessions that must be ignored, across the 79 minted-truth
+tasks, and 12 tasks are static. Read the current counts off `node eval/verify.mjs`,
+which prints them per task and totals them in its `cases exercised` line, the mutants
+as `mutants killed` and `shadow sessions ignored`.
 
 A review of N findings is a QUEUE. Rank it, work it in small verified increments,
 and expect the tail to be wrong: cosmetic items reported once and never reproduced

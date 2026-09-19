@@ -39,6 +39,8 @@ import { startPagesServer } from '../server.mjs';
 import { ORIGINS, originUrls } from '../manifest.mjs';
 import { conforms, enforceQuotes, extractFields, normalise } from './extract.mjs';
 import { DRIVERS } from './verify-drivers/index.mjs';
+import { addSession } from './verify-drivers/lib.mjs';
+import { gradedValues, mintedValues } from './surface-reach.mjs';
 import { checkFixtures } from '../scripts/check-fixtures.mjs';
 
 const args = process.argv.slice(2);
@@ -116,11 +118,12 @@ async function loadTasks(base, origins) {
   return [...(await webTasks(base, origins)), ...(await devtoolsTasks(base, origins))];
 }
 
-// Without this, an unrecognised --help silently ran the whole four-minute gate.
+// Without this, an unrecognised --help silently ran the whole gate.
 if (args.includes('--help') || args.includes('-h')) {
   console.log(`The gate: drive every task's golden path through a real browser and
 assert that each validator accepts a correct answer and rejects a wrong one.
-Free, no API spend, about 4 minutes.
+Free, no API spend: under 2 minutes at the default --jobs, about 3.5 with
+--jobs 1 (eval/spikes/gate-time.mjs measures both).
 
 Usage: node eval/verify.mjs [options]
 
@@ -305,7 +308,12 @@ const exercised = {
   wrongState: 0,
   alsoCorrectState: 0,
   neverAnswered: 0,
+  mutantsKilled: 0,
+  mutantsRun: 0,
+  shadowsIgnored: 0,
+  shadowsRun: 0,
 };
+const staticTruth = [];
 
 // A deep copy of the pages server's state for one wrongState/alsoCorrectState
 // case. One structuredClone call copies every data member together, so a
@@ -377,6 +385,69 @@ function neverAnswered(schema) {
   return JSON.stringify(shapes[0]) === JSON.stringify(shapes[1]) ? [shapes[0]] : shapes;
 }
 
+// Generic state mutants: wrongState/alsoCorrectState cases written once for
+// every task, each graded with the driver's own fields on its own copy. A task
+// whose truth is minted server-side must fail once the run's server record is
+// gone, whether nothing remains (empty: the state as reset() left it before the
+// driver ran) or one session that never acted (fresh). It must also ignore a
+// session minted ahead of the run and never used, the one a curl probe or a
+// cookieless fetch leaves (shadow), so that mutant must still pass.
+const copyOf = (state) => {
+  if (state instanceof Error) throw state;
+  return cloneState(state);
+};
+const MUTANTS = [
+  {
+    name: 'empty',
+    mustPass: false,
+    leaves: 'no sessions, beacons or /collect hits',
+    build: ({ pristine }) => copyOf(pristine),
+  },
+  {
+    name: 'fresh',
+    mustPass: false,
+    leaves: 'only a session that never acted',
+    build: ({ pristine }) => {
+      const state = copyOf(pristine);
+      addSession(state);
+      return state;
+    },
+  },
+  {
+    name: 'shadow',
+    mustPass: true,
+    build: ({ golden }) => {
+      const state = cloneState(golden);
+      addSession(state, {}, { first: true });
+      return state;
+    },
+  },
+];
+
+// A task's `truth`: { kind: 'minted', reason? }, the default when absent, or
+// { kind: 'static', reason } for a pure-extraction task whose answer is
+// published page content (rule 1 in docs/authoring-fixtures.md). A static task
+// is exempt from the mutants, and the gate checks the exemption still holds.
+function truthOf(task) {
+  const t = task.truth;
+  if (t === undefined) return { kind: 'minted' };
+  const reasoned = typeof t?.reason === 'string' && t.reason.trim();
+  if (t?.kind === 'minted' && (t.reason === undefined || reasoned)) return t;
+  if (t?.kind === 'static' && reasoned) return t;
+  return {
+    invalid: `truth must be { kind: 'minted' | 'static', reason } (reason required for static), got ${JSON.stringify(t)}`,
+  };
+}
+
+// The server-minted codes a golden answer carries, compared the way eqCode
+// does. surface-reach's CODE shape is the only mint registry there is, so a
+// minted number or word escapes this.
+function mintedIn(fields, state) {
+  const flat = (s) => String(s).toUpperCase().replace(/[\s-]+/g, '');
+  const answer = gradedValues(fields).map(flat);
+  return mintedValues(state, Infinity).filter((m) => answer.some((a) => a.includes(flat(m))));
+}
+
 // Stamp a task boundary into the Gecko profile. `performance.mark` surfaces as a
 // UserTiming marker carrying its own name, which is what lets a hot region in
 // the profile be attributed to one driver. Two instant marks rather than a
@@ -429,6 +500,14 @@ async function runOne(worker, id) {
   // the pages the real run serves. mirror-reroute's driver ASSERTS the outage
   // is armed rather than arming it, which is what keeps this plumbing covered.
   Object.assign(pages.state.modes, task.serverModes ?? {});
+  // The state before the driver acts, for the mutants that erase the run's
+  // record. A copy that cannot be made fails those mutants, not the gate.
+  let pristine;
+  try {
+    pristine = cloneState(pages.state);
+  } catch (error) {
+    pristine = error;
+  }
   helpers.taskId = task.id;
   await mark(helpers, `zoo:${task.id}:start`);
   const startedAt = Date.now();
@@ -489,6 +568,8 @@ async function runOne(worker, id) {
     if (!wrongFields.length) {
       schemaProblems.push('schema task has no wrongFields regression assertions');
     }
+    const truth = truthOf(task);
+    if (truth.invalid) schemaProblems.push(truth.invalid);
     if (schemaProblems.length) {
       fail++;
       failures.push(`${task.id}: ${schemaProblems[0]}`);
@@ -535,6 +616,38 @@ async function runOne(worker, id) {
         }
       })
       .filter(({ r }) => r.pass !== false);
+    // Mutants only mean something against a golden run the validator accepts.
+    // A static task runs the empty mutant alone, expecting it to PASS: a
+    // declaration its validator has outgrown fails here instead of exempting a
+    // task that now reads server state. The empty mutant cannot catch a holed
+    // validator that passes it anyway, so a static answer must also carry no
+    // code the server minted.
+    const minted = good.pass === true ? mintedIn(fields, pages.state) : [];
+    const mutants = good.pass !== true
+      ? []
+      : truth.kind === 'static'
+        ? [{ ...MUTANTS[0], mustPass: true }]
+        : MUTANTS;
+    const mutantResults = mutants.map((m) => {
+      try {
+        const state = m.build({ pristine, golden: pages.state });
+        return { m, r: task.validate('', { ...ctx, pages: { ...pages, state } }, fields) };
+      } catch (error) {
+        return { m, r: { threw: error } };
+      }
+    });
+    const mutantMisses = mutantResults.filter(({ m, r }) =>
+      m.mustPass ? r.pass !== true : r.pass !== false
+    );
+    if (truth.kind === 'static') staticTruth.push(task.id);
+    else {
+      const erasing = mutantResults.filter(({ m }) => !m.mustPass);
+      exercised.mutantsRun += erasing.length;
+      exercised.mutantsKilled += erasing.filter(({ r }) => r.pass === false).length;
+      const shadows = mutantResults.filter(({ m }) => m.mustPass);
+      exercised.shadowsRun += shadows.length;
+      exercised.shadowsIgnored += shadows.filter(({ r }) => r.pass === true).length;
+    }
     exercised.wrongFields += wrongFields.length;
     exercised.alsoCorrectFields += alsoCorrectFields.length;
     exercised.wrongState += wrongState.length;
@@ -558,6 +671,28 @@ async function runOne(worker, id) {
         r.threw
           ? `validator threw on never-answered fields ${JSON.stringify(f).slice(0, 70)} — ${r.threw.message}`
           : `validator PASSED never-answered fields ${JSON.stringify(f).slice(0, 70)} (never-answered must fail) — ${r.detail ?? ''}`
+      ),
+      truth.kind === 'static' &&
+        minted.length &&
+        `truth is declared static ("${truth.reason}") but the golden answer carries ` +
+          `${minted.join(', ')}, which the server minted into session state: drop the declaration`,
+      ...mutantMisses.map(({ m, r }) =>
+        r.threw
+          ? `mutant "${m.name}" threw — ${r.threw.message}`
+          : truth.kind === 'static'
+            ? `truth is declared static ("${truth.reason}") but mutant "empty" fails it, so the ` +
+              `verdict reads server state: drop the declaration — ${r.detail ?? ''}`
+            : m.mustPass
+              ? `validator REJECTED mutant "${m.name}": an unused session minted ahead of the run ` +
+                `must not change the verdict — ${r.detail ?? ''}`
+              : minted.length
+                ? `validator PASSED mutant "${m.name}" with ${m.leaves}, yet the golden answer ` +
+                  `carries ${minted.join(', ')}, which the server minted: the validator has a hole ` +
+                  `— ${r.detail ?? ''}`
+                : `validator PASSED mutant "${m.name}" with ${m.leaves}, so it grades nothing ` +
+                  `the server observed: the validator has a hole, unless the answer is published ` +
+                  `page content that no session mints, in which case declare truth ` +
+                  `{ kind: 'static', reason } — ${r.detail ?? ''}`
       ),
     ].filter(Boolean);
     if (why.length) {
@@ -620,6 +755,7 @@ async function runOne(worker, id) {
     console.log(
       `ok    ${task.id}  (fields; ${wrongFields.length} wrong, ` +
         `${alsoCorrectFields.length} accepted variants${stateCounts}` +
+        `; ${truth.kind === 'static' ? 'static truth' : 'mutants killed'}` +
         `${EXTRACT ? '; extractor verified' : ''})`
     );
   }
@@ -668,8 +804,13 @@ console.log(
   `cases exercised: ${exercised.wrongFields} wrongFields and ${exercised.wrongState} wrongState ` +
     `(must fail), ${exercised.alsoCorrectFields} alsoCorrectFields and ` +
     `${exercised.alsoCorrectState} alsoCorrectState (must pass), ` +
-    `${exercised.neverAnswered} never-answered shapes (must fail)`
+    `${exercised.neverAnswered} never-answered shapes (must fail), ` +
+    `${exercised.mutantsKilled}/${exercised.mutantsRun} mutants killed (empty, fresh; must fail), ` +
+    `${exercised.shadowsIgnored}/${exercised.shadowsRun} shadow sessions ignored (must pass)`
 );
+if (staticTruth.length) {
+  console.log(`static truth, exempt from mutants: ${staticTruth.sort().join(', ')}`);
+}
 if (failures.length) {
   console.log('\nfailures:');
   for (const f of failures) console.log(`  - ${f}`);

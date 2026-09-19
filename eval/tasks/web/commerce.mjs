@@ -33,6 +33,7 @@ export async function commerceTasks(base, origins = originUrls(base)) {
   return [
     {
       id: 'price-compare',
+      truth: { kind: 'static', reason: 'the three catalogues publish the same prices to every session' },
       ask:
         `Three online stores sell computer monitors:\n` +
         `- ${origins.voltro}/\n- ${origins.marrowgate}/\n- ${origins.gadgetron}/\n` +
