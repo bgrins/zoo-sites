@@ -8,7 +8,7 @@ const KIOSK_BASE_CENTS = {
   'reduced-day': { 'zone-1': 240, 'zones-1-2': 320, 'zones-1-3': 400 },
 };
 
-// The time-of-travel adjustment is minted per session and kept off the 5-cent
+// The time-of-travel adjustment is minted per session and kept off the 5p
 // grid every printed base fare sits on, so no quoted fare ever equals a figure
 // on the fares page.
 function mintAdjustmentCents() {
@@ -46,7 +46,7 @@ export function routes(ctx) {
       if (baseCents == null) return json(res, 400, { error: 'unknown ticket or zones' });
       const fareCents = baseCents + k.adjustmentCents;
       k.quotes.push({ ticket, zones, fareCents, at: Date.now() });
-      return json(res, 200, { ticket, zones, fare: fareCents / 100, currency: 'USD' });
+      return json(res, 200, { ticket, zones, fare: fareCents / 100, currency: 'GBP' });
     }
 
     if (req.method === 'POST' && pathname0 === '/api/kiosk/purchase') {

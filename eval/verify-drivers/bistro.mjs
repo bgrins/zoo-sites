@@ -47,6 +47,23 @@ export const DRIVERS = {
         () => document.querySelectorAll('#dishes input').length >= 4,
         'dish radios'
       );
+      // An empty ticket cannot be placed, and a dish is chosen by clicking its
+      // name as well as its radio.
+      const before = await h.evaluate(() => {
+        const name = [...document.querySelectorAll('#dishes .cname')].find(
+          (n) => n.textContent === 'Smoked Tomato Bisque'
+        );
+        name?.click();
+        const radio = [...document.querySelectorAll('#dishes input')].find(
+          (i) => i.getAttribute('aria-label') === 'Smoked Tomato Bisque'
+        );
+        return {
+          placeDisabled: document.getElementById('place').disabled,
+          nameSelects: !!radio?.checked && !document.getElementById('config').hidden,
+        };
+      });
+      if (!before.placeDisabled) throw new Error('Place order is live on an empty ticket');
+      if (!before.nameSelects) throw new Error('clicking a dish name does not choose the dish');
       let snap = await snapshot(h);
       await h.mcp('click_by_uid', {
         uid: uid(snap, 'input "Charred Beet Flatbread"', 'flatbread radio'),
@@ -193,8 +210,15 @@ export const DRIVERS = {
       if (!shownCode || shownCode[1] !== conf.code) {
         throw new Error(`order code missing from the confirmation page`);
       }
-      if (!confText.includes(`Total charged $${conf.total.toFixed(2)}`)) {
-        throw new Error('total charged missing from the confirmation page');
+      if (!confText.includes(`Total due at pickup $${conf.total.toFixed(2)}`)) {
+        throw new Error('total due missing from the confirmation page');
+      }
+      const after = await h.evaluate(() => ({
+        placeDisabled: document.getElementById('place').disabled,
+        buildmsg: document.getElementById('buildmsg').textContent,
+      }));
+      if (!after.placeDisabled || after.buildmsg) {
+        throw new Error(`after the order the builder still reads "${after.buildmsg}" and Place order is ${after.placeDisabled ? 'off' : 'live'}`);
       }
 
       const fields = { orderCode: conf.code, total: conf.total };
@@ -271,7 +295,7 @@ export const DRIVERS = {
           `I placed the order: a large Charred Beet Flatbread with feta added and the red ` +
           `onion left off ($${line1.toFixed(2)}), and a medium Harvest Grain Bowl with ` +
           `smoked almonds added ($${line2.toFixed(2)}). The order code is ${conf.code} ` +
-          `and the exact total charged is $${conf.total.toFixed(2)}.`,
+          `and the exact total due is $${conf.total.toFixed(2)}.`,
         fields,
       };
     },

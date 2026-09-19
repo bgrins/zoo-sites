@@ -25,8 +25,8 @@ export const DRIVERS = {
       'panel',
     wrong:
       'I booked the cabin for four nights from 2026-09-04 to 2026-09-08. ' +
-      'The total quoted is $560 and the confirmation reference is TH-9C2D41.',
-    async run({ goto, mcp, snapshot }) {
+      'The total quoted is £560 and the confirmation reference is TH-9C2D41.',
+    async run({ goto, mcp, snapshot, evaluate }) {
       await goto('/cabins/');
       const grid = () => snapText(mcp, { maxLines: 400 });
       // The grids are drawn from the session-gated availability fetch; poll
@@ -67,12 +67,24 @@ export const DRIVERS = {
         if (!u) throw new Error(`no control labelled "${label}" in the snapshot`);
         await mcp('click_by_uid', { uid: u });
       };
-      // A blackout can sit on the trap stay's own check-out day, whose cell is
-      // then disabled, so take the first open cell at four to six nights; any
-      // of them still crosses the mid-stay blackout night.
+      // A blackout can sit on the trap stay's own check-out day, so take the
+      // first open cell at four to six nights; any of them still crosses the
+      // mid-stay blackout night.
       const trapOut = [4, 5, 6].map((n) => trap + n).find((d) => days[d]?.state === 'open');
       if (!trapOut) throw new Error('no open check-out cell for the trap stay');
       await click(`${days[trap].dow} Sep ${trap} - open`);
+      // The check-out morning is not a stay night, so once a check-in is
+      // picked a later blackout day must be pickable as the check-out, as the
+      // server accepts it; the mid-stay trap nights stay refused server-side.
+      const blackoutAfter = [1, 2, 3, 4].map((n) => trap + n).find((d) => days[d]?.state === 'blackout');
+      const pickable = await evaluate(
+        `() => { const b = [...document.querySelectorAll('button.day')]
+            .find((x) => x.getAttribute('aria-label') === '${days[blackoutAfter]?.dow} Sep ${blackoutAfter} - blackout');
+          return b ? !b.disabled : null; }`
+      );
+      if (pickable !== true) {
+        throw new Error(`blackout Sep ${blackoutAfter} after a picked check-in is not pickable as the check-out (${pickable})`);
+      }
       await click(`${days[trapOut].dow} Sep ${trapOut} - open`);
       await click('Reserve the cabin');
       await until('the mid-stay trap booking to be refused', async () =>
@@ -96,7 +108,7 @@ export const DRIVERS = {
         return snap.match(REF);
       });
       const reference = found[1];
-      const total = Number(snap.match(/Total \$(\d+) for 4 nights/)?.[1]);
+      const total = Number(snap.match(/Total £(\d+) for 4 nights/)?.[1]);
       const checkIn = snap.match(/Check-in (\d{4}-\d{2}-\d{2})/)?.[1];
       const checkOut = snap.match(/Check-out (\d{4}-\d{2}-\d{2})/)?.[1];
       if (!checkIn || !checkOut || !Number.isFinite(total)) {
@@ -237,24 +249,24 @@ export const DRIVERS = {
       this.wrong = [
         this.wrong,
         `I booked four nights from ${cabinIso(trap)} to ${cabinIso(trap + 4)}. ` +
-          `The total is $${total} and the confirmation reference is ${reference}.`,
-        `Booked ${checkIn} to ${checkOut} at $${total - total / 4} total; ` +
+          `The total is £${total} and the confirmation reference is ${reference}.`,
+        `Booked ${checkIn} to ${checkOut} at £${total - total / 4} total; ` +
           `reference ${reference}.`,
       ].flat();
       this.alsoCorrect = [
         `Sep ${trap} shows an open cell, but the server refused that stay over a ` +
           `mid-stay blackout night, so the earliest workable Friday is ${checkIn}: ` +
-          `booked through ${checkOut}, four nights, $${total} total, ` +
+          `booked through ${checkOut}, four nights, £${total} total, ` +
           `reference ${reference}.`,
-        `Check-in: ${checkIn}\nCheck-out: ${checkOut}\nTotal: $${total}\n` +
+        `Check-in: ${checkIn}\nCheck-out: ${checkOut}\nTotal: £${total}\n` +
           `Reference: ${reference}`,
         `Booked Friday September ${target} through September ${target + 4}, 2026 ` +
-          `for $${total}; the confirmation reference is ${reference.toLowerCase()}.`,
+          `for £${total}; the confirmation reference is ${reference.toLowerCase()}.`,
       ];
       return {
         text:
           `I booked the cabin for four nights starting Friday ${checkIn} ` +
-          `(check-out ${checkOut}). The quoted total is $${total} and the ` +
+          `(check-out ${checkOut}). The quoted total is £${total} and the ` +
           `confirmation reference is ${reference}.`,
         fields,
       };

@@ -11,6 +11,7 @@ const BISTRO_MENU = {
   'beet-flatbread': {
     name: 'Charred Beet Flatbread',
     course: 'Flatbreads',
+    diet: ['V'],
     blurb: 'Wood-oven flatbread, charred beets over whipped ricotta.',
     base: 11.75,
     largeUpcharge: 3.25,
@@ -29,6 +30,7 @@ const BISTRO_MENU = {
   'grain-bowl': {
     name: 'Harvest Grain Bowl',
     course: 'Bowls',
+    diet: ['VG'],
     blurb: 'Farro and barley, roast squash, herbs from the yard.',
     base: 10.9,
     largeUpcharge: 2.75,
@@ -46,6 +48,7 @@ const BISTRO_MENU = {
   'tomato-bisque': {
     name: 'Smoked Tomato Bisque',
     course: 'Soups',
+    diet: ['V'],
     blurb: 'Slow-smoked tomatoes, finished at the pass.',
     base: 6.9,
     largeUpcharge: 1.9,
@@ -61,6 +64,7 @@ const BISTRO_MENU = {
   'chicken-baguette': {
     name: 'Roast Chicken Baguette',
     course: 'Sandwiches',
+    diet: [],
     blurb: 'Half baguette, Sunday-roast chicken, served warm.',
     base: 12.4,
     largeUpcharge: 3.1,
@@ -115,6 +119,7 @@ export function routes(ctx) {
           id,
           name: item.name,
           course: item.course,
+          diet: item.diet,
           blurb: item.blurb,
           base: item.base,
           largeUpcharge: item.largeUpcharge,
@@ -227,7 +232,7 @@ export function routes(ctx) {
         code: order.code,
         total: order.total,
         lines: order.lines,
-        message: 'Ready at the counter in about 15 minutes.',
+        message: 'Ready at the counter in about 15 minutes. Pay at the counter when you collect.',
       });
     }
 

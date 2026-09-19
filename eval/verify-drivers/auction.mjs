@@ -221,6 +221,14 @@ export const DRIVERS = {
 
       const total = allIn(closing.hammer);
       if (total > LIMIT_TOTAL) throw new Error(`winning total ${total} is past the limit`);
+
+      // The sale page follows the rostrum: once the hammer has fallen, lot 418
+      // is listed as sold to this bidder rather than still on the block.
+      await goto(INDEX_PATH);
+      await until('the sale page to list lot 418 as sold to us', async () => {
+        const s = await snapText(mcp);
+        return /Sold to you/.test(s) && !/"bid on lot 418"/.test(s);
+      }, { tries: 15, gap: 400 });
       const fields = {
         outcome: 'won',
         paddleCode: closing.paddle,

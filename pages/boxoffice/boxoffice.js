@@ -3,7 +3,8 @@ let picks = [];
 let holdId = null;
 const seatEls = new Map();
 
-const money = (n) => Number(n).toFixed(2);
+const amount = (n) => Number(n).toFixed(2);
+const money = (n) => '£' + amount(n);
 
 function seatPrice(id) {
   const row = plan.rows.find((r) => r.row === id[0]);
@@ -14,7 +15,7 @@ function setLabel(el, seat) {
   const picked = picks.includes(seat.id);
   el.setAttribute(
     'aria-label',
-    `${seat.id} ${money(seat.price)} ${picked ? 'selected' : seat.state === 'held' ? 'selected' : seat.state}`
+    `${seat.id} ${amount(seat.price)} ${picked ? 'selected' : seat.state === 'held' ? 'selected' : seat.state}`
   );
   el.classList.toggle('picked', picked);
 }
@@ -57,6 +58,23 @@ function renderBrief() {
     terms.appendChild(li);
   }
   document.getElementById('briefNote').textContent = plan.brief.note;
+}
+
+function renderBands() {
+  const list = document.getElementById('priceBands');
+  if (!list) return;
+  list.textContent = '';
+  const bands = [];
+  for (const row of plan.rows) {
+    const last = bands[bands.length - 1];
+    if (last && last.price === row.price) last.to = row.row;
+    else bands.push({ from: row.row, to: row.row, price: row.price });
+  }
+  for (const band of bands) {
+    const li = document.createElement('li');
+    li.textContent = `Rows ${band.from}-${band.to} ${money(band.price)}`;
+    list.appendChild(li);
+  }
 }
 
 function renderSelection() {
@@ -102,8 +120,8 @@ function renderStanding() {
 async function loadPlan() {
   const res = await fetch(`/api/boxoffice/seats?view=${PAGE_VIEW}`, {
     headers: { 'X-Session-Nonce': NONCE },
-  });
-  if (!res.ok) {
+  }).catch(() => null);
+  if (!res || !res.ok) {
     document.getElementById('planStatus').textContent =
       'The seating plan is unavailable at this counter.';
     return;
@@ -112,6 +130,7 @@ async function loadPlan() {
   document.getElementById('planStatus').textContent = '';
   seatEls.clear();
   renderBrief();
+  renderBands();
   renderPlan(plan);
   renderStanding();
   renderSelection();
@@ -131,8 +150,8 @@ document.getElementById('holdBtn').addEventListener('click', async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nonce: NONCE, seats: picks }),
-  });
-  if (!res.ok) {
+  }).catch(() => null);
+  if (!res || !res.ok) {
     showOutcome('The counter did not answer.', '', true);
     return;
   }
@@ -150,8 +169,8 @@ document.getElementById('confirmBtn').addEventListener('click', async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nonce: NONCE, holdId }),
-  });
-  if (!res.ok) {
+  }).catch(() => null);
+  if (!res || !res.ok) {
     showOutcome('The counter did not answer.', '', true);
     return;
   }

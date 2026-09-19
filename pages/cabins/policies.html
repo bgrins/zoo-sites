@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Policies — Tamarack Hollow</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   * { box-sizing: border-box; }
   body {
@@ -18,7 +19,7 @@
     border-bottom: 6px double #c9a04b;
   }
   .masthead { max-width: 960px; margin: 0 auto; }
-  .brand { font-size: 26px; letter-spacing: 1px; }
+  .brand { display: inline-block; font-size: 26px; letter-spacing: 1px; color: inherit; text-decoration: none; }
   .brand small {
     display: block; font-size: 11px; letter-spacing: 4px;
     text-transform: uppercase; color: #cdbf9a; margin-top: 2px;
@@ -28,6 +29,8 @@
     color: #f6f0e1; text-decoration: none; text-transform: uppercase;
     letter-spacing: 2px; font-size: 12px; margin-right: 22px;
   }
+  nav a[aria-current] { border-bottom: 2px solid #c9a04b; }
+  nav a { display: inline-block; white-space: nowrap; margin-bottom: 6px; }
   main { max-width: 960px; margin: 0 auto; padding: 26px 24px 40px; }
   h1 { font-size: 24px; color: #1e4632; margin: 0 0 14px; }
   h2 {
@@ -48,9 +51,16 @@
 <body>
 <header>
   <div class="masthead">
-    <div class="brand">Tamarack Hollow<small>Cabin lettings on the Fernlee ridge</small></div>
+    <a class="brand" href="index.html">Tamarack Hollow<small>Cabin lettings on the Fernlee ridge</small></a>
   </div>
-  <nav><a href="index.html">Back to the cabin</a></nav>
+  <nav aria-label="Site">
+    <a href="index.html">The cabin</a>
+    <a href="index.html#book">Availability</a>
+    <a href="arrival.html">Before you arrive</a>
+    <a href="ridge.html">Walks</a>
+    <a href="getting-about.html">Access</a>
+    <a href="policies.html" aria-current="page">Policies</a>
+  </nav>
 </header>
 <main>
   <h1>Policies</h1>
@@ -74,16 +84,22 @@
   <p>The booking desk records the dates you request and the reservation it
   issues, and nothing else. We keep booking records for the season and the one
   after it, as the letting ledger requires. We do not pass records to anyone
-  beyond the gate lodge, and we send no post you did not ask for.</p>
+  beyond the gate lodge, and we send no post you did not ask for. Write to the
+  gate lodge address below, or to stay@tamarackhollow.example, to see the record
+  we hold for your stay.</p>
 </main>
 <footer>
   <div class="inner">
-    &copy; 2026 Tamarack Hollow Lettings &middot; Gate lodge, Millbrook Road,
-    Fernlee &middot; stay@tamarackhollow.example &middot; 01632 960 177 &middot;
-    <a href="index.html">The cabin</a> &middot;
+    Tamarack Hollow Lettings Ltd &middot; Gate lodge, Millbrook Road, Fernlee FL4 7RT
+    &middot; stay@tamarackhollow.example &middot; 01632 960 177<br>
+    <a href="index.html#book">Availability</a> &middot;
     <a href="arrival.html">Before you arrive</a> &middot;
     <a href="ridge.html">Walks from the door</a> &middot;
-    <a href="getting-about.html">Access on the ridge</a>
+    <a href="getting-about.html">Access on the ridge</a> &middot;
+    <a href="policies.html#terms">Booking terms</a> &middot;
+    <a href="policies.html#privacy">Privacy</a><br>
+    &copy; 2026 Tamarack Hollow Lettings Ltd. Registered in England and Wales,
+    company number 00000000.
   </div>
 </footer>
 </body>

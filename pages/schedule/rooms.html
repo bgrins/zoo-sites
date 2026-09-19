@@ -5,21 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rooms — Peregrine Court Business Rooms</title>
 <link rel="stylesheet" href="schedule.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="masthead">
   <div class="masthead-top">
     <div>
-      <h1 class="wordmark">Peregrine<span>Court</span></h1>
+      <a class="wordmark" href="index.html">Peregrine <span>Court</span></a>
       <p class="sub">Business rooms &middot; Ashgate Quay</p>
     </div>
     <p class="desk">Front desk 0117 496 0144<br>Viewings by arrangement</p>
   </div>
+  <nav aria-label="Sections">
   <ul class="tabs">
     <li><a href="index.html">Day book</a></li>
     <li><a class="on" href="rooms.html">Rooms</a></li>
     <li><a href="terms.html">Booking terms</a></li>
   </ul>
+  </nav>
 </header>
 
 <main>
@@ -54,7 +57,7 @@
 </main>
 
 <footer>
-  <p>Peregrine Court Ltd, 14 Wharf Row, Ashgate Quay AQ2 7HN. Registered in England 00000000.</p>
+  <p>Peregrine Court Ltd, 14 Wharf Row, Ashgate Quay AQ2 7HN. Registered in England and Wales, company number 00000000.</p>
   <p><a href="terms.html">Booking terms</a><a href="index.html">Day book</a><a href="terms.html#privacy">Privacy</a></p>
   <p>&copy; 2026 Peregrine Court Ltd. Rates exclude VAT.</p>
 </footer>
@@ -63,9 +66,9 @@
 const NONCE = '__SESSION_NONCE__';
 
 async function load() {
-  const res = await fetch('/api/schedule/grid', { headers: { 'X-Session-Nonce': NONCE } });
+  const res = await fetch('/api/schedule/grid', { headers: { 'X-Session-Nonce': NONCE } }).catch(() => null);
   const list = document.getElementById('roomList');
-  if (!res.ok) {
+  if (!res || !res.ok) {
     list.textContent = '';
     const item = document.createElement('li');
     item.textContent = 'The room list is unavailable at this terminal.';

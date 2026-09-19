@@ -209,6 +209,24 @@ export function routes(ctx) {
       return json(res, 200, auctionView(auction, now));
     }
 
+    // The sale page's view of the rostrum. It never opens the lot or takes the
+    // session's draw, so reading the catalogue first starts no clock; once the
+    // lot page has opened bidding it replays the same server clock, which is
+    // idempotent, and counts no read.
+    if (req.method === 'GET' && pathname0 === '/api/auction/sale') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      const auction = found.session.auction;
+      if (!auction || auction.startedAt === null) return json(res, 200, { started: false });
+      auctionTick(auction, Date.now());
+      return json(res, 200, {
+        started: true,
+        over: auction.over,
+        winner: auction.winner,
+        hammerPrice: auction.hammerPrice,
+      });
+    }
+
     if (req.method === 'POST' && pathname0 === '/api/auction/bid') {
       let payload;
       try {

@@ -383,7 +383,7 @@ export async function extractionTasks(base, origins = originUrls(base)) {
           },
           seniorRoleSalary: {
             type: ['number', 'null'],
-            description: 'advertised annual salary of the senior-level opening, in dollars',
+            description: 'advertised annual salary of the senior-level opening, in pounds sterling',
           },
         },
       },

@@ -46,18 +46,18 @@ const BOX_SHOW = {
 };
 
 const BOX_BRIEF = {
-  patron: 'Mrs. Ida Carrow',
-  reference: 'Will-call 118',
+  patron: 'Booking for Mrs. Ida Carrow',
+  reference: 'Enquiry 118 · collect at will-call',
   terms: [
     'Two seats together in the same block of one row',
     'Not split by the centre aisle between seats 6 and 7',
     'Full view only, no restricted-view seats at any price',
-    'Total of 60.00 or less for the pair',
+    'Total of £60.00 or less for the pair',
   ],
   note:
     'Every row breaks at the centre aisle between seats 6 and 7; a pair split ' +
-    'by the aisle does not sit side by side. Mrs. Carrow will not take ' +
-    'restricted view at any price.',
+    'by the aisle does not sit side by side. You told us Mrs. Carrow will not ' +
+    'take restricted view at any price.',
 };
 
 const boxSeatId = (row, n) => row + n;
@@ -385,8 +385,8 @@ export function routes(ctx) {
       const total = round2(seats.reduce((sum, id) => sum + BOX_PRICES[id[0]], 0));
       if (total > BOX_LIMIT) {
         return refuse('over-limit', {
-          message: `Those seats come to ${total.toFixed(2)}.`,
-          detail: `The request is capped at ${BOX_LIMIT.toFixed(2)} in all.`,
+          message: `Those seats come to £${total.toFixed(2)}.`,
+          detail: `The request is capped at £${BOX_LIMIT.toFixed(2)} in all.`,
         });
       }
       if (counter.hold) counter.released += 1;

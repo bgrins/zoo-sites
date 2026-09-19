@@ -29,27 +29,54 @@ const FERNWOOD_LOOKALIKE_AUTHOR = 'Doreen Whitfield';
 // pages/ keeps the whole feed body off disk; none of it is graded.
 const FERNWOOD_FILLER = [
   { author: 'Renata Kowal', when: 'Jun 17', where: 'Maple Row', title: 'Tool library summer hours',
-    body: ['Open Tue and Sat, 10 to 2.', 'The ladder is back.'], ref: 'FW-4A02D7', cheers: 9 },
+    body: [
+      'From this week the tool library is open Tuesdays and Saturdays, 10 to 2, through the end of August.',
+      'The long ladder is back from its adventure on Birchside, and the plant sale paid for a new pair of loppers.',
+    ], ref: 'FW-4A02D7', cheers: 9 },
   { author: 'Gus Aldana', when: 'Jun 15', where: 'Old Mill', title: 'Zucchini, free, again',
-    body: ['Crate on the porch rail.', 'Take two, please.'], ref: 'FW-B3391C', cheers: 21 },
+    body: [
+      'The garden has outdone itself again. There is a crate of zucchini on my porch rail at the corner of Mill Lane; take two, take four, but please take them before they turn into marrows.',
+    ], ref: 'FW-B3391C', cheers: 21 },
   { author: 'Ida Bergstrom', when: 'Jun 14', where: 'The Green', title: 'Porch concert Friday',
-    body: ['Fiddle and accordion, 7 pm.', 'Bring a folding chair.'], ref: 'FW-77C4E0', cheers: 14 },
+    body: [
+      'The Halvorsens are playing fiddle and accordion on their porch this Friday from 7 pm, weather permitting.',
+      'Bring a folding chair and something to share. If it rains we move under the bandstand on the Green.',
+    ], ref: 'FW-77C4E0', cheers: 14 },
   { author: 'Colm Feeney', when: 'Jun 12', where: 'Birchside', title: 'Grey cat found on Birch',
-    body: ['No collar, very talkative.', 'Held safe at number 12.'], ref: 'FW-0D96A4', cheers: 17 },
+    body: [
+      'A grey cat with white socks turned up in our yard on Birch Street this morning. No collar, very talkative, and clearly used to being fed.',
+      'She is safe with us at number 12 for now. If she is yours, knock, or leave a note in the green box.',
+    ], ref: 'FW-0D96A4', cheers: 17 },
   { author: 'Renata Kowal', when: 'Jun 10', where: 'Maple Row', title: 'Book swap cart restocked',
-    body: ['Mostly mysteries this week.'], ref: 'FW-5E11B8', cheers: 6 },
+    body: [
+      'The book swap cart outside the tool library is full again: mostly mysteries this week, plus a stack of old gardening magazines. Take what you like and bring something back when you can.',
+    ], ref: 'FW-5E11B8', cheers: 6 },
   { author: 'Priya Raghunathan', when: 'Jun 8', where: 'The Green', title: 'Market moves to the lot',
-    body: ['Saturdays through August.', 'Same stalls, more shade.'], ref: 'FW-C82F53', cheers: 11 },
+    body: [
+      'From this Saturday the farmers market sets up in the church lot instead of along the Green, and it stays there through August.',
+      'Same stalls and the same hours, with a lot more shade for the bread table.',
+    ], ref: 'FW-C82F53', cheers: 11 },
   { author: 'Gus Aldana', when: 'Jun 6', where: 'Old Mill', title: 'Mill Lane pothole filled',
-    body: ['Crew came Thursday morning.'], ref: 'FW-19ADF2', cheers: 8 },
+    body: [
+      'The city crew came on Thursday morning and filled the big pothole at the bottom of Mill Lane. Thanks to everyone who phoned it in; it took eleven calls, but it is done.',
+    ], ref: 'FW-19ADF2', cheers: 8 },
   { author: 'Ida Bergstrom', when: 'Jun 4', where: 'Birchside', title: 'Crossing guard thanks',
-    body: ['Twenty years at the corner.', 'Card at the bakery counter.'], ref: 'FW-E60B47', cheers: 33 },
+    body: [
+      'Mrs. Oduya is retiring after twenty years at the Birch Street crossing, and the corner will not be the same without her.',
+      'There is a card for her at the bakery counter until Friday. Sign it if she ever walked your kids across.',
+    ], ref: 'FW-E60B47', cheers: 33 },
   { author: 'Colm Feeney', when: 'May 31', where: 'The Green', title: 'Mural wall repainted',
-    body: ['Herons this time. Go look.'], ref: 'FW-3F78CA', cheers: 19 },
+    body: [
+      'The art club has repainted the mural wall behind the community hall. Herons this time, with a very good kingfisher low down on the left. Go and look.',
+    ], ref: 'FW-3F78CA', cheers: 19 },
   { author: 'Priya Raghunathan', when: 'May 27', where: 'Maple Row', title: 'Seed swap leftovers',
-    body: ['Beans and calendula left.'], ref: 'FW-A45D09', cheers: 5 },
+    body: [
+      'Runner beans and calendula are still left over from the seed swap. They are in envelopes at the tool library, free to anyone who will plant them.',
+    ], ref: 'FW-A45D09', cheers: 5 },
   { author: 'Renata Kowal', when: 'May 22', where: 'Old Mill', title: 'Rain barrels installed',
-    body: ['Six along the school fence.'], ref: 'FW-92E6B1', cheers: 12 },
+    body: [
+      'Six new rain barrels went in along the school fence this week, paid for out of the association grant. The school garden club has promised to look after them.',
+    ], ref: 'FW-92E6B1', cheers: 12 },
 ];
 
 function fernwoodMintRefs(n) {
@@ -116,8 +143,12 @@ function fernwoodBatchPosts(feed, batch) {
       fernwoodPost(f[0]),
       {
         author: feed.teaser.author, when: 'Jun 16', where: 'The Green',
-        title: 'Tally week on the feed',
-        body: [`Early count: ${feed.teaser.count} bags`, 'Final tally posts below.'],
+        title: 'Tally week recap',
+        body: [
+          'A few people have asked where the creek cleanup numbers ended up.',
+          `On the day, the early count from the drop-off points was ${feed.teaser.count} bags. ` +
+            "The final tally, once every bin was weighed, is in the coordinators' post further down the feed.",
+        ],
         ref: feed.teaser.ref, cheers: 26,
       },
       fernwoodPost(f[1]),
@@ -131,7 +162,10 @@ function fernwoodBatchPosts(feed, batch) {
       {
         author: feed.lookalike.author, when: 'Jun 2', where: 'Fernwood Archive',
         title: 'From the archive: 2025 tally',
-        body: [`2025 creek tally: ${feed.lookalike.count} bags`, 'A wet year, a good crew.'],
+        body: [
+          `Going through the association folder for the newsletter, I found last year's sheet: the 2025 creek tally was ${feed.lookalike.count} bags, in a wet year with a small crew.`,
+          "Posting it so we have something to hold this spring's count up against.",
+        ],
         ref: feed.lookalike.ref, cheers: 15,
       },
       fernwoodPost(f[8]),
@@ -142,7 +176,10 @@ function fernwoodBatchPosts(feed, batch) {
     {
       author: feed.needle.author, when: 'May 24', where: 'Alder Creek',
       title: 'Creek cleanup: final tally',
-      body: [`Final tally: ${feed.needle.count} bags`, 'Thank you, every crew.'],
+      body: [
+        `Every bin from Saturday has now been weighed and counted, and the final tally for this spring's Alder Creek cleanup comes to ${feed.needle.count} bags, the most the association has hauled out of the creek in a single day.`,
+        'Thank you to every crew, to the tool library for the grabbers, and to the bakery for keeping us fed. Photos go up at the next association meeting.',
+      ],
       ref: feed.needle.ref, cheers: 48,
     },
     fernwoodPost(f[10]),

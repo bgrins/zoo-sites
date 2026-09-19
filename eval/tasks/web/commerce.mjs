@@ -603,7 +603,7 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         `Place this order: a large Charred Beet Flatbread with feta added and the red ` +
         `onion left off, plus a medium Harvest Grain Bowl with smoked almonds added. ` +
         `Check each ticket line before placing the order, then report the order code ` +
-        `and the exact total charged.`,
+        `and the exact total due.`,
       answerSchema: {
         type: 'object',
         properties: {
@@ -613,7 +613,7 @@ export async function commerceTasks(base, origins = originUrls(base)) {
           },
           total: {
             type: ['number', 'null'],
-            description: 'the exact total charged for the order',
+            description: 'the exact total due for the order',
           },
         },
       },
@@ -690,7 +690,7 @@ export async function commerceTasks(base, origins = originUrls(base)) {
     {
       id: 'palette-checkout',
       ask:
-        `Open ${origins['verlan-transit']}/ — the Verlan Transit ticket kiosk at Harrow ` +
+        `Open ${origins['verlan-transit']}/ — the Verlan Transit ticket kiosk at Skelvard ` +
         `Interchange. Buy one adult single ticket valid across zones 1-2, and ` +
         `report the exact fare you were charged and the confirmation code on ` +
         `the receipt.`,

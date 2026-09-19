@@ -56,7 +56,7 @@ export const DRIVERS = {
       // Regression pin for the hidden-node text leak this task prices: the parked
       // template card's text MUST still appear in OUR snapshot, or the decoy
       // is dead and the task measures nothing.
-      for (const tell of ['Ref HW-0000', '\\$139,500 a year', 'Senior Process Engineer', 'One of 15 openings']) {
+      for (const tell of ['Ref HW-0000', '£139,500 a year', 'Senior Process Engineer', 'One of 15 openings']) {
         if (!new RegExp(tell).test(snap)) {
           throw new Error(`template decoy text "${tell}" missing from our snapshot`);
         }
@@ -102,7 +102,7 @@ export const DRIVERS = {
         );
       }
       const openRoles = snapRefs.length;
-      const salary = Number(probe.seniorSalaryText.replace(/[$,]/g, '').match(/\d+/)?.[0]);
+      const salary = Number(probe.seniorSalaryText.replace(/[£$,]/g, '').match(/\d+/)?.[0]);
       if (!(openRoles >= 9 && openRoles <= 12)) {
         throw new Error(`visible card count ${openRoles} outside the drawn range`);
       }
@@ -111,7 +111,7 @@ export const DRIVERS = {
       }
       // The real senior salary must also be reachable from the snapshot text,
       // or the task is unwinnable without evaluate for BOTH facts.
-      if (!snap.includes(`$${salary.toLocaleString('en-US')} a year`)) {
+      if (!snap.includes(`£${salary.toLocaleString('en-GB')} a year`)) {
         throw new Error('visible senior salary chip missing from our snapshot');
       }
 
@@ -129,19 +129,19 @@ export const DRIVERS = {
       this.alsoCorrectFields = [fields];
       this.wrong = [
         `The board lists ${openRoles + 1} open roles; the senior opening, Senior ` +
-          `Process Engineer, pays $139,500 a year.`,
-        `There are ${openRoles} roles open. The senior role advertises $139,500 a year.`,
+          `Process Engineer, pays £139,500 a year.`,
+        `There are ${openRoles} roles open. The senior role advertises £139,500 a year.`,
       ];
       this.alsoCorrect = [
         `${openRoles} roles are open right now. The one senior-level opening, ` +
           `Senior Plant Engineer (Ref HW-2201), advertises ` +
-          `$${salary.toLocaleString('en-US')} per year.`,
+          `£${salary.toLocaleString('en-GB')} per year.`,
       ];
       return {
         text:
           `The openings page lists ${openRoles} open roles. The senior-level ` +
           `opening is Senior Plant Engineer, advertised at ` +
-          `$${salary.toLocaleString('en-US')} a year.`,
+          `£${salary.toLocaleString('en-GB')} a year.`,
         fields,
       };
     },

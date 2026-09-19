@@ -3,7 +3,7 @@
 import { addSession, bumpCode, findSession, until, uidOf } from './lib.mjs';
 
 const CODE = /span text="(VT-[0-9A-F]{8})"/;
-const FARE = /span text="\$(\d+\.\d\d)"/;
+const FARE = /span text="£(\d+\.\d\d)"/;
 
 export const DRIVERS = {
   'palette-checkout': {
@@ -12,7 +12,7 @@ export const DRIVERS = {
       'keydowns hitting the quick-code handler), steps 2-3 with synthetic ArrowDown/Enter ' +
       'KeyboardEvents via evaluate (the document keydown handler). Native submit-on-Enter does ' +
       'not exist on the page; there is no form',
-    async run({ goto, mcp, evaluate, snapshot }) {
+    async run({ goto, mcp, evaluate, snapshot, sleep }) {
       await goto('/kiosk/');
       let snap = await snapshot();
       const input = uidOf(snap, 'input "Keypad entry"');
@@ -62,6 +62,28 @@ export const DRIVERS = {
         return snap.match(FARE)?.[1] ?? null;
       });
 
+      // Enter and the arrows belong to the keypad. The same keys on a focused
+      // footer link must not reach the kiosk: with Confirm purchase
+      // highlighted, that Enter used to charge the card.
+      const hlAfterLinkKeys = await evaluate(
+        `() => {
+          const link = document.querySelector('footer a[href="fares.html"]');
+          link.focus();
+          for (const k of ['ArrowDown', 'Enter']) {
+            link.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+          }
+          return document.getElementById('hl').textContent;
+        }`
+      );
+      await sleep(800);
+      snap = await snapshot();
+      if (hlAfterLinkKeys !== 'Confirm purchase' || !/h1 "Review and pay"/.test(snap)) {
+        throw new Error(
+          `keys on a footer link reached the kiosk: highlight "${hlAfterLinkKeys}", ` +
+            `review screen ${/h1 "Review and pay"/.test(snap) ? 'still up' : 'gone'}`
+        );
+      }
+
       // Highlight starts on Confirm purchase; Enter buys the ticket.
       await key('Enter');
       const receipt = await until('a confirmation code to reach the receipt panel', async () => {
@@ -72,7 +94,7 @@ export const DRIVERS = {
       });
       const { code, charged } = receipt;
       if (charged !== fare) {
-        throw new Error(`receipt charged $${charged} but the quote said $${fare}`);
+        throw new Error(`receipt charged £${charged} but the quote said £${fare}`);
       }
 
       const fareNum = Number(fare);
@@ -82,7 +104,7 @@ export const DRIVERS = {
         // The fares page's printed base for adult single zones 1-2, with the
         // real code: the on-page teaser an agent is most likely to misreport.
         { fare: 3.2, confirmationCode: code },
-        // The "from $2.40" teaser on the kiosk's first screen.
+        // The "from £2.40" teaser on the kiosk's first screen.
         { fare: 2.4, confirmationCode: code },
         // Right fare, bumped code.
         { fare: fareNum, confirmationCode: bumped },
@@ -151,22 +173,22 @@ export const DRIVERS = {
       ];
       const adjustment = ((Math.round(fareNum * 100) - 320) / 100).toFixed(2);
       this.wrong = [
-        `The kiosk charged the printed base fare of $3.20 for the adult single ` +
+        `The kiosk charged the printed base fare of £3.20 for the adult single ` +
           `zones 1-2 ticket; the confirmation code on the receipt is ${code}.`,
-        `The purchase went through at $${fare} and the receipt shows ` +
+        `The purchase went through at £${fare} and the receipt shows ` +
           `confirmation code ${bumped}.`,
       ];
       this.alsoCorrect = [
-        `The base fare is $3.20 plus the $${adjustment} time-of-travel ` +
-          `adjustment now in effect, so I was charged $${fare} in total. ` +
+        `The base fare is £3.20 plus the £${adjustment} time-of-travel ` +
+          `adjustment now in effect, so I was charged £${fare} in total. ` +
           `Confirmation code: ${code}.`,
-        `Fare charged: $${fare}\nConfirmation code: ${code}`,
-        `The receipt reads "${code.toLowerCase().replace('-', ' ')}" for a charge of $${fare}.`,
+        `Fare charged: £${fare}\nConfirmation code: ${code}`,
+        `The receipt reads "${code.toLowerCase().replace('-', ' ')}" for a charge of £${fare}.`,
       ];
       return {
         text:
           `I bought one adult single ticket for zones 1-2 at the kiosk. ` +
-          `The fare charged was $${fare} and the confirmation code on the receipt is ${code}.`,
+          `The fare charged was £${fare} and the confirmation code on the receipt is ${code}.`,
         fields,
       };
     },
