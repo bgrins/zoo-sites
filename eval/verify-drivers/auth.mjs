@@ -129,11 +129,37 @@ export const DRIVERS = {
       });
       // Exploring the reports area after the login is a correct run, and it
       // clears the session's auth flag on the third fetch, so grading s.auth here
-      // would fail exactly this run.
+      // would fail exactly this run. Each report is waited on until it renders,
+      // so the third fetch has landed before grading.
       for (const n of [1, 2, 3]) {
-        await h.goto(`/portal/reports/${n}.html`);
-        await h.sleep(400);
+        const { total } = await openReport(h, n);
+        if (!total) throw new Error(`report ${n} was refused inside the three-fetch budget`);
       }
+
+      // The two-step gate must hold per sign-in: a reports-area sign-in as ops
+      // after a password-only console sign-in in the same session must not
+      // inherit that console.
+      const mint = await fetch(h.base + '/portal/', { headers: { accept: 'text/html' } });
+      const cookie = (mint.headers.get('set-cookie') ?? '').split(';')[0];
+      const nonce = (await mint.text()).match(/const NONCE = '([0-9a-f]+)'/)?.[1];
+      if (!cookie || !nonce) throw new Error('no probe session for the console check');
+      const post = (body) =>
+        fetch(h.base + '/api/portal/login', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', cookie },
+          body: JSON.stringify({ nonce, ...body }),
+        });
+      await post({ email: 'dispatch@bluefern.example', password: 'slate-ferry-64' });
+      await post({ email: 'ops@bluefern.example', password: 'gr8-heron-42', area: 'reports' });
+      const probeConsole = await fetch(h.base + '/api/portal/dashboard', {
+        headers: { cookie, 'X-Session-Nonce': nonce },
+      });
+      if (probeConsole.status !== 401) {
+        throw new Error(
+          `a reports-area sign-in opened the console without the second step (HTTP ${probeConsole.status})`
+        );
+      }
+
       const word = message.match(/vault (\w+)/)[1];
       this.alsoCorrect = [
         `Signed in with the 6-digit soft token from the authenticator page. ` +
@@ -142,8 +168,27 @@ export const DRIVERS = {
           `I then opened Reports 1-3 to check the area.`,
       ];
       const fields = { welcomeMessage: message };
-      this.wrongFields = [{ welcomeMessage: 'Welcome back, Ops — vault heliotrope' }];
+      const { ANSWERS } = await import('../answers.mjs');
+      // Another word off the server's own list: only THIS session's word passes.
+      const otherWord = ANSWERS.portal.vaultWords.find((w) => w !== word);
+      this.wrongFields = [
+        { welcomeMessage: 'Welcome back, Ops — vault heliotrope' },
+        { welcomeMessage: `Welcome back, Ops — vault ${otherWord}` },
+      ];
       this.alsoCorrectFields = [fields, { welcomeMessage: `Ops - vault ${word}` }];
+      this.wrongState = [
+        {
+          name: 'the session holding the word never passed the second step',
+          mutate: (state) => {
+            for (const s of state.sessions.values()) {
+              if (s.vaultWord === word) {
+                s.mfaVerified = false;
+                s.mfaAttempts = (s.mfaAttempts ?? []).map((a) => ({ ...a, ok: false }));
+              }
+            }
+          },
+        },
+      ];
       return {
         text: `Two-step login completed. The dashboard welcome message reads: ${message}`,
         fields,
@@ -200,6 +245,39 @@ export const DRIVERS = {
         { sumOfTotals: sum + 1000 },
       ];
       this.alsoCorrectFields = [fields];
+      const readers = (state) => [...state.sessions.values()].filter((s) => (s.reportHits ?? []).length);
+      this.wrongState = [
+        {
+          name: 'report 5 was never served',
+          mutate: (state) => {
+            for (const s of readers(state)) s.reportHits = s.reportHits.filter((n) => n !== 5);
+          },
+        },
+        {
+          // Five reads on one sign-in is the expiry never happening.
+          name: 'the five reads rest on a single sign-in',
+          mutate: (state) => {
+            const [first, ...rest] = readers(state);
+            for (const s of rest) s.logins = [];
+            first.logins = (first.logins ?? []).filter((l) => l.ok).slice(0, 1);
+          },
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          // "Log in again" re-uses the sid, so all five reads land on one session.
+          name: 'all five reads under one sid that signed in twice',
+          mutate: (state) => {
+            const [first, ...rest] = readers(state);
+            for (const s of rest) {
+              first.reportHits.push(...s.reportHits.filter((n) => !first.reportHits.includes(n)));
+              first.logins.push(...(s.logins ?? []));
+              s.reportHits = [];
+              s.logins = [];
+            }
+          },
+        },
+      ];
       return {
         text:
           `My session expired after the third report, so I logged back in and finished. ` +
@@ -219,8 +297,26 @@ export const DRIVERS = {
       const tier = statValue(snap, 'Account tier');
       const balance = statValue(snap, 'Current balance');
       const fields = { accountTier: tier };
-      this.wrongFields = [{ accountTier: 'Corridor Basic' }];
-      this.alsoCorrectFields = [fields, { accountTier: tier.toLowerCase() }];
+      this.wrongFields = [
+        { accountTier: 'Corridor Basic' },
+        // Another account's tier, in the shape the variant below accepts.
+        { accountTier: 'Corridor Lite tier' },
+        { accountTier: tier.split(' ')[0] },
+      ];
+      this.alsoCorrectFields = [
+        fields,
+        { accountTier: tier.toLowerCase() },
+        { accountTier: `${tier} tier` },
+        { accountTier: `the ${tier} plan.` },
+      ];
+      this.wrongState = [
+        {
+          name: 'the dispatch sign-in never loaded the dashboard',
+          mutate: (state) => {
+            for (const s of state.sessions.values()) s.portalDashboards = 0;
+          },
+        },
+      ];
       this.wrong = [
         'Signed in fine — the account tier shown is Corridor Basic.',
         `The dashboard for dispatch@bluefern.example shows a balance of ${balance} ` +
@@ -263,6 +359,57 @@ export const DRIVERS = {
       const fields = { balance: numeric };
       this.wrongFields = [{ balance: 318.42 }, { balance: numeric + 1000 }];
       this.alsoCorrectFields = [fields];
+      const { addSession, findSession } = await import('./lib.mjs');
+      const DISPATCH = 'dispatch@bluefern.example';
+      const winner = (state) => {
+        const found = findSession(state, (s) => s.portalSignedOut === true && (s.portalDashboards ?? 0) > 0);
+        if (!found) throw new Error('no signed-out dashboard session in the golden state');
+        return found.session;
+      };
+      const signedIn = (at, area, extra = {}) => ({
+        logins: [{ email: DISPATCH, area, ok: true, at }],
+        portalUser: DISPATCH,
+        portalRole: 'dispatcher',
+        portalLoginAt: at,
+        portalActive: true,
+        auth: 'full',
+        ...extra,
+      });
+      this.wrongState = [
+        {
+          // Lands on reports/1.html, so the dashboard is never fetched again.
+          name: 'signed back in through the reports area after logging out',
+          mutate: (state) => addSession(state, signedIn(winner(state).portalSignedOutAt + 1, 'reports')),
+        },
+        {
+          name: 'the signed-out session kept authenticating',
+          mutate: (state) => {
+            winner(state).auth = 'full';
+          },
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'an exploratory reports-area sign-in before the run was left signed in',
+          mutate: (state) =>
+            addSession(state, signedIn(winner(state).portalLoginAt - 1000, 'reports'), { first: true }),
+        },
+        {
+          name: 'signed back in after logging out, then logged out again',
+          mutate: (state) => {
+            const out = winner(state).portalSignedOutAt;
+            addSession(
+              state,
+              signedIn(out + 1, '', {
+                portalActive: false,
+                portalSignedOut: true,
+                portalSignedOutAt: out + 2,
+                auth: null,
+              })
+            );
+          },
+        },
+      ];
       return {
         text: `I am now signed out of the portal. The balance the dashboard showed was ${balance}.`,
         fields,
@@ -294,8 +441,67 @@ export const DRIVERS = {
       this.wrongFields = [
         { adminOnlyPanel: 'Invoices' },
         { adminOnlyPanel: viewerPanels[0] ?? 'Overview' },
+        { adminOnlyPanel: 'Invoices panel' },
+        { adminOnlyPanel: extra[0].split(' ')[0] },
       ];
-      this.alsoCorrectFields = [fields];
+      this.alsoCorrectFields = [
+        fields,
+        { adminOnlyPanel: `${extra[0]} panel` },
+        { adminOnlyPanel: `the ${extra[0].toLowerCase()} panel` },
+      ];
+      const { addSession } = await import('./lib.mjs');
+      const login = (email, at) => ({ email, area: '', ok: true, at });
+      const start = Date.now();
+      this.wrongState = [
+        {
+          // Signing in as the admin over the viewer's session, then logging out
+          // once at the end: a later clean switch must not cover for it.
+          name: 'switched from viewer to admin in one session without logging out',
+          mutate: (state) =>
+            addSession(state, {
+              logins: [login('viewer@bluefern.example', start + 1), login('admin@bluefern.example', start + 2)],
+              portalUser: 'admin@bluefern.example',
+              portalLoginAt: start + 2,
+              portalDashboards: 2,
+              portalActive: false,
+              portalSignedOut: true,
+              portalSignedOutAt: start + 3,
+              portalSignOuts: [start + 3],
+            }),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          // A cookie jar that ignored the cleared cookie re-uses the sid, and
+          // the sign-out between the two sign-ins is still a sign-out. This
+          // pins only that the switch walk honours it: `switched` still wants
+          // two sids, so this sid alone would not pass.
+          name: 'a sid kept across a sign-out between its two sign-ins is not a switch without logging out',
+          mutate: (state) =>
+            addSession(state, {
+              logins: [login('viewer@bluefern.example', start + 1), login('admin@bluefern.example', start + 3)],
+              portalUser: 'admin@bluefern.example',
+              portalLoginAt: start + 3,
+              portalDashboards: 2,
+              portalActive: false,
+              portalSignedOut: true,
+              portalSignedOutAt: start + 4,
+              portalSignOuts: [start + 2, start + 4],
+            }),
+        },
+        {
+          // A curl cookie jar that tried both passwords and never read a
+          // dashboard showed neither account's view, so it switched nothing.
+          name: 'a probe cookie jar signed in as both accounts and never loaded a dashboard',
+          mutate: (state) =>
+            addSession(state, {
+              logins: [login('viewer@bluefern.example', start - 2), login('admin@bluefern.example', start - 1)],
+              portalUser: 'admin@bluefern.example',
+              portalLoginAt: start - 1,
+              portalActive: true,
+            }),
+        },
+      ];
       this.wrong = [
         'The panel the admin account sees and the viewer account does not is Invoices.',
         `The admin-only panel is ${viewerPanels[0] ?? 'Overview'} — the viewer ` +

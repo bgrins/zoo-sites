@@ -1,7 +1,7 @@
 // Golden path for the Stavelock credential vault (token-rotate). See
 // probes.mjs for the driver contract.
 
-import { uidOf, until } from './lib.mjs';
+import { bumpCode, uidOf, until } from './lib.mjs';
 
 export const DRIVERS = {
   // The clipboard is the human route to the token, not the only one — an
@@ -119,8 +119,46 @@ export const DRIVERS = {
       this.alsoCorrect = [`Rotation receipt: **${receipt}**.`];
 
       const fields = { rotationReceipt: receipt };
-      this.wrongFields = [{ rotationReceipt: 'RCP-0000' }];
+      this.wrongFields = [{ rotationReceipt: 'RCP-0000' }, { rotationReceipt: bumpCode(receipt) }];
       this.alsoCorrectFields = [fields, { rotationReceipt: String(receipt).toLowerCase() }];
+      const graded = (state) => {
+        for (const s of state.sessions.values()) {
+          const record = s.vault?.receipts?.find((r) => r.receipt === receipt);
+          if (record) return { vault: s.vault, record };
+        }
+        throw new Error('no session holds the golden rotation');
+      };
+      // A second rotation of the same secret, as a curl replay after the real
+      // one leaves it: its own receipt, and a reason the ask did not dictate.
+      const replay = (state) => {
+        const { vault, record } = graded(state);
+        const later = { ...record, receipt: bumpCode(receipt), reason: 'cleanup', at: record.at + 1000 };
+        vault.receipts.push(later);
+        vault.rotated[record.id] = later;
+        return later.receipt;
+      };
+      this.wrongState = [
+        {
+          name: 'the rotation carries a reason the ask did not dictate',
+          mutate: (state) => {
+            graded(state).record.reason = 'cleanup';
+          },
+        },
+        {
+          name: 'the rotation carries no reason',
+          mutate: (state) => {
+            graded(state).record.reason = '';
+          },
+        },
+        {
+          name: 'the answer names a later rotation made with the wrong reason',
+          mutate: replay,
+          fields: { rotationReceipt: bumpCode(receipt) },
+        },
+      ];
+      this.alsoCorrectState = [
+        { name: 'a later replay rotation does not shadow the one the answer names', mutate: replay },
+      ];
       return {
         text:
           `I copied the current value of sluicegate-api/deploy out of Stavelock with the ` +

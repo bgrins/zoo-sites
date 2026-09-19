@@ -4,7 +4,7 @@
 // reading the verification word off the merchant tab and typing it into the
 // authorizer tab. It never reads ctx.pages.state.
 
-import { textOf, until } from './lib.mjs';
+import { bumpCode, textOf, until } from './lib.mjs';
 
 const OPEN_LINK = /uid=(\S+) a "Authorise with Anverra/;
 const WORD = /text="([A-Z]{4,8}-\d{2})"/;
@@ -29,74 +29,92 @@ export const DRIVERS = {
         return idx;
       };
 
-      await goto('/paylink/checkout.html');
-      const linkUid = await until('the pay link to be armed', async () =>
-        (await snapshot()).match(OPEN_LINK)?.[1]
-      );
-      const tabsBefore = await countTabs();
-      await mcp('click_by_uid', { uid: linkUid });
-      await until('the authorizer to open in a second tab', async () =>
-        (await countTabs()) > tabsBefore
-      );
-      // Everything past this point runs with the extra tab open; whatever
-      // happens, the tab must not leak into the next task on this worker.
-      let word;
-      let code;
-      let procRef;
-      try {
-        // The authorizer window: check it shows the amount being authorised, and
-        // that it does NOT carry the merchant's confirmation code.
-        await select('Anverra Pay');
-        const authSnap = await until('the authorizer to render the amount', async () => {
-          const s = await snapshot();
-          return /\$329\.14/.test(s) ? s : null;
-        });
-        if (CODE.test(authSnap)) {
-          throw new Error('the authorizer window leaked the merchant confirmation code');
-        }
-
-        // Back to the merchant tab for the verification word, which only appears
-        // there and only once the authorizer window exists.
-        await select('Ollister');
-        word = await until('the merchant tab to show the verification word', async () =>
-          (await snapshot()).match(WORD)?.[1]
+      const handoff = async () => {
+        await goto('/paylink/checkout.html');
+        const linkUid = await until('the pay link to be armed', async () =>
+          (await snapshot()).match(OPEN_LINK)?.[1]
         );
-
-        await select('Anverra Pay');
-        const formSnap = await snapshot();
-        const inputUid = formSnap.match(/uid=(\S+) input[^\n]*Verification word/)?.[1]
-          ?? formSnap.match(/uid=(\S+) input/)?.[1];
-        if (!inputUid) throw new Error('no verification word input in the authorizer snapshot');
-        await mcp('fill_by_uid', { uid: inputUid, value: word });
-        const approveUid = formSnap.match(/uid=(\S+) button "Approve payment"/)?.[1];
-        if (!approveUid) throw new Error('no Approve payment button in the authorizer snapshot');
-        await mcp('click_by_uid', { uid: approveUid });
-        const approvedSnap = await until('the authorizer to report the approval', async () => {
-          const s = await snapshot();
-          return /Authorisation complete/.test(s) ? s : null;
-        });
-        // The processor reference the authorizer shows: a different number from
-        // the merchant code, and the confusion the batteries below pin.
-        procRef = approvedSnap.match(/AVP-\d{8}/)?.[0] ?? null;
-
-        await select('Ollister');
-        code = await until('the merchant tab to show the confirmation code', async () =>
-          (await snapshot()).match(CODE)?.[1]
+        const tabsBefore = await countTabs();
+        await mcp('click_by_uid', { uid: linkUid });
+        await until('the authorizer to open in a second tab', async () =>
+          (await countTabs()) > tabsBefore
         );
-      } finally {
-        // Leave the browser as we found it even on a failed run: an authorizer
-        // tab left open would be inherited by the next task on this worker.
+        // Everything past this point runs with the extra tab open; whatever
+        // happens, the tab must not leak into the next task on this worker.
+        let word;
+        let code;
+        let procRef;
         try {
-          await mcp('close_page', { pageIdx: await select('Anverra Pay') });
-        } catch {
-          // already closed or never opened; nothing to clean
-        }
-        await select('Ollister');
-      }
+          // The authorizer window: check it shows the amount being authorised, and
+          // that it does NOT carry the merchant's confirmation code.
+          await select('Anverra Pay');
+          const authSnap = await until('the authorizer to render the amount', async () => {
+            const s = await snapshot();
+            return /\$329\.14/.test(s) ? s : null;
+          });
+          if (CODE.test(authSnap)) {
+            throw new Error('the authorizer window leaked the merchant confirmation code');
+          }
 
+          // Back to the merchant tab for the verification word, which only appears
+          // there and only once the authorizer window exists.
+          await select('Ollister');
+          word = await until('the merchant tab to show the verification word', async () =>
+            (await snapshot()).match(WORD)?.[1]
+          );
+
+          await select('Anverra Pay');
+          const formSnap = await snapshot();
+          const inputUid = formSnap.match(/uid=(\S+) input[^\n]*Verification word/)?.[1]
+            ?? formSnap.match(/uid=(\S+) input/)?.[1];
+          if (!inputUid) throw new Error('no verification word input in the authorizer snapshot');
+          await mcp('fill_by_uid', { uid: inputUid, value: word });
+          const approveUid = formSnap.match(/uid=(\S+) button "Approve payment"/)?.[1];
+          if (!approveUid) throw new Error('no Approve payment button in the authorizer snapshot');
+          await mcp('click_by_uid', { uid: approveUid });
+          const approvedSnap = await until('the authorizer to report the approval', async () => {
+            const s = await snapshot();
+            return /Authorisation complete/.test(s) ? s : null;
+          });
+          // The processor reference the authorizer shows: a different number from
+          // the merchant code, and the confusion the batteries below pin.
+          procRef = approvedSnap.match(/AVP-\d{8}/)?.[0] ?? null;
+
+          await select('Ollister');
+          code = await until('the merchant tab to show the confirmation code', async () =>
+            (await snapshot()).match(CODE)?.[1]
+          );
+        } finally {
+          // Leave the browser as we found it even on a failed run: an authorizer
+          // tab left open would be inherited by the next task on this worker.
+          try {
+            await mcp('close_page', { pageIdx: await select('Anverra Pay') });
+          } catch {
+            // already closed or never opened; nothing to clean
+          }
+          await select('Ollister');
+        }
+        return { word, code, procRef };
+      };
+
+      const first = await handoff();
+      // A second order placed from the same browser session, after a reload:
+      // the first order's code stays a genuine answer.
+      const second = await handoff();
+      const { code, procRef } = first;
+      if (!first.procRef && !second.procRef) throw new Error('the authorizer never showed a processor reference');
       const fields = { confirmationCode: code };
-      this.wrongFields = [{ confirmationCode: 'OC-0000-0000' }];
-      this.alsoCorrectFields = [fields, { confirmationCode: String(code).toLowerCase() }];
+      this.wrongFields = [
+        { confirmationCode: 'OC-0000-0000' },
+        { confirmationCode: bumpCode(code) },
+        // The processor reference the authorizer window shows: the decoy.
+        ...[first.procRef, second.procRef].filter(Boolean).map((ref) => ({ confirmationCode: ref })),
+      ];
+      this.alsoCorrectFields = [
+        fields,
+        { confirmationCode: String(code).toLowerCase() },
+        { confirmationCode: second.code },
+      ];
       this.wrong = ['Payment complete. The confirmation code is AVP-77120468.'];
       this.alsoCorrect = [
         `Order confirmation code: ${code}`,

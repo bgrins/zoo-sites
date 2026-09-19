@@ -546,6 +546,7 @@ export function routes(ctx) {
         // finishing, `completedAt` cannot. The validator grades on this.
         reset.completedAt ??= Date.now();
         found.session.auth = 'full';
+        found.session.consoleOk = false;
         found.session.authedHits = 0;
         return json(res, 200, { ok: true, next: 'carrier.html' });
       }
@@ -553,6 +554,10 @@ export function routes(ctx) {
       const ok = !!account && String(payload.password ?? '') === account.password;
       (found.session.logins ??= []).push({ email, area, ok, at: Date.now() });
       if (!ok) return json(res, 401, { error: 'Invalid email or password.' });
+      // Each sign-in earns its own console access: a reports-area or two-step
+      // sign-in must not inherit consoleOk from an earlier password-only one
+      // in the same session.
+      found.session.consoleOk = false;
       found.session.authedHits = 0;
       found.session.portalUser = email;
       found.session.portalRole = account.role;
@@ -615,8 +620,8 @@ export function routes(ctx) {
       const found = requireSession(req, res);
       if (!found) return;
       // consoleOk is set by the two-step step (ops@) or by a password-only
-      // sign-in, and cleared by sign-out. Reports-area logins get
-      // auth='full' without it, so the console stays closed to them.
+      // sign-in, and cleared by sign-out and by every sign-in. Reports-area
+      // logins get auth='full' without it, so the console stays closed to them.
       if (found.session.auth !== 'full' || !found.session.consoleOk) {
         return json(res, 401, { error: 'sign-in required' });
       }
@@ -654,6 +659,9 @@ export function routes(ctx) {
       found.session.portalActive = false;
       found.session.portalSignedOut = true;
       found.session.portalSignedOutAt = Date.now();
+      // Every sign-out, not only the last: role-panels checks that one fell
+      // between each account switch a session made.
+      (found.session.portalSignOuts ??= []).push(found.session.portalSignedOutAt);
       // Sign-out has to drop the auth flag too. The report route gates on
       // `auth === 'full'` and nothing else, so leaving it set kept serving the
       // report to anything holding the old sid until the count-based expiry at

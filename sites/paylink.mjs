@@ -21,7 +21,7 @@ const PAYLINK_WORDS = [
 ];
 
 function paylinkState(session) {
-  return (session.paylink ??= { intents: {}, order: [], settled: null });
+  return (session.paylink ??= { intents: {}, order: [], settles: [] });
 }
 
 // One payment intent per checkout page LOAD — minted by documents() when
@@ -197,7 +197,9 @@ export function routes(ctx) {
     // The graded record: the merchant page confirms it rendered the code it was
     // handed, for an intent that really was approved. Per-session, so
     // state.reset() clears it, and it is the only paylink fact the validator
-    // trusts — /api/beacon takes an arbitrary kind and would be forgeable.
+    // trusts — /api/beacon takes an arbitrary kind and would be forgeable. One
+    // record per placed order, so a second order in the same session leaves
+    // the first order's code standing.
     if (req.method === 'POST' && pathname0 === '/api/paylink/settle') {
       let payload = null;
       try {
@@ -222,7 +224,7 @@ export function routes(ctx) {
       if (String(payload?.code ?? '') !== intent.code) {
         return json(res, 400, { error: 'That code was not issued for this order.' });
       }
-      pay.settled = {
+      (pay.settles ??= []).push({
         ref: intent.ref,
         code: intent.code,
         word: intent.word,
@@ -237,7 +239,7 @@ export function routes(ctx) {
         secFetchSite: req.headers['sec-fetch-site'] ?? null,
         ua: req.headers['user-agent'] ?? '',
         at: Date.now(),
-      };
+      });
       return json(res, 200, { ok: true });
     }
 
