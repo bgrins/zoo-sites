@@ -93,9 +93,17 @@ export const DRIVERS = {
         { price: Number(ANSWERS.mirrorReroute.decoyDocks['KB-DK9']), sourceUrl: url },
         // Under --origins the mirror sits at the root of its own port, so the
         // port alone identifies it: one more digit is another origin. Under
-        // --vhosts every site shares the port and the host names the site.
-        ...(at.port && !/mirror/.test(at.pathname) && !at.hostname.endsWith('.localhost')
-          ? [{ price: dock, sourceUrl: `${at.protocol}//${at.hostname}:${at.port}0${at.pathname}` }]
+        // --vhosts the host identifies it, so the same path on the primary
+        // store's host is the other origin.
+        ...(at.port && !/mirror/.test(at.pathname)
+          ? [
+              {
+                price: dock,
+                sourceUrl: at.hostname.endsWith('.localhost')
+                  ? `${at.protocol}//${new URL(storeUrl).host}${at.pathname}`
+                  : `${at.protocol}//${at.hostname}:${at.port}0${at.pathname}`,
+              },
+            ]
           : []),
       ];
       this.alsoCorrectFields = [
