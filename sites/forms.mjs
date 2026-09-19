@@ -154,9 +154,9 @@ export function routes(ctx) {
     // T007 form-gauntlet: the steps walked, the field values collected and the
     // review-step reference code all live HERE, on the session. The code is
     // minted from randomBytes: composed in page script as 'MD-' + (4000 + 921)
-    // it would be readable off disk. The generic POST /api/beacon mints an
-    // arbitrary kind from the page nonce alone, so a 'form-progress' beacon
-    // cannot be the interaction gate.
+    // it would be readable off disk. Nothing here rides on POST /api/beacon,
+    // which refuses a 'form-progress' kind and would otherwise mint it from the
+    // page nonce alone.
     if (req.method === 'POST' && pathname0 === '/api/form-step') {
       let payload = await readJson(req, res);
       if (payload === undefined) return;
@@ -239,7 +239,13 @@ export function routes(ctx) {
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
-      const attendees = Array.isArray(payload.attendees) ? payload.attendees : [];
+      // Only the two strings a row carries are kept, so a row that is not an
+      // object (null, a number) is stored as an empty row rather than as
+      // something grading has to guard against.
+      const attendees = (Array.isArray(payload.attendees) ? payload.attendees : []).map((a) => ({
+        name: String(a?.name ?? ''),
+        email: String(a?.email ?? ''),
+      }));
       const roster = (found.session.roster ??= { submits: [], rowsAdded: 0, groupCode: null });
       // How many times "Add attendee" was pressed, for the results row only: the
       // page reports it, so it is telemetry, not evidence.

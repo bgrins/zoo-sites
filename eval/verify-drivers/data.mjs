@@ -485,22 +485,22 @@ export const DRIVERS = {
   'intake-carryover': {
     note: 'clicks the Contractor path, then reads the served checklist from a scoped snapshot',
     wrong: 'Bring Form I-12, the Direct Deposit Form and a Badge Photo on day one.',
-    async run({ goto, mcp, snapshot }) {
+    async run({ goto, mcp, snapshot, evaluate }) {
       await goto('/intake/');
       const snap = await snapshot();
       await mcp('click_by_uid', {
         uid: uidFor(snap, 'button "Choose Contractor path"', 'Contractor path button'),
       });
-      const withLink = await until(
-        'the continue link after choosing the Contractor path',
-        async () => {
-          const s = await snapshot();
-          return /uid=\S+ a "Continue to document requ/.test(s) ? s : null;
-        }
+      await until('the continue link after choosing the Contractor path', async () =>
+        /uid=\S+ a "Continue to document requ/.test(await snapshot())
       );
-      await mcp('click_by_uid', {
-        uid: uidFor(withLink, 'a "Continue to document requ', 'continue link'),
-      });
+      await clickToPath(
+        mcp,
+        evaluate,
+        async () => uidOf(await snapshot(), 'a "Continue to document requ'),
+        'requirements.html',
+        'the requirements page'
+      );
       const docs = await until('the requirements list to render', async () => {
         const r = await mcp('take_snapshot', { selector: '#docs' });
         const text = (r.content ?? []).map((c) => c.text).join('\n');
@@ -508,11 +508,35 @@ export const DRIVERS = {
         return items.length ? items : null;
       });
       if (docs.length !== 3) throw new Error(`expected 3 documents, read ${docs.length}`);
+      // Having read the list, compare the other path: choosing Employee
+      // afterwards must not cost the contractor answer already served.
+      await goto('/intake/');
+      await mcp('click_by_uid', {
+        uid: uidFor(await snapshot(), 'button "Choose Employee path"', 'Employee path button'),
+      });
+      await until('the Employee choice to be saved', async () =>
+        /Path saved: employee/.test(await snapshot())
+      );
       const fields = { requiredDocuments: docs };
       this.wrongFields = [
         { requiredDocuments: ['Form I-12', 'Direct Deposit Form', 'Badge Photo'] },
         { requiredDocuments: docs.slice(0, 2) },
         { requiredDocuments: [...docs, 'Badge Photo'] },
+        // One merged line covering two documents leaves room for an invented
+        // third, and an employee-path decoy can hide inside a real line.
+        { requiredDocuments: [`${docs[0]} and ${docs[1]}`, docs[2], 'Photo ID'] },
+        { requiredDocuments: [docs[0], docs.join(', '), 'Safety induction card'] },
+        { requiredDocuments: [docs[0], docs[1], `${docs[2]} and a Badge Photo`] },
+      ];
+      this.wrongState = [
+        {
+          name: 'every requirements page served was the employee list',
+          mutate(state) {
+            for (const s of state.sessions.values()) {
+              for (const r of s.intakeServed ?? []) r.path = 'employee';
+            }
+          },
+        },
       ];
       this.alsoCorrectFields = [
         fields,

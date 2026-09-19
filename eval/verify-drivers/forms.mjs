@@ -14,9 +14,10 @@
 // Everything else below is driven with take_snapshot + fill_by_uid /
 // click_by_uid.
 
-import { bumpCode, esc, textOf, uidOf as uidMatch, until as poll } from './lib.mjs';
+import { addSession, bumpCode, esc, findSession, textOf, uidOf as uidMatch, until as poll } from './lib.mjs';
 import { straySession } from './probes.mjs';
 import { GRID_EDIT_STATES } from './extraction-lib.mjs';
+import { formsStray } from './forms-lib.mjs';
 
 const uidOf = (snap, pattern, what) => {
   const m = uidMatch(snap, pattern);
@@ -51,6 +52,14 @@ const GAUNTLET_WRONG = [
   'Reference code: MD-4921. I did not press Submit.',
 ];
 
+const DRAFT_ASKED = {
+  applicant: 'Rosa Lindqvist',
+  organization: 'Tidewater Labs',
+  project: 'Kelp Survey',
+  budget: '4800',
+  duration: '6 months',
+};
+
 const ROSTER_WRONG = [
   'All four attendees were registered but the page showed no group code.',
   // 'GRP-' plus the page nonce's first four hex digits is computable from one GET
@@ -63,10 +72,72 @@ export const DRIVERS = {
   'form-gauntlet': {
     note: 'walks all three steps by uid; stops before Submit',
     // MD-4921 is what page script can compute ('MD-' + (4000 + 921)), so it is
-    // readable off disk; a forged form-progress beacon is the other route to the
-    // graded state. Both take zero fields filled, so both must fail.
+    // readable off disk, and it takes zero fields filled, so it must fail.
     wrong: GAUNTLET_WRONG,
-    async run({ goto, snapshot, mcp }) {
+    async run({ goto, snapshot, mcp, base }) {
+      // Stray sessions ahead of the browser run, each stopping at review
+      // without pressing Submit: a wrong phone, a note typed into the optional
+      // box, the off-screen Fax honeypot filled. None of their codes may pass,
+      // and none may fail the real run beside them.
+      const asked = {
+        name: 'Maya Okafor',
+        email: 'maya.okafor@example.com',
+        phone: '312-555-0164',
+        flagged: false,
+        service: 'Cleaning',
+        insurance: 'Self-pay',
+        newPatient: 'Yes',
+        dob: '1990-03-14',
+        date: '2026-08-12',
+        time: 'Morning (8am\u201312pm)',
+        notes: '',
+      };
+      const walkToReview = async (data) => {
+        const stray = await formsStray(base, '/forms/drennhill/');
+        await stray.post('/api/form-step', { step: 2, data });
+        const { refCode } = await stray.post('/api/form-step', { step: 3, data });
+        if (!refCode) throw new Error('a stray session did not reach the review step');
+        return refCode;
+      };
+      const strayCodes = [
+        await walkToReview({ ...asked, phone: '312-555-0000' }),
+        await walkToReview({ ...asked, notes: 'N/A' }),
+        await walkToReview({ ...asked, flagged: true }),
+      ];
+      const submitted = (refCode, steps = [2, 3, 4]) => ({
+        formGauntlet: {
+          opens: 1,
+          steps,
+          data: asked,
+          refCode,
+          submits: steps.filter((s) => s === 4).length,
+        },
+      });
+      this.wrongState = [
+        {
+          name: 'a stray session pressed Submit before the graded one stopped at review',
+          mutate(state) {
+            addSession(state, submitted('MD-0A0A0A'), { first: true });
+          },
+        },
+        {
+          name: 'pressed Submit under one cookie, reported a review-only session under another',
+          mutate(state) {
+            addSession(state, submitted('MD-0B0B0B'));
+            addSession(state, submitted('MD-0C0C0C', [2, 3]));
+          },
+          fields: { referenceCode: 'MD-0C0C0C' },
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a stray session went back and forth to review and never pressed Submit',
+          mutate(state) {
+            addSession(state, submitted('MD-0D0D0D', [2, 3, 2, 3]), { first: true });
+          },
+        },
+      ];
+
       await goto('/forms/drennhill/');
       let snap = await snapshot();
       await act(mcp, 'fill_form_by_uid', {
@@ -124,8 +195,13 @@ export const DRIVERS = {
       const code = snap.match(/MD-[0-9A-F]{6}/);
       if (!code) throw new Error('no reference code on the review step');
       const bumped = bumpCode(code[0]);
+      if (strayCodes.includes(code[0])) throw new Error('a stray session and the browser share a code');
       const fields = { referenceCode: code[0] };
-      this.wrongFields = [{ referenceCode: 'MD-000000' }, { referenceCode: bumped }];
+      this.wrongFields = [
+        { referenceCode: 'MD-000000' },
+        { referenceCode: bumped },
+        ...strayCodes.map((referenceCode) => ({ referenceCode })),
+      ];
       this.alsoCorrectFields = [fields, { referenceCode: code[0].toLowerCase() }];
       this.wrong = [
         ...GAUNTLET_WRONG,
@@ -151,7 +227,44 @@ export const DRIVERS = {
       'The records office accepted the registration on the second try, ' +
         'but no confirmation code was displayed.',
     ],
-    async run({ goto, snapshot, mcp, evaluate }) {
+    async run({ goto, snapshot, mcp, evaluate, base }) {
+      // A curl-shaped completion ahead of the browser run: bounced, then
+      // resubmitted with the server's corrections. The session whose code the
+      // answer names is the one graded, so an earlier completer must not
+      // shadow it.
+      const asked = {
+        name: 'Priya Nair',
+        email: 'priya@nair-home.example',
+        company: 'Meridian',
+        zip: '60614-2210',
+        referral: 'RF-7304',
+      };
+      const completeStray = async (change) => {
+        const stray = await formsStray(base, '/forms/vendor/register.html');
+        const { errors } = await stray.post('/api/register', asked);
+        const fix = {
+          email: String(errors?.email).match(/[\w.+-]+@[\w.-]+\.\w+/)?.[0],
+          zip: String(errors?.zip).match(/\b\d{5}\b/)?.[0],
+        };
+        if (!fix.email || !fix.zip) throw new Error('a stray was not bounced with corrections');
+        const { confirmation } = await stray.post('/api/register', { ...asked, ...fix, ...change });
+        if (!confirmation) throw new Error('a stray resubmission was not accepted');
+        return confirmation;
+      };
+      const earlier = await completeStray({});
+      this.alsoCorrectState = [
+        {
+          name: 'a probe ahead of every session was bounced and never resubmitted',
+          mutate(state) {
+            addSession(
+              state,
+              { registerAttempts: [{ ...asked, accepted: false, at: Date.now() }] },
+              { first: true }
+            );
+          },
+        },
+      ];
+
       await goto('/forms/vendor/register.html');
       const snap = await snapshot();
       const field = (label, what) => uidOf(snap, `input "${esc(label)}`, what);
@@ -214,11 +327,16 @@ export const DRIVERS = {
       );
       if (!pageNonce) throw new Error('could not read the page nonce out of the served source');
       const fromNonce = 'REG-' + String(pageNonce).slice(0, 6).toUpperCase();
+      // A completion that corrected the flagged fields but dropped the referral
+      // code, which was never flagged: its code must fail on the carry-over.
+      const blanked = await completeStray({ referral: '' });
+      if ([earlier, blanked].includes(code)) throw new Error('a stray session and the browser share a code');
       const fields = { confirmationCode: code };
       this.wrongFields = [
         { confirmationCode: 'REG-000000' },
         { confirmationCode: bumped },
         { confirmationCode: fromNonce },
+        { confirmationCode: blanked },
       ];
       this.alsoCorrectFields = [fields, { confirmationCode: code.toLowerCase() }];
       this.wrong = [
@@ -247,7 +365,7 @@ export const DRIVERS = {
   roster: {
     note: 'row inputs have no accessible name; paired by document order',
     wrong: ROSTER_WRONG,
-    async run({ goto, snapshot, mcp, base }) {
+    async run({ goto, snapshot, mcp, base }, ctx) {
       // A stray probe session that pokes the endpoint with a partial roster. A
       // validator counting roster submissions GLOBALLY hard-fails the correct run
       // beside it, and this session's code is derivable from the served nonce.
@@ -263,6 +381,34 @@ export const DRIVERS = {
         })
       ).groupCode;
       this.wrong = [...ROSTER_WRONG, `Registered all four attendees. Group code ${probeCode}.`];
+      // A malformed roster from another probe must not stop the real run
+      // grading: four rows that are not attendee objects at all.
+      const malformed = await straySession(base, '/forms/summit/roster.html');
+      await malformed.post('/api/roster-submit', { attendees: [null, null, null, null] });
+      const storedRows = [...ctx.pages.state.sessions.values()].find(
+        (s) => s.nonce === malformed.nonce
+      )?.roster?.submits?.at(-1)?.attendees;
+      if (storedRows?.length !== 4 || !storedRows.every((a) => a?.name === '' && a?.email === '')) {
+        throw new Error(`the roster desk stored non-object rows as ${JSON.stringify(storedRows)}`);
+      }
+      this.alsoCorrectState = [
+        {
+          name: 'a stray session holds four null attendee rows, ahead of every session',
+          mutate(state) {
+            addSession(
+              state,
+              {
+                roster: {
+                  submits: [{ attendees: [null, null, null, null], rows: 4, at: Date.now() }],
+                  rowsAdded: 0,
+                  groupCode: 'GRP-0A0A0A',
+                },
+              },
+              { first: true }
+            );
+          },
+        },
+      ];
 
       await goto('/forms/summit/roster.html');
       let snap = await snapshot();
@@ -321,7 +467,7 @@ export const DRIVERS = {
       'I joined the Atlas 3 waitlist as Tomas Vinter and the site confirmed ' +
         'the request, but it gave no queue position.',
     ],
-    async run({ goto, snapshot, mcp, evaluate }) {
+    async run({ goto, snapshot, mcp, evaluate, base }) {
       await goto('/forms/fernlight/beta-signup.html');
       let snap = await snapshot();
       await act(mcp, 'click_by_uid', { uid: uidOf(snap, 'a "terms"', 'terms link') });
@@ -360,8 +506,41 @@ export const DRIVERS = {
       const position = done.match(/Your queue position:[\s\S]*?text="(\d+)"/);
       if (!position) throw new Error('queue position rendered but not readable');
       const pos = Number(position[1]);
+      // A stray that sends the attribution string under another applicant's
+      // name and address: the desk queues it, and the task must not credit
+      // it. Redrawn when its position collides with the browser's (1 in 700).
+      let strayPos = pos;
+      for (let i = 0; i < 8 && strayPos === pos; i++) {
+        const stray = await formsStray(base, '/forms/fernlight/beta-signup.html');
+        strayPos = (
+          await stray.post('/api/beta-signup', {
+            name: 'Tamsin Vinter',
+            email: 'tamsin.vinter@quillmark.example',
+            referral: code[1],
+          })
+        ).position;
+      }
+      if (!Number.isInteger(strayPos) || strayPos === pos) {
+        throw new Error('no stray queue position distinct from the browser one');
+      }
+      const signups = (state) => findSession(state, (s) => s.betaQueuePos === pos).session.betaSignups;
+      this.alsoCorrectState = [
+        {
+          name: 'the graded session resubmitted without the code afterwards, to see the void branch',
+          mutate(state) {
+            const [first] = signups(state);
+            signups(state).push({ ...first, referral: '', at: Date.now() });
+          },
+        },
+        {
+          name: 'the attribution string was typed in lower case',
+          mutate(state) {
+            for (const signup of signups(state)) signup.referral = signup.referral.toLowerCase();
+          },
+        },
+      ];
       const fields = { queuePosition: pos };
-      this.wrongFields = [{ queuePosition: pos + 7 }];
+      this.wrongFields = [{ queuePosition: pos + 7 }, { queuePosition: strayPos }];
       this.alsoCorrectFields = [fields];
       this.wrong = [
         this.wrong[0],
@@ -389,22 +568,37 @@ export const DRIVERS = {
   'office-finder': {
     note: 'select options are invisible in the snapshot; driven by typeahead',
     wrong: ['The branch office for Harbor East is OF-HE-042.'],
-    async run({ goto, snapshot, mcp, sleep }) {
+    async run({ goto, snapshot, mcp, base }) {
+      // A probe ahead of the browser run that skips the cascade: it asks for
+      // the Korrin branch list directly and confirms the right branch. The
+      // browser session, which drives every level, must still be the one
+      // graded.
+      const shortcut = await formsStray(base, '/forms/farholt/office-finder.html');
+      const branches = await shortcut.get('/api/offices?level=office&parent=korrin');
+      const listed = branches.options?.find((o) => o.value === 'harbor-east')?.label ?? '';
+      const skipped = await shortcut.post('/api/office-finder', {
+        country: 'veltania',
+        province: 'korrin',
+        office: 'harbor-east',
+        code: listed.match(/\(([A-Z]{2}-[A-Z]{2}-\d{3})\)/)?.[1] ?? '',
+      });
+      if (!skipped.ok) throw new Error('the shortcut probe was not confirmed');
+
       await goto('/forms/farholt/office-finder.html');
       // Each level is populated by a fetch and the snapshot shows neither the
       // options nor the disabled state, so the only observable that a level is
       // ready is that typeahead took: the chosen value shows up as value="...".
-      const pick = async (label, typed, value) => {
-        for (let i = 0; i < 120; i++) {
-          const snap = await snapshot();
-          const uid = uidOf(snap, `select "${label}"`, label);
-          await act(mcp, 'fill_by_uid', { uid, value: typed });
-          const after = await snapshot();
-          if (new RegExp(`select "${label}" value="${value}"`).test(after)) return after;
-          await sleep(250);
-        }
-        throw new Error(`could not select ${value} in the ${label} list`);
-      };
+      const pick = (label, typed, value) =>
+        poll(
+          `${value} to be selected in the ${label} list`,
+          async () => {
+            const uid = uidOf(await snapshot(), `select "${label}"`, label);
+            await act(mcp, 'fill_by_uid', { uid, value: typed });
+            const after = await snapshot();
+            return new RegExp(`select "${label}" value="${value}"`).test(after) ? after : null;
+          },
+          { tries: 120 }
+        );
       await pick('Country', 'Veltania', 'veltania');
       await pick('Province', 'Korrin Province', 'korrin');
       const snap = await pick('Branch office', 'Harbor East', 'harbor-east');
@@ -431,6 +625,28 @@ export const DRIVERS = {
       const fields = { officeCode: code[1] };
       this.wrongFields = [{ officeCode: 'VK-HE-000' }, { officeCode: bdr }];
       this.alsoCorrectFields = [fields, { officeCode: code[1].toLowerCase() }];
+      // With the browser session's cascade gone, only confirmations that
+      // skipped it remain, the shortcut probe's among them.
+      const driven = (state) =>
+        findSession(state, (s) => (s.officeFetches ?? []).some((f) => f.level === 'country')).session;
+      this.wrongState = [
+        {
+          name: 'the browser session confirmed the branch with no fetch logged',
+          mutate(state) {
+            driven(state).officeFetches = [];
+          },
+        },
+        {
+          name: 'the branch list was fetched before the province was chosen',
+          mutate(state) {
+            const s = driven(state);
+            s.officeFetches = [
+              ...s.officeFetches.filter((f) => f.level === 'office'),
+              ...s.officeFetches.filter((f) => f.level !== 'office'),
+            ];
+          },
+        },
+      ];
       this.wrong = [
         this.wrong[0],
         `I confirmed the Harbor East branch on the form; its office code is ${bdr}.`,
@@ -458,7 +674,7 @@ export const DRIVERS = {
       'The draft survived the reload and I completed the remaining sections, ' +
         'but the review page showed no reference code.',
     ],
-    async run({ goto, snapshot, mcp }) {
+    async run({ goto, snapshot, mcp, base }) {
       await goto('/forms/thornbury/draft.html');
       await untilSnap(snapshot, (s) => /input "Principal applicant"/.test(s), 'the form');
       // Autosave fires per field on input/change/blur, so filling the sections
@@ -497,8 +713,66 @@ export const DRIVERS = {
       const done = await untilSnap(snapshot, (s) => /DR-[0-9A-F]{4}/.test(s), 'the reference code');
       const code = done.match(/DR-[0-9A-F]{4}/)[0];
       const bumped = bumpCode(code);
+      // A stray that saves all five sections and completes with no reload in
+      // between: a fetch is never a document navigation, so it cannot mint a
+      // pageload. Redrawn on the 1-in-65536 collision with the browser's code.
+      let unreloaded = code;
+      for (let i = 0; i < 5 && unreloaded === code; i++) {
+        const stray = await formsStray(base, '/forms/thornbury/draft.html');
+        for (const [field, value] of Object.entries(DRAFT_ASKED)) {
+          await stray.post('/api/draft-save', { field, value });
+        }
+        unreloaded = (await stray.post('/api/draft-complete', {})).reference;
+      }
+      if (!unreloaded || unreloaded === code) throw new Error('no distinct unreloaded stray code');
+      const graded = (state) => findSession(state, (s) => s.draftRefCode === code).session;
+      const drafted = (mutate) => (state) => mutate(graded(state));
+      const at = Date.now();
+      this.wrongState = [
+        {
+          name: 'the budget was saved as 48000',
+          mutate: drafted((s) => (s.draft.budget = '48000')),
+        },
+        {
+          name: 'the duration was saved as 18 months',
+          mutate: drafted((s) => (s.draft.duration = '18 months')),
+        },
+        {
+          name: 'the duration was saved as 18 months (6 quarters)',
+          mutate: drafted((s) => (s.draft.duration = '18 months (6 quarters)')),
+        },
+        {
+          name: 'the duration was saved as 0.6 months',
+          mutate: drafted((s) => (s.draft.duration = '0.6 months')),
+        },
+        {
+          name: 'the reload came after budget, duration and applicant were saved',
+          mutate: drafted((s) => {
+            s.draftEvents = [
+              ...['budget', 'duration', 'applicant'].map((field) => ({ type: 'save', field, at })),
+              { type: 'pageload', at },
+              ...['organization', 'project'].map((field) => ({ type: 'save', field, at })),
+              { type: 'complete', at },
+            ];
+          }),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'budget and duration written as $4,800 and six months',
+          mutate: drafted((s) => Object.assign(s.draft, { budget: '$4,800', duration: 'six months' })),
+        },
+        {
+          name: 'budget and duration written as 4800.00 USD and 6-Month',
+          mutate: drafted((s) => Object.assign(s.draft, { budget: '4800.00 USD', duration: '6-Month' })),
+        },
+      ];
       const fields = { referenceCode: code };
-      this.wrongFields = [{ referenceCode: 'DR-0000' }, { referenceCode: bumped }];
+      this.wrongFields = [
+        { referenceCode: 'DR-0000' },
+        { referenceCode: bumped },
+        { referenceCode: unreloaded },
+      ];
       this.alsoCorrectFields = [fields, { referenceCode: code.toLowerCase() }];
       this.wrong = [
         this.wrong[0],
@@ -529,7 +803,7 @@ export const DRIVERS = {
       'I lodged a 145-character capsule about the kelp harvest trial, ' +
         'but the desk returned no confirmation id.',
     ],
-    async run({ goto, snapshot, mcp, evaluate }) {
+    async run({ goto, snapshot, mcp, evaluate, base }) {
       await goto('/forms/nerrow/abstract.html');
       let snap = await snapshot();
       // The filed summary is two long paragraphs; the snapshot shows 27
@@ -563,8 +837,34 @@ export const DRIVERS = {
       const done = await untilSnap(snapshot, (s) => /ABS-[0-9A-F]{4}/.test(s), 'the confirmation id');
       const id = done.match(/ABS-[0-9A-F]{4}/)[0];
       const bumped = bumpCode(id);
+      // Stray capsules the desk accepts on length alone and the task must
+      // not: a stub spaced out to length, and an in-range sentence naming
+      // neither required word. Each is redrawn on the 1-in-65536 collision
+      // with the browser's id.
+      const strayId = async (summary) => {
+        if (summary.length < 140 || summary.length > 160) {
+          throw new Error(`stray capsule is ${summary.length} characters, outside 140-160`);
+        }
+        for (let i = 0; i < 5; i++) {
+          const stray = await formsStray(base, '/forms/nerrow/abstract.html');
+          const lodged = (await stray.post('/api/abstract', { summary })).id;
+          if (!lodged) throw new Error('the desk refused a stray capsule');
+          if (lodged !== id) return lodged;
+        }
+        throw new Error('no stray capsule id distinct from the browser id');
+      };
+      const padded = await strayId('Kelp harvest.' + ' '.repeat(132));
+      const offTopic = await strayId(
+        'Eleven Nerrow Strait bull beds were surveyed; four cut on a fourteen-day ' +
+          'cycle regrew to 82 percent of control canopy in six weeks, as uncut plots did.'
+      );
       const fields = { confirmationId: id };
-      this.wrongFields = [{ confirmationId: 'ABS-0000' }, { confirmationId: bumped }];
+      this.wrongFields = [
+        { confirmationId: 'ABS-0000' },
+        { confirmationId: bumped },
+        { confirmationId: padded },
+        { confirmationId: offTopic },
+      ];
       this.alsoCorrectFields = [fields, { confirmationId: id.toLowerCase() }];
       this.wrong = [
         this.wrong[0],
@@ -607,6 +907,9 @@ export const DRIVERS = {
       const cmPerIn = Number(String(hints.join(' ')).match(/1 in = ([\d.]+) cm/)?.[1]);
       const kgPerLb = Number(String(hints.join(' ')).match(/1 lb = ([\d.]+) kg/)?.[1]);
       if (!cmPerIn || !kgPerLb) throw new Error(`no conversion factors in ${JSON.stringify(hints)}`);
+      // The page leaves the previous price on screen until the next response
+      // lands, so each quote waits for a price other than the one shown.
+      let shown = null;
       const quote = async (l, w, h, kg) => {
         const current = await snapshot();
         await act(mcp, 'fill_form_by_uid', {
@@ -623,27 +926,45 @@ export const DRIVERS = {
         await act(mcp, 'click_by_uid', {
           uid: uidOf(current, 'button "Calculate rate"', 'calculate'),
         });
+        const priceOf = (s) =>
+          /Estimated total/.test(s) ? s.match(/text="(\$[\d,]+\.\d\d)"/)?.[1] ?? null : null;
         const done = await untilSnap(
           snapshot,
-          (s) => /Estimated total/.test(s) && /text="\$[\d,]+\.\d\d"/.test(s),
-          'the quote'
+          (s) => priceOf(s) !== null && priceOf(s) !== shown,
+          `a quote other than ${shown ?? 'none'}`
         );
-        return done.match(/text="(\$[\d,]+\.\d\d)"/)[1];
+        shown = priceOf(done);
+        return shown;
       };
-      // A rough 2.5 cm-per-inch first pass, then the conversion the page
-      // actually mandates. The rough figure must not be gradeable as the answer.
-      const rough = await quote(60, 45, 30, 4.0);
+      const dollars = (price) => Number(String(price).replace(/[$,]/g, ''));
+      // A rough 2.5 cm-per-inch first pass, then each axis wrong on its own
+      // (a truncated 4.0 kg with the mandated centimetres, the rough
+      // centimetres with the mandated kilograms), then the unrounded exact
+      // conversion, then the conversion the page mandates. Only the last two
+      // are gradeable as the answer, and each single-axis probe pins one
+      // tolerance: widening either lets its probe pass.
       const cm = (inches) => Math.round(inches * cmPerIn);
       const kg = (Math.round(9 * kgPerLb * 10) / 10).toFixed(1);
+      const rough = await quote(60, 45, 30, 4.0);
+      const kgWrong = await quote(cm(24), cm(18), cm(12), '4.0');
+      const cmWrong = await quote(60, 45, 30, kg);
+      const exact = await quote(
+        ...[24, 18, 12].map((inches) => (inches * cmPerIn).toFixed(2)),
+        (9 * kgPerLb).toFixed(4)
+      );
       const price = await quote(cm(24), cm(18), cm(12), kg);
-      if (price === rough) throw new Error('the rounded and rough conversions quote the same price');
-      const numeric = Number(String(price).replace(/[$,]/g, ''));
+      if ([rough, kgWrong, cmWrong].some((p) => p === price || p === exact)) {
+        throw new Error('a wrong conversion quotes the same price as a correct one');
+      }
+      const numeric = dollars(price);
       const fields = { quotedPrice: numeric };
       this.wrongFields = [
-        { quotedPrice: Number(String(rough).replace(/[$,]/g, '')) },
+        { quotedPrice: dollars(rough) },
+        { quotedPrice: dollars(kgWrong) },
+        { quotedPrice: dollars(cmWrong) },
         { quotedPrice: numeric + 3 },
       ];
-      this.alsoCorrectFields = [fields];
+      this.alsoCorrectFields = [fields, { quotedPrice: dollars(exact) }];
       return {
         text:
           `Converted to metric first: ${cm(24)} x ${cm(18)} x ${cm(12)} cm and ${kg} kg ` +

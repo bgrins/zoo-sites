@@ -201,7 +201,7 @@ export const ANSWERS = {
   // pages/forms/thornbury/draft.html — the reference code is server-issued per session
   // (POST /api/draft-complete mints it from randomBytes), so there is no
   // static ground truth; the validator reads it out of the session. These are
-  // the values the ask dictates, used only for the validator's detail line.
+  // the values the ask dictates, graded against what each section stored.
   draftResume: {
     fields: {
       applicant: 'Rosa Lindqvist',
@@ -1154,7 +1154,7 @@ export const ANSWERS = {
     rawMeter: 'gw 0042117 b',
     meter: 'GW-0042117-B',
     format: 'GW-0000000-X',
-    occupantKey: 'whitlock',
+    occupant: 'Dana Whitlock',
     refPattern: 'TR-<6 uppercase hex>',
   },
 

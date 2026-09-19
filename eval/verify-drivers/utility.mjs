@@ -38,6 +38,16 @@ export const DRIVERS = {
         occupant: 'M. Ordway',
       });
       if (!rivalOut.reference) throw new Error('rival transfer was not accepted');
+      // (3) Transfers to near-miss occupants, which must not pass for Dana
+      // Whitlock, and one naming her surname-first, which must.
+      const transferTo = async (occupant) => {
+        const s = await straySession(base, '/utility/transfer.html');
+        const out = await s.post('/api/utility/transfer', { meterId: 'GW-0042117-B', occupant });
+        if (!out.reference) throw new Error(`a transfer to ${occupant} was not accepted`);
+        return out.reference;
+      };
+      const nearMisses = [await transferTo('Mark Whitlock'), await transferTo('Dana Whitlocke')];
+      const surnameFirst = await transferTo('Whitlock, Dana');
 
       await goto('/utility/transfer.html');
       const snap = await snapshot();
@@ -94,7 +104,9 @@ export const DRIVERS = {
       if (!confirmSnap.includes(norm)) {
         throw new Error('the standardised meter id never reached the snapshot');
       }
-      if (ref === rivalOut.reference) throw new Error('rival reference collided');
+      if ([rivalOut.reference, ...nearMisses, surnameFirst].includes(ref)) {
+        throw new Error('a stray reference collided with the browser one');
+      }
       const bumped = bumpCode(ref);
       const fields = { transferReference: ref, normalizedMeterId: norm };
       this.wrong = [
@@ -110,9 +122,11 @@ export const DRIVERS = {
         { transferReference: ref, normalizedMeterId: 'GW-0042118-B' },
         { transferReference: ref, normalizedMeterId: null },
         { transferReference: null, normalizedMeterId: norm },
+        ...nearMisses.map((transferReference) => ({ transferReference, normalizedMeterId: norm })),
       ];
       this.alsoCorrectFields = [
         fields,
+        { transferReference: surnameFirst, normalizedMeterId: norm },
         { transferReference: ref.toLowerCase(), normalizedMeterId: norm.toLowerCase() },
         // Punctuation-adjacent renderings of the recorded value that the
         // quote-gated extractor plausibly emits; the raw dashless form stays
