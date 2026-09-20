@@ -60,6 +60,7 @@ import { startPagesServer } from '../server.mjs';
 import { ORIGINS, originUrls } from '../manifest.mjs';
 import { conforms, enforceQuotes, extractFields, normalise } from './extract.mjs';
 import { DRIVERS, DRIVER_FILES } from './verify-drivers/index.mjs';
+import { makeHelpers, pagesRouting } from './verify-drivers/helpers.mjs';
 import { addSession, textOf } from './verify-drivers/lib.mjs';
 import { gradedValues, mintedValues, reachOf } from './surface-reach.mjs';
 import { checkFixtures } from '../scripts/check-fixtures.mjs';
@@ -307,22 +308,6 @@ async function makeWorker(grid, slot) {
     throw new Error('--vhosts needs a server.mjs whose startPagesServer supports { vhosts: true }');
   }
   const origins = ORIGIN_MODE || VHOSTS ? originUrls(pages.url, pages.origins) : undefined;
-  // Drivers name single-origin paths (/paylink/checkout.html). In origin and
-  // vhost mode the site owning the longest matching dir prefix serves the rest
-  // of the path at its own root, so shop/gadgetron-mirror never lands on
-  // shop/gadgetron. A path no site owns (/, /api/...) stays on the
-  // single-origin listener, 127.0.0.1 in vhost mode too.
-  // Only goto maps: helpers.base stays that listener, so an answer a driver
-  // builds from base or a prefixed path grades the single-origin answer.
-  const byDir = [...pages.origins].sort((a, b) => b.dir.length - a.dir.length);
-  const urlFor = (path) => {
-    const owner = byDir.find(
-      (o) => path.startsWith(`/${o.dir}`) && /^([/?#]|$)/.test(path.slice(o.dir.length + 1))
-    );
-    if (!owner) return pages.url + path;
-    const rest = path.slice(owner.dir.length + 1);
-    return owner.url + (rest.startsWith('/') ? rest : `/${rest}`);
-  };
   // Headed workers each launch into a seeded profile so their windows tile
   // instead of stacking; the browser owns the dir, so it outlives no run. A
   // download lands in the worker's dir too, never in the operator's ~/Downloads.
@@ -373,39 +358,7 @@ async function makeWorker(grid, slot) {
       call.ms = performance.now() - started;
     }
   };
-  // Most drivers only need to navigate and read/poke the page; uid-based tools
-  // are available too, and using them is what makes this a real dogfood of the
-  // surface.
-  const helpers = {
-    mcp,
-    base: pages.url,
-    goto: (path) => mcp('navigate_page', { url: urlFor(path) }),
-    evaluate: async (fn, fnArgs) => {
-      const r = await mcp('evaluate_script', { function: String(fn), args: fnArgs });
-      const text = (r.content ?? []).map((c) => c.text).join('\n');
-      const m = text.match(/```json\n([\s\S]*?)\n```/);
-      if (!m) return text;
-      // A function with no return value comes back as the literal `undefined`,
-      // which is not JSON; treat any unparseable payload as raw text.
-      try {
-        return JSON.parse(m[1]);
-      } catch {
-        return m[1] === 'undefined' ? undefined : m[1];
-      }
-    },
-    snapshot: async () => {
-      const r = await mcp('take_snapshot', {});
-      return (r.content ?? []).map((c) => c.text).join('\n');
-    },
-    sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
-    // Stamp a named point inside the running task's profile span, e.g.
-    // `await mark('scrolled-to-batch-8')`. runOne sets taskId, so a label only
-    // has to be unique within its own driver. Costs nothing and reaches nothing
-    // without --profile, so a driver may call it freely.
-    mark: (label) => mark(helpers, `zoo:${helpers.taskId}:${label}`),
-    taskId: null,
-    phase: 'harness',
-  };
+  const helpers = makeHelpers({ mcp, pages, mark });
   // Settle the browser onto a real content process before the first task, so
   // that task's boundary marks are comparable with each other. Without it the
   // opening mark lands in the startup process, whose clock does not line up
@@ -440,19 +393,7 @@ async function makeWorker(grid, slot) {
     clearTimeout(timer);
     return ok;
   };
-  // A URL this worker serves as the single-origin path it maps to
-  // (/registrar/index.html), whichever serving mode served it, or null.
-  const pathOf = (url) => {
-    let parsed;
-    try {
-      parsed = new URL(url);
-    } catch {
-      return null;
-    }
-    const owner = byDir.find((o) => url === o.url || url.startsWith(`${o.url}/`));
-    if (owner) return `/${owner.dir}${parsed.pathname}`;
-    return url.startsWith(pages.url) ? parsed.pathname : null;
-  };
+  const { pathOf } = pagesRouting(pages);
   return { pages, helpers, tasks, close, calls, healthy, pathOf, slot, listTools: server.listTools };
 }
 
@@ -1289,7 +1230,7 @@ async function runOne(worker, id) {
 const AFFECTS_NONE =
   /^(?:docs\/|staging\/|docker\/|\.github\/|eval\/(?:results|spikes|scripts|backends)\/|scripts\/|eval\/(?:run|report|ab|agent-env|run-files)\.mjs$|eval\/tasks\/(?:areas\.json|basic\.mjs)$|eval\/verify-drivers\/timings\.json$|serve\.mjs$|preview\.html$|LICENSE$|NOTICE$)|\.md$/;
 const AFFECTS_ALL =
-  /^(?:eval\/(?:verify|extract|answers|surface-reach|mcp-stdio|window-grid)\.mjs|eval\/tasks\/web\.mjs|eval\/verify-drivers\/index\.mjs|server\.mjs|manifest\.mjs|package(?:-lock)?\.json|sites\/(?:index|lib)\.mjs)$/;
+  /^(?:eval\/(?:verify|extract|answers|surface-reach|mcp-stdio|window-grid)\.mjs|eval\/tasks\/web\.mjs|eval\/verify-drivers\/(?:index|helpers)\.mjs|server\.mjs|manifest\.mjs|package(?:-lock)?\.json|sites\/(?:index|lib)\.mjs)$/;
 
 function changedFiles(list) {
   if (list) {

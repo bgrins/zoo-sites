@@ -69,6 +69,31 @@ node eval/scripts/history.mjs add <run-dir>        # file the run in results/ind
 node eval/scripts/judge.mjs <run-dir> --dry-run    # the transcript judge's prompts; --paid calls it
 ```
 
+`--backend scripted` runs `run.mjs` without an agent and costs nothing. Each attempt's
+answer comes from the task's golden-path driver, which drives the condition's own server
+through the tap and hands its fields straight to the validator, so no extractor runs
+(the row records `extraction.extractor: 'backend'`). The backend streams every call as
+Agent SDK messages, so `transcript.mjs`, `tool-stats.mjs`, triage and the A/B report
+read its rows like an agent's. Its usage is a stand-in: no input tokens, cost 0, and
+output tokens a quarter of the answer's characters. Two labels on one build tie on that
+figure when the task's answer has a fixed length under a seed, and can differ by a token
+when the task mints its values with randomBytes (mirror-reroute, silent-throw).
+`--model wrong-fields` drives the same path but answers with the driver's first
+`wrongFields`, so every row it produces has to fail. The backend runs only tasks with a
+driver, which leaves out the default basic suite, and only `firefox-devtools-mcp`
+conditions, which leaves out the default `playwright-mcp` one, so a run names both:
+`node eval/run.mjs --backend scripted --conditions firefox-devtools-mcp --suite web`.
+A top-up of a scripted run has to name `--backend scripted` and its conditions again:
+`--rerun-failed` alone would run the default paid agent, so `run.mjs` refuses it.
+`run.mjs` also refuses `scripted` next to an agent backend, because report.md would
+count the scripted rows as the agent rows' extractor calls, and it refuses any argument
+it does not know, so a typo such as `--backend=scripted` cannot fall through to the paid
+default. CI runs a five-task sweep through the backend whenever the gate passes: two
+labels on one build under `--interleave`, then `--report-from --ab`, `tool-stats.mjs`,
+`--rerun-failed` and a `wrong-fields` control (`.github/workflows/gate.yml`). It checks
+each row's streamed snapshots against the tap, its surface reach, and that a driver's
+goto lands on the owning origin.
+
 **`run.mjs` hands an agent a shell.** Each attempt gets a fresh temporary directory and
 an allowlisted environment (`agent-env.mjs`) that still carries the backend's own API
 credentials. On the Anthropic backend the agent runs with permission prompts disabled

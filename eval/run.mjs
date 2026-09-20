@@ -85,6 +85,20 @@ function usage(message) {
 }
 
 const args = process.argv.slice(2);
+// Each flag below looks up its own name, so an argument none of them names (a
+// typo, --backend=scripted, several flags in one quoted string) would be
+// ignored and leave the run on its paid defaults. A new flag goes in one of these.
+const VALUE_FLAGS = new Set([
+  'ab', 'backend', 'compare', 'conditions', 'control', 'devtools-build', 'effort', 'max-output', 'max-wall',
+  'mcp-command', 'mode', 'model', 'parallel-tasks', 'repeat', 'report-from', 'rerun-failed', 'retries', 'screen',
+  'seed', 'suite', 'task',
+]);
+const SWITCHES = new Set(['headed', 'help', 'interleave', 'list-tasks', 'no-tap', 'parallel', 'single-origin', 'vhosts']);
+for (let i = 0; i < args.length; i++) {
+  const name = args[i].startsWith('--') ? args[i].slice(2) : null;
+  if (VALUE_FLAGS.has(name)) i++;
+  else if (!SWITCHES.has(name) && args[i] !== 'help') usage(`unknown argument "${args[i]}" (see --help)`);
+}
 // --mode key=value (repeatable): default server modes for every pages server
 // in the run, e.g. --mode forgeDefect=cache-key --mode auctionDraw=decline to
 // pin per-session draws for comparable repeats.
@@ -131,11 +145,14 @@ const numberFlag = (name, fallback, ok, want) => {
   if (raw.trim() === '' || !ok(n)) usage(`--${name} must be ${want}, got "${raw}"`);
   return n;
 };
-const KNOWN_BACKENDS = ['anthropic', 'codex'];
+// 'all' means every agent backend; scripted runs no agent, so only naming it
+// selects it.
+const AGENT_BACKENDS = ['anthropic', 'codex'];
+const KNOWN_BACKENDS = [...AGENT_BACKENDS, 'scripted'];
 const BACKEND_ARG = flag('backend', args.includes('--compare') && flag('compare', null) === 'backends' ? 'all' : 'anthropic');
 const BACKEND_NAMES =
   BACKEND_ARG === 'all'
-    ? KNOWN_BACKENDS
+    ? AGENT_BACKENDS
     : BACKEND_ARG.split(',').map((s) => s.trim()).filter(Boolean);
 if (!BACKEND_NAMES.length) usage(`--backend names no backend (known: ${KNOWN_BACKENDS.join(', ')}, or all)`);
 for (const name of BACKEND_NAMES) {
@@ -143,13 +160,22 @@ for (const name of BACKEND_NAMES) {
     usage(`unknown backend "${name}" (known: ${KNOWN_BACKENDS.join(', ')}, or all)`);
   }
 }
+// report.md names one extractor per run and counts every row with an
+// extraction, so scripted rows would pass as the agent rows' extractor calls.
+if (BACKEND_NAMES.includes('scripted') && BACKEND_NAMES.length > 1) {
+  usage('--backend scripted runs no agent, so it cannot share a run with an agent backend');
+}
 const BACKENDS = Object.fromEntries(
   await Promise.all(
     BACKEND_NAMES.map(async (name) => [name, await import(`./backends/${name}.mjs`)])
   )
 );
 // The package each backend drives, for the run's recorded versions.
-const SDK_PACKAGES = { anthropic: '@anthropic-ai/claude-agent-sdk', codex: '@openai/codex-sdk' };
+const SDK_PACKAGES = {
+  anthropic: '@anthropic-ai/claude-agent-sdk',
+  codex: '@openai/codex-sdk',
+  scripted: '@modelcontextprotocol/sdk',
+};
 // --model takes either a bare id, which pins the run's single backend, or
 // <backend>=<id> (repeatable) to pin one model per backend, e.g.
 //   --model codex=gpt-5.6-luna --model anthropic=claude-sonnet-5
@@ -191,6 +217,15 @@ if (MODEL_ALL && BACKEND_NAMES.length > 1) {
   );
 }
 const modelFor = (name) => MODEL_BY_BACKEND[name] ?? MODEL_ALL ?? BACKENDS[name].DEFAULT_MODEL;
+for (const name of BACKEND_NAMES) {
+  const models = BACKENDS[name].MODELS;
+  if (models && !models.includes(modelFor(name))) {
+    usage(`--model ${modelFor(name)} is not a model ${name} has (${models.join(', ')})`);
+  }
+}
+// A backend with OWN_FIELDS answers with fields of its own (scripted), so a run
+// of only such backends never calls the extractor.
+const EXTRACTOR_USED = !BACKEND_NAMES.every((name) => BACKENDS[name].OWN_FIELDS);
 // Pin reasoning effort symmetrically across backends (Agent SDK `effort`,
 // codex `model_reasoning_effort`); 'default' leaves each backend's own default.
 // The backends accept different ladders, so a level must suit every backend in
@@ -225,6 +260,15 @@ if (RERUN_FAILED) {
     usage(`--rerun-failed: cannot read ${priorPath}: ${error.message}`);
   }
   const priorMeta = prior.meta ?? {};
+  // The default backend is a paid agent, so a free scripted run is never
+  // topped up on it by omission.
+  if (priorMeta.backend?.split(',').includes('scripted') && !args.includes('--backend')) {
+    usage(
+      `--rerun-failed: ${RERUN_FAILED} ran on the scripted backend, and without --backend ` +
+        'its top-up would run on anthropic. Pass --backend scripted and its conditions ' +
+        `(${priorMeta.conditions}), or name the backend to pay for.`
+    );
+  }
   RERUN_SUITE = priorMeta.suite ?? null;
   // A run that records no serving mode predates per-origin serving.
   RERUN_SERVING = priorMeta.serving ?? 'single-origin';
@@ -437,6 +481,13 @@ Conditions and models:
                           low|medium|high|xhigh|max, codex minimal|low|medium|
                           high|xhigh; a level must suit every backend in the run
   --backend <names>       anthropic (default), codex, comma list, or 'all'
+                          (both agents). 'scripted' runs no agent and costs
+                          nothing: each task's golden-path driver
+                          (verify-drivers/) answers through the condition's
+                          server, firefox-devtools-mcp conditions only, and
+                          its fields are graded without the extractor. Its
+                          --model wrong-fields answers with the driver's
+                          wrongFields, so every row has to FAIL
   --headed                visible Firefox windows, tiled into a screen-sized
                           grid (one cell per browser; wraps with a cascade
                           offset past capacity)
@@ -606,6 +657,12 @@ for (const c of CONDITIONS) {
   }
 }
 if (new Set(CONDITIONS).size !== CONDITIONS.length) usage('--conditions names a condition twice');
+for (const name of BACKEND_NAMES) {
+  const unsupported = CONDITIONS.filter((c) => BACKENDS[name].supportsCondition?.(c) === false);
+  if (unsupported.length) {
+    usage(`backend ${name} cannot run ${unsupported.join(', ')}; pick conditions with --conditions`);
+  }
+}
 if (BACKEND_NAMES.length > 1 && CONDITIONS.length > 1) {
   console.log(
     `warning: this run varies BOTH axes (${BACKEND_NAMES.length} harnesses x ` +
@@ -666,7 +723,8 @@ function ensurePlaywrightFirefox() {
 // backends start the MCP server with the agent's environment (codex forwards
 // it by name), so the agent's shell runs in the same zone as its browser.
 const PINNED_ENV = { TZ: BROWSER_PINS.timeZone };
-const agentEnvFor = (backend) => ({ ...agentEnv(backend), ...PINNED_ENV });
+// The scripted backend calls no API, so it gets the base set an MCP server gets.
+const agentEnvFor = (backend) => ({ ...agentEnv(backend === 'scripted' ? null : backend), ...PINNED_ENV });
 
 const VIEWPORT = `${BROWSER_PINS.viewport.width}x${BROWSER_PINS.viewport.height}`;
 // firefox-devtools-mcp's --viewport sizes the WINDOW, and a headless Firefox's
@@ -889,7 +947,7 @@ async function preflight() {
   // The first codex home of a process reads the model catalog, which can fail,
   // so a codex extractor's is built here too rather than after the first paid
   // agent run.
-  if (BACKENDS.codex || extractorInfo().extractor === 'codex') {
+  if (BACKENDS.codex || (EXTRACTOR_USED && extractorInfo().extractor === 'codex')) {
     const { isolatedCodexHome } = BACKENDS.codex ?? (await import('./backends/codex.mjs'));
     const home = await isolatedCodexHome(agentEnv('codex'));
     const hasLogin = home.hasLogin;
@@ -966,6 +1024,10 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     cwd: attemptDir,
     mcpStdio,
     env: agentEnvFor(backendName),
+    // For the scripted backend, which runs the task's driver against this pages
+    // server; an agent backend reads only the prompt.
+    task,
+    pages: ctx.pages,
   };
   // Stream the raw agent transcript (thinking, tool calls, results) to disk
   // as it happens rather than buffering.
@@ -1091,7 +1153,12 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   // re-applied to a stored row.
   let extractionRaw = null;
   let extractionFailed = null;
-  if (task.answerSchema && !isSentinel(r.text)) {
+  // A backend that answers with fields of its own (scripted) is graded on
+  // those, and the paid extractor never runs.
+  if (r.fields !== undefined) {
+    fields = r.fields;
+    extraction = { extractor: 'backend', model: modelFor(backendName), output_tokens: 0, cost_usd: 0 };
+  } else if (task.answerSchema && !isSentinel(r.text)) {
     let lastError;
     for (let attempt = 0; attempt < 3 && !extraction; attempt++) {
       try {
@@ -1755,7 +1822,9 @@ function buildMeta(startedAt, selected, env, tools) {
     maxWall: MAX_WALL_OVERRIDE || undefined,
     wallTiers: WALL_TIERS,
     maxOutput: MAX_OUTPUT || undefined,
-    extractor: extractorInfo(),
+    extractor: EXTRACTOR_USED
+      ? extractorInfo()
+      : { extractor: 'backend', model: BACKEND_NAMES.map(modelFor).join(',') },
     git: gitState(join(here, '..')),
     surfaces,
     builds,
@@ -1821,6 +1890,10 @@ async function main() {
   const selected = await buildTasks('http://placeholder');
   if (!selected.length) {
     throw new Error(`no tasks selected (suite=${SUITE}, task=${ONLY_TASK})`);
+  }
+  for (const name of BACKEND_NAMES) {
+    const unsupported = selected.filter((t) => BACKENDS[name].supportsTask?.(t) === false).map((t) => t.id);
+    if (unsupported.length) usage(`backend ${name} cannot run ${unsupported.join(', ')}; pick others with --suite or --task`);
   }
   if (LIST_TASKS) {
     console.log(

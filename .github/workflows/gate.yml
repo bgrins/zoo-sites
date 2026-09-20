@@ -37,6 +37,7 @@ jobs:
       # machine GitHub handed out. Drivers poll on a wall clock, so contention
       # shows up as a phantom timeout.
       - name: The gate, twice (once catches load races, twice catches flakiness)
+        id: gate
         run: |
           node eval/verify.mjs --jobs 2
           node eval/verify.mjs --jobs 2
@@ -48,3 +49,123 @@ jobs:
       # waiting for its page to go quiet, so 3 tabs fit a 2-core runner.
       - name: Site crawl, every serving mode
         run: node scripts/crawl.mjs --jobs 3
+      # The paid runner, for free: the scripted backend answers each task with its
+      # golden-path driver, so run.mjs, the tap, report.md, the A/B report,
+      # tool-stats.mjs and --rerun-failed all run on real rows. The two builds are
+      # one build under two labels, so each task's output tokens have to match
+      # across them. That holds only for a task whose answer has a fixed length
+      # under a seed: mirror-reroute and silent-throw mint theirs with
+      # randomBytes, so neither belongs in the list. The wrong-fields model then
+      # answers two tasks with values their validators reject, and every row it
+      # gets has to FAIL, or run.mjs is grading PASS regardless of the answer.
+      # This is also CI's only driver run under per-origin serving, so it checks
+      # that goto lands on the owning origin. The step runs whenever the gate passed, so a red crawl neither hides it
+      # nor is hidden by it. About a minute.
+      - name: Scripted sweep through the paid runner
+        if: ${{ !cancelled() && steps.gate.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          arms=(--backend scripted --devtools-build a=dep --devtools-build b=dep --interleave)
+          node eval/run.mjs "${arms[@]}" --suite all --seed ci \
+            --task cart-math,portal-login,fee-schedule,roster-diff,shard-forensics | tee "$RUNNER_TEMP/sweep.log"
+          run=$(sed -n 's/^run dir: //p' "$RUNNER_TEMP/sweep.log")
+          node eval/run.mjs --report-from "$run" --ab firefox-devtools-mcp@a,firefox-devtools-mcp@b
+          node eval/scripts/tool-stats.mjs "$run" --json "$RUNNER_TEMP/tool-stats.json"
+          # One row failed in a copy of the run is what --rerun-failed has to find.
+          prior="$RUNNER_TEMP/prior"
+          mkdir -p "$prior"
+          node -e '
+            const fs = require("fs");
+            const run = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            run.results.find((r) => r.task === "roster-diff").success = false;
+            fs.writeFileSync(process.argv[2], JSON.stringify(run));
+          ' "$run/results.json" "$prior/results.json"
+          node eval/run.mjs "${arms[@]}" --rerun-failed "$prior" | tee "$RUNNER_TEMP/rerun.log"
+          rerun=$(sed -n 's/^run dir: //p' "$RUNNER_TEMP/rerun.log")
+          # refused <message> <args...>: run.mjs has to reject the arguments with the
+          # message. --list-tasks exits before any browser or agent starts, so a
+          # guard that stops refusing lists tasks and fails here without paying.
+          refused() {
+            local want=$1
+            shift
+            if node eval/run.mjs "$@" --list-tasks 2> "$RUNNER_TEMP/refused.err"; then
+              echo "run.mjs accepted $*"
+              return 1
+            fi
+            grep -qF -- "$want" "$RUNNER_TEMP/refused.err" || { echo "run.mjs refused $* without \"$want\":"; cat "$RUNNER_TEMP/refused.err"; return 1; }
+          }
+          # Each of these would otherwise run a paid agent: the top-up of a free run
+          # on the default backend, a free and a paid backend in one run, and a
+          # typo that drops --backend.
+          refused "ran on the scripted backend" --rerun-failed "$prior"
+          refused "cannot share a run" --backend scripted,anthropic --conditions firefox-devtools-mcp --suite web
+          refused 'unknown argument "--backend=scripted"' --backend=scripted --conditions firefox-devtools-mcp --suite web
+          # A run with a failing row exits 1, so this one has to.
+          wrong_exit=0
+          node eval/run.mjs --backend scripted --model wrong-fields --conditions firefox-devtools-mcp \
+            --suite all --seed ci --task cart-math,roster-diff | tee "$RUNNER_TEMP/wrong.log" || wrong_exit=$?
+          wrong=$(sed -n 's/^run dir: //p' "$RUNNER_TEMP/wrong.log")
+          node -e '
+            const fs = require("fs");
+            const [run, rerun, prior, toolStats, wrong, wrongExit] = process.argv.slice(1);
+            const problems = [];
+            const expect = (ok, what) => ok || problems.push(what);
+            const read = (dir) => JSON.parse(fs.readFileSync(`${dir}/results.json`, "utf8"));
+            const sweep = read(run);
+            const rows = sweep.results;
+            expect(rows.length === 10 && rows.every((r) => r.success && !r.invalid), `10 passing rows, got ${rows.filter((r) => r.success).length}/${rows.length}`);
+            expect(sweep.meta.extractor?.extractor === "backend", "meta.extractor: names an extractor that never ran");
+            // tool-stats.mjs reads each row back from its transcript on disk.
+            const stats = JSON.parse(fs.readFileSync(toolStats, "utf8"));
+            for (const r of rows) {
+              const at = `${r.condition}/${r.task}`;
+              expect(r.backend === "scripted" && r.cost_usd === 0 && r.input_tokens === 0 && r.output_tokens > 0, `${at}: scripted usage`);
+              expect(r.extraction?.extractor === "backend" && r.fields && r.grading === "fields", `${at}: fields from the backend`);
+              expect(r.surface_calls > 0 && !r.tap_mismatch && Object.keys(r.tools ?? {}).length, `${at}: tap and stream agree`);
+              for (const file of [`transcripts/${r.transcript}`, `tool-calls/${r.transcript}`, r.state_file]) {
+                expect(fs.existsSync(`${run}/${file}`), `${at}: no ${file}`);
+              }
+              const s = stats.find((x) => x.condition === r.condition && x.task === r.task);
+              expect(s?.surface_calls === r.surface_calls, `${at}: transcript holds ${s?.surface_calls} of ${r.surface_calls} calls`);
+              // The streamed tool results are what surface reach and triage read.
+              expect((r.snapshot?.chars ?? 0) === (r.tools?.take_snapshot?.chars ?? 0), `${at}: transcript snapshots ${r.snapshot?.chars} chars, the tap ${r.tools?.take_snapshot?.chars}`);
+              // fee-schedule answers with a total its page never shows, so reach has
+              // to find that one value absent and every other task none.
+              const absent = r.surface?.absent ?? [];
+              expect(r.task === "fee-schedule" ? absent.length > 0 : !absent.length, `${at}: surface reach finds [${absent}] absent`);
+            }
+            // A driver goto routed to the single-origin listener still passes, so only
+            // the URL shows whether helpers.urlFor mapped it onto the owning origin.
+            for (const r of rows.filter((x) => x.task === "cart-math")) {
+              const blocks = fs.readFileSync(`${run}/transcripts/${r.transcript}`, "utf8").trim().split("\n").flatMap((l) => JSON.parse(l).message?.content ?? []);
+              const url = blocks.find((c) => c.type === "tool_use" && c.name.endsWith("__navigate_page"))?.input.url ?? "";
+              expect(sweep.meta.serving === "origins" && url && !new URL(url).pathname.startsWith("/shop/"), `${r.condition}/cart-math: opened "${url}" under ${sweep.meta.serving} serving, not the shop origin`);
+            }
+            for (const task of new Set(rows.map((r) => r.task))) {
+              const out = rows.filter((r) => r.task === task).map((r) => r.output_tokens);
+              expect(out.length === 2 && out[0] === out[1], `${task}: output tokens ${out.join(" vs ")} on one build`);
+            }
+            const report = fs.readFileSync(`${run}/report.md`, "utf8");
+            for (const arm of ["a", "b"]) expect(report.includes(`| firefox-devtools-mcp@${arm} | 5/5 |`), `report.md: arm ${arm} not 5/5`);
+            const ab = fs.readFileSync(`${run}/ab--firefox-devtools-mcp@a--firefox-devtools-mcp@b.md`, "utf8");
+            expect(ab.includes("geometric-mean ratio A/B: **1.000 [1.000, 1.000]**"), "ab: an A/A pair of one build is not 1.000");
+            expect(ab.includes("A 5/5, B 5/5 over paired rows"), "ab: pass rate");
+            const top = read(rerun);
+            expect(top.results.length === 2 && top.results.every((r) => r.task === "roster-diff" && r.success), "rerun: roster-diff passing in both arms");
+            expect(top.meta.rerunFailed === prior && top.meta.seed === "ci" && top.meta.suite === "all", "rerun: seed and suite kept");
+            const control = read(wrong).results;
+            expect(wrongExit === "1", `wrong-fields: run exited ${wrongExit}, not 1`);
+            expect(control.length === 2 && control.every((r) => r.success === false && !r.invalid && !r.error && r.model === "wrong-fields" && r.extraction?.extractor === "backend"), "wrong-fields: every row a graded FAIL");
+            const failures = fs.readFileSync(`${wrong}/report.md`, "utf8");
+            expect(failures.includes("| firefox-devtools-mcp | 0/2 |"), "wrong-fields report.md: not 0/2");
+            expect(failures.includes("## Failure triage"), "wrong-fields report.md: failures never triaged");
+            for (const task of ["cart-math", "roster-diff"]) {
+              expect(failures.includes(`| firefox-devtools-mcp | ${task} | FAIL |`), `wrong-fields report.md: ${task} not FAIL`);
+            }
+            if (problems.length) {
+              console.error(problems.join("\n"));
+              process.exit(1);
+            }
+            console.log(`scripted sweep: ${rows.length} rows, report, A/B, transcripts, surface reach, origin routing, rerun and the wrong-fields control as expected`);
+          ' "$run" "$rerun" "$prior" "$RUNNER_TEMP/tool-stats.json" "$wrong" "$wrong_exit"
