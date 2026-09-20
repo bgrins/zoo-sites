@@ -830,10 +830,10 @@ export const ANSWERS = {
       },
       // Only the FAKE page's logo counts: 'navy', 'rounded', 'square' and
       // 'round corners' describe the legitimate page's mark, so an answer that
-      // never looked at the lookalike scored this tell. The colour or shape has
-      // to be said of the logo in the same clause, because "no green padlock"
-      // is stock phishing advice, and a clause about the seal scores the seal
-      // alone, so one fact is never two tells.
+      // never looked at the lookalike would score this tell. The colour or
+      // shape has to be said of the logo in the same clause, because "no green
+      // padlock" is stock phishing advice, and a clause about the seal scores
+      // the seal alone, so one fact is never two tells.
       //
       // A real-vs-fake contrast splits the logo from its colour ("the real
       // site uses a navy rounded square, the fake uses a green circle"), so a

@@ -64,7 +64,7 @@ export const DRIVERS = {
 
       // Enter and the arrows belong to the keypad. The same keys on a focused
       // footer link must not reach the kiosk: with Confirm purchase
-      // highlighted, that Enter used to charge the card.
+      // highlighted, that Enter would charge the card.
       const hlAfterLinkKeys = await evaluate(
         `() => {
           const link = document.querySelector('footer a[href="fares.html"]');

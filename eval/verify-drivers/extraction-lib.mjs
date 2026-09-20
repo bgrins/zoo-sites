@@ -1,6 +1,6 @@
 // wrongState / alsoCorrectState cases for extraction-family entries that sit in
-// driver files other families share (grid-edit in forms.mjs). They live here so
-// such a file gains one import line and nothing its other entries use changes.
+// driver files other families share (grid-edit in forms.mjs), kept apart so the
+// shared file only imports them.
 
 import { addSession, findSession } from './lib.mjs';
 

@@ -166,7 +166,7 @@ async function loadTasks(base, origins) {
   return [...(await webTasks(base, origins)), ...(await devtoolsTasks(base, origins))];
 }
 
-// Without this, an unrecognised --help silently ran the whole gate.
+// Without this, an unrecognised --help would silently run the whole gate.
 if (args.includes('--help') || args.includes('-h')) {
   console.log(`The gate: drive every task's golden path through a real browser and
 assert that each validator accepts a correct answer and rejects a wrong one.

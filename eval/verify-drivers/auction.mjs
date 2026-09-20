@@ -25,10 +25,11 @@
 //
 // The room's limit is a per-session draw, and only its top draw makes letting
 // the lot go the right answer, so a driver that took whatever it was dealt
-// graded the declined branch on about one run in nine. Both branches are pinned
-// instead (modes.auctionDraw in sites/auction.mjs): the browser works a draw it
-// can win, and a second session bids the top draw over plain HTTP at the same
-// time, so every run grades a won lot and a lot let go on real server state.
+// would grade the declined branch on about one run in nine. Both branches are
+// pinned instead (modes.auctionDraw in sites/auction.mjs): the browser works a
+// draw it can win, and a second session bids the top draw over plain HTTP at
+// the same time, so every run grades a won lot and a lot let go on real server
+// state.
 
 const INDEX_PATH = '/auction/';
 const LOT_PATH = '/auction/lot-418.html';

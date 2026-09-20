@@ -35,7 +35,7 @@ function collectText(node, underResult, out) {
   // The Agent SDK hands a tool's reply back as a tool_result block under
   // message.content: text blocks for an MCP tool, a plain string for Read, Bash
   // and errors. No result-ish key leads to it, so without this every anthropic
-  // row reported every value absent.
+  // row would report every value absent.
   if (node.type === 'tool_result') {
     if (typeof node.content === 'string') out.push(node.content);
     else collectText(node.content, true, out);

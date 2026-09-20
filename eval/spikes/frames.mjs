@@ -2,8 +2,8 @@
 //
 // The page is served on 127.0.0.1 and the cross-origin frame on localhost at
 // the same port: a different host, so a different origin and site, with one
-// listener. That is the shape paid runs cannot produce today, because they
-// serve every site under one origin.
+// listener. Paid runs produce it only under --vhosts, where each site has its
+// own host; per-origin ports on 127.0.0.1 are one site.
 
 import { findings, page, probeServer, sleep, surface } from './lib.mjs';
 

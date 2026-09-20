@@ -2,13 +2,14 @@
 // each attempt owns, and what an attempt leaves behind: its downloads, and the
 // pages server's state it was graded on.
 //
-// Agents used to inherit all of process.env. Under a parent Claude Code session
-// that carried its control channels (CLAUDE_CODE_MESSAGING_SOCKET and _TOKEN,
-// CLAUDE_CODE_SESSION_ID, ANTHROPIC_MODEL, CLAUDE_CODE_EFFORT_LEVEL...) into
-// every run, and a shell variable such as TOOL_PRESET or CONNECT_EXISTING
-// silently reconfigured the firefox-devtools-mcp server under test. Only the
-// allowlist below passes now: what the processes need to start, reach and
-// authenticate against their API, and launch a browser.
+// Agents get an allowlist, never all of process.env. Under a parent Claude
+// Code session, process.env would carry its control channels
+// (CLAUDE_CODE_MESSAGING_SOCKET and _TOKEN, CLAUDE_CODE_SESSION_ID,
+// ANTHROPIC_MODEL, CLAUDE_CODE_EFFORT_LEVEL...) into every run, and a shell
+// variable such as TOOL_PRESET or CONNECT_EXISTING would silently reconfigure
+// the firefox-devtools-mcp server under test. The allowlist below passes what
+// the processes need to start, reach and authenticate against their API, and
+// launch a browser.
 
 import { createHash } from 'node:crypto';
 import {

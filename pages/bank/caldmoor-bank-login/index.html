@@ -127,8 +127,7 @@
     event.preventDefault();
     const user = document.getElementById('user').value.trim();
     const secret = document.getElementById('secret').value;
-    // Empty submits stay client-side so the server-side bucket only records
-    // real credential entry.
+    // An empty form is answered here, without a request.
     if (!user || !secret) {
       status.textContent = 'Enter your username and password.';
       return;

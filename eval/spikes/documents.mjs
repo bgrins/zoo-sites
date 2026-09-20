@@ -2,8 +2,8 @@
 //
 // The devtools browser runs on a profile whose download prefs point into the
 // spike's scratch directory, the fix a per-attempt download directory needs;
-// without them the file lands in the OS download folder (the 2026-09-19
-// review measured ~/Downloads), which this spike never writes to.
+// without them the file lands in the OS download folder (~/Downloads,
+// measured 2026-09-19), which this spike never writes to.
 
 import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

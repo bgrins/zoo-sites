@@ -966,9 +966,8 @@ export async function startPagesServer({
         text = text.replaceAll('__SESSION_NONCE__', found.session.nonce);
         substituted = true;
       }
-      // Deliberate cross-origin links (there is exactly one today: the
-      // gadgetron maintenance splash pointing at the mirror node) resolve
-      // per serving mode via __ORIGIN_<KEY>__ tokens.
+      // Deliberate cross-origin links resolve per serving mode via
+      // __ORIGIN_<KEY>__ tokens.
       if (text.includes('__ORIGIN_')) {
         text = substituteOrigins(text);
         substituted = true;

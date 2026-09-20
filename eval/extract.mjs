@@ -288,7 +288,7 @@ function foldCode(s) {
 // Server-minted codes (PREFIX-HEX and friends) compare case-, whitespace- and
 // dash-insensitively, through foldCode, and ignoring punctuation at either end
 // ("AR-4149B7."): the tolerance costs no discrimination because the code body
-// is random. Retires the hand-rolled flat() clones.
+// is random.
 export function eqCode(got, want) {
   if (typeof got !== 'string' || !want) return false;
   const flat = (s) =>
@@ -308,7 +308,7 @@ export function eqCode(got, want) {
 // misses. A second code shows up as any digit ("AR 0892F0"), as the shape's
 // letter prefix again ("or AR BCDEFA", "AR-BCDEF"; a hex body can be all
 // letters), or as the shape with its dashes and one character gone
-// ("ARBCDEFA"). eqCode then rejects it as before. A shape that puts a literal
+// ("ARBCDEFA"). eqCode then rejects it. A shape that puts a literal
 // digit after its prefix (QTA-2026-...) gives every second code a digit, so
 // there the bare prefix may label the code ("QTA notice QTA-2026-1A2B"). A
 // caller whose comparator also takes the bare body passes the prefix as

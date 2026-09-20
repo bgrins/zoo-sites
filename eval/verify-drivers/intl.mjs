@@ -243,7 +243,7 @@ const localeNotice = {
     localeNotice.alsoCorrectFields = [
       fields,
       claim('an entry permit is needed 72 hours ahead', true, reference.toLowerCase()),
-      // No "permit" and no "72" in it, which a keyword test once failed.
+      // No "permit" and no "72" in it, which a keyword test would fail.
       claim('Sea arrivals need port-entry permission from the harbour office three days in advance.', true),
       // The reference as it comes out of Japanese text, RTL text and markdown.
       claim(fields.requirement, true, reference.replace(/-/g, '\uff0d')),

@@ -46,8 +46,7 @@ export function packageVersions() {
 // text starting ERROR and a transport failure as THROW, because what a tool
 // reports on failure is part of what a spike records. playwright-mcp writes
 // snapshots and downloads under its cwd and --output-dir, so both point at a
-// scratch directory that close() removes, never at the repo; --output-dir is
-// the one flag eval/run.mjs does not pass yet.
+// scratch directory that close() removes, never at the repo.
 //
 // `prefs(scratch)` (devtools only) returns prefs for a seeded profile's
 // user.js. The tool launches Firefox from

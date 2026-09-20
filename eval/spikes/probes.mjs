@@ -9,10 +9,10 @@
 // `--compare` reads an earlier --out file and prints each probe whose value
 // moved, so a build's own before and after sit side by side.
 //
-// These are the limits the gate used to assert inside drivers (the text cap in
-// news-extract, table cells in fee-schedule and formula-repair, the confirm
-// dead end in registrar-purge). A driver now holds either way, and a tool
-// change shows up here as CHANGED instead of as a red gate.
+// The drivers do not assert these limits (the text cap in news-extract, table
+// cells in fee-schedule and formula-repair, the confirm dead end in
+// registrar-purge): each driver holds either way, so a tool change shows up
+// here as CHANGED rather than as a red gate.
 //
 // Exit status is 1 when any probe CHANGED or failed to run on any build.
 

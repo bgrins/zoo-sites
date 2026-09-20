@@ -118,8 +118,8 @@ for (let i = 0; i < args.length - 1; i++) {
 // seeded run is reproducible, never forgeable.
 // Every run is seeded: without --seed the seed is the run's own stamp, so the
 // arms of a run always face the same draws, and `--seed none` opts out.
-// Unseeded arms drew different puzzles in stored runs (a seat-picker plan, a
-// pr-review defect), which widened every paired difference.
+// Unseeded arms draw different puzzles (a seat-picker plan, a pr-review
+// defect), which widens every paired difference.
 const seedIdx = args.indexOf('--seed');
 const SEED_ARG = seedIdx !== -1 ? args[seedIdx + 1] ?? null : undefined;
 if (seedIdx !== -1 && (!SEED_ARG || SEED_ARG.startsWith('--'))) {
@@ -646,7 +646,7 @@ for (let i = 0; i < args.length; i++) {
 const BUILD_CONDITIONS = [...DEVTOOLS_BUILDS.keys()].map((label) => `${DEVTOOLS}@${label}`);
 const isDevtools = (c) => c === DEVTOOLS || c.startsWith(`${DEVTOOLS}@`);
 // A build condition's root; undefined for plain firefox-devtools-mcp, which
-// resolves FIREFOX_DEVTOOLS_MCP or the dependency as it always has.
+// resolves FIREFOX_DEVTOOLS_MCP or the dependency.
 const devtoolsRootFor = (c) => (c === DEVTOOLS ? undefined : DEVTOOLS_BUILDS.get(c.slice(DEVTOOLS.length + 1)));
 
 const KNOWN_CONDITIONS = [DEVTOOLS, 'playwright-mcp', ...BUILD_CONDITIONS];

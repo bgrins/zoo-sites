@@ -17,8 +17,8 @@ const pricingWarned = new Set();
 // `requests` is how many model requests `usage` sums. A long-context tier
 // (gpt-5.6 doubles input past 272k) applies per request, but calcPrice picks
 // the tier from the input it is handed, so a run's summed usage priced whole
-// put 60k-token requests at the 272k rate. The usage is split evenly across the
-// requests instead, in whole tokens so the totals stay exact.
+// would put 60k-token requests at the 272k rate. The usage is split evenly
+// across the requests instead, in whole tokens so the totals stay exact.
 export function priceTokens(modelId, usage, label, requests = 1) {
   if (!usage || !modelId) return null;
   const n = Number.isInteger(requests) && requests > 1 ? requests : 1;

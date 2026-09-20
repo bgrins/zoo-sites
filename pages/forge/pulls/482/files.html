@@ -276,9 +276,8 @@ function renderFile(file) {
   return box;
 }
 
-// Reviews can be submitted more than once, as on a real code host: the staged
-// comments stay staged, so a wrong verdict is corrected by picking the right
-// radio and submitting again.
+// A review can be submitted more than once: the staged comments stay staged,
+// so a wrong verdict is corrected by picking the right radio and submitting again.
 async function submitReview() {
   if (sending) return;
   const result = document.getElementById('result');

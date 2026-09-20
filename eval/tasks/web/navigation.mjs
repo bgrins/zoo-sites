@@ -670,8 +670,8 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         // The one wrong answer this task must not hand out is "nothing applies
         // beyond the standing advisory". The colleagues arrive by sea, so the
         // claim graded is the one the notice makes about sea arrivals, as its
-        // own field: a keyword test over the requirement passed "no permit is
-        // needed" and the notice's own air/sea clause swapped.
+        // own field: a keyword test over the requirement would pass "no permit
+        // is needed" and the notice's own air/sea clause swapped.
         const requirement = String(fields?.requirement ?? '');
         const requirementOk = requirement.length > 0 && fields?.seaArrivalsNeedPermit === true;
         // Telemetry: whether the prose mentions the permit or the 72 hours, so a
