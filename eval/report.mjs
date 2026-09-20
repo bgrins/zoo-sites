@@ -4,9 +4,16 @@
 // from a finished run's results.json. Every field a newer runner writes is
 // optional here, so a results.json from any earlier run still renders.
 
-import { buildName, countOf, drawKey, runFlags } from './scripts/identity.mjs';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { createCallRecorder } from './mcp-tap.mjs';
+import { rowEvents, SURFACE_SERVER } from './scripts/events.mjs';
+import { foreignBrowser, tapWindows } from './scripts/foreign-browser.mjs';
+import { browserBuilds, buildName, countOf, drawKey, runFlags } from './scripts/identity.mjs';
+import { readStateFile } from './scripts/state-file.mjs';
 import { runToolStats, sumToolStats } from './scripts/tool-stats.mjs';
 import { classOf, triageLines, triageRun } from './scripts/triage.mjs';
+import { gradedValues } from './surface-reach.mjs';
 
 const SUMMED = [
   'turns', 'input_tokens', 'cache_creation', 'cache_read', 'output_tokens', 'cost_usd',
@@ -150,6 +157,133 @@ const SERVING_NOTE = {
 const na = (x) => (x == null ? 'n/a' : x);
 const short = (h) => (h ? String(h).slice(0, 12) : '?');
 
+// Counters newer than the recorder that wrote a row. With the run directory at
+// hand, a row that predates them is read back from its transcript, state file
+// and tap log instead, so a re-rendered report of an older run shows them too.
+const NEW_FRICTION = ['tool_search', 'tool_search_turns', 'tool_search_output_tokens', 'persisted', 'persisted_other', 'unknown_tools'];
+const DERIVED = new WeakMap();
+function derivedOf(row, runDir) {
+  if (DERIVED.has(row)) return DERIVED.get(row);
+  const out = {};
+  const wantsState = row.foreign_browser === undefined || (row.ledger?.non_browser && !row.ledger.non_browser_by_status);
+  let shell = [];
+  if (runDir && (row.friction?.tool_search == null || wantsState)) {
+    const events = rowEvents(runDir, row);
+    if (events) {
+      const recorder = createCallRecorder(SURFACE_SERVER);
+      for (const e of events) recorder.observe(e);
+      const summary = recorder.summary();
+      if (row.friction?.tool_search == null) out.friction = Object.fromEntries(NEW_FRICTION.map((k) => [k, summary.friction[k]]));
+      shell = summary.shell_windows;
+    }
+  }
+  if (runDir && wantsState && row.state_file) {
+    try {
+      const { state } = readStateFile(join(runDir, row.state_file));
+      if (row.foreign_browser === undefined && row.transcript) {
+        const tap = join(runDir, 'tool-calls', row.transcript);
+        out.foreign_browser = foreignBrowser(state.ledger, { windows: existsSync(tap) ? tapWindows(tap) : null, shell });
+      }
+      if (row.ledger?.non_browser && !row.ledger.non_browser_by_status && Array.isArray(state.ledger)) {
+        const by = {};
+        for (const e of state.ledger.filter((x) => (x.client ? x.client !== 'browser' : !x.dest))) {
+          const s = String(e.status ?? 'none');
+          by[s] = (by[s] ?? 0) + 1;
+        }
+        out.non_browser_by_status = by;
+      }
+    } catch {}
+  }
+  DERIVED.set(row, out);
+  return out;
+}
+const frictionOf = (row, runDir) => ({ ...(row.friction ?? {}), ...(derivedOf(row, runDir).friction ?? {}) });
+const foreignOf = (row, runDir) => (row.foreign_browser !== undefined ? row.foreign_browser : derivedOf(row, runDir).foreign_browser ?? null);
+const shellStatusOf = (row, runDir) => row.ledger?.non_browser_by_status ?? derivedOf(row, runDir).non_browser_by_status ?? null;
+const statusList = (by) => Object.entries(by ?? {}).map(([s, n]) => `${s}: ${n}`).join(', ');
+const round = (x) => (x == null ? null : Math.round(x));
+
+// Graded values a passing row claimed although the surface cut them before
+// they reached the agent: it completed each one without seeing it.
+function guessedValues(row) {
+  if (!row.success || !row.surface?.truncated?.length) return [];
+  const graded = new Set(gradedValues(row.fields ?? {}).map((v) => v.slice(0, 80)));
+  return row.surface.truncated.filter((v) => graded.has(v));
+}
+
+// Whether the Claude CLI deferred MCP tools behind ToolSearch in this run: the
+// harness pins ENABLE_TOOL_SEARCH, and a run that records no pin left it to
+// the CLI's default, which defers them.
+function toolSearchSetting(meta) {
+  const pinned = meta.isolation?.toolPolicy?.anthropic?.cliEnv?.ENABLE_TOOL_SEARCH;
+  return pinned == null ? 'not pinned (the CLI default defers every MCP tool)' : `ENABLE_TOOL_SEARCH=${pinned}`;
+}
+
+// ToolSearch's share of each condition's turns and output, and the surface
+// ratios with and without it, over the tasks both conditions of a backend
+// graded. A ToolSearch-only turn is an API request whose every tool call was
+// ToolSearch: tool discovery, not surface work.
+function toolSearchLines(results, meta, runDir) {
+  const rows = results.filter((r) => !r.invalid && !r.error && r.turns != null);
+  const backendOf = (r) => r.backend ?? (r.condition.includes('/') ? r.condition.split('/')[0] : meta.backend);
+  const anthropic = rows.filter((r) => backendOf(r) === 'anthropic');
+  if (!anthropic.length) return [];
+  const conditions = [...new Set(anthropic.map((r) => r.condition))];
+  const sums = (rs) => {
+    const f = rs.map((r) => frictionOf(r, runDir));
+    const known = f.some((x) => x.tool_search != null);
+    const add = (pick) => rs.reduce((n, r, i) => n + (pick(r, f[i]) ?? 0), 0);
+    return {
+      rows: rs.length,
+      known,
+      calls: known ? add((_, x) => x.tool_search) : null,
+      searchTurns: known ? add((_, x) => x.tool_search_turns) : null,
+      searchOut: known ? add((_, x) => x.tool_search_output_tokens) : null,
+      turns: add((r) => r.turns),
+      output: add((r) => r.output_tokens),
+    };
+  };
+  const lines = [
+    '',
+    '## Tool discovery (ToolSearch)',
+    '',
+    `MCP tool loading: ${toolSearchSetting(meta)}. A ToolSearch-only turn is an API request whose every tool call was ToolSearch; ` +
+      '"without" leaves those turns and their output tokens out.',
+    '',
+    '| condition | rows | ToolSearch calls | ToolSearch-only turns | their output | turns | turns without | output | output without |',
+    '|---|---|---|---|---|---|---|---|---|',
+  ];
+  for (const c of conditions) {
+    const s = sums(anthropic.filter((r) => r.condition === c));
+    lines.push(
+      `| ${c} | ${s.rows} | ${na(s.calls)} | ${na(s.searchTurns)} | ${na(s.searchOut)} | ${s.turns} | ` +
+        `${s.known ? s.turns - s.searchTurns : 'n/a'} | ${s.output} | ${s.known ? s.output - s.searchOut : 'n/a'} |`
+    );
+  }
+  if (conditions.length > 1) {
+    const [a, ...others] = conditions;
+    const key = (r) => `${r.task}#${r.rep ?? 1}`;
+    for (const b of others) {
+      const bKeys = new Set(anthropic.filter((r) => r.condition === b).map(key));
+      const aKeys = new Set(anthropic.filter((r) => r.condition === a).map(key));
+      const pa = sums(anthropic.filter((r) => r.condition === a && bKeys.has(key(r))));
+      const pb = sums(anthropic.filter((r) => r.condition === b && aKeys.has(key(r))));
+      if (!pa.rows || !pb.rows) continue;
+      const ratio = (x, y) => (y ? (x / y).toFixed(3) : 'n/a');
+      const without = pa.known && pb.known;
+      lines.push(
+        '',
+        `Surface ratio ${a} / ${b}, as a ratio of sums over ${pa.rows} paired rows: turns ${ratio(pa.turns, pb.turns)}` +
+          (without ? ` (${ratio(pa.turns - pa.searchTurns, pb.turns - pb.searchTurns)} without ToolSearch)` : '') +
+          `, output ${ratio(pa.output, pb.output)}` +
+          (without ? ` (${ratio(pa.output - pa.searchOut, pb.output - pb.searchOut)} without ToolSearch)` : '') +
+          '.'
+      );
+    }
+  }
+  return lines;
+}
+
 // Which build each condition ran: meta.builds for firefox-devtools-mcp builds
 // run as named conditions, meta.surfaces for every condition. A run with
 // neither predates build identity.
@@ -207,12 +341,14 @@ function invalidLines(results, totals) {
   if (!invalid.length) return [];
   const lines = [
     '',
-    `Invalid rows: ${invalid.length} row(s) never called their own browser server, so they are left out ` +
-      'of every column above (their spend below). A pass there came through another route and says nothing about the surface:',
+    `Invalid rows: ${invalid.length} row(s) never called their own browser server, or served the fixture to a browser ` +
+      'their surface did not start, so they are left out of every column above (their spend below). A pass there came ' +
+      'through another route and says nothing about the surface:',
   ];
   for (const r of invalid) {
     const foreign = r.foreign_tools ? `; ${countOf(r.foreign_tools)} call(s) to other MCP servers` : '';
-    lines.push(`  - ${r.condition}/${r.rep ? `${r.task} (r${r.rep})` : r.task}: ${r.invalid}, ${r.success ? 'passed' : 'failed'}${foreign}`);
+    const browser = r.foreign_browser?.sessions ? `; ${r.foreign_browser.sessions} foreign browser session(s)` : '';
+    lines.push(`  - ${r.condition}/${r.rep ? `${r.task} (r${r.rep})` : r.task}: ${r.invalid}, ${r.success ? 'passed' : 'failed'}${foreign}${browser}`);
   }
   for (const [condition, t] of Object.entries(totals).filter(([, t]) => t.invalid)) {
     lines.push(`  - ${condition} spend on invalid rows: ${t.invalid_output_tokens} output tokens, $${t.invalid_cost_usd.toFixed(4)}`);
@@ -220,7 +356,29 @@ function invalidLines(results, totals) {
   return lines;
 }
 
-function sumRowTools(rows) {
+// Rows a browser other than the surface's reached (scripts/foreign-browser.mjs).
+// A row written before the guard existed is checked from its state file and
+// tap log, and stays counted: only its row can say it is invalid.
+function foreignLines(results, runDir) {
+  const hit = results.map((r) => [r, foreignOf(r, runDir)]).filter(([, f]) => f?.sessions);
+  if (!hit.length) return [];
+  const lines = [
+    '',
+    `Foreign browser: ${hit.length} row(s) served pages to a browser session their surface did not start ` +
+      '(the agent\'s shell reached another browser, such as the operator\'s):',
+  ];
+  for (const [r, f] of hit) {
+    const first = f.first?.[0];
+    lines.push(
+      `  - ${r.condition}/${r.rep ? `${r.task} (r${r.rep})` : r.task}: ${f.sessions} session(s), ${f.requests} request(s) by ${f.method}` +
+        (first ? `, first ${first.path} at ${first.at}${first.why ? ` (${first.why})` : ''}` : '') +
+        (r.foreign_browser === undefined ? '; checked from the state file, the row predates the guard and still counts' : '')
+    );
+  }
+  return lines;
+}
+
+function sumRowTools(rows, runDir = null) {
   const tools = {};
   const ms = {};
   for (const r of rows) {
@@ -236,12 +394,17 @@ function sumRowTools(rows) {
   for (const [name, list] of Object.entries(ms)) tools[name].p50_ms = median(list);
   const sum = (group, key) =>
     rows.some((r) => r[group]?.[key] != null) ? rows.reduce((n, r) => n + (r[group]?.[key] ?? 0), 0) : null;
+  const friction = rows.map((r) => frictionOf(r, runDir));
+  const sumFriction = (key) =>
+    friction.some((f) => f[key] != null) ? friction.reduce((n, f) => n + (f[key] ?? 0), 0) : null;
   return {
     rows: rows.length,
     tools,
     snapshot: { calls: sum('snapshot', 'calls'), chars: sum('snapshot', 'chars'), truncated: sum('snapshot', 'truncated') },
     friction: Object.fromEntries(
-      ['act_then_snap', 'actions', 'eval_calls', 'stale_uid', 'restarts', 'sleeps'].map((k) => [k, sum('friction', k)])
+      ['act_then_snap', 'actions', 'eval_calls', 'stale_uid', 'restarts', 'sleeps', 'persisted', 'persisted_other', 'unknown_tools'].map(
+        (k) => [k, sumFriction(k)]
+      )
     ),
   };
 }
@@ -266,13 +429,13 @@ function toolLines(results, runDir) {
   for (const condition of conditions) {
     const rows = graded.filter((r) => r.condition === condition);
     const t = tapped
-      ? sumRowTools(rows.filter((r) => r.tools))
+      ? sumRowTools(rows.filter((r) => r.tools), runDir)
       : sumToolStats(derived.filter((d) => d.row.condition === condition).map((d) => d.stats));
     const names = Object.entries(t.tools).sort((a, b) => b[1].calls - a[1].calls);
     if (!names.length) continue;
     lines.push('', `**${condition}** (${t.rows} rows)`, '', '| tool | calls | rows | errors | chars/call | p50 ms |', '|---|---|---|---|---|---|');
     for (const [name, s] of names.slice(0, 15)) {
-      lines.push(`| ${name} | ${s.calls} | ${s.rows} | ${s.errors} | ${Math.round(s.chars / (s.calls || 1))} | ${na(s.p50_ms)} |`);
+      lines.push(`| ${name} | ${s.calls} | ${s.rows} | ${s.errors} | ${Math.round(s.chars / (s.calls || 1))} | ${na(round(s.p50_ms))} |`);
     }
     if (names.length > 15) lines.push(`| ${names.length - 15} more | ${names.slice(15).reduce((n, [, s]) => n + s.calls, 0)} | | | | |`);
     const sn = t.snapshot ?? {};
@@ -284,6 +447,8 @@ function toolLines(results, runDir) {
       fr.stale_uid != null && `stale uid ${fr.stale_uid}`,
       fr.restarts != null && `restarts ${fr.restarts}`,
       fr.sleeps != null && `waits ${fr.sleeps}`,
+      fr.persisted != null && `results spilled to <persisted-output> ${fr.persisted}${fr.persisted_other ? ` (+${fr.persisted_other} shell or file-tool)` : ''}`,
+      fr.unknown_tools ? `calls to tools the server lacks ${fr.unknown_tools}` : null,
       !tapped && t.no_surface_rows != null && `rows with no surface call ${t.no_surface_rows}`,
       !tapped && t.foreign_rows != null && `rows calling another MCP server ${t.foreign_rows}`,
     ].filter(Boolean);
@@ -296,7 +461,15 @@ function toolLines(results, runDir) {
 function ledgerLines(results) {
   const rows = results.filter((r) => r.ledger);
   if (!rows.length) return [];
-  const lines = ['', '## Server ledger', '', '| condition | rows | requests | documents | scripted | by status |', '|---|---|---|---|---|---|'];
+  const lines = [
+    '',
+    '## Server ledger',
+    '',
+    '`shell` counts requests without the browser\'s Fetch Metadata, which on these loopback origins only a client outside the page sends (the agent\'s curl).',
+    '',
+    '| condition | rows | requests | documents | scripted | shell | shell rows | by status |',
+    '|---|---|---|---|---|---|---|---|',
+  ];
   for (const condition of [...new Set(rows.map((r) => r.condition))]) {
     const rs = rows.filter((r) => r.condition === condition);
     const sum = (k) => rs.reduce((n, r) => n + (r.ledger[k] ?? 0), 0);
@@ -304,7 +477,7 @@ function ledgerLines(results) {
     for (const r of rs) for (const [s, n] of Object.entries(r.ledger.byStatus ?? {})) status[s] = (status[s] ?? 0) + n;
     lines.push(
       `| ${condition} | ${rs.length} | ${sum('requests')} | ${sum('documents')} | ${sum('scripted')} | ` +
-        `${Object.entries(status).map(([s, n]) => `${s}: ${n}`).join(', ')} |`
+        `${sum('non_browser')} | ${rs.filter((r) => r.ledger.non_browser).length} | ${statusList(status)} |`
     );
   }
   return lines;
@@ -414,7 +587,46 @@ export function envDrift(prior, meta) {
   return out;
 }
 
-function envLines(meta) {
+// A condition's PDF handling as the run recorded it, else as its browser is
+// known to ship: Playwright's Firefox build turns pdf.js off in its
+// playwright.cfg, so a PDF downloads there, and renders inline in pdf.js in a
+// release Firefox.
+function pdfViewer(condition, build) {
+  if (build?.pdfjs) return build.pdfjs === 'enabled' ? 'pdf.js (renders inline)' : `${build.pdfjs} (downloads)`;
+  const bare = condition.split('/').pop();
+  return bare === 'playwright-mcp'
+    ? 'disabled by playwright.cfg (downloads); not recorded, Playwright\'s build'
+    : bare.startsWith('firefox-devtools-mcp')
+      ? 'pdf.js (renders inline); not recorded, a release Firefox'
+      : '?';
+}
+
+// Which Firefox build each condition's rows ran on: the preflight's reading,
+// then every build the rows recorded, so a desktop Firefox that updated
+// between two attempts shows as two builds.
+function buildTableLines(meta, results) {
+  const conditions = Object.keys(meta.env ?? {});
+  if (!conditions.length) return [];
+  const perRow = browserBuilds(results);
+  const lines = [
+    '',
+    '| condition | binary | version | build ID | PDF viewer | builds the rows ran on |',
+    '|---|---|---|---|---|---|',
+  ];
+  for (const c of conditions) {
+    const b = meta.env[c]?.build;
+    const seen = Object.entries(perRow)
+      .filter(([label]) => label.split('/').pop() === c)
+      .flatMap(([, builds]) => builds);
+    lines.push(
+      `| ${c} | ${b?.binary ?? 'not recorded'} | ${b?.version ?? meta.env[c]?.firefox ?? '?'} | ${b?.buildID ?? 'not recorded'} | ` +
+        `${pdfViewer(c, b)} | ${seen.length ? seen.map((s) => `${s.version ?? '?'} ${s.buildID ?? '?'} (${s.rows} rows)`).join('; ') : 'not recorded per row'} |`
+    );
+  }
+  return lines;
+}
+
+function envLines(meta, results = []) {
   if (!meta.env) return [];
   const pins = meta.envPins ?? {};
   const lines = [
@@ -435,6 +647,7 @@ function envLines(meta) {
         : `| ${condition} | ${ENV_COLUMNS.map(([, read]) => read(e) ?? '?').join(' | ')} |`
     );
   }
+  lines.push(...buildTableLines(meta, results));
   const mismatches = envMismatches(meta);
   lines.push('');
   if (mismatches.length) {
@@ -493,7 +706,7 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
         ]
       : []),
     ...flags
-      .filter((f) => ['contaminated', 'pre-isolation', 'pricing_v1', 'foreign-calls', 'eval-dirty'].includes(f.flag))
+      .filter((f) => ['contaminated', 'pre-isolation', 'pricing_v1', 'foreign-calls', 'browser-changed', 'eval-dirty'].includes(f.flag))
       .map((f) => `- ${f.flag.toUpperCase()}: ${f.why}`),
     // Serving is a measurement epoch: single-origin URLs name the pages/
     // directory, which can describe the test (/flaky/slow.html, /maze/).
@@ -526,7 +739,7 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
             `so the two are not measured the same way`,
         ]
       : []),
-    ...envLines(meta),
+    ...envLines(meta, results),
     ...buildLines(meta),
     '',
     '## Totals per condition',
@@ -550,6 +763,7 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
     );
   }
   lines.push(...invalidLines(results, totals));
+  lines.push(...foreignLines(results, runDir));
   // Extraction spend is reported once for the run, never per condition: the
   // extractor is condition-blind and its usage is excluded from every metric
   // above (docs/grading-design.md). A row whose backend returned its fields
@@ -586,6 +800,19 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
       lines.push(`  - ${r.condition}/${r.rep ? `${r.task} (r${r.rep})` : r.task}: ${JSON.stringify(r.surface.truncated)}`);
     }
   }
+  // A pass on a value the surface cut is a pass the agent reached by completing
+  // the value itself, which says nothing good about the surface.
+  const guessed = results.map((r) => [r, guessedValues(r)]).filter(([, g]) => g.length);
+  if (guessed.length) {
+    lines.push(
+      '',
+      `Guessed passes: ${guessed.length} row(s) passed on a graded value the surface cut before it reached the ` +
+        'agent, so the agent completed it without seeing it. They count as passes above; read them as the surface failing:'
+    );
+    for (const [r, g] of guessed) {
+      lines.push(`  - ${r.condition}/${r.rep ? `${r.task} (r${r.rep})` : r.task}: ${JSON.stringify(g)}`);
+    }
+  }
   // A validator that throws is a harness defect. Its row stays a failure, since
   // excusing it could hide a real one.
   const brokenGrades = results.filter((r) => r.validator_error);
@@ -620,6 +847,7 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
   const partial = !runDir && results.some((r) => !r.success && r.surface_calls == null && r.tools == null);
   lines.push(...triageLines(results, triages, { partial }));
   lines.push(...toolLines(results, runDir));
+  lines.push(...toolSearchLines(results, meta, runDir));
   lines.push(...ledgerLines(results));
   lines.push('', '## Per-task results', '',
     '| condition | task | pass | turns | input | cache write | cache read | output | cost | api (s) | wall (s) | notes |',
@@ -652,13 +880,27 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
           .join(', ')}`
       : '';
     const cls = r.success ? null : classOf(triages[i]);
-    const lead = (r.invalid ? `INVALID (${r.invalid}) — ` : '') + (cls ? `[${cls}] ` : '');
-    const note =
-      lead +
-      (r.extraction_failed
-        ? `${cut}EXTRACTION FAILED (${r.extraction_failed}) — ${noteBase}`
-        : cut + noteBase) +
-      saved;
+    const guess = guessedValues(r).length ? 'GUESSED (passed on a value the surface cut) — ' : '';
+    const lead = (r.invalid ? `INVALID (${r.invalid}) — ` : '') + guess + (cls ? `[${cls}] ` : '');
+    // What else reached the fixture or the model outside the surface's own
+    // replies: shell requests, another browser, a tap that disagrees with the
+    // stream, ToolSearch and spilled results.
+    const fr = frictionOf(r, runDir);
+    const foreign = foreignOf(r, runDir);
+    const shell = r.ledger?.non_browser
+      ? `SHELL ${r.ledger.non_browser} request(s) to the fixtures${shellStatusOf(r, runDir) ? ` (${statusList(shellStatusOf(r, runDir))})` : ''}`
+      : '';
+    const flags = [
+      shell,
+      foreign?.sessions ? `FOREIGN BROWSER ${foreign.sessions} session(s), ${foreign.requests} request(s) (${foreign.method})` : '',
+      r.tap_mismatch ? `TAP MISMATCH tap ${r.tap_mismatch.tap} / stream ${r.tap_mismatch.stream}` : '',
+      fr.unknown_tools ? `${fr.unknown_tools} call(s) to a tool the server lacks` : '',
+      fr.tool_search ? `ToolSearch ${fr.tool_search} call(s), ${fr.tool_search_turns} ToolSearch-only turn(s)` : '',
+      fr.persisted || fr.persisted_other ? `SPILLED ${(fr.persisted ?? 0) + (fr.persisted_other ?? 0)} result(s) to <persisted-output>` : '',
+    ].filter(Boolean);
+    const body =
+      (r.extraction_failed ? `${cut}EXTRACTION FAILED (${r.extraction_failed}) — ${noteBase}` : cut + noteBase) + saved;
+    const note = lead + [body, flags.join('; ')].filter((x) => x.trim()).join(' — ');
     lines.push(
       `| ${r.condition} | ${task} | ${r.success ? 'PASS' : 'FAIL'} | ${r.turns ?? ''} | ` +
         `${r.input_tokens ?? ''} | ${r.cache_creation ?? ''} | ` +

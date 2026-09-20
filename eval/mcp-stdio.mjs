@@ -6,7 +6,7 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
-import { join } from 'node:path';
+import { delimiter, dirname, join } from 'node:path';
 import { createRequire } from 'node:module';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -135,6 +135,46 @@ export function downloadPrefs(dir) {
 
 // firefox-devtools-mcp's repeatable --pref flag, which it hands Firefox at launch.
 export const prefArgs = (prefs) => Object.entries(prefs).flatMap(([k, v]) => ['--pref', `${k}=${v}`]);
+
+// The Firefox that WebDriver starts when firefox-devtools-mcp is given no
+// --firefox-path: the macOS app, or the first `firefox` on PATH.
+function systemFirefox() {
+  if (process.platform === 'darwin') return '/Applications/Firefox.app/Contents/MacOS/firefox';
+  for (const dir of (process.env.PATH ?? '').split(delimiter)) {
+    const path = dir && join(dir, 'firefox');
+    if (path && existsSync(path)) return realpathSync(path);
+  }
+  return null;
+}
+
+const readText = (path) => {
+  try {
+    return readFileSync(path, 'utf8');
+  } catch {
+    return null;
+  }
+};
+
+// A Firefox build as its files describe it: application.ini's Version and
+// BuildID, and whether an autoconfig file turns pdf.js off. Playwright's build
+// ships a playwright.cfg that does, so PDFs download there and render in the
+// built-in viewer everywhere else. `binary` null means systemFirefox().
+export function firefoxBuild(binary) {
+  const path = binary ?? systemFirefox();
+  if (!path) return null;
+  const dir = dirname(path);
+  const nearby = (name) => [join(dir, '..', 'Resources', name), join(dir, name), join(dir, 'browser', name)];
+  const ini = nearby('application.ini').map(readText).find((t) => t != null) ?? '';
+  const field = (key) => new RegExp(`^${key}=(.*)$`, 'm').exec(ini)?.[1]?.trim() ?? null;
+  const cfg = nearby('playwright.cfg').map(readText).find((t) => t != null) ?? '';
+  const pdfOff = /pref\(\s*["']pdfjs\.disabled["']\s*,\s*true\s*\)/.test(cfg);
+  return {
+    binary: path,
+    version: field('Version'),
+    buildID: field('BuildID'),
+    pdfjs: pdfOff ? 'disabled by playwright.cfg' : PINNED_PREFS['pdfjs.disabled'] ? 'disabled by a pinned pref' : 'enabled',
+  };
+}
 
 // `baseEnv` is what the server inherits under `env`; the runner's preflight
 // passes the agents' allowlist so a server that needs a dropped variable fails

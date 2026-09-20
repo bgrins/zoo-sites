@@ -66,10 +66,35 @@ export function runFlags(meta = {}, results = [], { condition = null } = {}) {
   if (!meta.seed && conditions.size > 1) {
     flags.push({ flag: 'unseeded', why: 'arms drew their difficulty variants independently' });
   }
+  const changed = Object.entries(browserBuilds(rows)).filter(([, builds]) => builds.length > 1);
+  if (changed.length) {
+    flags.push({
+      flag: 'browser-changed',
+      why:
+        'the Firefox build changed between attempts of one condition: ' +
+        changed.map(([c, builds]) => `${c} ${builds.map((b) => `${b.version ?? '?'} ${b.buildID ?? '?'} (${b.rows} rows)`).join(' then ')}`).join('; '),
+    });
+  }
   if (!meta.builds && !meta.surfaces) flags.push({ flag: 'no-build-identity', why: 'the run records neither meta.builds nor meta.surfaces' });
   if (!meta.git?.commit) flags.push({ flag: 'no-eval-commit', why: 'the run records no eval commit' });
   if (meta.git?.dirty) flags.push({ flag: 'eval-dirty', why: `the eval tree at ${String(meta.git.commit).slice(0, 10)} had uncommitted changes` });
   return flags;
+}
+
+// The Firefox builds each condition's rows recorded (row.browser, read at every
+// attempt), in the order they first appear: { [condition]: [{ binary, version,
+// buildID, rows }] }. A row that recorded none is left out.
+export function browserBuilds(results = []) {
+  const out = {};
+  for (const r of results) {
+    const b = r.browser;
+    if (!b || (b.version == null && b.buildID == null)) continue;
+    const list = (out[r.condition] ??= []);
+    const same = list.find((x) => x.version === b.version && x.buildID === b.buildID && x.binary === b.binary);
+    if (same) same.rows++;
+    else list.push({ binary: b.binary ?? null, version: b.version ?? null, buildID: b.buildID ?? null, rows: 1 });
+  }
+  return out;
 }
 
 // The variants a row faced, from row.draws ({ scope, pick } per ctx.pick call).

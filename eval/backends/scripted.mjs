@@ -119,7 +119,13 @@ export async function run({ task, pages, model, condition, env, cwd, onMessage, 
   const stopError = () => new Error(`scripted run aborted: ${signal.reason ?? 'stopped'}`);
   let ended = false;
   const emit = (message) => ended || onMessage?.({ ...message, timestamp: new Date().toISOString() });
-  const server = await startMcpServer({ command: mcpStdio.command, args: mcpStdio.args, baseEnv: env ?? process.env, cwd });
+  const server = await startMcpServer({
+    command: mcpStdio.command,
+    args: mcpStdio.args,
+    env: mcpStdio.env,
+    baseEnv: env ?? process.env,
+    cwd,
+  });
   let calls = 0;
   const mcp = async (name, toolArgs = {}) => {
     if (signal?.aborted) throw stopError();

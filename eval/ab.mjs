@@ -19,7 +19,8 @@
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildKey, countOf, drawKey, findBuild, runFlags } from './scripts/identity.mjs';
+import { envMismatches } from './report.mjs';
+import { browserBuilds, buildKey, countOf, drawKey, findBuild, runFlags } from './scripts/identity.mjs';
 import { classOf, FAILURE_CLASSES, TOOL_CLASSES, triageRun } from './scripts/triage.mjs';
 import { runToolStats, sumToolStats } from './scripts/tool-stats.mjs';
 
@@ -221,11 +222,44 @@ function tagsOf(row, info) {
   };
 }
 
+// A condition's tools/list: its meta.builds entry (firefox-devtools-mcp
+// builds), else its meta.surfaces entry, which every condition has, playwright-mcp
+// included.
+function toolsOf(meta, condition) {
+  const build = findBuild(meta, condition);
+  if (build?.tools) return build.tools;
+  const bare = String(condition).split('/').pop();
+  return meta?.surfaces?.[bare]?.tools ?? meta?.surfaces?.[bare.split('@')[0]]?.tools ?? null;
+}
+
+// The browser environments of A and B as the preflight measured them, and
+// every Firefox build their rows recorded: a difference here is a difference
+// the surface did not make.
+function envDiff(meta, rowsA, rowsB, a, b) {
+  const bare = (c) => String(c).split('/').pop();
+  const env = Object.fromEntries([a, b].map((c) => [bare(c), meta.env?.[bare(c)]]).filter(([, e]) => e));
+  const out = [];
+  if (Object.keys(env).length === 2) {
+    for (const m of envMismatches({ ...meta, env })) out.push(`- **ENV-MISMATCH**: ${m}`);
+  } else {
+    out.push(`- browser environment: not recorded for ${[a, b].filter((c) => !env[bare(c)]).join(' and ')}`);
+  }
+  const builds = browserBuilds([...rowsA, ...rowsB]);
+  const describe = (c) => (builds[c] ?? []).map((x) => `${x.version ?? '?'} ${x.buildID ?? '?'} (${x.rows} rows)`).join(', ');
+  if (builds[a] || builds[b]) {
+    out.push(`- Firefox builds the rows ran on: A ${describe(a) || 'not recorded'}; B ${describe(b) || 'not recorded'}`);
+    for (const c of [a, b]) {
+      if ((builds[c] ?? []).length > 1) out.push(`- **BROWSER-CHANGED**: ${c}'s Firefox changed between attempts`);
+    }
+  }
+  return out;
+}
+
 function toolListDiff(meta, a, b) {
-  const ba = findBuild(meta, a);
-  const bb = findBuild(meta, b);
+  const ba = { tools: toolsOf(meta, a) };
+  const bb = { tools: toolsOf(meta, b) };
   if (!ba?.tools || !bb?.tools) {
-    return [`- tools/list: not recorded for ${[!ba?.tools && a, !bb?.tools && b].filter(Boolean).join(' and ')} (no meta.builds entry)`];
+    return [`- tools/list: not recorded for ${[!ba?.tools && a, !bb?.tools && b].filter(Boolean).join(' and ')} (no meta.builds or meta.surfaces entry)`];
   }
   const na = new Set(ba.tools.names ?? []);
   const nb = new Set(bb.tools.names ?? []);
@@ -332,6 +366,7 @@ export function abReport(input, options = {}) {
     );
   }
   lines.push(...toolListDiff(meta, a, b));
+  lines.push(...envDiff(meta, rowsA, rowsB, a, b));
   const tasksA = new Set(rowsA.map((r) => r.task));
   const tasksB = new Set(rowsB.map((r) => r.task));
   const onlyA = [...tasksA].filter((t) => !tasksB.has(t));

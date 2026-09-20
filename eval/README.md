@@ -103,15 +103,42 @@ goto lands on the owning origin.
 
 **`run.mjs` hands an agent a shell.** Each attempt gets a fresh temporary directory and
 an allowlisted environment (`agent-env.mjs`) that still carries the backend's own API
-credentials. On the Anthropic backend the agent runs with permission prompts disabled
-and a pinned tool set (the browser MCP server, `Bash`, and file tools that write only in
-the attempt directory; no web, subagent or scheduling tools) under no further sandbox.
-The codex backend runs under a network-enabled workspace-write sandbox limited to the
-attempt directory and a private `TMPDIR`, with its own `CODEX_HOME` holding only the
-login, so none of your codex config, plugins or skills reach it, and with its subagent
-tools turned off; inside that sandbox a bare `mktemp` fails on macOS, while
-`mktemp -p "$TMPDIR"` works. Each run's `meta` records both tool policies. Run it
-only where you are willing to let an agent execute arbitrary shell commands. One fixture is
+credentials. Stored runs opened fixture pages in the operator's desktop Firefox
+through `/opt/homebrew/bin/firefox`, so both backends put a stub directory first on the
+shell's `PATH`, where `firefox`, `playwright`, `playwright-cli`, `open`, `osascript` and
+their kin print "not available" and fail. The stubs cover a `PATH` lookup only: an
+absolute path (`/usr/bin/open`), a login shell (`zsh -l`, whose profile rebuilds
+`PATH`) or `env -i` reaches the real command, and whether either sandbox then stops a
+launch, or a hand-off of the URL to a Firefox already running, is untested. The MCP
+servers keep the real `PATH`. On the Anthropic backend the
+agent runs with permission prompts disabled and a pinned tool set (the browser MCP
+server, `Bash`, and file tools that write only in the attempt directory; no web,
+subagent or scheduling tools), and `Bash` runs under the Claude CLI's sandbox: writes
+only in the attempt directory and a private `TMPDIR`, network only to loopback, and no
+way to ask for a command to run outside it (on Linux the sandbox needs `bwrap` and `socat`, and
+the preflight stops a run without them). Each attempt also gets its own `CLAUDE_CONFIG_DIR`,
+so spilled tool results, background task output and memory stay out of your
+`~/.claude` and `/tmp/claude-<uid>`; your login stays where it is. MCP tools load
+eagerly (`ENABLE_TOOL_SEARCH=false`), as codex's do, and the rows count any ToolSearch
+calls and `<persisted-output>` spills. The codex backend runs under a network-enabled
+workspace-write sandbox limited to the attempt directory and a private `TMPDIR`, with
+its own `CODEX_HOME` holding only the login, so none of your codex config, plugins or
+skills reach it, and with its subagent tools turned off; each attempt's session
+rollout is kept as `rollouts/<transcript>`. Inside either sandbox a bare `mktemp`
+fails on macOS, while `mktemp -p "$TMPDIR"` works. Each run's `meta` records both tool
+policies. `firefox-devtools-mcp` runs with a `HOME` of the attempt's own, so its
+`~/.firefox-devtools-mcp` save root starts empty every attempt and never lands in your
+home. Every attempt's browser also sends a user agent carrying a token of its
+own, but the server's ledger does not record user agents yet, so two rules in
+`scripts/foreign-browser.mjs` find a browser session the surface did not start, and a
+row with one is marked invalid. Timing flags a session whose first request came outside
+every surface call the tap saw, during a shell command or long after any surface call.
+Count flags a second session that loaded a site top-level if it began inside the same
+surface call as the session before it, or while that session was still sending
+requests; a sign-out or a restart, which ends the first session, passes. The rules
+miss a session that begins inside a later surface call while the session before it
+sends nothing more, and `--no-tap` turns both off.
+Run it only where you are willing to let an agent execute arbitrary shell commands. One fixture is
 actively trying to talk that agent into exfiltrating data — that is the point of
 `injection-bait` — and an agent that takes the bait will run whatever the page told it
 to. `verify.mjs` runs no agent and is safe to run anywhere the browser is.
@@ -152,7 +179,11 @@ agent, Accept-Language, locale, time zone, viewport and colour scheme into `meta
 
 The Firefox version is the one setting left unpinned: `firefox-devtools-mcp` drives the
 installed Firefox, and Playwright drives its own patched build. The two differ today, and
-every report says so. A `--headed` run sizes each `firefox-devtools-mcp` window to its
+every report says so. Every row records the binary, version and build ID its condition
+launched, read at the attempt, so a desktop Firefox that updates mid-run shows up as
+`BROWSER-CHANGED` in `report.md` and the A/B report. The builds also differ on PDFs:
+Playwright's turns pdf.js off in its `playwright.cfg`, so a PDF downloads there and
+renders inline in the other; the environment table says which. A `--headed` run sizes each `firefox-devtools-mcp` window to its
 grid cell, so its viewport is flagged too. `--mcp-command` servers launch as given, with
 the time zone the only pin that reaches them. `--rerun-failed` cannot restore the
 environment of the run it tops up, so it records how its own differs as

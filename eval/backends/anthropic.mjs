@@ -1,14 +1,16 @@
 // Anthropic backend: drives tasks through the Claude Agent SDK.
 // Backend interface (shared with backends/codex.mjs):
 //   run({ prompt, model, effort, condition, env, cwd, onMessage, onOutputTokens,
-//         mcpStdio, abortController }) ->
+//         mcpStdio, abortController, shellPath }) ->
 //     { text, turns, input_tokens, cache_creation, cache_read, output_tokens,
 //       cost_usd, duration_ms, api_duration_ms, stream_errors? }
 // `input_tokens` is the UNCACHED remainder only, never the total, so that
 // input_tokens + cache_creation + cache_read is total input for every backend
 // and the three columns stay additive. Anthropic's SDK already reports it that
 // way; codex normalizes to it (see backends/codex.mjs).
-// The MCP server is spawned over stdio from `mcpStdio` ({command, args}).
+// The MCP server is spawned over stdio from `mcpStdio` ({command, args, env?}),
+// `env` holding what that server alone gets on top of the agent's environment.
+// shellPath (optional): the PATH the agent's shell gets instead of env.PATH.
 // onMessage (optional): called with every raw agent message as it streams
 // (thinking, tool calls, tool results, final result) for transcript logging.
 // onOutputTokens (optional): called with the run's output tokens so far, for
@@ -22,6 +24,10 @@
 // could measure, so run.mjs can report it.
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import { existsSync, rmSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { delimiter, join } from 'node:path';
+import { makeTempDir, removeTempDir, TEMP_PREFIX } from '../agent-env.mjs';
 import { priceTokens } from './pricing.mjs';
 
 export const DEFAULT_MODEL = 'claude-sonnet-5';
@@ -31,11 +37,11 @@ export const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'];
 // offered live web (WebFetch, WebSearch), subagents and orchestration (Task,
 // Workflow, SendMessage), scheduling (Cron*, ScheduleWakeup, Monitor) and push
 // notifications: none belong in a local browser task, and each lets a run
-// differ from its pair by more than the tool surface. ToolSearch stays because
-// the MCP tools are deferred behind it, and TaskOutput/TaskStop because a
-// background Bash command needs them. Every condition gets a shell so the ONLY
-// difference is how the browser is driven; a cost/turn gap must measure the tool
-// surface, never shell access.
+// differ from its pair by more than the tool surface. ToolSearch stays so an
+// MCP tool the CLI still defers can be loaded (CLI_ENV turns deferral off), and
+// TaskOutput/TaskStop because a background Bash command needs them. Every
+// condition gets a shell so the ONLY difference is how the browser is driven; a
+// cost/turn gap must measure the tool surface, never shell access.
 const TOOLS = ['Bash', 'Read', 'Write', 'Edit', 'ToolSearch', 'TaskOutput', 'TaskStop'];
 // Denied by name as well, so a CLI that widened `tools` still could not hand
 // these out.
@@ -49,6 +55,64 @@ const DISALLOWED_TOOLS = [
 // directory only, as codex's workspace-write sandbox does.
 const allowedTools = (cwd) => ['mcp__firefox', 'Bash', ...(cwd ? [`Edit(/${cwd}/**)`] : [])];
 
+// CLI settings the harness pins rather than leaving to the CLI's defaults and
+// remote config, which the allowlist in agent-env.mjs would otherwise decide.
+//   ENABLE_TOOL_SEARCH=false  every MCP tool's schema in the first request, as
+//     codex gets them. The default defers them behind ToolSearch, and a stored
+//     run spent 197 of one arm's 644 turns on ToolSearch alone.
+//   MAX_MCP_OUTPUT_TOKENS     the token cap past which the CLI truncates an MCP
+//     result; unset, a remote flag can move it. The CLI's default. It does not
+//     govern the <persisted-output> spill, which replaces any MCP result over
+//     50,000 characters with a 2,000-character preview and a file path, at a
+//     threshold only remote config can move; rows count the spills instead.
+//   CLAUDE_CODE_DISABLE_AUTO_MEMORY  no memory directory is offered or read.
+export const MAX_MCP_OUTPUT_TOKENS = 25000;
+const CLI_ENV = {
+  ENABLE_TOOL_SEARCH: 'false',
+  MAX_MCP_OUTPUT_TOKENS: String(MAX_MCP_OUTPUT_TOKENS),
+  CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1',
+};
+
+// The Bash tool runs under the CLI's sandbox (Seatbelt on macOS, bubblewrap on
+// Linux): writes only in the attempt directory and the attempt's own temp
+// directory, network only to loopback, where every fixture is served, and no
+// way to ask for a command to run outside it. Whether it stops /usr/bin/open,
+// or `firefox URL` handing the URL to a Firefox already running, is untested.
+// failIfUnavailable makes a missing sandbox
+// fail the attempt instead of running it unsandboxed. /tmp/claude is the
+// sandbox's default temp directory, shared by every attempt, so it is closed.
+// allowLocalBinding opens loopback both ways, so a curl to a fixture, or a
+// server the agent starts, works; the proxy denies every other host.
+function sandboxFor(cwd, tmp) {
+  return {
+    enabled: true,
+    failIfUnavailable: true,
+    autoAllowBashIfSandboxed: true,
+    allowUnsandboxedCommands: false,
+    filesystem: {
+      allowWrite: [cwd, tmp].filter(Boolean),
+      denyWrite: ['/tmp/claude', '/private/tmp/claude'],
+    },
+    network: {
+      allowedDomains: ['localhost', '127.0.0.1', '*.localhost'],
+      strictAllowlist: true,
+      allowLocalBinding: true,
+    },
+  };
+}
+
+// The sandbox needs bubblewrap and socat on Linux (macOS has sandbox-exec).
+// Without them every attempt would fail on its first command, after the run
+// has started paying, so run.mjs's preflight asks first.
+export function preflightCheck(env = process.env) {
+  if (process.platform !== 'linux') return;
+  const onPath = (name) => (env.PATH ?? '').split(delimiter).some((dir) => dir && existsSync(join(dir, name)));
+  const missing = ['bwrap', 'socat'].filter((name) => !onPath(name));
+  if (missing.length) {
+    throw new Error(`the anthropic backend runs Bash in the Claude CLI's sandbox, which needs ${missing.join(' and ')} on PATH`);
+  }
+}
+
 // Recorded in each run's meta, so results from before and after a policy
 // change stay distinguishable.
 export const TOOL_POLICY = {
@@ -59,7 +123,54 @@ export const TOOL_POLICY = {
   settingSources: [],
   strictMcpConfig: true,
   persistSession: false,
+  cliEnv: CLI_ENV,
+  sandbox: sandboxFor('<attempt dir>', '<attempt temp dir>'),
+  claudeConfigDir: 'fresh per attempt; the login stays where it was (CLAUDE_SECURESTORAGE_CONFIG_DIR)',
+  path: 'the harness PATH with a stub directory first (agent-env.mjs SHIMMED_COMMANDS)',
 };
+
+// A fresh CLAUDE_CONFIG_DIR per attempt, as codex gets a fresh CODEX_HOME: the
+// CLI otherwise wrote spilled tool results and a memory path into the
+// operator's ~/.claude/projects/<cwd slug>, and kept background task output in
+// /tmp/claude-<uid>/<cwd slug>, shared by every attempt. What a login needs stays put: an API key or ANTHROPIC_PROFILE is
+// read from the environment and ~/.config/anthropic, and a `claude login`
+// credential from the keychain entry (or .credentials.json) that
+// CLAUDE_SECURESTORAGE_CONFIG_DIR names, where the empty string means the
+// default one. Exported for any other process the harness starts on the CLI
+// (the extractor).
+export function isolatedClaudeHome(env) {
+  const config = makeTempDir(TEMP_PREFIX.home);
+  const tmp = makeTempDir(TEMP_PREFIX.tmp);
+  const secureStorage = env.CLAUDE_SECURESTORAGE_CONFIG_DIR ?? env.CLAUDE_CONFIG_DIR ?? '';
+  return {
+    env: {
+      ...env,
+      ...CLI_ENV,
+      CLAUDE_CONFIG_DIR: config,
+      CLAUDE_SECURESTORAGE_CONFIG_DIR: secureStorage,
+      CLAUDE_CODE_TMPDIR: tmp,
+    },
+    tmp,
+    // The CLI names a session's directories after its cwd. A CLI that ignored
+    // the variables above would write them under the defaults, so those go too.
+    close(cwd) {
+      removeTempDir(config);
+      removeTempDir(tmp);
+      if (!cwd) return;
+      const slug = cwd.replace(/[^A-Za-z0-9]/g, '-');
+      const uid = process.getuid?.();
+      const leftovers = [
+        join(env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'projects', slug),
+        ...(uid == null ? [] : [join('/tmp', `claude-${uid}`, slug)]),
+      ];
+      for (const dir of leftovers) {
+        try {
+          rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
+        } catch {}
+      }
+    },
+  };
+}
 
 // Output tokens per API message. The SDK streams an assistant message once per
 // content block, each carrying the usage as of message_start, so those alone
@@ -109,7 +220,13 @@ function usageTracker() {
   };
 }
 
-export function agentOptions({ model, effort, env, cwd, mcpStdio, abortController }) {
+// `env` is the CLI's own environment, which its Bash commands inherit;
+// `shellPath` replaces its PATH there. The MCP server is started with the PATH
+// `env` had, since the stub directory would hide the Firefox a server looks up
+// on PATH, plus whatever `mcpStdio.env` sets for it alone. `tmp` is the
+// attempt's own temp directory, which the sandbox lets the shell write.
+export function agentOptions({ model, effort, env, cwd, mcpStdio, abortController, shellPath, tmp }) {
+  const base = env ?? process.env;
   return {
     model,
     permissionMode: TOOL_POLICY.permissionMode,
@@ -120,23 +237,38 @@ export function agentOptions({ model, effort, env, cwd, mcpStdio, abortControlle
     allowedTools: allowedTools(cwd),
     strictMcpConfig: TOOL_POLICY.strictMcpConfig,
     persistSession: TOOL_POLICY.persistSession,
+    sandbox: sandboxFor(cwd, tmp),
     // Only for the message_start/message_delta usage above; content deltas are
     // dropped before they reach the transcript.
     includePartialMessages: true,
     ...(effort ? { effort } : {}),
     // Lets run.mjs stop a task on its backend-agnostic token/wall ceilings.
     ...(abortController ? { abortController } : {}),
-    env: env ?? process.env,
+    env: shellPath ? { ...base, PATH: shellPath } : base,
     mcpServers: {
-      firefox: { type: 'stdio', command: mcpStdio.command, args: mcpStdio.args },
+      firefox: {
+        type: 'stdio',
+        command: mcpStdio.command,
+        args: mcpStdio.args,
+        env: { ...(base.PATH ? { PATH: base.PATH } : {}), ...(mcpStdio.env ?? {}) },
+      },
     },
   };
 }
 
 export async function run({
-  prompt, model, effort, env, cwd, onMessage, onOutputTokens, mcpStdio, abortController,
+  prompt, model, effort, env, cwd, onMessage, onOutputTokens, mcpStdio, abortController, shellPath,
 }) {
-  const options = agentOptions({ model, effort, env, cwd, mcpStdio, abortController });
+  const home = isolatedClaudeHome(env ?? process.env);
+  try {
+    return await runIn(home, { prompt, model, effort, cwd, onMessage, onOutputTokens, mcpStdio, abortController, shellPath });
+  } finally {
+    home.close(cwd);
+  }
+}
+
+async function runIn(home, { prompt, model, effort, cwd, onMessage, onOutputTokens, mcpStdio, abortController, shellPath }) {
+  const options = agentOptions({ model, effort, env: home.env, cwd, mcpStdio, abortController, shellPath, tmp: home.tmp });
   const started = Date.now();
   const tracker = usageTracker();
   // What an attempt spent when no result message will ever say: an abort, or a

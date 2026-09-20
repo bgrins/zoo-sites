@@ -24,9 +24,10 @@ import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { normalise } from '../extract.mjs';
+import { blameToolErrors, createCallRecorder } from '../mcp-tap.mjs';
 import { createReachRecorder, gradedValues, mintedValues } from '../surface-reach.mjs';
 import { readStateFile } from './state-file.mjs';
-import { rowEvents } from './events.mjs';
+import { rowEvents, SURFACE_SERVER } from './events.mjs';
 import { rowToolStats } from './tool-stats.mjs';
 
 // owner: who a class points at. `tool` classes are the ones a tool change can
@@ -40,7 +41,7 @@ export const FAILURE_CLASSES = {
   extraction: { owner: 'grader', about: 'the answer holds the value, but the extracted field is null' },
   'surface-reach': { owner: 'tool', about: 'the surface cut the graded value before it reached the agent' },
   'both-arms': { owner: 'task-or-agent', about: 'every other arm failed the same task the same way' },
-  'tool-errors': { owner: 'tool', about: 'calls to the surface failed during the attempt' },
+  'tool-errors': { owner: 'tool', about: 'a call to the surface failed and nothing later made it good, or it carried a graded value' },
   unattributed: { owner: 'unattributed', about: 'no rule fired; read the transcript' },
 };
 export const TOOL_CLASSES = new Set(
@@ -188,9 +189,22 @@ function reachStates(events, values) {
   return rec.reach(values);
 }
 
-// The MCP tap saw every reply, so a row that carries its counts is not second-
-// guessed from the transcript.
-function toolErrorEvidence(row, stats) {
+// A surface error is charged to the tool only when nothing later made it good
+// or it carried a value the task grades (mcp-tap.mjs blameToolErrors): stored
+// runs charged codex's range-select to a take_snapshot error four working
+// scripts recovered from, while the agent's own slice(-500) cut the receipt. A
+// row that records its blame is read as written; an older one is re-read from
+// its transcript, and only without one does any error count.
+function toolErrorEvidence(row, stats, events, state) {
+  const describe = (blamed) =>
+    blamed.length ? blamed.map((b) => `${b.tool} #${b.seq} (${b.why})`).join(', ') : null;
+  if (row.tool_errors) return describe(row.tool_errors.blamed ?? []);
+  if (events) {
+    const recorder = createCallRecorder(SURFACE_SERVER);
+    for (const e of events) recorder.observe(e);
+    const values = [...gradedValues(row.fields ?? {}), ...(state ? mintedValues(state) : [])];
+    return describe(blameToolErrors(recorder.summary().tool_errors, values));
+  }
   if (row.tools && typeof row.tools === 'object') {
     const failing = Object.entries(row.tools).filter(([, t]) => t?.errors > 0);
     return failing.length ? failing.map(([name, t]) => `${name} x${t.errors}`).join(', ') : null;
@@ -251,7 +265,7 @@ export function failureClass(row, events = null, { peers = [], peerClasses = nul
     hit('both-arms', `${alike.map((p) => p.condition).join(', ')} failed alike (${signature || 'no field or sub-check named'})`);
   }
 
-  hit('tool-errors', toolErrorEvidence(row, stats));
+  hit('tool-errors', toolErrorEvidence(row, stats, events, state));
 
   const absentMinted = minted.filter((v) => reach[v] === 'absent');
   if (!hits.length) {

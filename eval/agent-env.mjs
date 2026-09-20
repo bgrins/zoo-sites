@@ -13,11 +13,11 @@
 
 import { createHash } from 'node:crypto';
 import {
-  chmodSync, createReadStream, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync,
+  chmodSync, createReadStream, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { delimiter, dirname, join } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
 
 const BASE_KEYS = [
@@ -81,10 +81,53 @@ export function agentEnv(backend = null, source = process.env) {
 // while the code that made them is still awaiting an agent.
 const LIVE_DIRS = new Set();
 
+// Prefixes an agent can read (its cwd in every playwright-mcp action result,
+// TMPDIR, PATH and CLAUDE_CONFIG_DIR in its shell), so none says what the run is.
+export const TEMP_PREFIX = {
+  attempt: 'work-',
+  home: 'home-',
+  tmp: 'tmp-',
+  bin: 'bin-',
+  profiles: 'profiles-',
+};
+
+// The real path: macOS tmpdir() is under /var, a symlink to /private/var, and
+// firefox-devtools-mcp rejected a saveTo path under /var as outside its
+// /private/var cwd.
 export function makeTempDir(prefix) {
-  const dir = mkdtempSync(join(tmpdir(), prefix));
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), prefix)));
   LIVE_DIRS.add(dir);
   return dir;
+}
+
+// Commands that would reach a browser other than the condition's own, or drive
+// the desktop: stored runs opened fixture pages in the operator's running
+// Firefox through /opt/homebrew/bin/firefox. Each is shadowed by a stub that
+// says it is not available and fails, for a PATH lookup only: an absolute path
+// (/usr/bin/open), a login shell, whose profile rebuilds PATH, or `env -i`
+// reaches the real one. What stops that is the backend's sandbox, if anything,
+// and what catches a page it loads is scripts/foreign-browser.mjs.
+export const SHIMMED_COMMANDS = [
+  'firefox', 'firefox-esr', 'firefox-bin', 'firefox-beta', 'firefox-nightly', 'firefox-developer-edition',
+  'firefoxdeveloperedition', 'playwright', 'playwright-cli', 'open', 'osascript', 'xdg-open',
+  'x-www-browser', 'sensible-browser',
+];
+let shims = null;
+export function shimDir() {
+  if (shims) return shims;
+  shims = makeTempDir(TEMP_PREFIX.bin);
+  for (const name of SHIMMED_COMMANDS) {
+    const path = join(shims, name);
+    writeFileSync(path, `#!/bin/sh\necho "${name}: not available" >&2\nexit 127\n`);
+    chmodSync(path, 0o755);
+  }
+  return shims;
+}
+
+// `path` with the stub directory first, so everything else on it still runs.
+export function shimmedPath(path) {
+  const rest = String(path ?? '').split(delimiter).filter((p) => p && p !== shimDir());
+  return [shimDir(), ...rest].join(delimiter);
 }
 
 // Never throws: callers clean up in finally blocks, where a throw would replace

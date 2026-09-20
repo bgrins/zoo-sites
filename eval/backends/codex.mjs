@@ -15,12 +15,12 @@
 
 import { Codex } from '@openai/codex-sdk';
 import { execFile } from 'node:child_process';
-import { existsSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { promisify } from 'node:util';
-import { agentEnv, makeTempDir, removeTempDir } from '../agent-env.mjs';
+import { agentEnv, makeTempDir, removeTempDir, TEMP_PREFIX } from '../agent-env.mjs';
 import { priceTokens } from './pricing.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -41,6 +41,8 @@ export const TOOL_POLICY = {
   codexHome: 'isolated per process: the login, no config, no bundled skills',
   subagents: 'none: multi_agent_version removed from the model catalog codex loads',
   mcpServerEnv: 'the harness allowlist (agent-env.mjs base keys), forwarded by name',
+  path: 'the harness PATH with a stub directory first (agent-env.mjs SHIMMED_COMMANDS)',
+  rollout: 'CODEX_HOME/sessions rollout copied into the run dir as rollouts/<transcript>',
 };
 
 // Settings every codex process gets on top of the isolated home. On first start
@@ -91,7 +93,7 @@ function modelCatalog(env) {
 // credential outlives a crashed run. Without an auth.json the API key env var is
 // the login, and codex exec reads it as CODEX_API_KEY.
 export async function isolatedCodexHome(env) {
-  const root = makeTempDir('zoo-codex-');
+  const root = makeTempDir(TEMP_PREFIX.home);
   const home = join(root, 'home');
   const tmp = join(root, 'tmp');
   mkdirSync(home);
@@ -146,8 +148,7 @@ export function codexConfig({ home, mcpStdio, effort, path, mcpEnvVars = [] }) {
     // gets a private TMPDIR instead. TMPPREFIX is zsh's temp dir for heredocs.
     // macOS mktemp ignores TMPDIR and uses the per-user temp dir, which holds
     // every attempt's directories and so stays closed: there, a bare `mktemp`
-    // fails and `mktemp -p "$TMPDIR"` works. A PATH shim cannot fix it, because
-    // the shell is a login zsh whose path_helper puts /usr/bin first.
+    // fails and `mktemp -p "$TMPDIR"` works.
     sandbox_workspace_write: {
       network_access: true,
       writable_roots: [shellTmp],
@@ -174,6 +175,9 @@ export function codexConfig({ home, mcpStdio, effort, path, mcpEnvVars = [] }) {
         // and the proxies would reach the server under the Agent SDK only.
         // Names, not values, so no value lands on the codex command line.
         env_vars: mcpEnvVars,
+        // What the harness sets for this server alone (its own HOME), which
+        // holds no credential.
+        ...(mcpStdio.env ? { env: mcpStdio.env } : {}),
         // Codex cancels non-read-only MCP tools under approval 'never';
         // auto-approve this server's tools instead.
         default_tools_approval_mode: 'approve',
@@ -185,7 +189,36 @@ export function codexConfig({ home, mcpStdio, effort, path, mcpEnvVars = [] }) {
   };
 }
 
-export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio, abortController }) {
+// Codex's own record of the session, which keeps what its event stream drops:
+// the instructions and tool list it sent, and shell output whose head
+// command_execution.aggregated_output cut. Every rollout file under the home's
+// sessions/, in name order, joined into one file at `dest`.
+function keepRollouts(home, dest) {
+  const files = [];
+  const walk = (dir) => {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+      const path = join(dir, e.name);
+      if (e.isDirectory()) walk(path);
+      else if (/^rollout-.*\.jsonl$/.test(e.name)) files.push(path);
+    }
+  };
+  walk(join(home, 'sessions'));
+  if (!files.length) return false;
+  mkdirSync(dirname(dest), { recursive: true });
+  writeFileSync(dest, files.map((f) => readFileSync(f)).join(''));
+  return true;
+}
+
+// `rolloutPath`, when given, is where the session's rollout is kept, and
+// `shellPath` the PATH the agent's shell gets instead of env.PATH, which codex
+// itself and the MCP server keep.
+export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio, abortController, rolloutPath, shellPath }) {
   const codexHome = await isolatedCodexHome(env ?? {});
   try {
     // When env is provided the SDK does not inherit process.env, so this is
@@ -196,7 +229,7 @@ export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio
         home: codexHome,
         mcpStdio,
         effort,
-        path: env?.PATH,
+        path: shellPath ?? env?.PATH,
         mcpEnvVars: Object.keys(agentEnv(null, env ?? {})),
       }),
     });
@@ -274,6 +307,13 @@ export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio
         : {}),
     };
   } finally {
+    if (rolloutPath) {
+      try {
+        keepRollouts(codexHome.home, rolloutPath);
+      } catch (error) {
+        console.error(`warning: codex rollout not kept: ${error.message}`);
+      }
+    }
     codexHome.close();
   }
 }

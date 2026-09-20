@@ -97,14 +97,19 @@ function looksTruncated(needle, hay) {
   return false;
 }
 
+// An answer's sentence punctuation and quotes around a value are the agent's,
+// not the page's: range-select's "...applied to 22 files." read as absent
+// against a page that ended the sentence differently.
+const unwrap = (s) => s.replace(/^["'“”‘’(\[]+/, '').replace(/["'“”‘’)\].,;:!?]+$/, '').trim();
+
 export function reachOf(values, haystack) {
   const hay = norm(haystack);
   const hayFlat = norm(degroup(haystack));
   const out = {};
   for (const v of values) {
-    const needle = norm(v);
+    const needle = unwrap(norm(v));
     if (!needle) continue;
-    let hit = hay.includes(needle) || hayFlat.includes(norm(degroup(v)));
+    let hit = hay.includes(needle) || hayFlat.includes(unwrap(norm(degroup(v))));
     if (!hit && numeric(v)) {
       const d = digits(v);
       // Bare digits alone would match any substring of a longer number, so

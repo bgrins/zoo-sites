@@ -15,7 +15,7 @@
 import { spawnSync } from 'node:child_process';
 import {
   existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync,
-  rmSync, statSync, writeFileSync,
+  realpathSync, rmSync, statSync, writeFileSync,
 } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -73,8 +73,11 @@ const sh = (cmd, cmdArgs) => {
 // Absolute local paths leak a home directory and add noise for anyone reading
 // the bundle elsewhere; rewrite them unless asked not to.
 const home = homedir();
+// Attempt dirs are recorded by their real path (macOS /private/var/...), which
+// tmpdir() (/var/...) does not prefix.
+const temps = [...new Set([realpathSync(tmpdir()), tmpdir()])];
 const scrub = (text) =>
-  KEEP_PATHS ? text : text.split(home).join('~').split(tmpdir()).join('/tmp');
+  KEEP_PATHS ? text : temps.reduce((t, dir) => t.split(dir).join('/tmp'), text.split(home).join('~'));
 
 const rows = run.results ?? [];
 const conditions = [...new Set(rows.map((r) => r.condition))];

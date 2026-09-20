@@ -56,6 +56,7 @@ import { createRequire } from 'node:module';
 import {
   createWriteStream, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync,
 } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startPagesServer } from '../server.mjs';
@@ -64,15 +65,23 @@ import { basicTasks } from './tasks/basic.mjs';
 import { webTasks } from './tasks/web.mjs';
 import { devtoolsTasks } from './tasks/devtools.mjs';
 import {
-  agentEnv, attemptDownloads, makeTempDir, removeAllTempDirs, removeTempDir, writeStateFile,
+  agentEnv, attemptDownloads, makeTempDir, removeAllTempDirs, removeTempDir, SHIMMED_COMMANDS, shimmedPath,
+  TEMP_PREFIX, writeStateFile,
 } from './agent-env.mjs';
 import { extractFields, extractorInfo, isSentinel } from './extract.mjs';
 import {
-  BROWSER_PINS, PINNED_PREFS, devtoolsMcpEntry, devtoolsMcpInfo, downloadPrefs, prefArgs, startMcpServer,
+  BROWSER_PINS, PINNED_PREFS, devtoolsMcpEntry, devtoolsMcpInfo, downloadPrefs, firefoxBuild, prefArgs,
+  startMcpServer,
 } from './mcp-stdio.mjs';
-import { createCallRecorder, readTapLog, tapSpec, tapToolStats, toolsListInfo } from './mcp-tap.mjs';
+import {
+  blameToolErrors, createCallRecorder, ensureTapExit, readTapLog, tapSpec, tapSurfaceCalls, tapToolStats,
+  toolsListInfo,
+} from './mcp-tap.mjs';
 import { envDrift, markdownReport, totalsByCondition } from './report.mjs';
 import { transcriptName } from './run-files.mjs';
+import {
+  foreignBrowser, OVERLAP_MS, SHELL_AFTER_MS, SURFACE_AFTER_MS, SURFACE_BEFORE_MS, SURFACE_SLACK_MS, tapWindows,
+} from './scripts/foreign-browser.mjs';
 import { createReachRecorder, gradedValues, mintedValues } from './surface-reach.mjs';
 import { detectScreen, windowGrid } from './window-grid.mjs';
 
@@ -559,7 +568,8 @@ Execution:
                           under --parallel
   --no-tap                run each MCP server without mcp-tap.mjs, the
                           passthrough that logs per-call latency and sizes;
-                          rows then carry no latency
+                          rows then carry no latency, and no row is checked
+                          for a browser its surface did not start
   --help                  show this help
 
 Before any paid work, each condition's MCP server is started once, must list
@@ -694,9 +704,11 @@ const PLAYWRIGHT_MCP_CLI = join(
 );
 
 // Every condition gets a shell, so the only difference between conditions
-// is how the browser is driven rather than whether a shell exists at all.
+// is how the browser is driven rather than whether a shell exists at all. It
+// claims nothing about what the shell lacks: its PATH is the operator's behind
+// a stub directory, and a stub cannot cover every way to start a browser.
 const SHELL_NOTE = `You also have a shell (Bash) for anything else you find useful.
-It has no browser-automation command in it — the MCP tools are how you drive the page.`;
+The MCP tools are how you drive the page.`;
 
 // Identical for every condition: the comparison of interest is
 // firefox-devtools-mcp vs playwright-mcp, so the prompt must not differ by so
@@ -737,6 +749,9 @@ function ensurePlaywrightFirefox() {
 const PINNED_ENV = { TZ: BROWSER_PINS.timeZone };
 // The scripted backend calls no API, so it gets the base set an MCP server gets.
 const agentEnvFor = (backend) => ({ ...agentEnv(backend === 'scripted' ? null : backend), ...PINNED_ENV });
+// The PATH an agent's shell gets. Only the shell's: a server that looks Firefox
+// up on PATH (firefox-devtools-mcp on Linux) must still find the real one.
+const shellPathFor = (backend) => (backend === 'scripted' ? undefined : shimmedPath(agentEnvFor(backend).PATH));
 
 const VIEWPORT = `${BROWSER_PINS.viewport.width}x${BROWSER_PINS.viewport.height}`;
 // firefox-devtools-mcp's --viewport sizes the WINDOW, and a headless Firefox's
@@ -751,13 +766,36 @@ const PLAYWRIGHT_CONFIG = {
     contextOptions: { colorScheme: BROWSER_PINS.colorScheme },
   },
 };
-let playwrightConfigPath = null;
-function playwrightConfigFile() {
-  if (!playwrightConfigPath) {
-    playwrightConfigPath = join(makeTempDir('zoo-eval-playwright-'), 'config.json');
-    writeFileSync(playwrightConfigPath, JSON.stringify(PLAYWRIGHT_CONFIG, null, 2));
-  }
-  return playwrightConfigPath;
+// `userAgent`, when set, is the attempt's tagged user agent (see browserTag),
+// so each attempt writes its own file into `dir`.
+function playwrightConfigFile(dir, userAgent = null) {
+  const path = join(dir, 'playwright-config.json');
+  const config = userAgent
+    ? { browser: { ...PLAYWRIGHT_CONFIG.browser, contextOptions: { ...PLAYWRIGHT_CONFIG.browser.contextOptions, userAgent } } }
+    : PLAYWRIGHT_CONFIG;
+  writeFileSync(path, JSON.stringify(config, null, 2));
+  return path;
+}
+
+// Every attempt's browser sends a user agent carrying a token of its own: the
+// preflight's user agent plus a space and eight hex digits. A page request
+// without the attempt's token came from some other browser, such as one the
+// agent's shell started, which the server would otherwise count as the
+// surface's (see foreignBrowser). Null when the preflight could not measure
+// the condition's user agent, or its tagged launch did not send the token.
+const TAG_MECHANISM = {
+  [DEVTOOLS]: 'pref general.useragent.override',
+  'playwright-mcp': 'contextOptions.userAgent',
+};
+const tagMechanismFor = (condition) =>
+  condition === 'playwright-mcp' ? TAG_MECHANISM['playwright-mcp'] : isDevtools(condition) && !(condition === DEVTOOLS && CUSTOM_MCP) ? TAG_MECHANISM[DEVTOOLS] : null;
+const PREFLIGHT_ENV = {};
+const TAGGABLE = new Set();
+function browserTag(condition) {
+  const base = PREFLIGHT_ENV[condition]?.userAgent;
+  if (!base || !TAGGABLE.has(condition)) return null;
+  const token = randomBytes(4).toString('hex');
+  return { token, userAgent: `${base} ${token}` };
 }
 
 // A headed Firefox is still writing its profile for a moment after its MCP
@@ -765,7 +803,7 @@ function playwrightConfigFile() {
 // therefore lives under one directory that is removed when the run exits.
 let gridProfiles = null;
 function gridProfileDir() {
-  gridProfiles ??= makeTempDir('zoo-eval-profiles-');
+  gridProfiles ??= makeTempDir(TEMP_PREFIX.profiles);
   return mkdtempSync(join(gridProfiles, 'p-'));
 }
 // Before that removal, wait up to `ms` for every browser launched on one of
@@ -778,15 +816,28 @@ async function awaitGridBrowsers(ms = 15000) {
   }
 }
 
-// `downloadsDir` is where the browser saves downloads; `profileDir` is a
-// profile seeded with a headed window's grid cell; `tapLog`, when set, runs the
+// `downloadsDir` is where the browser saves downloads; `privateDir` a directory
+// of the attempt's that its agent is never pointed at, for the server's own
+// files; `profileDir` is a profile seeded with a headed window's grid cell;
+// `userAgent` the attempt's tagged user agent; `tapLog`, when set, runs the
 // server through mcp-tap.mjs logging there.
-function mcpStdioFor(condition, { downloadsDir, profileDir = null, tapLog = null }) {
-  const spec = serverSpecFor(condition, { downloadsDir, profileDir });
+function mcpStdioFor(condition, { downloadsDir, privateDir, profileDir = null, userAgent = null, tapLog = null }) {
+  const spec = serverSpecFor(condition, { downloadsDir, privateDir, profileDir, userAgent });
   return spec && tapLog ? tapSpec(spec, tapLog) : spec;
 }
 
-function serverSpecFor(condition, { downloadsDir, profileDir }) {
+// firefox-devtools-mcp's saveTo root is ~/.firefox-devtools-mcp, so it runs
+// with a HOME of the attempt's own; stored runs found that directory shared by
+// every attempt and holding files from earlier days. Its WebDriver's driver
+// cache stays the operator's, since an empty one downloads geckodriver.
+function devtoolsServerEnv(privateDir) {
+  const home = join(privateDir, 'home');
+  mkdirSync(home, { recursive: true });
+  const realHome = process.env.HOME || homedir();
+  return { HOME: home, SE_CACHE_PATH: process.env.SE_CACHE_PATH || join(realHome, '.cache', 'selenium') };
+}
+
+function serverSpecFor(condition, { downloadsDir, privateDir, profileDir, userAgent }) {
   if (condition === 'playwright-mcp') {
     return {
       command: process.execPath,
@@ -799,7 +850,7 @@ function serverSpecFor(condition, { downloadsDir, profileDir }) {
         '--viewport-size',
         VIEWPORT,
         '--config',
-        playwrightConfigFile(),
+        playwrightConfigFile(privateDir, userAgent),
         // Its downloads land in its output directory, which also holds its own
         // snapshot and log files. Unset, that is .playwright-mcp/ in the cwd.
         '--output-dir',
@@ -820,10 +871,36 @@ function serverSpecFor(condition, { downloadsDir, profileDir }) {
             '--enable-script',
             ...(HEADED ? [] : ['--headless', '--viewport', DEVTOOLS_WINDOW]),
             ...(profileDir ? ['--profile-path', profileDir] : []),
-            ...prefArgs({ ...PINNED_PREFS, ...downloadPrefs(downloadsDir) }),
+            ...prefArgs({
+              ...PINNED_PREFS,
+              ...downloadPrefs(downloadsDir),
+              ...(userAgent ? { 'general.useragent.override': userAgent } : {}),
+            }),
           ],
+          env: devtoolsServerEnv(privateDir),
         };
   }
+  return null;
+}
+
+// The Firefox build each condition's server launches, read at every attempt so
+// an auto-update between two attempts shows on the rows: firefox-devtools-mcp
+// starts the installed Firefox (it is given no --firefox-path), and
+// playwright-mcp the build `playwright install` put in its cache.
+let playwrightFirefox;
+function browserBuildFor(condition) {
+  if (condition === 'playwright-mcp') {
+    playwrightFirefox ??= (() => {
+      try {
+        const mcpRequire = createRequire(PLAYWRIGHT_MCP_CLI);
+        return mcpRequire(mcpRequire.resolve('playwright-core')).firefox.executablePath();
+      } catch {
+        return null;
+      }
+    })();
+    return firefoxBuild(playwrightFirefox);
+  }
+  if (isDevtools(condition) && !(condition === DEVTOOLS && CUSTOM_MCP)) return firefoxBuild(null);
   return null;
 }
 
@@ -892,6 +969,64 @@ async function measureEnv(server, tools, probe, path) {
   };
 }
 
+// One preflight server of `condition`, in a fresh directory, launched as an
+// attempt's is. `userAgent` tags its browser.
+async function preflightServer(condition, userAgent = null) {
+  const dir = makeTempDir(TEMP_PREFIX.attempt);
+  const privateDir = makeTempDir(TEMP_PREFIX.home);
+  const downloadsDir = join(dir, 'downloads');
+  mkdirSync(downloadsDir);
+  const profileDir =
+    GRID && POSITIONABLE.includes(condition)
+      ? GRID.seed(gridProfileDir(), slotFor(BACKEND_NAMES[0], condition, 0))
+      : null;
+  const tapLog = TAP ? join(privateDir, 'tap.jsonl') : null;
+  const spec = mcpStdioFor(condition, { downloadsDir, privateDir, profileDir, userAgent, tapLog });
+  const cleanup = () => {
+    removeTempDir(dir);
+    removeTempDir(privateDir);
+  };
+  try {
+    const server = await startMcpServer({
+      command: spec.command,
+      args: spec.args,
+      env: spec.env,
+      baseEnv: agentEnvFor(null),
+      cwd: dir,
+    });
+    return { server, tapLog, cleanup };
+  } catch (error) {
+    cleanup();
+    throw error;
+  }
+}
+
+// Whether a browser launched with a tagged user agent sends it: a launch that
+// ignored the pref or the config would make every page request of every
+// attempt look foreign.
+async function verifyTag(condition, probe, tools) {
+  const mechanism = tagMechanismFor(condition);
+  const base = PREFLIGHT_ENV[condition]?.userAgent;
+  const pair = ENV_TOOLS.find((p) => tools.names.includes(p.navigate));
+  if (!mechanism || !base || !pair) return null;
+  const token = randomBytes(4).toString('hex');
+  const path = `/${condition}/tag-${token}`;
+  let launched;
+  try {
+    launched = await preflightServer(condition, `${base} ${token}`);
+    await launched.server.call(pair.navigate, { url: probe.url + path });
+  } catch (error) {
+    return { mechanism, verified: false, why: String(error?.message ?? error).slice(0, 200) };
+  } finally {
+    await launched?.server.close();
+    launched?.cleanup();
+  }
+  const sent = probe.headersAt(path)['user-agent'] ?? null;
+  const verified = sent === `${base} ${token}`;
+  if (verified) TAGGABLE.add(condition);
+  return { mechanism, verified, ...(verified ? {} : { sent }) };
+}
+
 // Free checks before any paid work. A crashing --mcp-command, or a server that
 // needs a variable the environment allowlist drops, otherwise leaves every
 // agent with only Bash, and the run grades that as the surface. The server gets
@@ -906,23 +1041,10 @@ async function preflight() {
   const probe = await startProbeServer();
   try {
     for (const condition of CONDITIONS) {
-      const dir = makeTempDir('zoo-eval-preflight-');
-      let server;
+      let launched;
       try {
-        const downloadsDir = join(dir, 'downloads');
-        mkdirSync(downloadsDir);
-        const profileDir =
-          GRID && POSITIONABLE.includes(condition)
-            ? GRID.seed(gridProfileDir(), slotFor(BACKEND_NAMES[0], condition, 0))
-            : null;
-        const tapLog = TAP ? join(dir, 'tap.jsonl') : null;
-        const spec = mcpStdioFor(condition, { downloadsDir, profileDir, tapLog });
-        server = await startMcpServer({
-          command: spec.command,
-          args: spec.args,
-          baseEnv: agentEnvFor(null),
-          cwd: dir,
-        });
+        launched = await preflightServer(condition);
+        const { server, tapLog } = launched;
         const listed = (await server.listTools()).tools;
         if (!listed?.length) throw new Error('the server listed no tools');
         tools[condition] = toolsListInfo(listed);
@@ -937,6 +1059,7 @@ async function preflight() {
             throw new Error('the tools/list reply mcp-tap.mjs logged names other tools than the client received');
           }
         }
+        e.build = browserBuildFor(condition);
         console.log(
           `(preflight: ${condition} lists ${listed.length} tools; ` +
             (e.unmeasured
@@ -949,8 +1072,19 @@ async function preflight() {
             `load a page, so no agent ran:\n${error.message}`
         );
       } finally {
-        await server?.close();
-        removeTempDir(dir);
+        await launched?.server.close();
+        launched?.cleanup();
+      }
+      if (!env[condition].unmeasured) {
+        PREFLIGHT_ENV[condition] = env[condition];
+        env[condition].tag = await verifyTag(condition, probe, tools[condition]);
+        if (env[condition].tag && !env[condition].tag.verified) {
+          console.log(
+            `(preflight: ${condition}'s browser did not send its tagged user agent ` +
+              `(${env[condition].tag.why ?? `sent ${JSON.stringify(env[condition].tag.sent)}`}), so its rows ` +
+              'tell a foreign browser from their own by timing alone)'
+          );
+        }
       }
     }
   } finally {
@@ -980,24 +1114,33 @@ const ACTIVE_STOPS = new Set();
 // What a row records about its tool calls. The message stream says which
 // server each call went to and what the results meant; the tap's log, when the
 // server ran through one, supplies the tools map, because only the wire has
-// latency. A row that never called its own browser server measured nothing
-// about the surface, whatever its grade, so it is marked invalid.
+// latency, and the surface call count, because only the wire shows which calls
+// reached the server: the Claude CLI answers a call to a tool the server lacks
+// itself. A row that never called its own browser server measured nothing
+// about the surface, whatever its grade, so it is marked invalid. Returns the
+// row's fields, and the surface's errors for blameToolErrors once the graded
+// values are known.
 function callTelemetry(recorder, tapLog) {
   const s = recorder.summary();
-  const tapped = tapLog ? readTapLog(tapLog).filter((r) => r.type === 'call') : null;
+  const tapped = tapLog ? tapSurfaceCalls(readTapLog(tapLog)) : null;
+  const surfaceCalls = tapped ? tapped.length : s.surface_calls;
   return {
-    surface_calls: s.surface_calls,
-    foreign_tools: s.foreign_tools,
-    ...(s.foreign_tools ? { foreign_servers: s.foreign_servers } : {}),
-    ...(s.surface_calls === 0 ? { invalid: 'no-surface-calls' } : {}),
-    tools: tapped ? tapToolStats(tapped) : s.tools,
-    // A call the agent saw start but the tap never saw answered (an aborted
-    // attempt), or the reverse, which would mean the two disagree.
-    ...(tapped && tapped.length !== s.surface_calls
-      ? { tap_mismatch: { tap: tapped.length, stream: s.surface_calls } }
-      : {}),
-    snapshot: s.snapshot,
-    friction: s.friction,
+    telemetry: {
+      surface_calls: surfaceCalls,
+      foreign_tools: s.foreign_tools,
+      ...(s.foreign_tools ? { foreign_servers: s.foreign_servers } : {}),
+      ...(surfaceCalls === 0 ? { invalid: 'no-surface-calls' } : {}),
+      tools: tapped ? tapToolStats(tapped) : s.tools,
+      // A call the agent saw start but the tap never saw answered (an aborted
+      // attempt), or the reverse, which would mean the two disagree.
+      ...(tapped && tapped.length !== s.surface_calls
+        ? { tap_mismatch: { tap: tapped.length, stream: s.surface_calls } }
+        : {}),
+      snapshot: s.snapshot,
+      friction: s.friction,
+    },
+    toolErrors: s.tool_errors,
+    shellWindows: s.shell_windows,
   };
 }
 
@@ -1007,9 +1150,11 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   // agents writing the same file in one shared dir, and repeats reusing the
   // scripts an earlier task left there. Downloads land inside it, where the
   // agent's shell can read them.
-  const attemptDir = makeTempDir('zoo-eval-attempt-');
+  const attemptDir = makeTempDir(TEMP_PREFIX.attempt);
   const downloadsDir = join(attemptDir, 'downloads');
   mkdirSync(downloadsDir);
+  // The attempt's files that are not the agent's: the server's HOME and config.
+  const privateDir = makeTempDir(TEMP_PREFIX.home);
   const transcript = transcriptName({
     label,
     task: task.id,
@@ -1023,11 +1168,16 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   // a profile kept per worker would hand one task's cookies and storage to the
   // next.
   const profileRoot = ctx.gridSlot != null ? gridProfileDir() : null;
+  const tag = browserTag(condition);
+  const browser = { ...(browserBuildFor(condition) ?? {}), tag: tag?.token ?? null };
   const mcpStdio = mcpStdioFor(condition, {
     downloadsDir,
+    privateDir,
     profileDir: profileRoot ? GRID.seed(profileRoot, ctx.gridSlot) : null,
+    userAgent: tag?.userAgent ?? null,
     tapLog,
   });
+  const rollout = ctx.rolloutsDir ? join(ctx.rolloutsDir, transcript) : null;
   const spec = {
     prompt: taskPrompt(task),
     model: modelFor(backendName),
@@ -1036,6 +1186,9 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     cwd: attemptDir,
     mcpStdio,
     env: agentEnvFor(backendName),
+    shellPath: shellPathFor(backendName),
+    // Where a backend that keeps its own session record (codex) copies it.
+    rolloutPath: rollout,
     // For the scripted backend, which runs the task's driver against this pages
     // server; an agent backend reads only the prompt.
     task,
@@ -1056,7 +1209,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   const calls = createCallRecorder(SURFACE_SERVER);
   spec.onMessage = (message) => {
     reach.observe(message);
-    calls.observe(message);
+    calls.observe(message, Date.now());
     if (transcriptStream) transcriptStream.write(JSON.stringify(message) + '\n');
   };
   // Runaway guards. There is deliberately no turn limit: a "turn" means
@@ -1093,6 +1246,10 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   let failed = null;
   let downloads = [];
   let telemetry = null;
+  let toolErrors = [];
+  let shellWindows = [];
+  let provenance = null;
+  let foreign = null;
   try {
     r = await backend.run(spec);
   } catch (error) {
@@ -1114,16 +1271,32 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     clearTimeout(wallTimer);
     ACTIVE_STOPS.delete(stopFor);
     transcriptStream?.end();
+    await ensureTapExit(tapLog);
     // Never allowed to cost the attempt its row: telemetry is not the grade.
     try {
-      telemetry = callTelemetry(calls, tapLog);
+      ({ telemetry, toolErrors, shellWindows } = callTelemetry(calls, tapLog));
     } catch (error) {
       telemetry = { telemetry_error: String(error?.message ?? error) };
     }
     // Hashing a large download stays out of the attempt's wall time.
     downloads = await attemptDownloads(downloadsDir);
-    if (failed) Object.assign(failed, { downloads, telemetry, startedAt });
+    provenance = {
+      prompt: spec.prompt,
+      browser,
+      ...(rollout && existsSync(rollout) ? { rollout: `rollouts/${transcript}` } : {}),
+    };
+    try {
+      foreign = foreignBrowser(ctx.pages?.state?.ledger, { windows: tapWindows(tapLog), shell: shellWindows, token: tag?.token });
+    } catch (error) {
+      foreign = { error: String(error?.message ?? error) };
+    }
+    if (failed) Object.assign(failed, { downloads, telemetry, startedAt, provenance, foreign });
+    // What the agent's shell left running outlives the agent: a sandboxed
+    // Firefox the probes started crashed and left its crash reporter up for half
+    // an hour. The directory names are random, so this matches the attempt's own.
+    for (const dir of [attemptDir, privateDir]) spawnSync('pkill', ['-f', dir]);
     removeTempDir(attemptDir);
+    removeTempDir(privateDir);
     if (profileRoot) {
       // Whatever this misses goes with the parent directory at exit.
       try {
@@ -1145,6 +1318,8 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
       downloads,
       telemetry,
       startedAt,
+      provenance,
+      foreign,
       ...extra,
     });
   // A run that finished past the cap fails like one stopped at it. Codex
@@ -1215,11 +1390,9 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   // page, and the codes the server minted say whether the truth was ever shown
   // at all. Only the shortfalls are recorded - a row listing everything the
   // agent could see would dwarf the row itself.
+  const truth = [...gradedValues(fields ?? {}), ...mintedValues(ctx.pages?.state ?? {})];
   const surface = (() => {
-    const states = reach.reach([
-      ...gradedValues(fields ?? {}),
-      ...mintedValues(ctx.pages?.state ?? {}),
-    ]);
+    const states = reach.reach(truth);
     const truncated = Object.keys(states).filter((v) => states[v] === 'truncated');
     const absent = Object.keys(states).filter((v) => states[v] === 'absent');
     if (!truncated.length && !absent.length) return null;
@@ -1230,6 +1403,10 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     };
   })();
   const tenth = (ms) => (ms == null ? null : Math.round(ms / 100) / 10);
+  // Triage charges a failure to the tool only through these (triage.mjs).
+  const blamed = toolErrors.length ? blameToolErrors(toolErrors, truth) : [];
+  const { invalid, ...measured } = telemetry;
+  const invalidWhy = invalid ?? (foreign?.sessions ? 'foreign-browser' : null);
   return {
     backend: backendName,
     condition: label,
@@ -1243,7 +1420,11 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     // Absent alone is ambiguous (a derived total was never printed either), but
     // truncated is not: it means the page rendered the value and the surface cut it.
     ...(surface ? { surface } : {}),
-    ...telemetry,
+    ...(invalidWhy ? { invalid: invalidWhy } : {}),
+    ...measured,
+    ...(toolErrors.length ? { tool_errors: { errors: toolErrors.length, blamed } } : {}),
+    ...(foreign ? { foreign_browser: foreign } : {}),
+    ...provenance,
     started_at: startedAt.toISOString(),
     answer: r.text.slice(0, 160).replace(/\n/g, ' '),
     turns: r.turns,
@@ -1365,6 +1546,7 @@ const taskTags = (task) => ({ family: task.family ?? null, areas: task.areas ?? 
 const DOCUMENT_DESTS = new Set(['document', 'iframe', 'frame']);
 function ledgerSummary(ledger) {
   const byStatus = {};
+  const nonBrowserByStatus = {};
   const sids = new Set();
   let documents = 0;
   let scripted = 0;
@@ -1374,10 +1556,16 @@ function ledgerSummary(ledger) {
     byStatus[status] = (byStatus[status] ?? 0) + 1;
     if (e.route ? e.route === 'document' || e.route === 'frame' : DOCUMENT_DESTS.has(e.dest)) documents++;
     else if (e.route ? e.route === 'fetch' : e.dest === 'empty') scripted++;
-    if (e.client ? e.client !== 'browser' : !e.dest) nonBrowser++;
+    if (e.client ? e.client !== 'browser' : !e.dest) {
+      nonBrowser++;
+      nonBrowserByStatus[status] = (nonBrowserByStatus[status] ?? 0) + 1;
+    }
     if (e.sid) sids.add(e.sid);
   }
-  return { requests: ledger.length, documents, scripted, non_browser: nonBrowser, sessions: sids.size, byStatus };
+  return {
+    requests: ledger.length, documents, scripted, non_browser: nonBrowser, sessions: sids.size, byStatus,
+    ...(nonBrowser ? { non_browser_by_status: nonBrowserByStatus } : {}),
+  };
 }
 
 // What the server saw during a row's attempt, read before the next reset() wipes
@@ -1429,7 +1617,7 @@ function writeRun(runDir, meta, results) {
   const jsonPath = join(runDir, 'results.json');
   const mdPath = join(runDir, 'report.md');
   writeFileSync(jsonPath, JSON.stringify({ meta, results, totals }, null, 2));
-  writeFileSync(mdPath, markdownReport({ meta, results, totals }));
+  writeFileSync(mdPath, markdownReport({ meta, results, totals, runDir }));
   return { totals, jsonPath, mdPath };
 }
 
@@ -1566,7 +1754,8 @@ async function runOne({ backendName, condition, label }, env, item, shared) {
       console.log(`[${label}] ${tag}: ERROR ${error?.message}`);
       // An infra row already sits outside the pass rate, in its own column; an
       // API error before the first tool call is not a contaminated row.
-      const { invalid, ...telemetry } = error?.telemetry ?? {};
+      const { invalid: noSurface, ...telemetry } = error?.telemetry ?? {};
+      const invalid = noSurface ?? (error?.foreign?.sessions ? 'foreign-browser' : undefined);
       // `infra` separates "we never got a graded attempt" from "the agent
       // failed the task", and is deliberately NARROWER than a retry: what
       // is worth retrying is not the same as what is worth excusing. An API or
@@ -1589,6 +1778,8 @@ async function runOne({ backendName, condition, label }, env, item, shared) {
         ...(error?.transcript ? { transcript: error.transcript } : {}),
         ...telemetry,
         ...(invalid && !infra ? { invalid } : {}),
+        ...(error?.foreign ? { foreign_browser: error.foreign } : {}),
+        ...(error?.provenance ?? {}),
         ...(error?.startedAt ? { started_at: error.startedAt.toISOString() } : {}),
         ...serverRecord(env, error?.transcript, shared.statesDir),
       });
@@ -1850,6 +2041,22 @@ function buildMeta(startedAt, selected, env, tools) {
       ...(HEADED ? { browserProfile: 'seeded per attempt with its grid cell' } : {}),
       env: Object.fromEntries(BACKEND_NAMES.map((n) => [n, Object.keys(agentEnvFor(n)).sort()])),
       toolPolicy: Object.fromEntries(BACKEND_NAMES.map((n) => [n, BACKENDS[n].TOOL_POLICY])),
+      // Stubs first on every agent shell's PATH, never on an MCP server's.
+      shellStubs: SHIMMED_COMMANDS,
+      devtoolsHome: 'fresh per attempt, outside the agent\'s directory; SE_CACHE_PATH keeps the WebDriver cache',
+      browserTag: {
+        how: 'each attempt\'s browser sends the preflight user agent plus a space and 8 hex digits',
+        mechanism: Object.fromEntries(CONDITIONS.map((c) => [c, tagMechanismFor(c)])),
+        verified: Object.fromEntries(CONDITIONS.map((c) => [c, TAGGABLE.has(c)])),
+      },
+      foreignBrowser: TAP
+        ? `a browser session whose first request came outside every surface call (${SURFACE_BEFORE_MS}ms before to ${SURFACE_SLACK_MS}ms after) and during a shell ` +
+          `command (until ${SHELL_AFTER_MS}ms after it, for good once backgrounded) or over ${SURFACE_AFTER_MS}ms after any surface call; ` +
+          'or a second session loading a site top-level that first did so inside the same surface call as the one before it, or while that one ' +
+          `still sent requests (over ${OVERLAP_MS}ms after); ` +
+          "or, once ledger rows carry the user agent, a browser request without the attempt's token. Any makes the row invalid. " +
+          'Missed: a session that starts inside a later surface call while the one before it on that site sends nothing more'
+        : 'off: both rules read the tap log, which --no-tap drops',
     },
     node: process.version,
   };
@@ -1894,7 +2101,7 @@ async function main() {
     if (AB) checkAbConditions(dir, prior);
     const totals = totalsByCondition(prior.results);
     const path = join(dir, 'report.md');
-    writeFileSync(path, markdownReport({ ...prior, totals }));
+    writeFileSync(path, markdownReport({ ...prior, totals, runDir: dir }));
     console.log(`rewrote ${path} (${prior.results.length} rows)`);
     if (AB) await writeAbReport(dir, prior);
     return;
@@ -1934,6 +2141,9 @@ async function main() {
   ) {
     console.log(`note: serving ${SERVING}, as ${RERUN_FAILED} was\n`);
   }
+  if (!TAP) {
+    console.log('note: --no-tap turns off the check for a browser the surface did not start, so no row is marked foreign-browser\n');
+  }
 
   if (SERVING === 'vhosts') {
     const pages = await startPagesServer({ vhosts: true });
@@ -1948,6 +2158,13 @@ async function main() {
   }
   if (HEADED) {
     GRID = windowGrid(TOTAL_SLOTS, detectScreen(flag('screen', null)));
+  }
+  for (const name of BACKEND_NAMES) {
+    try {
+      BACKENDS[name].preflightCheck?.(agentEnvFor(name));
+    } catch (error) {
+      throw new Error(`preflight: ${error.message}, so no agent ran`);
+    }
   }
   const { env, tools } = await preflight();
 
@@ -1970,7 +2187,12 @@ async function main() {
     }
   }
   Object.assign(LIVE, { runDir, meta, rows: [] });
-  const shared = { transcriptsDir, statesDir: join(runDir, 'states'), toolCallsDir };
+  const shared = {
+    transcriptsDir,
+    statesDir: join(runDir, 'states'),
+    toolCallsDir,
+    rolloutsDir: BACKENDS.codex ? join(runDir, 'rollouts') : null,
+  };
   const onRow = (row) => LIVE.rows.push(row);
 
   const runs = BACKEND_NAMES.flatMap((backendName) =>
