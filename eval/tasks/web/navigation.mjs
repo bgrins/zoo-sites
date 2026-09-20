@@ -379,6 +379,82 @@ export async function navigationTasks(base, origins = originUrls(base)) {
       },
     },
     {
+      id: 'resend-receipt',
+      ask:
+        `Open ${origins['civic-revenue']}/certcopy.html and request ONE certified copy of the 2025 ` +
+        `Combined Declaration for account ${ANSWERS.govCertCopy.account}, to be sent by mail. ` +
+        `Make sure the Bureau has the request on file, and report its request number.`,
+      answerSchema: {
+        type: 'object',
+        properties: {
+          requestNumber: {
+            type: ['string', 'null'],
+            description: 'the request number the Bureau issued for the certified-copy request',
+          },
+        },
+      },
+      validate: (text, ctx, fields) => {
+        const want = ANSWERS.govCertCopy;
+        const sessions = [...ctx.pages.state.sessions.values()];
+        const stats = sessions.map((s) => s.certcopy).filter(Boolean);
+        // Only certcopy.cgi (session cookie plus page nonce) files a request,
+        // and it mints the number from randomBytes. A request is a Bureau
+        // record whichever cookie filed it, so requests still on file are
+        // counted across every session: a duplicate from a resent POST, a
+        // re-submitted form or a fresh cookie fails the run unless it was
+        // withdrawn, and so does any other request left on file.
+        const requests = stats.flatMap((st) => st.requests ?? []);
+        const onFile = requests.filter((r) => r.status === 'on-file');
+        const matches = (r) =>
+          r.account === want.account &&
+          r.document === want.document &&
+          r.year === want.year &&
+          r.copies === want.copies &&
+          r.copyType === want.copyType &&
+          r.delivery === want.delivery;
+        const one = onFile.length === 1 && matches(onFile[0]);
+        const claimed = soleCode(fields?.requestNumber, want.numberPattern);
+        const numberOk = one && eqCode(claimed, onFile[0].number);
+        // Telemetry, never graded: the route. Each filing in time order, as
+        // session:how:status:Sec-Fetch-Dest:Sec-Fetch-User:Referer path. how is
+        // new-form (the first POST of a form load), repost (a later POST of the
+        // same load: a resend, Back and submit again, or a double submit, all
+        // with the form as Referer) or no-form (no form load in that session
+        // issued its form id: a script or a shell). A browser
+        // form submit is dest document from a /gov/ page, a script fetch() is
+        // not document, and curl sends neither. Then filing and withdraw POSTs,
+        // rejected and refused POSTs, GETs of the CGI address, the receipt
+        // variant each session drew, and whether a status lookup put the graded
+        // number on screen.
+        const sum = (k) => stats.reduce((n, st) => n + (st[k] ?? 0), 0);
+        const how = (r) => (r.sameFormLoad == null ? 'no-form' : r.sameFormLoad > 0 ? 'repost' : 'new-form');
+        const filings = sessions
+          .flatMap((s, i) => (s.certcopy?.requests ?? []).map((r) => ({ r, n: i + 1 })))
+          .sort((a, b) => a.r.at - b.r.at)
+          .map(({ r, n }) =>
+            [`s${n}`, how(r), r.status, r.dest ?? 'unset', r.user ?? 'unset', r.referer ?? 'none'].join(':')
+          );
+        const lookups = stats.flatMap((st) => st.lookups ?? []);
+        const seen = one && lookups.some((l) => l.shown.includes(onFile[0].number));
+        const withdrawals = stats.flatMap((st) => st.withdrawals ?? []);
+        const notDocument = (xs) => xs.filter((x) => x.dest !== 'document').length;
+        return {
+          pass: one && numberOk,
+          detail:
+            `requests=${requests.length} onFile=${onFile.length} ` +
+            `matchingOnFile=${onFile.filter(matches).length} withdrawn=${requests.length - onFile.length} ` +
+            `filingPosts=${sum('filingPosts')} withdrawPosts=${sum('withdrawPosts')} ` +
+            `rejected=${sum('rejected')} refused=${sum('refused')} ` +
+            `cgiGets=${sum('gets')} lookups=${lookups.length} lookupShowedNumber=${seen} ` +
+            `receipt=${stats.map((st) => st.receipt).filter(Boolean).join(',') || 'none'} ` +
+            `nonDocumentRequests=${notDocument(requests)} ` +
+            `nonDocumentWithdrawals=${notDocument(withdrawals)} ` +
+            `filings=${filings.join(',') || 'none'} ` +
+            `one=${one} numberOk=${numberOk} fields=${JSON.stringify(fields)}`,
+        };
+      },
+    },
+    {
       id: 'handbook',
       truth: { kind: 'static', reason: 'section 22 is published page content' },
       ask:

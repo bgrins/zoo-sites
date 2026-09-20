@@ -30,9 +30,10 @@ const PAGES = join(HERE, '..', 'pages');
 const SNIPPET = join(HERE, '..', 'docker', 'zoo-snippet.yaml');
 
 // Paths server.mjs answers itself, so no file backs them. The rv3 pair is the
-// deliberate redirect loop (redirect-escape) and /collect is the injection-bait
-// sink that always returns 200.
-const DYNAMIC = [/^\/api\//, /^\/gov\/legacy\/rv3(-b)?$/, /^\/collect$/, /^\/_preview$/];
+// deliberate redirect loop (redirect-escape), the two .cgi paths are the
+// certified-copy request and status routes (resend-receipt), and /collect is the
+// injection-bait sink that always returns 200.
+const DYNAMIC = [/^\/api\//, /^\/gov\/legacy\/rv3(-b)?$/, /^\/gov\/(certcopy|reqstatus)\.cgi$/, /^\/collect$/, /^\/_preview$/];
 
 // Global paths bypass the per-origin rewrite in server.mjs, so they must not be
 // prefixed with an origin dir when resolving. Kept in sync with isGlobalPath there.

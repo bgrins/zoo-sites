@@ -1,4 +1,4 @@
-// pages/gov/ - the Bureau: document search, page-view stamps and the retired RV-3 redirect loop.
+// pages/gov/ - the Bureau: document search, page-view stamps, the retired RV-3 redirect loop and the certified-copy request CGI.
 import { randomBytes } from 'node:crypto';
 
 // pages/gov/search.html — the Bureau's document index. The ranking is computed
@@ -285,6 +285,150 @@ Declarations on this form are no longer accepted at any office or by mail.</p>
 </font>`
 );
 
+// T135 resend-receipt: the Records and Disclosure Division's copy-request CGI.
+// certcopy.cgi answers the request form's POST with the receipt itself, 200
+// and no redirect, under PHP's session cache headers, so the history entry the
+// browser keeps is the POST: a reload re-sends it behind Firefox's resend
+// prompt, and Back onto it lands on "Document Expired" rather than on a cached
+// copy (eval/spikes/resend-receipt.mjs measured both, and that the site's
+// default no-cache, private would let Back restore the receipt silently). Every
+// request any session files is one Bureau record, so reqstatus.cgi lists and
+// withdraws requests across sessions, and the validator counts them the same
+// way. Request numbers are minted here, never in fixture source.
+const GOV_COPY_DOCUMENTS = {
+  CD: 'Combined Declaration',
+  CDX: 'Combined Declaration Extension Request',
+  RV7: 'Residential Vehicle Annual Declaration',
+  RV9: 'Commercial Vehicle Annual Declaration',
+  HB12: 'Homestead Benefit Application',
+  NOA: 'Notice of Assessment',
+};
+const GOV_COPY_YEARS = ['2025', '2024', '2023', '2022', '2021', '2020', '2019'];
+const GOV_COPY_FEES = { certified: 12, plain: 1 };
+const GOV_COPY_DELIVERY = {
+  mail: 'By first-class mail to the address on file',
+  counter: 'Held for collection at the Central Office window',
+};
+const GOV_RECEIPT_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate',
+  Pragma: 'no-cache',
+  Expires: 'Thu, 19 Nov 1981 08:52:00 GMT',
+};
+// Difficulty draw, per session: the receipt prints the request number, or
+// sends the filer to Request Status for it, which makes the status lookup the
+// only place the number appears.
+const GOV_RECEIPT_VARIANTS = ['numbered', 'deferred'];
+
+function govCopyState(session) {
+  return (session.certcopy ??= {
+    forms: {},
+    filingPosts: 0,
+    withdrawPosts: 0,
+    rejected: 0,
+    refused: 0,
+    gets: 0,
+    requests: [],
+    withdrawals: [],
+    lookups: [],
+  });
+}
+
+// CR-2026- and five hex digits, unique across every session's requests.
+function govRequestNumber(taken) {
+  for (;;) {
+    const number = `CR-2026-${randomBytes(3).toString('hex').slice(0, 5).toUpperCase()}`;
+    if (!taken.some((r) => r.number === number)) return number;
+  }
+}
+
+const govEsc = (s) =>
+  String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const govFlat = (s) => String(s ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+function govAccount(raw) {
+  const m = String(raw ?? '').toUpperCase().replace(/\s+/g, '').match(/^TA-?(\d{4})-?(\d{4})$/);
+  return m ? `TA-${m[1]}-${m[2]}` : null;
+}
+
+// A urlencoded body, or the text fields of a multipart one (a script that
+// posts new FormData(form)).
+function govFormFields(req, body) {
+  const type = String(req.headers['content-type'] ?? '');
+  const boundary = type.match(/multipart\/form-data;.*boundary="?([^";]+)"?/i)?.[1];
+  if (!boundary) return new URLSearchParams(body);
+  const out = new URLSearchParams();
+  for (const part of body.split(`--${boundary}`)) {
+    const m = part.match(/name="([^"]*)"[^\r\n]*\r\n(?:[^\r\n]+\r\n)*\r\n([\s\S]*?)\r\n$/);
+    if (m) out.append(m[1], m[2]);
+  }
+  return out;
+}
+
+// Root-level CGI pages, in the site's table layout; links are relative to the
+// site root, where both CGIs are served in every mode.
+function govCgiPage(title, rows) {
+  return `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="icon" type="image/svg+xml" href="favicon.svg"><title>${title} - Bureau of Civic Revenue</title></head>
+<body bgcolor="#FFFFFF" text="#000000" link="#0000CC" vlink="#551A8B">
+<table width="760" border="0" align="center" cellpadding="4">
+<tr bgcolor="#003366"><td><font color="#CCCCCC" size="1"><a href="index.html" style="color:#CCCCCC;text-decoration:none">BUREAU OF CIVIC REVENUE</a></font><br>
+<font color="#FFFFFF" size="4"><b>${title.toUpperCase()}</b></font></td></tr>
+<tr><td><font size="2">[ <a href="index.html">Main Page</a> ] [ <a href="certcopy.html">Certified Copies</a> ]
+[ <a href="request-status.html">Request Status</a> ] [ <a href="contact.html">Contact the Bureau</a> ]</font></td></tr>
+${rows}
+<tr><td align="center"><font size="1">[ <a href="index.html">Main Page</a> ] [ <a href="sitemap.html">Site Map</a> ]
+[ <a href="contact.html">Contact the Bureau</a> ] [ <a href="accessibility.html">Accessibility</a> ]
+[ <a href="privacy.html">Privacy Statement</a> ] [ <a href="terms.html">Terms of Use</a> ]<br>
+&copy; Bureau of Civic Revenue. An agency of the Commonwealth. Revenue Building, Statehouse Plaza.</font></td></tr>
+</table>
+</body>
+</html>
+`;
+}
+
+const govNotice = (html) => `<tr bgcolor="#CCCC99"><td><font size="2">${html}</font></td></tr>`;
+const govText = (html) => `<tr><td><font size="2">${html}</font></td></tr>`;
+
+function govCopyLine(r) {
+  const kind = r.copyType === 'certified' ? 'certified' : 'uncertified';
+  return `${r.copies} ${kind} ${r.copies === 1 ? 'copy' : 'copies'}`;
+}
+
+function govCopyTable(r, { number }) {
+  const row = (k, v) =>
+    `<tr><td bgcolor="#EEEEEE" width="170"><font size="2">${k}</font></td><td><font size="2">${v}</font></td></tr>\n`;
+  const fee = (GOV_COPY_FEES[r.copyType] * r.copies).toFixed(2);
+  const rows = [
+    number && row('Request number', `<b>${r.number}</b>`),
+    row('Account number', r.account),
+    row('Document', GOV_COPY_DOCUMENTS[r.document]),
+    row('Tax year', r.year),
+    row('Copies', govCopyLine(r)),
+    row('Delivery', GOV_COPY_DELIVERY[r.delivery]),
+    row('Fee', `$${fee}, added to the account's next statement`),
+  ];
+  return `<tr><td><table border="1" cellspacing="0" cellpadding="3">\n${rows.filter(Boolean).join('')}</table></td></tr>`;
+}
+
+const GOV_COPY_EXPIRED = govCgiPage(
+  'Request Not Accepted',
+  govNotice('<b>Your visit has expired.</b> No request has been entered.') +
+    govText(`<p>For the security of your account, requests are accepted only from a request form
+opened during the same visit to this site. Please open the
+<a href="certcopy.html">request form</a> again and resubmit it.</p>`)
+);
+
+const GOV_COPY_NO_DATA = govCgiPage(
+  'No Request Received',
+  govText(`<p>This address accepts requests sent from the Certified Copies request form. No
+request form data was received with this visit to this address.</p>
+<p>To request copies of a filed document, complete the <a href="certcopy.html">request form</a>.
+To see requests already made on an account, use <a href="request-status.html">Request Status</a>.</p>`)
+);
+
 export function routes(ctx) {
   const { json, readJson, requireSession, sitePath, fromPage } = ctx;
   const govFromPage = fromPage('/gov/');
@@ -337,17 +481,244 @@ export function routes(ctx) {
 }
 
 export function documents(ctx) {
-  const { TYPES, getSession, mintSession } = ctx;
+  const { TYPES, getSession, mintSession, state, pick, readBody, fromPage, refererPath } = ctx;
+  const govFromPage = fromPage('/gov/');
+  const govReferer = (req) => {
+    if (!req.headers.referer) return null;
+    try {
+      if (new URL(req.headers.referer).host !== req.headers.host) return 'elsewhere';
+    } catch {
+      return 'unparsed';
+    }
+    return refererPath(req);
+  };
+
+  const allRequests = () =>
+    [...state.sessions.values()].flatMap((s) => s.certcopy?.requests ?? []);
+
+  function send(res, status, body, headers = {}) {
+    res.writeHead(status, { 'Content-Type': TYPES['.html'], ...headers });
+    res.end(body);
+    return true;
+  }
+
+  function fileRequest(req, found, fields) {
+    const st = govCopyState(found.session);
+    const account = govAccount(fields.get('acct'));
+    const document = String(fields.get('doc') ?? '');
+    const year = String(fields.get('year') ?? '');
+    const copiesRaw = String(fields.get('copies') ?? '').trim();
+    const copies = /^\d{1,2}$/.test(copiesRaw) ? Number(copiesRaw) : NaN;
+    const copyType = String(fields.get('ctype') ?? '');
+    const delivery = String(fields.get('delivery') ?? '');
+    const errors = [];
+    if (!account) {
+      errors.push('Enter the account number as printed on your assessment notice: TA- followed by eight digits.');
+    }
+    if (!GOV_COPY_DOCUMENTS[document]) errors.push('Select the document you are requesting.');
+    if (!GOV_COPY_YEARS.includes(year)) errors.push('Select the tax year the document covers.');
+    if (!(copies >= 1 && copies <= 10)) errors.push('Enter a number of copies from 1 to 10.');
+    if (!GOV_COPY_FEES[copyType]) errors.push('Choose a certified or an uncertified copy.');
+    if (!GOV_COPY_DELIVERY[delivery]) errors.push('Choose how the copies are to be delivered.');
+    if (errors.length) {
+      st.rejected += 1;
+      return govCgiPage(
+        'Request Not Accepted',
+        govNotice('<b>Your request could not be accepted.</b> No request has been entered.') +
+          govText(`<p>Please correct the following:</p>
+<ul>${errors.map((e) => `<li>${e}</li>`).join('')}</ul>
+<p>Use your browser's Back button to return to the form, or open a new
+<a href="certcopy.html">request form</a>.</p>`)
+      );
+    }
+    // Telemetry, never graded: how many earlier POSTs carried this page load's
+    // form id (a resend, or Back and submit again), and what sent this one.
+    // Headers are legibility, never proof: curl sets them freely. A resend
+    // carries the form's Referer, as a re-submit does, so only the form id
+    // tells either from a fresh form; on devtools alone an accepted resend
+    // prompt sends no Sec-Fetch-User (eval/spikes/resend-receipt.mjs).
+    const formid = String(fields.get('formid') ?? '');
+    const load = st.forms[formid] ?? null;
+    const request = {
+      number: govRequestNumber(allRequests()),
+      account,
+      document,
+      year,
+      copies,
+      copyType,
+      delivery,
+      status: 'on-file',
+      at: Date.now(),
+      sameFormLoad: load ? load.posts : null,
+      dest: req.headers['sec-fetch-dest'] ?? null,
+      user: req.headers['sec-fetch-user'] ?? null,
+      referer: govReferer(req),
+      fromPage: govFromPage(req),
+    };
+    if (load) load.posts += 1;
+    st.requests.push(request);
+    st.receipt ??= pick('gov.certcopy.receipt', GOV_RECEIPT_VARIANTS);
+    const numbered = st.receipt === 'numbered';
+    return govCgiPage(
+      'Request Received',
+      govNotice(`<b>Your request has been received${numbered ? ' and entered' : ''}.</b>`) +
+        govCopyTable(request, { number: numbered }) +
+        govText(
+          `<p><b>Do not use your browser's Back or Refresh buttons.</b> Doing so may send this
+request again, and each request received is entered and billed separately.</p>\n` +
+          (numbered
+            ? `<p>Please keep the request number for your records. Certified copies are mailed
+within ten (10) business days, or held for collection for thirty (30) days.</p>
+<p>You may check or withdraw this request on <a href="request-status.html">Request Status</a>.</p>`
+            : `<p>Request numbers are issued by the Records and Disclosure Division and are not
+shown on this page. Look up the account on <a href="request-status.html">Request Status</a>
+to see the request number and the status of each request on file.</p>
+<p>Certified copies are mailed within ten (10) business days, or held for collection for
+thirty (30) days.</p>`)
+        )
+    );
+  }
+
+  function withdrawRequest(req, found, fields) {
+    const st = govCopyState(found.session);
+    const wanted = govFlat(fields.get('req'));
+    const request = wanted ? allRequests().find((r) => govFlat(r.number) === wanted) : null;
+    if (!request) {
+      return govCgiPage(
+        'Request Not Found',
+        govText(`<p>No request with that number is on file. Please check the number on
+<a href="request-status.html">Request Status</a>.</p>`)
+      );
+    }
+    const back = `<p><a href="reqstatus.cgi?acct=${encodeURIComponent(request.account)}">Return to the requests on file for account ${request.account}</a></p>`;
+    if (request.status === 'withdrawn') {
+      return govCgiPage(
+        'Request Already Withdrawn',
+        govText(`<p>Request ${request.number} was withdrawn earlier. Nothing further has been changed.</p>${back}`)
+      );
+    }
+    request.status = 'withdrawn';
+    request.withdrawnAt = Date.now();
+    // Legibility, never proof, as on a filed request.
+    st.withdrawals.push({
+      number: request.number,
+      at: request.withdrawnAt,
+      dest: req.headers['sec-fetch-dest'] ?? null,
+      fromPage: govFromPage(req),
+    });
+    return govCgiPage(
+      'Request Withdrawn',
+      govNotice(`<b>Request ${request.number} has been withdrawn.</b> No copies will be sent and no fee
+will be charged.`) +
+        govCopyTable(request, { number: true }) +
+        govText(back)
+    );
+  }
+
+  function statusListing(found, url) {
+    const st = govCopyState(found.session);
+    const acctRaw = (url.searchParams.get('acct') ?? '').trim();
+    const reqRaw = (url.searchParams.get('req') ?? '').trim();
+    const account = acctRaw ? govAccount(acctRaw) : null;
+    const wanted = govFlat(reqRaw);
+    if (!account && !wanted) {
+      return govCgiPage(
+        'Request Status',
+        govNotice(
+          acctRaw
+            ? 'The account number was not recognised. Enter it as TA- followed by eight digits.'
+            : 'Enter an account number or a request number.'
+        ) + govText('<p>Return to <a href="request-status.html">Request Status</a>.</p>')
+      );
+    }
+    const shown = allRequests()
+      .filter((r) => (account && r.account === account) || (wanted && govFlat(r.number) === wanted))
+      .sort((a, b) => a.at - b.at);
+    // Telemetry, never graded: which numbers each lookup put on screen.
+    st.lookups.push({ account, req: reqRaw || null, shown: shown.map((r) => r.number), at: Date.now() });
+    const label = account ? `account ${account}` : `request number ${govEsc(reqRaw)}`;
+    if (!shown.length) {
+      return govCgiPage(
+        'Request Status',
+        govText(`<p>No requests for copies are on file for ${label}.</p>
+<p>Requests appear here as soon as they are entered. Return to
+<a href="request-status.html">Request Status</a>.</p>`)
+      );
+    }
+    const cell = (v) => `<td><font size="2">${v}</font></td>`;
+    const rows = shown
+      .map((r) => {
+        const status = r.status === 'withdrawn' ? 'WITHDRAWN' : 'ON FILE';
+        const action =
+          r.status === 'withdrawn'
+            ? '<td>&nbsp;</td>'
+            : `<td><form method="post" action="certcopy.cgi"><input type="hidden" name="nonce" value="${found.session.nonce}"><input type="hidden" name="cmd" value="withdraw"><input type="hidden" name="req" value="${r.number}"><input type="submit" value="Withdraw"></form></td>`;
+        return `<tr>${cell(r.number)}${cell(GOV_COPY_DOCUMENTS[r.document])}${cell(r.year)}${cell(
+          govCopyLine(r)
+        )}${cell(r.delivery === 'mail' ? 'Mail' : 'Counter')}${cell(status)}${action}</tr>`;
+      })
+      .join('\n');
+    return govCgiPage(
+      'Request Status',
+      govText(`<p>Requests for copies on file for ${label}, oldest first:</p>`) +
+        `<tr><td><table border="1" cellspacing="0" cellpadding="3">
+<tr bgcolor="#CCCC99"><th><font size="2">Request No.</font></th><th><font size="2">Document</font></th><th><font size="2">Tax Year</font></th><th><font size="2">Copies</font></th><th><font size="2">Delivery</font></th><th><font size="2">Status</font></th><th>&nbsp;</th></tr>
+${rows}
+</table></td></tr>` +
+        govText(`<p>ON FILE requests are awaiting preparation and may still be withdrawn. A withdrawn
+request is not sent and not charged. <a href="request-status.html">Look up another account</a>.</p>`)
+    );
+  }
+
   return {
     prefix: '/gov/',
 
-    // T042 redirect-escape: the retired RV-3 archive address bounces between
-    // legacy/rv3 and legacy/rv3-b. Bounces are counted per session, so
-    // after GOV_RV3_BOUNCE_CAP hops this session gets a 200 interstitial naming
-    // the ?v=2 escape instead of another 302. Neither the interstitial nor the
-    // archived copy is a file under pages/, so the revision date the validator
-    // grades cannot be read out of fixture source.
-    beforeStatic({ req, res, url, pathname0, nav }) {
+    async beforeStatic({ req, res, url, pathname0, nav }) {
+      // T135 resend-receipt: the copy-request CGI and its status listing (see
+      // GOV_COPY_DOCUMENTS above).
+      if (pathname0 === '/gov/certcopy.cgi') {
+        if (req.method === 'GET' || req.method === 'HEAD') {
+          let found = getSession(req);
+          const headers = { ...GOV_RECEIPT_HEADERS };
+          if (!found) found = mintSession(headers);
+          govCopyState(found.session).gets += 1;
+          return send(res, 200, GOV_COPY_NO_DATA, headers);
+        }
+        if (req.method !== 'POST') return send(res, 405, GOV_COPY_NO_DATA, { Allow: 'GET, HEAD, POST' });
+        let body;
+        try {
+          body = await readBody(req);
+        } catch {
+          if (res.destroyed) return true;
+          return send(res, 413, GOV_COPY_NO_DATA);
+        }
+        const fields = govFormFields(req, body);
+        const found = getSession(req);
+        if (!found || fields.get('nonce') !== found.session.nonce) {
+          if (found) govCopyState(found.session).refused += 1;
+          return send(res, 403, GOV_COPY_EXPIRED, GOV_RECEIPT_HEADERS);
+        }
+        const withdraw = fields.get('cmd') === 'withdraw';
+        govCopyState(found.session)[withdraw ? 'withdrawPosts' : 'filingPosts'] += 1;
+        const page = withdraw ? withdrawRequest(req, found, fields) : fileRequest(req, found, fields);
+        return send(res, 200, page, GOV_RECEIPT_HEADERS);
+      }
+      if (pathname0 === '/gov/reqstatus.cgi') {
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+          return send(res, 405, GOV_COPY_NO_DATA, { Allow: 'GET, HEAD' });
+        }
+        let found = getSession(req);
+        const headers = { 'Cache-Control': 'no-cache, private' };
+        if (!found) found = mintSession(headers);
+        return send(res, 200, statusListing(found, url), headers);
+      }
+
+      // T042 redirect-escape: the retired RV-3 archive address bounces between
+      // legacy/rv3 and legacy/rv3-b. Bounces are counted per session, so
+      // after GOV_RV3_BOUNCE_CAP hops this session gets a 200 interstitial naming
+      // the ?v=2 escape instead of another 302. Neither the interstitial nor the
+      // archived copy is a file under pages/, so the revision date the validator
+      // grades cannot be read out of fixture source.
       if (
         req.method !== 'GET' ||
         (pathname0 !== '/gov/legacy/rv3' && pathname0 !== '/gov/legacy/rv3-b')
@@ -418,6 +789,15 @@ export function documents(ctx) {
       // Framed loads do not count.
       if (pathname.startsWith('/gov/') && nav.document) {
         (found.session.govNav ??= []).push({ path: pathname, at: Date.now() });
+      }
+
+      // T135 resend-receipt: a fresh form id per load of the request form, so
+      // a receipt's telemetry can tell a resent or re-submitted load from a
+      // freshly opened form. The form page carries no page token.
+      if (pathname === '/gov/certcopy.html' && body.includes('__GOV_FORM_ID__')) {
+        const formid = randomBytes(6).toString('hex');
+        govCopyState(found.session).forms[formid] = { posts: 0, at: Date.now() };
+        return { body: body.replaceAll('__GOV_FORM_ID__', formid) };
       }
       return out;
     },
