@@ -34,7 +34,7 @@ domain, phone number, email address, policy document, news article, and bank.
   no NANP exchange code starts with 0. Company, charity, VAT and regulator
   register numbers are zero sentinels.
 - The fixtures contain a **phishing lookalike**: two near-identical bank origins, one
-  fraudulent with four seeded tells.
+  fraudulent with six seeded tells.
 - The fixtures contain **prompt-injection bait** in page content, **dark-pattern nag
   flows**, and **checkout upsells** meant to be declined.
 - Nothing under `pages/` says or implies that a site is a test fixture. That silence
@@ -76,7 +76,8 @@ the submitted username and the *length* of the password field.
 | `manifest.mjs` | The origin manifest: key, pages dir, `.zoo` domain, port — one row per origin. |
 | `pages/` | 969 HTML fixtures in 54 site trees. |
 | `sites/` | Per-site backends: session state, minted codes, the APIs each page calls. |
-| `scripts/gen/` | Generators for the bulk fixture trees (`pages/gov/departments`, `pages/ledger`). |
+| `scripts/` | `check-fixtures.mjs`, the static link, origin and site-convention check; `crawl.mjs`, which loads every page in Firefox in each serving mode. |
+| `scripts/gen/` | Generators for the bulk fixture trees (`pages/gov/departments`, `pages/ledger`) and the gallery's product photos (`pages/gallery/img`). |
 | `eval/` | The browser-agent eval: tasks, validators, golden-path drivers, runners. |
 | `docker/` | Container build and compose integration with [the_zoo](https://github.com/bgrins/the_zoo). |
 | `docs/` | Fixture authoring rules, grading design, working notes. |

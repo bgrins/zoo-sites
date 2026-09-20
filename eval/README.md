@@ -9,13 +9,15 @@ The tool surface is a configurable condition: `--mcp-command` replaces the built
 server, so the same tasks grade whatever an agent drives the browser through. Nothing
 here touches the live web.
 
-This directory imports three modules from the sites side: `../server.mjs`,
-`../manifest.mjs`, and `../scripts/check-fixtures.mjs`, the static link and origin
-check `verify.mjs` runs before any driver. It also reads fixture files under
-`../pages/` directly: `verify.mjs` scans every page for unmuted media, and
-`tasks/web/extraction.mjs` and `tasks/web/safety.mjs` build their asks and checks
-from `pages/news/items.json` (safety also from `pages/news/threads/item-1.json`).
-The sites do not depend on it.
+This directory imports four modules from the sites side: `../server.mjs`,
+`../manifest.mjs`, `../scripts/check-fixtures.mjs`, the static link and origin
+check `verify.mjs` runs before any driver, and `../sites/utility.mjs`, whose bill
+renderer `spikes/pdf-bill.mjs` probes. It also reads fixture files under
+`../pages/` directly: `verify.mjs` scans every page for unmuted media,
+`scripts/derive-areas.mjs` reads the pages each task visits for the features its
+areas name, and `tasks/web/extraction.mjs` and `tasks/web/safety.mjs` build their
+asks and checks from `pages/news/items.json` (safety also from
+`pages/news/threads/item-1.json`). The sites do not depend on it.
 
 ## The gate
 
@@ -115,6 +117,9 @@ Both the gate and paid runs resolve `firefox-devtools-mcp` in this order, so
 2. `FIREFOX_DEVTOOLS_MCP=/path/to/checkout` — a built checkout's repo root
 3. the `@mozilla/firefox-devtools-mcp` dependency from `package.json`
 
+A `firefox-devtools-mcp@<label>` condition skips that order: it runs the root, or the
+dependency, that its `--devtools-build <label>=<root|dep>` names.
+
 ### What a paid run pins
 
 **Every site gets its own origin.** `run.mjs` serves each site on its own loopback
@@ -122,9 +127,10 @@ port with its directory at `/`, the shape the container serves, so no task promp
 names a `pages/` directory such as `/flaky/slow.html` or `/maze/`, and no page links to
 one: `scripts/check-fixtures.mjs` fails a page that hard-codes its own directory.
 `--single-origin` serves every site under its directory's path on one port instead, which is how every
-run before 2026-09-19 was served. The two are separate measurement epochs: `meta.serving`
-records the mode, a run without it was single-origin, and `--rerun-failed` keeps the mode
-of the run it tops up.
+run before 2026-09-19 was served, and `--vhosts` serves every site on one port under its
+own host name, `http://<key>.localhost:<port>`. The modes are separate measurement
+epochs: `meta.serving` records the mode, a run without it was single-origin, and
+`--rerun-failed` keeps the mode of the run it tops up.
 
 **Both conditions' browsers run in one environment.** Before any paid work the preflight
 loads a loopback page in each condition's browser and records its Firefox version, user
@@ -223,13 +229,14 @@ so a change that fails a free step never reaches a paid one.
    ```
 1. **Build the candidate** in a firefox-devtools-mcp checkout, `$FDM` below.
 2. **Run the free gate twice:** `FIREFOX_DEVTOOLS_MCP=$FDM node eval/verify.mjs`. A red
-   fixture task means the build broke a tool. A red assertion about a tool limit
-   (content.mjs throws "expected truncated link names in the snapshot") means the
-   driver has to stop asserting the limit, not that the build is wrong. Twice, because
-   one run can flake.
-3. **Run the free bench.** The spikes (`eval/spikes/README.md`) print `same` or
-   `CHANGED` per behaviour, and the spike covering the changed behaviour must print
-   `CHANGED`. The snapshot census
+   task means the build broke a tool. No driver asserts a tool limit any more, so a
+   build that lifts one stays green and shows up in step 3 instead. Twice, because one
+   run can flake.
+3. **Run the free bench.** `node eval/spikes/probes.mjs --build base=dep --build cand=$FDM`
+   prints `HOLDS` or `CHANGED` per documented tool limit, and the spikes
+   (`eval/spikes/README.md`) print `same` or `CHANGED` per behaviour; the probe or spike
+   covering the changed behaviour must print `CHANGED`. The snapshot census
+   (`node eval/scripts/snapshot-census.mjs --build base=dep --build cand=$FDM`)
    measures how much of each page's text reaches a snapshot, and must move within
    its size budget. A latency claim needs three gate repeats per build: navigate_page
    p50 has swung from 100 to 36 ms between two builds that differed only in the
@@ -261,7 +268,7 @@ so a change that fails a free step never reaches a paid one.
    The report ticks the mechanical checks; the mechanism and the cost still need a
    reader.
 6. **Before a release,** run the full web sweep of baseline against candidate at two
-   repeats (344 rows, about $38), which detects about a 10% suite-wide change.
+   repeats (376 rows, about $41), which detects about a 10% suite-wide change.
 7. **File it:** `node eval/scripts/history.mjs add eval/results/<run>`.
 
 **Budget.** A paired task sample costs about $0.11 per arm on codex luna (an upper
@@ -286,11 +293,12 @@ builds of one tool:
 
 **First experiment: the snapshot text cap.** Raise `MAX_ATTR_LENGTH` from 30 to 200
 and the walker's text cap from 100 to 2000 (finding 1 in `../docs/tool-findings.md`).
-The free census should move from about 19% of rendered characters to at least 45%,
-with snapshot characters up no more than 20%, and the gate should stay green apart
-from news-extract. The paid A/B is 12 snapshot-text tasks and the 4 guard rails at
-three repeats in three arms: 144 rows, about $16, whose 36 target pairs detect about a
-17% change. It ships if the candidate/baseline output CI lies below 1 and its estimate
+The free census should move from about 18% of rendered characters to at least 45%,
+with snapshot characters up no more than 20%, the gate should stay green, and the
+probes should print `CHANGED` for the text, name, href and walker text caps. The paid
+A/B is 12 of the 38 tasks `tasks/areas.json` tags `snapshot-text`, and the 4 guard
+rails, at three repeats in three arms: 144
+rows, about $16, whose 36 target pairs detect about a 17% change. It ships if the candidate/baseline output CI lies below 1 and its estimate
 below the A/A band, script calls per row fall by half, mfa-login passes 3 of 3,
 `surface.truncated` reaches 0, input tokens rise no more than 20%, and no guard rail
 rises above the band.
@@ -313,7 +321,9 @@ a surface that omitted the value.
 `eval/scripts/judge.mjs` asks a model why a failed or unusually expensive row went the
 way it did: the primary cause, the ranges of wasted steps, and the tool call that
 triggered them. It exists for the rows deterministic triage leaves `unattributed` and
-for successes that cost 1.5x the other arm; on the 172-row sweep that is 43 rows.
+for successes that cost 1.5x the other arm, so it reads every graded failure and, given
+`--ab`, every success that spent 1.5x its pair's output tokens; on the 172-row sweep
+that is 43 rows.
 
 **It is unvalidated.** Until the plan below is carried out, a diagnosis is a lead for a
 person to check against the transcript, never a finding, and nothing may be counted or
@@ -355,8 +365,10 @@ The judge is shown the same triage class report.md prints.
 | `answers.mjs` | The answer key. Excluded from result bundles and from the container image. |
 | `extract.mjs` | Structured answer extraction and the shared comparators. |
 | `mcp-stdio.mjs` | Stdio MCP client; resolves the tool server per the order above. |
+| `mcp-tap.mjs` | The passthrough every condition's server runs behind, logging each call's latency and sizes to `tool-calls/*.jsonl`; `--no-tap` drops it. |
 | `report.mjs`, `ab.mjs` | report.md, and the paired A/B report with its statistics. |
-| `scripts/` | Readers of a finished run: `transcript.mjs`, `bundle.mjs`, `triage.mjs`, `tool-stats.mjs`, `regrade.mjs`, `compare.mjs`, `history.mjs`, the opt-in `judge.mjs`, and the modules they share (`events.mjs`, `identity.mjs`, `state-file.mjs`). |
+| `scripts/` | Readers of a finished run: `transcript.mjs`, `bundle.mjs`, `triage.mjs`, `tool-stats.mjs`, `regrade.mjs`, `compare.mjs`, `history.mjs`, the opt-in `judge.mjs`, and the modules they share (`events.mjs`, `identity.mjs`, `state-file.mjs`). Beside them, `snapshot-census.mjs` measures snapshot coverage per build, and `derive-areas.mjs` regenerates `tasks/areas.json`. |
+| `spikes/` | Free capability spikes and the probe suite; see `spikes/README.md`. |
 | `results/` | Run output. Gitignored. |
 
 `../docs/process.md` covers how to work on the suite, `../docs/authoring-fixtures.md`

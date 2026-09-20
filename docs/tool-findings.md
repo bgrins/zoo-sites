@@ -23,7 +23,10 @@ firmer ground than the sizes, because each was also confirmed in the tool's sour
 by a free probe.
 
 Each finding carries tags for how it was confirmed: **[T]** in agent transcripts,
-**[P]** by a free local probe or census, **[S]** from source only.
+**[P]** by a free local probe or census, **[S]** from source only. The limits behind
+the [P] findings are re-checked by `node eval/spikes/probes.mjs`: on 0.9.15 every one
+of its 31 checks with a documented outcome prints HOLDS, so no finding below has
+changed.
 
 ## The headline
 
@@ -67,16 +70,18 @@ node eval/scripts/triage.mjs eval/results/run-2026-08-18T19-55-49-724Z
   text of a value the preceding snapshot had cut. The free census (the review's
   coverage-size probe over 74 task entry pages) put 0.9.15 at 18.6% of rendered
   characters delivered verbatim, and a build with both caps raised at 45.3% for 19.1%
-  more snapshot characters.
+  more snapshot characters. `eval/scripts/snapshot-census.mjs` now covers 82 entry
+  pages and puts 0.9.15 at 17.7%.
 - **Proposed change:** raise the text cap to 200 or more, or make it a `take_snapshot`
   parameter; mark a cut as `…(+N)`; emit hrefs relative to the origin and uncut; raise
   the walker cap to 2000.
 - **How the eval would show it:** on the snapshot-text area suite, `evaluate_script`
   calls per row fall by half or more, output tokens fall 10-25%, `surface.truncated`
   reaches 0 and mfa-login passes. Watch input tokens (snapshots grow about 20%) and the
-  dense-page guard rails in eval/ab.mjs. `eval/verify-drivers/content.mjs` asserts
-  the truncation today ("expected truncated link names in the snapshot") and goes red
-  on a fixed build, so it has to become a probe first.
+  dense-page guard rails in eval/ab.mjs. No driver asserts the cut any more: the
+  `text-cap`, `name-cap`, `href-cap` and `walker-text-cap` probes in
+  `eval/spikes/probes.mjs` hold on 0.9.15 and print CHANGED on a fixed build, and the
+  gate stays green.
 
 ### 2. Native dialogs are dismissed before the agent sees them [T][P]
 
@@ -92,9 +97,12 @@ node eval/scripts/triage.mjs eval/results/run-2026-08-18T19-55-49-724Z
   `userPromptOpened`, report the dialog in the reply of the action that opened it, and
   say "no dialog open" when none is.
 - **How the eval would show it:** registrar-purge turns fall to about 9 and output by
-  half or more. Only one task exercises a dialog, so add alert, confirm and prompt
-  fixtures before an A/B; `eval/verify-drivers/registrar.mjs:29-38` asserts the current
-  dead end.
+  half or more. Three tasks raise a dialog: registrar-purge a `confirm()`,
+  resend-receipt Firefox's resend prompt, and unsaved-leave a beforeunload prompt. None
+  raises `alert()` or `prompt()`, so add those fixtures before an A/B. The
+  `confirm-auto-dismiss`, `alert-auto-dismiss` and `prompt-auto-dismiss` probes in
+  `eval/spikes/probes.mjs` measure today's dismissal, and registrar-purge's driver
+  holds either way.
 
 ### 3. A crashed browser does not come back [T][S]
 
@@ -135,14 +143,15 @@ node eval/scripts/triage.mjs eval/results/run-2026-08-18T19-55-49-724Z
   `code`, `td`, `dd`, `label`, `option` and `summary`, so `<strong>$274.50</strong>`
   renders as "Your total is  today", with no ellipsis to show the loss.
 - **Evidence:** agents pass `includeAll` on most snapshots; on the census the full tree
-  raises word recall from 0.54 to 0.62 for 14% more characters; 50 golden-path graded
-  values never appear in any snapshot the drivers take.
+  raises word recall from 0.54 to 0.62 for 14% more characters; the gate's telemetry
+  (`verify.mjs --telemetry`) finds 99 of the 212 graded values its 99 drivers produce in
+  no snapshot a driver takes.
 - **Proposed change:** fold inline descendants' text into the parent, and always emit
   table cells, dd/dt, label, summary and option.
 - **How the eval would show it:** fewer script rows on fee-schedule, ledger-sum,
-  crm-join, roster-diff, oos-substitute, iframe-schedule and formula-repair.
-  `eval/verify-drivers/content.mjs:232` and `calc.mjs` ("grid text unexpectedly present
-  in the snapshot") assert today's loss.
+  crm-join, roster-diff, oos-substitute, iframe-schedule and formula-repair. The
+  `table-cells`, `inline-text` and `select-options` probes in `eval/spikes/probes.mjs`
+  measure today's loss; the fee-schedule and formula-repair drivers no longer assert it.
 
 ### 6. Checked, disabled and selected state never reaches the snapshot [T][P]
 
@@ -184,8 +193,10 @@ node eval/scripts/triage.mjs eval/results/run-2026-08-18T19-55-49-724Z
 - **Proposed change:** keep an in-page element map or use BiDi `sharedId`, with CSS as
   the fallback.
 - **How the eval would show it:** no fixture repeats a `data-testid` yet, so one has to
-  be added (`docs/task-ideas.md`, T134 Reused Row) before the wrong-target rate can be
-  measured.
+  be added before the wrong-target rate can be measured; until then the
+  `uid-repeated-selector` probe in `eval/spikes/probes.mjs` is the only measure. T134
+  shipped as `reused-row`, but its misfire is an in-place re-render, which both
+  surfaces click through (`eval/spikes/reused-row.mjs`), not a repeated selector.
 
 ### 10. Snapshots are cut by line count without saying where [T]
 
@@ -214,8 +225,9 @@ node eval/scripts/triage.mjs eval/results/run-2026-08-18T19-55-49-724Z
 - `saveTo` refuses absolute paths under the server's own cwd or the temp dir (5 errors
   in the sweep) [T].
 - Error messages drop their cause: stale uid, `accept_dialog` and `saveTo` [T].
-- A web `--tools` preset: the harness's `--enable-script` loads 44 tools and 21,875
-  schema characters, and 19 rarely used tools were called 4 times in 86 rows [S].
+- A web `--tools` preset: the harness's `--enable-script` loads 44 tools and 21,920
+  schema characters (`toolsListInfo` in `eval/mcp-tap.mjs`), and 19 rarely used tools
+  were called 4 times in 86 rows [S].
 - Docs to fix in the tool: date fill works in Firefox 156 with ISO dates, and
   `evaluate_script`'s 5 s is a default capped at 10 s.
 

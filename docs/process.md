@@ -36,8 +36,10 @@ The default gate serves every site under a path prefix on one port. The containe
 a bug that only exists there, such as a Referer check that expects the prefix, passes
 the default gate. `--origins` runs the gate in the container's shape: each worker
 binds every origin on an ephemeral port, and the asks carry the origin URLs.
-Only navigation is mapped: `goto` sends a driver's single-origin path to the site
-that owns it, so a driver runs in both modes without an edit. The answer a driver
+`--vhosts` serves every site on one port under its own host name, the way the_zoo's
+proxy separates them. In both, only navigation is mapped: `goto` sends a driver's
+single-origin path to the site that owns it, so a driver runs in every mode without
+an edit. The answer a driver
 returns is not mapped. A driver that builds an answer value from `helpers.base` or
 a prefixed path such as `/bank/caldmoor-bank-login/` still reports the
 single-origin answer. The validator accepts that answer, and the task goes green,
@@ -85,8 +87,10 @@ site server itself uses node builtins. The `firefox-devtools-mcp` condition and 
    `dist/index.js` is used; the checkout must have been built (`npm run build`)
 3. the `@mozilla/firefox-devtools-mcp` dependency installed by `npm install`
 
-Without one of the last two the gate throws before its first task, naming the path
-it looked for. Export the env var to measure your own build of
+A `firefox-devtools-mcp@<label>` condition skips that order and runs the root, or the
+dependency, that its `--devtools-build <label>=<root|dep>` names. Without one of the
+last two the gate throws before its first task, naming the path it looked for.
+Export the env var to measure your own build of
 `firefox-devtools-mcp` in both the gate and paid runs; pass `--mcp-command` to
 measure another MCP browser server in place of the built-in one.
 
@@ -129,9 +133,11 @@ and a golden-path driver.
    key in `eval/answers.mjs`. A pure-extraction task adds `truth: { kind: 'static',
    reason }` (see "Fixing a defect", rule 1). `eval/tasks/web.mjs` concatenates the
    families, so it needs no edit unless the task starts a new one. Build URLs from the `origins.<key>`
-   templates; a new origin is a `manifest.mjs` entry keyed by domain, with its
-   `dir` under `pages/`. Per-task turn limits are deliberately absent: runaway
-   protection lives in `--max-wall` and `--max-output`.
+   templates. A new origin is a `manifest.mjs` entry with its `dir` under `pages/`,
+   appended at the end, because its port is 8100 plus its index and the_zoo publishes
+   the ports; regenerate `docker/zoo-snippet.yaml` with it (`docker/README.md`,
+   section 5) and widen the Dockerfile's port range. Per-task turn limits are
+   deliberately absent: runaway protection lives in `--max-wall` and `--max-output`.
 4. **Golden-path driver** in `eval/verify-drivers/<family>.mjs`, merged by
    `eval/verify-drivers/index.mjs`: it navigates, clicks by uid, and returns the answer
    a correct agent would produce, having genuinely satisfied the server-observed
@@ -186,7 +192,8 @@ spike the tools no task exercises. A tool that reports success while doing nothi
 is the failure mode to expect, and `drag_by_uid_to_uid` is the standing example: it
 sends only untrusted dragstart and drop events, so a pointer-driven list does not
 move while the tool reports a drag. `set_viewport_size` silently clamps,
-`evaluate_script` caps at 5s, and a wrapping label does not name an input. `fill` on
+`evaluate_script` times out at 5s by default and at 10s whatever timeout it is given,
+and a wrapping label does not name an input. `fill` on
 `type=range` silently keeps the old value. On `type=date` it takes an ISO value and
 silently leaves the field empty for the locale's typed order (03/04/2027), and on
 `datetime-local` it is the reverse: an ISO value silently stores a wrong date, and
@@ -264,7 +271,7 @@ and only a late adversarial pass catches it.
    deliberately design around is the most common false positive here.
 
 Those assertions accumulate into the gate's memory. All 99 drivers carry them, and a
-full run exercises 614 wrong answers and 219 wrong server states that must all fail,
+full run exercises 615 wrong answers and 219 wrong server states that must all fail,
 and 450 accepted variants and 144 accepted states that must all pass, so a change that
 re-breaks one fails the run and names it. The generic mutants add 174 erased states
 that must fail and 87 shadow sessions that must be ignored, across the 87 minted-truth
@@ -331,8 +338,9 @@ work:
 - **Compare tools inside one run, as a paired A/B.** Put both builds in one seeded,
   interleaved run as conditions, and read `eval/ab.mjs`. Across runs, cost never
   compares and prompt caches differ, so `eval/scripts/compare.mjs` refuses two runs
-  whose backend, model, effort, seed or eval commit differ. An unseeded run gives each
-  arm its own difficulty draws, so its paired difference carries draw noise too.
+  whose backend, model, effort, seed, eval commit, suite, serving or extractor differ.
+  An unseeded run gives each arm its own difficulty draws, so its paired difference
+  carries draw noise too.
 - **Quote the geometric-mean ratio with its interval, never a ratio of sums.** A few
   long tasks dominate a sum: the 2026-08-18 sweep gives 1.336 as a ratio of sums and
   1.209 as a geometric mean over tasks.

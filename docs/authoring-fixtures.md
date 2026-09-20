@@ -107,7 +107,8 @@ Each of these binds every fixture and every validator, without exception.
    pattern, and the corner and shadow treatment, not the first name in a CSS
    stack: `forms/draymere` asks for IBM Plex Sans and renders the generic
    sans-serif, which is Helvetica. Re-measure and edit this list whenever a site
-   is re-skinned.
+   is re-skinned. `events`, which arrived later that day, was entered from its
+   stylesheet and landing page rather than re-measured.
 
    CLOSED — every family here already has two or more members and takes no new
    one. A re-skin moves a site OUT of its family and into unclaimed territory,
@@ -167,14 +168,14 @@ Each of these binds every fixture and every validator, without exception.
    - A centred masthead, with the wordmark and the nav on the centre line:
      `bistro`, `boxoffice`, `insure`, `promo`.
    - The defaults, which claim nothing on their own: a horizontal top nav whose
-     current item is underlined or filled, on 36 landing pages, and a dark
+     current item is underlined or filled, on 37 landing pages, and a dark
      full-width top bar, on 23. A dark top bar over a left rail is the console
      look above.
 
    By corners and depth:
    - Hard offset shadows with no blur: `lexvane`, `promo`, `vault`.
    - The rest are counts, not families, and most sites are square and flat:
-     37 landing pages have no corner of 8px or more and no shadow at all. Cards
+     38 landing pages have no corner of 8px or more and no shadow at all. Cards
      rounded to 8px or more: `fernwood`, `forms/drennhill`, `forms/summit`,
      `forms/thornbury`, `forms/waypost`, `gallery`, `inbox`, `intake`,
      `kanban`, `lexvane`, `portal`, `roles`, `smarthome`, `status`, `telco`.
@@ -225,9 +226,13 @@ Each of these binds every fixture and every validator, without exception.
    - `intake`: a Material 3 app. Kohinoor Telugu behind a Roboto stack, dusty
      rose tonal surfaces on a rose-white ground, a surface-coloured app bar
      over primary tabs, elevated cards and pill buttons.
+   - `events`: a council service in the GOV.UK manner. A PT Serif body on
+     white under an 8px tangerine rule, a periwinkle tab strip whose current
+     tab is filled white, a breadcrumb over a ruled side column, square and
+     flat throughout, and tangerine buttons with an ink bottom border.
 
    House tics, each already far past two sites: letterspaced caps labels (34 of
-   65 landing pages carry three or more), a two-tone split wordmark (about 11),
+   66 landing pages carry three or more), a two-tone split wordmark (about 11),
    and a founding year in the tagline (about 11). A new site uses none of them,
    and a re-skin drops them.
 
@@ -237,11 +242,12 @@ Each of these binds every fixture and every validator, without exception.
      WordPress magazine or blog theme, a Swiss International-style grid, a 2003
      portal with bevels and gradients.
    - Faces no site renders its text mainly in: American Typewriter, Bodoni 72,
-     Marion, STIX Two Text, PT Serif, Baskerville, Courier New, PT Mono, Hiragino
-     Mincho, Microsoft Sans Serif, Marker Felt.
-   - Palettes no site leads with: periwinkle and tangerine. Seafoam and peach
-     appear only as small tints (`status`, `roles`). Dusty rose (`intake`) and
-     sky blue on a light ground (`flaky`) were taken on 2026-09-19.
+     Marion, STIX Two Text, Baskerville, Courier New, PT Mono, Hiragino Mincho,
+     Microsoft Sans Serif, Marker Felt.
+   - Palettes no site leads with: seafoam and peach, which appear only as small
+     tints (`status`, `roles`). Dusty rose (`intake`), sky blue on a light ground
+     (`flaky`), and periwinkle with tangerine (`events`) were taken on
+     2026-09-19.
    - Webfonts: no site ships one, so a self-hosted OFL face under the site's own
      directory is open territory too (check its licence against rule 5).
 9. **Deterministic.** Ship no wall-clock or random-dependent content unless the

@@ -139,14 +139,16 @@ the extracted object as a third argument:
   worked examples for row-shaped answers.
 - Shared comparators live in `eval/extract.mjs` and replace the per-task `money()` clones:
   `eqMoney` (0.005 tolerance), `eqName`, `eqEnum`, `eqCode` (case-, space- and
-  dash-insensitive, for server-minted PREFIX-HEX codes), `eqTime`, `eqPerson`
-  (order-free but token-complete), and `normaliseWords` for whole-word containment.
+  dash-insensitive, for server-minted PREFIX-HEX codes), `soleCode` (the one code of a
+  given shape in a labelled field, so "Reference AR-4149B7" grades as the code),
+  `eqTime`, `eqPerson` (order-free but token-complete), and `normaliseWords` for
+  whole-word containment.
 - A field-graded validator drops its prose clause-scoping outright. Two grading paths
   for one claim is how an answer key and a validator drift apart.
 
 ## What the runner records
 
-`eval/run.mjs` extracts between `backend.run` returning and `task.validate` running, retrying
+`eval/run.mjs` extracts between `backend.run` returning and `task.validate` running, trying
 up to three times. If all three fail, the row grades with null fields and carries
 `extraction_failed`, and the report prefixes it with `EXTRACTION FAILED`: the agent run
 is already paid for, so a grader hiccup never discards it, and the reader can see whose
@@ -155,7 +157,9 @@ failure it was.
 A field-graded row carries `grading: 'fields'`, the extracted `fields`, an `extraction`
 record (`extractor`, `model`, `output_tokens`, `cost_usd`, `duration_ms`), and
 `answer_full`, the verbatim answer — self-contained evidence for what graded and for
-what the agent said.
+what the agent said. The free `scripted` backend answers with its golden-path driver's
+fields, so its rows skip extraction and record `extraction.extractor: 'backend'` at no
+cost.
 
 ## What the free gate checks
 
@@ -177,6 +181,10 @@ directly, asserting four things per task.
    each around an otherwise-correct answer.
 4. **All-null fields fail.** The never-answered case must fail for every schema task,
    unconditionally.
+
+The gate also varies the server state under fixed fields: the `wrongState` and
+`alsoCorrectState` cases and the generic mutants in `docs/process.md`, "Fixing a
+defect".
 
 `node eval/verify.mjs --extract` additionally runs the real extractor over the driver's
 `text` and over the retained `wrong` and `alsoCorrect` strings, then asserts that the
