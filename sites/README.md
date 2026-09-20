@@ -124,14 +124,16 @@ migrated.
 ## Request ledger
 
 `state.ledger` holds a row per request the server answers:
-`{ sid, at, method, path, site, dest, mode, route, client, status, bytes, ms }`,
+`{ sid, at, method, path, site, dest, mode, route, client, ua, status, bytes, ms }`,
 plus `minted: true` when the response set the `sid` cookie and `aborted: true`
 when the client left first. `path` is in the `/<dir>/` form with its query,
 `site` is the manifest dir, `dest` and `mode` are the `sec-fetch-*` headers as
 sent, `route` is `document`, `frame`, `image`, `fetch`, `subresource` or `other`,
 and `client` is `browser`, `shell` (loopback without Fetch Metadata, which both
 eval browsers always send) or `unknown` (off loopback, where a browser may omit
-them). It is telemetry, like the headers it reads: no validator may grade on it.
+them). `ua` is the User-Agent header as sent; a paid run tags each attempt's own
+browser with a per-attempt token, so its foreign-browser check can tell that browser
+from any other. It is telemetry, like the headers it reads: no validator may grade on it.
 `state.reset()` clears it, and only `capped` bounds it.
 
 `route` and `client` measure different things. `route: 'fetch'` marks every

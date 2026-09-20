@@ -1441,11 +1441,11 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     ...(r.segments > 1 ? { segments: r.segments } : {}),
     ...(r.stream_errors ? { stream_errors: r.stream_errors } : {}),
     // Grading evidence for schema tasks; excluded from every condition total.
-    // The verbatim answer rides along so the row is self-contained: fields are
-    // what graded, answer_full is what the agent actually said.
+    // The verbatim answer rides along on every row so regrade.mjs never grades
+    // the preview: fields are what graded, answer_full is what the agent said.
     ...(task.answerSchema
       ? { grading: 'fields', fields, extraction, extraction_raw: extractionRaw, answer_full: r.text }
-      : {}),
+      : { answer_full: r.text }),
     ...(extractionFailed ? { extraction_failed: extractionFailed } : {}),
     ...(downloads.length ? { downloads } : {}),
     ...(ctx.transcriptsDir ? { transcript } : {}),

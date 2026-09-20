@@ -771,6 +771,7 @@ export async function startPagesServer({
       path: path.slice(0, LEDGER_PATH_KEEP),
       site,
       ...requestClass(req),
+      ua: req.headers['user-agent'] ?? null,
       status: null,
       bytes: 0,
       ms: null,
