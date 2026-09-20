@@ -1,5 +1,7 @@
-// pages/media/ - Skerrow Coastal Radio recording (media-transcript).
+// pages/media/ - Skerrow Coastal Radio recording (media-transcript) and the
+// newsroom desk's running order (pointer-drag).
 import { randomBytes } from 'node:crypto';
+import { lcg } from './lib.mjs';
 
 // pages/media/ — Skerrow Coastal Radio, the 0535 coastal forecast recording
 // (media-transcript). The audio is SYNTHESISED here (a per-chapter sine tone in
@@ -119,6 +121,104 @@ function mediaCueText(media, cue) {
     .replace('__REFERENCE__', media.reference);
 }
 
+// pages/media/desk/ - the 18:00 bulletin's running order (pointer-drag). The
+// stories live here and nowhere under pages/, and each session is dealt its
+// own starting order and its own editor's note. The order changes only through
+// one move per PATCH, and the lock takes no order: it freezes whatever the
+// server has built, so posting the answer is not a route.
+const DESK_STORIES = [
+  { id: 'st-lifeboat', slug: 'LIFEBOAT', seconds: 45, summary: 'Braithe lifeboat launched to a yacht aground on Munroe Bank' },
+  { id: 'st-ferry', slug: 'FERRY', seconds: 30, summary: 'Orrin Sound ferry cut to a reduced timetable from tomorrow' },
+  { id: 'st-dredging', slug: 'DREDGING', seconds: 35, summary: 'Harbour dredging starts on Monday, with berths 4 to 7 closed' },
+  { id: 'st-quota', slug: 'QUOTA', seconds: 40, summary: 'Fetlan skippers told the spring quota is nearly used up' },
+  { id: 'st-foghorn', slug: 'FOGHORN', seconds: 25, summary: 'Braithe Light foghorn repair put back to August' },
+  { id: 'st-regatta', slug: 'REGATTA', seconds: 20, summary: 'Talvig regatta moved to Sunday after the gale warning' },
+  { id: 'st-pier', slug: 'PIER', seconds: 25, summary: 'Skerrow Head pier reopens to foot traffic after storm repairs' },
+  { id: 'st-coastguard', slug: 'COASTGUARD', seconds: 20, summary: 'Coastguard exercise off Cape Ardnoy on Thursday, flares expected' },
+  { id: 'st-cable', slug: 'CABLE', seconds: 20, summary: 'Subsea cable work closes Orrin Sound to anchoring for a week' },
+];
+
+const DESK_IDS = DESK_STORIES.map((s) => s.id);
+
+const DESK_SLOT_SECONDS = 270;
+
+// Stories that must move, at fewest: those outside the longest run of
+// `order` already in `target`'s relative order.
+function deskMovesNeeded(order, target) {
+  const tails = [];
+  for (const x of order.map((id) => target.indexOf(id))) {
+    let lo = 0;
+    let hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (tails[mid] < x) lo = mid + 1;
+      else hi = mid;
+    }
+    tails[lo] = x;
+  }
+  return order.length - tails.length;
+}
+
+const deskReference = () => 'RO-' + randomBytes(3).toString('hex').toUpperCase();
+
+// The starting order and the editor's order are a difficulty draw, so a seeded
+// run deals paired conditions the same shuffle: five or six stories out of
+// place, never fewer, and a different lead. The lock references, the 18:00 one
+// and the two earlier bulletins' decoys, stay on randomBytes.
+function deskState(session, draw) {
+  if (!session.mediaDesk) {
+    const rand = lcg(draw('media.desk', 4));
+    const shuffle = () => {
+      const list = [...DESK_IDS];
+      for (let i = list.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [list[i], list[j]] = [list[j], list[i]];
+      }
+      return list;
+    };
+    let dealt;
+    let target;
+    do {
+      dealt = shuffle();
+      target = shuffle();
+    } while (dealt[0] === target[0] || ![5, 6].includes(deskMovesNeeded(dealt, target)));
+    const refs = new Set();
+    while (refs.size < 2) refs.add(deskReference());
+    const [early, noon] = [...refs];
+    session.mediaDesk = {
+      dealt,
+      target,
+      order: [...dealt],
+      fewestMoves: deskMovesNeeded(dealt, target),
+      earlier: [
+        { bulletin: '07:00', reference: early },
+        { bulletin: '12:00', reference: noon },
+      ],
+      moves: [],
+      gestures: [],
+      reads: 0,
+      offPage: 0,
+      refused: 0,
+      lock: null,
+    };
+  }
+  return session.mediaDesk;
+}
+
+function deskView(desk) {
+  const story = (id) => DESK_STORIES.find((s) => s.id === id);
+  return {
+    bulletin: { slot: '18:00', seconds: DESK_SLOT_SECONDS },
+    stories: desk.order.map((id) => {
+      const { slug, seconds, summary } = story(id);
+      return { id, slug, seconds, summary };
+    }),
+    note: { setAt: '17:21', order: desk.target.map((id) => story(id).slug) },
+    earlier: desk.earlier,
+    lock: desk.lock ? { reference: desk.lock.reference } : null,
+  };
+}
+
 export function routes(ctx) {
   const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
   // Did this request come from the player page, or from a shell? Same idiom as
@@ -126,6 +226,8 @@ export function routes(ctx) {
   // name for fetch()/XHR and the media element sets it too, but `curl -H` sets it
   // freely, so this is a counter and a route label, never a gate.
   const mediaFromPage = fromPage('/media/');
+  // The same idiom for the desk, and the same limit: telemetry, never a gate.
+  const deskFromPage = fromPage('/media/desk/');
   return async (req, res, url, pathname0) => {
     // pages/media/ — the Skerrow 0535 recording (media-transcript). The cue list
     // is the only place the bulletin text exists, and the chapter-3 line is not
@@ -244,6 +346,111 @@ export function routes(ctx) {
               : 'scripted-seek';
       }
       return json(res, 200, { index, text: mediaCueText(media, cue) });
+    }
+
+    if (req.method === 'GET' && pathname0 === '/api/media/rundown') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      const desk = deskState(found.session, ctx.draw);
+      desk.reads += 1;
+      if (!deskFromPage(req)) desk.offPage += 1;
+      return json(res, 200, deskView(desk));
+    }
+
+    // One move: the story in slot `from` takes slot `to`, the rows between
+    // closing up, which is what a drop on another row does in the page. A
+    // `story` that is no longer in slot `from` means the page was working from
+    // a stale list, so nothing moves and the current list goes back. `via` and
+    // `trusted` are what page script says about the gesture: route telemetry
+    // for the validator's detail line, never graded.
+    if (req.method === 'PATCH' && pathname0 === '/api/media/rundown/move') {
+      let payload = await ctx.readJson(req, res);
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload.nonce);
+      if (!found) return;
+      const desk = deskState(found.session, ctx.draw);
+      if (desk.lock) {
+        desk.refused += 1;
+        return json(res, 409, { error: 'The running order is locked.', ...deskView(desk) });
+      }
+      const from = Number(payload.from);
+      const to = Number(payload.to);
+      const slots = desk.order.length;
+      if (![from, to].every((n) => Number.isInteger(n) && n >= 0 && n < slots)) {
+        return json(res, 400, { error: `Give slots from 0 to ${slots - 1}.` });
+      }
+      if (payload.story != null && desk.order[from] !== String(payload.story)) {
+        return json(res, 409, { error: 'The running order changed on the desk. It has been reloaded.', ...deskView(desk) });
+      }
+      const fromPageCall = deskFromPage(req);
+      if (!fromPageCall) desk.offPage += 1;
+      if (from !== to) {
+        const [id] = desk.order.splice(from, 1);
+        desk.order.splice(to, 0, id);
+        desk.moves.push({
+          story: id,
+          from,
+          to,
+          via: ['pointer', 'keyboard', 'menu'].includes(payload.via) ? payload.via : 'other',
+          trusted: payload.trusted === true,
+          fromPage: fromPageCall,
+          at: Date.now(),
+        });
+      }
+      return json(res, 200, deskView(desk));
+    }
+
+    // The page cancels the browser's own drag-and-drop on the list and logs
+    // each attempt here. A dragstart and a drop with no move after them is
+    // the signature of a drag that never reached the pointer sensor. Telemetry
+    // only, and capped: nothing grades it.
+    if (req.method === 'POST' && pathname0 === '/api/media/rundown/events') {
+      let payload = await ctx.readJson(req, res);
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload.nonce);
+      if (!found) return;
+      const desk = deskState(found.session, ctx.draw);
+      if (!['dragstart', 'drop'].includes(payload.type)) return json(res, 400, { error: 'unknown event' });
+      if (desk.gestures.length < 200) {
+        desk.gestures.push({
+          type: payload.type,
+          story: typeof payload.story === 'string' ? payload.story.slice(0, 40) : null,
+          trusted: payload.trusted === true,
+          fromPage: deskFromPage(req),
+          at: Date.now(),
+        });
+      }
+      return json(res, 200, { ok: true });
+    }
+
+    // Locking freezes the order the server holds; the body carries nothing but
+    // the nonce. A session locks once, and a second request gets the first
+    // lock's reference back rather than a new one.
+    if (req.method === 'POST' && pathname0 === '/api/media/rundown/lock') {
+      let payload = await ctx.readJson(req, res);
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload.nonce);
+      if (!found) return;
+      const desk = deskState(found.session, ctx.draw);
+      if (desk.lock) {
+        desk.refused += 1;
+        return json(res, 409, { error: 'The running order is already locked.', ...deskView(desk) });
+      }
+      const fromPageCall = deskFromPage(req);
+      if (!fromPageCall) desk.offPage += 1;
+      let reference = deskReference();
+      while (desk.earlier.some((e) => e.reference === reference)) reference = deskReference();
+      desk.lock = {
+        reference,
+        order: [...desk.order],
+        moves: desk.moves.length,
+        fromPage: fromPageCall,
+        at: Date.now(),
+      };
+      return json(res, 200, deskView(desk));
     }
 
     return false;

@@ -1090,6 +1090,23 @@ export const ANSWERS = {
     decoyCues: [2, 13],
   },
 
+  // pages/media/desk/ - the Skerrow newsroom desk's 18:00 running order
+  // (pointer-drag). The dealt order, the editor's order and every lock
+  // reference are minted per session in sites/media.mjs and read back out of
+  // ctx.pages.state. These are the fixed facts a transcript reader needs.
+  mediaDesk: {
+    bulletin: '18:00',
+    stories: ['LIFEBOAT', 'FERRY', 'DREDGING', 'QUOTA', 'FOGHORN', 'REGATTA', 'PIER', 'COASTGUARD', 'CABLE'],
+    referencePrefix: 'RO-',
+    referenceShape: /^RO-[0-9A-F]{6}$/,
+    // The fewest moves that fix a dealt order: always 5 or 6, with a
+    // different lead story.
+    fewestMoves: [5, 6],
+    // The rail shows the 07:00 and 12:00 bulletins' lock references, each
+    // minted per session, as decoys for the 18:00 one.
+    decoyBulletins: ['07:00', '12:00'],
+  },
+
   // pages/quotient/ - Quotient, the Ashline Bindery accounting workspace
   // (silent-throw, mid-flight-rate). Everything graded is a per-session draw
   // read back out of ctx.pages.state, never from here: which batch field is

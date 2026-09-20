@@ -524,6 +524,105 @@ export async function interactionTasks(base, origins = originUrls(base)) {
       },
     },
     {
+      id: 'pointer-drag',
+      ask:
+        `Open ${origins['skerrow-radio']}/desk/. Put the 18:00 bulletin's running order into ` +
+        `the order the editor's note gives, lock it, and report the lock reference.`,
+      answerSchema: {
+        type: 'object',
+        properties: {
+          lockReference: {
+            type: ['string', 'null'],
+            description: 'the lock reference the desk issued for the 18:00 running order, e.g. RO-1A2B3C',
+          },
+        },
+      },
+      validate: (rawText, ctx, fields) => {
+        const A = ANSWERS.mediaDesk;
+        const sessions = [...ctx.pages.state.sessions.values()].filter((s) => s.mediaDesk);
+        // The page labels everything by clock time (the 18:00 bulletin, 4:30
+        // slot, locked at 17:58), so a time beside the reference, written
+        // 18:00, 18.00, 18:00:00, 6pm or 6 p.m., is no second code. A lone
+        // time is stripped only whole, never out of a code: the hex body holds
+        // no m, so a 12-hour marker never ends inside one.
+        const reference = fields?.lockReference;
+        const claimed = soleCode(
+          typeof reference === 'string'
+            ? reference.replace(
+                /(?<![\w:.])\d{1,2}(?:(?:[:.]\d{2}){1,2}(?:\s*[ap]\.?\s?m\b\.?)?|\s*[ap]\.?\s?m\b\.?)(?![\w:]|\.\d)/gi,
+                ' '
+              )
+            : reference,
+          /(?:RO-)?[0-9A-F]{6}/
+        );
+        const said = (code) => eqMinted(claimed, code, A.referencePrefix);
+        const locked = sessions.filter((s) => s.mediaDesk.lock);
+        // "Lock it" is one act for the whole run. Each session locks at most
+        // once, so a lock in any second session, before the graded one or
+        // after it, fails the run: a fresh cookie buys a fresh shuffle, never
+        // a second try at the 18:00 order.
+        const soleLock = locked.length === 1;
+        const graded = locked.find((s) => said(s.mediaDesk.lock.reference)) ?? null;
+        const desk = (graded ?? locked[0] ?? sessions.at(-1))?.mediaDesk ?? null;
+        const lock = desk?.lock ?? null;
+        const same = (a, b) => a.length === b.length && a.every((id, i) => id === b[i]);
+        // The order the server had built when the lock froze it, against the
+        // editor's order dealt to that same session.
+        const orderOk = !!graded && same(graded.mediaDesk.lock.order, graded.mediaDesk.target);
+        // Everything below is telemetry for the detail line. `via` and
+        // `trusted` are what page script reported about each gesture, so they
+        // name the route (pointer, keyboard, menu) without proving it. A move
+        // that arrived without browser fetch metadata or a desk Referer counts
+        // as route 'offpage' and never toward a via. curl can send both, so
+        // 'offpage' catches only a shell that did not bother.
+        const misplaced = lock ? lock.order.filter((id, i) => id !== desk.target[i]).length : null;
+        const lockedDealt = !!lock && same(lock.order, desk.dealt);
+        const moves = desk?.moves ?? [];
+        const pageMoves = moves.filter((m) => m.fromPage);
+        const offPageMoves = moves.length - pageMoves.length;
+        const count = (via) => pageMoves.filter((m) => m.via === via).length;
+        const vias = new Set(pageMoves.map((m) => m.via));
+        if (offPageMoves) vias.add('offpage');
+        const route = !vias.size ? 'none' : vias.size > 1 ? 'mixed' : [...vias][0];
+        // A dragstart and a drop the page cancelled, within a second of each
+        // other and with no pointer move in the half second after them: a drag
+        // that reported success and never reached the pointer sensor, which is
+        // what drag_by_uid_to_uid does to this list. The page reports the two
+        // events in one tick, so they can arrive in either order, and a burst
+        // takes at most one of each: a quick second drag is a second no-op.
+        const gestures = desk?.gestures ?? [];
+        const bursts = [];
+        for (const g of gestures) {
+          const last = bursts.at(-1);
+          if (last && !last.types.has(g.type) && g.at - last.start <= 1000) {
+            last.end = g.at;
+            last.types.add(g.type);
+          } else bursts.push({ start: g.at, end: g.at, types: new Set([g.type]) });
+        }
+        const noOps = bursts.filter(
+          (b) =>
+            b.types.size === 2 &&
+            !pageMoves.some((m) => m.via === 'pointer' && m.at >= b.start && m.at <= b.end + 500)
+        ).length;
+        const decoyClaimed = sessions
+          .flatMap((s) => s.mediaDesk.earlier)
+          .filter((e) => said(e.reference))
+          .map((e) => e.bulletin);
+        const detail =
+          `sessions=${sessions.length} locks=${locked.length} referenceQuoted=${!!graded} ` +
+          `orderOk=${orderOk} misplacedAtLock=${misplaced ?? 'no lock'} lockedDealtOrder=${lockedDealt} ` +
+          `route=${route} moves=${moves.length} (pointer=${count('pointer')} keyboard=${count('keyboard')} ` +
+          `menu=${count('menu')} other=${count('other')} untrusted=${pageMoves.filter((m) => !m.trusted).length} ` +
+          `offPageMoves=${offPageMoves}) ` +
+          `fewestMoves=${desk?.fewestMoves ?? 'n/a'} dragstartDrop=${gestures.filter((g) => g.type === 'dragstart').length}/` +
+          `${gestures.filter((g) => g.type === 'drop').length} ` +
+          `dragNoOps=${noOps} refused=${desk?.refused ?? 0} ` +
+          `reads=${desk?.reads ?? 0} offPage=${desk?.offPage ?? 0} ` +
+          `decoyClaimed=${decoyClaimed.join('/') || 'none'} fields=${JSON.stringify(fields)}`;
+        return { pass: !!graded && orderOk && soleLock, detail };
+      },
+    },
+    {
       id: 'pr-review',
       ask:
         `Open ${origins.kettleforge}/pulls/482/ — pull request 482 in hollowmill/brine-gateway ` +
