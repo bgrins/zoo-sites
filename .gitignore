@@ -15,3 +15,6 @@ profile.json
 dist/
 docker-compose.override.yml
 HANDOFF.md
+
+# Tool findings are kept out of the repo (shared as a private gist).
+docs/tool-findings.md

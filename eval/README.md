@@ -218,8 +218,7 @@ graded task is built the same way.
 ## Measuring a tool change
 
 A firefox-devtools-mcp developer uses the eval to learn whether a build changed what
-agents spend and whether it broke anything. `../docs/tool-findings.md` lists what the
-eval has found in 0.9.15 so far. Each step below is cheaper than the next,
+agents spend and whether it broke anything. Each step below is cheaper than the next,
 so a change that fails a free step never reaches a paid one.
 
 0. **Once: take a clean baseline.** Run a seeded web sweep with an A/A pair, two
@@ -298,7 +297,7 @@ builds of one tool:
   about 11% of the time, so a 5-point pass-rate change needs 250-400 paired rows.
 
 **First experiment: the snapshot text cap.** Raise `MAX_ATTR_LENGTH` from 30 to 200
-and the walker's text cap from 100 to 2000 (finding 1 in `../docs/tool-findings.md`).
+and the walker's text cap from 100 to 2000.
 The free census should move from about 18% of rendered characters to at least 45%,
 with snapshot characters up no more than 20%, the gate should stay green, and the
 probes should print `CHANGED` for the text, name, href and walker text caps. The paid
