@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { originUrls } from '../../../manifest.mjs';
 import { ANSWERS } from '../../answers.mjs';
-import { eqCode, eqEnum, eqMoney, eqName, eqPerson, normalise, normaliseWords } from '../../extract.mjs';
+import { eqCode, eqEnum, eqMoney, eqName, eqPerson, normalise, normaliseWords, soleCode } from '../../extract.mjs';
 
 const here = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -660,6 +660,92 @@ export async function extractionTasks(base, origins = originUrls(base)) {
             `target=${target ? `${target.label} ${target.value} (-${target.drop})` : 'none'} ` +
             `runnerUp=${runnerUp ? `${runnerUp.label} ${runnerUp.value} (-${runnerUp.drop})` : 'none'} ` +
             `allRoutes=${sessions.map(routeOf).join('+') || 'none'} ` +
+            `fields=${JSON.stringify(fields)}`,
+        };
+      },
+    },
+    {
+      id: 'pdf-bill',
+      ask:
+        `Grelsby Water issued one of the six bills in my billing history on an estimated ` +
+        `meter reading. On the day their reader could not get to the meter I read it ` +
+        `myself, and the register showed ${ANSWERS.utilityBill.actualReading}. Open ` +
+        `${origins['grelsby-water']}/account/, find the bill that was issued on the ` +
+        `estimated reading, and submit my reading against that bill and no other. Report ` +
+        `that bill's number and the re-bill reference you are given.`,
+      answerSchema: {
+        type: 'object',
+        properties: {
+          billNumber: {
+            type: ['string', 'null'],
+            description: 'the number of the bill that was issued on the estimated reading, as printed on the bill',
+          },
+          rebillReference: {
+            type: ['string', 'null'],
+            description: 'the re-bill reference Grelsby gave when the reading was accepted',
+          },
+        },
+      },
+      validate: (text, ctx, fields) => {
+        const want = ANSWERS.utilityBill;
+        const accounts = [...ctx.pages.state.sessions.values()]
+          .map((s) => s.utilityAccount)
+          .filter(Boolean);
+        // soleCode takes the code out of "Re-bill reference RB-4C19A0" and
+        // leaves a field naming two codes whole, so it matches neither.
+        const claimedRef = soleCode(fields?.rebillReference, /RB-[0-9A-F]{6}/);
+        const claimedBill = soleCode(fields?.billNumber, /GW-B-[0-9A-F]{6}/);
+        const cites = (c) => !!c?.reference && eqCode(claimedRef, c.reference);
+        // Every session mints its own six bills, so grade the session whose
+        // re-bill reference the answer cites; failing that, one that had a
+        // reading accepted, so its state still shows in detail.
+        const graded =
+          accounts.find((a) => a.corrections.some(cites)) ??
+          accounts.find((a) => a.corrections.length > 0) ??
+          accounts.at(-1) ??
+          null;
+        const estimated = graded?.bills.find((b) => b.code === 'E') ?? null;
+        const correction = graded?.corrections.find(cites) ?? null;
+        // Server-observed: /api/utility/reading accepts a reading only against
+        // the bill issued on the estimate, dated the estimate's day, on the
+        // account's meter, and mints the reference there from randomBytes. The
+        // reading itself is the ask's dictation, which the server cannot know.
+        const refOk = !!correction && !!estimated && correction.index === estimated.index;
+        const readingOk = !!correction && correction.reading === want.actualReading;
+        const billOk = !!estimated && eqCode(claimedBill, estimated.number);
+        // The bills belong to one real account whichever cookie viewed them, so
+        // a second accepted reading, or any reading tried against a bill that
+        // was not estimated, fails the run from every session; a fresh cookie
+        // buys nothing. That includes a number another session's view printed
+        // on a bill that was not estimated, which this session's server
+        // refuses as unknown. A refused try on the right bill (a mistyped date
+        // or serial) is ordinary correction and does not count.
+        const accepted = accounts.flatMap((a) => a.corrections);
+        const notEstimated = accounts.flatMap((a) => a.bills.filter((b) => b.code !== 'E').map((b) => b.number));
+        const wrongBill = accounts.flatMap((a) =>
+          a.attempts.filter(
+            (t) => t.outcome === 'not-estimated' || notEstimated.some((n) => eqCode(t.billNumber, n))
+          )
+        );
+        const oneAccepted = accepted.length === 1;
+        const noWrongBill = wrongBill.length === 0;
+        // Telemetry only: how each PDF was reached. document/navigate is the
+        // viewer or a download, cors an in-page fetch, and no headers a shell.
+        const route = (f) => `${f.code}:${f.dest ?? '-'}/${f.mode ?? '-'}${f.fromPage ? '' : ':offpage'}`;
+        const opened = new Set((graded?.pdfFetches ?? []).map((f) => f.index));
+        return {
+          pass: refOk && readingOk && billOk && oneAccepted && noWrongBill,
+          detail:
+            `sessions=${accounts.length} ` +
+            `bills=${graded ? graded.bills.map((b) => b.code).join('') : 'none'} ` +
+            `estimated=${estimated ? `${estimated.number}@${estimated.index}` : 'none'} ` +
+            `opened=${opened.size}/6 openedEstimated=${!!estimated && opened.has(estimated.index)} ` +
+            `pdfFetches=${(graded?.pdfFetches ?? []).map(route).join(',') || 'none'} ` +
+            `attempts=${(graded?.attempts ?? []).map((t) => `${t.code ?? '?'}:${t.outcome}`).join(',') || 'none'} ` +
+            `accepted=${accepted.length} wrongBill=${wrongBill.length} ` +
+            `reading=${correction?.reading ?? 'none'} ` +
+            `refOk=${refOk} readingOk=${readingOk} billOk=${billOk} ` +
+            `oneAccepted=${oneAccepted} noWrongBill=${noWrongBill} ` +
             `fields=${JSON.stringify(fields)}`,
         };
       },

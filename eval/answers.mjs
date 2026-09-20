@@ -1336,6 +1336,21 @@ export const ANSWERS = {
     refPattern: 'TR-<6 uppercase hex>',
   },
 
+  // pages/utility/account/ - Grelsby Water's My Account (pdf-bill). Which of
+  // the six bills was issued on an estimated reading, the bill numbers and the
+  // re-bill reference are all minted per session in sites/utility.mjs and read
+  // back out of ctx.pages.state. The actual reading is the ask's dictation,
+  // not a page fact: the site builds each session's registers so that it is
+  // the true reading on the estimated bill's read date, and no bill prints it.
+  // It must equal ACCOUNT_ACTUAL there.
+  utilityBill: {
+    account: '44-60317-08',
+    meter: 'GW-0051903-C',
+    actualReading: 4127,
+    billPattern: 'GW-B-<6 uppercase hex>',
+    rebillPattern: 'RB-<6 uppercase hex>',
+  },
+
   // pages/registrar/ — Northgate Domains control panel (registrar-purge). The
   // retirement itself is server-observed and the removal reference is minted
   // per session by /api/registrar/retire from randomBytes, so neither is

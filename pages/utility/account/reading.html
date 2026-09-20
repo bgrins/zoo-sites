@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>Submit a Meter Reading — Grelsby Water &amp; Sewer Authority</title>
+<link rel="stylesheet" href="../grelsby.css">
+<link rel="stylesheet" href="account.css">
+</head>
+<body>
+<p class="dutyline">Main break, no water or a sewer backup? Call <b>(802) 555-0122</b> at any hour; after counter hours the line reaches the on-call operator.</p>
+<header class="masthead">
+  <a class="sitehome" href="../index.html"><span class="seal">GW</span><span class="sitename">Grelsby Water &amp; Sewer Authority</span></a>
+  <p class="est">Serving the Borough of Grelsby since 1911</p>
+</header>
+<nav class="navband" aria-label="Main">
+  <a href="../index.html">Home</a>
+  <a href="../rates.html">Rates &amp; Charges</a>
+  <a href="../billing.html">Billing &amp; Payment</a>
+  <a href="../quality.html">Water Quality</a>
+  <a href="../transfer.html">Transfer of Service</a>
+  <a href="../complaints.html">Complaints &amp; Appeals</a>
+</nav>
+<div class="acctbar">
+  <div class="inner">
+    <span class="who">My Account &middot; <b>T. Veltrow</b> &middot; Service account 44-60317-08</span>
+    <nav aria-label="My Account">
+      <a href="index.html">Account summary</a>
+      <a href="reading.html" class="here">Submit a meter reading</a>
+    </nav>
+  </div>
+</div>
+<main>
+  <h1 class="pagehead">Submit a Meter Reading</h1>
+
+  <div class="printnotice">
+    <p class="nt">Replacing an Estimated Reading</p>
+    <p>A bill issued on an estimated reading (code E on the bill) is recalculated
+    from a reading you took on the day of the estimate. Enter the reading from
+    the black digits of the register, in hundreds of cubic feet; ignore the red
+    digits and the sweep hand.</p>
+    <p>A bill issued on an actual reading (code A) or on a reading you supplied
+    (code C) cannot be changed here. To dispute one, call customer service or
+    write to the billing clerk.</p>
+  </div>
+
+  <div class="sheet" id="formSheet">
+    <h2>Reading Details</h2>
+    <form id="readingForm" novalidate>
+      <div class="field">
+        <label class="cap" for="billNumber">Bill number</label>
+        <input id="billNumber" autocomplete="off">
+      </div>
+      <p class="fieldnote">Printed at the top right of the bill, beginning GW-B.</p>
+      <div class="field">
+        <label class="cap" for="readingDate">Date of the reading</label>
+        <input id="readingDate" autocomplete="off" placeholder="MM/DD/YYYY">
+      </div>
+      <div class="field">
+        <label class="cap" for="reading">Register reading (ccf)</label>
+        <input id="reading" autocomplete="off" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label class="cap" for="meterSerial">Meter serial</label>
+        <input id="meterSerial" autocomplete="off">
+      </div>
+      <p class="fieldnote">Stamped on the meter lid and printed on the bill, in the form
+      <span class="code">GW-0000000-X</span>.</p>
+      <div id="refuseSlot"></div>
+      <button type="submit" class="action" id="submitBtn">Submit reading</button>
+    </form>
+  </div>
+
+  <div id="doneSlot"></div>
+</main>
+<footer>
+  <p>Grelsby Water &amp; Sewer Authority &middot; Works Yard, 4 Aqueduct Road, Grelsby</p>
+  <p>Customer service (802) 555-0122 &middot; Counter hours Mon&ndash;Fri 8:30 a.m.&ndash;4:00 p.m.</p>
+  <p><a href="../billing.html">Billing &amp; Payment</a> &middot; <a href="../quality.html">Water Quality</a> &middot; <a href="../complaints.html">Complaints &amp; Appeals</a> &middot; <a href="../privacy.html">Privacy Statement</a> &middot; <a href="../terms.html">Terms of Service</a></p>
+  <p>&copy; 2026 Grelsby Water &amp; Sewer Authority. Established by borough ordinance 1911-6.</p>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const refuseSlot = document.getElementById('refuseSlot');
+  const money = (n) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const value = (id) => document.getElementById(id).value.trim();
+
+  function showRefusal(message) {
+    const box = document.createElement('div');
+    box.className = 'refuseline';
+    const rl = document.createElement('span');
+    rl.className = 'rl';
+    rl.textContent = 'Not accepted.';
+    const err = document.createElement('span');
+    err.id = 'errText';
+    err.textContent = message;
+    box.append(rl, err);
+    refuseSlot.textContent = '';
+    refuseSlot.append(box);
+  }
+
+  function showAccepted(body) {
+    const sheet = document.createElement('div');
+    sheet.className = 'sheet';
+    const h2 = document.createElement('h2');
+    h2.textContent = 'Reading Accepted';
+    sheet.append(h2);
+    const rows = [
+      ['Re-bill reference', 'refValue', body.reference, 'v rv'],
+      ['Bill recalculated', 'billValue', body.billNumber, 'v rv'],
+      ['Reading', 'readValue', body.reading.toLocaleString('en-US') + ' ccf on ' + body.readingDate, 'v'],
+      ['Usage for the period', 'useValue', body.usage + ' ccf', 'v'],
+      ['Amount billed', 'wasValue', money(body.previousAmount), 'v'],
+      ['Revised amount', 'nowValue', money(body.revisedAmount), 'v'],
+    ];
+    for (const [label, id, text, cls] of rows) {
+      const row = document.createElement('div');
+      row.className = 'kvrow';
+      const k = document.createElement('span');
+      k.className = 'k';
+      k.textContent = label;
+      const v = document.createElement('span');
+      v.className = cls;
+      v.id = id;
+      v.textContent = text;
+      row.append(k, v);
+      sheet.append(row);
+    }
+    const note = document.createElement('p');
+    note.style.marginTop = '12px';
+    note.textContent =
+      'A corrected bill is issued within five business days and replaces the ' +
+      'estimated one in your billing history. Quote the re-bill reference if you ' +
+      'contact us about this bill.';
+    sheet.append(note);
+    document.getElementById('doneSlot').append(sheet);
+    document.getElementById('formSheet').style.display = 'none';
+  }
+
+  document.getElementById('readingForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    refuseSlot.textContent = '';
+    const entry = {
+      billNumber: value('billNumber'),
+      readingDate: value('readingDate'),
+      reading: value('reading'),
+      meterSerial: value('meterSerial'),
+    };
+    if (Object.values(entry).some((v) => !v)) {
+      showRefusal('Complete every field before submitting the reading.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/utility/reading', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, ...entry }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        showRefusal(body.error ?? 'The reading was not accepted.');
+        return;
+      }
+      showAccepted(body);
+    } catch {
+      showRefusal('The reading could not be sent. Try again.');
+    }
+  });
+</script>
+</body>
+</html>
