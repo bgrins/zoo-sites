@@ -76,8 +76,13 @@ export function foreignBrowser(ledger, { windows = null, shell = [], token = nul
   }
   const why = new Map();
   if (byUa) {
+    // A session is one browser's cookie jar, so a single tagged request makes it
+    // the surface's own. Playwright's Firefox leaves the override off
+    // navigator.sendBeacon (the gov page-view beacon arrives with the stock
+    // agent), so an untagged request inside a tagged session proves nothing.
     for (const rows of sessions.values()) {
-      if (rows.some((e) => typeof e.ua === 'string' && !e.ua.endsWith(` ${token}`))) why.set(rows, 'user agent');
+      const agents = rows.filter((e) => typeof e.ua === 'string');
+      if (agents.length && !agents.some((e) => e.ua.endsWith(` ${token}`))) why.set(rows, 'user agent');
     }
   } else {
     for (const rows of sessions.values()) if (foreignAt(rows[0].at)) why.set(rows, 'timing');
