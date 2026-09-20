@@ -145,6 +145,8 @@ export const ORIGINS = [
   { key: 'waypost', dir: 'forms/waypost', domain: 'waypost.zoo', port: 8164 },
   // Zellick Analytics (flaky-retry, timeout-vs-slow)
   { key: 'zellick', dir: 'flaky', domain: 'zellick.zoo', port: 8165 },
+  // Ivrelby Borough Council events office (native-permit)
+  { key: 'ivrelby-events', dir: 'events', domain: 'ivrelby-events.zoo', port: 8166 },
 ];
 
 // Origins that exist for the harness rather than as simulated sites. They stay

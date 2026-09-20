@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<title>Closure details - Ivrelby Events Office</title>
+<link rel="stylesheet" href="ivrelby.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="mast">
+  <div class="mast-in">
+    <a class="brand" href="index.html"><span class="glyph" aria-hidden="true"></span><span class="brand-name">Ivrelby Borough Council</span></a>
+    <p class="brand-sub">Events Office</p>
+  </div>
+</header>
+<nav class="tabs" aria-label="Events office">
+  <div class="tabs-in">
+    <a href="index.html">Events home</a>
+    <a href="street-closures.html" class="on">Street closures</a>
+    <a href="contact.html">Contact us</a>
+  </div>
+</nav>
+<main id="content" class="page">
+<p class="crumbs"><a href="index.html">Events office</a> / <a href="street-closures.html">Street closures</a> / Apply</p>
+<div class="grid">
+  <aside class="side"><p class="stage">Step 2 of 3</p><p class="stage-name">Closure details</p><ul><li><a href="start.html">Your organiser pack</a></li><li><a href="street-closures.html#equipment">Equipment codes</a></li></ul></aside>
+  <section class="body">
+    <h1>Closure details</h1>
+    <p class="lede">Enter the details exactly as they appear in your organiser pack.</p>
+    <form class="form" id="permit-form" method="post" action="apply.html" novalidate>
+      <input type="hidden" name="nonce" value="__SESSION_NONCE__">
+      <div class="field">
+        <div class="field-label"><label for="event-name">Event name</label></div>
+        <input type="text" id="event-name" name="event-name" autocomplete="off">
+      </div>
+      <div class="field">
+        <div class="field-label"><label for="contact-name">Contact name</label><p class="hint" id="contact-name-hint">The person we should contact about this application.</p></div>
+        <input type="text" id="contact-name" name="contact-name" autocomplete="name" aria-describedby="contact-name-hint">
+      </div>
+      <div class="field">
+        <div class="field-label"><label for="contact-email">Contact email</label><p class="hint" id="contact-email-hint">We send the signed closure order to this address.</p></div>
+        <input type="email" id="contact-email" name="contact-email" autocomplete="email" spellcheck="false" aria-describedby="contact-email-hint">
+      </div>
+      <div class="field">
+        <div class="field-label"><label for="streets">Streets to close</label><p class="hint" id="streets-hint">Hold Ctrl, or Cmd on a Mac, to choose more than one street.</p></div>
+        <select id="streets" name="street" multiple size="8" aria-describedby="streets-hint">
+          <option value="abrill-street">Abrill Street</option>
+          <option value="dremmock-lane">Dremmock Lane</option>
+          <option value="fettick-place">Fettick Place</option>
+          <option value="gilvane-row">Gilvane Row</option>
+          <option value="holbrisk-road">Holbrisk Road</option>
+          <option value="lumsick-walk">Lumsick Walk</option>
+          <option value="nadderly-road">Nadderly Road</option>
+          <option value="ombery-terrace">Ombery Terrace</option>
+          <option value="pessick-street">Pessick Street</option>
+          <option value="quistel-lane">Quistel Lane</option>
+          <option value="selbray-court">Selbray Court</option>
+          <option value="umbrell-yard">Umbrell Yard</option>
+          <option value="wrothen-road">Wrothen Road</option>
+          <option value="yarrant-street">Yarrant Street</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-label"><label for="start">Closure starts</label><p class="hint" id="start-hint">When the first barrier goes up.</p></div>
+        <input type="datetime-local" id="start" name="start" aria-describedby="start-hint">
+      </div>
+      <div class="field">
+        <div class="field-label"><label for="end">Closure ends</label><p class="hint" id="end-hint">When the road reopens to traffic.</p></div>
+        <input type="datetime-local" id="end" name="end" aria-describedby="end-hint">
+      </div>
+      <div class="field">
+        <div class="field-label"><label for="quiet">Amplified sound stops</label><p class="hint" id="quiet-hint">On the quarter hour, 24-hour clock.</p></div>
+        <input type="time" id="quiet" name="quiet" step="900" aria-describedby="quiet-hint">
+      </div>
+      <div class="field">
+        <div class="field-label"><label for="equipment">Equipment code</label><p class="hint" id="equipment-hint">Your main item of equipment, from the <a href="street-closures.html#equipment">equipment list</a>.</p></div>
+        <input id="equipment" name="equipment" list="equipment-codes" autocomplete="off" spellcheck="false" aria-describedby="equipment-hint">
+        <datalist id="equipment-codes">
+          <option value="GEN-13P">Generator, 1-3 kVA, petrol</option>
+          <option value="GEN-13D">Generator, 1-3 kVA, diesel</option>
+          <option value="GEN-35P">Generator, 3-5 kVA, petrol</option>
+          <option value="GEN-35D">Generator, 3-5 kVA, diesel</option>
+          <option value="GEN-58P">Generator, 5-8 kVA, petrol</option>
+          <option value="GEN-58D">Generator, 5-8 kVA, diesel</option>
+          <option value="GEN-35S">Silenced generator, 3-5 kVA</option>
+          <option value="PA-05">PA system, up to 500 W</option>
+          <option value="PA-10">PA system, 500 W to 1 kW</option>
+          <option value="PA-20">PA system, 1 kW to 2 kW</option>
+          <option value="PA-DJ">DJ console with speakers</option>
+          <option value="GZ-33">Gazebo, 3 m by 3 m</option>
+          <option value="GZ-36">Gazebo, 3 m by 6 m</option>
+          <option value="GZ-66">Gazebo, 6 m by 6 m</option>
+          <option value="MQ-612">Marquee, 6 m by 12 m</option>
+          <option value="STG-32">Stage, 3 m by 2 m</option>
+          <option value="STG-43">Stage, 4 m by 3 m</option>
+          <option value="STG-64">Stage, 6 m by 4 m</option>
+          <option value="INF-S">Inflatable, under 4 m</option>
+          <option value="INF-M">Inflatable, 4 m to 6 m</option>
+          <option value="INF-L">Inflatable, over 6 m</option>
+          <option value="LT-TOW">Lighting tower, towable</option>
+          <option value="LT-SOL">Lighting tower, solar</option>
+          <option value="LT-FES">Festoon lighting run</option>
+          <option value="CAT-LPG">Catering unit, LPG</option>
+          <option value="CAT-ELE">Catering unit, electric</option>
+          <option value="BBQ-CH">Barbecue, charcoal</option>
+          <option value="BAR-PED">Pedestrian barriers</option>
+          <option value="BAR-VEH">Vehicle mitigation barrier</option>
+          <option value="WC-UNI">Portable toilet block</option>
+        </datalist>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn">Continue</button>
+        <a href="start.html">Back to your organiser pack</a>
+      </div>
+    </form>
+  </section>
+</div>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const form = document.getElementById('permit-form');
+const touched = new Set();
+for (const type of ['input', 'change']) form.addEventListener(type, (e) => touched.add(e.target.id));
+// A Change link brings the applicant back with the answers the office last
+// received; a field the applicant has already edited keeps its new value.
+if (new URLSearchParams(location.search).has('change')) {
+  fetch('/api/events/draft', { headers: { 'X-Session-Nonce': NONCE } })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      const d = data && data.draft;
+      if (!d) return;
+      const set = (id, value) => {
+        if (!touched.has(id) && value) document.getElementById(id).value = value;
+      };
+      set('event-name', d.eventName);
+      set('contact-name', d.contactName);
+      set('contact-email', d.contactEmail);
+      set('start', d.start);
+      set('end', d.end);
+      set('quiet', d.quiet);
+      set('equipment', d.equipment);
+      if (!touched.has('streets')) {
+        for (const option of document.getElementById('streets').options) option.selected = d.streets.includes(option.value);
+      }
+    })
+    .catch(() => {});
+}
+</script>
+</main>
+<footer class="foot">
+  <div class="foot-in">
+    <p>Ivrelby Borough Council Events Office, Town Hall, Civic Square, Ivrelby QV6 2JE</p>
+    <p>Telephone 0151 496 0873, Monday to Friday 9:00 to 16:30</p>
+    <p><a href="contact.html">Contact the events office</a> <a href="privacy.html">Privacy notice</a> <a href="terms.html">Terms of use</a></p>
+    <p>Copyright Ivrelby Borough Council 2026</p>
+  </div>
+</footer>
+</body>
+</html>

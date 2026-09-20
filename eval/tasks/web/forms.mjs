@@ -436,6 +436,185 @@ export async function formsTasks(base, origins = originUrls(base)) {
       },
     },
     {
+      id: 'native-permit',
+      ask:
+        `Apply at ${origins['ivrelby-events']}/ for the street closure in the organiser's pack, ` +
+        `and report the permit number and the closure start and end the office recorded.`,
+      answerSchema: {
+        type: 'object',
+        properties: {
+          permitNumber: {
+            type: ['string', 'null'],
+            description: 'the permit number the office issued, e.g. PT-1A2B3C',
+          },
+          closureStart: {
+            type: ['string', 'null'],
+            description: 'when the recorded closure starts, date and time as the answer states them; the start only',
+          },
+          closureEnd: {
+            type: ['string', 'null'],
+            description: 'when the recorded closure ends, date and time as the answer states them; the end only',
+          },
+        },
+      },
+      validate: (rawText, ctx, fields) => {
+        const desks = [...ctx.pages.state.sessions.values()].map((s) => s.permitDesk).filter(Boolean);
+        const permits = desks.flatMap((d) => d.permits);
+        const claimed = soleCode(fields?.permitNumber, ANSWERS.nativePermit.permitPattern);
+        const cites = (p) => eqCode(claimed, p.number);
+        // Grade the session whose permit the answer cites, so a probe session
+        // cannot shadow the run; failing that, any session that got a permit or
+        // a draft, so a wrong run still shows its own state in detail.
+        const desk =
+          desks.find((d) => d.permits.some(cites)) ??
+          desks.find((d) => d.permits.length) ??
+          desks.find((d) => d.drafts.length) ??
+          desks[0] ??
+          null;
+        const permit = desk?.permits.find(cites) ?? null;
+        const brief = desk?.brief ?? null;
+        // The pack's values against what the office parsed out of the posted
+        // form. Streets compare as a set, so neither one street (devtools' fill
+        // on a select[multiple]) nor every street passes.
+        const streetsOk =
+          !!permit && !!brief &&
+          permit.streets.length === brief.streets.length &&
+          brief.streets.every((id) => permit.streets.includes(id));
+        const startOk = !!permit && permit.start === brief?.start;
+        const endOk = !!permit && permit.end === brief?.end;
+        const quietOk = !!permit && permit.quiet === brief?.quiet;
+        const equipmentOk = !!permit && permit.equipment === brief?.equipment;
+        // A stated closure time: every clock time in the field must be the
+        // recorded one, and a date or weekday, when the field gives one, the
+        // recorded date. Numeric dates are read in both field orders; the
+        // pack's day is above 12, so only one order can match a correct window.
+        const MONTH = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+        const WEEKDAY = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+        const monthWord =
+          '(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|' +
+          'sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\.?(?![a-z])';
+        const sep = '[\\s/-]+';
+        const statedAt = (value, local) => {
+          if (typeof value !== 'string' || !local) return false;
+          const [wy, wm, wd] = local.slice(0, local.indexOf('T')).split('-').map(Number);
+          const day = new Date(Date.UTC(2000, wm - 1, wd));
+          day.setUTCFullYear(wy);
+          const wantMins = Number(local.slice(-5, -3)) * 60 + Number(local.slice(-2));
+          let t = value
+            .normalize('NFKC')
+            .replace(/[*_~`]+/g, '')
+            .replace(/[‐-―−]/g, '-')
+            .toLowerCase()
+            .replace(/(\d{1,2})(st|nd|rd|th)\b/g, '$1')
+            .replace(/,/g, ' ')
+            // An ISO time's UTC offset is not a second clock time.
+            .replace(/(\dt\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(?:z|[+-](?:0\d|1[0-4]):?[0-5]\d)(?![\d:])/g, '$1')
+            // Nor is one written after a spaced clock time, "09:45 +01:00". The
+            // sign must touch the offset, so "09:45 - 10:00" stays two times.
+            .replace(/(?<![\d:.])(\d{1,2}[:.]\d{2}(?::\d{2})?(?:\s*[ap]\.?\s?m\.?)?)\s+[+-](?:0\d|1[0-4]):?[0-5]\d(?![\d:])/g, '$1')
+            .replace(/\b(?:utc|gmt)(?:\s*[+-]\s*(?:0?\d|1[0-4])(?::?[0-5]\d)?)?(?![\d:])/g, ' ');
+          const dates = [];
+          const year = (y) => (y === undefined ? null : y.length === 2 ? 2000 + Number(y) : Number(y));
+          const take = (re, read) => {
+            t = t.replace(re, (...m) => {
+              dates.push(read(m));
+              return ' ';
+            });
+          };
+          take(/(?<!\d)(\d{4,6})[/.-](\d{1,2})[/.-](\d{1,2})(?!\d)/g, (m) => [[Number(m[1]), Number(m[2]), Number(m[3])]]);
+          take(/(?<![\d:.])(\d{1,2})[/.-](\d{1,2})[/.-](\d{4}|\d{2})(?![\d:])/g, (m) => [
+            [year(m[3]), Number(m[2]), Number(m[1])],
+            [year(m[3]), Number(m[1]), Number(m[2])],
+          ]);
+          take(new RegExp(`(?<![\\d:.])(\\d{1,2})${sep}(?:of\\s+)?${monthWord}(?:${sep}([1-9]\\d{3,5}))?(?![\\d:.])`, 'g'), (m) => [
+            [year(m[3]), MONTH[m[2].slice(0, 3)], Number(m[1])],
+          ]);
+          take(new RegExp(`${monthWord}${sep}(\\d{1,2})(?![\\d:.])(?:${sep}([1-9]\\d{3,5})(?![\\d:.]))?`, 'g'), (m) => [
+            [year(m[3]), MONTH[m[1].slice(0, 3)], Number(m[2])],
+          ]);
+          const weekdays = [];
+          t = t.replace(/\b(sun|mon|tue|wed|thu|fri|sat)(?:day|s|sday|nesday|r|rs|rsday|urday)?\b\.?/g, (w, d) => {
+            weekdays.push(WEEKDAY[d]);
+            return ' ';
+          });
+          const dateOk =
+            weekdays.every((d) => d === day.getUTCDay()) &&
+            dates.every((readings) => readings.some(([y, m, d]) => (y === null || y === wy) && m === wm && d === wd));
+          const clocks = [];
+          t = t.replace(/\b(noon|midday|midnight)\b/g, (w) => {
+            clocks.push({ mins: w === 'midnight' ? 0 : 720, marked: true });
+            return ' ';
+          });
+          // A bare long number is the recorded year or a 24-hour "0845"; any
+          // other one is a date this reading cannot place, so it fails.
+          let unplaced = false;
+          t = t.replace(/(?<![\d:.])\d{4,6}(?![\d:.])/g, (n) => {
+            const hm = /^([01]\d|2[0-3])([0-5]\d)$/.exec(n);
+            if (Number(n) !== wy) {
+              if (hm) clocks.push({ mins: Number(hm[1]) * 60 + Number(hm[2]), marked: true });
+              else unplaced = true;
+            }
+            return ' ';
+          });
+          for (const m of t.matchAll(
+            /(?<![\d:.])(\d{1,2})(?:[:.h](\d{2})(?::\d{2})?)?\s*(a\.?\s?m\.?|p\.?\s?m\.?)?(?![\d:])/g
+          )) {
+            if (m[2] === undefined && m[3] === undefined) continue;
+            let h = Number(m[1]);
+            const marker = m[3]?.[0] ?? null;
+            if (h > 23 || Number(m[2] ?? 0) > 59) return false;
+            if (marker === 'p' && h < 12) h += 12;
+            if (marker === 'a' && h === 12) h = 0;
+            clocks.push({ mins: h * 60 + Number(m[2] ?? 0), marked: marker !== null || m[1].startsWith('0') || h > 12 });
+          }
+          // An unmarked "7:45" may stand for 19:45, as eqTime allows.
+          const clockOk = (c) => c.mins === wantMins || (!c.marked && c.mins + 720 === wantMins);
+          return dateOk && !unplaced && clocks.length > 0 && clocks.every(clockOk);
+        };
+        const startReported = !!permit && statedAt(fields?.closureStart, permit.start);
+        const endReported = !!permit && statedAt(fields?.closureEnd, permit.end);
+        // The pack is one closure: a second permit in any session is a second
+        // closure order, and a fresh cookie cannot hide one.
+        const onePermit = permits.length === 1;
+        // Telemetry, never graded: the drafts the check page echoed before the
+        // submit (a corrected draft is the noticed-and-fixed signal), the
+        // window each echo printed, verbatim, so the run's transcript can say
+        // whether the echo reached the agent (the check page is a <dl>, which
+        // a default devtools snapshot omits), and the raw values of every
+        // attempt the office refused.
+        const drafts = desk?.drafts ?? [];
+        const attempts = desk?.attempts ?? [];
+        const draftLine = drafts
+          .map((d) => `${d.streets.length}st/${d.start}/${d.end}/${d.quiet}/${d.equipment}${d.id === permit?.draft ? '*' : ''}`)
+          .join(' ');
+        const echoLine = drafts.map((d) => (d.echo ? `${d.echo.start}|${d.echo.end}` : 'none')).join(' ; ');
+        const raw = (v) => JSON.stringify(String(v ?? '').slice(0, 40));
+        const erroredLine = attempts
+          .filter((a) => a.errors.length)
+          .map((a) => `${a.errors.join('+')}:${a.raw.street.length}st/${raw(a.raw.start)}/${raw(a.raw.end)}/${raw(a.raw.quiet)}/${raw(a.raw.equipment)}`)
+          .join(' ');
+        // How the permit's own draft and its submit reached the office. The
+        // sec-fetch headers are telemetry, never a gate: curl sets them freely,
+        // and a shell POST that skips the controls is a route to report.
+        const applied = attempts.find((a) => a.draft && a.draft === permit?.draft) ?? null;
+        const via = (r) => (r ? `${r.dest}/${r.mode}/${r.site}/fromPage=${r.fromPage}` : 'none');
+        return {
+          pass:
+            !!permit && streetsOk && startOk && endOk && quietOk && equipmentOk &&
+            startReported && endReported && onePermit,
+          detail:
+            `sessions=${desks.length} permits=${permits.length} cited=${!!permit} ` +
+            `briefFetches=${desk?.briefFetches ?? 0} attempts=${attempts.length} ` +
+            `errored=[${erroredLine}] drafts=[${draftLine}] echo=[${echoLine}] resubmits=${desk?.resubmits ?? 0} ` +
+            `pack=${brief ? `${brief.streets.length}st/${brief.start}/${brief.end}/${brief.quiet}/${brief.equipment}` : 'none'} ` +
+            `applyPost=${via(applied)} submitPost=${via(permit)} ` +
+            `streets=${streetsOk} start=${startOk} end=${endOk} quiet=${quietOk} equipment=${equipmentOk} ` +
+            `startReported=${startReported} endReported=${endReported} onePermit=${onePermit} ` +
+            `fields=${JSON.stringify(fields)}`,
+        };
+      },
+    },
+    {
       id: 'draft-resume',
       ask:
         `Open ${origins['thornbury-trust']}/draft.html — a grant application form that autosaves. ` +

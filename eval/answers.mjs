@@ -302,6 +302,18 @@ export const ANSWERS = {
     decoyCode: 'OF-HE-042',
   },
 
+  // pages/events/ — Ivrelby Borough Council events office (native-permit).
+  // Nothing here is a secret: each session's organiser pack (4 of the 14
+  // streets, the closure window on a 15-minute grid, when amplified sound
+  // stops, one item of equipment, and an ungraded contact) is minted by
+  // sites/events.mjs and read back out of ctx.pages.state, and the PT- permit
+  // number comes from randomBytes at submit. `date` is EVENTS_DATE in
+  // sites/events.mjs, the one day every pack's closure falls on.
+  nativePermit: {
+    date: '2027-07-17',
+    permitPattern: /PT-[0-9A-F]{6}/,
+  },
+
   // pages/parcels/ — Corvane tracking. Statuses come only from the
   // session-gated GET /api/parcels/track (one lookup per 5 s per session);
   // neither a status string nor a tracking number appears in fixture source.
