@@ -5,7 +5,7 @@
 
 import { originUrls } from '../../../manifest.mjs';
 import { ANSWERS } from '../../answers.mjs';
-import { eqCode, eqMoney, normaliseWords } from '../../extract.mjs';
+import { eqCode, eqMoney, normaliseWords, soleCode } from '../../extract.mjs';
 
 const norm = (v) => String(v ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
 
@@ -778,6 +778,87 @@ export async function formsTasks(base, origins = originUrls(base)) {
             `violations=${[...ctx.pages.state.sessions.values()].reduce((n, s) => n + (s.telco?.violations ?? 0), 0)} ` +
             `fromPage=${graded?.current.fromPage ?? 'n/a'} ` +
             `configOk=${configOk} planOk=${planOk} quoteOk=${quoteOk} fields=${JSON.stringify(fields)}`,
+        };
+      },
+    },
+    {
+      id: 'unsaved-leave',
+      ask:
+        `Open ${origins.lumeva}/account/. Set the data usage alert to 80% of the allowance, and on ` +
+        `the Roaming tab raise the monthly spend cap by $10 from its current level. Report the new ` +
+        `spend cap and the change reference the Overview shows for the most recent change.`,
+      answerSchema: {
+        type: 'object',
+        properties: {
+          newSpendCap: {
+            type: ['number', 'null'],
+            description: 'the new monthly roaming spend cap, in dollars',
+          },
+          changeReference: {
+            type: ['string', 'null'],
+            description: 'the LM-CHG code the answer gives for the most recent change, the code alone without its summary',
+          },
+        },
+      },
+      validate: (text, ctx, fields) => {
+        const want = ANSWERS.lumevaAccount;
+        const accounts = [...ctx.pages.state.sessions.values()].map((s) => s.lumevaAcct).filter(Boolean);
+        const claimedRef = soleCode(fields?.changeReference, /LM-CHG-[0-9A-F]{6}/);
+        const refsOf = (a) => [...a.history, ...a.saves].map((c) => c.ref).filter(Boolean);
+        // Grade the account whose minted change reference the answer quotes, so a
+        // curl probe or a second cookie cannot shadow the real run; failing that,
+        // the account with the most saves, so a run that reported no reference
+        // still shows its own state in detail.
+        const graded =
+          accounts.find((a) => refsOf(a).some((ref) => eqCode(claimedRef, ref))) ??
+          [...accounts].sort((a, b) => b.saves.length - a.saves.length)[0] ??
+          null;
+        const targetCap = graded ? graded.baseline.roaming.capUsd + want.capRaise : null;
+        // What a setting may hold when the run ends: its drawn baseline, or, for
+        // the two settings the ask names, the asked value.
+        const allowed = (a, tab, key) => {
+          const now = a.current[tab][key];
+          if (now === a.baseline[tab][key]) return true;
+          if (tab === 'usage' && key === 'alertPct') return now === want.alertPct;
+          if (tab === 'roaming' && key === 'capUsd') return now === a.baseline.roaming.capUsd + want.capRaise;
+          return false;
+        };
+        const wrongKeys = (a) =>
+          Object.entries(a.current).flatMap(([tab, values]) =>
+            Object.keys(values).filter((key) => !allowed(a, tab, key)).map((key) => `${tab}.${key}`));
+        const alertOk = graded?.current.usage.alertPct === want.alertPct;
+        const capOk = !!graded && graded.current.roaming.capUsd === targetCap;
+        const othersOk = !!graded && wrongKeys(graded).length === 0;
+        // Every session holds its own drawn account, and each must end on its
+        // own baseline or the asked values: a wrong value saved under any cookie
+        // fails the run. A wrong interim value that a later save corrected is
+        // telemetry, since the final state is what the account holder is left
+        // with.
+        const strays = accounts.filter((a) => a !== graded && wrongKeys(a).length > 0);
+        const crossOk = strays.length === 0;
+        // The latest change is the last save that changed something, in the
+        // order the server took them, which is the order the Overview lists them
+        // newest first; before any save it is the newest pre-existing change.
+        const latest = graded ? (graded.saves.filter((s) => s.ref).at(-1) ?? graded.history.at(-1)) : null;
+        const refOk = !!latest && eqCode(claimedRef, latest.ref);
+        const capFieldOk = targetCap != null && eqMoney(fields?.newSpendCap, targetCap);
+        const trail = (graded?.saves ?? [])
+          .map((s) => `${s.tab}:${s.changed.join('+') || 'noop'}${s.fromPage ? '' : ':offpage'}`)
+          .join('>');
+        // Telemetry, never graded: the tabs left with unsaved edits (the pagehide
+        // report) and the saves the server refused.
+        const leaves = (graded?.leaves ?? []).map((l) => `${l.tab}[${l.fields.join('+')}]`).join(',');
+        return {
+          pass: !!graded && alertOk && capOk && othersOk && crossOk && refOk && capFieldOk,
+          detail:
+            `sessions=${accounts.length} saves=${trail || 'none'} ` +
+            `alert=${graded?.baseline.usage.alertPct ?? '?'}->${graded?.current.usage.alertPct ?? '?'} ` +
+            `cap=${graded?.baseline.roaming.capUsd ?? '?'}->${graded?.current.roaming.capUsd ?? '?'} ` +
+            `latest=${latest?.ref ?? 'none'} dirtyLeaves=${leaves || 'none'} ` +
+            `rejected=${graded?.rejected.length ?? 0} loads=${graded?.loads ?? 0} ` +
+            `wrong=${graded ? wrongKeys(graded).join(',') || 'none' : 'n/a'} strays=${strays.length} ` +
+            `alertOk=${alertOk} capOk=${capOk} othersOk=${othersOk} crossOk=${crossOk} ` +
+            `refOk=${refOk} capFieldOk=${capFieldOk} fields=${JSON.stringify(fields)}`,
         };
       },
     },

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My account — Lumeva Mobile</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../lumeva.css">
+<link rel="stylesheet" href="account.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="wordmark" href="../">lumeva</a>
+  <nav aria-label="Main">
+    <a href="../">Plans</a>
+    <a href="../network.html">Network</a>
+    <a href="../help.html">Help</a>
+    <a href="./" class="here">My account</a>
+  </nav>
+  <span class="care">Care team 1-512-555-0142</span>
+</header>
+
+<main>
+<div class="acct-band">
+  <div class="inner">
+    <h1>My account</h1>
+    <p class="acct-meta">Account <strong id="acctNumber">…</strong> &middot; <span id="acctPlan">Signal Plus</span></p>
+    <nav class="acct-tabs" aria-label="Account sections">
+      <a href="./" aria-current="page">Overview</a>
+      <a href="usage.html">Usage alerts</a>
+      <a href="roaming.html">Roaming</a>
+    </nav>
+  </div>
+</div>
+
+<div class="acct-body">
+  <div class="inner">
+    <p class="acct-error" id="acctError" role="alert" hidden>We could not load your account just now. Refresh the page to try again, or call the care team.</p>
+
+    <div class="ov-grid">
+      <article class="ov-card">
+        <h2>Usage alerts</h2>
+        <dl class="facts">
+          <div><dt>Alert at</dt><dd id="ovAlert">…</dd></div>
+          <div><dt>Alerts by</dt><dd id="ovNotify">…</dd></div>
+          <div><dt>Weekly summary</dt><dd id="ovWeekly">…</dd></div>
+        </dl>
+        <a class="edit" href="usage.html">Edit usage alerts</a>
+      </article>
+      <article class="ov-card">
+        <h2>Roaming</h2>
+        <dl class="facts">
+          <div><dt>Spend cap</dt><dd id="ovCap">…</dd></div>
+          <div><dt>Roaming on</dt><dd id="ovLines">…</dd></div>
+          <div><dt>At the cap</dt><dd id="ovAtCap">…</dd></div>
+        </dl>
+        <a class="edit" href="roaming.html">Edit roaming</a>
+      </article>
+    </div>
+
+    <section class="last-change" aria-labelledby="lastHead">
+      <h2 id="lastHead">Last change</h2>
+      <span class="k">Last change ref</span>
+      <p><strong id="lastRef">…</strong></p>
+      <span class="k">What changed</span>
+      <p id="lastWhat">…</p>
+      <span class="k">When</span>
+      <p id="lastWhen">…</p>
+    </section>
+
+    <h2>Recent changes</h2>
+    <p class="lede">Every saved change to your account settings gets its own reference. Quote it if you call the care team about a change.</p>
+    <ol class="changes" id="changes"></ol>
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="inner">
+    Lumeva Wireless LLC &middot; 55 Caliche Row, Duneport, TX &middot; care@lumeva.example &middot; 1-512-555-0142<br>
+    <a href="../network.html">Network coverage</a> &middot;
+    <a href="../help.html">Help center</a> &middot;
+    <a href="../terms.html">Terms of service</a> &middot;
+    <a href="../privacy.html">Privacy notice</a> &middot;
+    <a href="../legal.html">Legal and disclosures</a><br>
+    Coverage and speeds vary by location and load. &copy; 2026 Lumeva Wireless LLC. Lumeva Mobile is a service of Lumeva Wireless LLC.
+  </div>
+</footer>
+
+<script>const NONCE = '__SESSION_NONCE__';</script>
+<script src="account.js"></script>
+<script>
+  async function render() {
+    const acct = await LumevaAccount.load();
+    const $ = (id) => document.getElementById(id);
+    const { usage, roaming, account, changes } = acct;
+    const by = [usage.notifyText && 'Text', usage.notifyEmail && 'Email'].filter(Boolean);
+    $('ovAlert').textContent = `${usage.alertPct}% of allowance`;
+    $('ovNotify').textContent = by.length ? by.join(' and ') : 'No alerts';
+    $('ovWeekly').textContent = usage.weeklySummary ? 'On' : 'Off';
+    $('ovCap').textContent = `$${roaming.capUsd} a month`;
+    const roamers = account.lines.filter((line) => roaming[line.id]).map((line) => line.label);
+    $('ovLines').textContent = roamers.length ? roamers.join(', ') : 'No lines';
+    $('ovAtCap').textContent = roaming.atCap === 'block' ? 'Block roaming data' : 'Drop to Roam Lite';
+
+    const latest = changes[0];
+    $('lastRef').textContent = latest ? latest.ref : 'None yet';
+    $('lastWhat').textContent = latest ? latest.summary : 'No changes on record';
+    $('lastWhen').textContent = latest ? LumevaAccount.when(latest.at) : '';
+
+    const list = $('changes');
+    list.replaceChildren();
+    for (const change of changes) {
+      const li = document.createElement('li');
+      const when = document.createElement('span');
+      when.className = 'when';
+      when.textContent = LumevaAccount.when(change.at);
+      const what = document.createElement('span');
+      const tab = document.createElement('span');
+      tab.className = 'tab';
+      tab.textContent = change.tab === 'usage' ? 'Usage alerts' : 'Roaming';
+      what.append(tab, change.summary);
+      const ref = document.createElement('span');
+      ref.className = 'ref';
+      ref.textContent = change.ref;
+      li.append(when, what, ref);
+      list.append(li);
+    }
+  }
+  render();
+  addEventListener('pageshow', (e) => {
+    if (e.persisted) render();
+  });
+</script>
+</body>
+</html>

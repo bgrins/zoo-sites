@@ -1250,6 +1250,15 @@ export const ANSWERS = {
     teaserPerLine: 26.3,
   },
 
+  // pages/telco/account/ — Lumeva Mobile account settings (unsaved-leave).
+  // Only the two changes the ask dictates: every baseline is drawn and every
+  // change reference minted per session in sites/telco.mjs, and the validator
+  // reads both back out of ctx.pages.state.
+  lumevaAccount: {
+    alertPct: 80,
+    capRaise: 10,
+  },
+
   // pages/utility/ — Grelsby Water & Sewer Authority transfer desk
   // (meter-transfer). Nothing here is a secret the page could leak: the
   // transfer reference is minted per session by POST /api/utility/transfer
