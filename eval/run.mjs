@@ -54,7 +54,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import {
-  createWriteStream, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync,
+  appendFileSync, createWriteStream, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -272,7 +272,7 @@ if (RERUN_FAILED) {
   const priorPath = join(RERUN_FAILED.replace(/\/results\.json$/, ''), 'results.json');
   let prior;
   try {
-    prior = JSON.parse(readFileSync(priorPath, 'utf8'));
+    prior = readRun(dirname(priorPath));
   } catch (error) {
     usage(`--rerun-failed: cannot read ${priorPath}: ${error.message}`);
   }
@@ -1612,6 +1612,20 @@ const LIVE = { runDir: null, meta: null, rows: [] };
 const SETTLING = new Set();
 let interrupting = false;
 
+// A finished run's results.json, or, for a run killed before it wrote one, its
+// meta.json and rows.jsonl, marked so the report says the run did not finish.
+function readRun(dir) {
+  const json = join(dir, 'results.json');
+  if (existsSync(json)) return JSON.parse(readFileSync(json, 'utf8'));
+  const rows = join(dir, 'rows.jsonl');
+  if (!existsSync(rows)) throw new Error(`${dir} has neither results.json nor rows.jsonl`);
+  const meta = existsSync(join(dir, 'meta.json'))
+    ? JSON.parse(readFileSync(join(dir, 'meta.json'), 'utf8'))
+    : {};
+  const results = readFileSync(rows, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  return { meta: { ...meta, interrupted: meta.interrupted ?? 'killed' }, results };
+}
+
 function writeRun(runDir, meta, results) {
   const totals = totalsByCondition(results);
   const jsonPath = join(runDir, 'results.json');
@@ -2097,7 +2111,7 @@ async function writeAbReport(dir, prior) {
 async function main() {
   if (REPORT_FROM) {
     const dir = REPORT_FROM.replace(/\/results\.json$/, '');
-    const prior = JSON.parse(readFileSync(join(dir, 'results.json'), 'utf8'));
+    const prior = readRun(dir);
     if (AB) checkAbConditions(dir, prior);
     const totals = totalsByCondition(prior.results);
     const path = join(dir, 'report.md');
@@ -2187,13 +2201,19 @@ async function main() {
     }
   }
   Object.assign(LIVE, { runDir, meta, rows: [] });
+  // Written as the run goes, so a run killed before it can write results.json
+  // (SIGKILL, an out-of-memory stop) still has its meta and every finished row.
+  writeFileSync(join(runDir, 'meta.json'), JSON.stringify(meta, null, 2));
   const shared = {
     transcriptsDir,
     statesDir: join(runDir, 'states'),
     toolCallsDir,
     rolloutsDir: BACKENDS.codex ? join(runDir, 'rollouts') : null,
   };
-  const onRow = (row) => LIVE.rows.push(row);
+  const onRow = (row) => {
+    LIVE.rows.push(row);
+    appendFileSync(join(runDir, 'rows.jsonl'), JSON.stringify(row) + '\n');
+  };
 
   const runs = BACKEND_NAMES.flatMap((backendName) =>
     CONDITIONS.map((condition) => [backendName, condition])
