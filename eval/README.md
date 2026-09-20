@@ -74,7 +74,12 @@ node eval/scripts/judge.mjs <run-dir> --dry-run    # the transcript judge's prom
 `--backend scripted` runs `run.mjs` without an agent and costs nothing. Each attempt's
 answer comes from the task's golden-path driver, which drives the condition's own server
 through the tap and hands its fields straight to the validator, so no extractor runs
-(the row records `extraction.extractor: 'backend'`). The backend streams every call as
+(the row records `extraction.extractor: 'backend'`). Under `EVAL_EXTRACTOR=scripted`,
+`--model extracted`, `misquoted` and `extractor-down` answer with text alone, graded
+through a free stub extractor instead of the paid one: `extracted` has to pass,
+`misquoted` has to fail the quote gate, and `extractor-down` has to fail with the row
+flagged `extraction_failed`. `run.mjs` refuses a text-only scripted model without
+`EVAL_EXTRACTOR=scripted`, and the stub extractor next to an agent backend. The backend streams every call as
 Agent SDK messages, so `transcript.mjs`, `tool-stats.mjs`, triage and the A/B report
 read its rows like an agent's. Its usage is a stand-in: no input tokens, cost 0, and
 output tokens a quarter of the answer's characters. Two labels on one build tie on that
@@ -91,7 +96,8 @@ A top-up of a scripted run has to name `--backend scripted` and its conditions a
 it does not know, so a typo such as `--backend=scripted` cannot fall through to the paid
 default. CI runs a five-task sweep through the backend whenever the gate passes: two
 labels on one build under `--interleave`, then `--report-from --ab`, `tool-stats.mjs`,
-`--rerun-failed` and a `wrong-fields` control (`.github/workflows/gate.yml`). It checks
+`--rerun-failed`, a `wrong-fields` control, and the three stub-extractor models, so the
+extractor path paid rows take runs too (`.github/workflows/gate.yml`). It checks
 each row's streamed snapshots against the tap, its surface reach, and that a driver's
 goto lands on the owning origin.
 

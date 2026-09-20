@@ -79,6 +79,14 @@ Registry: `index.mjs` exports `SITES`, an array of `routes` factories in dispatc
 order, and `DOCUMENTS`, the `documents` factories. Order matters only where
 prefixes overlap, and they should not.
 
+## Per-session records
+
+A record a site only reports (a log of page loads, gestures or saves) is trimmed
+oldest-first with `pushTrimmed(list, row)` from `lib.mjs`, so a standing habitat's
+session cannot grow without bound. A record a validator grades is never trimmed,
+because a flood could push the row that fails a task off the front: its route
+refuses the request once the record holds `SESSION_ROWS` rows.
+
 ## Difficulty draws
 
 A site that deals each session one of several shapes (a layout, a week, a defect)
