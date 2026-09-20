@@ -1,6 +1,6 @@
 // Derives eval/tasks/areas.json: the capability areas each task exercises, so
 // a tool change can be gated and measured on the tasks it touches
-// (`verify.mjs --area`, `run.mjs --area`).
+// (`verify.mjs --area`).
 //
 //   node eval/verify.mjs --jobs 1 --telemetry /tmp/dep.json
 //   FIREFOX_DEVTOOLS_MCP=<build with the text caps raised> \
@@ -76,6 +76,9 @@ const OVERRIDES = {
   'live-auction': { add: ['timing'], why: 'the room moves on a clock the agent has to wait out' },
   'maze-escape': { add: ['navigation'], why: 'the maze is walked room by room inside one document' },
   'status-flash': { add: ['timing'], why: 'the probe code shows for a moment and is gone' },
+  'reused-row': { add: ['timing'], why: "the queue re-sorts every 5 s between the agent's read and its click" },
+  'resend-receipt': { add: ['dialogs'], why: "a reload of the receipt raises Firefox's POST resend prompt, and accepting it through a dialog tool files a duplicate" },
+  'native-permit': { add: ['select'], why: 'the streets are a select[multiple] on apply.html, which the driver reaches by link and the telemetry page list omits' },
   'mid-flight-rate': { add: ['network'], why: 'the multiplier is only in the quote response body' },
   'partial-import': { add: ['network'], why: 'what the intake accepted is only in the post response' },
 };

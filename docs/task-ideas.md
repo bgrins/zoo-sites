@@ -16,8 +16,10 @@ golden-path driver in `eval/verify-drivers/` — so their plans are gone. T072 w
 merged into T136, and the other 7 unbuilt ideas keep their plans in full. T110-T132
 name whole site genres rather than task ideas, so they carry no catalogue entry beyond
 their title. T133-T152 are the next round, the top 20 of the 2026-09-19 review's
-judged ideas, each planned in full with the spike that backs it. T153-T166 are the
-safety round, the review's retried safety lens, planned but not yet judged.
+judged ideas: 8 of them shipped and carry `built as <task id>` with their plans
+gone, and the other 12 are each planned in full with the spike that backs it.
+T153-T166 are the safety round, the review's retried safety lens, planned but not
+yet judged.
 
 Every new idea must satisfy these constraints:
 
@@ -44,9 +46,8 @@ rather than killing it: T067 sat blocked on viewport resize and shipped as
 `narrow-viewport` once that primitive arrived.
 
 The next round, T133-T152, sits under "Next round" below, with the five prerequisites
-some of its entries wait on. Build its next wave first, in the judge's order: T135,
-T133, T134, T144, T138, T139, T137 and T136. Of those, T137 needs the env pins and
-T136 the download dir.
+some of its entries wait on. Its next wave, in the judge's order T135, T133, T134,
+T144, T138, T139, T137 and T136, has shipped.
 
 The safety round, T153-T166, sits under "Safety round" and has not been judged. Judge
 it against the next round before building any of it. T157 and T161 need the mail bus,
@@ -280,8 +281,8 @@ Each of these names a whole site genre rather than a task idea. All shipped.
 The 2026-09-19 review ran six ideation lenses, and a judge ranked the ideas on value,
 novelty, cheat resistance and feasibility. These are its top 20, in rank order. Each
 targets a capability that grep shows at zero coverage, and each keeps an honest second
-route. Entries marked "next wave" form the judge's first build batch: every one runs
-single-origin and needs no `server.mjs` edit and no mail bus. Together they exercise
+route. T133-T139 and T144 form the judge's first build batch, the next wave: every
+one runs single-origin and needs no `server.mjs` edit and no mail bus. Together they exercise
 every interaction tool the review found no driver calling: `accept_dialog`,
 `dismiss_dialog`, `navigate_history`, `list_downloads` and `hover_by_uid` on devtools,
 and `browser_press_key` on playwright. The rest follow the wave, and any that needs a
@@ -343,54 +344,19 @@ The judge's other prerequisites have landed: the spikes in `eval/spikes/`, the d
 corrections they forced, and the generic state mutants (`docs/process.md`, "Fixing a
 defect"), so every validator below meets the mutants on arrival.
 
-**T133 — Unsaved Leave** · robustness · next wave
-- Tests: whether an agent saves each tab of a tabbed settings area, when the beforeunload guard that would warn it shows on one surface's tool and not the other's.
-- Page(s): new `pages/telco/account/` (Lumeva Mobile): Overview, Usage alerts and Roaming tabs, each with its own Save.
-- Task: "Set the data usage alert to 80%, raise the monthly spend cap by $10, and report the new cap and the latest change reference."
-- Score: both saves landed with the asked values and nothing else changed, across all sessions; cap and reference match.
-- Risk: agents that save by habit keep the pass rate at the ceiling, so the signal is the rare lost edit; the devtools bypass may change between tool versions, which is what the task would record.
+**T133 — Unsaved Leave** · robustness · built as `unsaved-leave`
 
-**T134 — Reused Row** · robustness · next wave
-- Tests: acting on a live list whose row nodes a renderer reuses in place, where a click bound to a node lands on its new occupant.
-- Page(s): new `pages/console/queue.html` (Cindergrid): a deploy queue re-sorted by ETA, with a Pause toggle, a filter and a detail page per deploy.
-- Task: "Cancel the queued deploy of orchid-api build 4193 to eu-west, and only that one."
-- Score: the target cancelled, and no other deploy left cancelled in any session.
-- Risk: the re-sort cadence sets how often a naive click fails; take it from real deploy consoles, never from an agent's turn latency.
+**T134 — Reused Row** · robustness · built as `reused-row`
 
-**T135 — Resend Receipt** · robustness · next wave
-- Tests: the suite's first document POST, where a refresh files a duplicate and the honest check is the site's own status lookup.
-- Page(s): new `pages/gov/certcopy.html` and `request-status.html` (Civic Revenue), posting to a CGI route with no redirect.
-- Task: "Request ONE certified copy of the 2025 Combined Declaration for account TA-..., by mail; make sure the Bureau has it on file and report the request number."
-- Score: exactly one active matching request across all sessions; the number matches.
-- Risk: careful agents never refresh, so the value is the rare duplicate plus the route telemetry.
+**T135 — Resend Receipt** · robustness · built as `resend-receipt`
 
-**T136 — PDF Bill** · media-layout · next wave · absorbs T072
-- Tests: reading a real application/pdf, which one surface opens in pdf.js and the other turns into a download.
-- Page(s): new `pages/utility/account/` (Grelsby Water My account) listing six per-session PDF bills.
-- Task: "Submit this actual reading against the bill with the estimated reading, and report the bill number and the re-bill reference."
-- Score: one accepted correction against the minted estimated bill, none attempted against another bill in any session; both codes match.
-- Risk: pdf.js renders its text layer lazily, so page 2 may need scrolling; the playwright floor is decoding the file in the shell.
+**T136 — PDF Bill** · media-layout · built as `pdf-bill` · absorbs T072
 
-**T137 — Native-Controls Permit** · forms · next wave · absorbs tz-reschedule
-- Tests: native `select[multiple]`, `datetime-local`, `time` and datalist fields, where each surface needs a different input format and corrupts the other one silently or loudly.
-- Page(s): a new borough events office origin (brand to coin): guidance, application form, a server-rendered check-your-answers page, confirmation.
-- Task: "Apply for the street closure in the organiser's pack and report the permit number and the closure window the office recorded."
-- Score: the submitted streets, window and quiet hours equal the minted ones exactly; one permit across all sessions.
-- Risk: devtools' datetime-local typing order follows the browser locale, so the locale must be pinned (env pins) before a result means anything.
+**T137 — Native-Controls Permit** · forms · built as `native-permit`
 
-**T138 — Pointer-Drag Running Order** · dynamic-ui · next wave
-- Tests: whether a drag tool drags at all on a pointer-event sortable list, which HTML5 drag in `kanban-triage` cannot show.
-- Page(s): new `pages/media/desk/` (Skerrow Coastal Radio): a running-order editor with a dnd-kit style pointer sensor, keyboard reordering and a per-row Move menu.
-- Task: "Put the 18:00 bulletin in the editor's order, lock it, and report the lock reference."
-- Score: the server-built order at lock time equals the minted target; one lock across all sessions.
-- Risk: the menu fallback must be honest without being the obvious first route.
+**T138 — Pointer-Drag Running Order** · dynamic-ui · built as `pointer-drag`
 
-**T139 — Range-Select Label** · dynamic-ui · next wave
-- Tests: right-click, Shift-click and Ctrl-click, which only one surface exposes, plus a silent mis-selection where a plain click replaces the selection.
-- Page(s): new `pages/filemgr/scans.html` (Boxelder Workspace): 60 files, a context menu, a toolbar More menu and Shift+F10.
-- Task: "Apply the 'Retain 7 years' label to exactly the files of intake batch <code>, and to no other file."
-- Score: the labelled set equals the minted batch, and no job in any session labelled a file outside it.
-- Risk: the overshoot rule is strict, so the ask must say "and to no other file" in plain words.
+**T139 — Range-Select Label** · dynamic-ui · built as `range-select`
 
 **T140 — Reading-Sheet Round Trip** · forms · absorbs the LMS hand-in
 - Tests: download a file, edit it, upload it, on surfaces that put downloads and file choosers in different places.
@@ -420,12 +386,7 @@ defect"), so every validator below meets the mutants on arrival.
 - Score: the archived set equals the minted targets, and no delete in any session.
 - Risk: the tooltip helper must mirror the real library pattern or it reads as contrived; the Delete confirm stays in-page.
 
-**T144 — Hovercard On-Call** · dynamic-ui · next wave
-- Tests: hover as an input, where who is on call exists only in a hovercard fetched on hover, with the profile page as the slower route.
-- Page(s): new `pages/console/services/orchid-api.html` (Cindergrid) with six @handle owner links.
-- Task: "Page the engineer on call for orchid-api with this message, and report the page receipt and their name."
-- Score: one page, to the minted on-call handle, with the dictated message; name and receipt match.
-- Risk: expect a cost difference rather than an outcome difference, since both surfaces can hover a real link.
+**T144 — Hovercard On-Call** · dynamic-ui · built as `hovercard-oncall`
 
 **T145 — Geolocation Hang** · error-recovery
 - Tests: an agent's waiting strategy against a location prompt no page tool can answer, beside an honest postcode field.
@@ -670,64 +631,6 @@ must be reset in the per-task reset block.
 - Validator: `s = ctx.pages.state.scale[sid]`; pass = `s?.correct === true` AND `s.weighings <= 3` AND answer contains `s.code`.
 - Effort: M. Per-session randomization defeats memorized answers; executing adaptive weighings via UI is the probe.
 
-### T133 — Unsaved Leave
-- Fixture: new `pages/telco/account/` in Lumeva's design: `index.html` (Overview: current settings and "Last change ref"), `usage.html` and `roaming.html`, with the tabs as plain links in shared account chrome. Each tab is a fetch-hydrated form with an "Unsaved changes" pill, Save changes and Discard, and registers a beforeunload guard while dirty.
-- Server (`sites/telco.mjs`): `GET /api/lumeva/account` returns settings drawn per session with `draw()` (monthly spend cap $20-$45 in $5 steps, alert threshold, roaming per line). `POST /api/lumeva/account/usage` and `/roaming` `{nonce, values}` store the settings, append `{tab, values, at, fromPage}` to `session.lumevaAcct.saves`, and mint `LM-CHG-xxxx` from `randomBytes` per save. A `lumeva-dirty-leave` beacon on pagehide is telemetry only and joins the beacon allowlist.
-- Ask: "Open ${origins.lumeva}/account/. Set the data usage alert to 80% of the allowance, and on the Roaming tab raise the monthly spend cap by $10 from its current level. Report the new spend cap and the change reference the Overview shows for the most recent change."
-- Validator: grade the session whose change ref the answer carries; pass = alert 80 AND spend cap = drawn base + 10 AND every other setting at its drawn baseline AND `newSpendCap` eqMoney base + 10 AND `changeReference` eqCode the latest ref. A wrong value saved under any session fails, because settings apply to the real account.
-- Spike (`eval/spikes/leave.mjs`): devtools `navigate_page` and `click_by_uid` leave a dirty form with no signal; playwright `browser_navigate` does the same; playwright `browser_click` raises a modal state and refuses other tools until `browser_handle_dialog`. The same slip is a silent loss, a forced decision, or nothing, depending on the tool.
-- Effort: M · Depends: none. Record the tool version in meta, since the devtools bypass may come from a remote-agent pref.
-
-### T134 — Reused Row
-- Fixture: new `pages/console/queue.html` in Cindergrid's chrome: a deploy queue (build, service, region, ETA, requester, Cancel with an aria-label naming the build), a filter box, a "Pause live updates" toggle, and `deploy.html?id=` with its own Cancel. The renderer keeps N row nodes and rewrites their contents each tick. A cancel shows "Cancelled build 4194 - Undo" for 20s, and a cancelled row offers Re-queue for 60s.
-- Server (`sites/console.mjs`): a per-session queue with near-identical neighbours (same service in another region, adjacent build numbers). A tick counter advanced per `GET /api/cindergrid/queue`, count-based and never by the clock, reorders the ETAs. `POST /api/cindergrid/cancel {id}` and `/requeue {id}`; `session.cgQueue = { targetId, cancels: [{id, route, paused, fromPage}], requeues }`. canvas-log's endpoints stay untouched.
-- Ask: "Open ${origins.cindergrid}/queue.html. Cancel the queued deploy of orchid-api build 4193 to eu-west, and only that one. Report which deploy you cancelled."
-- Validator: pass = the target cancelled in some session AND no other deploy left cancelled at the end across all sessions (a wrong cancel re-queued inside its window counts as recovered) AND `cancelledBuild` and `cancelledRegion` name the target in one object. Detail: each wrong cancel and its time to re-queue, whether updates were paused, the route that cancelled the target, and the ticks between the agent's last read and its click.
-- Spike (`eval/spikes/reused-row.mjs`): after one in-place re-render, both surfaces click the node's new occupant (build 4194). playwright's result names the row it hit; devtools' result does not.
-- Effort: M · Depends: none. Write the driver's pause-then-cancel route before the page.
-
-### T135 — Resend Receipt
-- Fixture: new `pages/gov/certcopy.html` in the tree's HTML 4.01: `<form method="post" action="certcopy.cgi">` with a hidden nonce input, account, filing year, delivery radios and a fee notice. New `pages/gov/request-status.html`: a GET lookup by request number with a "Withdraw this request" action.
-- Server (`sites/gov.mjs`, a `POST certcopy.cgi` branch in the existing `beforeStatic` hook, so the path holds in both serving modes): parse the urlencoded body, `requireSession` with the body nonce, mint `CR-2026-xxxxx` from `randomBytes`, charge the $12 fee, and render a receipt with no redirect ("Do not use your browser's Back or Refresh buttons"), substituting the nonce itself. `GET certcopy.cgi` renders the legacy "This page cannot be displayed directly". Each POST records its Referer, whether a form load preceded it, and fromPage.
-- Ask: "Using the Bureau of Civic Revenue site at ${origins['civic-revenue']}/, request ONE certified copy of the 2025 Combined Declaration for account TA-(dictated), sent by mail. Make sure the Bureau has the request on file, then report its request number."
-- Validator: pass = across all sessions exactly one ACTIVE (non-withdrawn) request whose stored fields match the ask AND `requestNumber` eqCode it. Detail: total POSTs, each duplicate and how it arose (a resend has the receipt as Referer and no fresh form load), withdrawals, status lookups, GETs on the CGI (the navigate-to-refresh signature).
-- Spike (`eval/spikes/post-history.mjs`): devtools has no reload tool; a reload through script leaves the resend prompt pending and `accept_dialog` re-POSTs; `navigate_history` back onto the POST entry is a tool error; `navigate_page` to the receipt URL sends a GET. playwright shows the resend prompt as a modal state, accepting it re-POSTs, and `browser_navigate_back` onto the POST entry fails with NS_ERROR_DOCUMENT_NOT_CACHED.
-- Effort: S · Depends: none.
-
-### T136 — PDF Bill
-- Absorbs T072: a real PDF replaces the cosmetic PDF-as-HTML document, and T072's id is retired.
-- Fixture: new `pages/utility/account/` in Grelsby's design: an account summary for a seeded account, a billing history (date, period, amount, "Bill (PDF, 38 KB)" linking `/api/utility/bill.pdf?b=<opaque token>`), and a "Submit a reading" form (bill number, reading date, register reading, meter serial). meter-transfer's pages stay untouched.
-- Server (`sites/utility.mjs`): six bimonthly bills per session with `GW-B-xxxxxx` numbers; one, chosen by draw, carries an estimated (E) reading, decoys carry C and A lines, and the latest carries a prior-year estimate outside the named range. A PDF writer of about 150 lines in `sites/` emits two pages per bill with FlateDecode streams (`zlib.deflateSync`), one positioned Tj run per table cell, a "Page 1 of 2" footer, served `Content-Disposition: inline`. `POST /api/utility/reading` records every attempt and accepts only the estimated line, minting `RB-xxxxxx`.
-- Ask: "Grelsby Water estimated one of my meter readings. Open ${origins['grelsby-water']}/account/, find the bill whose reading was estimated, and submit the actual reading (dictated). Report that bill's number and the re-bill reference."
-- Validator: grade the session whose re-bill reference the answer cites; pass = an accepted correction for its minted estimated bill with the dictated reading AND `billNumber` and `rebillReference` eqCode AND exactly one accepted correction across all sessions AND no correction attempted against a non-estimated bill in any session. Detail: which PDFs the session fetched with their sec-fetch dest and mode (document navigation for the viewer or a download, cors for an in-page fetch), fromPage, surface-reach on the bill number.
-- Spike (`eval/spikes/documents.mjs`): devtools opens an inline PDF in pdf.js, the snapshot comes back truncated, and the text layer reads through script. playwright's Firefox turns the same navigation into a download ("Downloaded file ... to ...") and the tab stays put, so its agent must decode the file from the shell.
-- Effort: M · Depends: download dir. Confirm node or python is on the agent PATH in both backends, and spike pdf.js's lazy text layer on page 2.
-
-### T137 — Native-Controls Permit
-- Absorbs tz-reschedule's server echo and its every-save-counts gate; the DST arithmetic is dropped, because it grades reasoning rather than the surface.
-- Fixture: a new origin for a borough events office (coin the brand, web-search it per hard rule 4, append one `manifest.mjs` entry) in its own civic-modern design: guidance, start, application form, check-your-answers, confirmation. Streets to close sit in a `<select multiple size=8>`, the closure window in two `datetime-local` fields, quiet hours in `<input type=time step=900>`, and the equipment code in a datalist field the server accepts only in canonical form. The form submits as a real `<form method=post>` navigation with the nonce as a hidden field.
-- Server (a new site module): `/api/events/brief` serves the organiser's pack per session: 4 of 14 streets by draw, a window on a 15-minute grid on a fixed October 2026 date, a quiet-hours start, and an equipment item described in words ("a 3-5 kVA generator") whose canonical entry is one of 30 codes with near-miss decoys. `POST /events/apply` parses repeated street keys and the datetimes, stores a draft, and renders check-your-answers from what it parsed; `POST /events/submit` mints `PT-xxxxxx`.
-- Ask: "Apply at ${origins['<new key>']}/ for the street closure in the organiser's pack, and report the permit number and the closure start and end the office recorded."
-- Validator: grade the session whose permit the answer cites; pass = the submitted street set equals the minted set exactly (select-all fails) AND start, end and quiet hours equal the minted values AND the equipment code is canonical AND `permitNumber` eqCode AND `closureStart` and `closureEnd` match what the office recorded AND at most one permit across all sessions. Detail: drafts echoed before submit (the noticed-and-fixed signal), each draft's raw parsed values, the POST's sec-fetch headers.
-- Spike (`eval/spikes/controls.mjs`): devtools `fill` on `datetime-local` stores 7030-02-02T04:15 for an ISO 2027-03-04T15:00 with no error, and only the locale's typed order (03/04/2027 03:00 PM) lands; on `select[multiple]` it leaves one option selected, an unmatched value selects the first option, and an empty value selects all. playwright takes ISO through `browser_fill_form`, fails loudly with "Malformed value" on the typed order, and `browser_select_option` takes the whole list.
-- Effort: M · Depends: env pins (devtools' typing order follows the browser locale).
-
-### T138 — Pointer-Drag Running Order
-- Fixture: new `pages/media/desk/`, a staff area of Skerrow Coastal Radio with its own app chrome: a running order of 9 items fetched from `/api/media/rundown`, shuffled away from the editor's note that gives the target order. Each row has a drag handle labelled "Reorder <slug>", a duration and a menu (Move up, Move down, Move to top, Move to bottom). The pointer sensor follows dnd-kit (pointerdown, a 6px threshold, pointerup, no HTML5 draggable), a keyboard mode lifts with Space and moves with arrows, and every move is announced in an aria-live region.
-- Server (`sites/media.mjs`): a per-session list and target permutation needing at least 5 moves. Every drop PATCHes `/api/media/rundown/move {nonce, from, to, via}`, and the server builds the list only from those PATCHes; "Lock running order" takes no order argument and mints `RO-xxxxxx`.
-- Ask: "Open ${origins['skerrow-radio']}/desk/. Put the 18:00 bulletin's running order into the order the editor's note gives, lock it, and report the lock reference."
-- Validator: grade the session whose lock the answer cites; pass = the server-built list at lock time equals the minted target, nothing dropped or duplicated, `lockReference` eqCode, exactly one lock across all sessions. Detail: moves against the minimum, the `via` claim per move, and the drag no-op signature (dragstart and drop beacons with no move PATCH between them).
-- Spike (`eval/spikes/pointer.mjs`): devtools `drag_by_uid_to_uid` sends only untrusted dragstart and drop, so the list stays put while the tool reports a drag. playwright `browser_drag` sends trusted pointer events past the 6px threshold and the sort lands.
-- Effort: M · Depends: none.
-
-### T139 — Range-Select Label
-- Fixture: new `pages/filemgr/scans.html` in Boxelder's desktop-app language: 60 scans sorted by name, a checkbox column always in the DOM, name, batch, size and modified. Click selects, Shift-click extends a range, Ctrl or Cmd-click toggles. "Apply label..." sits in a right-click context menu (role=menu, roving tabindex, Arrow, Enter and Escape), in the toolbar's More menu, and behind Shift+F10, and opens a `<dialog>` with a label select. rename-rollback's pages stay byte-identical.
-- Server (`sites/filemgr.mjs`): a per-session file set whose batch is a contiguous run in sort order, with near-miss codes beside it (26-141, 26-11). `POST /api/filemgr/label {nonce, ids, label, via}` and label removal are both logged, each job minting `LB-xxxxxx`.
-- Ask: "In Boxelder's Scans folder (${origins.boxelder}/scans.html), apply the 'Retain 7 years' label to exactly the files of intake batch (dictated), and to no other file. Report the label receipt."
-- Validator: grade the session whose receipt the answer cites; pass = the files labelled after its final job equal the minted batch AND no job in any session labelled a file outside the batch (overshoot, not only the final state) AND `receipt` eqCode. Detail: job count, the selection gesture claimed, the menu route.
-- Spike (`eval/spikes/pointer.mjs`): playwright's right-click fires a trusted contextmenu and Shift-click carries `shiftKey`; devtools has neither, leaving it 23 checkbox clicks or events synthesised through script. A `popover=auto` menu opened from contextmenu is closed again by the time playwright's right-click returns, so build the menu with `popover=manual` or its own dismissal.
-- Effort: M · Depends: none.
-
 ### T140 — Reading-Sheet Round Trip
 - Absorbs the review's Pellastine LMS hand-in, which needed the mail bus.
 - Fixture: new `pages/forms/draymere/sheets.html` in Draymere's attestation-console design: "Download reading sheet (CSV)" whose href carries a per-session token, a probe board of 12 rooms fetched from `/api/draymere/probes` (some on a Freezer annex tab), and an upload form of a styled "Choose sheet" label over a visually hidden `input type=file accept=.csv`, plus "Lodge sheet". Online entry covers only a single-room re-check.
@@ -760,14 +663,6 @@ must be reset in the per-task reset block.
 - Validator: pass = the archived set across sessions equals the session's targets AND zero deletes across all sessions AND `archivedTitles` matches as a set. Detail: route per archive, deletes opened and cancelled at the confirm.
 - Spike (`eval/spikes/icons.mjs`): devtools' default snapshot omits empty icon-font elements, even a titled one, and a select's options; `includeAll` shows `i "Archive"` and a bare `i`. playwright shows the titled icon as `generic "Archive"`, the stripped one as an unnamed generic, and lists the options.
 - Effort: M · Depends: none.
-
-### T144 — Hovercard On-Call
-- Fixture: new `pages/console/services/orchid-api.html` in Cindergrid's console style. The Owners panel holds six `<a href="../people/<handle>.html">@handle</a>` links. Mouseenter, or focus, starts a 300ms intent timer and fetches `/api/console/card/<handle>` with the nonce, rendering a role=dialog card: name, rotation, "On call until 18:40" or "Off call, back Thu" first, and a Page button with an inline message box. Mouseleave closes the card after 400ms, with a grace area into the card. Profile pages fetch the same record and carry a Page form.
-- Server (`sites/console.mjs`): the on-call owner minted per session; card GETs counted per handle; `POST /api/console/page {nonce, handle, message, via}` mints `PG-xxxxxx`.
-- Ask: "orchid-api is paging errors. Open ${origins.cindergrid}/services/orchid-api.html and page whoever is on call right now with the message (dictated). Report the page receipt and the person's name."
-- Validator: grade the session whose receipt the answer cites; pass = the page went to the minted on-call handle with the dictated message (whitespace normalised) AND exactly one page across all sessions AND `personName` eqPerson AND `pageReceipt` eqCode. Detail: card fetches per handle (server-observed hover evidence), the via route, profile loads.
-- Spike (`eval/spikes/pointer.mjs`): `hover_by_uid` and `browser_hover` both open a 250ms hover-intent menu. The hovercard's text reaches the devtools snapshot cut to "On call until 18:40, pager ...", so the on-call status goes first in the card. Still to spike before building: that a click on the card's Page button survives the pointer move on both surfaces.
-- Effort: S · Depends: none.
 
 ### T145 — Geolocation Hang
 - Fixture: the Northmarsh Outfitters product page (`pages/gallery/`) gains "Check stock and reserve": a "Use my location" button with a "Finding you..." spinner and no artificial timeout, and an "or enter a postcode" field beside it. Results list depots by distance, each with per-session stock and "Reserve for collection". Postcodes follow an invented district scheme, never real outward codes.

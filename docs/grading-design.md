@@ -11,7 +11,7 @@ That conversion is one cheap model call per task run, made after the agent's ses
 has closed, and it sees the task ask, the answer text, and the task's JSON schema —
 nothing else. `eval/extract.mjs` implements it, `eval/run.mjs` invokes it, and
 `docs/authoring-fixtures.md` states the rules a validator must follow on top of it. All
-91 tasks the gate covers declare an `answerSchema` and grade on fields. The three basic
+99 tasks the gate covers declare an `answerSchema` and grade on fields. The three basic
 smoke tasks sit outside the gate and match a regexp instead, because their answer is a
 single literal string.
 

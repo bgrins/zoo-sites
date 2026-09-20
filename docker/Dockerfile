@@ -3,7 +3,7 @@
 # only), so there is no install step and the image is the source plus node.
 #
 #   docker build -f docker/Dockerfile -t zoo-sites .
-#   docker run -p 8100-8165:8100-8165 zoo-sites
+#   docker run -p 8100-8166:8100-8166 zoo-sites
 #
 # Determinism: pass EVAL_SEED to pin the sites' difficulty draws for the
 # container's lifetime.
@@ -21,7 +21,7 @@ COPY --chmod=0755 pages/ pages/
 # refuses every connection from the host and from peer containers.
 ENV ZOO_HOST=0.0.0.0
 
-EXPOSE 8100-8165
+EXPOSE 8100-8166
 # The probe targets loopback whatever ZOO_HOST says, because 0.0.0.0 and :: are
 # bind addresses, not connectable ones. That makes this a liveness check only:
 # it reports healthy whenever the server is up, including the case where the

@@ -160,8 +160,8 @@ for (const name of BACKEND_NAMES) {
     usage(`unknown backend "${name}" (known: ${KNOWN_BACKENDS.join(', ')}, or all)`);
   }
 }
-// report.md names one extractor per run and counts every row with an
-// extraction, so scripted rows would pass as the agent rows' extractor calls.
+// A scripted row is a golden path, not an agent's run, so a run mixing it with
+// an agent backend would report the two side by side as if they were comparable.
 if (BACKEND_NAMES.includes('scripted') && BACKEND_NAMES.length > 1) {
   usage('--backend scripted runs no agent, so it cannot share a run with an agent backend');
 }

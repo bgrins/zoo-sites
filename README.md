@@ -1,13 +1,13 @@
 # zoo-sites
 
-A set of simulated websites, served locally. 66 origins across 53 site trees: a
+A set of simulated websites, served locally. 67 origins across 54 site trees: a
 storefront, a legacy government portal, a dark ops console, a bank, a newsroom, a
 1930s freight registry, and so on. Every one is invented, and every one carries its
 own design language rather than a shared template.
 
 ```sh
 node server.mjs --port 8907   # every site on one port; / is an index, /_preview a contact sheet
-node serve.mjs                # all 66 origins, one per port from 8100, one process
+node serve.mjs                # all 67 origins, one per port from 8100, one process
 ```
 
 No dependencies: the server is node builtins only. `docker/README.md` runs the same
@@ -74,7 +74,7 @@ the submitted username and the *length* of the password field.
 | `server.mjs` | Fixture server core: sessions, static serving, site dispatch. Node builtins only. |
 | `serve.mjs` | Multi-origin entry, what the container runs. `--print-zoo-label` emits the compose label. |
 | `manifest.mjs` | The origin manifest: key, pages dir, `.zoo` domain, port — one row per origin. |
-| `pages/` | 736 HTML fixtures in 53 site trees. |
+| `pages/` | 969 HTML fixtures in 54 site trees. |
 | `sites/` | Per-site backends: session state, minted codes, the APIs each page calls. |
 | `scripts/gen/` | Generators for the bulk fixture trees (`pages/gov/departments`, `pages/ledger`). |
 | `eval/` | The browser-agent eval: tasks, validators, golden-path drivers, runners. |

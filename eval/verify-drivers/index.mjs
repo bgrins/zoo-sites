@@ -44,6 +44,14 @@ import { DRIVERS as registrar } from './registrar.mjs';
 import { DRIVERS as telco } from './telco.mjs';
 import { DRIVERS as utility } from './utility.mjs';
 import { DRIVERS as kiosk } from './kiosk.mjs';
+import { DRIVERS as resendReceipt } from './resend-receipt.mjs';
+import { DRIVERS as unsavedLeave } from './unsaved-leave.mjs';
+import { DRIVERS as reusedRow } from './reused-row.mjs';
+import { DRIVERS as hovercardOncall } from './hovercard-oncall.mjs';
+import { DRIVERS as nativePermit } from './native-permit.mjs';
+import { DRIVERS as pointerDrag } from './pointer-drag.mjs';
+import { DRIVERS as rangeSelect } from './range-select.mjs';
+import { DRIVERS as pdfBill } from './pdf-bill.mjs';
 
 // Keyed by file name, which is what the duplicate-id error and DRIVER_FILES
 // report.
@@ -88,6 +96,14 @@ const modules = {
   'jobs.mjs': jobs,
   'utility.mjs': utility,
   'kiosk.mjs': kiosk,
+  'resend-receipt.mjs': resendReceipt,
+  'unsaved-leave.mjs': unsavedLeave,
+  'reused-row.mjs': reusedRow,
+  'hovercard-oncall.mjs': hovercardOncall,
+  'native-permit.mjs': nativePermit,
+  'pointer-drag.mjs': pointerDrag,
+  'range-select.mjs': rangeSelect,
+  'pdf-bill.mjs': pdfBill,
 };
 
 export const DRIVERS = {};

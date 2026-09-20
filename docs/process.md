@@ -1,10 +1,10 @@
 # Working on zoo-sites
 
-This repository holds two things: 66 locally-served simulated origins, across 53
+This repository holds two things: 67 locally-served simulated origins, across 54
 fixture trees under `pages/` with their backends in `sites/`, and a browser-agent
-eval over them in `eval/`. The eval runs 94 tasks — 86 web, 5 devtools, 3 basic
+eval over them in `eval/`. The eval runs 102 tasks — 94 web, 5 devtools, 3 basic
 smoke — and grades each on what the site's server observed, not on what the agent
-claimed. The tool surface is a configurable condition, so the same 94 tasks measure
+claimed. The tool surface is a configurable condition, so the same 102 tasks measure
 whichever stdio MCP browser server you point them at. The eval measures how that
 surface shapes a run rather than scoring models, and the signal lives in efficiency
 and in the rare failure, not in the pass rate.
@@ -23,7 +23,7 @@ node eval/verify.mjs --origins                    # every site on its own port, 
 ```
 
 Run the gate after touching any fixture, validator, or server code, and get it
-green before committing. It drives 91 golden paths through real headless Firefox
+green before committing. It drives 99 golden paths through real headless Firefox
 and this repo's MCP client, asserting per task that the validator accepts a
 correct answer and rejects a wrong one. Nothing else catches a well-meaning edit
 that silently breaks a task, and a restyle can change measured behaviour with no
@@ -263,11 +263,11 @@ and only a late adversarial pass catches it.
    `docs/authoring-fixtures.md` first: re-reporting a constraint the fixtures
    deliberately design around is the most common false positive here.
 
-Those assertions accumulate into the gate's memory. All 91 drivers carry them, and a
-full run exercises 542 wrong answers and 136 wrong server states that must all fail,
-and 390 accepted variants and 98 accepted states that must all pass, so a change that
-re-breaks one fails the run and names it. The generic mutants add 158 erased states
-that must fail and 79 shadow sessions that must be ignored, across the 79 minted-truth
+Those assertions accumulate into the gate's memory. All 99 drivers carry them, and a
+full run exercises 614 wrong answers and 219 wrong server states that must all fail,
+and 450 accepted variants and 144 accepted states that must all pass, so a change that
+re-breaks one fails the run and names it. The generic mutants add 174 erased states
+that must fail and 87 shadow sessions that must be ignored, across the 87 minted-truth
 tasks, and 12 tasks are static. Read the current counts off `node eval/verify.mjs`,
 which prints them per task and totals them in its `cases exercised` line, the mutants
 as `mutants killed` and `shadow sessions ignored`.

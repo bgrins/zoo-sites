@@ -23,7 +23,7 @@ jobs:
           node-version: 22
       - run: npm ci
       # Runs before the browser install because it needs neither, and it fails in
-      # about a second on a dead link or a missing origin root. The gate's 91
+      # about a second on a dead link or a missing origin root. The gate's 99
       # drivers only ever exercise single-origin mode, so nothing downstream of
       # here would catch a link that resolves under site prefixes and 404s under
       # the container's one-origin-per-port mounts.

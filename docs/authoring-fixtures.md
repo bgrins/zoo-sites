@@ -10,9 +10,9 @@ agent is, across two conditions: `firefox-devtools-mcp` (over stdio) and
 `playwright-mcp` (the vendored `@playwright/mcp`). Build each fixture as the real
 site it imitates, and let the surfaces succeed or fail against it on their own: a
 task that one surface loses is a finding, not a bug to author away. See
-"Tool-surface limits are the measurement" below. For scale: 94 tasks (86 web, 5
-devtools, 3 basic smoke) run against 66 origins served from 53 fixture trees under
-`pages/`, and `eval/verify.mjs` gates 91 of them with one deterministic driver each.
+"Tool-surface limits are the measurement" below. For scale: 102 tasks (94 web, 5
+devtools, 3 basic smoke) run against 67 origins served from 54 fixture trees under
+`pages/`, and `eval/verify.mjs` gates 99 of them with one deterministic driver each.
 
 ## Where to look first
 
@@ -340,7 +340,7 @@ tuned to fit inside a truncation limit can never report that the limit loses dat
 — and every one of the numbers below is a constant in one vendor's bundle
 (`le=10`, `j=1e3`, `ie=100`, `MAX_ATTR_LENGTH=30` in
 `@mozilla/firefox-devtools-mcp`), not a property of browsers or of HTML. Tuning
-736 pages to those constants couples the corpus to a dependency's internals, and
+969 pages to those constants couples the corpus to a dependency's internals, and
 bumping one of them silently retires whatever it was testing.
 
 So the limits below are documented to help you READ RESULTS, never to shape a

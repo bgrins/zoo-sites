@@ -106,8 +106,12 @@ const layout = ctx.pick('boxoffice.layout', ['stalls-first', 'circle-first', 'sp
 - Scope names are per site and per factor (`<site>.<factor>`), so forcing one
   factor never shifts another's sequence.
 
-No site uses `pick` yet; the sites that call `draw` directly keep their current
-sequences until they are migrated.
+Three sites use `pick`. `console.oncall` in `sites/console.mjs` (hovercard-oncall)
+is drawn once per task: later sessions reuse the first session's pick.
+`gov.certcopy.receipt` in `sites/gov.mjs` (resend-receipt) and
+`events.equipment` in `sites/events.mjs` (native-permit) pick once per session. The
+sites that call `draw` directly keep their current sequences until they are
+migrated.
 
 ## Request ledger
 

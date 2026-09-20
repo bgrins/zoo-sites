@@ -552,14 +552,20 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
   lines.push(...invalidLines(results, totals));
   // Extraction spend is reported once for the run, never per condition: the
   // extractor is condition-blind and its usage is excluded from every metric
-  // above (docs/grading-design.md).
-  const extracted = results.filter((r) => r.extraction);
+  // above (docs/grading-design.md). A row whose backend returned its fields
+  // (extractor 'backend') made no extraction call.
+  const extracted = results.filter((r) => r.extraction && r.extraction.extractor !== 'backend');
   if (extracted.length) {
+    const byExtractor = new Map();
+    for (const r of extracted) {
+      const key = `${r.extraction.extractor}/${r.extraction.model}`;
+      byExtractor.set(key, (byExtractor.get(key) ?? 0) + 1);
+    }
     const spend = extracted.reduce((n, r) => n + (r.extraction.cost_usd ?? 0), 0);
+    const via = [...byExtractor].map(([key, n]) => `${n} rows via ${key}`).join(', ');
     lines.push(
       '',
-      `Structured answer extraction: ${extracted.length} rows via ` +
-        `${extracted[0].extraction.extractor}/${extracted[0].extraction.model}, ` +
+      `Structured answer extraction: ${via}, ` +
         `$${spend.toFixed(4)} total (excluded from the per-condition metrics above).`
     );
   }

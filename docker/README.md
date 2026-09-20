@@ -9,8 +9,8 @@ need nothing but Docker.
 
 ## What the image is
 
-One node process serves all 66 simulated origins, each on its own port
-(8100-8165), over one shared in-memory state. The server tree needs no
+One node process serves all 67 simulated origins, each on its own port
+(8100-8166), over one shared in-memory state. The server tree needs no
 dependencies beyond node builtins, so the image needs no `npm install`: it is the
 source plus `node:22-slim`.
 
@@ -80,10 +80,10 @@ from the host after publishing the ports — and does not report the bind addres
 ## 3. Run and smoke-test the origins
 
 ```sh
-docker run --rm -p 8100-8165:8100-8165 zoo-sites
+docker run --rm -p 8100-8166:8100-8166 zoo-sites
 ```
 
-The startup log opens with `zoo-sites: 66 origins up (shared state, one
+The startup log opens with `zoo-sites: 67 origins up (shared state, one
 process)`, followed by one line per origin mapping domain to port to `pages/`
 subtree. Then, from the host:
 
@@ -122,7 +122,7 @@ docker inspect --format '{{.State.Health.Status}}' <container>
 weekend, which board layout — for a container's lifetime:
 
 ```sh
-docker run --rm -e EVAL_SEED=alpha -p 8100-8165:8100-8165 zoo-sites
+docker run --rm -e EVAL_SEED=alpha -p 8100-8166:8100-8166 zoo-sites
 ```
 
 Two containers started with the same seed deal the same shapes to their first
@@ -160,7 +160,7 @@ request builds the image without pushing it. The generator reads
 GITHUB_REPOSITORY_OWNER=<owner> node docker/gen-zoo-snippet.mjs > docker/zoo-snippet.yaml
 ```
 
-The Dockerfile `EXPOSE`s the range 8100-8165. If the zoo's network mode makes
+The Dockerfile `EXPOSE`s the range 8100-8166. If the zoo's network mode makes
 port publishing unnecessary (the proxy sits on the compose network), drop the
 `-p` range from local runs and let the proxy reach the container directly.
 

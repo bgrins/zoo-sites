@@ -478,7 +478,7 @@ export async function startPagesServer({
   // Container/zoo mode binds the manifest's exact ports; local origin mode
   // stays ephemeral so parallel workers never collide.
   fixedPorts = false,
-  // Loopback by default so a laptop never exposes 66 mutable-state fixture
+  // Loopback by default so a laptop never exposes 67 mutable-state fixture
   // origins to its network. Only the container overrides this (ZOO_HOST), where
   // binding all interfaces is the whole point of publishing a port.
   host = '127.0.0.1',
