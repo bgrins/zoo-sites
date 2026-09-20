@@ -313,6 +313,128 @@ export async function interactionTasks(base, origins = originUrls(base)) {
       },
     },
     {
+      id: 'range-select',
+      ask:
+        `In Boxelder's Scans folder (${origins.boxelder}/scans.html), apply the ` +
+        `'Retain 7 years' label to exactly the files of intake batch 26-14, and to ` +
+        `no other file. Leave every other file's label as it is, and report the label receipt.`,
+      answerSchema: {
+        type: 'object',
+        properties: {
+          receipt: {
+            type: ['string', 'null'],
+            description:
+              'the label receipt the workspace issued, e.g. LB-1A2B3C; every receipt the answer ' +
+              'names, when it names more than one',
+          },
+        },
+      },
+      validate: (text, ctx, fields) => {
+        const want = ANSWERS.filemgrScans;
+        const runs = [...ctx.pages.state.sessions.values()]
+          .map((s) => s.scans)
+          .filter((sc) => sc && Array.isArray(sc.jobs) && Array.isArray(sc.targetIds));
+        // The receipts the answer names, with or without the prefix, and with
+        // whatever notes it adds ("LB-1A2B3C (Retain 7 years, 25 files)"). A run
+        // that labelled the batch in more than one job may name each receipt
+        // ("LB-1A2B3C and 4D5E6F"); an "or" between them, or a negation, is a
+        // hedge and grades as written. A bare body counts only with a digit in
+        // it and never after a dash, so neither a word such as "decade" nor the
+        // number in a file name such as SC-004787 reads as a receipt.
+        const sole = soleCode(fields?.receipt, /LB-[0-9A-F]{6}/);
+        const listed =
+          typeof sole === 'string' && !/\b(?:or|not|never)\b|n't\b/i.test(sole)
+            ? sole.match(
+                /(?<![A-Za-z0-9])LB[\s\u2010-\u2015-]*[0-9A-F]{6}(?![A-Za-z0-9])|(?<![A-Za-z0-9\u2010-\u2015-])(?=[A-F]*[0-9])[0-9A-F]{6}(?![A-Za-z0-9])/gi
+              ) ?? []
+            : [];
+        const claims = listed.length ? listed : [sole];
+        const labelJob = (j) => j.action === 'apply' && j.label === want.label;
+        const cites = (j) => labelJob(j) && claims.some((claim) => eqMinted(claim, j.receipt, 'LB-'));
+        // Grade the session whose label receipt the answer quotes, so a probe
+        // or a re-minted cookie cannot shadow the run; failing that, a session
+        // that labelled anything, so a wrong run still shows its own state.
+        const graded =
+          runs.find((sc) => sc.jobs.some(cites)) ??
+          runs.find((sc) => sc.jobs.some(labelJob)) ??
+          runs.find((sc) => sc.jobs.length) ??
+          runs[0] ??
+          null;
+        const cited = graded?.jobs.find(cites) ?? null;
+        // One receipt named has to be a label receipt of the graded session.
+        // The others may be any job of that session, named while narrating a
+        // correction; a receipt the session never issued fails the answer.
+        const issued = (claim) => graded.jobs.some((j) => eqMinted(claim, j.receipt, 'LB-'));
+        const citedAll = !!cited && claims.every(issued);
+        // Each session's labels replayed from the ones its folder opened with
+        // through its job log: a later label replaces an earlier one and a
+        // removal clears it. `changes` lists every file a job actually moved.
+        const replay = (sc) => {
+          const label = new Map(Object.entries(sc.seeded ?? {}));
+          const changes = [];
+          for (const j of sc.jobs) {
+            for (const id of j.ids ?? []) {
+              const next = j.action === 'remove' ? null : j.label;
+              if ((label.get(id) ?? null) !== next) changes.push({ sc, j, id });
+              label.set(id, next);
+            }
+          }
+          return { label, changes };
+        };
+        const replays = new Map(runs.map((sc) => [sc, replay(sc)]));
+        const finalLabel = graded ? replays.get(graded).label : new Map();
+        const target = new Set(graded?.targetIds ?? []);
+        const missing = [...target].filter((id) => finalLabel.get(id) !== want.label);
+        const extra = [...finalLabel].filter(([id, l]) => l === want.label && !target.has(id));
+        const setOk = target.size > 0 && missing.length === 0 && extra.length === 0;
+        // "And to no other file" and "leave every other file's label as it is"
+        // bind every job, not only the final state: a label applied past the
+        // batch and removed again changed that file twice. Each session's jobs
+        // are held to that session's own batch, across all sessions, so a fresh
+        // cookie buys nothing. A job that left a file's label as it was, such as
+        // a label it already had, changed nothing.
+        const strays = runs.flatMap((sc) => {
+          const own = new Set(sc.targetIds);
+          return replays.get(sc).changes.filter(({ id }) => !own.has(id));
+        });
+        const overshootOk = strays.length === 0;
+        // Telemetry, never graded: the rows the batch spans, since a snapshot
+        // that prints the Batch column can stop short of them; whether an
+        // overshoot reached the near-miss neighbours (a range one row long) or
+        // covered a whole folder (select all); and each job's page-reported
+        // gestures and menu route.
+        const order = (graded?.files ?? []).map((f) => f.id);
+        const [from, to] = [order.indexOf(graded?.targetIds[0]), order.indexOf(graded?.targetIds.at(-1))];
+        const span =
+          from < 0 || to < 0
+            ? 'none'
+            : `rows=${from + 1}-${to + 1}/${order.length} ${graded.files[from].name}..${graded.files[to].name}`;
+        const near = new Set(graded?.neighbourIds ?? []);
+        const nearTouched = strays.filter((s) => s.sc === graded && near.has(s.id)).length;
+        const selectAll = runs.some((sc) => sc.jobs.some((j) => (j.ids ?? []).length === sc.files?.length));
+        const gestures = (g) =>
+          Object.entries(g ?? {})
+            .filter(([, n]) => n > 0)
+            .map(([k, n]) => `${k}${n}`)
+            .join('+') || 'none';
+        const jobs = (graded?.jobs ?? []).map(
+          (j) =>
+            `${j.receipt}:${j.action}:${j.label ?? '-'}:${(j.action === 'remove' ? j.cleared : j.ids)?.length ?? 0}` +
+            `:${j.via?.menu ?? '-'}:${gestures(j.via?.gestures)}${j.fromPage ? '' : ':offpage'}`
+        );
+        return {
+          pass: citedAll && setOk && overshootOk,
+          detail:
+            `sessions=${runs.length} batch=${want.batch} target=${target.size} ${span} ` +
+            `cited=${cited?.receipt ?? 'none'} citedAll=${citedAll} missing=${missing.length} extra=${extra.length} ` +
+            `strays=${strays.length} (sessions ${new Set(strays.map((s) => s.sc)).size}, ` +
+            `nearMiss=${nearTouched}, selectAll=${selectAll}) ` +
+            `jobs=[${jobs.join(' ') || 'none'}] reads=${graded?.reads ?? 0} refused=${graded?.refused ?? 0} ` +
+            `setOk=${setOk} overshootOk=${overshootOk} fields=${JSON.stringify(fields)}`,
+        };
+      },
+    },
+    {
       id: 'floorplan-room',
       ask:
         `Open ${origins['cadre-workplace']}/ — the facilities console for Ostmark House, ` +

@@ -653,6 +653,13 @@ export const ANSWERS = {
   // the page rolls the DOM back ~2s after the optimistic update.
   filemgr: { lockedId: 4, lockedName: 'draft-old', targetName: 'draft-final' },
 
+  // pages/filemgr/scans.html — the Scans folder (range-select). The file ids,
+  // which files form each intake batch, where the dictated batch sits in the
+  // list and how long it runs are minted per session in sites/filemgr.mjs, and
+  // each label job's receipt comes from randomBytes, so none of them is
+  // derivable from fixture source. These are the ask's dictated values.
+  filemgrScans: { batch: '26-14', label: 'Retain 7 years', receiptPrefix: 'LB-' },
+
   // pages/grid-edit/ — the count sheet, its planted errors and the corrections
   // memo are server-issued per session (server.mjs); the graded fact is the
   // per-session grid the server holds after the agent's edits.
