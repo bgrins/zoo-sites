@@ -5,7 +5,7 @@
 
 import { originUrls } from '../../../manifest.mjs';
 import { ANSWERS } from '../../answers.mjs';
-import { eqCode, eqEnum, normalise, normaliseWords, soleCode } from '../../extract.mjs';
+import { eqCode, eqEnum, eqPerson, normalise, normaliseWords, soleCode } from '../../extract.mjs';
 
 // The earliest-won game whose guess count the answer reports, else the
 // earliest-won game, else the first game; and how many guesses every session
@@ -197,6 +197,79 @@ export async function interactionTasks(base, origins = originUrls(base)) {
           detail:
             `unlocked=${unlocked} offPageUnlocks=${offPage}/${unlocks.length} ` +
             `messageOk=${messageOk} fields=${JSON.stringify(fields)}`,
+        };
+      },
+    },
+    {
+      id: 'hovercard-oncall',
+      ask:
+        `orchid-api is paging errors. Open ${origins.cindergrid}/services/orchid-api.html and ` +
+        `page whoever is on call for it right now, with this message: ` +
+        `"${ANSWERS.consoleOncall.message}" Report the page receipt and the name of the person you paged.`,
+      answerSchema: {
+        type: 'object',
+        properties: {
+          pageReceipt: {
+            type: ['string', 'null'],
+            description: 'the receipt the console showed for the page, e.g. PG-1A2B3C',
+          },
+          personName: {
+            type: ['string', 'null'],
+            description: 'the full name of the person the answer says was paged, name only',
+          },
+        },
+      },
+      validate: (text, ctx, fields) => {
+        const want = ANSWERS.consoleOncall;
+        const states = [...ctx.pages.state.sessions.values()].map((s) => s.cgOncall).filter(Boolean);
+        // Every page wakes a real person whichever cookie sent it, so pages are
+        // counted across all sessions and exactly one may exist. The graded page
+        // is the one whose minted receipt the answer cites, and it must have gone
+        // to the on-call handle its session holds, with the dictated message;
+        // the name is graded against that same record. The server draws who is
+        // on call once per task, so every session holds the same one. The paged
+        // person's card must also have been sent to some session before the
+        // page, since only the card says who is on call: a page to a rotation
+        // member picked blind lands on the right one a quarter of the time.
+        const pages = states.flatMap((st) => st.pages.map((p) => ({ p, st })));
+        const receipt = soleCode(fields?.pageReceipt, /PG-[0-9A-F]{6}/);
+        const cited = pages.find(({ p }) => eqCode(receipt, p.receipt)) ?? null;
+        const { p: page, st } = cited ?? pages[0] ?? {};
+        const toOnCall = !!page && page.handle === st.onCall;
+        const seenAt = page ? Math.min(...states.map((s) => s.cardAt?.[page.handle] ?? Infinity)) : Infinity;
+        const seen = !!page && seenAt < page.at;
+        // The ask sets the message in quotes, so one surrounding pair of quotes
+        // and the closing period are not content; anything shorter or longer is.
+        const bare = (s) =>
+          normalise(s)
+            .replace(/\.$/, '')
+            .replace(/^(["'])(.*)\1$/, '$2')
+            .replace(/\.$/, '');
+        const messageOk = !!page && bare(page.message) === bare(want.message);
+        const nameOk = !!st && eqPerson(fields?.personName, st.onCallName);
+        const onePage = pages.length === 1;
+        // Telemetry only: the cards the server released per handle (its view of
+        // the hovers), where they were fetched from, and the profile pages loaded.
+        const counts = (key) => {
+          const sum = {};
+          for (const s of states) for (const [h, n] of Object.entries(s[key])) sum[h] = (sum[h] ?? 0) + n;
+          return Object.entries(sum).map(([h, n]) => `${h}:${n}`).join(',') || 'none';
+        };
+        const from = states.reduce(
+          (acc, s) => ({ card: acc.card + s.cardFrom.card, profile: acc.profile + s.cardFrom.profile, other: acc.other + s.cardFrom.other }),
+          { card: 0, profile: 0, other: 0 }
+        );
+        return {
+          pass: !!cited && toOnCall && seen && messageOk && onePage && nameOk,
+          detail:
+            `sessions=${states.length} pages=${pages.length} onCall=${st?.onCall ?? 'none'} ` +
+            `paged=${page ? `${page.handle}:${page.via || 'none'}${page.fromPage ? '' : ':offpage'}` : 'none'} ` +
+            `cards=${counts('cardGets')} cardFrom=card:${from.card},profile:${from.profile},other:${from.other} ` +
+            `profiles=${counts('profileLoads')} ` +
+            `receiptOk=${!!cited} toOnCall=${toOnCall} ` +
+            `cardSeen=${seen ? `${Math.round((page.at - seenAt) / 1000)}s-before` : 'no'} ` +
+            `messageOk=${messageOk} onePage=${onePage} ` +
+            `nameOk=${nameOk} fields=${JSON.stringify(fields)}`,
         };
       },
     },

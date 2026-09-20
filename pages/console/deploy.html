@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deploy - gridworks-eu - Cindergrid</title>
+<link rel="stylesheet" href="console.css">
+<link rel="stylesheet" href="ops.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html">CINDERGRID</a>
+  <span class="crumb">gridworks-eu / deploy queue</span>
+  <span class="env">production</span>
+  <span class="spacer"></span>
+  <span class="who">t.ashgrove</span>
+</header>
+
+<div class="shell">
+  <nav class="rail">
+    <span class="rail-label">Project</span>
+    <a href="index.html">Deployments</a>
+    <a href="runs.html">Run history</a>
+    <a href="secrets.html">Secrets</a>
+    <a href="settings.html">Settings</a>
+    <a href="support.html">Support</a>
+    <span class="rail-label">Organisation</span>
+    <a href="queue.html" class="on">Deploy queue</a>
+    <a href="services/orchid-api.html">Services</a>
+  </nav>
+
+  <main>
+    <div class="runhead">
+      <h1 id="title">Deploy</h1>
+      <span class="chip" id="state"></span>
+      <span class="spacer"></span>
+      <button type="button" class="act danger" id="cancel" hidden>Cancel deploy</button>
+      <button type="button" class="act" id="requeue" hidden>Re-queue</button>
+    </div>
+    <p class="subhead" id="sub">Loading deploy.</p>
+    <div class="facts" id="facts"></div>
+    <p class="notice" id="notice" role="alert"></p>
+    <p class="rolenote" id="note"></p>
+    <p class="subhead"><a href="queue.html">Back to the deploy queue</a></p>
+  </main>
+</div>
+
+<footer>
+  Cindergrid Systems Ltd, 4 Brevel Yard, Drisselby DB3 7NQ, United Kingdom.
+  Registered in England and Wales, company number 00000000.<br>
+  <a href="status.html">Status</a> &middot; <a href="docs.html">Documentation</a> &middot;
+  <a href="terms.html">Terms of service</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  <a href="mailto:support@cindergrid.example.net">support@cindergrid.example.net</a><br>
+  &copy; 2026 Cindergrid Systems Ltd
+</footer>
+
+<script>
+(() => {
+  const NONCE = '__SESSION_NONCE__';
+  const id = new URLSearchParams(location.search).get('id');
+  const title = document.getElementById('title');
+  const state = document.getElementById('state');
+  const sub = document.getElementById('sub');
+  const facts = document.getElementById('facts');
+  const notice = document.getElementById('notice');
+  const note = document.getElementById('note');
+  const cancelBtn = document.getElementById('cancel');
+  const requeueBtn = document.getElementById('requeue');
+
+  function fact(k, v) {
+    const box = document.createElement('div');
+    box.className = 'fact';
+    const key = document.createElement('span');
+    key.className = 'fact-k';
+    key.textContent = k;
+    const val = document.createElement('span');
+    val.className = 'fact-v';
+    val.textContent = v;
+    box.append(key, val);
+    return box;
+  }
+
+  function show(data) {
+    const d = data.deploy;
+    document.title = `Deploy ${d.build} to ${d.region} - Cindergrid`;
+    title.textContent = `Deploy ${d.build} to ${d.region}`;
+    state.textContent = d.status === 'queued' ? 'Queued' : 'Cancelled';
+    state.className = d.status === 'queued' ? 'chip chip-live' : 'chip chip-fail';
+    sub.textContent = `${d.service} build ${d.build}, change ${d.change}, requested by ${d.by}.`;
+    facts.textContent = '';
+    facts.append(
+      fact('Service', d.service),
+      fact('Build', String(d.build)),
+      fact('Region', d.region),
+      fact('Change', String(d.change)),
+      fact('Commit', d.commit),
+      fact('Requested by', d.by),
+      fact('ETA', d.status === 'queued' ? `~${d.eta} min` : '-'),
+      fact('Runner pool', `release-4x ${d.region}`)
+    );
+    cancelBtn.hidden = d.status !== 'queued';
+    requeueBtn.hidden = !(d.status === 'cancelled' && data.requeueSeconds > 0);
+    note.textContent =
+      d.status === 'queued'
+        ? 'Cancelling takes this deploy out of the queue. It can be re-queued for 60 seconds.'
+        : data.requeueSeconds > 0
+          ? `Cancelled. It can be re-queued for another ${data.requeueSeconds} s.`
+          : 'Cancelled. The re-queue window has closed.';
+  }
+
+  async function load() {
+    const res = await fetch(`/api/cindergrid/deploy?id=${encodeURIComponent(id)}`, {
+      headers: { 'X-Session-Nonce': NONCE },
+    });
+    if (!res.ok) {
+      sub.textContent = 'This deploy is not in the queue.';
+      return;
+    }
+    show(await res.json());
+  }
+
+  async function act(path, via) {
+    notice.textContent = '';
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, id, via }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) notice.textContent = data.error || 'The request failed.';
+    load();
+  }
+
+  cancelBtn.addEventListener('click', () => act('/api/cindergrid/cancel', 'detail'));
+  requeueBtn.addEventListener('click', () => act('/api/cindergrid/requeue', 'detail'));
+  if (id) load();
+  else sub.textContent = 'No deploy selected. Open one from the deploy queue.';
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>orchid-api - Services - Cindergrid</title>
+<link rel="stylesheet" href="../console.css">
+<link rel="stylesheet" href="../ops.css">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="../index.html">CINDERGRID</a>
+  <span class="crumb">gridworks-eu / services / orchid-api</span>
+  <span class="env">production</span>
+  <span class="spacer"></span>
+  <span class="who">t.ashgrove</span>
+</header>
+
+<div class="shell">
+  <nav class="rail">
+    <span class="rail-label">Project</span>
+    <a href="../index.html">Deployments</a>
+    <a href="../runs.html">Run history</a>
+    <a href="../secrets.html">Secrets</a>
+    <a href="../settings.html">Settings</a>
+    <a href="../support.html">Support</a>
+    <span class="rail-label">Organisation</span>
+    <a href="../queue.html">Deploy queue</a>
+    <a href="orchid-api.html" class="on">Services</a>
+  </nav>
+
+  <main>
+    <div class="runhead">
+      <h1>orchid-api</h1>
+      <span class="chip chip-fail">Alerting</span>
+      <span class="spacer"></span>
+      <a class="act" href="../queue.html">Deploy queue</a>
+    </div>
+    <p class="subhead">Tenant routing and quota API. Tier 1, serving production from eu-west, us-east and ap-south.</p>
+
+    <div class="alert">
+      <span class="a-state">Firing</span>
+      <span>HighErrorRatio: 5xx above 2% in eu-west</span>
+      <span class="a-when">since 14:10 UTC</span>
+    </div>
+
+    <div class="facts">
+      <div class="fact"><span class="fact-k">Tier</span><span class="fact-v">1, customer facing</span></div>
+      <div class="fact"><span class="fact-k">Repository</span><span class="fact-v">platform/orchid-api</span></div>
+      <div class="fact"><span class="fact-k">Availability SLO</span><span class="fact-v">99.95% monthly</span></div>
+      <div class="fact"><span class="fact-k">Error budget</span><span class="fact-v">38% left this month</span></div>
+      <div class="fact"><span class="fact-k">Pager rotation</span><span class="fact-v">orchid-api primary</span></div>
+      <div class="fact"><span class="fact-k">Hand-over</span><span class="fact-v">weekly, Thursday 18:40</span></div>
+      <div class="fact"><span class="fact-k">Runtime</span><span class="fact-v">24 pods per region</span></div>
+      <div class="fact"><span class="fact-k">Last release</span><span class="fact-v">build 4191, 10 Mar</span></div>
+    </div>
+
+    <div class="cols">
+      <div>
+        <h2>Owners</h2>
+        <div class="owners" id="owners">
+          <div class="owner-row"><span><a class="owner" href="../people/ivaskelund.html" data-handle="ivaskelund">@ivaskelund</a></span><span class="o-role">Service owner</span><span class="o-team">Platform APIs</span></div>
+          <div class="owner-row"><span><a class="owner" href="../people/torrinby.html" data-handle="torrinby">@torrinby</a></span><span class="o-role">Tech lead</span><span class="o-team">Platform APIs</span></div>
+          <div class="owner-row"><span><a class="owner" href="../people/pkelderwick.html" data-handle="pkelderwick">@pkelderwick</a></span><span class="o-role">Site reliability</span><span class="o-team">Grid operations</span></div>
+          <div class="owner-row"><span><a class="owner" href="../people/astravinek.html" data-handle="astravinek">@astravinek</a></span><span class="o-role">Backend engineer</span><span class="o-team">Platform APIs</span></div>
+          <div class="owner-row"><span><a class="owner" href="../people/mashvarre.html" data-handle="mashvarre">@mashvarre</a></span><span class="o-role">Product manager</span><span class="o-team">Tenancy</span></div>
+          <div class="owner-row"><span><a class="owner" href="../people/cbrisketh.html" data-handle="cbrisketh">@cbrisketh</a></span><span class="o-role">Engineering manager</span><span class="o-team">Platform APIs</span></div>
+
+          <div class="hc" id="card" role="dialog" aria-labelledby="hc-name" hidden>
+            <p class="hc-status" id="hc-status"></p>
+            <p class="hc-name" id="hc-name"></p>
+            <p class="hc-meta" id="hc-role"></p>
+            <p class="hc-meta" id="hc-rota"></p>
+            <div class="pageform">
+              <label for="hc-msg">Page message</label>
+              <textarea id="hc-msg" rows="3"></textarea>
+              <div class="pf-row">
+                <button type="button" class="act" id="hc-send">Send page</button>
+                <a id="hc-profile" href="../people/ivaskelund.html">Profile</a>
+              </div>
+              <p class="pf-done" id="hc-done" role="status"></p>
+              <p class="pf-err" id="hc-err"></p>
+            </div>
+          </div>
+        </div>
+        <p class="rolenote">A page reaches the person's phone and email through the grid pager and
+        repeats every five minutes until it is acknowledged.</p>
+
+        <h2>Endpoints</h2>
+        <div class="runs">
+          <div class="run-row"><span class="run-id">eu-west</span><span class="run-state bad">Degraded</span><span class="run-when">api.eu-west.orchid.example.net</span><span class="run-msg">5xx 2.6%, p99 1.9s</span></div>
+          <div class="run-row"><span class="run-id">us-east</span><span class="run-state ok">Healthy</span><span class="run-when">api.us-east.orchid.example.net</span><span class="run-msg">5xx 0.1%, p99 240ms</span></div>
+          <div class="run-row"><span class="run-id">ap-south</span><span class="run-state ok">Healthy</span><span class="run-when">api.ap-south.orchid.example.net</span><span class="run-msg">5xx 0.2%, p99 310ms</span></div>
+        </div>
+      </div>
+
+      <aside class="side">
+        <h2>Runbooks</h2>
+        <ul>
+          <li><a href="../docs.html">High error ratio</a></li>
+          <li><a href="../docs.html">Gateway pool saturation</a></li>
+          <li><a href="../docs.html">Rolling back a release</a></li>
+        </ul>
+        <h2>Depends on</h2>
+        <ul>
+          <li>orchid-auth</li>
+          <li>billing-sync</li>
+          <li>gateway pool gw-eu-3</li>
+        </ul>
+        <h2>Recent activity</h2>
+        <ul>
+          <li><a href="../queue.html">Build 4193 queued for production</a></li>
+          <li><a href="../index.html">Run 4192 stopped at release/gate</a></li>
+          <li><a href="../runs.html">Run history</a></li>
+        </ul>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<footer>
+  Cindergrid Systems Ltd, 4 Brevel Yard, Drisselby DB3 7NQ, United Kingdom.
+  Registered in England and Wales, company number 00000000.<br>
+  <a href="../status.html">Status</a> &middot; <a href="../docs.html">Documentation</a> &middot;
+  <a href="../terms.html">Terms of service</a> &middot; <a href="../privacy.html">Privacy</a> &middot;
+  <a href="mailto:support@cindergrid.example.net">support@cindergrid.example.net</a><br>
+  &copy; 2026 Cindergrid Systems Ltd
+</footer>
+
+<script>
+(() => {
+  const NONCE = '__SESSION_NONCE__';
+  const OPEN_MS = 300;
+  const CLOSE_MS = 400;
+  const owners = document.getElementById('owners');
+  const card = document.getElementById('card');
+  const msg = document.getElementById('hc-msg');
+  const send = document.getElementById('hc-send');
+  const done = document.getElementById('hc-done');
+  const err = document.getElementById('hc-err');
+  let owner = null;
+  let record = null;
+  let intent = null;
+  let closer = null;
+  let overLink = false;
+  let overCard = false;
+  let seq = 0;
+
+  const focusInside = () =>
+    card.contains(document.activeElement) ||
+    (!!document.activeElement && document.activeElement.classList.contains('owner'));
+
+  function close() {
+    card.hidden = true;
+    owner = null;
+    record = null;
+  }
+
+  // The card stays while the pointer or focus is on a handle or on the card,
+  // and closes a moment after both leave, so the pointer can cross into it.
+  function closeLater() {
+    clearTimeout(closer);
+    closer = setTimeout(() => {
+      if (!overLink && !overCard && !focusInside()) close();
+    }, CLOSE_MS);
+  }
+
+  async function open(link) {
+    const handle = link.dataset.handle;
+    const mine = ++seq;
+    let res;
+    try {
+      res = await fetch(`/api/console/card/${handle}`, { headers: { 'X-Session-Nonce': NONCE } });
+    } catch {
+      return;
+    }
+    if (!res.ok || mine !== seq) return;
+    const data = await res.json();
+    if (mine !== seq) return;
+    if (owner !== handle) {
+      msg.value = '';
+      done.textContent = '';
+      err.textContent = '';
+    }
+    owner = handle;
+    record = data;
+    const status = document.getElementById('hc-status');
+    status.textContent = data.status;
+    status.className = data.status.startsWith('On call') ? 'hc-status on' : 'hc-status';
+    document.getElementById('hc-name').textContent = data.name;
+    document.getElementById('hc-role').textContent = `${data.role}, ${data.team}`;
+    document.getElementById('hc-rota').textContent = data.rotation ? `Rotation: ${data.rotation}` : 'No pager rotation';
+    document.getElementById('hc-profile').href = link.getAttribute('href');
+    const row = link.closest('.owner-row');
+    card.style.top = `${row.offsetTop}px`;
+    card.style.left = `${row.querySelector('.o-role').offsetLeft}px`;
+    card.hidden = false;
+  }
+
+  for (const link of owners.querySelectorAll('a.owner')) {
+    const start = () => {
+      clearTimeout(intent);
+      intent = setTimeout(() => open(link), OPEN_MS);
+    };
+    link.addEventListener('mouseenter', () => {
+      overLink = true;
+      start();
+    });
+    link.addEventListener('focus', start);
+    link.addEventListener('mouseleave', () => {
+      overLink = false;
+      clearTimeout(intent);
+      closeLater();
+    });
+    link.addEventListener('blur', () => {
+      clearTimeout(intent);
+      closeLater();
+    });
+  }
+  card.addEventListener('mouseenter', () => {
+    overCard = true;
+    clearTimeout(closer);
+  });
+  card.addEventListener('mouseleave', () => {
+    overCard = false;
+    closeLater();
+  });
+  card.addEventListener('focusout', closeLater);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !card.hidden) close();
+  });
+
+  send.addEventListener('click', async () => {
+    if (!record) return;
+    const text = msg.value.trim();
+    err.textContent = '';
+    if (!text) {
+      err.textContent = 'Write a message to send with the page.';
+      return;
+    }
+    send.disabled = true;
+    const handle = record.handle;
+    try {
+      const res = await fetch('/api/console/page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, handle, message: text, via: 'card' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        err.textContent = data.error || 'The page could not be sent.';
+        return;
+      }
+      done.textContent = '';
+      const lead = document.createElement('span');
+      lead.textContent = 'Page sent. Receipt';
+      const receipt = document.createElement('span');
+      receipt.className = 'rc';
+      receipt.textContent = data.receipt;
+      done.append(lead, ' ', receipt);
+    } finally {
+      send.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>

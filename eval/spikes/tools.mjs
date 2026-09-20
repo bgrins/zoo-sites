@@ -43,7 +43,7 @@ const MEASURED = {
     unexercised: [
       'accept_dialog', 'clear_console_messages', 'clear_downloads', 'clear_snapshot',
       'enable_debugger', 'get_firefox_info', 'get_firefox_output',
-      'get_logpoint_results', 'get_script_source', 'hover_by_uid', 'install_extension',
+      'get_logpoint_results', 'get_script_source', 'install_extension',
       'list_downloads', 'list_scripts', 'navigate_history', 'new_page', 'profiler_is_active',
       'profiler_start', 'profiler_stop', 'remove_logpoint', 'restart_firefox', 'screencast_start',
       'screencast_stop', 'screenshot_by_uid', 'screenshot_page', 'set_download_behavior',

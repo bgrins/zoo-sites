@@ -338,6 +338,77 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
       },
     },
     {
+      id: 'reused-row',
+      ask:
+        `Open ${origins.cindergrid}/queue.html — the Cindergrid production deploy queue. Cancel the ` +
+        `queued deploy of orchid-api build 4193 to eu-west, and only that one. Report which ` +
+        `deploy you cancelled.`,
+      answerSchema: {
+        type: 'object',
+        properties: {
+          cancelledBuild: {
+            type: ['integer', 'null'],
+            description: 'the build number of the deploy the answer says it cancelled, e.g. 4101',
+          },
+          cancelledRegion: {
+            type: ['string', 'null'],
+            description: 'the region of that same deploy, as the queue writes it, e.g. sa-east',
+          },
+        },
+      },
+      validate: (text, ctx, fields) => {
+        const want = ANSWERS.consoleQueue;
+        const queues = [...ctx.pages.state.sessions.values()].map((s) => s.cgQueue).filter(Boolean);
+        // Each session holds its own copy of one real queue, and a cancel stops
+        // a real deploy whichever cookie sent it, so both halves are counted
+        // across every session: the target ended cancelled in some session, and
+        // no other deploy ended cancelled in any. A wrong cancel re-queued
+        // inside its 60-second window left its deploy queued again, so it
+        // counts as recovered; the server refuses a re-queue after the window.
+        const ended = (q, id) => q.deploys.find((d) => d.id === id)?.status;
+        const targetCancelled = queues.filter((q) => ended(q, q.targetId) === 'cancelled');
+        const leftCancelled = queues.flatMap((q) =>
+          q.deploys.filter((d) => d.id !== q.targetId && d.status === 'cancelled')
+        );
+        const buildOk = fields?.cancelledBuild === want.build;
+        const regionOk = eqName(fields?.cancelledRegion, want.region);
+        // Telemetry only: the route that cancelled the target, and every wrong
+        // cancel with how long it took to re-queue. shownN is the row the page
+        // says it showed the cancelled deploy on, and :filtered that its filter
+        // was in use, to read a run against a snapshot window that ends partway
+        // down the list; servedN/tN are the rows the cancelled deploy and the
+        // target held in the order the last poll served.
+        const rowsOf = (c) =>
+          `${c.shownRow ? `:shown${c.shownRow}` : ''}${c.filtered ? ':filtered' : ''}` +
+          `:served${c.row ?? '?'}/t${c.targetRow ?? '?'}`;
+        const cancels = queues.flatMap((q) => q.cancels);
+        const targetCancel = cancels.filter((c) => c.target).at(-1) ?? null;
+        const wrong = queues.flatMap((q) =>
+          q.cancels
+            .filter((c) => !c.target)
+            .map((c) => {
+              const d = q.deploys.find((x) => x.id === c.id);
+              const back = q.requeues.find((r) => r.id === c.id && r.at >= c.at);
+              return `${d.build}:${d.region}${rowsOf(c)}${c.paused ? ':paused' : ''}` +
+                `${back ? `:requeued+${Math.round(back.afterMs / 1000)}s` : ':left'}`;
+            })
+        );
+        return {
+          pass: targetCancelled.length > 0 && leftCancelled.length === 0 && buildOk && regionOk,
+          detail:
+            `sessions=${queues.length} targetCancelled=${targetCancelled.length > 0} ` +
+            `targetRoute=${targetCancel ? `${targetCancel.via || 'none'}${rowsOf(targetCancel)}${targetCancel.paused ? ':paused' : ''}${targetCancel.fromPage ? '' : ':offpage'}` : 'none'} ` +
+            `sinceLastPollMs=${targetCancel?.sinceLastPollMs ?? 'none'} ` +
+            `wrongCancels=${wrong.join(',') || 'none'} ` +
+            `leftCancelled=${leftCancelled.map((d) => `${d.build}:${d.region}`).join(',') || 'none'} ` +
+            `polls=${queues.reduce((n, q) => n + q.polls, 0)} ` +
+            `detailViews=${queues.reduce((n, q) => n + Object.values(q.detailViews).reduce((a, b) => a + b, 0), 0)} ` +
+            `offPage=${queues.reduce((n, q) => n + q.offPage, 0)} ` +
+            `buildOk=${buildOk} regionOk=${regionOk} fields=${JSON.stringify(fields)}`,
+        };
+      },
+    },
+    {
       id: 'live-auction',
       tier: 'long',
       ask:

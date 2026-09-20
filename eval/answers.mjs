@@ -1002,6 +1002,30 @@ export const ANSWERS = {
     decoyErrorSteps: ['scan/deps', 'push/registry', 'cleanup/artifacts'],
   },
 
+  // pages/console/queue.html — reused-row. Nothing graded lives here: the
+  // deploy ids are minted per session and the validator reads which deploys
+  // ended cancelled out of ctx.pages.state. These are the ask's target and its
+  // near-identical neighbours, for reading a transcript.
+  consoleQueue: {
+    service: 'orchid-api',
+    build: 4193,
+    region: 'eu-west',
+    neighbours: ['4193 to us-east', '4193 to ap-south', '4194 to eu-west', '4194 to eu-north'],
+    refreshSeconds: 5,
+    undoSeconds: 20,
+    requeueSeconds: 60,
+  },
+
+  // pages/console/services/orchid-api.html — hovercard-oncall. Who is on call
+  // is drawn once per task in sites/console.mjs, released only by the card
+  // endpoint, and the receipt is minted there; the validator reads both out of
+  // ctx.pages.state. Held here: the message the ask dictates.
+  consoleOncall: {
+    message:
+      'orchid-api 5xx is above 2% in eu-west since 14:10 UTC and the gateway pool looks saturated. Please take a look.',
+    receiptPrefix: 'PG-',
+  },
+
   // pages/vault/ — Stavelock, the Platform Delivery credential vault. Nothing
   // graded is held here: every secret's value is minted per session from
   // randomBytes in sites/vault.mjs, the mask the console renders is computed from it,
