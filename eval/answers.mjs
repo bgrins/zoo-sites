@@ -111,7 +111,8 @@ export const ANSWERS = {
   // rv7-instructions.html; the two copies must agree.
   gov: {
     deadline: 'June 12',
-    instructionsPath: 'rv7-instructions',
+    // The server serves the page under this name only, with no extensionless alias.
+    instructionsPage: 'rv7-instructions.html',
     harborviewThursday: { opens: '10:00 am', closes: '6:30 pm' },
     handbookRetentionYears: 7,
     rv7LateTotal: '209.00',

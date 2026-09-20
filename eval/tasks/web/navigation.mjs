@@ -3,7 +3,7 @@
 // One family of the web suite. tasks/web.mjs concatenates every family; see
 // docs/authoring-fixtures.md for the rules a task and its fixture must follow.
 
-import { originUrls } from '../../../manifest.mjs';
+import { ORIGINS, originUrls } from '../../../manifest.mjs';
 import { ANSWERS } from '../../answers.mjs';
 import {
   MONTH_NAMES,
@@ -67,6 +67,26 @@ function weekdaysOf(items) {
   return days;
 }
 
+// An absolute URL in a field, its scheme optional before localhost or a dotted
+// host. The match runs over ASCII URL characters only, so markdown, brackets,
+// straight or curly quotes, dashes and other non-ASCII punctuation around it end
+// it; urlPathsIn trims sentence punctuation after it.
+const URL_TOKEN =
+  /(?:\bhttps?:\/\/|(?<![\w.:\/@-])(?=(?:localhost|[a-z0-9-]+(?:\.[a-z0-9-]+)+)(?::\d+)?\/))[\w\-.~:/?#@!$&+,;=%]+/gi;
+
+// The pathname of every absolute URL a field names. A path or a page name on
+// its own names no URL, so it contributes nothing.
+function urlPathsIn(field) {
+  return [...String(field ?? '').matchAll(URL_TOKEN)].flatMap(([token]) => {
+    const bare = token.replace(/[.,;:!?]+$/, '');
+    try {
+      return [new URL(/^https?:\/\//i.test(bare) ? bare : `http://${bare}`).pathname];
+    } catch {
+      return [];
+    }
+  });
+}
+
 // Telemetry for the gov page gates: page-view beacons for `path` whose POST
 // carried neither the browser's same-origin fetch metadata nor a Referer.
 const beaconsOffPage = (sessions, path) =>
@@ -100,9 +120,22 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         const [month, day] = normaliseDateWords(ANSWERS.gov.deadline).trim().split(' ');
         const d = normaliseDateWords(fields?.filingDeadline ?? '');
         const dateOk = d.includes(` ${month} ${day} `) || d.includes(` ${day} ${month} `);
-        const urlOk =
-          typeof fields?.instructionsUrl === 'string' &&
-          fields.instructionsUrl.toLowerCase().includes(ANSWERS.gov.instructionsPath);
+        // The URL must be the page's own: its path under whichever layout this
+        // run served (/gov/ prefixed in single-origin mode, the root under
+        // --origins and --vhosts), any origin. Under --origins and --vhosts the
+        // server also passes the /gov/-prefixed path through to the same page,
+        // so that path is the page's own in every mode. The server resolves no
+        // extensionless or near-miss path, so "rv7-instructions" guessed from a
+        // link cut to "rv7-..." is a URL that 404s. The ask wants the URL, so a
+        // path or page name alone fails, and so does a field naming two pages.
+        const page = ANSWERS.gov.instructionsPage;
+        const govDir = ORIGINS.find((o) => o.key === 'civic-revenue').dir;
+        const instructions = new Set([
+          new URL(`${origins['civic-revenue']}/${page}`).pathname,
+          `/${govDir}/${page}`,
+        ]);
+        const paths = urlPathsIn(fields?.instructionsUrl);
+        const urlOk = paths.length > 0 && paths.every((p) => instructions.has(p));
         return {
           pass: dateOk && urlOk,
           detail: `dateOk=${dateOk} urlOk=${urlOk} fields=${JSON.stringify(fields)}`,

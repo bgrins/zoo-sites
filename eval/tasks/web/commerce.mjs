@@ -574,7 +574,11 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         // Any of these identifies where the figure came from; no contiguous URL
         // is required. The last branch credits the network-log solve path,
         // which cites the mirror's JSON endpoint or the dock's SKU rather than
-        // the spec sheet's filename.
+        // the spec sheet's filename. This deliberately stays a source label and
+        // is not parsed as a URL, as gov-lookup's is: the minted price and
+        // dataReads already prove the mirror was read, so a mirror label, or a
+        // mirror URL that would 404, passes here. gov-lookup, by contrast,
+        // grades the URL itself.
         const src = String(fields?.sourceUrl ?? '')
           .replace(/[‐-―−]/g, '-')
           .toLowerCase();

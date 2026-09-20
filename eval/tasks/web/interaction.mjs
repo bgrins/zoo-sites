@@ -5,7 +5,7 @@
 
 import { originUrls } from '../../../manifest.mjs';
 import { ANSWERS } from '../../answers.mjs';
-import { eqCode, eqEnum, eqPerson, normalise, normaliseWords, soleCode } from '../../extract.mjs';
+import { eqCode, eqEnum, eqPerson, normalise, soleCode } from '../../extract.mjs';
 
 // The earliest-won game whose guess count the answer reports, else the
 // earliest-won game, else the first game; and how many guesses every session
@@ -25,6 +25,23 @@ function lexvaneGraded(games, reportsCount) {
       .filter((g) => g !== game)
       .reduce((n, g) => n + g.guesses.filter((p) => p.at < wonAt).length, 0);
   return { game, spent };
+}
+
+// Every file path a field names, lowercased: "`b/src/tariff/cache.js`:42"
+// names b/src/tariff/cache.js. An extension needs two characters, so "e.g." is
+// no file.
+const filePathsIn = (field) =>
+  [...String(field ?? '').matchAll(/(?:[\w.-]+\/)*[\w-][\w.-]*\.[a-z0-9]{2,}(?![\w-])/gi)].map(([p]) =>
+    p.toLowerCase()
+  );
+
+// Whether `path` names the repository file `file`: one segment list ends the
+// other, so a bare file name, a diff's a/ or b/ prefix and a repo-rooted path
+// all name it, and the same name in another directory does not.
+function namesFile(path, file) {
+  const [a, b] = [path, file.toLowerCase()].map((p) => p.split('/').filter(Boolean));
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  return short.every((seg, i) => seg === long[long.length - short.length + i]);
 }
 
 // A server-minted PREFIX-HEX code, quoted with or without its constant prefix.
@@ -846,10 +863,21 @@ export async function interactionTasks(base, origins = originUrls(base)) {
           ? Object.keys(idents).filter((k) => k !== defect.key && strictRe(k).test(claimed))
           : [];
         const lineInAnswer = !!defect && fields?.lineNumber === defect.line;
+        // Some path in the field must name the at-fault file, and none may name
+        // another diff file or the at-fault file's name in another directory, so
+        // a hedge fails. Other dotted tokens (rate.perTonne, a host) are not
+        // files the diff can hold and do not count.
+        const filesNamed = filePathsIn(fields?.file);
+        const atFault = String(defect?.file ?? '');
+        const baseName = (p) => p.split('/').pop();
         const fileInAnswer =
           !!defect &&
-          normaliseWords(fields?.file ?? '').includes(
-            normaliseWords(String(defect.file ?? '').split('/').pop() ?? '')
+          filesNamed.some((p) => namesFile(p, atFault)) &&
+          !filesNamed.some((p) =>
+            ANSWERS.prReview.files.some((f) => f !== atFault && namesFile(p, f))
+          ) &&
+          !filesNamed.some(
+            (p) => baseName(p) === baseName(atFault).toLowerCase() && !namesFile(p, atFault)
           );
         return {
           pass:

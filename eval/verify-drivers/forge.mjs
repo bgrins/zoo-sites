@@ -327,15 +327,27 @@ export const DRIVERS = {
         lineNumber: defect.line,
         identifier: defect.identifier,
       };
+      const basename = String(defect.file).split('/').pop();
+      const otherFile = ['src/tariff/cache.js', 'src/tariff/window.js'].find((f) => f !== defect.file);
       this.wrongFields = [
         { ...fields, identifier: rivalId },
         { ...fields, lineNumber: defect.line + 1 },
         { ...fields, file: 'src/tariff/other.js' },
         { ...fields, identifier: 'round2' },
+        // The right file name in a directory the diff does not touch.
+        { ...fields, file: `lib/${basename}` },
+        { ...fields, file: `${defect.file} or ${otherFile}` },
+        { ...fields, file: `${defect.file} or lib/${basename}` },
       ];
       this.alsoCorrectFields = [
         fields,
-        { file: String(defect.file).split('/').pop(), lineNumber: defect.line, identifier: defect.identifier },
+        { file: basename, lineNumber: defect.line, identifier: defect.identifier },
+        { ...fields, file: `b/${defect.file}` },
+        { ...fields, file: `\`${defect.file}\`:${defect.line}` },
+        { ...fields, file: String(defect.file).split('/').slice(1).join('/') },
+        // Dotted tokens that are code or a host, not a file.
+        { ...fields, file: `${defect.file} (module.exports unchanged, rate.perTonne)` },
+        { ...fields, file: `http://kettleforge.localhost/pulls/482/files - ${defect.file}` },
       ];
       return { text: answer, fields };
     },
