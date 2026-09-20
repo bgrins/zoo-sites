@@ -223,9 +223,17 @@ for (const name of BACKEND_NAMES) {
     usage(`--model ${modelFor(name)} is not a model ${name} has (${models.join(', ')})`);
   }
 }
-// A backend with OWN_FIELDS answers with fields of its own (scripted), so a run
-// of only such backends never calls the extractor.
-const EXTRACTOR_USED = !BACKEND_NAMES.every((name) => BACKENDS[name].OWN_FIELDS);
+// A backend whose model owns its fields answers with fields of its own
+// (scripted), so a run of only such backends never calls the extractor.
+const EXTRACTOR_USED = !BACKEND_NAMES.every((name) => BACKENDS[name].ownsFields?.(modelFor(name)));
+// The stub extractor grades only scripted answers, and a scripted answer never
+// reaches a paid extractor.
+if (EXTRACTOR_USED && BACKEND_NAMES.includes('scripted') && extractorInfo().extractor !== 'scripted') {
+  usage(`--model ${modelFor('scripted')} hands its answers to the extractor; set EVAL_EXTRACTOR=scripted so its stub grades them, not a paid model`);
+}
+if (EXTRACTOR_USED && !BACKEND_NAMES.includes('scripted') && extractorInfo().extractor === 'scripted') {
+  usage('EVAL_EXTRACTOR=scripted grades only the scripted backend\'s answers, not an agent\'s');
+}
 // Pin reasoning effort symmetrically across backends (Agent SDK `effort`,
 // codex `model_reasoning_effort`); 'default' leaves each backend's own default.
 // The backends accept different ladders, so a level must suit every backend in
@@ -487,7 +495,11 @@ Conditions and models:
                           server, firefox-devtools-mcp conditions only, and
                           its fields are graded without the extractor. Its
                           --model wrong-fields answers with the driver's
-                          wrongFields, so every row has to FAIL
+                          wrongFields, so every row has to FAIL. Under
+                          EVAL_EXTRACTOR=scripted, --model extracted,
+                          misquoted and extractor-down answer with text
+                          alone, graded through a free stub extractor:
+                          extracted has to PASS, the other two FAIL
   --headed                visible Firefox windows, tiled into a screen-sized
                           grid (one cell per browser; wraps with a cascade
                           offset past capacity)

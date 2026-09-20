@@ -18,7 +18,10 @@ export const CODEX_EXTRACTOR_MODEL = 'gpt-5.6-terra';
 // the Codex SDK extractor for environments without Anthropic credentials.
 // Do not mix extractors within a comparison: grading strictness must come
 // from one grader. EVAL_EXTRACTOR_MODEL overrides the pinned model either way.
+// EVAL_EXTRACTOR=scripted is the scripted backend's free stub, which grades
+// only that backend's answers (see backends/scripted.mjs).
 const EXTRACTOR = process.env.EVAL_EXTRACTOR ?? 'anthropic';
+const SCRIPTED_EXTRACTOR_MODEL = 'driver-fields';
 
 const LEAF_TYPES = new Set(['string', 'number', 'integer', 'boolean']);
 
@@ -205,7 +208,13 @@ async function extractCodex({ ask, answer, schema, abortController }) {
   }
 }
 
+async function extractScripted({ answer }) {
+  const { extract } = await import('./backends/scripted.mjs');
+  return { ...(await extract({ answer })), model: SCRIPTED_EXTRACTOR_MODEL };
+}
+
 export function extractorInfo() {
+  if (EXTRACTOR === 'scripted') return { extractor: EXTRACTOR, model: SCRIPTED_EXTRACTOR_MODEL };
   return {
     extractor: EXTRACTOR,
     model:
@@ -218,7 +227,7 @@ export function extractorInfo() {
 // forever; the caller's retry loop gets the timeout as an ordinary failure.
 export async function extractFields({ ask, answer, schema, timeoutMs = 120000 }) {
   const started = Date.now();
-  const impl = EXTRACTOR === 'codex' ? extractCodex : extractAnthropic;
+  const impl = { codex: extractCodex, scripted: extractScripted }[EXTRACTOR] ?? extractAnthropic;
   const abortController = new AbortController();
   const timer = setTimeout(() => abortController.abort(), timeoutMs);
   let extracted;

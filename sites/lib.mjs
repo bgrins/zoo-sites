@@ -12,3 +12,16 @@ export function lcg(bytes) {
     return seed / 4294967296;
   };
 }
+
+// A standing habitat (serve.mjs) never resets state, so a record one session
+// grows on every request needs a ceiling. Telemetry, which a validator may
+// report but never grades, is trimmed oldest-first with pushTrimmed. A record
+// a validator grades is never trimmed, since a flood could push the row that
+// fails a task off the front: its route refuses the request once the record
+// holds SESSION_ROWS rows.
+export const SESSION_ROWS = 500;
+
+export function pushTrimmed(list, row, max = SESSION_ROWS) {
+  list.push(row);
+  if (list.length > max) list.splice(0, list.length - max);
+}

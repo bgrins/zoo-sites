@@ -6,7 +6,7 @@
 // fixture source - the page's blur-time standardiser (or the on-page format
 // hint) is what produces it from the raw id the ask supplies.
 import { randomBytes } from 'node:crypto';
-import { round2 } from './lib.mjs';
+import { SESSION_ROWS, pushTrimmed, round2 } from './lib.mjs';
 import { PdfPage, pdfDocument } from './pdf.mjs';
 
 const UTILITY_ACCOUNT = '44-58291-03';
@@ -385,7 +385,7 @@ function accountRoutes(ctx) {
       const bill = acct?.bills.find((b) => b.token === url.searchParams.get('b'));
       if (!bill) return json(res, 404, { error: 'No bill was found at that address. Open it again from My Account.' });
       const body = billPdf(bill);
-      acct.pdfFetches.push({
+      pushTrimmed(acct.pdfFetches, {
         index: bill.index,
         number: bill.number,
         code: bill.code,
@@ -413,6 +413,9 @@ function accountRoutes(ctx) {
       const found = requireSession(req, res, payload.nonce);
       if (!found) return;
       const acct = accountState(found.session, ctx);
+      if (acct.attempts.length >= SESSION_ROWS) {
+        return json(res, 429, { error: 'Too many readings have been submitted online. Call customer service to submit this one.' });
+      }
       const entered = {
         billNumber: String(payload.billNumber ?? '').trim(),
         readingDate: String(payload.readingDate ?? '').trim(),

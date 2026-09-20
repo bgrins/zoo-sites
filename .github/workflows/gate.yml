@@ -58,9 +58,15 @@ jobs:
       # randomBytes, so neither belongs in the list. The wrong-fields model then
       # answers two tasks with values their validators reject, and every row it
       # gets has to FAIL, or run.mjs is grading PASS regardless of the answer.
+      # Those rows carry the backend's own fields, so three more runs take the
+      # extractor path every paid row takes: text alone, graded by
+      # extractFields and its quote gate under the free stub extractor. The
+      # extracted model has to PASS, misquoted (quotes the answer never holds)
+      # has to FAIL on the quote gate, and extractor-down has to FAIL on the
+      # null-fields fallback with the row flagged.
       # This is also CI's only driver run under per-origin serving, so it checks
       # that goto lands on the owning origin. The step runs whenever the gate passed, so a red crawl neither hides it
-      # nor is hidden by it. About a minute.
+      # nor is hidden by it. About a minute and a half.
       - name: Scripted sweep through the paid runner
         if: ${{ !cancelled() && steps.gate.outcome == 'success' }}
         shell: bash
@@ -101,14 +107,30 @@ jobs:
           refused "ran on the scripted backend" --rerun-failed "$prior"
           refused "cannot share a run" --backend scripted,anthropic --conditions firefox-devtools-mcp --suite web
           refused 'unknown argument "--backend=scripted"' --backend=scripted --conditions firefox-devtools-mcp --suite web
+          # A text-only scripted answer on the paid extractor, and a paid agent
+          # graded by the stub.
+          refused "set EVAL_EXTRACTOR=scripted" --backend scripted --model extracted --conditions firefox-devtools-mcp --suite web
+          EVAL_EXTRACTOR=scripted refused "grades only the scripted backend" --conditions firefox-devtools-mcp --suite web
           # A run with a failing row exits 1, so this one has to.
           wrong_exit=0
           node eval/run.mjs --backend scripted --model wrong-fields --conditions firefox-devtools-mcp \
             --suite all --seed ci --task cart-math,roster-diff | tee "$RUNNER_TEMP/wrong.log" || wrong_exit=$?
           wrong=$(sed -n 's/^run dir: //p' "$RUNNER_TEMP/wrong.log")
+          # stubbed <model> <tasks>: a scripted run graded through the stub
+          # extractor; prints its exit code and run dir.
+          stubbed() {
+            local code=0
+            EVAL_EXTRACTOR=scripted node eval/run.mjs --backend scripted --model "$1" --conditions firefox-devtools-mcp \
+              --suite all --seed ci --task "$2" > "$RUNNER_TEMP/$1.log" || code=$?
+            cat "$RUNNER_TEMP/$1.log" >&2
+            echo "$code $(sed -n 's/^run dir: //p' "$RUNNER_TEMP/$1.log")"
+          }
+          read -r extracted_exit extracted < <(stubbed extracted fee-schedule,roster-diff)
+          read -r misquoted_exit misquoted < <(stubbed misquoted fee-schedule)
+          read -r down_exit down < <(stubbed extractor-down roster-diff)
           node -e '
             const fs = require("fs");
-            const [run, rerun, prior, toolStats, wrong, wrongExit] = process.argv.slice(1);
+            const [run, rerun, prior, toolStats, wrong, wrongExit, extracted, extractedExit, misquoted, misquotedExit, down, downExit] = process.argv.slice(1);
             const problems = [];
             const expect = (ok, what) => ok || problems.push(what);
             const read = (dir) => JSON.parse(fs.readFileSync(`${dir}/results.json`, "utf8"));
@@ -163,9 +185,31 @@ jobs:
             for (const task of ["cart-math", "roster-diff"]) {
               expect(failures.includes(`| firefox-devtools-mcp | ${task} | FAIL |`), `wrong-fields report.md: ${task} not FAIL`);
             }
+            // The extractor path. A leaf of the raw pairs is its value; the
+            // gate has to collapse them back to exactly the driver fields the
+            // sweep graded.
+            const values = (v) => (v === null || typeof v !== "object" ? [v] : "quote" in v ? [v.value] : Object.values(v).flatMap(values));
+            const stub = (r) => !r.invalid && !r.error && r.grading === "fields" && r.extraction?.extractor === "scripted";
+            const ext = read(extracted);
+            expect(extractedExit === "0", `extracted: run exited ${extractedExit}, not 0`);
+            expect(ext.meta.extractor?.extractor === "scripted", "extracted: meta.extractor does not name the stub");
+            expect(ext.results.length === 2 && ext.results.every((r) => r.success && stub(r) && r.extraction_raw && !r.extraction_failed), "extracted: 2 rows passing through the stub extractor");
+            for (const r of ext.results) {
+              const golden = rows.find((x) => x.task === r.task);
+              expect(JSON.stringify(r.fields) === JSON.stringify(golden?.fields), `extracted/${r.task}: fields ${JSON.stringify(r.fields)} after the quote gate, the driver ${JSON.stringify(golden?.fields)}`);
+            }
+            const mis = read(misquoted).results;
+            expect(misquotedExit === "1", `misquoted: run exited ${misquotedExit}, not 1`);
+            expect(mis.length === 1 && mis.every((r) => r.success === false && stub(r) && values(r.extraction_raw).some((v) => v !== null) && values(r.fields).every((v) => v === null)), "misquoted: the quote gate left a field standing");
+            expect(fs.readFileSync(`${misquoted}/report.md`, "utf8").includes("the quote gate nulled"), "misquoted report.md: triage never names the quote gate");
+            const downRows = read(down).results;
+            expect(downExit === "1", `extractor-down: run exited ${downExit}, not 1`);
+            expect(downRows.length === 1 && downRows.every((r) => r.success === false && !r.invalid && !r.error && r.grading === "fields" && r.extraction === null && r.fields === null && r.extraction_failed), "extractor-down: not a FAIL on null fields flagged extraction_failed");
+            expect(fs.readFileSync(`${down}/report.md`, "utf8").includes("EXTRACTION FAILED"), "extractor-down report.md: the failed extraction is not flagged");
             if (problems.length) {
               console.error(problems.join("\n"));
               process.exit(1);
             }
-            console.log(`scripted sweep: ${rows.length} rows, report, A/B, transcripts, surface reach, origin routing, rerun and the wrong-fields control as expected`);
-          ' "$run" "$rerun" "$prior" "$RUNNER_TEMP/tool-stats.json" "$wrong" "$wrong_exit"
+            console.log(`scripted sweep: ${rows.length} rows, report, A/B, transcripts, surface reach, origin routing, rerun, the wrong-fields control and the extractor path as expected`);
+          ' "$run" "$rerun" "$prior" "$RUNNER_TEMP/tool-stats.json" "$wrong" "$wrong_exit" \
+            "$extracted" "$extracted_exit" "$misquoted" "$misquoted_exit" "$down" "$down_exit"

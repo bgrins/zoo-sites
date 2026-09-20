@@ -10,7 +10,7 @@
 // server parsed; /events/submit turns a draft into a permit whose PT- number
 // comes from randomBytes. Nothing graded is in fixture source.
 import { randomBytes } from 'node:crypto';
-import { lcg } from './lib.mjs';
+import { SESSION_ROWS, lcg } from './lib.mjs';
 
 export const EVENTS_STREETS = [
   { id: 'abrill-street', name: 'Abrill Street' },
@@ -493,6 +493,10 @@ export function documents(ctx) {
       desk.brief ??= mintBrief(draw, pick);
 
       if (path === '/events/apply.html') {
+        if (desk.attempts.length >= SESSION_ROWS) {
+          send(res, 429, plainPage('Too many applications', 'We cannot take any more applications from this browser today. Try again tomorrow.'));
+          return true;
+        }
         const parsed = parseApplication(posted.form);
         const attempt = {
           at: Date.now(),

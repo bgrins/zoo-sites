@@ -13,7 +13,7 @@ export const DRIVERS = {
       // the name its card returns doubles as a decoy below.
       const stray = await straySession(ctx.pages.url, '/console/services/orchid-api.html');
       let strayOnCall = null;
-      for (const h of ['ivaskelund', 'torrinby', 'pkelderwick', 'astravinek']) {
+      for (const h of ['ivaskelund', 'tquevrine', 'pkelderwick', 'astravinek']) {
         if ((await stray.get(`/api/console/card/${h}`)).status?.startsWith('On call')) strayOnCall = h;
       }
       const decoy = await stray.get('/api/console/card/cbrisketh');

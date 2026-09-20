@@ -4,7 +4,7 @@
 // server-visible telemetry; the live configuration and its server-computed
 // monthly total are what the validator grades.
 import { randomBytes } from 'node:crypto';
-import { round2 } from './lib.mjs';
+import { SESSION_ROWS, pushTrimmed, round2 } from './lib.mjs';
 
 const TELCO_PLANS = {
   'sig': { name: 'Signal', perLine: 31.5 },
@@ -34,7 +34,6 @@ const ACCT_CAPS = [20, 25, 30, 35, 40, 45];
 // Which lines roam: at least one on and one off, so a stray toggle shows.
 const ACCT_ROAMING = ['100', '010', '001', '110', '101', '011'];
 const ACCT_AT_CAP = { block: 'block roaming data', lite: 'drop to Roam Lite' };
-const DAY = 86400000;
 
 const isBool = (v) => typeof v === 'boolean';
 const onOff = (v) => (v ? 'on' : 'off');
@@ -93,7 +92,6 @@ function acctState(session, { draw, pick }) {
       atCap: pick('lumeva.atcap', Object.keys(ACCT_AT_CAP)),
     },
   };
-  const minute = Math.floor(Date.now() / 60000) * 60000;
   const acct = {
     number: String(1e9 + (randomBytes(4).readUInt32BE(0) % 9e9)).replace(/^(\d{4})(\d{4})(\d{2})$/, '$1 $2 $3'),
     baseline,
@@ -112,11 +110,11 @@ function acctState(session, { draw, pick }) {
     loads: 0,
   };
   acct.history.push({
-    ref: mintChangeRef(acct), at: minute - 33 * DAY - 41 * 60000, tab: 'usage',
+    ref: mintChangeRef(acct), at: Date.UTC(2026, 7, 17, 14, 12), tab: 'usage',
     summary: ACCT_TABS.usage.alertPct.summary(baseline.usage.alertPct),
   });
   acct.history.push({
-    ref: mintChangeRef(acct), at: minute - 15 * DAY - 197 * 60000, tab: 'roaming',
+    ref: mintChangeRef(acct), at: Date.UTC(2026, 8, 4, 16, 35), tab: 'roaming',
     summary: ACCT_TABS.roaming.capUsd.summary(baseline.roaming.capUsd),
   });
   session.lumevaAcct = acct;
@@ -245,12 +243,15 @@ export function routes(ctx) {
       const spec = ACCT_TABS[tab];
       const values = payload.values && typeof payload.values === 'object' ? payload.values : {};
       const refuse = (error) => {
-        acct.rejected.push({ tab, error, at: Date.now(), fromPage: acctFromPage(req) });
+        pushTrimmed(acct.rejected, { tab, error, at: Date.now(), fromPage: acctFromPage(req) });
         return json(res, 400, { error });
       };
       for (const [key, field] of Object.entries(spec)) {
         if (!Object.hasOwn(values, key)) return refuse('Some settings were missing. Reload the page and try again.');
         if (!field.ok(values[key])) return refuse(field.error ?? 'One of these settings is not valid.');
+      }
+      if (acct.saves.length >= SESSION_ROWS) {
+        return json(res, 429, { error: 'Your account cannot take any more changes online today. Call the care team to make this change.' });
       }
       const next = Object.fromEntries(Object.keys(spec).map((key) => [key, values[key]]));
       const changed = Object.keys(spec).filter((key) => next[key] !== acct.current[tab][key]);
@@ -284,7 +285,7 @@ export function routes(ctx) {
       const fields = Array.isArray(payload.fields)
         ? payload.fields.filter((key) => Object.hasOwn(ACCT_TABS[tab], key))
         : [];
-      acct.leaves.push({ tab, fields, at: Date.now(), fromPage: acctFromPage(req) });
+      pushTrimmed(acct.leaves, { tab, fields, at: Date.now(), fromPage: acctFromPage(req) });
       return json(res, 200, { ok: true });
     }
 

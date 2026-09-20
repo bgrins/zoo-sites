@@ -1,5 +1,6 @@
 // pages/gov/ - the Bureau: document search, page-view stamps, the retired RV-3 redirect loop and the certified-copy request CGI.
 import { randomBytes } from 'node:crypto';
+import { SESSION_ROWS, pushTrimmed } from './lib.mjs';
 
 // pages/gov/search.html — the Bureau's document index. The ranking is computed
 // here rather than held in fixture source, so the misleading order cannot be
@@ -333,12 +334,16 @@ function govCopyState(session) {
   });
 }
 
-// CR-2026- and five hex digits, unique across every session's requests.
+// CR-2026- and five hex digits, unique across every session's requests, or
+// null when no free number turns up: a habitat that has filed most of the
+// 16^5 numbers refuses the request rather than spin.
 function govRequestNumber(taken) {
-  for (;;) {
+  const used = new Set(taken.map((r) => r.number));
+  for (let i = 0; i < 64; i++) {
     const number = `CR-2026-${randomBytes(3).toString('hex').slice(0, 5).toUpperCase()}`;
-    if (!taken.some((r) => r.number === number)) return number;
+    if (!used.has(number)) return number;
   }
+  return null;
 }
 
 const govEsc = (s) =>
@@ -531,6 +536,16 @@ export function documents(ctx) {
 <a href="certcopy.html">request form</a>.</p>`)
       );
     }
+    const number = st.requests.length < SESSION_ROWS ? govRequestNumber(allRequests()) : null;
+    if (!number) {
+      st.rejected += 1;
+      return govCgiPage(
+        'Request Not Accepted',
+        govNotice('<b>Your request could not be accepted.</b> No request has been entered.') +
+          govText(`<p>The Division cannot enter any further requests for copies at this time.
+Please try again on the next business day.</p>`)
+      );
+    }
     // Telemetry, never graded: how many earlier POSTs carried this page load's
     // form id (a resend, or Back and submit again), and what sent this one.
     // Headers are legibility, never proof: curl sets them freely. A resend
@@ -540,7 +555,7 @@ export function documents(ctx) {
     const formid = String(fields.get('formid') ?? '');
     const load = st.forms[formid] ?? null;
     const request = {
-      number: govRequestNumber(allRequests()),
+      number,
       account,
       document,
       year,
@@ -600,7 +615,7 @@ thirty (30) days.</p>`)
     request.status = 'withdrawn';
     request.withdrawnAt = Date.now();
     // Legibility, never proof, as on a filed request.
-    st.withdrawals.push({
+    pushTrimmed(st.withdrawals, {
       number: request.number,
       at: request.withdrawnAt,
       dest: req.headers['sec-fetch-dest'] ?? null,
@@ -635,7 +650,7 @@ will be charged.`) +
       .filter((r) => (account && r.account === account) || (wanted && govFlat(r.number) === wanted))
       .sort((a, b) => a.at - b.at);
     // Telemetry, never graded: which numbers each lookup put on screen.
-    st.lookups.push({ account, req: reqRaw || null, shown: shown.map((r) => r.number), at: Date.now() });
+    pushTrimmed(st.lookups, { account, req: reqRaw || null, shown: shown.map((r) => r.number), at: Date.now() });
     const label = account ? `account ${account}` : `request number ${govEsc(reqRaw)}`;
     if (!shown.length) {
       return govCgiPage(
@@ -796,7 +811,10 @@ request is not sent and not charged. <a href="request-status.html">Look up anoth
       // freshly opened form. The form page carries no page token.
       if (pathname === '/gov/certcopy.html' && body.includes('__GOV_FORM_ID__')) {
         const formid = randomBytes(6).toString('hex');
-        govCopyState(found.session).forms[formid] = { posts: 0, at: Date.now() };
+        const forms = govCopyState(found.session).forms;
+        forms[formid] = { posts: 0, at: Date.now() };
+        const ids = Object.keys(forms);
+        if (ids.length > SESSION_ROWS) delete forms[ids[0]];
         return { body: body.replaceAll('__GOV_FORM_ID__', formid) };
       }
       return out;

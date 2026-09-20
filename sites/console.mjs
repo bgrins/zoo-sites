@@ -2,6 +2,7 @@
 // production deploy queue (reused-row) and the orchid-api service page with its
 // owner hovercards (hovercard-oncall).
 import { randomBytes } from 'node:crypto';
+import { SESSION_ROWS, pushTrimmed } from './lib.mjs';
 
 // pages/console/ — Cindergrid deploy console, run 4192. The run log is painted
 // to a <canvas>, so none of its text exists in the DOM. The graded error id and
@@ -310,7 +311,7 @@ const requeueLeft = (d, now) =>
 // a fresh cookie sees the same person on call.
 const ONCALL_OWNERS = [
   { handle: 'ivaskelund', name: 'Ines Vaskelund', role: 'Service owner', team: 'Platform APIs', rotation: true },
-  { handle: 'torrinby', name: 'Tomas Orrinby', role: 'Tech lead', team: 'Platform APIs', rotation: true },
+  { handle: 'tquevrine', name: 'Tomas Quevrine', role: 'Tech lead', team: 'Platform APIs', rotation: true },
   { handle: 'pkelderwick', name: 'Priya Kelderwick', role: 'Site reliability', team: 'Grid operations', rotation: true },
   { handle: 'astravinek', name: 'Aurel Stravinek', role: 'Backend engineer', team: 'Platform APIs', rotation: true },
   { handle: 'mashvarre', name: 'Meiko Ashvarre', role: 'Product manager', team: 'Tenancy', rotation: false },
@@ -516,7 +517,7 @@ export function routes(ctx) {
         const rowOf = (id) => rows.indexOf(id) + 1 || null;
         d.status = 'cancelled';
         d.cancelledAt = now;
-        q.cancels.push({
+        pushTrimmed(q.cancels, {
           id: d.id,
           target: d.id === q.targetId,
           at: now,
@@ -540,7 +541,7 @@ export function routes(ctx) {
         q.refused += 1;
         return json(res, 409, { error: 'This deploy can no longer be re-queued.' });
       }
-      q.requeues.push({ id: d.id, at: now, afterMs: now - d.cancelledAt, via, fromPage: onPage });
+      pushTrimmed(q.requeues, { id: d.id, at: now, afterMs: now - d.cancelledAt, via, fromPage: onPage });
       d.status = 'queued';
       d.cancelledAt = null;
       return json(res, 200, { deploy: publicDeploy(d, null) });
@@ -582,6 +583,10 @@ export function routes(ctx) {
       if (!owner || !message || message.length > 1000) {
         oc.refused += 1;
         return json(res, 400, { error: owner ? 'Write a message to send with the page.' : 'No such person.' });
+      }
+      if (oc.pages.length >= SESSION_ROWS) {
+        oc.refused += 1;
+        return json(res, 429, { error: 'Too many pages sent from this session. Page through the grid pager instead.' });
       }
       const onPage = consoleFromPage(req);
       if (!onPage) oc.offPage += 1;

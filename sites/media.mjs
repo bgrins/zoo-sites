@@ -1,7 +1,7 @@
 // pages/media/ - Skerrow Coastal Radio recording (media-transcript) and the
 // newsroom desk's running order (pointer-drag).
 import { randomBytes } from 'node:crypto';
-import { lcg } from './lib.mjs';
+import { lcg, pushTrimmed } from './lib.mjs';
 
 // pages/media/ — Skerrow Coastal Radio, the 0535 coastal forecast recording
 // (media-transcript). The audio is SYNTHESISED here (a per-chapter sine tone in
@@ -388,7 +388,7 @@ export function routes(ctx) {
       if (from !== to) {
         const [id] = desk.order.splice(from, 1);
         desk.order.splice(to, 0, id);
-        desk.moves.push({
+        pushTrimmed(desk.moves, {
           story: id,
           from,
           to,

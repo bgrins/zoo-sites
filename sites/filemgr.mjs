@@ -1,7 +1,7 @@
 // pages/filemgr/ - Working files and the locked rename (rename-rollback), and the
 // Scans folder with its retention labels (range-select).
 import { randomBytes } from 'node:crypto';
-import { lcg } from './lib.mjs';
+import { SESSION_ROWS, lcg } from './lib.mjs';
 
 // The Scans folder is served per session by /api/filemgr/scans, so its file
 // ids, which files belong to which intake batch, where the dictated batch sits
@@ -205,6 +205,10 @@ export function routes(ctx) {
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
       const sc = scansState(found.session, draw);
+      if (sc.jobs.length >= SESSION_ROWS) {
+        sc.refused += 1;
+        return json(res, 429, { ok: false, error: 'Too many label changes from this session. Try again later.' });
+      }
       const ids = Array.isArray(payload.ids) ? [...new Set(payload.ids)] : [];
       const byId = new Map(sc.files.map((f) => [f.id, f]));
       // Map keys compare without coercion, so an id that is not a string is unknown.
