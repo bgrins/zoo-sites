@@ -13,11 +13,12 @@
 
 import { createHash } from 'node:crypto';
 import {
-  chmodSync, createReadStream, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync,
-  writeFileSync,
+  chmodSync, createReadStream, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync,
+  rmSync, writeFileSync,
 } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { delimiter, dirname, join } from 'node:path';
+import { homedir, tmpdir } from 'node:os';
+import { basename, delimiter, dirname, join, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
 
 const BASE_KEYS = [
@@ -129,6 +130,60 @@ export function shimmedPath(path) {
   const rest = String(path ?? '').split(delimiter).filter((p) => p && p !== shimDir());
   return [shimDir(), ...rest].join(delimiter);
 }
+
+// What no agent shell may read. `deny` holds every checkout of this repository,
+// whose eval/answers.mjs and sites/ hold the graded truth, and the operator's
+// Claude and codex homes (the defaults and any the environment names), whose
+// session transcripts can quote them. `allow` re-opens this checkout's
+// node_modules, where the agent CLIs live: the Claude CLI's shell runs `rg` as
+// the CLI's own bundled build from there. A linked worktree's .git file names
+// its git directory, whose commondir names the main one, which lists every
+// linked worktree under worktrees/; git may write any of those paths relative.
+// Real paths, since both sandboxes match the resolved path. A path inside
+// another is left out: both backends print the list into the agent's prompt.
+export function unreadablePaths(env = process.env) {
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+  const checkouts = new Set([root]);
+  const read = (path) => {
+    try {
+      return readFileSync(path, 'utf8').trim();
+    } catch {
+      return null;
+    }
+  };
+  let common = join(root, '.git');
+  const gitdir = /^gitdir:\s*(.+)$/m.exec(read(common) ?? '')?.[1].trim();
+  if (gitdir) {
+    const admin = resolve(root, gitdir);
+    common = resolve(admin, read(join(admin, 'commondir')) ?? '.');
+  }
+  // A bare repository has no main checkout to add.
+  if (basename(common) === '.git') checkouts.add(dirname(common));
+  let linked = [];
+  try {
+    linked = readdirSync(join(common, 'worktrees'));
+  } catch {}
+  for (const name of linked) {
+    const admin = join(common, 'worktrees', name);
+    const dotGit = read(join(admin, 'gitdir'));
+    if (dotGit) checkouts.add(dirname(resolve(admin, dotGit)));
+  }
+  const real = (paths) => [...new Set(paths.filter((p) => p && existsSync(p)).map((p) => realpathSync(p)))];
+  const all = real([
+    ...checkouts,
+    env.CLAUDE_CONFIG_DIR,
+    join(homedir(), '.claude'),
+    env.CODEX_HOME,
+    join(homedir(), '.codex'),
+  ]);
+  const deny = all.filter((p) => !all.some((q) => p.startsWith(q + sep)));
+  return { deny, allow: real([join(root, 'node_modules')]) };
+}
+
+// Both ways an agent can write a real path under macOS's /private, which /tmp,
+// /var and /etc link into: a check that matches the text an agent wrote, not
+// the resolved path, needs each.
+export const pathSpellings = (path) => [...new Set([path, path.replace(/^\/private(?=\/(?:tmp|var|etc)\/)/, '')])];
 
 // Never throws: callers clean up in finally blocks, where a throw would replace
 // a finished attempt's result. A directory that will not go stays registered,

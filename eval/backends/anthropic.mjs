@@ -27,11 +27,13 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 import { existsSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { delimiter, join } from 'node:path';
-import { makeTempDir, removeTempDir, TEMP_PREFIX } from '../agent-env.mjs';
+import { makeTempDir, pathSpellings, removeTempDir, TEMP_PREFIX, unreadablePaths } from '../agent-env.mjs';
 import { priceTokens } from './pricing.mjs';
 
 export const DEFAULT_MODEL = 'claude-sonnet-5';
 export const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'];
+
+const SHELL_READ = unreadablePaths();
 
 // The built-in tool set is pinned rather than left to the CLI's default, which
 // offered live web (WebFetch, WebSearch), subagents and orchestration (Task,
@@ -44,22 +46,28 @@ export const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'];
 // cost/turn gap must measure the tool surface, never shell access.
 const TOOLS = ['Bash', 'Read', 'Write', 'Edit', 'ToolSearch', 'TaskOutput', 'TaskStop'];
 // Denied by name as well, so a CLI that widened `tools` still could not hand
-// these out.
+// these out. The Read rules keep the file tool out of the paths the sandbox
+// denies the shell (agent-env.mjs unreadablePaths), under each spelling of a
+// /private path; the CLI adds each to the sandbox's denyRead too.
 const DISALLOWED_TOOLS = [
   'WebFetch', 'WebSearch', 'Task', 'Agent', 'Workflow', 'SendMessage',
   'CronCreate', 'CronDelete', 'CronList', 'ScheduleWakeup', 'Monitor', 'PushNotification',
+  ...SHELL_READ.deny.flatMap(pathSpellings).map((p) => `Read(/${p}/**)`),
 ];
 // dontAsk denies every tool not allowed here, so Write and Edit need a rule or
 // each call burns a turn on a denial. An Edit rule covers Write too, and the
 // leading `//` makes the path absolute: file tools write in the attempt
-// directory only, as codex's workspace-write sandbox does.
+// directory only, as codex's shell permissions profile does.
 const allowedTools = (cwd) => ['mcp__firefox', 'Bash', ...(cwd ? [`Edit(/${cwd}/**)`] : [])];
 
 // CLI settings the harness pins rather than leaving to the CLI's defaults and
 // remote config, which the allowlist in agent-env.mjs would otherwise decide.
-//   ENABLE_TOOL_SEARCH=false  every MCP tool's schema in the first request, as
-//     codex gets them. The default defers them behind ToolSearch, and a stored
-//     run spent 197 of one arm's 644 turns on ToolSearch alone.
+//   ENABLE_TOOL_SEARCH=false  every MCP tool's schema in the first request.
+//     The default defers them behind ToolSearch, and a stored run spent 197 of
+//     one arm's 644 turns on ToolSearch alone. Codex in its default code mode
+//     sends no MCP schema at all: its agent searches the catalog from a script
+//     (see backends/codex.mjs), so the two backends meet the catalog
+//     differently and a cross-backend input comparison carries that.
 //   MAX_MCP_OUTPUT_TOKENS     the token cap past which the CLI truncates an MCP
 //     result; unset, a remote flag can move it. The CLI's default. It does not
 //     govern the <persisted-output> spill, which replaces any MCP result over
@@ -82,7 +90,9 @@ const CLI_ENV = {
 // fail the attempt instead of running it unsandboxed. /tmp/claude is the
 // sandbox's default temp directory, shared by every attempt, so it is closed.
 // allowLocalBinding opens loopback both ways, so a curl to a fixture, or a
-// server the agent starts, works; the proxy denies every other host.
+// server the agent starts, works; the proxy denies every other host. Reads go
+// everywhere but the graded truth and the agent homes (agent-env.mjs
+// unreadablePaths), as in the codex shell.
 function sandboxFor(cwd, tmp) {
   return {
     enabled: true,
@@ -92,6 +102,8 @@ function sandboxFor(cwd, tmp) {
     filesystem: {
       allowWrite: [cwd, tmp].filter(Boolean),
       denyWrite: ['/tmp/claude', '/private/tmp/claude'],
+      denyRead: SHELL_READ.deny,
+      allowRead: SHELL_READ.allow,
     },
     network: {
       allowedDomains: ['localhost', '127.0.0.1', '*.localhost'],
@@ -124,6 +136,17 @@ export const TOOL_POLICY = {
   strictMcpConfig: true,
   persistSession: false,
   cliEnv: CLI_ENV,
+  toolMode: 'direct',
+  toolModeDetail: 'every MCP tool is a tool of its own, its schema in the first request (ENABLE_TOOL_SEARCH=false)',
+  subagents: 'none: Task, Agent, Workflow and SendMessage are left out of tools and named in disallowedTools',
+  network: 'Bash reaches loopback only (sandbox.network); no web tool',
+  readable:
+    'Bash reads everything but sandbox.filesystem.denyRead, with allowRead open again inside it; the Read tool is ' +
+    'denied every denyRead path, allowRead included. Not covered: the browser and the MCP server, which run ' +
+    'unsandboxed (file:// and the upload tools reach the repository), and copies of the graded truth outside a checkout',
+  promptListsPaths:
+    "the Bash tool's description lists the sandbox's read paths, so input tokens compare only between runs that " +
+    'deny the same paths',
   sandbox: sandboxFor('<attempt dir>', '<attempt temp dir>'),
   claudeConfigDir: 'fresh per attempt; the login stays where it was (CLAUDE_SECURESTORAGE_CONFIG_DIR)',
   path: 'the harness PATH with a stub directory first (agent-env.mjs SHIMMED_COMMANDS)',
@@ -339,5 +362,6 @@ async function runIn(home, { prompt, model, effort, cwd, onMessage, onOutputToke
     // Time spent in API calls (vs tool execution etc.), when reported.
     api_duration_ms: last.duration_api_ms ?? null,
     segments: results.length,
+    tool_mode: TOOL_POLICY.toolMode,
   };
 }

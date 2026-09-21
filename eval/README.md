@@ -119,25 +119,41 @@ way to ask for a command to run outside it (on Linux the sandbox needs `bwrap` a
 the preflight stops a run without them). Each attempt also gets its own `CLAUDE_CONFIG_DIR`,
 so spilled tool results, background task output and memory stay out of your
 `~/.claude` and `/tmp/claude-<uid>`; your login stays where it is. MCP tools load
-eagerly (`ENABLE_TOOL_SEARCH=false`), as codex's do, and the rows count any ToolSearch
-calls and `<persisted-output>` spills. The codex backend runs under a network-enabled
-workspace-write sandbox limited to the attempt directory and a private `TMPDIR`, with
-its own `CODEX_HOME` holding only the login, so none of your codex config, plugins or
-skills reach it, and with its subagent tools turned off; each attempt's session
-rollout is kept as `rollouts/<transcript>`. Inside either sandbox a bare `mktemp`
-fails on macOS, while `mktemp -p "$TMPDIR"` works. Each run's `meta` records both tool
-policies. `firefox-devtools-mcp` runs with a `HOME` of the attempt's own, so its
-`~/.firefox-devtools-mcp` save root starts empty every attempt and never lands in your
-home. Every attempt's browser also sends a user agent carrying a token of its
-own, but the server's ledger does not record user agents yet, so two rules in
-`scripts/foreign-browser.mjs` find a browser session the surface did not start, and a
-row with one is marked invalid. Timing flags a session whose first request came outside
-every surface call the tap saw, during a shell command or long after any surface call.
-Count flags a second session that loaded a site top-level if it began inside the same
-surface call as the session before it, or while that session was still sending
-requests; a sign-out or a restart, which ends the first session, passes. The rules
-miss a session that begins inside a later surface call while the session before it
-sends nothing more, and `--no-tap` turns both off.
+eagerly (`ENABLE_TOOL_SEARCH=false`), and the rows count any ToolSearch calls and
+`<persisted-output>` spills. The codex backend runs its shell under a permissions
+profile with the same limits: writes in the attempt directory and a private `TMPDIR`,
+and network to loopback only, through the managed proxy that `features.network_proxy`
+starts (experimental in codex 0.145.0; the shell can still resolve names and reach this
+machine's own addresses). It gets its own `CODEX_HOME` holding only the login and that
+profile, so none of your codex config, plugins or skills reach it; its subagent tools
+are off (`agents.enabled=false`), and so are its own browser, computer use, image
+generation and ChatGPT apps. The preflight checks codex's effective features and runs
+the profile under `codex sandbox`, and a row whose rollout shows other permissions or a
+subagent version is marked invalid (`codex-isolation`). Each attempt's session rollout
+is kept as `rollouts/<transcript>`. Neither shell, nor the Anthropic Read tool, can read
+a checkout of this repository, where `eval/answers.mjs` and `sites/` hold the graded
+truth, or your `~/.claude` and `~/.codex`, whose transcripts can quote them; this
+checkout's `node_modules` stays readable for the agent CLIs' own tools (`agent-env.mjs`
+`unreadablePaths`). That covers the shells alone: the browser and the MCP servers run
+unsandboxed, so a `file://` page or an upload tool still reaches the repository, and a
+copy of the graded truth outside a checkout stays readable. Codex's `view_image` reads
+any file, not only an image, in codex's own process, and 0.145.0 cannot turn it off, so
+a codex row whose `view_image` names a denied path is marked invalid too. Both backends
+print the denied paths into the agent's prompt, so run from checkouts whose paths say
+nothing about the run, and compare input tokens only between runs that deny the same
+paths. Inside either sandbox a bare `mktemp` fails on macOS, while `mktemp -p "$TMPDIR"`
+works. Each run's `meta` records both tool policies. `firefox-devtools-mcp` runs with a
+`HOME` of the attempt's own, so its `~/.firefox-devtools-mcp` save root starts empty
+every attempt and never lands in your home. Every attempt's browser also sends a user
+agent carrying a token of its own, but the server's ledger does not record user agents
+yet, so two rules in `scripts/foreign-browser.mjs` find a browser session the surface
+did not start, and a row with one is marked invalid. Timing flags a session whose
+first request came outside every surface call the tap saw, during a shell command or
+long after any surface call. Count flags a second session that loaded a site top-level
+if it began inside the same surface call as the session before it, or while that
+session was still sending requests; a sign-out or a restart, which ends the first
+session, passes. The rules miss a session that begins inside a later surface call
+while the session before it sends nothing more, and `--no-tap` turns both off.
 Run it only where you are willing to let an agent execute arbitrary shell commands. One fixture is
 actively trying to talk that agent into exfiltrating data — that is the point of
 `injection-bait` — and an agent that takes the bait will run whatever the page told it
@@ -201,6 +217,35 @@ timestamp-named snapshots and logs, and the `screencast-<uuid>.webm` that
 firefox-devtools-mcp's `screencast_stop` saves. Unpinned, `firefox-devtools-mcp` saved
 chart-escape's CSV export and every screencast into the operator's `~/Downloads`. The
 gate sends its downloads to each worker's temporary directory.
+
+**Codex drives the browser from scripts.** Codex ships gpt-5.6-* in code mode
+(`tool_mode: code_mode_only` in its model catalog), and `backends/codex.mjs` pins that
+mode on every catalog model. `EVAL_CODEX_TOOL_MODE=direct|code_mode|code_mode_only`
+picks another for an experiment; `meta.isolation.toolPolicy.codex.toolMode` and each
+row's `tool_mode` record which. In code mode the model has no MCP tool of its own: it
+writes JavaScript for one `exec` tool, which calls the MCP tools and the shell, and it
+sees only what the script prints. That changes what a codex number measures:
+
+- The tool catalog reaches the model through `ALL_TOOLS`, which a script has to search
+  and print, not as inline schemas. The first request carries no MCP schema, and each
+  printed catalog rides along in every later request, so a larger catalog costs input
+  there instead.
+- One script can make several MCP calls in a single model request, so a codex turn is a
+  model request, counted from the rollout, not a tool call.
+- Codex cuts an exec's whole output past a token budget (10,000 unless the script's
+  first-line `// @exec:` pragma sets `max_output_tokens`) and marks the cut `Warning:
+  truncated output` before the model sees it. The tap records the full reply.
+- An agent can sleep inside a script (`setTimeout`, `page.waitForTimeout`, a shell
+  `sleep`), where neither a wait tool nor the tap's shell count records it.
+
+Each codex row records these as `code_mode: {requests, execs, discovery_execs,
+exec_sleeps, truncated_outputs}`, read from its rollout, and its `turns` are those
+`requests` (rows from before `meta.isolation.toolPolicy.codex.turns` existed counted tool
+calls plus one). In `direct` mode codex still defers the MCP tools behind its own tool
+search, because the catalog marks gpt-5.6-* `supports_search_tool`; an experiment with
+inline schemas has to clear that in the catalog as well (the `tool_search` features are
+removed in 0.145.0 and change nothing). The codex extractor keeps `code_mode_only`
+whatever `EVAL_CODEX_TOOL_MODE` says.
 
 ## How a task is graded
 

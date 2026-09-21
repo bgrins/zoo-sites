@@ -508,7 +508,11 @@ Conditions and models:
                           EVAL_EXTRACTOR=scripted, --model extracted,
                           misquoted and extractor-down answer with text
                           alone, graded through a free stub extractor:
-                          extracted has to PASS, the other two FAIL
+                          extracted has to PASS, the other two FAIL. codex
+                          offers its tools in the mode EVAL_CODEX_TOOL_MODE
+                          names: code_mode_only (the default, as codex ships
+                          gpt-5.6-*), code_mode or direct; its extractor
+                          keeps the default
   --headed                visible Firefox windows, tiled into a screen-sized
                           grid (one cell per browser; wraps with a cascade
                           offset past capacity)
@@ -1105,6 +1109,13 @@ async function preflight() {
       );
     }
   }
+  if (BACKENDS.codex) {
+    try {
+      await BACKENDS.codex.preflightIsolation(agentEnvFor('codex'), shellPathFor('codex'));
+    } catch (error) {
+      throw new Error(`preflight: ${error.message}, so no agent ran`);
+    }
+  }
   return { env, tools };
 }
 
@@ -1213,9 +1224,9 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     if (transcriptStream) transcriptStream.write(JSON.stringify(message) + '\n');
   };
   // Runaway guards. There is deliberately no turn limit: a "turn" means
-  // different things per backend (codex only approximates one), so turns are
-  // neither a fair metric nor a usable safety net. Wall time and output
-  // tokens are.
+  // different things per backend (codex counts its model requests from the
+  // rollout, once the run has ended), so turns are neither a fair metric nor a
+  // usable safety net. Wall time and output tokens are.
   const abortController = new AbortController();
   spec.abortController = abortController;
   let spent = 0;
@@ -1406,7 +1417,8 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   // Triage charges a failure to the tool only through these (triage.mjs).
   const blamed = toolErrors.length ? blameToolErrors(toolErrors, truth) : [];
   const { invalid, ...measured } = telemetry;
-  const invalidWhy = invalid ?? (foreign?.sessions ? 'foreign-browser' : null);
+  const invalidWhy =
+    invalid ?? (foreign?.sessions ? 'foreign-browser' : r.codex_isolation ? 'codex-isolation' : null);
   return {
     backend: backendName,
     condition: label,
@@ -1440,6 +1452,12 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     // SDK result segments whose usage had to be summed (see backends/anthropic.mjs).
     ...(r.segments > 1 ? { segments: r.segments } : {}),
     ...(r.stream_errors ? { stream_errors: r.stream_errors } : {}),
+    // How the backend offered the MCP tools, what codex's rollout says code mode
+    // did, and where its session departed from the isolation it was set up
+    // with (see backends/codex.mjs codeModeStats and isolationProblems).
+    ...(r.tool_mode ? { tool_mode: r.tool_mode } : {}),
+    ...(r.code_mode ? { code_mode: r.code_mode } : {}),
+    ...(r.codex_isolation ? { codex_isolation: r.codex_isolation } : {}),
     // Grading evidence for schema tasks; excluded from every condition total.
     // The verbatim answer rides along on every row so regrade.mjs never grades
     // the preview: fields are what graded, answer_full is what the agent said.
