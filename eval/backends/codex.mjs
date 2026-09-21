@@ -47,7 +47,7 @@ const execFileAsync = promisify(execFile);
 
 // Pinned explicitly (rather than deferring to ~/.codex/config.toml) so runs
 // are reproducible and the model is recorded in results.
-export const DEFAULT_MODEL = 'gpt-5.6-terra';
+export const DEFAULT_MODEL = 'gpt-5.6-luna';
 export const EFFORT_LEVELS = ['minimal', 'low', 'medium', 'high', 'xhigh'];
 
 // The agent's catalog gives every model this tool_mode. code_mode_only is what
