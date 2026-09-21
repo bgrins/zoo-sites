@@ -54,11 +54,18 @@ function collectText(node, underResult, out) {
   }
 }
 
+// playwright-mcp's "### Ran Playwright code" section echoes the call it ran,
+// the agent's own input included: pdf-bill's only reply carrying GW-B-A034C4
+// was the fill('GW-B-A034C4') of a bill number the agent had read off a
+// screenshot. A section runs to the next "### " line, as playwright-mcp's own
+// parseSections reads it.
+const CODE_ECHO = /^### Ran Playwright code\n[\s\S]*?(?=^### |(?![\s\S]))/gm;
+
 // Everything one streamed message delivered TO the agent.
 export function toolTextOf(message) {
   const out = [];
   collectText(message, false, out);
-  return out.join('\n');
+  return out.join('\n').replace(CODE_ECHO, '');
 }
 
 // Values are matched case-insensitively and whitespace-insensitively, because a
@@ -318,12 +325,62 @@ function carriesImage(node, underResult = false) {
   );
 }
 
+// Where the page that carries a value is known, and when it loaded. The
+// session-state object that holds the value also holds a string under an
+// address key, the value itself included: a key under which some object's
+// string, eight or more letters and digits of at least two kinds, appears in
+// a request path the ledger recorded. pdf-bill's bills each hold a `token`
+// that /api/utility/bill.pdf?b=<token> carries, and faceted-search's postings
+// an `id` that the vacancy page's URL does. Returns a function of a value:
+// null when its page is not known this way, else the ledger times of the
+// requests for that page, empty when nothing loaded it. A value its page
+// shows and another page shows too, such as a list, reads as shown by its
+// own page alone.
+const opaque = (s) =>
+  s.length >= 8 && s.length <= 64 && /^[\w-]+$/.test(s) && [/[A-Z]/, /[a-z]/, /\d/].filter((re) => re.test(s)).length >= 2;
+export function pageLoadsOf(state) {
+  const ledger = Array.isArray(state?.ledger) ? state.ledger.filter((e) => typeof e?.path === 'string') : [];
+  if (!ledger.length) return () => null;
+  const holders = new Map();
+  const byKey = new Map();
+  const seen = new WeakSet();
+  const walk = (node) => {
+    if (!node || typeof node !== 'object' || seen.has(node)) return;
+    seen.add(node);
+    for (const [k, v] of Object.entries(node)) {
+      if (typeof v !== 'string') walk(v);
+      else if (!Array.isArray(node)) {
+        if (!holders.has(v)) holders.set(v, []);
+        holders.get(v).push(node);
+        if (k !== 'nonce' && opaque(v)) (byKey.get(k) ?? byKey.set(k, new Set()).get(k)).add(v);
+      }
+    }
+  };
+  try {
+    for (const session of state.sessions.values()) walk(session);
+  } catch {
+    return () => null;
+  }
+  const requested = (s) => ledger.some((e) => e.path.includes(s));
+  const addressKeys = [...byKey].filter(([, strings]) => [...strings].some(requested)).map(([k]) => k);
+  if (!addressKeys.length) return () => null;
+  return (value) => {
+    const addresses = (holders.get(String(value)) ?? []).flatMap((o) =>
+      addressKeys.map((k) => o[k]).filter((s) => typeof s === 'string' && opaque(s))
+    );
+    if (!addresses.length) return null;
+    return ledger.filter((e) => addresses.some((a) => e.path.includes(a))).map((e) => e.at ?? null);
+  };
+}
+
 // Accumulates across a task's message stream so run.mjs can hand messages in as
 // they arrive rather than re-reading the transcript afterwards.
 export function createReachRecorder() {
   const chunks = [];
   let chars = 0;
-  let images = 0;
+  // When each reply holding an image arrived, null for a stream without
+  // timestamps (codex's).
+  const imageTimes = [];
   let hay = null;
   const normalised = () => (hay?.chunks === chunks.length ? hay.text : (hay = { chunks: chunks.length, text: norm(chunks.join('\n')) }).text);
   // A run can stream tens of MB of snapshots; keep only the first CAP
@@ -331,7 +388,7 @@ export function createReachRecorder() {
   const CAP = 24 * 1024 * 1024;
   return {
     observe(message) {
-      if (carriesImage(message)) images += 1;
+      if (carriesImage(message)) imageTimes.push(Date.parse(message?.timestamp ?? '') || null);
       if (chars >= CAP) return;
       const text = toolTextOf(message);
       if (!text) return;
@@ -339,18 +396,29 @@ export function createReachRecorder() {
       chars += text.length;
     },
     // Each value as seen, truncated or absent. An absent value is
-    // `image-only` when a reply carried an image, since a screenshot may have
-    // shown it (flaky-retry's total, room-booking's PCR-076981 and
-    // promo-zindex's code were read off screenshots), and otherwise, for a
-    // value the agent composed, derived or paraphrased. Values in `truth` are
-    // the server's, never the agent's, so one no image could have shown stays
-    // absent.
-    reach(values, { truth = [] } = {}) {
+    // `image-only` when an image reply may have shown it (flaky-retry's
+    // total, room-booking's PCR-076981 and promo-zindex's code were read off
+    // screenshots), and otherwise, for a value the agent composed, derived or
+    // paraphrased. Values in `truth` are the server's, never the agent's, so
+    // one no image could have shown stays absent. Given the attempt's `state`,
+    // a value whose page pageLoadsOf knows needs an image reply at or after a
+    // load of that page, or after any load on a stream without timestamps, so
+    // a bill pdf-bill's agent never opened no longer reads as image-only
+    // beside one screenshot of the reading form. Every other value, and every
+    // value without state, as run.mjs records a row, needs only an image reply
+    // somewhere in the row.
+    reach(values, { truth = [], state = null } = {}) {
       const states = reachOf(values, chunks.join('\n'));
       const server = new Set(truth.map(String));
-      for (const [v, state] of Object.entries(states)) {
-        if (state !== 'absent') continue;
-        states[v] = images ? 'image-only' : (!server.has(v) && composedAs(v)) || state;
+      const loadsOf = state ? pageLoadsOf(state) : () => null;
+      const imaged = (v) => {
+        const loads = loadsOf(v);
+        if (loads == null) return imageTimes.length > 0;
+        return imageTimes.some((i) => loads.some((at) => i == null || at == null || i >= at));
+      };
+      for (const [v, reached] of Object.entries(states)) {
+        if (reached !== 'absent') continue;
+        states[v] = imaged(v) ? 'image-only' : (!server.has(v) && composedAs(v)) || reached;
       }
       return states;
     },
@@ -420,7 +488,8 @@ if (invokedDirectly) {
       }
     }
     // What run.mjs records on a row now: the answer's values and the attempt's
-    // truth, with the truth marked as the server's.
+    // truth, with the truth marked as the server's, and image-only read
+    // against the state's page loads (createReachRecorder's reach).
     const truth = state ? truthValues(state, tasks.get(row.task)?.task) : [];
     const values = [...new Set([...gradedValues(row.fields ?? {}), ...truth])];
     if (!values.length) continue;
@@ -428,10 +497,11 @@ if (invokedDirectly) {
     // was less than the replies this reads, so "seen" there is an upper bound.
     const harnessCut = codeModeOf(row, dir)?.truncated_outputs;
     const cutByHarness = harnessCut ? ` [harness cut ${harnessCut} output(s)]` : '';
-    for (const [value, reached] of Object.entries(rec.reach(values, { truth }))) {
+    for (const [value, reached] of Object.entries(rec.reach(values, { truth, state }))) {
       tally[truth.includes(value) ? 'truth' : 'answer'][reached] += 1;
-      // A passing row's absent truth is mostly minted codes nothing grades
-      // (reused-row's deploy ids), so only a failing row lists its truth.
+      // A passing row's absent truth is mostly codes the server minted for a
+      // task that names no truth and grades none of them, so only a failing
+      // row lists its truth.
       if (reached !== 'seen' && (!row.success || !truth.includes(value))) {
         notable.push(
           `${reached.padEnd(11)} ${row.success ? 'PASS' : 'FAIL'} ${row.condition}/${row.task}  ` +
@@ -445,14 +515,14 @@ if (invokedDirectly) {
   console.log(`  seen in tool output : ${tally.answer.seen}`);
   console.log(`  truncated by surface: ${tally.answer.truncated}`);
   console.log(`  absent (never shown): ${tally.answer.absent}`);
-  console.log(`  image-only (absent from text, beside an image reply): ${tally.answer['image-only']}`);
+  console.log(`  image-only (absent from text, beside an image reply that could have shown it): ${tally.answer['image-only']}`);
   console.log(`  derived by the agent (an absent number): ${tally.answer.derived}`);
   console.log(`  paraphrased by the agent (absent prose): ${tally.answer.paraphrased}`);
   console.log(`truth values of the attempts: ${total(tally.truth)}`);
   console.log(`  seen in tool output : ${tally.truth.seen}`);
   console.log(`  truncated by surface: ${tally.truth.truncated}`);
   console.log(`  absent (never shown; listed below for failing rows only): ${tally.truth.absent}`);
-  console.log(`  image-only (absent from text, beside an image reply): ${tally.truth['image-only']}`);
+  console.log(`  image-only (absent from text, beside an image reply that could have shown it): ${tally.truth['image-only']}`);
   if (notable.length) {
     console.log('\nvalues the agent never received verbatim:');
     for (const n of notable) console.log(`  ${n}`);

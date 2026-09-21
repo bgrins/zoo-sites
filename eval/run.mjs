@@ -1461,11 +1461,12 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   const named = truthValues(ctx.pages?.state ?? {}, task);
   const truth = [...gradedValues(fields ?? {}), ...named];
   const surface = (() => {
-    const states = reach.reach(truth, { truth: named });
+    const states = reach.reach(truth, { truth: named, state: ctx.pages?.state ?? null });
     const truncated = Object.keys(states).filter((v) => states[v] === 'truncated');
     const absent = Object.keys(states).filter((v) => states[v] === 'absent');
-    // Absent from every reply's text while a reply carried an image, which may
-    // have shown it (surface-reach.mjs).
+    // Absent from every reply's text while an image reply may have shown it,
+    // one after its page loaded where the state names that page
+    // (surface-reach.mjs pageLoadsOf).
     const imageOnly = Object.keys(states).filter((v) => states[v] === 'image-only');
     if (!truncated.length && !absent.length && !imageOnly.length) return null;
     const clip = (list) => list.slice(0, 8).map((v) => v.slice(0, 80));

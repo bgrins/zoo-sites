@@ -8,9 +8,10 @@
 // that also fires is listed as contributing. The order puts the causes that
 // void a row's evidence first (no grade, no surface, a shell that fetched from
 // a graded route, a nulled or reworded field), then the provable tool cause (a
-// truncated value), then the comparisons across arms, then the weaker signals
-// (tool errors, outputs the harness cut). A row no rule explains is `unattributed`, which is what a
-// transcript judge is for.
+// truncated value), then the agent's provable slip (`transcription`, a claim
+// one character from a truth a reply showed), then the comparisons across
+// arms, then the weaker signals (tool errors, outputs the harness cut). A row
+// no rule explains is `unattributed`, which is what a transcript judge is for.
 //
 // `surface-reach` fires only on a truncated value: the reply carried the value
 // and cut it, which proves the surface had it, or on a claimed value that is
@@ -22,7 +23,8 @@
 // other surface under the same backend passed and received its own truth while
 // no arm passed on this surface. For the generic minted codes the same
 // comparison is listed as contributing, beside `minted-absent`. A truth no text
-// reply carried, on a row whose replies held an image, is listed as
+// reply carried, on a row whose replies held an image that could have shown it
+// (surface-reach.mjs reach, read with the attempt's state), is listed as
 // `image-only` instead of either.
 //
 // Old rows lack the telemetry fields, so the rules fall back to the transcript
@@ -51,6 +53,7 @@ export const FAILURE_CLASSES = {
   extraction: { owner: 'grader', about: 'the answer holds the value, but the extracted field is null' },
   paraphrase: { owner: 'grader', about: 'the extractor reworded a value its quote gives verbatim, and the validator graded the rewording' },
   'surface-reach': { owner: 'tool', about: 'the surface cut the graded value before it reached the agent, or the answer is its cut text' },
+  transcription: { owner: 'agent', about: 'the answer claims a value one character from a truth a text or image reply showed: a copying slip or a misread' },
   'both-arms': { owner: 'task-or-agent', about: 'every other arm failed the same task the same way' },
   'surface-absent': { owner: 'tool', about: 'no reply carried the graded truth, while a peer arm that passed received its own' },
   'tool-errors': { owner: 'tool', about: "a call to the surface failed and nothing later made it good, or it carried the attempt's truth" },
@@ -63,7 +66,7 @@ export const TOOL_CLASSES = new Set(
 // A peer failing for one of these reasons says nothing about the task.
 const VOID_CLASSES = new Set([
   'infra', 'limit', 'error', 'validator-error', 'no-surface-calls', 'shell-assisted', 'extraction', 'paraphrase',
-  'harness-truncated',
+  'transcription', 'harness-truncated',
 ]);
 
 const CODE = /\b[A-Za-z]{2,6}-[A-Za-z0-9][A-Za-z0-9-]{2,14}\b/g;
@@ -350,6 +353,58 @@ function paraphraseEvidence(row) {
   );
 }
 
+// Whether `claim` is one slip from `truth`, compared in capitals: one
+// character dropped, added or changed, or only characters a screenshot
+// confuses changed (0 and O, 8 and B, 1 and I). Only a truth of six or more
+// characters holding a letter and a digit, a code, is tested: a reading or an
+// amount one digit off may be the agent's own arithmetic.
+const CONFUSABLE = [['0', 'O'], ['0', 'D'], ['0', 'Q'], ['1', 'I'], ['1', 'L'], ['2', 'Z'], ['5', 'S'], ['6', 'G'], ['8', 'B']];
+const confusable = (a, b) => CONFUSABLE.some(([x, y]) => (a === x && b === y) || (a === y && b === x));
+function oneSlip(claim, truth) {
+  const a = String(claim).trim().toUpperCase();
+  const b = String(truth).trim().toUpperCase();
+  if (a === b || b.length < 6 || !/\d/.test(b) || !/\p{L}/u.test(b)) return false;
+  if (a.length === b.length) {
+    const diffs = [...a].map((ch, i) => [ch, b[i]]).filter(([x, y]) => x !== y);
+    return diffs.length === 1 || diffs.every(([x, y]) => confusable(x, y));
+  }
+  if (Math.abs(a.length - b.length) !== 1) return false;
+  const [short, long] = a.length < b.length ? [a, b] : [b, a];
+  let i = 0;
+  while (i < short.length && short[i] === long[i]) i++;
+  return short.slice(i) === long.slice(i + 1);
+}
+
+// A claimed value one slip from this attempt's truth, where the truth reached
+// the agent in a text reply or beside an image that could have shown it:
+// resend-receipt's answer dropped the last character of the CR-2026-26B0E its
+// listing showed twice, and hovercard-oncall's read PG-8B1956 off a screenshot
+// as PG-881956. A claim is a field's value or a code inside it. A row that
+// re-grades as failing with the truth in its place failed on something else.
+function transcriptionEvidence(row, truth, reach, task, state) {
+  const delivered = truth.filter((t) => reach[t] === 'seen' || reach[t] === 'image-only');
+  if (!delivered.length || !row.fields) return null;
+  const slips = [];
+  for (const [path, value] of leaves(row.fields)) {
+    if (typeof value !== 'string' || truth.includes(value)) continue;
+    for (const claim of new Set([value, ...[...value.matchAll(CODE)].map((m) => m[0])])) {
+      const t = truth.includes(claim) ? null : delivered.find((d) => oneSlip(claim, d));
+      if (t) slips.push({ path, value, claim, truth: t });
+    }
+  }
+  if (!slips.length) return null;
+  const patch = new Map();
+  for (const s of slips) if (!patch.has(s.path)) patch.set(s.path, s.value.replace(s.claim, s.truth));
+  const regraded = passesWith(row, task, state, patch);
+  if (regraded === false || (regraded == null && otherFailedChecks(row, patch.keys()).length)) return null;
+  const [s] = slips;
+  const how = reach[s.truth] === 'seen' ? 'a text reply showed' : 'no text reply carried, beside an image reply that could have shown it';
+  return (
+    `${s.path} claims ${JSON.stringify(s.claim)}, one slip from the truth ${JSON.stringify(s.truth)} ${how}` +
+    (regraded ? ', and the row passes with it' : '')
+  );
+}
+
 // This attempt's truth reached none of its replies, while a peer that passed
 // found its own truth in its replies: mid-flight-rate's rate lived only in a
 // response body that firefox-devtools-mcp's get_network_request never
@@ -465,7 +520,7 @@ export function failureClass(
   const truth = state ? truthValues(state, task) : [];
   const rec = events ? reachRecorderOf(events) : null;
   const values = [...new Set([...graded, ...truth])];
-  const reach = rec && values.length ? rec.reach(values, { truth }) : {};
+  const reach = rec && values.length ? rec.reach(values, { truth, state }) : {};
   // The row's own record is what the recorder that wrote it saw; a transcript
   // is re-read with today's, which decodes a script result's JSON escapes.
   const cut = events ? Object.keys(reach).filter((v) => reach[v] === 'truncated') : row.surface?.truncated ?? [];
@@ -477,6 +532,7 @@ export function failureClass(
   // makes it the surface's; an agent can shorten a value it saw whole.
   const copiedCuts = rec ? graded.filter((v) => CUT_TAIL.test(v) && rec.showsCut(v)) : [];
   if (!cut.length && copiedCuts.length) hit('surface-reach', `the answer claimed the surface's cut text: ${JSON.stringify(copiedCuts.slice(0, 3))}`);
+  if (events) hit('transcription', transcriptionEvidence(row, truth, reach, task, state));
 
   const signature = failureSignature(row);
   const alike = peers.filter((p, i) => {

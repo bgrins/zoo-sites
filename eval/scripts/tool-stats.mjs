@@ -14,7 +14,7 @@
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createCallRecorder, malformedUid, NO_SUCH_TOOL, scriptSleeps, STALE, withCodeMode } from '../mcp-tap.mjs';
+import { createCallRecorder, malformedUid, NO_SUCH_TOOL, scriptedWrite, scriptSleeps, STALE, withCodeMode } from '../mcp-tap.mjs';
 import { rowEvents, SURFACE_SERVER, toolCalls } from './events.mjs';
 import { codeModeOf } from './row-evidence.mjs';
 
@@ -112,7 +112,7 @@ export function rowToolStats(events, { server = SURFACE_SERVER } = {}) {
     line_cut: 0, dom_truncated: 0, sizes: [],
   };
   const friction = {
-    actions: 0, act_then_snap: 0, clicks: 0, click_then_snap: 0, eval_calls: 0,
+    actions: 0, act_then_snap: 0, clicks: 0, click_then_snap: 0, eval_calls: 0, scripted_writes: 0,
     eval_after_cut: 0, eval_straight_after_cut: 0, eval_recovers_cut: 0, stale_uid: 0, malformed_uid: 0, restarts: 0,
     browser_lost: 0, sleeps: 0, script_sleeps: 0,
     unknown_tools: calls.filter((c) => c.server === server && unknown(c)).length,
@@ -120,6 +120,7 @@ export function rowToolStats(events, { server = SURFACE_SERVER } = {}) {
   const signatures = Object.fromEntries(Object.keys(SIGNATURES).map((k) => [k, 0]));
   let lastCut = [];
   let lastSnapshotId = 0;
+  let malformedStale = 0;
   surface.forEach((c, i) => {
     const prev = surface[i - 1];
     const next = surface[i + 1];
@@ -163,6 +164,7 @@ export function rowToolStats(events, { server = SURFACE_SERVER } = {}) {
         if (recoversCut(c.text, lastCut)) friction.eval_recovers_cut++;
       }
       friction.script_sleeps += scriptSleeps(c.detail);
+      if (scriptedWrite(c.tool, c.args)) friction.scripted_writes++;
     }
     if (RESTART_TOOL.test(c.tool)) friction.restarts++;
     if (WAIT_TOOL.test(c.tool)) friction.sleeps++;
@@ -170,11 +172,15 @@ export function rowToolStats(events, { server = SURFACE_SERVER } = {}) {
       if (re.test(c.text)) signatures[k]++;
     }
     // firefox-devtools-mcp answers a malformed uid ("uid=1_59") with its
-    // stale text (mcp-tap.mjs malformedUid).
-    if (c.isError && SIGNATURES.staleUid.test(c.text) && malformedUid(c.args)) friction.malformed_uid++;
+    // stale text, playwright-mcp a malformed ref with a selector error
+    // (mcp-tap.mjs malformedUid); only the former comes out of stale_uid.
+    if (c.isError && malformedUid(c.args)) {
+      friction.malformed_uid++;
+      if (SIGNATURES.staleUid.test(c.text)) malformedStale++;
+    }
   });
   friction.sleeps += friction.script_sleeps;
-  friction.stale_uid = signatures.staleUid - friction.malformed_uid;
+  friction.stale_uid = signatures.staleUid - malformedStale;
   friction.browser_lost = signatures.browserLost;
   const shell = calls.filter((c) => c.tool === 'shell' || c.tool === 'Bash');
   friction.sleeps += shell.filter((c) => /(^|[;&|\s])sleep\s+\d/.test(c.detail)).length;
@@ -284,11 +290,11 @@ export function formatConditionStats(condition, t) {
     );
   }
   lines.push(
-    `   scripts: ${fr.eval_calls ?? 0} calls in ${t.script_rows} rows; after an earlier snapshot in the row cut some value ` +
+    `   scripts: ${fr.eval_calls ?? 0} calls in ${t.script_rows} rows, ${fr.scripted_writes ?? 0} of them writing the page; after an earlier snapshot in the row cut some value ` +
       `${fr.eval_after_cut ?? 0} (straight after it ${fr.eval_straight_after_cut ?? 0}); returned a cut value in full ${fr.eval_recovers_cut ?? 0}`,
     `   action then snapshot: ${fr.act_then_snap ?? 0}/${fr.actions ?? 0} (${pct(fr.act_then_snap, fr.actions)}); ` +
       `click then snapshot ${fr.click_then_snap ?? 0}/${fr.clicks ?? 0} (${pct(fr.click_then_snap, fr.clicks)})`,
-    `   stale uid ${fr.stale_uid ?? 0}, malformed uid ${fr.malformed_uid ?? 0}, restarts ${fr.restarts ?? 0}, browser lost ${fr.browser_lost ?? 0}, ` +
+    `   stale uid ${fr.stale_uid ?? 0}, malformed uid or ref ${fr.malformed_uid ?? 0}, restarts ${fr.restarts ?? 0}, browser lost ${fr.browser_lost ?? 0}, ` +
       `timeouts ${t.signatures.timeout ?? 0}, empty dialog errors ${t.signatures.emptyDialogError ?? 0}, waits ${fr.sleeps ?? 0}, ` +
       `calls to tools the server lacks ${fr.unknown_tools ?? 0}` +
       (fr.tool_search ? `, tool discovery ${fr.tool_search}` : '') +

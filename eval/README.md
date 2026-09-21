@@ -477,11 +477,19 @@ verbatim, and fewer than half of the value's words are in the quote, because
 validators grade values. `surface-reach`, a tool class, fires only when a graded or
 truth value reached the agent truncated, or when a claimed value is a cut a reply
 showed, ending in its `...` (news-extract's and modal-escape's titles); a value the
-agent shortened itself, from a reply that showed it whole, is not. A truth value that
-no tool reply carried at all is listed as the contributing signal `minted-absent`,
-because an agent that never opened the page leaves the same trace as a surface that
-omitted the value, and one no text reply carried on a row whose replies held an image
-is listed as `image-only`, with the peer comparison read as text alone.
+agent shortened itself, from a reply that showed it whole, is not. `transcription`, an
+agent class, fires next, on a claimed code one slip from a truth that a text reply
+showed or that an image reply could have shown: one character dropped, added or
+changed, or only characters a screenshot confuses (0 and O, 8 and B, 1 and I). A
+truth under six characters or without both a letter and a digit is not tested, and a
+row the validator still fails with the truth in the claim's place is not a slip.
+resend-receipt's `CR-2026-26B0` against a listing that showed `CR-2026-26B0E`, and
+hovercard-oncall's `PG-881956` read off a screenshot of `PG-8B1956`, both fire. A
+truth value that no tool reply carried at all is listed as the contributing signal
+`minted-absent`, because an agent that never opened the page leaves the same trace
+as a surface that omitted the value, and one no text reply carried on a row whose
+replies held an image is listed as `image-only`, with the peer comparison read as
+text alone.
 `surface-absent`, the other tool class, fires instead for a task that names its truth,
 when the other surface under the same backend passed and received its own attempt's
 truth, no arm passed on this surface (a shell-assisted pass counts for neither), and no reply of this row carried any of its
@@ -520,7 +528,16 @@ more with punctuation and whitespace folded, so an answer that joins two page li
 with a comma (search-decoy's address) reads as seen. A value absent from every reply's
 text while a reply carried an image reads as `image-only`, ahead of `derived` or
 `paraphrased`, since a screenshot may have shown it (flaky-retry's total, room-booking's
-PCR-076981). A GUESSED pass in report.md needs the cut value to be what passed the row:
+PCR-076981). Given the attempt's state, as `surface-reach.mjs` and triage read a
+stored run, a value whose page the state names needs an image reply at or after a
+load of that page: the object that holds the value also holds a string that the
+ledger shows in a request path, as a pdf-bill bill's token is in its PDF's URL, so a
+bill the agent never opened reads as `absent`. A value whose page the state does not
+name, and every value on the row run.mjs records, which it reads without the state,
+needs only an image reply somewhere in the row. playwright-mcp's
+`### Ran Playwright code` section is not read at all: it echoes the agent's own
+input, and pdf-bill's `fill('GW-B-A034C4')` read as the bill number reaching the
+agent. A GUESSED pass in report.md needs the cut value to be what passed the row:
 report.mjs re-runs the validator with the value cut back to the opening the surface
 showed, and a row that still passes, such as embargo-wait, graded on the headline's
 company names, is not guessed. `surface.absent` leaves out an answer value the agent
@@ -541,7 +558,17 @@ counts of actions that replied success and did not land, the detail keys ending 
 `NoOps`, `noops` or `misses`; a miss also counts values the agent got wrong, so the
 count is an upper bound on no-ops. `stale_uid` leaves out
 `malformed_uid`, the calls whose uid argument firefox-devtools-mcp cannot parse
-(`uid=1_59`), which it answers with its stale text. `snapshot.chars` counts the snapshot
+(`uid=1_59`), which it answers with its stale text. On playwright-mcp `malformed_uid`
+counts a ref pasted with its wrapper (`[ref=e27]`, `ref=e29`, a whole snapshot line),
+which it reads as a selector and fails with a selector error, so there it takes
+nothing from `stale_uid`. `scripted_writes` counts the script calls
+(`evaluate_script`, `browser_evaluate`, the page functions inside
+`browser_run_code`) that wrote the page themselves: they assign a control's value,
+selected or checked state, or call `click()`, `submit()`, `requestSubmit()` or
+`dispatchEvent()`. It grades nothing; it shows a pass that went around the surface's
+action tools, as every devtools native-permit row did for its datetimes and its
+multi-select. A codex exec cell reaches the page only through the calls it makes,
+which its stream shows one by one, so those are what it reads. `snapshot.chars` counts the snapshot
 files an agent read back through the Read tool or its shell (`snapshot.file_reads`,
 `file_chars`), since playwright-mcp's action replies link a snapshot file rather than
 print it; `output_file_reads` counts the other files a surface wrote that the agent
@@ -550,7 +577,8 @@ tool the row's own server lacks is `unknown_tools`; a row without `malformed_uid
 written by an older recorder, counted both as foreign, so readers count
 `foreign_servers` (`identity.mjs` `foreignCallsOf`). An Agent SDK row records `api_retries` and `api_retry_s`, the SDK's
 own retries of a failed API request and the waits they added to wall time. The report
-prints `harness_truncated` and `noops` per row, and the A/B mechanism table prints every one of these per condition, with
+prints `harness_truncated`, `noops` and `scripted_writes` per row, and
+`scripted_writes` per task in the medians table; the A/B mechanism table prints every one of these per condition, with
 `n/a` for harness cuts when no row carries `code_mode`.
 
 ## The transcript judge

@@ -98,7 +98,7 @@ function spanOf(values, digits = 0) {
   return `${fmt(med)} (${fmt(v[0])}-${fmt(v.at(-1))})`;
 }
 
-function medianLines(results) {
+function medianLines(results, runDir = null) {
   const groups = new Map();
   for (const r of results) {
     const key = `${r.condition}|${r.task}`;
@@ -110,10 +110,11 @@ function medianLines(results) {
     '## Per-task medians across repeats',
     '',
     'Each cell is `median (min-max)`. `spread` is max/min output tokens: >2 means',
-    'a single sample of that task is not trustworthy.',
+    'a single sample of that task is not trustworthy. `scripted writes` sums the script',
+    'calls that wrote the page themselves rather than through the surface\'s action tools.',
     '',
-    '| condition | task | pass | turns | output | cost (USD) | wall (s) | api (s) | spread |',
-    '|---|---|---|---|---|---|---|---|---|',
+    '| condition | task | pass | turns | output | cost (USD) | wall (s) | api (s) | spread | scripted writes |',
+    '|---|---|---|---|---|---|---|---|---|---|',
   ];
   for (const [key, rs] of groups) {
     const [condition, task] = key.split('|');
@@ -127,12 +128,14 @@ function medianLines(results) {
     const spread = outs.length > 1 && lo > 0 ? (Math.max(...outs) / lo).toFixed(1) + 'x' : '';
     const infra = valid.length - graded.length;
     const invalid = rs.length - valid.length;
+    const writes = valid.map((r) => frictionOf(r, runDir).scripted_writes);
     lines.push(
       `| ${condition} | ${task} | ${passed}/${graded.length}` +
         `${infra ? ` (+${infra} infra)` : ''}${invalid ? ` (+${invalid} invalid)` : ''} | ` +
         `${spanOf(valid.map((r) => r.turns))} | ${spanOf(outs)} | ` +
         `${spanOf(valid.map((r) => r.cost_usd), 4)} | ${spanOf(valid.map((r) => r.wall_s), 1)} | ` +
-        `${spanOf(valid.map((r) => r.api_s), 1)} | ${spread} |`
+        `${spanOf(valid.map((r) => r.api_s), 1)} | ${spread} | ` +
+        `${writes.some((w) => w != null) ? writes.reduce((n, w) => n + (w ?? 0), 0) : 'n/a'} |`
     );
   }
   const unstable = [...groups.entries()].filter(([, rs]) => {
@@ -165,10 +168,13 @@ const short = (h) => (h ? String(h).slice(0, 12) : '?');
 // is re-read with script_sleeps, which it has counted since 2026-09-20, and
 // `stale_uid` with malformed_uid: a row without malformed_uid counted a
 // malformed uid's reply as stale. api_retries is only on an Agent SDK row.
+// malformed_uid is re-read with scripted_writes, since a row without it
+// counted no playwright-mcp malformed ref.
 const NEW_FRICTION = {
   tool_search: ['tool_search', 'tool_search_turns', 'tool_search_output_tokens', 'persisted', 'persisted_other', 'unknown_tools'],
   script_sleeps: ['script_sleeps', 'sleeps'],
   malformed_uid: ['malformed_uid', 'stale_uid', 'output_file_reads', 'output_file_chars', 'api_retries', 'api_retry_s'],
+  scripted_writes: ['scripted_writes', 'malformed_uid', 'stale_uid'],
 };
 const DERIVED = new WeakMap();
 function derivedOf(row, runDir) {
@@ -567,7 +573,7 @@ function sumRowTools(rows, runDir = null) {
     },
     friction: Object.fromEntries(
       [
-        'act_then_snap', 'actions', 'eval_calls', 'stale_uid', 'malformed_uid', 'restarts', 'sleeps', 'persisted',
+        'act_then_snap', 'actions', 'eval_calls', 'scripted_writes', 'stale_uid', 'malformed_uid', 'restarts', 'sleeps', 'persisted',
         'persisted_other', 'unknown_tools', 'tool_search', 'harness_truncated', 'noops', 'output_file_reads',
         'api_retries', 'api_retry_s',
       ].map(
@@ -611,10 +617,10 @@ function toolLines(results, runDir) {
     const bits = [
       sn.calls != null &&
         `snapshots ${sn.calls} (${na(sn.chars)} chars${sn.file_reads ? `, ${sn.file_chars} of them from ${sn.file_reads} snapshot file(s) read back` : ''}, ${na(sn.truncated)} with a cut)`,
-      fr.eval_calls != null && `script calls ${fr.eval_calls}`,
+      fr.eval_calls != null && `script calls ${fr.eval_calls}${fr.scripted_writes ? ` (${fr.scripted_writes} writing the page)` : ''}`,
       fr.act_then_snap != null && `action then snapshot ${fr.act_then_snap}${fr.actions ? `/${fr.actions}` : ''}`,
       fr.stale_uid != null && `stale uid ${fr.stale_uid}`,
-      fr.malformed_uid ? `malformed uid ${fr.malformed_uid} (the tool replies with its stale text)` : null,
+      fr.malformed_uid ? `malformed uid or ref ${fr.malformed_uid}` : null,
       fr.output_file_reads ? `other surface files read back ${fr.output_file_reads}` : null,
       fr.api_retries ? `API retries ${fr.api_retries} (${Math.round(fr.api_retry_s ?? 0)} s waited)` : null,
       fr.restarts != null && `restarts ${fr.restarts}`,
@@ -1136,7 +1142,8 @@ export function markdownReport({ meta, results: stored, totals: given, runDir = 
       fr.persisted || fr.persisted_other ? `SPILLED ${(fr.persisted ?? 0) + (fr.persisted_other ?? 0)} result(s) to <persisted-output>` : '',
       fr.harness_truncated ? `HARNESS TRUNCATED ${fr.harness_truncated} tool output(s) before the model read them` : '',
       noopsOf(r)?.count ? `NO-OPS OR MISSES ${noopsOf(r).keys.join(', ')}` : '',
-      fr.malformed_uid ? `${fr.malformed_uid} malformed uid(s) the tool called stale` : '',
+      fr.malformed_uid ? `${fr.malformed_uid} malformed uid(s) or ref(s)` : '',
+      fr.scripted_writes ? `SCRIPTED WRITES ${fr.scripted_writes} script call(s) wrote the page` : '',
       fr.api_retries ? `API RETRIES ${fr.api_retries} (${fr.api_retry_s} s waited, in wall time)` : '',
     ].filter(Boolean);
     const body =
@@ -1150,7 +1157,7 @@ export function markdownReport({ meta, results: stored, totals: given, runDir = 
     );
   }
   if (meta.repeat) {
-    lines.push(...medianLines(results));
+    lines.push(...medianLines(results, runDir));
   }
   lines.push('', '## Answers (truncated)', '');
   for (const r of results) {

@@ -118,6 +118,30 @@ const probe = await probeServer({
       .join('')
   ),
   '/hover': page('Hover', `<button onmouseover="document.body.dataset.r = 'hovered'">Hover me</button>`),
+  // pointer-drag's desk: every move empties the list and builds it again.
+  '/rerender': page(
+    'Re-render',
+    `<ul id="list"></ul><script>
+     let order = ['ALPHA', 'BRAVO', 'CHARLIE'];
+     const list = document.getElementById('list');
+     function render() {
+       list.textContent = '';
+       order.forEach((name, i) => {
+         const li = document.createElement('li');
+         const up = document.createElement('button');
+         up.textContent = 'Up';
+         up.setAttribute('aria-label', 'Move up ' + name);
+         up.onclick = () => { if (i) { order.splice(i - 1, 0, order.splice(i, 1)[0]); render(); } };
+         const more = document.createElement('button');
+         more.textContent = 'More';
+         more.setAttribute('aria-label', 'More actions for ' + name);
+         more.onclick = () => { document.body.dataset.r = 'menu-' + name; };
+         li.append(name, up, more);
+         list.append(li);
+       });
+     }
+     render();</script>`
+  ),
   '/link': page('Link', '<a href="/landed">Go to landing</a>'),
   '/landed': page('Landed', '<h1>landed-page</h1>'),
   '/console': page('Console', `<p>console</p><script>function inner() { throw new Error('boom-8812'); } setTimeout(() => inner(), 10);</script>`),
@@ -471,6 +495,22 @@ const PROBES = [
       return { error: r.startsWith('ERROR'), hovered: (await evaluate(() => document.body.dataset.r ?? null)) === 'hovered' };
     },
     holds: (v) => v.error && !v.hovered,
+  },
+  {
+    // pointer-drag, Haiku fdm r1: click_by_uid 30_91, "More actions for
+    // CABLE" in snapshot 30, opened DREDGING's menu once a move had rebuilt
+    // the list, and stale_uid stayed 0.
+    id: 'uid-after-rerender',
+    claim: "a uid taken before a re-render clicks whatever element holds its place in the rebuilt list, and replies success",
+    async measure({ go, snap, call, evaluate, uid }) {
+      await go('/rerender');
+      const s = await snap();
+      await call('click_by_uid', { uid: uid(s, /button "Move up CHARLIE"/) });
+      const order = await evaluate(() => [...document.querySelectorAll('#list li')].map((li) => li.firstChild.textContent));
+      const r = await call('click_by_uid', { uid: uid(s, /button "More actions for CHARLIE"/) });
+      return { order, reply: r.slice(0, 60), error: r.startsWith('ERROR'), clicked: await evaluate(() => document.body.dataset.r ?? null) };
+    },
+    holds: (v) => !v.error && v.clicked === 'menu-BRAVO',
   },
   {
     id: 'click-reply',

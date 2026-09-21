@@ -153,18 +153,73 @@ export const STALE = /stale\/invalid|from a stale snapshot|invalid or from an ol
 // tells them apart: the tool's validateUid wants a snapshot number before the
 // first underscore, which parseInt must read. Every string under a key ending
 // in "uid" (uid, fromUid, toUid, a fill_form_by_uid element's uid) is tested.
+// playwright-mcp's equivalent is a ref pasted with its wrapper under a target
+// or ref key (target, startTarget, a browser_fill_form field's target):
+// roster's "ref=e29", cabin-dates' whole snapshot line ending "[ref=e90]". It
+// reads any target that is no bare ref as a selector and fails it with a
+// selector error, never its stale text, so on that surface the count adds to
+// the errors without taking any from stale_uid.
+const PW_REF = /^(?:f\d+)?e\d+$/;
+const PW_REF_INSIDE = /(?<![A-Za-z0-9])(?:f\d+)?e\d+(?![A-Za-z0-9])/;
 export function malformedUid(input) {
   const bad = (uid) => {
     const [head, ...rest] = String(uid).split('_');
     return !rest.length || !head || Number.isNaN(parseInt(head, 10));
   };
+  const badRef = (ref) => !PW_REF.test(ref) && PW_REF_INSIDE.test(ref);
   const walk = (node, key = '') => {
-    if (typeof node === 'string') return /uid$/i.test(key) && bad(node);
+    if (typeof node === 'string') return (/uid$/i.test(key) && bad(node)) || (/^(?:start|end)?(?:target|ref)$/i.test(key) && badRef(node));
     if (Array.isArray(node)) return node.some((v) => walk(v, key));
     if (node && typeof node === 'object') return Object.entries(node).some(([k, v]) => walk(v, k));
     return false;
   };
   return walk(input);
+}
+// A script call that writes the page itself rather than through the
+// surface's action tools: it assigns a control's value, selected or checked
+// state, calls a value setter directly, or clicks, submits or dispatches an
+// event. native-permit's devtools rows set the closure datetimes and the
+// street multi-select this way after fill_form_by_uid failed them silently.
+// A Playwright script (browser_run_code) drives trusted input through its
+// locators, so only its page functions count: the arguments of evaluate,
+// evaluateAll, evaluateHandle, $eval and $$eval. A codex code-mode exec
+// cell reaches the page only through the tool calls it makes, which its
+// stream shows as calls of their own, so those are what is read.
+const SCRIPT_WRITE =
+  /\.(?:value|selected|checked|selectedIndex)\s*\+?=(?!=)|\.set\.call\(|\.(?:click|submit)\(\s*\)|\.(?:requestSubmit|dispatchEvent)\(/;
+const PAGE_FUNCTION = /(?<![\w$])(?:evaluate(?:All|Handle)?|\$\$?eval)\s*\(/g;
+// The text of each call PAGE_FUNCTION opens, up to its closing parenthesis,
+// with the parentheses inside string literals skipped.
+function pageFunctions(code) {
+  const out = [];
+  for (const m of code.matchAll(PAGE_FUNCTION)) {
+    const start = m.index + m[0].length;
+    let depth = 1;
+    let quote = null;
+    let i = start;
+    for (; i < code.length && depth; i++) {
+      const ch = code[i];
+      if (quote) {
+        if (ch === '\\') i++;
+        else if (ch === quote) quote = null;
+      } else if (ch === '"' || ch === "'" || ch === '`') quote = ch;
+      else if (ch === '(') depth++;
+      else if (ch === ')') depth--;
+    }
+    out.push(code.slice(start, i));
+  }
+  return out.join('\n');
+}
+export function scriptedWrite(tool, input) {
+  if (!EVAL_TOOL.test(tool ?? '')) return false;
+  const strings = [];
+  const walk = (node) => {
+    if (typeof node === 'string') strings.push(node);
+    else if (node && typeof node === 'object') Object.values(node).forEach(walk);
+  };
+  walk(input);
+  const source = strings.join('\n');
+  return SCRIPT_WRITE.test(/^browser_run_code/.test(tool) ? pageFunctions(source) : source);
 }
 // A script that sleeps before it reads: setTimeout(callback, ms) with a literal
 // delay or a product of literals (5 * 1000), Playwright's waitForTimeout(ms), or
@@ -387,6 +442,7 @@ export function createCallRecorder(surface) {
       args: json.slice(0, ERROR_KEEP),
       ...(EVAL_TOOL.test(tool ?? '') ? { sleeps: scriptSleeps(json) } : {}),
       ...(malformedUid(input) ? { malformedUid: true } : {}),
+      ...(scriptedWrite(tool, input) ? { scriptedWrite: true } : {}),
       ...(typeof input?.filename === 'string' ? { saves: input.filename } : typeof input?.saveTo === 'string' ? { saves: input.saveTo } : {}),
     };
   };
@@ -593,6 +649,9 @@ export function createCallRecorder(surface) {
           actions,
           act_then_snap: actThenSnap,
           eval_calls: own.filter((c) => EVAL_TOOL.test(c.tool)).length,
+          // The script calls among eval_calls that wrote the page themselves
+          // (scriptedWrite). Ungraded: a pass that needed them still passed.
+          scripted_writes: own.filter((c) => c.scriptedWrite).length,
           // A stale reply to a call whose uid was malformed is malformed_uid.
           stale_uid: own.filter((c) => c.stale && !c.malformedUid).length,
           malformed_uid: own.filter((c) => c.isError && c.malformedUid).length,

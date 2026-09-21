@@ -624,6 +624,7 @@ export function abReport(input, options = {}) {
       const per = (x, d = 2) => (x == null ? 'n/a' : fmt(x / side.rows, d));
       return {
         scripts: per(fr('eval_calls')),
+        scriptedWrites: per(fr('scripted_writes')),
         actSnap: fr('act_then_snap'),
         actions: fr('actions'),
         snapChars: per(sn('chars'), 0),
@@ -653,12 +654,13 @@ export function abReport(input, options = {}) {
       '| mechanism, per row | A | B |',
       '|---|---|---|',
       `| script calls | ${ma.scripts} | ${mb.scripts} |`,
+      `| script calls that wrote the page (ungraded) | ${ma.scriptedWrites} | ${mb.scriptedWrites} |`,
       `| action followed by a snapshot | ${rate(ma)} | ${rate(mb)} |`,
       `| snapshot characters, snapshot files read back included | ${ma.snapChars} | ${mb.snapChars} |`,
       `| snapshot files read back | ${ma.fileReads} | ${mb.fileReads} |`,
       `| snapshots with a cut | ${ma.cut} | ${mb.cut} |`,
       `| stale-uid replies | ${ma.stale} | ${mb.stale} |`,
-      `| malformed uids the tool called stale | ${ma.malformed} | ${mb.malformed} |`,
+      `| malformed uids or refs | ${ma.malformed} | ${mb.malformed} |`,
       `| browser restarts | ${ma.restarts} | ${mb.restarts} |`,
       `| waits and sleeps | ${ma.sleeps} | ${mb.sleeps} |`,
       `| tool discovery calls | ${ma.discovery} | ${mb.discovery} |`,
