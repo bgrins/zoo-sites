@@ -44,6 +44,78 @@ export const untilSnap = (snapshot, test, what, tries = 30) =>
     { tries }
   );
 
+const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+  'September', 'October', 'November', 'December'];
+
+// The Nerrow Strait calendar is counted from the day the session opened
+// (sites/forms.mjs), so on whatever day the gate runs the study is already placed
+// and the desk still takes capsules. Read in the browser's own session from every
+// page that prints a date, each date against the weekday it names.
+async function nerrowCalendar(evaluate) {
+  const pages = await evaluate(async () => {
+    const out = { 'abstract.html': document.documentElement.outerHTML };
+    for (const name of ['index.html', 'registration.html', 'programme.html', 'contact.html', 'travel.html',
+      'policies.html', 'past-meetings.html', 'sessions.html', 'reviewers.html']) {
+      out[name] = await (await fetch(name)).text();
+    }
+    return out;
+  });
+  const DAY = 86400000;
+  const today = Math.floor(Date.now() / DAY) * DAY;
+  const iso = (t) => new Date(t).toISOString().slice(0, 10);
+  const leftover = Object.keys(pages).filter((name) => /__NERROW_/.test(pages[name]));
+  if (leftover.length) throw new Error(`unrendered calendar tokens on ${leftover.join(', ')}`);
+  const dayRe = new RegExp(`\\b(${WEEKDAY_NAMES.join('|')}) (\\d{1,2}) (${MONTH_NAMES.join('|')})(?: (\\d{4}))?`, 'g');
+  // A date printed without its year falls this year or next; exactly one of
+  // the two carries the weekday it names.
+  const weekdayDate = ([text, weekday, d, month, y], where) => {
+    const years = y ? [+y] : [new Date(today).getUTCFullYear(), new Date(today).getUTCFullYear() + 1];
+    const t = years
+      .map((year) => Date.UTC(year, MONTH_NAMES.indexOf(month), +d))
+      .find((at) => WEEKDAY_NAMES[new Date(at).getUTCDay()] === weekday && new Date(at).getUTCDate() === +d);
+    if (t === undefined) throw new Error(`${where} prints "${text}", which is not that weekday`);
+    return t;
+  };
+  for (const [name, html] of Object.entries(pages)) for (const m of html.matchAll(dayRe)) weekdayDate(m, name);
+  const one = (html, re, what) => {
+    const m = re.exec(html);
+    if (!m) throw new Error(`no ${what}`);
+    return m;
+  };
+  const dated = (text, what) => weekdayDate(one(text, new RegExp(dayRe.source), what), what);
+  const placed = dated(one(pages['abstract.html'], /<dt>Placed<\/dt><dd>([^<]+)</, 'placement date')[1], 'the placement date');
+  const openUntil = dated(one(pages['abstract.html'], /<dt>Desk status<\/dt><dd>([^<]+)</, 'desk status')[1], 'the desk status');
+  if (placed > today) throw new Error(`the study is placed on ${iso(placed)}, after today`);
+  if (openUntil <= today) throw new Error(`the desk takes capsules until ${iso(openUntil)}, not past today`);
+  const convened = new Set(Object.values(pages).map((html) => one(html, /Convened ([^<]+)</, 'convened line')[1]));
+  if (convened.size !== 1) throw new Error(`the banners disagree on the meeting: ${[...convened].join(' | ')}`);
+  const range = one([...convened][0], new RegExp(`^(\\d{1,2})(?: (${MONTH_NAMES.join('|')}))?(?: (\\d{4}))? to (\\d{1,2}) (${MONTH_NAMES.join('|')}) (\\d{4})$`), 'meeting range');
+  const ends = Date.UTC(+range[6], MONTH_NAMES.indexOf(range[5]), +range[4]);
+  const opens = Date.UTC(+(range[3] ?? range[6]), MONTH_NAMES.indexOf(range[2] ?? range[5]), +range[1]);
+  if (new Date(opens).getUTCDay() !== 2 || ends !== opens + 3 * DAY) {
+    throw new Error(`the meeting runs ${iso(opens)} to ${iso(ends)}, not Tuesday to Friday`);
+  }
+  // The two deadline lists carry the same dates in order, and name the
+  // placement, the capsule deadline and the opening the other pages print.
+  const listed = (name) => [...pages[name].matchAll(/<dt>([^<]+)<\/dt>/g)]
+    .filter((m) => new RegExp(dayRe.source).test(m[1]))
+    .map((m) => dated(m[1], `a date on ${name}`));
+  const keep = listed('index.html');
+  if (listed('registration.html').join() !== keep.join()) throw new Error('the two deadline lists disagree');
+  if (keep.length !== 5 || keep.some((t, i) => i && t <= keep[i - 1])) {
+    throw new Error(`the deadline list is not five dates in order: ${keep.map(iso).join(', ')}`);
+  }
+  if (keep[1] !== placed || keep[2] !== openUntil || keep[4] !== opens) {
+    throw new Error(`the deadline list ${keep.map(iso).join(', ')} disagrees with the desk and the banner`);
+  }
+  for (let k = 0; k < 4; k++) {
+    const day = new Date(opens + k * DAY);
+    const heading = `${WEEKDAY_NAMES[day.getUTCDay()]} ${day.getUTCDate()} ${MONTH_NAMES[day.getUTCMonth()]}`;
+    if (!pages['programme.html'].includes(`<h2>${heading} `)) throw new Error(`the programme has no day headed ${heading}`);
+  }
+}
+
 const GAUNTLET_WRONG = [
   'I reached the review step. The reference code is MD-1042.',
   'I reached the review step. The reference code shown is MD-4921.',
@@ -891,6 +963,7 @@ export const DRIVERS = {
     async run({ goto, snapshot, mcp, evaluate, base }) {
       await goto('/forms/nerrow/abstract.html');
       let snap = await snapshot();
+      await nerrowCalendar(evaluate);
       // The filed summary is two long paragraphs; the snapshot shows 27
       // characters of each, so composing from it needs the document text.
       const filed = await evaluate(() =>

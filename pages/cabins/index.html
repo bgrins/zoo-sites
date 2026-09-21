@@ -161,7 +161,7 @@
   <section id="rates">
     <h2>Rates and season notes</h2>
     <div class="plaque">
-      <p id="rate-line">Autumn rate loading</p>
+      <p id="rate-line">Season rate loading</p>
       <p id="window-line">Season window loading</p>
     </div>
     <ul>
@@ -239,10 +239,8 @@
 </footer>
 <script>
 const NONCE = '__SESSION_NONCE__';
-const MONTHS = [
-  { y: 2026, m: 8, name: 'September 2026' },
-  { y: 2026, m: 9, name: 'October 2026' },
-];
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+let MONTHS = [];
 const SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const iso = (y, m, d) =>
@@ -413,9 +411,16 @@ async function load() {
   const data = await res.json();
   rate = data.rate;
   blackouts = new Set(data.blackouts);
-  el('rate-line').textContent = 'Autumn rate: £' + data.rate + ' a night';
+  el('rate-line').textContent = 'Season rate: £' + data.rate + ' a night';
   el('window-line').textContent =
     'Booking window: ' + data.window.from + ' to ' + data.window.to;
+  MONTHS = [];
+  const [fy, fm] = data.window.from.split('-').map(Number);
+  const [ty, tm] = data.window.to.split('-').map(Number);
+  for (let k = fy * 12 + fm - 1; k <= ty * 12 + tm - 1; k++) {
+    const y = Math.floor(k / 12);
+    MONTHS.push({ y, m: k % 12, name: MONTH_NAMES[k % 12] + ' ' + y });
+  }
   if (data.confirmed) showConfirmed(data.confirmed);
   render();
 }

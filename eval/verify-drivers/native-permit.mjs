@@ -1,11 +1,11 @@
 // pages/events/ - Ivrelby Borough Council events office (native-permit).
-import { ANSWERS } from '../answers.mjs';
 import { addSession, bumpCode, clickToPath, findSession, straySession, textOf, uidOf, until } from './lib.mjs';
 
 // The window firefox-devtools-mcp 0.9.15 stored for an ISO fill of 07:30 and
-// 19:45 on the pack's date (eval/spikes/native-permit.mjs), and the office's
-// own rendering of it. The wrong cases use these constants rather than the
-// live run, so a tool release that fixes the fill leaves the gate sound.
+// 19:45 on the pack's date, then 2027-07-17 (eval/spikes/native-permit.mjs),
+// and the office's own rendering of it. The wrong cases use these constants
+// rather than the live run, so a tool release that fixes the fill leaves the
+// gate sound.
 const CORRUPT = {
   start: '7071-02-02T07:07',
   end: '7071-02-02T07:19',
@@ -13,14 +13,22 @@ const CORRUPT = {
   endShown: 'Thu 2 Feb 7071, 07:19',
 };
 
-const date = ANSWERS.nativePermit.date;
-const [Y, M, D] = date.split('-').map(Number);
-const weekday = new Date(Date.UTC(Y, M - 1, D)).getUTCDay();
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const longDay = `${DAYS[weekday]} ${D} ${MONTHS[M - 1]} ${Y}`;
-const shortDay = `${DAYS[weekday].slice(0, 3)} ${D} ${MONTHS[M - 1].slice(0, 3)} ${Y}`;
-const nextDay = `${DAYS[(weekday + 1) % 7]} ${D + 1} ${MONTHS[M - 1]} ${Y}`;
+
+// The pack's closure day, which sites/events.mjs counts from the day the
+// session opened, in the forms the office and the answer variants write it.
+function packDay(date) {
+  const [Y, M, D] = date.split('-').map(Number);
+  const weekday = new Date(Date.UTC(Y, M - 1, D)).getUTCDay();
+  const nth = `${D}${[11, 12, 13].includes(D) ? 'th' : ['th', 'st', 'nd', 'rd'][D % 10] ?? 'th'}`;
+  return {
+    date, Y, M, D, weekday, nth,
+    longDay: `${DAYS[weekday]} ${D} ${MONTHS[M - 1]} ${Y}`,
+    shortDay: `${DAYS[weekday].slice(0, 3)} ${D} ${MONTHS[M - 1].slice(0, 3)} ${Y}`,
+    nextDay: `${DAYS[(weekday + 1) % 7]} ${D + 1} ${MONTHS[M - 1]} ${Y}`,
+  };
+}
 
 // A datetime-local value in the order firefox-devtools-mcp has to type it:
 // fill_by_uid sends keystrokes, and Firefox's en-US control reads them as
@@ -64,7 +72,8 @@ export const DRIVERS = {
         'contact-email': strayPack.contactEmail,
       });
       strayForm.append('street', 'abrill-street');
-      for (const [k, v] of [['start', `${date}T08:00`], ['end', `${date}T20:00`], ['quiet', '19:00'], ['equipment', 'GEN-13P']]) {
+      const strayDate = deskOf((d) => d.brief?.packRef === strayPack.packRef).brief.date;
+      for (const [k, v] of [['start', `${strayDate}T08:00`], ['end', `${strayDate}T20:00`], ['quiet', '19:00'], ['equipment', 'GEN-13P']]) {
         strayForm.append(k, v);
       }
       const strayApply = await fetch(`${ctx.pages.url}/events/apply.html`, {
@@ -103,26 +112,33 @@ export const DRIVERS = {
       const streets = pack['Streets to close'];
       const [from, to] = pack['Road closed'].split(' to ');
       const soundOff = pack['Amplified sound off by'];
+      const packRef = (await evaluate(() => document.getElementById('pack-ref').textContent)).replace(/^Pack /, '');
+      const session = [...state.sessions.values()].find((s) => s.permitDesk?.brief?.packRef === packRef);
+      const brief = session?.permitDesk.brief;
+      if (!brief) throw new Error('the browser session has no pack server-side');
+      const { date, Y, M, D, weekday, nth, longDay, shortDay, nextDay } = packDay(brief.date);
       if (pack.Date !== longDay || streets?.length !== 4) {
         throw new Error(`unexpected pack ${JSON.stringify(pack)}`);
       }
-      // The office asks for eight weeks' notice (street-closures.html), so a run
-      // inside that window applies late for the pack's closure. Recorded, not
-      // enforced: the wall clock must not turn the gate red on a commit that
-      // changed nothing, so the note starts a quarter early.
-      if (Date.parse(date) < Date.now() + (56 + 90) * 86400000) {
-        console.log(
-          `    native-permit: the pack's closure on ${date} is less than eight weeks ` +
-            'and a quarter ahead: move EVENTS_DATE in sites/events.mjs'
+      // The office asks for eight weeks' notice (street-closures.html), so the
+      // pack's closure is counted from the day the session opened and falls on a
+      // Saturday at least twelve weeks out, on a day of the month from 13 to 27:
+      // above 12, so a numeric date reads one way in either field order, and at
+      // most 27, so the day after it that the wrong cases name is in the same
+      // month. The first such Saturday is at most four weeks past the twelfth.
+      const DAY = 86400000;
+      const opened = Math.floor(session.createdAt / DAY) * DAY;
+      const ahead = (Date.UTC(Y, M - 1, D) - opened) / DAY;
+      if (weekday !== 6 || D < 13 || D > 27 || ahead < 84 || ahead >= 84 + 28) {
+        throw new Error(
+          `the pack's closure on ${date} is not a Saturday from the 13th to the 27th, ` +
+            `twelve to sixteen weeks after the session opened (${ahead} days)`
         );
       }
       // Every value the form needs is on the page.
       for (const value of [...streets, from, to, soundOff, pack.Equipment, pack.Event, pack.Contact, pack['Contact email']]) {
         if (!packSnap.includes(value)) throw new Error(`pack value "${value}" is not in the includeAll snapshot`);
       }
-      const packRef = (await evaluate(() => document.getElementById('pack-ref').textContent)).replace(/^Pack /, '');
-      const brief = deskOf((d) => d.brief?.packRef === packRef)?.brief;
-      if (!brief) throw new Error('the browser session has no pack server-side');
 
       // The equipment phrase names one entry of the published list.
       await goto('/events/street-closures.html');
@@ -280,7 +296,7 @@ export const DRIVERS = {
       this.alsoCorrectFields = [
         fields,
         { permitNumber: permitNumber.toLowerCase() + '.', closureStart: `${date}T${from}`, closureEnd: `${date}T${to}:00` },
-        { permitNumber: `Permit ${permitNumber}`, closureStart: `${longDay.replace(/ (\d+) /, ' $1th ')} at ${h12(from)}`, closureEnd: h12(to) },
+        { permitNumber: `Permit ${permitNumber}`, closureStart: `${longDay.replace(/ (\d+) /, ` ${nth} `)} at ${h12(from)}`, closureEnd: h12(to) },
         { permitNumber, closureStart: typedOrder(`${date}T${from}`), closureEnd: typedOrder(`${date}T${to}`) },
         { permitNumber, closureStart: from, closureEnd: `${to} on ${D}/${mm}/${Y}` },
         { permitNumber, closureStart: `${MONTHS[M - 1]} ${D}, ${Y}, ${h12(from).toUpperCase()}`, closureEnd: `${MONTHS[M - 1]} ${D}, ${Y}, ${h12(to)}` },

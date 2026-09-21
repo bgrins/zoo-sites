@@ -13,6 +13,27 @@ export function lcg(bytes) {
   };
 }
 
+// A date that has to stay ahead of the run is counted in whole days from the UTC
+// day its session opened (hard rule 9 in docs/authoring-fixtures.md).
+export const DAY_MS = 86400000;
+export const utcDay = (ms) => Math.floor(ms / DAY_MS) * DAY_MS;
+
+export const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December'];
+export const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// A UTC day as a British page prints it: "Friday 25 September 2026", with the
+// weekday or the year left off on request.
+export function dayText(ms, { weekday = true, year = true } = {}) {
+  const at = new Date(ms);
+  return [
+    weekday ? WEEKDAY_NAMES[at.getUTCDay()] : null,
+    at.getUTCDate(),
+    MONTH_NAMES[at.getUTCMonth()],
+    year ? at.getUTCFullYear() : null,
+  ].filter((part) => part !== null).join(' ');
+}
+
 // A standing habitat (serve.mjs) never resets state, so a record one session
 // grows on every request needs a ceiling. Telemetry, which a validator may
 // report but never grades, is trimmed oldest-first with pushTrimmed. A record

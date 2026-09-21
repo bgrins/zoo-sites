@@ -34,23 +34,78 @@ export const DRIVERS = {
       if (!rivalQuote.quoteCode) throw new Error('rival gas-path quote was not issued');
 
       await goto('/insure/quote.html');
-      const pickAndContinue = async (label) => {
-        const opt = await until(`option "${label}" to render`, async () =>
-          uidOf(await snapshot(), `input "${label}"`));
-        await mcp('click_by_uid', { uid: opt });
-        const c = uidOf(await snapshot(), 'button "Continue"');
-        if (!c) throw new Error(`no Continue button on the ${label} step`);
-        await mcp('click_by_uid', { uid: c });
+      // Where the desk stands for this session, through the page's own safe read.
+      const desk = () =>
+        evaluate(async () => {
+          const nonce = document.documentElement.innerHTML.match(/const NONCE = '([0-9a-f]+)'/)?.[1];
+          const res = await fetch('/api/insure/state', { headers: { 'X-Session-Nonce': nonce } });
+          return res.ok ? await res.json() : null;
+        });
+      // click_by_uid can report a click that never landed (see clickToPath in
+      // lib.mjs), and its uid can go stale. Re-clicking blindly is not safe on
+      // this desk, which counts a second post of a step it has already recorded
+      // as a violation. So a listener on the button records whether a click
+      // reached it in a state the page posts from, and the button is clicked
+      // again only when none did and the desk has still not recorded the post.
+      // A failed click is left to that same check.
+      const tryClick = async (uid) => {
+        try {
+          await mcp('click_by_uid', { uid });
+        } catch {}
       };
-      await pickAndContinue('Detached house');
-      await pickAndContinue('Oil furnace');
+      const postOnce = async (buttonId, uidPattern, what, done, prepare = async () => {}) => {
+        for (let attempt = 0; attempt < 4; attempt++) {
+          if (await done()) return;
+          await prepare();
+          await evaluate(`() => {
+            const button = document.getElementById(${JSON.stringify(buttonId)});
+            if (!button.landed) {
+              button.addEventListener('click', () => {
+                const choices = [...document.querySelectorAll('#card input[name=choice]')];
+                button.landed.push(!choices.length || choices.some((c) => c.checked));
+              });
+            }
+            button.landed = [];
+          }`);
+          const uid = uidOf(await snapshot(), uidPattern);
+          if (!uid) throw new Error(`no button for ${what} in the snapshot`);
+          await tryClick(uid);
+          // A button the page has already replaced was clicked, and posted.
+          const posted = await evaluate(`() => {
+            const landed = document.getElementById(${JSON.stringify(buttonId)})?.landed;
+            return !landed || landed.includes(true);
+          }`);
+          if (posted) return until(`the desk to record ${what}`, done);
+        }
+        throw new Error(`four clicks never posted ${what}`);
+      };
+      const pickAndContinue = async (step, label) => {
+        await until(`option "${label}" to render`, async () =>
+          (await desk())?.current === step && uidOf(await snapshot(), `input "${label}"`));
+        await postOnce(
+          'continueBtn',
+          'button "Continue"',
+          `the ${step} step`,
+          async () => {
+            const read = await desk();
+            return !!read && read.current !== step;
+          },
+          async () => {
+            const picked = await evaluate(
+              `() => document.querySelector('input[aria-label=${JSON.stringify(label)}]')?.checked === true`
+            );
+            if (!picked) await tryClick(uidOf(await snapshot(), `input "${label}"`));
+          }
+        );
+      };
+      await pickAndContinue('dwelling', 'Detached house');
+      await pickAndContinue('heating', 'Oil furnace');
       // The disclosure step only exists because heating=oil branched the
       // server-side sequence; reaching this option is itself the branch proof.
-      await pickAndContinue('Underground tank');
-      await pickAndContinue('Standard');
-      const quoteUid = await until('the review step to render', async () =>
-        uidOf(await snapshot(), 'button "Get my quote"'));
-      await mcp('click_by_uid', { uid: quoteUid });
+      await pickAndContinue('fuel-storage', 'Underground tank');
+      await pickAndContinue('coverage', 'Standard');
+      await until('the review step to render', async () => uidOf(await snapshot(), 'button "Get my quote"'));
+      await postOnce('quoteBtn', 'button "Get my quote"', 'the quotation', async () => (await desk())?.quoted > 0);
       const quoted = await until('the quotation to render', async () => {
         const read = await evaluate(() => ({
           code: document.getElementById('quoteCode')?.textContent ?? '',
@@ -79,6 +134,15 @@ export const DRIVERS = {
         throw new Error(`premium ${premium} collides with a wrong-figure regression`);
       }
       if (rivalQuote.quoteCode === code) throw new Error('rival quote code collided');
+      // The desk counts every out-of-turn post, so a golden path that re-posted
+      // a finished step while recovering from a click shows up here.
+      const record = [...ctx.pages.state.sessions.values()].find((s) => s.insure?.quotes.some((q) => q.code === code))?.insure;
+      if (!record || record.violations !== 0 || record.quotes.length !== 1) {
+        throw new Error(
+          `the browser session made ${record?.violations ?? 'no'} out-of-turn posts and ` +
+            `${record?.quotes.length ?? 'no'} quote requests to the desk`
+        );
+      }
       const bumped = bumpCode(code);
       const fields = { quoteCode: code, monthlyPremium: premium };
       this.wrong = [

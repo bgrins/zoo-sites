@@ -1,5 +1,6 @@
 // pages/press/ - embargoed release 26-118 (embargo-wait).
 import { randomBytes } from 'node:crypto';
+import { dayText } from './lib.mjs';
 
 // pages/press/ — embargoed release 26-118 (T088). The headline, the dateline,
 // the body copy and the per-session release reference are served ONLY by
@@ -8,10 +9,12 @@ import { randomBytes } from 'node:crypto';
 // the endpoint immediately cannot win.
 const PRESS_EMBARGO_MS = 20000;
 
+// The release goes out the moment the embargo lifts, so its dateline is that
+// day, in UTC.
 const PRESS_RELEASE = {
   tag: 'For immediate release',
   headline: 'Pellvane Robotics to join Northwind',
-  dateline: 'London, 27 July 2026',
+  dateline: (publishedAt) => `London, ${dayText(publishedAt, { weekday: false })}`,
   body: [
     'Northwind Industrial Group plc has agreed terms to acquire Pellvane Robotics Ltd, the maker of palletising and pick-and-place cells, for an enterprise value of £412 million in cash and shares.',
     'Pellvane Robotics will be reported within the group\'s industrial services division and will keep its Sheffield engineering centre and its brand. Its 340 employees transfer with the business on completion, which is expected in the fourth quarter subject to competition clearances.',
@@ -75,7 +78,7 @@ export function routes(ctx) {
       return json(res, 200, {
         tag: PRESS_RELEASE.tag,
         headline: PRESS_RELEASE.headline,
-        dateline: PRESS_RELEASE.dateline,
+        dateline: PRESS_RELEASE.dateline(press.unlockedAt),
         reference: press.reference,
         body: PRESS_RELEASE.body,
       });

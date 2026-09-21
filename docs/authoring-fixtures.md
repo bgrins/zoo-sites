@@ -259,13 +259,18 @@ Each of these binds every fixture and every validator, without exception.
      answer: the 2026-09-20 sweep read locale-notice's closure as expired, because
      its page says notices withdraw on their stated end date. Mint such a date in
      `sites/` as a day offset from the day the session opened, in UTC, and render
-     it into the page, as `sites/intl.mjs` does. A date the ask dictates cannot
-     move without changing the task, so set it well ahead, and have the driver
-     print a note a quarter before it ages, as the `native-permit` driver does.
-     The note must not fail the gate, because the wall clock would turn a
-     commit red that changed nothing. A date already in the past when the site
-     shows it (a run log, a changelog, an effective date) is history and stays
-     static.
+     it into the page, as `sites/intl.mjs` and `sites/forms.mjs` (the Nerrow
+     Strait calendar) do; `utcDay` and `dayText` in `sites/lib.mjs` count and
+     print the days. Move everything the date drags with it: its weekday, the
+     month and year words around it, and the dates it sits between. The driver
+     then checks each rendered date against today, as the `locale-notice` and
+     `abstract-length` drivers do, so a date that stops moving turns the gate red.
+   - A date the ask dictates cannot move without changing the task, so set it
+     well ahead, and have the driver print a note a quarter before it ages. The
+     note must not fail the gate, because the wall clock would turn a commit red
+     that changed nothing.
+   - A date already in the past when the site shows it (a run log, a changelog,
+     an effective date) is history and stays static.
 10. **Silent by default.** Any `<audio>` or `<video>` a fixture ships carries
     `muted`, sets `volume = 0` in script, and never autoplays unmuted.
     `eval/verify.mjs` fails the gate on an unmuted media tag under `pages/`, because

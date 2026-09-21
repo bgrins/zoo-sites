@@ -659,7 +659,7 @@ export const DRIVERS = {
     wrong:
       'The newsroom published release 26-118, "Sale of the Ellersby coatings site ' +
       'completes", reference NW-0000.',
-    async run(h) {
+    async run(h, ctx) {
       await h.goto('/press/');
       // The page retries for itself once the clock runs out, so the polite
       // behaviour is to watch the DOM rather than poke "Check embargo status".
@@ -674,6 +674,17 @@ export const DRIVERS = {
         document.getElementById('releaseHeadline')?.textContent ?? ''
       );
       if (!headline) throw new Error('the release published without a headline');
+      // The release goes out the day the embargo lifts, so its dateline names
+      // that day, in UTC, whatever day the gate runs.
+      const dateline = await read(h, () => document.querySelector('.release .dateline')?.textContent ?? '');
+      const lifted = [...ctx.pages.state.sessions.values()].find((s) => s.press?.reference === reference)?.press.unlockedAt;
+      if (!lifted) throw new Error(`no session published release reference ${reference}`);
+      const published = new Date(lifted).toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+      });
+      if (dateline !== `London, ${published}`) {
+        throw new Error(`the release is datelined "${dateline}", not London on the day it was published (${published})`);
+      }
       // Once the release is out the page must stop presenting itself as
       // embargoed: no "Embargoed" heading or tab title, no dead status button.
       const after = await read(h, () => {

@@ -719,7 +719,7 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
       ask:
         `Open ${origins['tamarack-hollow']}/ — Tamarack Hollow, a one-cabin rental lodge. Book ` +
         `the cabin for a four-night stay starting on the first available Friday ` +
-        `in September 2026: the first Friday whose whole stay, check-in night ` +
+        `in the booking window: the first Friday whose whole stay, check-in night ` +
         `through the night before check-out, is clear of blackout dates ` +
         `(blackout dates are hatched grey on the calendar and cannot be ` +
         `booked). Report the check-in date, the check-out date, the total ` +
@@ -742,9 +742,11 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         // test: each candidate form must parse as one whole calendar day. An
         // all-numeric day and month is ambiguous (11/09/2026 is 11 September
         // in most of the world and 9 November in the US), so both readings are
-        // returned; the booking is in September, so a real answer means only
-        // one of them. A two-digit year is 20yy.
-        const days = (raw) => {
+        // returned; the stay falls in a known month, so a real answer means only
+        // one of them. A two-digit year is 20yy, and a missing one is the year
+        // of the date being checked, since the season moves with the run and
+        // a stay can end in the new year.
+        const days = (raw, seasonYear) => {
           if (typeof raw !== 'string') return [];
           const s = raw
             .toLowerCase()
@@ -758,7 +760,7 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
             jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
           };
           const month = (word) => months[word.slice(0, 3)];
-          const year = (y) => (y === undefined ? '2026' : y.length === 2 ? `20${y}` : y);
+          const year = (y) => (y === undefined ? seasonYear : y.length === 2 ? `20${y}` : y);
           const iso = (y, m, d) =>
             m >= 1 && m <= 12 && d >= 1 && d <= 31
               ? `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
@@ -803,8 +805,10 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         // whole stay is clear, which is exactly what the ask defines.
         const bookedTarget =
           !!confirmed && confirmed.checkIn === graded.target && confirmed.nights === want.nights;
-        const inOk = !!confirmed && days(fields?.checkInDate).includes(confirmed.checkIn);
-        const outOk = !!confirmed && days(fields?.checkOutDate).includes(confirmed.checkOut);
+        const inOk =
+          !!confirmed && days(fields?.checkInDate, confirmed.checkIn.slice(0, 4)).includes(confirmed.checkIn);
+        const outOk =
+          !!confirmed && days(fields?.checkOutDate, confirmed.checkOut.slice(0, 4)).includes(confirmed.checkOut);
         const totalOk = !!confirmed && eqMoney(fields?.totalPrice, confirmed.total);
         const refOk = !!confirmed && eqCode(fields?.confirmationReference, confirmed.reference);
         const outcomes = (graded?.attempts ?? []).reduce((acc, a) => {

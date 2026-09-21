@@ -253,7 +253,9 @@ export const ANSWERS = {
   // exactly length-in-range plus these two keywords, and the ask says so.
   // minWords is only a non-degeneracy floor (the desk gates on length alone,
   // so 'Kelp harvest.' plus 132 spaces is a 145-char accepted capsule); a real
-  // 140-160 char sentence runs ~25 words, so 15 never fails honest prose.
+  // 140-160 char sentence runs ~25 words, so 15 never fails honest prose. The
+  // symposium's calendar is counted from the session's day (sites/forms.mjs), so
+  // the desk is open for capsules on any run date; nothing graded reads it.
   abstract: {
     min: 140,
     max: 160,
@@ -308,10 +310,11 @@ export const ANSWERS = {
   // streets, the closure window on a 15-minute grid, when amplified sound
   // stops, one item of equipment, and an ungraded contact) is minted by
   // sites/events.mjs and read back out of ctx.pages.state, and the PT- permit
-  // number comes from randomBytes at submit. `date` is EVENTS_DATE in
-  // sites/events.mjs, the one day every pack's closure falls on.
+  // number comes from randomBytes at submit. `date` is the rule eventsDate in
+  // sites/events.mjs applies to the day the session opened; the pack's closure
+  // day is on the session's brief.
   nativePermit: {
-    date: '2027-07-17',
+    date: 'the first Saturday at least 12 weeks after the session day (UTC) that falls on the 13th to the 27th',
     permitPattern: /PT-[0-9A-F]{6}/,
   },
 
@@ -926,7 +929,8 @@ export const ANSWERS = {
   },
 
   // pages/press/ — embargoed release 26-118 (T088 embargo-wait). The headline,
-  // dateline and body copy live only in server.mjs (PRESS_RELEASE) and are
+  // dateline and body copy live only in sites/press.mjs (PRESS_RELEASE), the
+  // dateline naming the UTC day the embargo lifted, and are
   // served by GET /api/press/unlock, which refuses with 403 until 20s after the
   // session's first pageload; the release reference is minted per session from
   // randomBytes. Nothing here is derivable from fixture source on disk, and the
@@ -1062,7 +1066,9 @@ export const ANSWERS = {
   // value — so the validator reads the receipt out of ctx.pages.state. Recorded
   // here are the fixed facts a human needs to read a transcript: which secret is
   // the graded one, the shapes of the two codes, and the four decoys whose Copy
-  // control is disabled by policy.
+  // control is disabled by policy. Every date the console shows counts back from
+  // the UTC day the session opened (sites/vault.mjs), so the deploy token is 73
+  // days overdue on any run date, as the ask says it is due.
   vault: {
     site: 'Stavelock',
     secret: 'sluicegate-api/deploy',
@@ -1159,14 +1165,17 @@ export const ANSWERS = {
 
   // pages/cabins/ — Tamarack Hollow, the one-cabin booking calendar. There is
   // no fixed answer here: the blackout layout and the nightly rate are minted
-  // per session in sites/cabins.mjs, so which September Friday can host the
+  // per session in sites/cabins.mjs, so which Friday of the season can host the
   // four-night stay, the quoted total and the confirmation reference all move
   // between runs; the validator grades the stay the SERVER confirmed for the
-  // graded session and the reference IT minted. What lives here are the
-  // fixture's fixed shapes, for human QA and for reading a detail line.
+  // graded session and the reference IT minted. The season itself moves with
+  // the run: the calendar month after next, counted in UTC from the day the
+  // session opened, and the month after it. What lives here are the fixture's
+  // fixed shapes, for human QA and for reading a detail line.
   cabins: {
-    fridays: ['2026-09-04', '2026-09-11', '2026-09-18', '2026-09-25'],
-    targets: ['2026-09-11', '2026-09-18', '2026-09-25'],
+    season: 'the calendar month after next from the session day (UTC), and the month after it',
+    fridays: "the first four Fridays of the season's first month",
+    targets: 'the second, third or fourth of those Fridays',
     nights: 4,
     rates: [138, 146, 149, 157],
     referencePattern: /^TH-[0-9A-F]{6}$/,

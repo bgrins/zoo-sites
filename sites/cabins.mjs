@@ -1,9 +1,9 @@
 // pages/cabins/ - Tamarack Hollow, a one-cabin rental lodge (cabin-dates).
 import { randomBytes } from 'node:crypto';
-import { lcg } from './lib.mjs';
+import { DAY_MS, lcg, utcDay } from './lib.mjs';
 
 // The blackout layout and the nightly rate are drawn per session from a
-// seedable ctx.draw, so which September 2026 Friday can host a four-night stay
+// seedable ctx.draw, so which Friday of the season can host a four-night stay
 // exists nowhere on disk and moves between runs. Every draw makes each Friday
 // before the target unbookable in one of two ways: the Friday cell itself is a
 // blackout date (visible at a glance), or the cell is open but a blackout falls
@@ -12,14 +12,11 @@ import { lcg } from './lib.mjs';
 // trap of the mid-stay kind exists in every draw. The confirmation reference
 // and the total are minted server-side on POST /api/cabins/book, which
 // re-checks every night of the stay against the session's own blackout draw.
-const CABINS_EPOCH = Date.UTC(2026, 8, 1);
-
-// 2026-09-01 (day 0) through 2026-10-31 (day 60).
-const CABINS_DAYS = 61;
-
-// The Fridays of September 2026: Sep 4, 11, 18, 25.
-const CABINS_FRIDAYS = [3, 10, 17, 24];
-
+//
+// The season is the calendar month after next, counted in UTC from the day the
+// session opened, and the month after it, so every Friday the ask can mean is
+// still ahead on any run date. The target is one of the first month's first
+// four Fridays.
 const CABINS_RATES = [138, 146, 149, 157];
 
 const CABINS_NIGHTS = { min: 2, max: 14 };
@@ -29,31 +26,42 @@ const CABINS_MONTH_NAMES = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-const cabinsIso = (n) => new Date(CABINS_EPOCH + n * 86400000).toISOString().slice(0, 10);
+// `epoch` is day 0, the first of the season's first month, and every day is
+// numbered from it; `fridays` are that month's first four Fridays.
+function cabinsSeason(createdAt) {
+  const opened = new Date(utcDay(createdAt));
+  const epoch = Date.UTC(opened.getUTCFullYear(), opened.getUTCMonth() + 2, 1);
+  const end = Date.UTC(opened.getUTCFullYear(), opened.getUTCMonth() + 4, 0);
+  const first = (12 - new Date(epoch).getUTCDay()) % 7;
+  return { epoch, days: (end - epoch) / DAY_MS + 1, fridays: [first, first + 7, first + 14, first + 21] };
+}
+
+const cabinsIso = (season, n) => new Date(season.epoch + n * DAY_MS).toISOString().slice(0, 10);
 
 // Day number for a strict YYYY-MM-DD string, or null when the string is not a
 // real calendar date (2026-09-31 rolls over and fails the round trip).
-function cabinsNum(raw) {
+function cabinsNum(season, raw) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(raw ?? '').trim());
   if (!m) return null;
-  const n = Math.round((Date.UTC(+m[1], +m[2] - 1, +m[3]) - CABINS_EPOCH) / 86400000);
-  return cabinsIso(n) === m[0] ? n : null;
+  const n = Math.round((Date.UTC(+m[1], +m[2] - 1, +m[3]) - season.epoch) / DAY_MS);
+  return cabinsIso(season, n) === m[0] ? n : null;
 }
 
-function cabinsShort(n) {
-  const d = new Date(CABINS_EPOCH + n * 86400000);
+function cabinsShort(season, n) {
+  const d = new Date(season.epoch + n * DAY_MS);
   return `${CABINS_MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCDate()}`;
 }
 
-function cabinsMint(draw) {
+function cabinsMint(draw, season) {
+  const { fridays } = season;
   const rand = lcg(draw('cabins', 4));
   const pick = (list) => list[Math.floor(rand() * list.length)];
   const rate = pick(CABINS_RATES);
-  const targetIndex = 1 + Math.floor(rand() * (CABINS_FRIDAYS.length - 1));
-  const target = CABINS_FRIDAYS[targetIndex];
+  const targetIndex = 1 + Math.floor(rand() * (fridays.length - 1));
+  const target = fridays[targetIndex];
   // One kind per earlier Friday, redrawn so at least one mid-stay trap exists
   // and, when there is room for both kinds, at least one greyed Friday too.
-  const kinds = CABINS_FRIDAYS.slice(0, targetIndex).map(() =>
+  const kinds = fridays.slice(0, targetIndex).map(() =>
     rand() < 0.5 ? 'midstay' : 'blackout'
   );
   if (!kinds.includes('midstay')) kinds[Math.floor(rand() * kinds.length)] = 'midstay';
@@ -64,7 +72,7 @@ function cabinsMint(draw) {
   }
   const blackouts = new Set();
   kinds.forEach((kind, i) => {
-    const friday = CABINS_FRIDAYS[i];
+    const friday = fridays[i];
     if (kind === 'midstay') {
       // The Friday cell stays open; one of the three nights after it does not.
       // Nothing here can reach the next Friday (friday + 7) or grey a later
@@ -75,42 +83,47 @@ function cabinsMint(draw) {
     } else {
       blackouts.add(friday);
       if (rand() < 0.5) blackouts.add(friday + 1);
-      if (rand() < 0.4) blackouts.add(friday - 1);
+      // The draw is taken either way, so a season whose first Friday is the
+      // 1st keeps the same sequence and only drops the day before its window.
+      if (rand() < 0.4 && friday > 0) blackouts.add(friday - 1);
     }
   });
-  // October noise so the second month is not uniformly open; it starts at
-  // Oct 2 (day 31) and can never touch a graded September window.
+  // Later noise so the rest of the season is not uniformly open; it starts a
+  // week after the fourth Friday and can never touch a graded stay window.
   const runs = 2 + Math.floor(rand() * 2);
   for (let r = 0; r < runs; r++) {
-    const start = 31 + Math.floor(rand() * 25);
+    const start = fridays[3] + 7 + Math.floor(rand() * 25);
     const len = 1 + Math.floor(rand() * 3);
-    for (let d = start; d < Math.min(start + len, CABINS_DAYS); d++) blackouts.add(d);
+    for (let d = start; d < Math.min(start + len, season.days); d++) blackouts.add(d);
   }
   // By construction the target is the first Friday whose whole stay is clear
   // (its check-out day included); asserted so an edit to the mint cannot
   // silently move the answer out from under the validator.
   const clear = (f) => [0, 1, 2, 3, 4].every((k) => !blackouts.has(f + k));
-  if (CABINS_FRIDAYS.find((f) => clear(f)) !== target) {
+  if (fridays.find((f) => clear(f)) !== target) {
     throw new Error('cabins mint: target is not the first clear Friday');
   }
   return {
     rate,
     target,
     blackouts: [...blackouts].sort((a, b) => a - b),
-    trapFridays: kinds.flatMap((k, i) => (k === 'midstay' ? [CABINS_FRIDAYS[i]] : [])),
+    trapFridays: kinds.flatMap((k, i) => (k === 'midstay' ? [fridays[i]] : [])),
   };
 }
 
 function cabinsState(session, draw) {
   if (!session.cabins) {
-    const minted = cabinsMint(draw);
+    const season = cabinsSeason(session.createdAt ?? Date.now());
+    const minted = cabinsMint(draw, season);
+    const iso = (n) => cabinsIso(season, n);
     session.cabins = {
+      season,
       rate: minted.rate,
-      // Day numbers relative to CABINS_EPOCH; serialized to ISO only at the API.
+      // Day numbers relative to season.epoch; serialized to ISO only at the API.
       blackouts: minted.blackouts,
-      target: cabinsIso(minted.target),
-      targetCheckOut: cabinsIso(minted.target + 4),
-      trapFridays: minted.trapFridays.map(cabinsIso),
+      target: iso(minted.target),
+      targetCheckOut: iso(minted.target + 4),
+      trapFridays: minted.trapFridays.map(iso),
       views: 0,
       attempts: [],
       rebooks: 0,
@@ -131,13 +144,14 @@ export function routes(ctx) {
       const found = requireSession(req, res);
       if (!found) return;
       const stay = cabinsState(found.session, draw);
+      const iso = (n) => cabinsIso(stay.season, n);
       stay.views += 1;
       return json(res, 200, {
         cabin: 'Tamarack Hollow',
-        window: { from: cabinsIso(0), to: cabinsIso(CABINS_DAYS - 1) },
+        window: { from: iso(0), to: iso(stay.season.days - 1) },
         rate: stay.rate,
         nights: CABINS_NIGHTS,
-        blackouts: stay.blackouts.map(cabinsIso),
+        blackouts: stay.blackouts.map(iso),
         confirmed: stay.confirmed,
       });
     }
@@ -156,12 +170,14 @@ export function routes(ctx) {
       const found = requireSession(req, res, payload.nonce);
       if (!found) return;
       const stay = cabinsState(found.session, draw);
-      const checkin = cabinsNum(payload.checkin);
-      const checkout = cabinsNum(payload.checkout);
+      const { season } = stay;
+      const iso = (n) => cabinsIso(season, n);
+      const checkin = cabinsNum(season, payload.checkin);
+      const checkout = cabinsNum(season, payload.checkout);
       const refuse = (outcome, message, detail) => {
         stay.attempts.push({
-          checkin: checkin !== null ? cabinsIso(checkin) : String(payload.checkin ?? ''),
-          checkout: checkout !== null ? cabinsIso(checkout) : String(payload.checkout ?? ''),
+          checkin: checkin !== null ? iso(checkin) : String(payload.checkin ?? ''),
+          checkout: checkout !== null ? iso(checkout) : String(payload.checkout ?? ''),
           outcome,
           at: Date.now(),
         });
@@ -174,11 +190,11 @@ export function routes(ctx) {
           'Both a check-in and a check-out date are needed, written as YYYY-MM-DD.'
         );
       }
-      if (checkin < 0 || checkout > CABINS_DAYS - 1) {
+      if (checkin < 0 || checkout > season.days - 1) {
         return refuse(
           'window',
           'Outside this season',
-          'The cabin takes bookings from 2026-09-01 to 2026-10-31 this season.'
+          `The cabin takes bookings from ${iso(0)} to ${iso(season.days - 1)} this season.`
         );
       }
       if (checkout <= checkin) {
@@ -210,7 +226,7 @@ export function routes(ctx) {
       if (blocked.length) {
         return refuse(
           'blackout',
-          `Blackout night: ${cabinsShort(blocked[0])}`,
+          `Blackout night: ${cabinsShort(season, blocked[0])}`,
           'Every night of a stay, check-in to the morning of check-out, must be ' +
             'clear of blackout dates. Pick dates whose whole stay is open.'
         );
@@ -219,16 +235,16 @@ export function routes(ctx) {
       const total = nights * stay.rate;
       const reference = 'TH-' + randomBytes(3).toString('hex').toUpperCase();
       stay.confirmed = {
-        checkIn: cabinsIso(checkin),
-        checkOut: cabinsIso(checkout),
+        checkIn: iso(checkin),
+        checkOut: iso(checkout),
         nights,
         total,
         reference,
         at: Date.now(),
       };
       stay.attempts.push({
-        checkin: cabinsIso(checkin),
-        checkout: cabinsIso(checkout),
+        checkin: iso(checkin),
+        checkout: iso(checkout),
         outcome: 'confirmed',
         at: Date.now(),
       });

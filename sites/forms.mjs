@@ -1,5 +1,43 @@
 // pages/forms/ - the appointment gauntlet, registration, roster, brochure, beta waitlist, shipping quote, autosaving draft and abstract desk.
 import { randomBytes } from 'node:crypto';
+import { DAY_MS, MONTH_NAMES, dayText, utcDay } from './lib.mjs';
+
+// pages/forms/nerrow/ — the Nerrow Strait symposium calendar. Every date the site
+// prints is counted from the day the session opened, in UTC, so on any run date
+// the study record is already placed and the abstract desk still takes capsules.
+// The meeting opens on the Tuesday 40 to 46 days out and runs to the Friday, and
+// each deadline is a Friday a fixed number of days before the opening, which puts
+// the placement in the past week and the capsule deadline 8 to 14 days ahead.
+const NERROW_BEFORE_OPENING = { CALL: 67, PLACED: 46, CAPSULES: 32, ACCESS: 18 };
+
+function nerrowCalendar(createdAt) {
+  const earliest = utcDay(createdAt) + 40 * DAY_MS;
+  const opens = earliest + ((9 - new Date(earliest).getUTCDay()) % 7) * DAY_MS;
+  const closes = opens + 3 * DAY_MS;
+  const [a, b] = [new Date(opens), new Date(closes)];
+  const convened =
+    a.getUTCFullYear() !== b.getUTCFullYear()
+      ? `${dayText(opens, { weekday: false })} to ${dayText(closes, { weekday: false })}`
+      : a.getUTCMonth() !== b.getUTCMonth()
+        ? `${dayText(opens, { weekday: false, year: false })} to ${dayText(closes, { weekday: false })}`
+        : `${a.getUTCDate()} to ${dayText(closes, { weekday: false })}`;
+  const tokens = { CONVENED: convened, OPENS: dayText(opens), MONTH: MONTH_NAMES[a.getUTCMonth()] };
+  for (const [key, days] of Object.entries(NERROW_BEFORE_OPENING)) {
+    tokens[key] = dayText(opens - days * DAY_MS);
+  }
+  tokens.ACCESS_DM = dayText(opens - NERROW_BEFORE_OPENING.ACCESS * DAY_MS, { weekday: false, year: false });
+  for (let k = 0; k < 4; k++) tokens[`DAY${k + 1}`] = dayText(opens + k * DAY_MS, { year: false });
+  return { tokens, year: a.getUTCFullYear() };
+}
+
+// __NERROW_<KEY>__ is a date from the calendar above; __NERROW_YEAR-<n>__ is the
+// year n meetings before this one, since the symposium meets once a year.
+function nerrowRender(body, createdAt) {
+  const { tokens, year } = nerrowCalendar(createdAt);
+  return body
+    .replace(/__NERROW_YEAR-(\d+)__/g, (_, n) => String(year - Number(n)))
+    .replace(/__NERROW_([A-Z0-9_]+)__/g, (token, key) => tokens[key] ?? token);
+}
 
 // pages/forms/draymere/upload.html — Draymere depot attestation intake. The intake
 // service refuses anything that is not a .txt of at most UPLOAD_MAX_BYTES, and
@@ -564,7 +602,7 @@ export function documents() {
   return {
     prefix: '/forms/',
 
-    onHtml({ pathname, found, nav }) {
+    onHtml({ pathname, found, nav, body }) {
       // T055 draft-resume: the graded `pageload` event is minted here, on a
       // real document navigation, and nowhere else. Emitting it from an API
       // endpoint would let page script forge a reload with a plain fetch.
@@ -580,6 +618,10 @@ export function documents() {
       // would only look like browser proof. Framed loads do not count.
       if (pathname === '/forms/drennhill/index.html' && nav.document) {
         formGauntletRecord(found.session).opens += 1;
+      }
+
+      if (body.includes('__NERROW_')) {
+        return { body: nerrowRender(body, found.session.createdAt ?? Date.now()) };
       }
     },
   };

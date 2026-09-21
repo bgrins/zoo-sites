@@ -429,7 +429,10 @@ compared across runs, and no difference inside the A/A band.
 - `click_by_uid` can report a successful click that never navigated, and the uid can
   go stale. `clickToPath` in `eval/verify-drivers/lib.mjs` re-resolves a fresh uid per
   attempt and confirms the document changed; use it for link navigation rather than
-  clicking and polling for content.
+  clicking and polling for content. A control that posts cannot be re-clicked on a
+  hunch, because the second click may post twice. The `policy-quote` driver arms a
+  listener on the button to learn whether a click reached it, and re-reads the
+  server's step before it clicks again.
 
 ## Lessons the design encodes
 

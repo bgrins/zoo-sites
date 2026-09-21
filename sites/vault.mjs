@@ -1,6 +1,7 @@
 // pages/vault/ - Stavelock credential vault (token-rotate).
 // A UK company: UK spelling, 020 7946 0xxx numbers, UK time.
 import { randomBytes } from 'node:crypto';
+import { DAY_MS, MONTH_NAMES, utcDay } from './lib.mjs';
 
 // pages/vault/ — Stavelock, a team credential vault (token-rotate). Every secret's
 // value is minted per session from randomBytes and exists nowhere under pages/: the
@@ -12,24 +13,18 @@ import { randomBytes } from 'node:crypto';
 // NOT a clipboard gate: /api/vault/copy answers any request carrying the page
 // nonce, so an evaluate_script fetch reaches the value without the Copy button.
 // The clipboard is the human affordance, and `route=` reports which was used.
-const VAULT_ROTATED_ON = '27 July 2026';
+//
+// The console's "today", which the rotation-due list is worked out against, is the
+// day the session opened, in UTC, and every date it shows for a secret is counted
+// in days back from it, so the deploy token is overdue on any run date and a
+// rotation made today falls due again after it.
 
-const VAULT_AUDIT_DAY = '27 Jul';
-
-// The console's "today", which the rotation-due list is worked out against.
-const VAULT_TODAY = '2026-07-27';
-
-const VAULT_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-  'August', 'September', 'October', 'November', 'December'];
-
-// '2026-02-14' plus a policy's days, written the way the console writes dates.
-function vaultDue(iso, days) {
-  const at = new Date(iso + 'T00:00:00Z');
-  at.setUTCDate(at.getUTCDate() + days);
-  return {
-    iso: at.toISOString().slice(0, 10),
-    text: `${at.getUTCDate()} ${VAULT_MONTHS[at.getUTCMonth()]} ${at.getUTCFullYear()}`,
-  };
+// A day as the console writes it, '14 February 2026'; the seeded records carry
+// two-digit days, '03 January 2026'.
+function vaultDay(ms, { pad = false } = {}) {
+  const at = new Date(ms);
+  const day = pad ? String(at.getUTCDate()).padStart(2, '0') : at.getUTCDate();
+  return `${day} ${MONTH_NAMES[at.getUTCMonth()]} ${at.getUTCFullYear()}`;
 }
 
 const VAULT_SECRETS = [
@@ -40,9 +35,8 @@ const VAULT_SECRETS = [
     purpose: 'Release pipeline deploy token',
     scope: 'deploy:write, artifact:read',
     owner: 'Platform Delivery',
-    issued: '14 February 2026',
-    lastRotated: '14 February 2026',
-    rotatedIso: '2026-02-14',
+    issuedDaysAgo: 163,
+    rotatedDaysAgo: 163,
     policyDays: 90,
     policy: 'Rotate every 90 days',
     fingerprint: 'a4:1c:9e:33:07:bd',
@@ -56,9 +50,8 @@ const VAULT_SECRETS = [
     purpose: 'Read-only reporting connection',
     scope: 'db:read',
     owner: 'Platform Delivery',
-    issued: '03 January 2026',
-    lastRotated: '19 June 2026',
-    rotatedIso: '2026-06-19',
+    issuedDaysAgo: 205,
+    rotatedDaysAgo: 38,
     policyDays: 180,
     policy: 'Rotate every 180 days',
     fingerprint: '7c:20:b8:41:ee:09',
@@ -72,9 +65,8 @@ const VAULT_SECRETS = [
     purpose: 'Edge cache purge key',
     scope: 'cache:purge',
     owner: 'Edge Platform',
-    issued: '22 November 2025',
-    lastRotated: '11 May 2026',
-    rotatedIso: '2026-05-11',
+    issuedDaysAgo: 247,
+    rotatedDaysAgo: 77,
     policyDays: 180,
     policy: 'Rotate every 180 days',
     fingerprint: 'd1:6f:34:aa:52:97',
@@ -88,9 +80,8 @@ const VAULT_SECRETS = [
     purpose: 'Settlement callback signing secret',
     scope: 'webhook:sign',
     owner: 'Payments',
-    issued: '08 April 2026',
-    lastRotated: '08 April 2026',
-    rotatedIso: '2026-04-08',
+    issuedDaysAgo: 110,
+    rotatedDaysAgo: 110,
     policyDays: 90,
     policy: 'Rotate every 90 days',
     fingerprint: '2b:95:c7:18:6d:40',
@@ -104,9 +95,8 @@ const VAULT_SECRETS = [
     purpose: 'Outbound notification relay password',
     scope: 'smtp:send',
     owner: 'Security Engineering',
-    issued: '30 September 2025',
-    lastRotated: '02 March 2026',
-    rotatedIso: '2026-03-02',
+    issuedDaysAgo: 300,
+    rotatedDaysAgo: 147,
     policyDays: 365,
     policy: 'Rotate every 365 days',
     fingerprint: '5e:83:0c:79:b1:2f',
@@ -115,26 +105,34 @@ const VAULT_SECRETS = [
   },
 ];
 
+// The two rotations here fall on the rotatedDaysAgo of their secrets above.
 const VAULT_AUDIT_BASE = [
-  { at: '26 Jul 16:41', what: 'Policy PD-04 reviewed, no change', actor: 'k.arbuthnot' },
-  { at: '24 Jul 09:12', what: 'sluicegate-api/deploy read by pipeline lease', actor: 'svc-release' },
-  { at: '21 Jul 14:03', what: 'Break-glass request 4471 declined, no ticket', actor: 'security-eng' },
-  { at: '19 Jun 08:55', what: 'sluicegate-api/db-ro rotated', actor: 'm.tarleton' },
-  { at: '11 May 10:26', what: 'northmoor-cdn/purge rotated', actor: 'edge-platform' },
+  { daysAgo: 1, time: '16:41', what: 'Policy PD-04 reviewed, no change', actor: 'k.arbuthnot' },
+  { daysAgo: 3, time: '09:12', what: 'sluicegate-api/deploy read by pipeline lease', actor: 'svc-release' },
+  { daysAgo: 6, time: '14:03', what: 'Break-glass request 4471 declined, no ticket', actor: 'security-eng' },
+  { daysAgo: 38, time: '08:55', what: 'sluicegate-api/db-ro rotated', actor: 'm.tarleton' },
+  { daysAgo: 77, time: '10:26', what: 'northmoor-cdn/purge rotated', actor: 'edge-platform' },
 ];
 
 const VAULT_MASK = (token) => token.slice(0, 13) + '…' + token.slice(-4);
 
 // Audit rows the server writes have to read like the seeded ones ('26 Jul 16:41'),
-// so a generated row is the rotation day plus the clock time of the record itself.
+// so a generated row is the day and the clock time of the record itself, in UTC
+// like every other date the console shows.
 const VAULT_STAMP = (at) => {
   const when = new Date(at);
   const pad = (n) => String(n).padStart(2, '0');
-  return `${VAULT_AUDIT_DAY} ${pad(when.getHours())}:${pad(when.getMinutes())}`;
+  return `${vaultAuditDay(at)} ${pad(when.getUTCHours())}:${pad(when.getUTCMinutes())}`;
 };
+
+function vaultAuditDay(ms) {
+  const at = new Date(ms);
+  return `${at.getUTCDate()} ${MONTH_NAMES[at.getUTCMonth()].slice(0, 3)}`;
+}
 
 function vaultState(session) {
   return (session.vault ??= {
+    today: utcDay(session.createdAt ?? Date.now()),
     tokens: VAULT_SECRETS.reduce((acc, s) => {
       acc[s.id] = 'stv_live_' + randomBytes(16).toString('hex');
       return acc;
@@ -152,11 +150,18 @@ function vaultState(session) {
   });
 }
 
-// Where a secret stands against its rotation cadence for this session.
-function vaultCadence(vault, secret) {
-  const rotated = !!vault.rotated[secret.id];
-  const due = vaultDue(rotated ? VAULT_TODAY : secret.rotatedIso, secret.policyDays);
-  return { dueOn: due.text, overdue: due.iso < VAULT_TODAY };
+// A secret's dates for this session: a rotation this session made counts from
+// the day it was made, and a seeded one from the console's today.
+function vaultDates(vault, secret) {
+  const record = vault.rotated[secret.id];
+  const rotated = record ? utcDay(record.at) : vault.today - secret.rotatedDaysAgo * DAY_MS;
+  const due = rotated + secret.policyDays * DAY_MS;
+  return {
+    issued: vaultDay(vault.today - secret.issuedDaysAgo * DAY_MS, { pad: true }),
+    lastRotated: vaultDay(rotated, { pad: !record }),
+    dueOn: vaultDay(due),
+    overdue: due < vault.today,
+  };
 }
 
 export function routes(ctx) {
@@ -201,15 +206,19 @@ export function routes(ctx) {
       if (signedOut(res, vault)) return;
       return json(res, 200, {
         team: 'Platform Delivery',
-        secrets: VAULT_SECRETS.map((s) => ({
-          id: s.id,
-          name: s.name,
-          environment: s.environment,
-          purpose: s.purpose,
-          lastRotated: vault.rotated[s.id] ? VAULT_ROTATED_ON : s.lastRotated,
-          rotatable: s.rotatable,
-          ...vaultCadence(vault, s),
-        })),
+        secrets: VAULT_SECRETS.map((s) => {
+          const { lastRotated, dueOn, overdue } = vaultDates(vault, s);
+          return {
+            id: s.id,
+            name: s.name,
+            environment: s.environment,
+            purpose: s.purpose,
+            lastRotated,
+            rotatable: s.rotatable,
+            dueOn,
+            overdue,
+          };
+        }),
       });
     }
 
@@ -221,6 +230,7 @@ export function routes(ctx) {
       if (signedOut(res, vault)) return;
       if (!secret) return json(res, 404, { error: 'no such secret' });
       const rotation = vault.rotated[secret.id] ?? null;
+      const { issued, lastRotated, dueOn, overdue } = vaultDates(vault, secret);
       return json(res, 200, {
         id: secret.id,
         name: secret.name,
@@ -228,15 +238,16 @@ export function routes(ctx) {
         purpose: secret.purpose,
         scope: secret.scope,
         owner: secret.owner,
-        issued: secret.issued,
-        lastRotated: rotation ? VAULT_ROTATED_ON : secret.lastRotated,
+        issued,
+        lastRotated,
         policy: secret.policy,
         fingerprint: secret.fingerprint,
         copyable: secret.copyable,
         rotatable: secret.rotatable,
         masked: VAULT_MASK(vault.tokens[secret.id]),
         receipt: rotation ? rotation.receipt : null,
-        ...vaultCadence(vault, secret),
+        dueOn,
+        overdue,
       });
     }
 
@@ -341,7 +352,7 @@ export function routes(ctx) {
         ok: true,
         receipt,
         masked: VAULT_MASK(vault.tokens[secret.id]),
-        rotatedOn: VAULT_ROTATED_ON,
+        rotatedOn: vaultDates(vault, secret).lastRotated,
       });
     }
 
@@ -366,7 +377,12 @@ export function routes(ctx) {
           actor: 'd.pellworth',
         });
       }
-      return json(res, 200, { entries: [...entries, ...VAULT_AUDIT_BASE] });
+      const seeded = VAULT_AUDIT_BASE.map(({ daysAgo, time, what, actor }) => ({
+        at: `${vaultAuditDay(vault.today - daysAgo * DAY_MS)} ${time}`,
+        what,
+        actor,
+      }));
+      return json(res, 200, { entries: [...entries, ...seeded] });
     }
 
     return false;

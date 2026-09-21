@@ -10,7 +10,7 @@
 // server parsed; /events/submit turns a draft into a permit whose PT- number
 // comes from randomBytes. Nothing graded is in fixture source.
 import { randomBytes } from 'node:crypto';
-import { SESSION_ROWS, lcg } from './lib.mjs';
+import { DAY_MS, SESSION_ROWS, lcg, utcDay } from './lib.mjs';
 
 export const EVENTS_STREETS = [
   { id: 'abrill-street', name: 'Abrill Street' },
@@ -76,10 +76,17 @@ const EVENTS_EQUIPMENT_PHRASES = {
   'GZ-36': 'a 3 m by 6 m gazebo',
 };
 
-// Every closure falls on this Saturday; the day is above 12, so a numeric
-// date reads one way only in either field order. It sits far enough ahead
-// that the guidance's eight weeks' notice holds for the corpus's life.
-export const EVENTS_DATE = '2027-07-17';
+// A session's closure falls on the first Saturday at least twelve weeks after
+// the day the session opened, in UTC, so the guidance's eight weeks' notice holds
+// on any run date. The day of the month runs from 13 to 27: above 12, so a
+// numeric date reads one way only in either field order, and short of the
+// month's end, so the day after it is in the same month.
+function eventsDate(createdAt) {
+  let day = utcDay(createdAt) + 84 * DAY_MS;
+  const fits = (at) => at.getUTCDay() === 6 && at.getUTCDate() >= 13 && at.getUTCDate() <= 27;
+  while (!fits(new Date(day))) day += DAY_MS;
+  return new Date(day).toISOString().slice(0, 10);
+}
 
 const EVENT_NAMES = ['Lantern Fair', 'Street Party', 'Apple Day', 'Play Street'];
 
@@ -94,7 +101,7 @@ const hhmm = (minutes) =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 
 // Difficulty draws only: the permit number is the identifier mint.
-function mintBrief(draw, pick) {
+function mintBrief(draw, pick, date) {
   const rand = lcg(draw('events.brief', 4));
   const ids = EVENTS_STREETS.map((s) => s.id);
   const streets = [];
@@ -110,8 +117,9 @@ function mintBrief(draw, pick) {
     event: `${EVENTS_STREETS.find((s) => s.id === streets[0]).name} ${EVENT_NAMES[Math.floor(rand() * EVENT_NAMES.length)]}`,
     packRef: 'PK-' + randomBytes(2).toString('hex').toUpperCase(),
     streets,
-    start: `${EVENTS_DATE}T${hhmm(start)}`,
-    end: `${EVENTS_DATE}T${hhmm(end)}`,
+    date,
+    start: `${date}T${hhmm(start)}`,
+    end: `${date}T${hhmm(end)}`,
     quiet: hhmm(quiet),
     equipment: code,
     contact: CONTACTS[Math.floor(rand() * CONTACTS.length)],
@@ -379,7 +387,7 @@ export function routes(ctx) {
       const found = requireSession(req, res);
       if (!found) return;
       const desk = deskState(found.session);
-      desk.brief ??= mintBrief(draw, pick);
+      desk.brief ??= mintBrief(draw, pick, eventsDate(found.session.createdAt ?? Date.now()));
       desk.briefFetches += 1;
       const b = desk.brief;
       return json(res, 200, {
@@ -388,7 +396,7 @@ export function routes(ctx) {
         organiser: `${streetName(b.streets[0])} Residents' Association`,
         contact: b.contact[0],
         contactEmail: b.contact[1],
-        date: longDate(EVENTS_DATE),
+        date: longDate(b.date),
         streets: b.streets.map(streetName),
         closureFrom: b.start.slice(-5),
         closureTo: b.end.slice(-5),
@@ -490,7 +498,7 @@ export function documents(ctx) {
       const posted = await formSession(req, res);
       if (!posted) return true;
       const desk = deskState(posted.found.session);
-      desk.brief ??= mintBrief(draw, pick);
+      desk.brief ??= mintBrief(draw, pick, eventsDate(posted.found.session.createdAt ?? Date.now()));
 
       if (path === '/events/apply.html') {
         if (desk.attempts.length >= SESSION_ROWS) {
