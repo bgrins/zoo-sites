@@ -324,10 +324,11 @@ function buildLines(meta) {
     }
   }
   if (surfaces.length) {
-    lines.push('', '| condition | source | version | commit | command |', '|---|---|---|---|---|');
+    lines.push('', '| condition | source | version | entry sha256 | commit | command |', '|---|---|---|---|---|---|');
     for (const [c, s] of surfaces) {
+      const core = s.core ? `; playwright-core ${na(s.core.version)} ${short(s.core.coreBundle)}, ${short(s.core.utilsBundle)}` : '';
       lines.push(
-        `| ${c} | ${na(s.source)} | ${na(s.version)} | ` +
+        `| ${c} | ${na(s.source)} | ${na(s.version)} | ${s.sha256 ? short(s.sha256) : 'n/a'}${core} | ` +
           `${s.commit ? `${short(s.commit)}${s.dirty ? ' (dirty)' : ''}` : 'n/a'} | ${s.command ?? ''} |`
       );
     }
@@ -530,9 +531,19 @@ const ENV_COMPARED = [
   ['navigator.languages', (e) => (e.languages ?? []).join(',')],
   ['device pixel ratio', (e) => e.devicePixelRatio],
   ['user agent', (e) => String(e.userAgent ?? '').replace(/\d+(\.\d+)*/g, 'N')],
+  // Whether a PDF opens in pdf.js or downloads: unflagged, pdf-bill compared
+  // the viewer against a host pdftotext of downloaded bills. A run whose
+  // preflight predates the measurement is read from its build's files.
+  ['navigator.pdfViewerEnabled', (e) => e.pdfViewerEnabled ?? (e.build?.pdfjs ? e.build.pdfjs.startsWith('enabled') : null)],
 ];
 // The pins a measured value is held to, by column label.
-const PINNED = { locale: 'locale', 'time zone': 'timeZone', viewport: 'viewport', 'colour scheme': 'colorScheme' };
+const PINNED = {
+  locale: 'locale',
+  'time zone': 'timeZone',
+  viewport: 'viewport',
+  'colour scheme': 'colorScheme',
+  'navigator.pdfViewerEnabled': 'pdfViewerEnabled',
+};
 
 // Every way the conditions' browsers differed from each other or from their
 // pins. A run's numbers compare surfaces only as far as these allow.
@@ -587,18 +598,33 @@ export function envDrift(prior, meta) {
   return out;
 }
 
-// A condition's PDF handling as the run recorded it, else as its browser is
-// known to ship: Playwright's Firefox build turns pdf.js off in its
-// playwright.cfg, so a PDF downloads there, and renders inline in pdf.js in a
-// release Firefox.
-function pdfViewer(condition, build) {
-  if (build?.pdfjs) return build.pdfjs === 'enabled' ? 'pdf.js (renders inline)' : `${build.pdfjs} (downloads)`;
+// A condition's PDF handling as its preflight measured it, else as its build's
+// files say, else as its browser is known to ship: Playwright's Firefox build
+// turns pdf.js off in its playwright.cfg, so a PDF downloads there unless a
+// pinned pref turns it back on, and renders inline in pdf.js in a release
+// Firefox.
+function pdfViewer(condition, env) {
+  const build = env?.build;
+  const why = build?.pdfjs && build.pdfjs !== 'enabled' ? `; ${build.pdfjs}` : '';
+  if (typeof env?.pdfViewerEnabled === 'boolean') {
+    return `${env.pdfViewerEnabled ? 'pdf.js (renders inline)' : 'none (downloads)'}${why}`;
+  }
+  if (build?.pdfjs) {
+    return build.pdfjs.startsWith('enabled') ? `pdf.js (renders inline)${why}` : `${build.pdfjs} (downloads)`;
+  }
   const bare = condition.split('/').pop();
   return bare === 'playwright-mcp'
     ? 'disabled by playwright.cfg (downloads); not recorded, Playwright\'s build'
     : bare.startsWith('firefox-devtools-mcp')
       ? 'pdf.js (renders inline); not recorded, a release Firefox'
       : '?';
+}
+
+// What a dirty eval tree differed by, for a run that recorded it.
+function dirtyNote(git) {
+  if (!git?.dirtyFiles) return '';
+  const diff = git.diffError ? `eval diff not hashed: ${git.diffError}` : `eval diff sha256 ${short(git.diffSha256)}`;
+  return ` (${git.dirtyFiles.length} dirty file(s); ${diff})`;
 }
 
 // Which Firefox build each condition's rows ran on: the preflight's reading,
@@ -620,7 +646,7 @@ function buildTableLines(meta, results) {
       .flatMap(([, builds]) => builds);
     lines.push(
       `| ${c} | ${b?.binary ?? 'not recorded'} | ${b?.version ?? meta.env[c]?.firefox ?? '?'} | ${b?.buildID ?? 'not recorded'} | ` +
-        `${pdfViewer(c, b)} | ${seen.length ? seen.map((s) => `${s.version ?? '?'} ${s.buildID ?? '?'} (${s.rows} rows)`).join('; ') : 'not recorded per row'} |`
+        `${pdfViewer(c, meta.env[c])} | ${seen.length ? seen.map((s) => `${s.version ?? '?'} ${s.buildID ?? '?'} (${s.rows} rows)`).join('; ') : 'not recorded per row'} |`
     );
   }
   return lines;
@@ -635,7 +661,8 @@ function envLines(meta, results = []) {
     '',
     `What each condition's browser reported in the preflight. Pinned for every ` +
       `condition: locale ${pins.locale}, time zone ${pins.timeZone}, viewport ` +
-      `${pins.viewport}, colour scheme ${pins.colorScheme}.`,
+      `${pins.viewport}, colour scheme ${pins.colorScheme}` +
+      `${pins.pdfViewerEnabled == null ? '' : `, pdf.js ${pins.pdfViewerEnabled ? 'on' : 'off'}`}.`,
     '',
     `| condition | ${ENV_COLUMNS.map(([label]) => label).join(' | ')} |`,
     `|---|${ENV_COLUMNS.map(() => '---').join('|')}|`,
@@ -707,7 +734,7 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
       : []),
     ...flags
       .filter((f) => ['contaminated', 'pre-isolation', 'pricing_v1', 'foreign-calls', 'browser-changed', 'eval-dirty'].includes(f.flag))
-      .map((f) => `- ${f.flag.toUpperCase()}: ${f.why}`),
+      .map((f) => `- ${f.flag.toUpperCase()}: ${f.why}${f.flag === 'eval-dirty' ? dirtyNote(meta.git) : ''}`),
     // Serving is a measurement epoch: single-origin URLs name the pages/
     // directory, which can describe the test (/flaky/slow.html, /maze/).
     `- serving: ${SERVING_NOTE[meta.serving ?? 'single-origin']}.` +

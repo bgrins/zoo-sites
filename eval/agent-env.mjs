@@ -220,6 +220,17 @@ export function removeAllTempDirs() {
   for (const dir of [...LIVE_DIRS]) removeTempDir(dir);
 }
 
+// The directory of the attempt's that only its MCP server writes: where the
+// browser saves downloads, which for playwright-mcp is its --output-dir, beside
+// its own snapshots and logs. Stored runs recorded curl's 403 bodies, which the
+// agent's shell wrote into downloads/, as the browser's downloads, so each
+// backend's sandbox lets the agent's shell and file tools read both names and
+// write neither (serverDirs); the servers run outside the sandboxes. Plain
+// directories, since `find` and `rg --files` skip a linked one.
+export const SERVER_DIR_NAMES = ['downloads', 'playwright-output'];
+export const serverDirName = (condition) => (condition === 'playwright-mcp' ? 'playwright-output' : 'downloads');
+export const serverDirs = (cwd) => (cwd ? SERVER_DIR_NAMES.map((name) => join(cwd, name)) : []);
+
 // Files the MCP servers write for themselves into the download directory, so
 // `downloads` counts only what a page made the browser save, in either
 // condition. playwright-mcp names its snapshots and logs <kind>-<ISO time>.<ext>;
@@ -247,9 +258,11 @@ async function describeFile(path, name) {
 
 // What the browser saved into an attempt's download directory, read before the
 // directory is removed. A file still downloading keeps Firefox's .part name.
-// Never throws, like removeTempDir: a file it cannot read is recorded with its
-// error.
-export async function attemptDownloads(dir) {
+// `named` holds the absolute paths the agent gave a server tool to write, which
+// playwright-mcp resolves against the attempt directory, so one inside its
+// output directory is the server's file too. Never throws, like removeTempDir:
+// a file it cannot read is recorded with its error.
+export async function attemptDownloads(dir, named = new Set()) {
   let entries;
   try {
     entries = readdirSync(dir, { withFileTypes: true });
@@ -258,7 +271,7 @@ export async function attemptDownloads(dir) {
   }
   const out = [];
   for (const e of entries) {
-    if (e.isFile() && !TOOL_ARTIFACTS.some((re) => re.test(e.name))) {
+    if (e.isFile() && !TOOL_ARTIFACTS.some((re) => re.test(e.name)) && !named.has(join(dir, e.name))) {
       out.push(await describeFile(join(dir, e.name), e.name));
     }
   }

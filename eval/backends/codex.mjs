@@ -37,7 +37,7 @@ import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { promisify } from 'node:util';
-import { agentEnv, makeTempDir, pathSpellings, removeTempDir, TEMP_PREFIX, unreadablePaths } from '../agent-env.mjs';
+import { agentEnv, makeTempDir, pathSpellings, removeTempDir, SERVER_DIR_NAMES, TEMP_PREFIX, unreadablePaths } from '../agent-env.mjs';
 import { priceTokens } from './pricing.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -249,7 +249,7 @@ export function shellPermissionsToml(tmp) {
   };
   const tables = [
     [`${profile}.filesystem`, filesystem],
-    [`${profile}.filesystem.":workspace_roots"`, { '.': 'write' }],
+    [`${profile}.filesystem.":workspace_roots"`, { '.': 'write', ...Object.fromEntries(SERVER_DIR_NAMES.map((n) => [n, 'read'])) }],
     [`${profile}.network`, { enabled: true, allow_local_binding: true }],
     [`${profile}.network.domains`, Object.fromEntries(LOOPBACK_HOSTS.map((h) => [h, 'allow']))],
   ];

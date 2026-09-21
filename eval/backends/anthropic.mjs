@@ -27,7 +27,7 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 import { existsSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { delimiter, join } from 'node:path';
-import { makeTempDir, pathSpellings, removeTempDir, TEMP_PREFIX, unreadablePaths } from '../agent-env.mjs';
+import { makeTempDir, pathSpellings, removeTempDir, serverDirs, TEMP_PREFIX, unreadablePaths } from '../agent-env.mjs';
 import { priceTokens } from './pricing.mjs';
 
 export const DEFAULT_MODEL = 'claude-sonnet-5';
@@ -101,7 +101,7 @@ function sandboxFor(cwd, tmp) {
     allowUnsandboxedCommands: false,
     filesystem: {
       allowWrite: [cwd, tmp].filter(Boolean),
-      denyWrite: ['/tmp/claude', '/private/tmp/claude'],
+      denyWrite: ['/tmp/claude', '/private/tmp/claude', ...serverDirs(cwd)],
       denyRead: SHELL_READ.deny,
       allowRead: SHELL_READ.allow,
     },
@@ -256,7 +256,7 @@ export function agentOptions({ model, effort, env, cwd, mcpStdio, abortControlle
     cwd,
     settingSources: TOOL_POLICY.settingSources,
     tools: TOOLS,
-    disallowedTools: DISALLOWED_TOOLS,
+    disallowedTools: [...DISALLOWED_TOOLS, ...serverDirs(cwd).map((dir) => `Edit(/${dir}/**)`)],
     allowedTools: allowedTools(cwd),
     strictMcpConfig: TOOL_POLICY.strictMcpConfig,
     persistSession: TOOL_POLICY.persistSession,

@@ -54,7 +54,8 @@ import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import {
-  appendFileSync, createWriteStream, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync,
+  appendFileSync, createWriteStream, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync,
+  writeFileSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -65,13 +66,13 @@ import { basicTasks } from './tasks/basic.mjs';
 import { webTasks } from './tasks/web.mjs';
 import { devtoolsTasks } from './tasks/devtools.mjs';
 import {
-  agentEnv, attemptDownloads, makeTempDir, removeAllTempDirs, removeTempDir, SHIMMED_COMMANDS, shimmedPath,
-  TEMP_PREFIX, writeStateFile,
+  agentEnv, attemptDownloads, makeTempDir, removeAllTempDirs, removeTempDir, serverDirName, SHIMMED_COMMANDS,
+  shimmedPath, TEMP_PREFIX, writeStateFile,
 } from './agent-env.mjs';
 import { extractFields, extractorInfo, isSentinel } from './extract.mjs';
 import {
   BROWSER_PINS, PINNED_PREFS, devtoolsMcpEntry, devtoolsMcpInfo, downloadPrefs, firefoxBuild, prefArgs,
-  startMcpServer,
+  sha256File, startMcpServer,
 } from './mcp-stdio.mjs';
 import {
   blameToolErrors, createCallRecorder, ensureTapExit, readTapLog, tapSpec, tapSurfaceCalls, tapToolStats,
@@ -578,12 +579,14 @@ Execution:
 
 Before any paid work, each condition's MCP server is started once, must list
 its tools, and loads a loopback page that records its browser's Firefox
-version, user agent, Accept-Language, locale, time zone, viewport and colour
-scheme into meta.env; the run aborts if one cannot. Every condition is pinned
-to locale ${BROWSER_PINS.locale}, time zone ${BROWSER_PINS.timeZone}, a ${BROWSER_PINS.viewport.width}x${BROWSER_PINS.viewport.height} viewport and the ${BROWSER_PINS.colorScheme} colour
-scheme, and report.md flags whatever still differs. Each attempt's browser
-saves downloads into downloads/ in the attempt's directory, and the row records
-them as downloads [{name, bytes, sha256}].
+version, user agent, Accept-Language, locale, time zone, viewport, colour
+scheme and PDF viewer into meta.env; the run aborts if one cannot. Every
+condition is pinned to locale ${BROWSER_PINS.locale}, time zone ${BROWSER_PINS.timeZone}, a ${BROWSER_PINS.viewport.width}x${BROWSER_PINS.viewport.height} viewport, the
+${BROWSER_PINS.colorScheme} colour scheme and pdf.js on, and report.md flags whatever still differs.
+Each attempt's browser saves downloads into downloads/ in the attempt's
+directory (playwright-output/, beside its own files, under playwright-mcp).
+The backend's sandbox lets the agent read that directory but not write it,
+and the row records what the browser saved as downloads [{name, bytes, sha256}].
 
 Results land in results/run-<timestamp>/ (gitignored): results.json,
 report.md (shareable), transcripts/*.jsonl (full agent message streams,
@@ -706,6 +709,23 @@ const PLAYWRIGHT_MCP_CLI = join(
   dirname(requireHere.resolve('@playwright/mcp/package.json')),
   'cli.js'
 );
+
+// Which playwright-mcp a run measured, for its meta. Its cli.js only hands the
+// command to playwright-core's two bundles, which hold every tool and require
+// no other file of the package, so the bundles the package resolves are hashed
+// too.
+function playwrightMcpInfo() {
+  const mcpRequire = createRequire(PLAYWRIGHT_MCP_CLI);
+  let core = null;
+  try {
+    core = {
+      version: JSON.parse(readFileSync(mcpRequire.resolve('playwright-core/package.json'), 'utf8')).version ?? null,
+      coreBundle: sha256File(mcpRequire.resolve('playwright-core/lib/coreBundle')),
+      utilsBundle: sha256File(mcpRequire.resolve('playwright-core/lib/utilsBundle')),
+    };
+  } catch {}
+  return { source: 'dependency', version: packageVersion('@playwright/mcp'), sha256: sha256File(PLAYWRIGHT_MCP_CLI), core };
+}
 
 // Every condition gets a shell, so the only difference between conditions
 // is how the browser is driven rather than whether a shell exists at all. It
@@ -855,8 +875,9 @@ function serverSpecFor(condition, { downloadsDir, privateDir, profileDir, userAg
         VIEWPORT,
         '--config',
         playwrightConfigFile(privateDir, userAgent),
-        // Its downloads land in its output directory, which also holds its own
-        // snapshot and log files. Unset, that is .playwright-mcp/ in the cwd.
+        // Its downloads land in its output directory, with no option to put
+        // them elsewhere, beside its own snapshot and log files, which its
+        // replies link to. Unset, that is .playwright-mcp/ in the cwd.
         '--output-dir',
         downloadsDir,
       ],
@@ -921,6 +942,7 @@ const ENV_PROBE = `() => {
     screen: screen.width + 'x' + screen.height,
     devicePixelRatio,
     colorScheme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+    pdfViewerEnabled: navigator.pdfViewerEnabled,
   })) + 'ZOOENV';
 }`;
 const ENV_TOOLS = [
@@ -978,7 +1000,7 @@ async function measureEnv(server, tools, probe, path) {
 async function preflightServer(condition, userAgent = null) {
   const dir = makeTempDir(TEMP_PREFIX.attempt);
   const privateDir = makeTempDir(TEMP_PREFIX.home);
-  const downloadsDir = join(dir, 'downloads');
+  const downloadsDir = join(dir, serverDirName(condition));
   mkdirSync(downloadsDir);
   const profileDir =
     GRID && POSITIONABLE.includes(condition)
@@ -1068,7 +1090,8 @@ async function preflight() {
           `(preflight: ${condition} lists ${listed.length} tools; ` +
             (e.unmeasured
               ? `environment unmeasured: ${e.unmeasured})`
-              : `Firefox ${e.firefox}, ${e.locale}, ${e.timeZone}, ${e.viewport}, ${e.colorScheme})`)
+              : `Firefox ${e.firefox}, ${e.locale}, ${e.timeZone}, ${e.viewport}, ${e.colorScheme}, ` +
+                `pdf.js ${e.pdfViewerEnabled == null ? '?' : e.pdfViewerEnabled ? 'on' : 'off'})`)
         );
       } catch (error) {
         throw new Error(
@@ -1155,14 +1178,28 @@ function callTelemetry(recorder, tapLog) {
   };
 }
 
+// The `filename` arguments of a message's MCP tool calls, from either backend's
+// stream, resolved as playwright-mcp resolves them: against the agent's cwd.
+// It writes a snapshot, screenshot, log or response body there, which is no
+// download even when the name points into its output directory.
+function filesNamedIn(message, cwd) {
+  const inputs =
+    message?.type === 'assistant' && Array.isArray(message.message?.content)
+      ? message.message.content.filter((b) => b?.type === 'tool_use' && /^mcp__/.test(b.name ?? '')).map((b) => b.input)
+      : message?.item?.type === 'mcp_tool_call'
+        ? [message.item.arguments]
+        : [];
+  return inputs.map((i) => i?.filename).filter((f) => typeof f === 'string' && f).map((f) => resolve(cwd, f));
+}
+
 async function runTask(backendName, condition, label, task, ctx, rep = 1, attempt = 0) {
   const backend = BACKENDS[backendName];
   // A fresh working directory per attempt: stored runs showed two parallel
   // agents writing the same file in one shared dir, and repeats reusing the
   // scripts an earlier task left there. Downloads land inside it, where the
-  // agent's shell can read them.
+  // agent's shell can read them and cannot write (agent-env.mjs serverDirs).
   const attemptDir = makeTempDir(TEMP_PREFIX.attempt);
-  const downloadsDir = join(attemptDir, 'downloads');
+  const downloadsDir = join(attemptDir, serverDirName(condition));
   mkdirSync(downloadsDir);
   // The attempt's files that are not the agent's: the server's HOME and config.
   const privateDir = makeTempDir(TEMP_PREFIX.home);
@@ -1218,9 +1255,11 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   // transcripts are being written, because the answer belongs in the result row.
   const reach = createReachRecorder();
   const calls = createCallRecorder(SURFACE_SERVER);
+  const named = new Set();
   spec.onMessage = (message) => {
     reach.observe(message);
     calls.observe(message, Date.now());
+    for (const path of filesNamedIn(message, attemptDir)) named.add(path);
     if (transcriptStream) transcriptStream.write(JSON.stringify(message) + '\n');
   };
   // Runaway guards. There is deliberately no turn limit: a "turn" means
@@ -1290,7 +1329,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
       telemetry = { telemetry_error: String(error?.message ?? error) };
     }
     // Hashing a large download stays out of the attempt's wall time.
-    downloads = await attemptDownloads(downloadsDir);
+    downloads = await attemptDownloads(downloadsDir, named);
     provenance = {
       prompt: spec.prompt,
       browser,
@@ -1963,15 +2002,55 @@ async function runInterleaved(runs, shared, onRow) {
   return perArm.flat().map((item) => rows.get(itemKey(item))).filter(Boolean);
 }
 
+// The paths of the repository whose edits change what a run serves, drives or
+// grades.
+const EVAL_PATHS = ['eval', 'sites', 'pages', 'server.mjs', 'serve.mjs', 'manifest.mjs'];
+
 // The commit and dirty flag of a git work tree, read now rather than whenever
-// the run is later bundled.
+// the run is later bundled. The flag alone left a stored run's edits unknown,
+// so a dirty tree also records its dirty files as `git status` codes and
+// paths, and a sha256 over the files under EVAL_PATHS that differ from HEAD,
+// untracked ones included: each path, then its bytes' sha256, a link's target,
+// or "deleted". Contents rather than diff text, whose prefixes and textconv
+// follow the operator's git config. Two runs of one commit with the same hash
+// ran the same eval code. The hash is null when no file under EVAL_PATHS
+// differs, and `diffError` says so when git could not list them.
 function gitState(dir) {
   const git = (gitArgs) => {
-    const r = spawnSync('git', ['-C', dir, ...gitArgs], { encoding: 'utf8' });
-    return r.status === 0 ? r.stdout.trim() : null;
+    const r = spawnSync('git', ['-C', dir, ...gitArgs], { maxBuffer: 1 << 30 });
+    return r.status === 0 ? r.stdout.toString('utf8') : null;
   };
-  const status = git(['status', '--porcelain']);
-  return { commit: git(['rev-parse', 'HEAD']), dirty: status == null ? null : status !== '' };
+  const status = git(['status', '--porcelain', '-z', '--untracked-files=all']);
+  const commit = git(['rev-parse', 'HEAD'])?.trim() ?? null;
+  if (!status) return { commit, dirty: status == null ? null : false };
+  // -z entries are "XY path", and a rename or copy is followed by its source.
+  const dirtyFiles = [];
+  const entries = status.split('\0').filter(Boolean);
+  for (let i = 0; i < entries.length; i++) {
+    const code = entries[i].slice(0, 2);
+    const path = entries[i].slice(3);
+    dirtyFiles.push(/[RC]/.test(code) ? `${code} ${entries[++i]} -> ${path}` : `${code} ${path}`);
+  }
+  const state = { commit, dirty: true, dirtyFiles, diffPaths: EVAL_PATHS, diffSha256: null };
+  const changed = git(['diff', 'HEAD', '--name-only', '--no-renames', '--no-relative', '-z', '--', ...EVAL_PATHS]);
+  const untracked = git(['ls-files', '--others', '--exclude-standard', '-z', '--', ...EVAL_PATHS]);
+  if (changed == null || untracked == null) {
+    return { ...state, diffError: `git ${changed == null ? 'diff' : 'ls-files'} failed` };
+  }
+  const paths = [...new Set(`${changed}\0${untracked}`.split('\0').filter(Boolean))].sort();
+  if (!paths.length) return state;
+  const hash = createHash('sha256');
+  for (const path of paths) {
+    const full = join(dir, path);
+    let content;
+    try {
+      content = lstatSync(full).isSymbolicLink() ? `link ${readlinkSync(full)}` : (sha256File(full) ?? 'unreadable');
+    } catch {
+      content = 'deleted';
+    }
+    hash.update(`${path}\0${content}\0`);
+  }
+  return { ...state, diffSha256: hash.digest('hex') };
 }
 
 // Walks up node_modules the way Node resolves a package, because neither SDK
@@ -1996,7 +2075,7 @@ function buildMeta(startedAt, selected, env, tools) {
       c,
       {
         ...(c === 'playwright-mcp'
-          ? { source: 'dependency', version: packageVersion('@playwright/mcp') }
+          ? playwrightMcpInfo()
           : custom(c)
             ? { source: '--mcp-command', command: MCP_COMMAND }
             : devtoolsMcpInfo(devtoolsRootFor(c))),
@@ -2034,6 +2113,7 @@ function buildMeta(startedAt, selected, env, tools) {
       ...BROWSER_PINS,
       viewport: VIEWPORT,
       devtoolsWindow: HEADED ? 'the headed grid cell' : DEVTOOLS_WINDOW,
+      pdfViewerEnabled: 'pdfjs.disabled' in PINNED_PREFS ? !PINNED_PREFS['pdfjs.disabled'] : null,
       prefs: PINNED_PREFS,
       playwrightConfig: PLAYWRIGHT_CONFIG,
     },
@@ -2069,7 +2149,10 @@ function buildMeta(startedAt, selected, env, tools) {
     sdks: Object.fromEntries(BACKEND_NAMES.map((n) => [n, packageVersion(SDK_PACKAGES[n])])),
     isolation: {
       scratch: 'fresh directory per attempt',
-      downloads: '<attempt dir>/downloads, recorded on the row',
+      downloads:
+        '<attempt dir>/downloads, or playwright-mcp\'s --output-dir <attempt dir>/playwright-output; the agent\'s ' +
+        'sandbox denies it writes to either (agent-env.mjs serverDirs); recorded on the row without the servers\' ' +
+        'own files or a file the agent named in a tool call',
       ...(HEADED ? { browserProfile: 'seeded per attempt with its grid cell' } : {}),
       env: Object.fromEntries(BACKEND_NAMES.map((n) => [n, Object.keys(agentEnvFor(n)).sort()])),
       toolPolicy: Object.fromEntries(BACKEND_NAMES.map((n) => [n, BACKENDS[n].TOOL_POLICY])),

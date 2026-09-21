@@ -11,6 +11,12 @@ never touch `pages/`, never start `server.mjs`, and cost nothing. `pdf-bill.mjs`
 imports site code: the bill renderer in `sites/utility.mjs`. playwright-mcp's
 snapshots and downloads go to a temporary directory that each run removes.
 
+Each server launches with its own defaults and none of a paid run's pins
+(`eval/README.md`): no locale, viewport or colour scheme, and Playwright's Firefox with
+pdf.js off, as its `playwright.cfg` ships it. So `documents.mjs` and `pdf-bill.mjs`
+record a playwright-mcp PDF download where a paid run, whose `pdfjs.disabled=false`
+pin turns pdf.js back on, opens the viewer.
+
 ## Running one
 
 ```sh

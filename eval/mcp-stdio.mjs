@@ -54,7 +54,7 @@ export function devtoolsMcpEntry(root = undefined) {
   return resolved;
 }
 
-function sha256File(path) {
+export function sha256File(path) {
   try {
     return createHash('sha256').update(readFileSync(path)).digest('hex');
   } catch {
@@ -115,11 +115,15 @@ export const BROWSER_PINS = {
 // locale (intl.locale.requested=de-DE left an en-US build at en-US), so
 // javascript.use_us_english_locale is what holds a localised system Firefox to
 // en-US. Unset, the colour scheme follows the operator's OS appearance;
-// Playwright emulates one over the pref.
+// Playwright emulates one over the pref. Playwright's Firefox build turns
+// pdf.js off in its playwright.cfg, so a PDF downloaded there while the release
+// Firefox opened it in pdf.js; a user pref overrides the cfg, and the build
+// then renders it in the viewer too.
 export const PINNED_PREFS = {
   'intl.accept_languages': BROWSER_PINS.acceptLanguage,
   'javascript.use_us_english_locale': true,
   'layout.css.prefers-color-scheme.content-override': 1,
+  'pdfjs.disabled': false,
 };
 
 // Downloads go to `dir` without a dialog. Firefox's default is the operator's
@@ -156,9 +160,9 @@ const readText = (path) => {
 };
 
 // A Firefox build as its files describe it: application.ini's Version and
-// BuildID, and whether an autoconfig file turns pdf.js off. Playwright's build
-// ships a playwright.cfg that does, so PDFs download there and render in the
-// built-in viewer everywhere else. `binary` null means systemFirefox().
+// BuildID, and whether pdf.js is on: Playwright's build ships a playwright.cfg
+// that turns it off, which a pinned pdfjs.disabled overrides. `binary` null
+// means systemFirefox().
 export function firefoxBuild(binary) {
   const path = binary ?? systemFirefox();
   if (!path) return null;
@@ -168,11 +172,19 @@ export function firefoxBuild(binary) {
   const field = (key) => new RegExp(`^${key}=(.*)$`, 'm').exec(ini)?.[1]?.trim() ?? null;
   const cfg = nearby('playwright.cfg').map(readText).find((t) => t != null) ?? '';
   const pdfOff = /pref\(\s*["']pdfjs\.disabled["']\s*,\s*true\s*\)/.test(cfg);
+  const pinned = PINNED_PREFS['pdfjs.disabled'];
   return {
     binary: path,
     version: field('Version'),
     buildID: field('BuildID'),
-    pdfjs: pdfOff ? 'disabled by playwright.cfg' : PINNED_PREFS['pdfjs.disabled'] ? 'disabled by a pinned pref' : 'enabled',
+    pdfjs:
+      pinned === true
+        ? 'disabled by a pinned pref'
+        : !pdfOff
+          ? 'enabled'
+          : pinned === false
+            ? 'enabled by a pinned pref over playwright.cfg'
+            : 'disabled by playwright.cfg',
   };
 }
 

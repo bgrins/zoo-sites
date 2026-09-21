@@ -77,7 +77,10 @@ export function runFlags(meta = {}, results = [], { condition = null } = {}) {
   }
   if (!meta.builds && !meta.surfaces) flags.push({ flag: 'no-build-identity', why: 'the run records neither meta.builds nor meta.surfaces' });
   if (!meta.git?.commit) flags.push({ flag: 'no-eval-commit', why: 'the run records no eval commit' });
-  if (meta.git?.dirty) flags.push({ flag: 'eval-dirty', why: `the eval tree at ${String(meta.git.commit).slice(0, 10)} had uncommitted changes` });
+  // A run that hashed its eval paths (run.mjs gitState) and found none changed
+  // ran its commit's eval code, whatever else was dirty.
+  const evalClean = meta.git?.dirtyFiles && meta.git.diffSha256 == null && !meta.git.diffError;
+  if (meta.git?.dirty && !evalClean) flags.push({ flag: 'eval-dirty', why: `the eval tree at ${String(meta.git.commit).slice(0, 10)} had uncommitted changes` });
   return flags;
 }
 

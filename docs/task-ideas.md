@@ -313,10 +313,11 @@ phish-pick's `bankLogins` bucket.
 **Prerequisites.** These change shared files, so they land one writer at a time. The
 first four have landed, ctx.pick without its `sweep` field; the mail bus has not.
 
-- **download dir** (landed). Each attempt's browser saves into `<attempt>/downloads`:
-  `eval/run.mjs` passes firefox-devtools-mcp the `browser.download.*` prefs as `--pref`
-  flags and playwright-mcp the directory as `--output-dir`, and records
-  `row.downloads` as `[{ name, bytes, sha256 }]`; `eval/verify.mjs` sends each
+- **download dir** (landed). Each attempt's browser saves into a directory of the
+  attempt's that the agent can read and not write: `eval/run.mjs` passes
+  firefox-devtools-mcp the `browser.download.*` prefs for `<attempt>/downloads` as
+  `--pref` flags and playwright-mcp `<attempt>/playwright-output` as `--output-dir`,
+  and records `row.downloads` as `[{ name, bytes, sha256 }]`; `eval/verify.mjs` sends each
   worker's downloads to its temporary directory. Before it, chart-escape's Export CSV,
   served as an attachment, landed in the operator's own download folder.
   `eval/spikes/documents.mjs` shows the prefs route a download into the seeded

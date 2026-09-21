@@ -183,8 +183,9 @@ epochs: `meta.serving` records the mode, a run without it was single-origin, and
 
 **Both conditions' browsers run in one environment.** Before any paid work the preflight
 loads a loopback page in each condition's browser and records its Firefox version, user
-agent, Accept-Language, locale, time zone, viewport and colour scheme into `meta.env`.
-`report.md` flags anything that differs between conditions or from its pin:
+agent, Accept-Language, locale, time zone, viewport, colour scheme and
+`navigator.pdfViewerEnabled` into `meta.env`. `report.md` and the A/B report flag
+anything that differs between conditions or from its pin:
 
 | setting | pinned to | firefox-devtools-mcp | playwright-mcp |
 |---|---|---|---|
@@ -192,28 +193,53 @@ agent, Accept-Language, locale, time zone, viewport and colour scheme into `meta
 | locale | `en-US`, Accept-Language `en-US,en;q=0.9` | prefs `intl.accept_languages` and `javascript.use_us_english_locale` via `--pref` | the same prefs via `firefoxUserPrefs` in a `--config` file |
 | viewport | `1366x683` | `--viewport 1366x768`, which sizes the window; the toolbars take the rest | `--viewport-size 1366x683` |
 | colour scheme | `light` | pref `layout.css.prefers-color-scheme.content-override=1` | `contextOptions.colorScheme` in the config file |
+| PDF viewer | pdf.js on | pref `pdfjs.disabled=false` via `--pref`, already the release default | the same pref via `firefoxUserPrefs`, which overrides the `playwright.cfg` that turns pdf.js off |
 
 The Firefox version is the one setting left unpinned: `firefox-devtools-mcp` drives the
 installed Firefox, and Playwright drives its own patched build. The two differ today, and
 every report says so. Every row records the binary, version and build ID its condition
 launched, read at the attempt, so a desktop Firefox that updates mid-run shows up as
-`BROWSER-CHANGED` in `report.md` and the A/B report. The builds also differ on PDFs:
-Playwright's turns pdf.js off in its `playwright.cfg`, so a PDF downloads there and
-renders inline in the other; the environment table says which. A `--headed` run sizes each `firefox-devtools-mcp` window to its
+`BROWSER-CHANGED` in `report.md` and the A/B report. Playwright's build turns pdf.js
+off in its `playwright.cfg`. Before the pin, a PDF downloaded there and opened in pdf.js
+in the release Firefox. So pdf-bill's playwright-mcp agent read the downloaded bills
+with a host `pdftotext` while the other read the viewer, and gov-lookup's form PDFs
+downloaded in one arm only. The pinned pref turns pdf.js on in both builds. A run whose
+preflight predates the `navigator.pdfViewerEnabled` probe is read from each build's
+files instead. A `--headed` run sizes each `firefox-devtools-mcp` window to its
 grid cell, so its viewport is flagged too. `--mcp-command` servers launch as given, with
 the time zone the only pin that reaches them. `--rerun-failed` cannot restore the
 environment of the run it tops up, so it records how its own differs as
 `meta.rerunEnvDrift`, and `report.md` lists that too. A run without `meta.env` predates
 the pins, and every top-up of one says its rows ran unpinned.
 
-**Downloads stay in the attempt.** Each attempt's browser saves downloads into
-`downloads/` in the attempt's directory, where the agent's shell can read them:
-`firefox-devtools-mcp` through the `browser.download.*` prefs, and `playwright-mcp`
-through `--output-dir`, which also receives its own snapshot and log files. The row
-records what landed as `downloads: [{name, bytes, sha256}]`, or `{name, bytes, error}`
-for a file it could not read. It leaves out what the servers write there for
-themselves, so `downloads` counts only what a page made the browser save: playwright-mcp's
-timestamp-named snapshots and logs, and the `screencast-<uuid>.webm` that
+**The run records the code it ran.** `meta.git` holds the eval commit and whether the
+tree was dirty. A dirty tree adds `dirtyFiles`, each file's two-letter `git status` code
+and path. It also adds `diffSha256`, a hash over the files under `eval/`, `sites/`,
+`pages/`, `server.mjs`, `serve.mjs` and `manifest.mjs` that differ from that commit,
+untracked ones included: each path and the sha256 of its bytes. Two runs of one commit
+with one hash ran the same eval code. The hash is null when only other files differ,
+and such a run raises no `EVAL-DIRTY`; a run that does quotes the hash on that line.
+`meta.surfaces` holds each server's version and entry sha256: firefox-devtools-mcp's
+`dist/index.js`, and playwright-mcp's `cli.js` plus the two `playwright-core` bundles
+that hold its tools.
+
+**Downloads stay in the attempt, and only the browser writes them.** Each attempt's
+browser saves downloads into a directory inside the attempt's directory. That is
+`downloads/` for `firefox-devtools-mcp`, through the `browser.download.*` prefs, and
+`playwright-output/` for `playwright-mcp`, whose `--output-dir` takes its downloads beside
+its own snapshot and log files, which its replies link to. The agent's shell and file
+tools can read both directories and write neither: the anthropic sandbox lists them
+under `denyWrite` and denies `Edit` there, and the codex permissions profile marks them
+read-only under its workspace root. On macOS, `codex sandbox` under that profile refused
+every write, rename and removal there, and so did a Seatbelt profile built the way the
+Claude CLI builds its own. The CLI's sandbox itself, its Write tool, codex's
+`apply_patch` and Linux's bubblewrap are untested. The agent's own files go elsewhere in
+the attempt directory. Before, one directory took all three, and a playwright-mcp pdf-bill row
+recorded five 28-byte 403 bodies that the agent's `curl -o` wrote as the browser's
+downloads. The row records what the browser saved as `downloads: [{name, bytes,
+sha256}]`, or `{name, bytes, error}` for a file it could not read. It leaves out what
+the servers write there for themselves: playwright-mcp's timestamp-named snapshots and
+logs, any file an agent's tool call named there, and the `screencast-<uuid>.webm` that
 firefox-devtools-mcp's `screencast_stop` saves. Unpinned, `firefox-devtools-mcp` saved
 chart-escape's CSV export and every screencast into the operator's `~/Downloads`. The
 gate sends its downloads to each worker's temporary directory.
