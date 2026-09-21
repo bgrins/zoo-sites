@@ -559,7 +559,8 @@ Conditions and models:
                           replaces the built-in firefox-devtools-mcp server.
                           It launches as given: the time zone reaches it
                           through its environment, but the other browser pins
-                          and the download directory do not
+                          and the download directory do not, and a file it
+                          saves in your home the agent cannot read
 
 Execution:
   --parallel              run conditions concurrently
@@ -663,6 +664,9 @@ for (let i = 0; i < args.length; i++) {
 }
 const BUILD_CONDITIONS = [...DEVTOOLS_BUILDS.keys()].map((label) => `${DEVTOOLS}@${label}`);
 const isDevtools = (c) => c === DEVTOOLS || c.startsWith(`${DEVTOOLS}@`);
+// A firefox-devtools-mcp condition that runs a build of that server, not a
+// --mcp-command one.
+const builtInDevtools = (c) => isDevtools(c) && !(c === DEVTOOLS && CUSTOM_MCP);
 // A build condition's root; undefined for plain firefox-devtools-mcp, which
 // resolves FIREFOX_DEVTOOLS_MCP or the dependency.
 const devtoolsRootFor = (c) => (c === DEVTOOLS ? undefined : DEVTOOLS_BUILDS.get(c.slice(DEVTOOLS.length + 1)));
@@ -813,7 +817,7 @@ const TAG_MECHANISM = {
   'playwright-mcp': 'contextOptions.userAgent',
 };
 const tagMechanismFor = (condition) =>
-  condition === 'playwright-mcp' ? TAG_MECHANISM['playwright-mcp'] : isDevtools(condition) && !(condition === DEVTOOLS && CUSTOM_MCP) ? TAG_MECHANISM[DEVTOOLS] : null;
+  condition === 'playwright-mcp' ? TAG_MECHANISM['playwright-mcp'] : builtInDevtools(condition) ? TAG_MECHANISM[DEVTOOLS] : null;
 const PREFLIGHT_ENV = {};
 const TAGGABLE = new Set();
 function browserTag(condition) {
@@ -855,12 +859,22 @@ function mcpStdioFor(condition, { downloadsDir, privateDir, profileDir = null, u
 // with a HOME of the attempt's own; stored runs found that directory shared by
 // every attempt and holding files from earlier days. Its WebDriver's driver
 // cache stays the operator's, since an empty one downloads geckodriver.
+const devtoolsHome = (privateDir) => join(privateDir, 'home');
 function devtoolsServerEnv(privateDir) {
-  const home = join(privateDir, 'home');
+  const home = devtoolsHome(privateDir);
   mkdirSync(home, { recursive: true });
   const realHome = process.env.HOME || homedir();
   return { HOME: home, SE_CACHE_PATH: process.env.SE_CACHE_PATH || join(realHome, '.cache', 'selenium') };
 }
+
+// Where a condition's server saves files outside the attempt directory and
+// names them in its replies, for the backend to let the agent read and not
+// write: firefox-devtools-mcp saves under <its HOME>/.firefox-devtools-mcp,
+// saveTo:true in its output/ and an absolute saveTo anywhere inside.
+// playwright-mcp saves inside the attempt directory, and a --mcp-command
+// server keeps the operator's HOME, which the agent may not read.
+const serverOutputDirsFor = (condition, privateDir) =>
+  builtInDevtools(condition) ? [join(devtoolsHome(privateDir), '.firefox-devtools-mcp')] : [];
 
 function serverSpecFor(condition, { downloadsDir, privateDir, profileDir, userAgent }) {
   if (condition === 'playwright-mcp') {
@@ -926,7 +940,7 @@ function browserBuildFor(condition) {
     })();
     return firefoxBuild(playwrightFirefox);
   }
-  if (isDevtools(condition) && !(condition === DEVTOOLS && CUSTOM_MCP)) return firefoxBuild(null);
+  if (builtInDevtools(condition)) return firefoxBuild(null);
   return null;
 }
 
@@ -1236,6 +1250,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     mcpStdio,
     env: agentEnvFor(backendName),
     shellPath: shellPathFor(backendName),
+    serverOutputDirs: serverOutputDirsFor(condition, privateDir),
     // Where a backend that keeps its own session record (codex) copies it.
     rolloutPath: rollout,
     // For the scripted backend, which runs the task's driver against this pages
@@ -2169,7 +2184,10 @@ function buildMeta(startedAt, selected, env, tools) {
       toolPolicy: Object.fromEntries(BACKEND_NAMES.map((n) => [n, BACKENDS[n].TOOL_POLICY])),
       // Stubs first on every agent shell's PATH, never on an MCP server's.
       shellStubs: SHIMMED_COMMANDS,
-      devtoolsHome: 'fresh per attempt, outside the agent\'s directory; SE_CACHE_PATH keeps the WebDriver cache',
+      devtoolsHome:
+        'fresh per attempt, outside the agent\'s directory; SE_CACHE_PATH keeps the WebDriver cache; its ' +
+        '.firefox-devtools-mcp, where saveTo saves, is the backend\'s serverOutputDirs, readable and not writable ' +
+        'by the agent',
       browserTag: {
         how: 'each attempt\'s browser sends the preflight user agent plus a space and 8 hex digits',
         mechanism: Object.fromEntries(CONDITIONS.map((c) => [c, tagMechanismFor(c)])),

@@ -8,9 +8,9 @@
 //   are auto-approved (default_tools_approval_mode) since codex otherwise
 //   cancels non-read-only MCP tools under approval 'never'. Commands run under
 //   a permissions profile (shellPermissionsToml) that reads everywhere but the
-//   graded truth, writes in the attempt directory and a private TMPDIR, and
-//   reaches loopback only (the fixtures are loopback HTTP), so the shell never
-//   differs between conditions.
+//   operator's home and the graded truth, writes in the attempt directory and
+//   a private TMPDIR, and has no network, so the shell never differs between
+//   conditions.
 //
 // Codex offers tools in the mode the model catalog names (TOOL_MODE). In code
 //   mode, which codex ships for gpt-5.6-*, the model has no MCP tool of its
@@ -37,7 +37,10 @@ import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { promisify } from 'node:util';
-import { agentEnv, makeTempDir, pathSpellings, removeTempDir, SERVER_DIR_NAMES, TEMP_PREFIX, unreadablePaths } from '../agent-env.mjs';
+import {
+  agentEnv, assertTempDirReadable, makeTempDir, pathSpellings, removeTempDir, SERVER_DIR_NAMES, SHELL_ENV, TEMP_PREFIX,
+  unreadablePaths,
+} from '../agent-env.mjs';
 import { priceTokens } from './pricing.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -61,10 +64,9 @@ if (!TOOL_MODES.includes(TOOL_MODE)) {
 
 const SHELL_READ = unreadablePaths();
 const SHELL_PROFILE = 'shell';
-// Hosts the shell may reach through codex's managed proxy: loopback, where
-// every fixture is served. The anthropic sandbox names all but ::1, and both
-// sandboxes let the shell connect to loopback directly as well.
-const LOOPBACK_HOSTS = ['localhost', '127.0.0.1', '::1', '*.localhost'];
+// What a rollout's turn_context records as the profile's network once
+// network.enabled=false.
+const SHELL_NETWORK = 'restricted';
 
 // Settings every codex process gets on top of the isolated home. On first start
 // codex unpacks its bundled skills (imagegen, skill-installer and more) into
@@ -98,14 +100,11 @@ const ISOLATED_CONFIG = {
     plugins: false,
   },
 };
-// The agent's process alone also starts the managed network proxy that holds
-// its shell to loopback (shellPermissionsToml).
-const AGENT_FEATURES = { ...ISOLATED_CONFIG.features, network_proxy: true };
 
 // Recorded in each run's meta, so results from before and after a policy
 // change stay distinguishable.
 export const TOOL_POLICY = {
-  config: { ...ISOLATED_CONFIG, features: AGENT_FEATURES },
+  config: ISOLATED_CONFIG,
   // Every feature `codex features list` reports on under that config, filled
   // in by preflightIsolation.
   featuresOn: null,
@@ -117,18 +116,27 @@ export const TOOL_POLICY = {
     'model requests: the distinct total_token_usage values of the rollout token_count events; tool calls + 1 ' +
     'when no rollout parses or its last total disagrees with turn.completed usage (stored runs before this field: tool calls + 1)',
   network:
-    `shell only: features.network_proxy routes it through codex's proxy, which allows ${LOOPBACK_HOSTS.join(', ')}, ` +
-    "and the sandbox lets it connect directly to loopback and this machine's own addresses, and resolve names; nothing else",
+    'none for the shell: the profile\'s network.enabled=false, loopback fixtures included; the browser and the MCP ' +
+    'server run outside the sandbox',
   readable:
-    'shell only: everything but readDenied, with readAllowed open again inside it. Not covered: view_image, which ' +
-    'reads any file in codex\'s own process and has no switch in 0.145.0 (a row whose view_image names a ' +
+    'shell only: everything but readDenied (the operator home, every checkout, the agent homes), with readAllowed ' +
+    'open again inside it (this checkout\'s node_modules, and the shell PATH directories under the home, each bin ' +
+    'with the lib beside it: agent-env.mjs unreadablePaths); the preflight keeps the temp directory, which holds ' +
+    'the attempt directory, TMPDIR and serverOutputDirs, outside every denied path. Not covered: view_image, ' +
+    'which reads any file in codex\'s own process and has no switch in 0.145.0 (a row whose view_image names a ' +
     'readDenied path is invalid), the browser and the MCP servers, which run unsandboxed (file:// and the upload ' +
-    'tools reach the repository), and copies of the graded truth outside a checkout',
+    'tools reach the repository), and copies of the graded truth outside the home and every checkout',
+  serverOutput:
+    'firefox-devtools-mcp saves under <its HOME>/.firefox-devtools-mcp (saveTo:true in its output/), outside the ' +
+    'attempt directory, and names the file in its reply; the shell reads it under :root read and cannot write it. ' +
+    'A --mcp-command server keeps the operator HOME, so a file it saves there is unreadable to the shell',
+  shellEnv: SHELL_ENV,
   readDenied: SHELL_READ.deny,
   readAllowed: SHELL_READ.allow,
   promptListsPaths:
-    "codex puts readDenied into the agent's prompt twice (permissions instructions and environment_context), so " +
-    'input tokens compare only between runs that deny the same paths',
+    "codex puts readDenied into the agent's prompt twice (permissions instructions and environment_context), and " +
+    'readAllowed into environment_context, so input tokens compare only between runs that deny and re-open the ' +
+    'same paths (readAllowed follows the shell PATH)',
   writable: 'attempt cwd + a private TMPDIR (macOS mktemp ignores TMPDIR, so a bare mktemp is denied)',
   webSearch: 'disabled',
   approval: 'never',
@@ -138,9 +146,11 @@ export const TOOL_POLICY = {
     'and each rollout turn_context reads multi_agent_version "disabled"; features.multi_agent=false as well',
   isolationCheck:
     'preflight: the effective features must match config.features, and `codex sandbox` under the profile must ' +
-    'deny readDenied, reach loopback and not reach https://example.com. Each row: its rollout turn_context must ' +
-    'read multi_agent_version "disabled", deny every readDenied path and open writes to the attempt cwd and ' +
-    'TMPDIR alone, and no view_image may name a readDenied path, or the row is invalid (codex-isolation)',
+    'deny readDenied, read readAllowed, read and not write a directory made as a server output directory is, and ' +
+    'reach neither a loopback server (which counts what reaches it) nor https://example.com. Each row: its rollout ' +
+    `turn_context must read multi_agent_version "disabled" and network "${SHELL_NETWORK}", deny every readDenied ` +
+    'path and open writes to the attempt cwd and TMPDIR alone, and no view_image may name a readDenied path, or ' +
+    'the row is invalid (codex-isolation)',
   mcpServerEnv: 'the harness allowlist (agent-env.mjs base keys), forwarded by name',
   path: 'the harness PATH with a stub directory first (agent-env.mjs SHIMMED_COMMANDS)',
   rollout: 'CODEX_HOME/sessions rollout copied into the run dir as rollouts/<transcript>',
@@ -227,31 +237,31 @@ function uncachedInput(usage) {
 
 // The permissions profile the agent's shell runs under, as the TOML of the
 // home's config.toml. Every condition gets the same shell so the only
-// difference is how the browser is driven. It reads everywhere but the graded
-// truth and the agent homes (agent-env.mjs unreadablePaths), and writes in the
-// attempt directory (the workspace root, cwd) and `tmp` alone: workspace-write
-// also opened $TMPDIR and /tmp, which every other attempt shares (stored runs
-// kept cookie jars at fixed /tmp paths). macOS mktemp ignores TMPDIR and uses
-// the per-user temp dir, which holds every attempt's directories and so stays
-// closed: there, a bare `mktemp` fails and `mktemp -p "$TMPDIR"` works. With
-// features.network_proxy on, codex routes the shell through a proxy that
-// allows LOOPBACK_HOSTS alone, and its sandbox then lets the shell connect
-// only to loopback (allow_local_binding) and to DNS. The SDK flattens `config`
-// into dotted --config keys, which codex splits on every dot, so a path key
-// would break there; config.toml takes them quoted.
-export function shellPermissionsToml(tmp) {
+// difference is how the browser is driven. It reads everywhere but the
+// operator's home, the graded truth and the agent homes, with what the shell
+// needs to run open again inside them (`read`, agent-env.mjs unreadablePaths),
+// and writes in the attempt directory (the workspace root, cwd) and `tmp`
+// alone: workspace-write also opened $TMPDIR and /tmp, which every other
+// attempt shares (stored runs kept cookie jars at fixed /tmp paths). macOS
+// mktemp ignores TMPDIR and uses the per-user temp dir, which holds every
+// attempt's directories and so stays closed: there, a bare `mktemp` fails and
+// `mktemp -p "$TMPDIR"` works. It has no network, loopback included: the
+// browser and the MCP server run outside it, so no task needs one, and a shell
+// that has it can replay the browser's session cookie. The SDK flattens
+// `config` into dotted --config keys, which codex splits on every dot, so a
+// path key would break there; config.toml takes them quoted.
+export function shellPermissionsToml(tmp, read = SHELL_READ) {
   const profile = `permissions.${SHELL_PROFILE}`;
   const filesystem = {
     ':root': 'read',
-    ...Object.fromEntries(SHELL_READ.deny.map((p) => [p, 'deny'])),
-    ...Object.fromEntries(SHELL_READ.allow.map((p) => [p, 'read'])),
+    ...Object.fromEntries(read.deny.map((p) => [p, 'deny'])),
+    ...Object.fromEntries(read.allow.map((p) => [p, 'read'])),
     [tmp]: 'write',
   };
   const tables = [
     [`${profile}.filesystem`, filesystem],
     [`${profile}.filesystem.":workspace_roots"`, { '.': 'write', ...Object.fromEntries(SERVER_DIR_NAMES.map((n) => [n, 'read'])) }],
-    [`${profile}.network`, { enabled: true, allow_local_binding: true }],
-    [`${profile}.network.domains`, Object.fromEntries(LOOPBACK_HOSTS.map((h) => [h, 'allow']))],
+    [`${profile}.network`, { enabled: false }],
   ];
   return [
     `default_permissions = ${JSON.stringify(SHELL_PROFILE)}`,
@@ -267,7 +277,6 @@ export function codexConfig({ home, mcpStdio, effort, path, mcpEnvVars = [] }) {
   const shellTmp = home.tmp;
   return {
     ...home.config,
-    features: AGENT_FEATURES,
     approval_policy: 'never',
     ...(effort ? { model_reasoning_effort: effort } : {}),
     // The process env is already the harness allowlist (agent-env.mjs); the
@@ -279,6 +288,7 @@ export function codexConfig({ home, mcpStdio, effort, path, mcpEnvVars = [] }) {
       ignore_default_excludes: false,
       set: {
         ...(path ? { PATH: path } : {}),
+        ...SHELL_ENV,
         TMPDIR: shellTmp,
         TMPPREFIX: join(shellTmp, 'zsh'),
       },
@@ -312,23 +322,30 @@ const configFlags = (config, prefix = '') =>
     v && typeof v === 'object' ? configFlags(v, `${prefix}${k}.`) : ['-c', `${prefix}${k}=${JSON.stringify(v)}`]
   );
 
-// Before any paid work, on a home built as run() builds one. Codex's effective
-// features must match every pin in AGENT_FEATURES, which catches a renamed or
-// ignored key. The shell profile, run under `codex sandbox`, must deny every
-// readDenied path, keep readAllowed open, reach a loopback server by address
-// and as *.localhost, write in its cwd and TMPDIR, and not reach
-// https://example.com. No rollout records the network part: were
-// features.network_proxy ignored, the profile's network.enabled would open the
-// shell to every host. Offline, that last check passes without proving
-// anything. Records the features that are on in TOOL_POLICY.featuresOn and
-// throws naming every check that failed. `shellPath` as for run().
+// Before any paid work, on a home built as run() builds one. The temp
+// directory must lie outside every denied path (agent-env.mjs). Codex's
+// effective features must match every pin in ISOLATED_CONFIG, which catches a
+// renamed or ignored key. The shell profile, run under `codex sandbox`, must
+// deny every readDenied path, keep readAllowed open, read and not write a
+// directory the harness makes as it makes a server's output directory, write
+// in its cwd and TMPDIR, and reach neither a loopback server, by address or as
+// *.localhost, nor https://example.com. The loopback server counts what
+// reaches it, so a curl that failed for another reason cannot pass for a
+// refusal; offline, the example.com check passes without proving anything.
+// Records the features that are on in TOOL_POLICY.featuresOn and throws naming
+// every check that failed. `shellPath` as for run().
 export async function preflightIsolation(env, shellPath = env.PATH) {
+  const read = unreadablePaths(process.env, { path: shellPath });
+  assertTempDirReadable(read.deny);
   const home = await isolatedCodexHome(env, { toolMode: TOOL_MODE });
   const cwd = makeTempDir(TEMP_PREFIX.attempt);
-  const server = createServer((req, res) => res.end('loopback-ok'));
+  const saved = makeTempDir(TEMP_PREFIX.home);
+  writeFileSync(join(saved, 'saved.json'), '{}');
+  let reached = 0;
+  const server = createServer((req, res) => res.end(`loopback-ok ${++reached}`));
   try {
-    writeFileSync(join(home.home, 'config.toml'), shellPermissionsToml(home.tmp));
-    const flags = configFlags({ ...ISOLATED_CONFIG, features: AGENT_FEATURES });
+    writeFileSync(join(home.home, 'config.toml'), shellPermissionsToml(home.tmp, read));
+    const flags = configFlags(ISOLATED_CONFIG);
     const cli = (args, options = {}) =>
       execFileAsync(process.execPath, [CODEX_CLI, ...args], { env: home.env, timeout: 60000, ...options }).catch(
         (error) => {
@@ -341,7 +358,7 @@ export async function preflightIsolation(env, shellPath = env.PATH) {
       const m = /^(\S+)\s.*\s(true|false)\s*$/.exec(line);
       if (m) effective[m[1]] = m[2] === 'true';
     }
-    const unpinned = Object.entries(AGENT_FEATURES)
+    const unpinned = Object.entries(ISOLATED_CONFIG.features)
       .filter(([k, v]) => effective[k] !== v)
       .map(([k, v]) => `${k} is ${effective[k] ?? 'not listed'}, not ${v}`);
     if (unpinned.length) throw new Error(`codex features list: ${unpinned.join('; ')}`);
@@ -352,10 +369,12 @@ export async function preflightIsolation(env, shellPath = env.PATH) {
     const q = (s) => `'${s.replaceAll("'", "'\\''")}'`;
     const script = [
       'command -v curl >/dev/null || echo "FAIL curl, which this check uses, is not on PATH"',
-      ...SHELL_READ.deny.map((p) => `ls ${q(p)} >/dev/null 2>&1 && echo ${q(`FAIL reads ${p}`)}`),
-      ...SHELL_READ.allow.map((p) => `ls ${q(p)} >/dev/null 2>&1 || echo ${q(`FAIL cannot read ${p}`)}`),
+      ...read.deny.map((p) => `ls ${q(p)} >/dev/null 2>&1 && echo ${q(`FAIL reads ${p}`)}`),
+      ...read.allow.map((p) => `ls ${q(p)} >/dev/null 2>&1 || echo ${q(`FAIL cannot read ${p}`)}`),
+      `cat ${q(join(saved, 'saved.json'))} >/dev/null 2>&1 || echo ${q(`FAIL cannot read ${saved}`)}`,
+      `touch ${q(join(saved, 'w'))} 2>/dev/null && echo ${q(`FAIL writes ${saved}`)}`,
       ...[`127.0.0.1:${port}`, `preflight.localhost:${port}`].map(
-        (h) => `curl -s -m 5 http://${h}/ | grep -q loopback-ok || echo ${q(`FAIL cannot reach http://${h}/`)}`
+        (h) => `curl -s -m 5 http://${h}/ | grep -q loopback-ok && echo ${q(`FAIL reached http://${h}/`)}`
       ),
       `code=$(curl -s -m 5 -o /dev/null -w '%{http_code}' https://example.com); ` +
         '[ "$code" = 000 ] || echo "FAIL reached https://example.com ($code)"',
@@ -365,14 +384,16 @@ export async function preflightIsolation(env, shellPath = env.PATH) {
     ].join('\n');
     const { stdout } = await cli(['sandbox', ...flags, '-P', SHELL_PROFILE, '-C', cwd, '--', '/bin/sh', '-c', script], {
       cwd,
-      env: { ...home.env, PATH: shellPath, TMPDIR: home.tmp },
+      env: { ...home.env, PATH: shellPath, ...SHELL_ENV, TMPDIR: home.tmp },
     });
     const failed = stdout.split('\n').filter((l) => l.startsWith('FAIL ')).map((l) => l.slice(5));
+    if (reached) failed.push(`the loopback server answered ${reached} request(s) from the shell`);
     if (!/^DONE$/m.test(stdout)) failed.push(`the check did not finish: ${stdout.slice(-300)}`);
     if (failed.length) throw new Error(`codex shell sandbox: ${failed.join('; ')}`);
   } finally {
     server.close();
     removeTempDir(cwd);
+    removeTempDir(saved);
     home.close();
   }
 }
@@ -492,28 +513,30 @@ function rolloutFacts(rollout) {
 }
 
 // What the session's rollout says against the isolation this backend sets up:
-// the subagent team gone, every readDenied path denied, and writes open in the
-// attempt directory and the private TMPDIR alone. The managed network proxy
-// leaves no trace there, so the preflight checks that instead. view_image
-// reads in codex's own process, outside the permissions profile, and hands
-// back any file, not only an image, as a data URL, and 0.145.0 has no switch
-// for it; so a script or call that uses it and names a readDenied path marks
-// the row too. `writable` holds the real paths of the attempt directory and
-// TMPDIR.
-function isolationProblems({ turnContext, imageReads = [] }, writable) {
+// the subagent team gone, the network off, every readDenied path denied, and
+// writes open in the attempt directory and the private TMPDIR alone.
+// view_image reads in codex's own process, outside the permissions profile,
+// and hands back any file, not only an image, as a data URL, and 0.145.0 has
+// no switch for it; so a script or call that uses it and names a readDenied
+// path marks the row too. `writable` holds the real paths of the attempt
+// directory and TMPDIR, and `deny` the paths the profile denied.
+function isolationProblems({ turnContext, imageReads = [] }, writable, deny = SHELL_READ.deny) {
   if (!turnContext) return ['the rollout holds no turn_context'];
   const problems = [];
   if (turnContext.multi_agent_version !== 'disabled') {
     problems.push(`subagents: multi_agent_version is ${JSON.stringify(turnContext.multi_agent_version)}`);
   }
+  if (turnContext.permission_profile?.network !== SHELL_NETWORK) {
+    problems.push(`network: the profile's network is ${JSON.stringify(turnContext.permission_profile?.network)}`);
+  }
   const entries = turnContext.permission_profile?.file_system?.entries ?? [];
   const where = (e) => (e.path?.type === 'path' ? e.path.path : JSON.stringify(e.path));
   const denied = new Set(entries.filter((e) => e.access === 'deny').map(where));
-  for (const p of SHELL_READ.deny) if (!denied.has(p)) problems.push(`read: ${p} is not denied`);
+  for (const p of deny) if (!denied.has(p)) problems.push(`read: ${p} is not denied`);
   for (const e of entries) {
     if (e.access === 'write' && !writable.includes(where(e))) problems.push(`write: ${where(e)} is writable`);
   }
-  for (const p of SHELL_READ.deny) {
+  for (const p of deny) {
     if (imageReads.some((text) => pathSpellings(p).some((s) => text.includes(s)))) {
       problems.push(`read: view_image, which the profile does not cover, names ${p}`);
     }
@@ -523,14 +546,17 @@ function isolationProblems({ turnContext, imageReads = [] }, writable) {
 
 // `rolloutPath`, when given, is where the session's rollout is kept, and
 // `shellPath` the PATH the agent's shell gets instead of env.PATH, which codex
-// itself and the MCP server keep.
+// itself and the MCP server keep. The shell's read rules are derived from that
+// PATH. The shell reads the spec's serverOutputDirs as it reads any path
+// outside the denied ones, so run() takes none.
 export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio, abortController, rolloutPath, shellPath }) {
   const codexHome = await isolatedCodexHome(env ?? {}, { toolMode: TOOL_MODE });
+  const read = unreadablePaths(process.env, { path: shellPath ?? env?.PATH });
   // Read once the stream ends, when codex has exited and the file is whole.
   let rollout;
   const sessionRecord = () => (rollout === undefined ? (rollout = readRollouts(codexHome.home)) : rollout);
   try {
-    writeFileSync(join(codexHome.home, 'config.toml'), shellPermissionsToml(codexHome.tmp));
+    writeFileSync(join(codexHome.home, 'config.toml'), shellPermissionsToml(codexHome.tmp, read));
     // When env is provided the SDK does not inherit process.env, so this is
     // exactly the harness allowlist plus CODEX_HOME.
     const codex = new Codex({
@@ -604,7 +630,7 @@ export async function run({ prompt, model, effort, env, cwd, onMessage, mcpStdio
     }
     const turns = (whole && stats.requests) || toolCalls + 1;
     const writable = [cwd, codexHome.tmp].filter((p) => p && existsSync(p)).map((p) => realpathSync(p));
-    const isolation = isolationProblems(facts ?? {}, writable);
+    const isolation = isolationProblems(facts ?? {}, writable, read.deny);
     const counts = {
       // Normalized to the backend interface's uncached-remainder convention:
       // codex reports an input_tokens INCLUSIVE of both cache figures, so

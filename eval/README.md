@@ -110,41 +110,72 @@ their kin print "not available" and fail. The stubs cover a `PATH` lookup only: 
 absolute path (`/usr/bin/open`), a login shell (`zsh -l`, whose profile rebuilds
 `PATH`) or `env -i` reaches the real command, and whether either sandbox then stops a
 launch, or a hand-off of the URL to a Firefox already running, is untested. The MCP
-servers keep the real `PATH`. On the Anthropic backend the
-agent runs with permission prompts disabled and a pinned tool set (the browser MCP
-server, `Bash`, and file tools that write only in the attempt directory; no web,
-subagent or scheduling tools), and `Bash` runs under the Claude CLI's sandbox: writes
-only in the attempt directory and a private `TMPDIR`, network only to loopback, and no
-way to ask for a command to run outside it (on Linux the sandbox needs `bwrap` and `socat`, and
-the preflight stops a run without them). Each attempt also gets its own `CLAUDE_CONFIG_DIR`,
-so spilled tool results, background task output and memory stay out of your
-`~/.claude` and `/tmp/claude-<uid>`; your login stays where it is. MCP tools load
-eagerly (`ENABLE_TOOL_SEARCH=false`), and the rows count any ToolSearch calls and
-`<persisted-output>` spills. The codex backend runs its shell under a permissions
-profile with the same limits: writes in the attempt directory and a private `TMPDIR`,
-and network to loopback only, through the managed proxy that `features.network_proxy`
-starts (experimental in codex 0.145.0; the shell can still resolve names and reach this
-machine's own addresses). It gets its own `CODEX_HOME` holding only the login and that
-profile, so none of your codex config, plugins or skills reach it; its subagent tools
-are off (`agents.enabled=false`), and so are its own browser, computer use, image
-generation and ChatGPT apps. The preflight checks codex's effective features and runs
-the profile under `codex sandbox`, and a row whose rollout shows other permissions or a
-subagent version is marked invalid (`codex-isolation`). Each attempt's session rollout
-is kept as `rollouts/<transcript>`. Neither shell, nor the Anthropic Read tool, can read
-a checkout of this repository, where `eval/answers.mjs` and `sites/` hold the graded
-truth, or your `~/.claude` and `~/.codex`, whose transcripts can quote them; this
-checkout's `node_modules` stays readable for the agent CLIs' own tools (`agent-env.mjs`
-`unreadablePaths`). That covers the shells alone: the browser and the MCP servers run
-unsandboxed, so a `file://` page or an upload tool still reaches the repository, and a
-copy of the graded truth outside a checkout stays readable. Codex's `view_image` reads
-any file, not only an image, in codex's own process, and 0.145.0 cannot turn it off, so
-a codex row whose `view_image` names a denied path is marked invalid too. Both backends
-print the denied paths into the agent's prompt, so run from checkouts whose paths say
-nothing about the run, and compare input tokens only between runs that deny the same
-paths. Inside either sandbox a bare `mktemp` fails on macOS, while `mktemp -p "$TMPDIR"`
-works. Each run's `meta` records both tool policies. `firefox-devtools-mcp` runs with a
-`HOME` of the attempt's own, so its `~/.firefox-devtools-mcp` save root starts empty
-every attempt and never lands in your home. Every attempt's browser also sends a user
+servers keep the real `PATH`. On the Anthropic backend the agent runs with permission
+prompts disabled and a pinned tool set (the browser MCP server, `Bash`, and file tools
+that write only in the attempt directory; no web, subagent or scheduling tools), and
+`Bash` runs under the Claude CLI's sandbox: writes only in the attempt directory and a
+private `TMPDIR`, no network, loopback fixtures included, and no way to ask for a
+command to run outside it (on Linux the sandbox needs `bwrap` and `socat`, and the
+preflight stops a run without them). The browser and the MCP servers run outside both
+backends' sandboxes, so no task needs the shell on the network. A stored Haiku sweep
+showed why it gets none: its firefox-devtools-mcp agents copied the browser's `sid`
+cookie out of a network dump and `curl`ed cookie-only fixture routes, which alone held
+the fact that decided body-only-ref and hovercard-oncall. Each attempt also gets its own
+`CLAUDE_CONFIG_DIR`, so spilled tool results, background task output and memory stay
+out of your `~/.claude` and `/tmp/claude-<uid>`; your login stays where it is. MCP
+tools load eagerly (`ENABLE_TOOL_SEARCH=false`), and the rows count any ToolSearch
+calls and `<persisted-output>` spills. The codex backend runs its shell under a
+permissions profile with the same limits: writes in the attempt directory and a private
+`TMPDIR`, and no network (`network.enabled=false`). It gets its own `CODEX_HOME`
+holding only the login and that profile, so none of your codex config, plugins or
+skills reach it; its subagent tools are off (`agents.enabled=false`), and so are its
+own browser, computer use, image generation and ChatGPT apps. The preflight checks
+codex's effective features and runs the profile under `codex sandbox`, where a
+loopback server it starts must see no request from the shell. A row whose rollout
+shows other permissions, a network other than `restricted` or another subagent
+version is marked invalid (`codex-isolation`). Each attempt's session rollout is kept
+as `rollouts/<transcript>`.
+
+Neither shell, nor the Anthropic Read tool, can read your home directory, a checkout of
+this repository, where `eval/answers.mjs` and `sites/` hold the graded truth, or your
+`~/.claude` and `~/.codex`, whose transcripts can quote them. The Haiku sweep's shells
+ran `find ~ -name "*.db"`, which listed `~/.codex`'s sqlite files. Inside the home the
+shells may read again what they need to run (`agent-env.mjs` `unreadablePaths`): this
+checkout's `node_modules`, where the agent CLIs live, and each directory on the shell's
+`PATH` that lies in the home, with the `lib` beside it when it is a `bin`, so
+`~/miniconda3/bin/python3` finds its standard library. Nothing that holds or lies in a
+checkout or an agent home is re-opened, so a `PATH` entry under `~/.claude` stays shut.
+The rest of the home answers the shell with a permission error, which a tool reading its
+dotfiles there may not survive: git stops at a `~/.gitconfig` it may not read, so both
+shells get `GIT_CONFIG_GLOBAL=/dev/null` (`agent-env.mjs` `SHELL_ENV`). Every attempt
+directory is made in the temp directory, so both preflights stop a run whose temp
+directory lies in a denied path. That covers the shells alone: the browser and the MCP
+servers run unsandboxed, so a `file://` page or an upload tool still reaches the
+repository, and a copy of the graded truth outside your home and every checkout stays
+readable. Codex's `view_image` reads any file, not only an image, in codex's own
+process, and 0.145.0 cannot turn it off, so a codex row whose `view_image` names a
+denied path is marked invalid too. Both backends print the denied and re-opened paths
+into the agent's prompt, so run from checkouts whose paths say nothing about the run,
+and compare input tokens only between runs that deny and re-open the same paths; the
+re-opened ones follow the shell's `PATH`. Inside either sandbox a bare `mktemp` fails on
+macOS, while `mktemp -p "$TMPDIR"` works. Each run's `meta` records both tool policies.
+
+`firefox-devtools-mcp` runs with a `HOME` of the attempt's own, so its
+`~/.firefox-devtools-mcp` save root starts empty every attempt and never lands in your
+home. That root lies outside the attempt directory: `saveTo:true` writes into its
+`output/`, an absolute `saveTo` anywhere inside it, and the reply names the file. The
+Anthropic Read tool reads outside the attempt directory only by a rule, and the Haiku
+sweep had none: it denied 13 Reads under `output/` in 12 firefox-devtools-mcp rows, five
+of them screenshots, which a shell's `cat` cannot show the agent, and a 14th of a file
+the agent's own shell had saved in its `TMPDIR`. So `run.mjs` hands each backend that
+root as `serverOutputDirs`, and the Anthropic agent gets a Read rule for it and for its
+`TMPDIR`, under both spellings of a `/private` path, and no Edit rule. The codex shell
+reads the root as it reads every path outside the denied ones. Neither agent can write
+there. playwright-mcp saves inside the attempt directory. A `--mcp-command` server keeps
+your `HOME`, so a file it saves there, as a firefox-devtools-mcp build's `saveTo:true`
+does, is unreadable to both agents.
+
+Every attempt's browser also sends a user
 agent carrying a token of its own, but the server's ledger does not record user agents
 yet, so two rules in `scripts/foreign-browser.mjs` find a browser session the surface
 did not start, and a row with one is marked invalid. Timing flags a session whose
@@ -207,7 +238,8 @@ downloaded in one arm only. The pinned pref turns pdf.js on in both builds. A ru
 preflight predates the `navigator.pdfViewerEnabled` probe is read from each build's
 files instead. A `--headed` run sizes each `firefox-devtools-mcp` window to its
 grid cell, so its viewport is flagged too. `--mcp-command` servers launch as given, with
-the time zone the only pin that reaches them. `--rerun-failed` cannot restore the
+the time zone the only pin that reaches them, and keep your `HOME`, where their
+agent cannot read what they save. `--rerun-failed` cannot restore the
 environment of the run it tops up, so it records how its own differs as
 `meta.rerunEnvDrift`, and `report.md` lists that too. A run without `meta.env` predates
 the pins, and every top-up of one says its rows ran unpinned.

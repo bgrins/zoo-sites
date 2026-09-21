@@ -17,7 +17,7 @@ import {
   rmSync, writeFileSync,
 } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
-import { basename, delimiter, dirname, join, resolve, sep } from 'node:path';
+import { basename, delimiter, dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
 
@@ -131,22 +131,28 @@ export function shimmedPath(path) {
   return [shimDir(), ...rest].join(delimiter);
 }
 
-// What no agent shell may read. `deny` holds every checkout of this repository,
-// whose eval/answers.mjs and sites/ hold the graded truth, and the operator's
-// Claude and codex homes (the defaults and any the environment names), whose
-// session transcripts can quote them. `allow` re-opens this checkout's
-// node_modules, where the agent CLIs live: the Claude CLI's shell runs `rg` as
-// the CLI's own bundled build from there. A linked worktree's .git file names
-// its git directory, whose commondir names the main one, which lists every
-// linked worktree under worktrees/; git may write any of those paths relative.
-// Real paths, since both sandboxes match the resolved path. A path inside
-// another is left out: both backends print the list into the agent's prompt.
-export function unreadablePaths(env = process.env) {
+// What no agent shell may read. `deny` holds the operator's home directory,
+// every checkout of this repository, whose eval/answers.mjs and sites/ hold the
+// graded truth, and the operator's Claude and codex homes (the defaults and any
+// the environment names), whose session transcripts can quote them. `allow`
+// re-opens, inside that, what a shell needs to run: this checkout's
+// node_modules, where the agent CLIs live (the Claude CLI's shell runs `rg` as
+// the CLI's own bundled build from there), and each directory on `path`, the
+// PATH the shell gets, that lies in the home directory, with the lib directory
+// beside it when it is a bin one, where a python keeps its standard library.
+// A directory that holds or lies in a checkout or an agent home is never
+// re-opened, so a PATH entry under ~/.claude stays shut. A linked worktree's
+// .git file names its git directory, whose commondir names the main one, which
+// lists every linked worktree under worktrees/; git may write any of those
+// paths relative. Real paths, since both sandboxes match the resolved path. A
+// denied path inside another is left out unless a re-opened one holds it: both
+// backends print the lists into the agent's prompt.
+export function unreadablePaths(env = process.env, { path = env.PATH } = {}) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
   const checkouts = new Set([root]);
-  const read = (path) => {
+  const read = (file) => {
     try {
-      return readFileSync(path, 'utf8').trim();
+      return readFileSync(file, 'utf8').trim();
     } catch {
       return null;
     }
@@ -169,16 +175,44 @@ export function unreadablePaths(env = process.env) {
     if (dotGit) checkouts.add(dirname(resolve(admin, dotGit)));
   }
   const real = (paths) => [...new Set(paths.filter((p) => p && existsSync(p)).map((p) => realpathSync(p)))];
-  const all = real([
+  const within = (p, dir) => p === dir || p.startsWith(dir + sep);
+  const [home] = real([homedir()]);
+  const secret = real([
     ...checkouts,
     env.CLAUDE_CONFIG_DIR,
     join(homedir(), '.claude'),
     env.CODEX_HOME,
     join(homedir(), '.codex'),
   ]);
-  const deny = all.filter((p) => !all.some((q) => p.startsWith(q + sep)));
-  return { deny, allow: real([join(root, 'node_modules')]) };
+  const all = [...(home ? [home] : []), ...secret];
+  const reopenable = (p) => p !== home && !secret.some((s) => within(p, s) || within(s, p));
+  const onPath = real(String(path ?? '').split(delimiter).filter((p) => isAbsolute(p)));
+  const toolchain = real(
+    onPath.flatMap((dir) => (['bin', 'sbin'].includes(basename(dir)) ? [dir, join(dirname(dir), 'lib')] : [dir]))
+  ).filter((p) => home && within(p, home) && reopenable(p));
+  const wanted = [...new Set([...real([join(root, 'node_modules')]), ...toolchain])];
+  const allow = wanted.filter((p) => !wanted.some((q) => q !== p && within(p, q)));
+  const deny = all.filter((p) => !all.some((q) => q !== p && within(p, q)) || allow.some((a) => within(p, a)));
+  return { deny, allow };
 }
+
+// Every attempt directory, its temp directory and firefox-devtools-mcp's save
+// root are made in the temp directory, so one that lay in a denied path would
+// shut the agent out of its own files: the Read tool's deny rules outrank its
+// allow rules, and a codex view_image of an attempt file would mark the row.
+// Both backends' preflights call this before any paid work.
+export function assertTempDirReadable(deny) {
+  const root = realpathSync(tmpdir());
+  const shut = deny.find((d) => root === d || root.startsWith(d + sep));
+  if (shut) {
+    throw new Error(`the temp directory ${root} lies in ${shut}, which no agent may read; set TMPDIR outside it`);
+  }
+}
+
+// What every agent shell's environment sets over the harness's. The home
+// directory is shut to the shell, and git skips a missing ~/.gitconfig but
+// stops at one it may not read.
+export const SHELL_ENV = { GIT_CONFIG_GLOBAL: '/dev/null' };
 
 // Both ways an agent can write a real path under macOS's /private, which /tmp,
 // /var and /etc link into: a check that matches the text an agent wrote, not

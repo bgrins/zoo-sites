@@ -1,7 +1,7 @@
 // Anthropic backend: drives tasks through the Claude Agent SDK.
 // Backend interface (shared with backends/codex.mjs):
 //   run({ prompt, model, effort, condition, env, cwd, onMessage, onOutputTokens,
-//         mcpStdio, abortController, shellPath }) ->
+//         mcpStdio, abortController, shellPath, serverOutputDirs }) ->
 //     { text, turns, input_tokens, cache_creation, cache_read, output_tokens,
 //       cost_usd, duration_ms, api_duration_ms, stream_errors? }
 // `input_tokens` is the UNCACHED remainder only, never the total, so that
@@ -11,6 +11,8 @@
 // The MCP server is spawned over stdio from `mcpStdio` ({command, args, env?}),
 // `env` holding what that server alone gets on top of the agent's environment.
 // shellPath (optional): the PATH the agent's shell gets instead of env.PATH.
+// serverOutputDirs (optional): directories outside cwd where the MCP server
+// saves files its replies name, which the agent may read and not write.
 // onMessage (optional): called with every raw agent message as it streams
 // (thinking, tool calls, tool results, final result) for transcript logging.
 // onOutputTokens (optional): called with the run's output tokens so far, for
@@ -27,7 +29,9 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 import { existsSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { delimiter, join } from 'node:path';
-import { makeTempDir, pathSpellings, removeTempDir, serverDirs, TEMP_PREFIX, unreadablePaths } from '../agent-env.mjs';
+import {
+  assertTempDirReadable, makeTempDir, pathSpellings, removeTempDir, serverDirs, SHELL_ENV, TEMP_PREFIX, unreadablePaths,
+} from '../agent-env.mjs';
 import { priceTokens } from './pricing.mjs';
 
 export const DEFAULT_MODEL = 'claude-sonnet-5';
@@ -57,8 +61,16 @@ const DISALLOWED_TOOLS = [
 // dontAsk denies every tool not allowed here, so Write and Edit need a rule or
 // each call burns a turn on a denial. An Edit rule covers Write too, and the
 // leading `//` makes the path absolute: file tools write in the attempt
-// directory only, as codex's shell permissions profile does.
-const allowedTools = (cwd) => ['mcp__firefox', 'Bash', ...(cwd ? [`Edit(/${cwd}/**)`] : [])];
+// directory only, as codex's shell permissions profile does. Read needs a rule
+// for each `readable` directory outside it, where the shell or the MCP server
+// saves a file the agent then reads: under each spelling of a /private path,
+// and with no Edit rule, so the file tools cannot write there.
+const allowedTools = (cwd, readable = []) => [
+  'mcp__firefox',
+  'Bash',
+  ...(cwd ? [`Edit(/${cwd}/**)`] : []),
+  ...readable.flatMap(pathSpellings).map((p) => `Read(/${p}/**)`),
+];
 
 // CLI settings the harness pins rather than leaving to the CLI's defaults and
 // remote config, which the allowlist in agent-env.mjs would otherwise decide.
@@ -83,17 +95,21 @@ const CLI_ENV = {
 
 // The Bash tool runs under the CLI's sandbox (Seatbelt on macOS, bubblewrap on
 // Linux): writes only in the attempt directory and the attempt's own temp
-// directory, network only to loopback, where every fixture is served, and no
-// way to ask for a command to run outside it. Whether it stops /usr/bin/open,
-// or `firefox URL` handing the URL to a Firefox already running, is untested.
-// failIfUnavailable makes a missing sandbox
-// fail the attempt instead of running it unsandboxed. /tmp/claude is the
-// sandbox's default temp directory, shared by every attempt, so it is closed.
-// allowLocalBinding opens loopback both ways, so a curl to a fixture, or a
-// server the agent starts, works; the proxy denies every other host. Reads go
-// everywhere but the graded truth and the agent homes (agent-env.mjs
-// unreadablePaths), as in the codex shell.
-function sandboxFor(cwd, tmp) {
+// directory, no network, and no way to ask for a command to run outside it.
+// Whether it stops /usr/bin/open, or `firefox URL` handing the URL to a
+// Firefox already running, is untested. failIfUnavailable makes a missing
+// sandbox fail the attempt instead of running it unsandboxed. /tmp/claude is
+// the sandbox's default temp directory, shared by every attempt, so it is
+// closed. The browser and the MCP server run outside the sandbox, so no task
+// needs the shell on the network, and a shell that has it can replay the
+// browser's session cookie against fixture routes. An empty allowedDomains
+// still starts the CLI's filtering proxy, which strictAllowlist makes refuse
+// every host, and without allowLocalBinding the shell may connect to that
+// proxy alone: a loopback fixture, which NO_PROXY sends direct, is refused as
+// well. Reads go everywhere but the operator's home, the graded truth and the
+// agent homes, with what the shell needs to run open again inside them
+// (agent-env.mjs unreadablePaths), as in the codex shell.
+function sandboxFor(cwd, tmp, read = SHELL_READ) {
   return {
     enabled: true,
     failIfUnavailable: true,
@@ -102,21 +118,23 @@ function sandboxFor(cwd, tmp) {
     filesystem: {
       allowWrite: [cwd, tmp].filter(Boolean),
       denyWrite: ['/tmp/claude', '/private/tmp/claude', ...serverDirs(cwd)],
-      denyRead: SHELL_READ.deny,
-      allowRead: SHELL_READ.allow,
+      denyRead: read.deny,
+      allowRead: read.allow,
     },
     network: {
-      allowedDomains: ['localhost', '127.0.0.1', '*.localhost'],
+      allowedDomains: [],
       strictAllowlist: true,
-      allowLocalBinding: true,
+      allowLocalBinding: false,
     },
   };
 }
 
 // The sandbox needs bubblewrap and socat on Linux (macOS has sandbox-exec).
 // Without them every attempt would fail on its first command, after the run
-// has started paying, so run.mjs's preflight asks first.
+// has started paying, so run.mjs's preflight asks first, and it asks that the
+// temp directory lie outside every denied path (agent-env.mjs).
 export function preflightCheck(env = process.env) {
+  assertTempDirReadable(SHELL_READ.deny);
   if (process.platform !== 'linux') return;
   const onPath = (name) => (env.PATH ?? '').split(delimiter).some((dir) => dir && existsSync(join(dir, name)));
   const missing = ['bwrap', 'socat'].filter((name) => !onPath(name));
@@ -130,7 +148,7 @@ export function preflightCheck(env = process.env) {
 export const TOOL_POLICY = {
   tools: TOOLS,
   disallowedTools: DISALLOWED_TOOLS,
-  allowedTools: allowedTools('/<attempt dir>'),
+  allowedTools: allowedTools('/<attempt dir>', ['/<attempt temp dir>', '/<server output dir>']),
   permissionMode: 'dontAsk',
   settingSources: [],
   strictMcpConfig: true,
@@ -139,14 +157,27 @@ export const TOOL_POLICY = {
   toolMode: 'direct',
   toolModeDetail: 'every MCP tool is a tool of its own, its schema in the first request (ENABLE_TOOL_SEARCH=false)',
   subagents: 'none: Task, Agent, Workflow and SendMessage are left out of tools and named in disallowedTools',
-  network: 'Bash reaches loopback only (sandbox.network); no web tool',
+  network:
+    'none for Bash: sandbox.network allows no host, strictAllowlist makes its proxy refuse the rest, and without ' +
+    'allowLocalBinding loopback fixtures are refused too; no web tool. The browser and the MCP server run outside it',
   readable:
-    'Bash reads everything but sandbox.filesystem.denyRead, with allowRead open again inside it; the Read tool is ' +
-    'denied every denyRead path, allowRead included. Not covered: the browser and the MCP server, which run ' +
-    'unsandboxed (file:// and the upload tools reach the repository), and copies of the graded truth outside a checkout',
+    'Bash reads everything but sandbox.filesystem.denyRead (the operator home, every checkout, the agent homes), ' +
+    'with allowRead open again inside it (this checkout\'s node_modules, and the shell PATH directories under the ' +
+    'home, each bin with the lib beside it: agent-env.mjs unreadablePaths); the Read tool is denied every denyRead ' +
+    'path, allowRead included, and reads outside the attempt directory only in the attempt temp directory and ' +
+    'serverOutputDirs. The preflight keeps the temp directory, which holds all three, outside every denied path. ' +
+    'Not covered: the browser and the MCP server, which run unsandboxed (file:// and the upload tools reach the ' +
+    'repository), and copies of the graded truth outside the home and every checkout',
+  serverOutput:
+    'firefox-devtools-mcp saves under <its HOME>/.firefox-devtools-mcp (saveTo:true in its output/, an absolute ' +
+    'saveTo anywhere inside), outside the attempt directory, and names the file in its reply: a Read allow rule ' +
+    'opens that root, under each spelling of a /private path, with no Edit rule and no sandbox write, so it stays ' +
+    'read-only. playwright-mcp saves inside the attempt directory. A --mcp-command server keeps the operator HOME, ' +
+    'so a file it saves there is unreadable to the agent',
+  shellEnv: SHELL_ENV,
   promptListsPaths:
-    "the Bash tool's description lists the sandbox's read paths, so input tokens compare only between runs that " +
-    'deny the same paths',
+    "the Bash tool's description lists the sandbox's denyRead and allowRead paths, so input tokens compare only " +
+    'between runs that deny and re-open the same paths (allowRead follows the shell PATH)',
   sandbox: sandboxFor('<attempt dir>', '<attempt temp dir>'),
   claudeConfigDir: 'fresh per attempt; the login stays where it was (CLAUDE_SECURESTORAGE_CONFIG_DIR)',
   path: 'the harness PATH with a stub directory first (agent-env.mjs SHIMMED_COMMANDS)',
@@ -247,9 +278,15 @@ function usageTracker() {
 // `shellPath` replaces its PATH there. The MCP server is started with the PATH
 // `env` had, since the stub directory would hide the Firefox a server looks up
 // on PATH, plus whatever `mcpStdio.env` sets for it alone. `tmp` is the
-// attempt's own temp directory, which the sandbox lets the shell write.
-export function agentOptions({ model, effort, env, cwd, mcpStdio, abortController, shellPath, tmp }) {
+// attempt's own temp directory, which the sandbox lets the shell write. The
+// shell's read rules are derived from the PATH it gets; the agent homes are
+// the operator's, not the CLI's fresh one. SHELL_ENV reaches the MCP server
+// too, which reads no git config.
+export function agentOptions({
+  model, effort, env, cwd, mcpStdio, abortController, shellPath, tmp, serverOutputDirs = [],
+}) {
   const base = env ?? process.env;
+  const read = unreadablePaths(process.env, { path: shellPath ?? base.PATH });
   return {
     model,
     permissionMode: TOOL_POLICY.permissionMode,
@@ -257,17 +294,17 @@ export function agentOptions({ model, effort, env, cwd, mcpStdio, abortControlle
     settingSources: TOOL_POLICY.settingSources,
     tools: TOOLS,
     disallowedTools: [...DISALLOWED_TOOLS, ...serverDirs(cwd).map((dir) => `Edit(/${dir}/**)`)],
-    allowedTools: allowedTools(cwd),
+    allowedTools: allowedTools(cwd, [tmp, ...serverOutputDirs].filter(Boolean)),
     strictMcpConfig: TOOL_POLICY.strictMcpConfig,
     persistSession: TOOL_POLICY.persistSession,
-    sandbox: sandboxFor(cwd, tmp),
+    sandbox: sandboxFor(cwd, tmp, read),
     // Only for the message_start/message_delta usage above; content deltas are
     // dropped before they reach the transcript.
     includePartialMessages: true,
     ...(effort ? { effort } : {}),
     // Lets run.mjs stop a task on its backend-agnostic token/wall ceilings.
     ...(abortController ? { abortController } : {}),
-    env: shellPath ? { ...base, PATH: shellPath } : base,
+    env: { ...base, ...(shellPath ? { PATH: shellPath } : {}), ...SHELL_ENV },
     mcpServers: {
       firefox: {
         type: 'stdio',
@@ -280,18 +317,24 @@ export function agentOptions({ model, effort, env, cwd, mcpStdio, abortControlle
 }
 
 export async function run({
-  prompt, model, effort, env, cwd, onMessage, onOutputTokens, mcpStdio, abortController, shellPath,
+  prompt, model, effort, env, cwd, onMessage, onOutputTokens, mcpStdio, abortController, shellPath, serverOutputDirs,
 }) {
   const home = isolatedClaudeHome(env ?? process.env);
   try {
-    return await runIn(home, { prompt, model, effort, cwd, onMessage, onOutputTokens, mcpStdio, abortController, shellPath });
+    return await runIn(home, {
+      prompt, model, effort, cwd, onMessage, onOutputTokens, mcpStdio, abortController, shellPath, serverOutputDirs,
+    });
   } finally {
     home.close(cwd);
   }
 }
 
-async function runIn(home, { prompt, model, effort, cwd, onMessage, onOutputTokens, mcpStdio, abortController, shellPath }) {
-  const options = agentOptions({ model, effort, env: home.env, cwd, mcpStdio, abortController, shellPath, tmp: home.tmp });
+async function runIn(home, {
+  prompt, model, effort, cwd, onMessage, onOutputTokens, mcpStdio, abortController, shellPath, serverOutputDirs,
+}) {
+  const options = agentOptions({
+    model, effort, env: home.env, cwd, mcpStdio, abortController, shellPath, tmp: home.tmp, serverOutputDirs,
+  });
   const started = Date.now();
   const tracker = usageTracker();
   // What an attempt spent when no result message will ever say: an abort, or a
