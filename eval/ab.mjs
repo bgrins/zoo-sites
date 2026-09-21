@@ -9,7 +9,9 @@
 // run.mjs --report-from <dir> --ab A,B [--control A,A2] calls abReport too.
 // Every ratio is A/B: below 1 means A spent less than B. Put the build under
 // test first and its baseline second, and the A/A control as the baseline and
-// its copy, so the headline reads candidate/baseline.
+// its copy, so the headline reads candidate/baseline. A pair holding a
+// shell-assisted row (scripts/row-evidence.mjs) stays out of every figure, and
+// a closing sensitivity section gives the figures with it.
 //
 // The statistics are exported as pure helpers so a reader can check them:
 // geometric-mean ratio, a seeded hierarchical bootstrap (tasks, then the
@@ -19,8 +21,9 @@
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { envMismatches, frictionOf } from './report.mjs';
-import { browserBuilds, buildKey, countOf, drawKey, findBuild, runFlags } from './scripts/identity.mjs';
+import { envMismatches, frictionOf, snapshotOf } from './report.mjs';
+import { browserBuilds, buildKey, countOf, drawKey, findBuild, foreignCallsOf, runFlags } from './scripts/identity.mjs';
+import { shellAssistedOf, withRolloutFacts } from './scripts/row-evidence.mjs';
 import { classOf, FAILURE_CLASSES, TOOL_CLASSES, triageRun } from './scripts/triage.mjs';
 import { runToolStats, sumToolStats } from './scripts/tool-stats.mjs';
 
@@ -162,20 +165,24 @@ const METRICS = {
 };
 
 // Why a row cannot carry an efficiency figure, or null when it can.
-function exclusion(row) {
+// `assisted` holds the rows whose shell got answers from a graded fixture
+// route (scripts/row-evidence.mjs), which measured the shell as well as the
+// surface.
+function exclusion(row, assisted = null) {
   if (row.infra) return 'infra';
   if (row.error) return 'error';
   if (row.invalid) return `invalid:${row.invalid}`;
+  if (assisted?.has(row)) return 'shell-assisted';
   if (!(row.output_tokens > 0)) return 'no output tokens';
   return null;
 }
 
 // Per task, the valid values of one metric in each arm, as log groups.
-function groupsFor(rowsA, rowsB, metric, keep = () => true) {
+function groupsFor(rowsA, rowsB, metric, keep = () => true, assisted = null) {
   const byTask = (rows) => {
     const m = new Map();
     for (const r of rows) {
-      if (exclusion(r) || !keep(r)) continue;
+      if (exclusion(r, assisted) || !keep(r)) continue;
       const v = METRICS[metric](r);
       if (!(v > 0)) continue;
       if (!m.has(r.task)) m.set(r.task, []);
@@ -196,9 +203,9 @@ const cell = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
 
 // Sums of one metric over the (task, repeat) pairs where both arms carry a
 // value, so an arm that lost rows to an exclusion is not summed over fewer rows.
-function pairedSums(rowsA, rowsB, metric) {
+function pairedSums(rowsA, rowsB, metric, assisted = null) {
   const key = (r) => `${r.task}#${repOf(r)}`;
-  const value = (r) => (exclusion(r) ? null : METRICS[metric](r));
+  const value = (r) => (exclusion(r, assisted) ? null : METRICS[metric](r));
   const b = new Map(rowsB.filter((r) => value(r) != null).map((r) => [key(r), value(r)]));
   let a = 0;
   let sb = 0;
@@ -307,9 +314,11 @@ function drawMismatches(rowsA, rowsB) {
 //              predate the tags
 //   guardRails task ids to watch; defaults to GUARD_RAILS
 export function abReport(input, options = {}) {
-  const results = Array.isArray(input) ? input : input?.results ?? [];
   const meta = options.meta ?? (Array.isArray(input) ? {} : input?.meta ?? {});
   const { a, b, runDir = null, taskInfo = null } = options;
+  // A codex row that predates row.code_mode reads its rollout's, and its turns
+  // become the rollout's model requests (row-evidence.mjs withRolloutFacts).
+  const results = (Array.isArray(input) ? input : input?.results ?? []).map((r) => withRolloutFacts(r, runDir));
   const control = typeof options.control === 'string' ? options.control.split(',') : options.control;
   const seed = options.seed ?? meta.seed ?? 'ab';
   const resamples = options.resamples ?? 10000;
@@ -323,6 +332,10 @@ export function abReport(input, options = {}) {
   }
   const rowsA = results.filter((r) => r.condition === a);
   const rowsB = results.filter((r) => r.condition === b);
+  // Rows whose shell got answers from a graded fixture route: out of every
+  // paired figure, which "Sensitivity: shell-assisted rows" gives with them.
+  const assisted = new Set([...rowsA, ...rowsB].filter((r) => shellAssistedOf(r, runDir)));
+  const excl = (r) => exclusion(r, assisted);
 
   // Old rows carry no surface_calls, so their validity comes from the transcripts.
   const derived = new Map();
@@ -335,7 +348,7 @@ export function abReport(input, options = {}) {
   const triageOf = new Map(results.map((r, i) => [r, triages[i]]));
 
   // --- validity ---
-  const flags = runFlags(meta, results);
+  const flags = runFlags(meta, results, { runDir });
   lines.push(
     `A = \`${a}\`, B = \`${b}\`. Every ratio below is A/B: under 1 means A spent less.`,
     '',
@@ -346,7 +359,8 @@ export function abReport(input, options = {}) {
       ` · eval ${meta.git?.commit ? `${meta.git.commit.slice(0, 10)}${meta.git.dirty ? ' (dirty)' : ''}` : 'commit not recorded'}`,
     `- run seed: ${meta.seed ?? 'NONE'}; bootstrap seed: ${seed}, ${resamples} resamples`,
   );
-  for (const f of flags) lines.push(`- **${f.flag.toUpperCase()}**: ${f.why}`);
+  // The shell-assisted rows are named, pair by pair, further down.
+  for (const f of flags.filter((f) => f.flag !== 'shell-assisted')) lines.push(`- **${f.flag.toUpperCase()}**: ${f.why}`);
   for (const c of [a, b]) {
     const k = buildKey(meta, c);
     lines.push(
@@ -385,13 +399,13 @@ export function abReport(input, options = {}) {
   const excluded = (rows) => {
     const counts = {};
     for (const r of rows) {
-      const why = exclusion(r);
+      const why = excl(r);
       if (why) counts[why] = (counts[why] ?? 0) + 1;
     }
     return Object.entries(counts).map(([k, v]) => `${k} ${v}`).join(', ') || 'none';
   };
   lines.push(`- rows excluded from efficiency: A ${excluded(rowsA)}; B ${excluded(rowsB)}`);
-  const foreignOf = (r) => countOf(r.foreign_tools ?? derived.get(r)?.foreign_tools);
+  const foreignOf = (r) => (r.foreign_tools != null ? foreignCallsOf(r) : countOf(derived.get(r)?.foreign_tools));
   const foreign = (rows) => rows.filter((r) => foreignOf(r) > 0).length;
   const noSurface = (rows) => rows.filter((r) => surfaceCallsOf(r) === 0).length;
   if (needsDerived) {
@@ -414,8 +428,16 @@ export function abReport(input, options = {}) {
     lines.push('- draws: not recorded on the rows, so paired rows are not known to have faced the same variants');
   }
 
+  if (assisted.size) {
+    const list = (rows) => rows.filter((r) => assisted.has(r)).map((r) => r.task + (r.rep ? ` (r${r.rep})` : '')).join(', ') || 'none';
+    lines.push(
+      `- **SHELL-ASSISTED**: ${assisted.size} row(s) got answers through the agent's shell from a graded fixture route, ` +
+        `so every pair holding one is left out below: A ${list(rowsA)}; B ${list(rowsB)}`
+    );
+  }
+
   // --- primary ---
-  const groups = groupsFor(rowsA, rowsB, 'output');
+  const groups = groupsFor(rowsA, rowsB, 'output', undefined, assisted);
   const boot = hierarchicalBootstrap(groups, { seed, resamples });
   const diffs = groups.map(taskDiff);
   const sign = signTest(diffs);
@@ -423,7 +445,7 @@ export function abReport(input, options = {}) {
   const mde = minimumDetectableEffect(sigma, groups.length);
   const repsA = groups.reduce((n, g) => n + g.a.length, 0);
   const repsB = groups.reduce((n, g) => n + g.b.length, 0);
-  const sums = pairedSums(rowsA, rowsB, 'output');
+  const sums = pairedSums(rowsA, rowsB, 'output', assisted);
   lines.push(
     '',
     '## Output tokens (primary)',
@@ -469,9 +491,9 @@ export function abReport(input, options = {}) {
   // --- secondary ---
   lines.push('', '## Secondary metrics', '', 'Sums run over the paired rows where both arms carry the metric.', '', '| metric | GM ratio A/B [95% CI] | tasks | paired rows | sum A | sum B |', '|---|---|---|---|---|---|');
   for (const metric of ['turns', 'total input', 'cost', 'wall', 'api']) {
-    const g = groupsFor(rowsA, rowsB, metric);
+    const g = groupsFor(rowsA, rowsB, metric, undefined, assisted);
     const bs = g.length ? hierarchicalBootstrap(g, { seed, resamples: Math.min(resamples, 4000) }) : null;
-    const { a: sa, b: sb, n } = pairedSums(rowsA, rowsB, metric);
+    const { a: sa, b: sb, n } = pairedSums(rowsA, rowsB, metric, assisted);
     const note = metric === 'cost' ? ' (within this run only)' : metric === 'wall' ? ' (machine noise)' : '';
     lines.push(
       `| ${metric}${note} | ${bs ? ci(bs) : 'n/a'} | ${g.length} | ${n} | ${sa == null ? 'n/a' : +sa.toFixed(4)} | ${sb == null ? 'n/a' : +sb.toFixed(4)} |`
@@ -481,16 +503,19 @@ export function abReport(input, options = {}) {
   // --- passes and flips ---
   const pairKey = (r) => `${r.task}#${repOf(r)}`;
   const bByKey = new Map(rowsB.map((r) => [pairKey(r), r]));
-  const pairs = rowsA
-    .filter((r) => bByKey.has(pairKey(r)) && !r.infra && !bByKey.get(pairKey(r)).infra && !r.invalid && !bByKey.get(pairKey(r)).invalid)
-    .map((r) => [r, bByKey.get(pairKey(r))]);
+  const pairsWith = (keepShell) =>
+    rowsA
+      .filter((r) => bByKey.has(pairKey(r)))
+      .map((r) => [r, bByKey.get(pairKey(r))])
+      .filter(([x, y]) => [x, y].every((z) => !z.infra && !z.invalid && (keepShell || !assisted.has(z))));
+  const pairs = pairsWith(false);
   const aOnly = pairs.filter(([x, y]) => x.success && !y.success);
   const bOnly = pairs.filter(([x, y]) => !x.success && y.success);
   lines.push(
     '',
     '## Pass rate (a guard, not an endpoint)',
     '',
-    `- A ${pairs.filter(([x]) => x.success).length}/${pairs.length}, B ${pairs.filter(([, y]) => y.success).length}/${pairs.length} over paired rows (infra and invalid rows excluded)`,
+    `- A ${pairs.filter(([x]) => x.success).length}/${pairs.length}, B ${pairs.filter(([, y]) => y.success).length}/${pairs.length} over paired rows (infra, invalid and shell-assisted rows excluded)`,
     `- flips: A-only passes ${aOnly.length}, B-only passes ${bOnly.length}; exact McNemar p=${fmtP(mcnemarExact(aOnly.length, bOnly.length))}`,
   );
   const flipLine = (failed, passedArm) => {
@@ -534,7 +559,7 @@ export function abReport(input, options = {}) {
   // --- per-tool diff ---
   const pairedTasks = new Set(groups.map((g) => g.task));
   const toolsOf = (rows) => {
-    const valid = rows.filter((r) => pairedTasks.has(r.task) && !exclusion(r));
+    const valid = rows.filter((r) => pairedTasks.has(r.task) && !excl(r));
     const fromRows = valid.filter((r) => r.tools && typeof r.tools === 'object');
     if (fromRows.length === valid.length && valid.length) {
       const sum = {};
@@ -585,13 +610,15 @@ export function abReport(input, options = {}) {
     // recorder re-read from its transcript, a codex code-mode row's exec cells
     // and the validator's no-op count.
     const mech = (side, rows) => {
-      const valid = rows.filter((r) => pairedTasks.has(r.task) && !exclusion(r));
+      const valid = rows.filter((r) => pairedTasks.has(r.task) && !excl(r));
       const fr = (k) => {
         if (valid.every((r) => r.friction)) return valid.reduce((n, r) => n + (frictionOf(r, runDir)[k] ?? 0), 0);
         return side.stats?.friction?.[k] ?? null;
       };
+      // Snapshot files the agent read back count as snapshot characters
+      // (report.mjs snapshotOf).
       const sn = (k) => {
-        if (valid.every((r) => r.snapshot)) return valid.reduce((n, r) => n + (r.snapshot[k] ?? 0), 0);
+        if (valid.every((r) => r.snapshot)) return valid.reduce((n, r) => n + (snapshotOf(r, runDir)[k] ?? 0), 0);
         return side.stats?.snapshot?.[k] ?? null;
       };
       const per = (x, d = 2) => (x == null ? 'n/a' : fmt(x / side.rows, d));
@@ -601,7 +628,9 @@ export function abReport(input, options = {}) {
         actions: fr('actions'),
         snapChars: per(sn('chars'), 0),
         cut: per(sn('truncated')),
+        fileReads: per(sn('file_reads')),
         stale: per(fr('stale_uid')),
+        malformed: per(fr('malformed_uid')),
         restarts: per(fr('restarts')),
         sleeps: per(fr('sleeps')),
         discovery: per(fr('tool_search')),
@@ -609,6 +638,8 @@ export function abReport(input, options = {}) {
         // the count is unknown rather than zero.
         harnessCut: valid.some((r) => r.code_mode) ? per(fr('harness_truncated')) : 'n/a',
         noops: per(fr('noops')),
+        // Only an Agent SDK row records the SDK's own API retries.
+        retries: valid.some((r) => frictionOf(r, runDir).api_retries != null) ? per(fr('api_retries')) : 'n/a',
         // A codex row written before row.code_mode existed hides the waits and
         // the tool discovery its exec cells ran.
         blind: valid.filter((r) => r.backend === 'codex' && !r.code_mode).length,
@@ -623,14 +654,17 @@ export function abReport(input, options = {}) {
       '|---|---|---|',
       `| script calls | ${ma.scripts} | ${mb.scripts} |`,
       `| action followed by a snapshot | ${rate(ma)} | ${rate(mb)} |`,
-      `| snapshot characters | ${ma.snapChars} | ${mb.snapChars} |`,
+      `| snapshot characters, snapshot files read back included | ${ma.snapChars} | ${mb.snapChars} |`,
+      `| snapshot files read back | ${ma.fileReads} | ${mb.fileReads} |`,
       `| snapshots with a cut | ${ma.cut} | ${mb.cut} |`,
       `| stale-uid replies | ${ma.stale} | ${mb.stale} |`,
+      `| malformed uids the tool called stale | ${ma.malformed} | ${mb.malformed} |`,
       `| browser restarts | ${ma.restarts} | ${mb.restarts} |`,
       `| waits and sleeps | ${ma.sleeps} | ${mb.sleeps} |`,
       `| tool discovery calls | ${ma.discovery} | ${mb.discovery} |`,
       `| tool outputs the harness cut | ${ma.harnessCut} | ${mb.harnessCut} |`,
       `| no-ops and misses the validators counted | ${ma.noops} | ${mb.noops} |`,
+      `| API retries (wall time, not the surface) | ${ma.retries} | ${mb.retries} |`,
     );
     if (ma.blind || mb.blind) {
       lines.push(
@@ -648,7 +682,7 @@ export function abReport(input, options = {}) {
   const perTask = new Map(groups.map((g) => [g.task, Math.exp(taskDiff(g))]));
   const band = controlSigma ? [Math.exp(-Z_ALPHA * controlSigma), Math.exp(Z_ALPHA * controlSigma)] : null;
   const inBand = (r) => (!band ? 'no A/A band' : r > band[1] ? 'ABOVE' : r < band[0] ? 'below' : 'within');
-  const inputGroups = groupsFor(rowsA, rowsB, 'total input');
+  const inputGroups = groupsFor(rowsA, rowsB, 'total input', undefined, assisted);
   const inputRatio = inputGroups.length ? Math.exp(mean(inputGroups.map(taskDiff))) : null;
   const toolFails = (rows, pairsFailedIn) =>
     pairsFailedIn.filter((r) => TOOL_CLASSES.has(classOf(triageOf.get(r)))).map((r) => `${r.task} (${classOf(triageOf.get(r))})`);
@@ -692,17 +726,18 @@ export function abReport(input, options = {}) {
   }
 
   // --- per task ---
-  const med = (rows) => median(rows.filter((r) => !exclusion(r)).map((r) => r.output_tokens));
+  const med = (rows) => median(rows.filter((r) => !excl(r)).map((r) => r.output_tokens));
   const passes = (rows) => {
-    const graded = rows.filter((r) => !r.infra && !r.invalid);
-    return `${graded.filter((r) => r.success).length}/${graded.length}`;
+    const graded = rows.filter((r) => !r.infra && !r.invalid && !assisted.has(r));
+    const shelled = rows.filter((r) => assisted.has(r));
+    return `${graded.filter((r) => r.success).length}/${graded.length}${shelled.length ? ` (+${shelled.length} shell-assisted)` : ''}`;
   };
   const classes = (rows) => [...new Set(rows.filter((r) => !r.success).map((r) => classOf(triageOf.get(r)) ?? 'untriaged'))].join(', ');
   lines.push(
     '',
     '## Per task',
     '',
-    'Median output per arm across repeats; ratio is the per-task geometric mean A/B; passes leave out infra and invalid rows; class is the triage of failed rows.',
+    'Median output per arm across repeats; ratio is the per-task geometric mean A/B; passes leave out infra, invalid and shell-assisted rows; class is the triage of failed rows.',
     '',
     '| task | family | areas | output A | output B | A/B | pass A | pass B | failure class A | failure class B |',
     '|---|---|---|---|---|---|---|---|---|---|',
@@ -721,7 +756,7 @@ export function abReport(input, options = {}) {
   // Old rows that never called their surface stay in the primary figure, because
   // nothing on the row marks them; this is how much they move it.
   if (needsDerived) {
-    const cg = groupsFor(rowsA, rowsB, 'output', (r) => surfaceCallsOf(r) !== 0);
+    const cg = groupsFor(rowsA, rowsB, 'output', (r) => surfaceCallsOf(r) !== 0, assisted);
     const cb = hierarchicalBootstrap(cg, { seed, resamples });
     lines.push(
       '',
@@ -732,6 +767,27 @@ export function abReport(input, options = {}) {
         (results.some((r) => foreignOf(r) > 0 && surfaceCallsOf(r) !== 0)
           ? ' Rows that called a foreign server as well as their own stay in both figures.'
           : ''),
+    );
+  }
+  // The same figures with the shell-assisted rows kept, for a reader who
+  // counts a shell's answer as the agent's.
+  if (assisted.size) {
+    const all = pairsWith(true);
+    const onlyA = all.filter(([x, y]) => x.success && !y.success).length;
+    const onlyB = all.filter(([x, y]) => !x.success && y.success).length;
+    const withShell = (metric) => {
+      const g = groupsFor(rowsA, rowsB, metric);
+      return { g, bs: g.length ? hierarchicalBootstrap(g, { seed, resamples: metric === 'output' ? resamples : Math.min(resamples, 4000) }) : null };
+    };
+    const out = withShell('output');
+    lines.push(
+      '',
+      '## Sensitivity: shell-assisted rows',
+      '',
+      `With the ${assisted.size} shell-assisted row(s) kept: output ${ci(out.bs)} over ${out.g.length} tasks; ` +
+        ['turns', 'total input', 'cost'].map((m) => `${m} ${ci(withShell(m).bs)}`).join('; ') +
+        `; pass A ${all.filter(([x]) => x.success).length}/${all.length}, B ${all.filter(([, y]) => y.success).length}/${all.length}, ` +
+        `flips A-only ${onlyA}, B-only ${onlyB} (McNemar p=${fmtP(mcnemarExact(onlyA, onlyB))}).`,
     );
   }
   return lines.join('\n') + '\n';

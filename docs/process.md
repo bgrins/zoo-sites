@@ -235,6 +235,14 @@ and only a late adversarial pass catches it.
    `eval/verify-drivers/lib.mjs` cover the common plants, and the `lexvane-hard`
    driver is the worked example.
 
+   The quote gate sits between an answer and its fields, so neither kind of case can
+   catch a hole in it. Write those as `wrongExtraction` (must fail) or
+   `alsoCorrectExtraction` (must pass), a list of `{ name, answer, raw }` cases: the
+   gate passes `raw`, the extractor's `{ value, quote }` pairs, through
+   `enforceQuotes` with that answer and the task's ask, and the validator grades the
+   result on the golden state. The `popup-storm` and `feed-needle` drivers build
+   theirs from stored rows.
+
    The gate also grades every task against three generic state mutants, so a state
    half that reads nothing fails without anyone writing a case for it. Each mutant
    is a copy of the state, graded with the driver's own fields. `empty` is the state as `reset()`
@@ -315,9 +323,12 @@ work:
 
 - **Output tokens are the comparable efficiency metric.**
 - **Turns compare only between runs whose backend counts a turn the same way.**
-  Codex only approximates a turn, and surfaces pack different amounts of work into
-  one call: a shell-driven surface measures about 1.21 browser operations per turn
-  against 1.00 for a per-tool MCP surface.
+  A turn is a model request: the Agent SDK counts its own, and a codex row's are the
+  requests its rollout records. A codex row without its rollout falls back to tool
+  calls plus one, which overcounts, since one script can make several MCP calls; the
+  reports read a stored row's rollout instead. Surfaces also pack different amounts
+  of work into one call: a shell-driven surface measures about 1.21 browser
+  operations per turn against 1.00 for a per-tool MCP surface.
 - **Cost compares within one run and never between two.** Every condition in a run
   meets the same prompt cache, so a ratio there is fair; across runs, cache-creation
   volume swings enough to move a ratio from 1.03 to 1.50 at identical turn counts.
@@ -343,10 +354,23 @@ work:
   whole: in the 172-row sweep of 2026-08-18, 170 transcripts read the operator's
   `~/.codex`, 144 rows called its MCP servers, and 9 never called their own. Quote
   none of those figures as a measurement; they name defects, not sizes.
+- **A pass the shell earned is not a surface pass.** A row whose agent's shell got an
+  answer from a graded fixture route (an `/api/` route or `/collect`, answered 2xx or
+  5xx, or a page a site's `documents()` hook writes session values into, fetched with
+  a session) is `shell_assisted`. A shell that reaches loopback can open a session
+  route with a cookie the surface printed: in the Haiku sweep of 2026-09-20,
+  body-only-ref's ref came only from a curl'd 507 body, and hovercard-oncall's
+  on-call status only from curl'd cards. report.md prints such a row as
+  SHELL-ASSISTED and gives the pass count without it, `eval/ab.mjs` pairs without it
+  and gives the figures with it as a sensitivity, and triage files a failed one as
+  `shell-assisted`. A shell's curl of a static page is the page the browser shows,
+  and does not count.
 - **Compare tools inside one run, as a paired A/B.** Put both builds in one seeded,
   interleaved run as conditions, and read `eval/ab.mjs`. Across runs, cost never
   compares and prompt caches differ, so `eval/scripts/compare.mjs` refuses two runs
-  whose backend, model, effort, seed, eval commit, suite, serving or extractor differ.
+  whose backend, model, effort, seed, eval commit, eval diff (`diffSha256`), suite,
+  serving, extractor or browser pins (`meta.envPins`) differ, and leaves
+  shell-assisted rows out.
   An unseeded run gives each arm its own difficulty draws, so its paired difference
   carries draw noise too.
 - **Quote the geometric-mean ratio with its interval, never a ratio of sums.** A few

@@ -185,6 +185,16 @@ if it began inside the same surface call as the session before it, or while that
 session was still sending requests; a sign-out or a restart, which ends the first
 session, passes. The rules miss a session that begins inside a later surface call
 while the session before it sends nothing more, and `--no-tap` turns both off.
+A shell that reaches the fixtures with a cookie the surface printed (firefox-devtools-mcp's
+`list_network_requests` prints request headers whole) can fetch a session route itself,
+so each row records `shell_assisted`, the shell requests a graded route answered (an
+`/api/` route or `/collect`, 2xx or 5xx, or, to a request that carried a session, a
+page under a site's `documents()` hook, which writes that session's values into the
+body), or null; a scripted row, whose drivers fetch with the browser's cookie
+themselves, never is. report.md prints such a row as
+SHELL-ASSISTED and gives each condition's pass count without it, `ab.mjs` pairs without
+it and gives the figures with it as a sensitivity, and `regrade.mjs` reads it from a
+stored row's state file (`scripts/row-evidence.mjs`).
 Run it only where you are willing to let an agent execute arbitrary shell commands. One fixture is
 actively trying to talk that agent into exfiltrating data — that is the point of
 `injection-bait` — and an agent that takes the bait will run whatever the page told it
@@ -249,7 +259,7 @@ tree was dirty. A dirty tree adds `dirtyFiles`, each file's two-letter `git stat
 and path. It also adds `diffSha256`, a hash over the files under `eval/`, `sites/`,
 `pages/`, `server.mjs`, `serve.mjs` and `manifest.mjs` that differ from that commit,
 untracked ones included: each path and the sha256 of its bytes. Two runs of one commit
-with one hash ran the same eval code. The hash is null when only other files differ,
+with one hash ran the same eval code, and `compare.mjs` compares them. The hash is null when only other files differ,
 and such a run raises no `EVAL-DIRTY`; a run that does quotes the hash on that line.
 `meta.surfaces` holds each server's version and entry sha256: firefox-devtools-mcp's
 `dist/index.js`, and playwright-mcp's `cli.js` plus the two `playwright-core` bundles
@@ -299,8 +309,11 @@ sees only what the script prints. That changes what a codex number measures:
 Each codex row records these as `code_mode: {requests, execs, discovery_execs,
 exec_sleeps, truncated_outputs}`, read from its rollout, and its `turns` are those
 `requests` (rows from before `meta.isolation.toolPolicy.codex.turns` existed counted tool
-calls plus one). In `direct` mode codex still defers the MCP tools behind its own tool
-search, because the catalog marks gpt-5.6-* `supports_search_tool`; an experiment with
+calls plus one, and `report.mjs`, `ab.mjs`, `compare.mjs`, `triage.mjs` and
+`tool-stats.mjs` read such a row's `code_mode` from its `rollouts/` file, and its turns
+too when the rollout's totals are the row's usage, as the backend checks,
+`scripts/row-evidence.mjs`). In
+`direct` mode codex still defers the MCP tools behind its own tool search, because the catalog marks gpt-5.6-* `supports_search_tool`; an experiment with
 inline schemas has to clear that in the catalog as well (the `tool_search` features are
 removed in 0.145.0 and change nothing). The codex extractor keeps `code_mode_only`
 whatever `EVAL_CODEX_TOOL_MODE` says.
@@ -449,7 +462,10 @@ changes a grade. `extraction` fires when a field is null although the answer hol
 value: the extractor's raw pair shows the quote gate nulled it, a passing arm's value
 appears in the answer, the answer holds a code the server minted (from the state file)
 or a value the validator's detail names, or the answer labels a value for the field
-(`Title: ...` for `postTitle`). A value the prompt carries is no evidence, since any
+(`Title: ...` for `postTitle`). A label for a nested field has to name every key
+below the top level, in the label or the heading above it: `perStore.Gadgetron.price`
+needs `Gadgetron` beside `Price:`, where price-compare's lone `**Price:** $274.50` was
+the winner's. A value the prompt carries is no evidence, since any
 answer can repeat the ask; the prompt's URLs are left out of that test, and the value
 must stand there as a whole token. When the task and the attempt's state are at hand,
 triage re-runs the validator with the value written into the field, as `regrade.mjs`
@@ -459,16 +475,34 @@ in the detail, about none of the null fields, fails the row on its own. `paraphr
 fires when the extractor reworded a value of three words or more that its quote gives
 verbatim, and fewer than half of the value's words are in the quote, because
 validators grade values. `surface-reach`, a tool class, fires only when a graded or
-truth value reached the agent truncated. A truth value that no tool reply carried at
-all is listed as the contributing signal `minted-absent`, because an agent that never
-opened the page leaves the same trace as a surface that omitted the value.
+truth value reached the agent truncated, or when a claimed value is a cut a reply
+showed, ending in its `...` (news-extract's and modal-escape's titles); a value the
+agent shortened itself, from a reply that showed it whole, is not. A truth value that
+no tool reply carried at all is listed as the contributing signal `minted-absent`,
+because an agent that never opened the page leaves the same trace as a surface that
+omitted the value, and one no text reply carried on a row whose replies held an image
+is listed as `image-only`, with the peer comparison read as text alone.
 `surface-absent`, the other tool class, fires instead for a task that names its truth,
 when the other surface under the same backend passed and received its own attempt's
-truth, no arm passed on this surface, and no reply of this row carried any of its
+truth, no arm passed on this surface (a shell-assisted pass counts for neither), and no reply of this row carried any of its
 truth. For the generic minted codes that comparison is listed as contributing, beside
 `minted-absent`. `harness-truncated` fires last, on a codex row whose outputs codex
 cut before the model read them (`code_mode.truncated_outputs`), because a value a
 reply carried may then never have reached the model.
+
+`shell-assisted` fires before the answer is read at all, on a row whose agent's shell
+got answers from a graded fixture route (`scripts/row-evidence.mjs`): its evidence is
+not the surface's. `tool-errors`, the third tool class, fires on a surface error that
+no later call made good, or one that carried the attempt's truth. A later success
+makes an error good when it came from the same tool, from a tool of the same kind (a
+fill, a pointer action, a key, a navigation to the same url, a dialog), or from a
+script whose code does that job (a `.fill(` or `.value =`, a `.click(`, a
+`keyboard.` call, a `.goto(` or `location =`, a dialog's `.accept(`), and a failed
+script from any later script; a read-only tool's error is good after two later
+successes. Only the attempt's truth marks an error as being about the graded value: a
+value the answer claimed can be the agent's own mistake, and formula-repair's
+`carried "e14"` was the cell its agent wrongly rewrote. Triage re-reads a row's
+transcript with these rules rather than trusting the blame the row recorded.
 
 An attempt's truth is the set of values its task names, when the task entry declares
 `truth: { kind: 'minted', values: (state) => [...] }`, and otherwise the codes the
@@ -480,7 +514,16 @@ A slug or enum in session state, such as `same-origin`, `on-file` or `rr-104`, i
 neither. Only a task can name a truth that is not code-shaped: `mid-flight-rate` names
 the rate it mints into one response body. Reach decodes the JSON string escapes of a
 script's result, so a multi-line value that an `evaluate_script` or `browser_evaluate`
-call returned reads as seen. `surface.absent` leaves out an answer value the agent
+call returned reads as seen. It also reads playwright-mcp's YAML with a doubled quote
+undone (`'Don''t'`) and HTML entities decoded, and matches a value of 12 characters or
+more with punctuation and whitespace folded, so an answer that joins two page lines
+with a comma (search-decoy's address) reads as seen. A value absent from every reply's
+text while a reply carried an image reads as `image-only`, ahead of `derived` or
+`paraphrased`, since a screenshot may have shown it (flaky-retry's total, room-booking's
+PCR-076981). A GUESSED pass in report.md needs the cut value to be what passed the row:
+report.mjs re-runs the validator with the value cut back to the opening the surface
+showed, and a row that still passes, such as embargo-wait, graded on the headline's
+company names, is not guessed. `surface.absent` leaves out an answer value the agent
 composed: reach reads a number it computed as `derived`, and prose of four words or
 more as `paraphrased`. `node eval/surface-reach.mjs <run-dir>` re-reads a run with
 these rules, and tallies the answers' values apart from the attempts' truth.
@@ -496,8 +539,18 @@ in an `evaluate_script` function it passes included, so it replaces `script_slee
 `truncated_outputs` becomes `harness_truncated`. `noops` sums the validator's own
 counts of actions that replied success and did not land, the detail keys ending in
 `NoOps`, `noops` or `misses`; a miss also counts values the agent got wrong, so the
-count is an upper bound on no-ops. The report prints `harness_truncated` and `noops`
-per row, and the A/B mechanism table prints every one of these per condition, with
+count is an upper bound on no-ops. `stale_uid` leaves out
+`malformed_uid`, the calls whose uid argument firefox-devtools-mcp cannot parse
+(`uid=1_59`), which it answers with its stale text. `snapshot.chars` counts the snapshot
+files an agent read back through the Read tool or its shell (`snapshot.file_reads`,
+`file_chars`), since playwright-mcp's action replies link a snapshot file rather than
+print it; `output_file_reads` counts the other files a surface wrote that the agent
+read back. `foreign_tools` counts calls to another MCP server only, and a call naming a
+tool the row's own server lacks is `unknown_tools`; a row without `malformed_uid`,
+written by an older recorder, counted both as foreign, so readers count
+`foreign_servers` (`identity.mjs` `foreignCallsOf`). An Agent SDK row records `api_retries` and `api_retry_s`, the SDK's
+own retries of a failed API request and the waits they added to wall time. The report
+prints `harness_truncated` and `noops` per row, and the A/B mechanism table prints every one of these per condition, with
 `n/a` for harness cuts when no row carries `code_mode`.
 
 ## The transcript judge
@@ -551,7 +604,7 @@ The judge is shown the same triage class report.md prints.
 | `mcp-stdio.mjs` | Stdio MCP client; resolves the tool server per the order above. |
 | `mcp-tap.mjs` | The passthrough every condition's server runs behind, logging each call's latency and sizes to `tool-calls/*.jsonl`; `--no-tap` drops it. |
 | `report.mjs`, `ab.mjs` | report.md, and the paired A/B report with its statistics. |
-| `scripts/` | Readers of a finished run: `transcript.mjs`, `bundle.mjs`, `triage.mjs`, `tool-stats.mjs`, `regrade.mjs`, `compare.mjs`, `history.mjs`, the opt-in `judge.mjs`, and the modules they share (`events.mjs`, `identity.mjs`, `state-file.mjs`). Beside them, `snapshot-census.mjs` measures snapshot coverage per build, and `derive-areas.mjs` regenerates `tasks/areas.json`. |
+| `scripts/` | Readers of a finished run: `transcript.mjs`, `bundle.mjs`, `triage.mjs`, `tool-stats.mjs`, `regrade.mjs`, `compare.mjs`, `history.mjs`, the opt-in `judge.mjs`, and the modules they share (`events.mjs`, `identity.mjs`, `state-file.mjs`, and `row-evidence.mjs`, which reads a stored row's shell assistance from its state file and a codex row's `code_mode` from its rollout), and `rule-checks.mjs`, which checks the reporting rules that read a row without a browser (reach's matching, the copied-cut rule, script recovery, shell assistance, whole-path labels) on the cases that made them and the cases they must not catch. Beside them, `snapshot-census.mjs` measures snapshot coverage per build, and `derive-areas.mjs` regenerates `tasks/areas.json`. |
 | `spikes/` | Free capability spikes and the probe suite; see `spikes/README.md`. |
 | `results/` | Run output. Gitignored. |
 

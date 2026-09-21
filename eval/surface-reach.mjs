@@ -83,18 +83,32 @@ const digits = (s) => String(s).replace(/[^\d.]/g, '');
 // So allow a few characters of slack, and require a long prefix so the slack
 // cannot manufacture a match.
 const ELLIPSIS = /^.{0,3}?(\.{3}|…)/;
-function looksTruncated(needle, hay) {
+// The longest opening of `needle` the haystack shows cut, or null.
+function truncatedHead(needle, hay) {
   for (let cut = Math.min(needle.length - 1, 27); cut >= 12; cut--) {
     const head = needle.slice(0, cut);
     let from = 0;
     for (;;) {
       const at = hay.indexOf(head, from);
       if (at === -1) break;
-      if (ELLIPSIS.test(hay.slice(at + head.length))) return true;
+      if (ELLIPSIS.test(hay.slice(at + head.length))) return head;
       from = at + 1;
     }
   }
-  return false;
+  return null;
+}
+const looksTruncated = (needle, hay) => truncatedHead(needle, hay) != null;
+// The opening of `value` that reads as `head`, an opening of unwrap(norm(value)):
+// norm folds whitespace runs and case and unwrap drops leading quotes, so the
+// two lengths differ.
+function openingOf(value, head) {
+  const want = head.trimEnd();
+  const s = String(value);
+  for (let end = 1; end <= s.length; end++) {
+    const n = norm(s.slice(0, end)).replace(/^["'“”‘’(\[]+/, '').trimStart();
+    if (n.length >= want.length) return n.startsWith(want) ? s.slice(0, end) : null;
+  }
+  return null;
 }
 
 // An answer's sentence punctuation and quotes around a value are the agent's,
@@ -129,11 +143,61 @@ export function decodedView(text) {
   return out.join('\n');
 }
 
+// Two more views of a reply's text, each made of the lines that need it, so a
+// view of a large haystack stays small. playwright-mcp's YAML snapshot writes
+// a quote inside a single-quoted scalar twice ('Don''t miss'), and a script
+// that returns innerHTML hands back HTML entities undecoded (&amp;, &#39;).
+const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+const ENTITY = /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi;
+const decodeEntities = (line) =>
+  line.replace(ENTITY, (m, e) => {
+    if (e[0] === '#') {
+      const code = e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : Number(e.slice(1));
+      return Number.isFinite(code) && code <= 0x10ffff ? String.fromCodePoint(code) : m;
+    }
+    return ENTITIES[e.toLowerCase()] ?? m;
+  });
+const linesMatching = (text, re, fn) => Array.from(text.matchAll(re), ([line]) => fn(line)).join('\n');
+const entityView = (text) => (text.includes('&') ? linesMatching(text, /^.*&(?:#x[0-9a-f]+|#\d+|[a-z]+);.*$/gim, decodeEntities) : '');
+const yamlView = (text) => (text.includes("''") ? linesMatching(text, /^.*''.*$/gm, (l) => l.replaceAll("''", "'")) : '');
+// Letters and digits only, every run of anything else one space, and padded,
+// so a value matches as whole words. An answer joins lines the page shows
+// apart: search-decoy's "Bureau of Civic Revenue, Declarations Unit, PO Box
+// 4410, ..." against a script reply's two array entries, one per line. A value
+// under FOLD_MIN characters folded is not tested this way, since "A-1" folds
+// to words any page holds.
+const fold = (s) => ` ${String(s).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()} `;
+const FOLD_MIN = 12;
+// The lines an answer joins can sit under nodes of their own, a JSON key
+// ("text32": "PO Box 4410, ...") or a YAML one (- paragraph [ref=f2e73]: PO
+// Box 4410, ...), which the fold keeps between them. A value whose comma- or
+// semicolon-separated parts each appear, in order, within JOIN_SPAN
+// characters of the part before, was shown.
+const JOIN_SPAN = 200;
+function joinedSeen(value, hayFold) {
+  const parts = String(value).split(/\s*[,;\n]\s*/).map(fold).filter((p) => p.length - 2 >= 3);
+  if (parts.length < 2) return false;
+  for (let from = 0; ; ) {
+    const at = hayFold.indexOf(parts[0], from);
+    if (at === -1) return false;
+    let end = at + parts[0].length;
+    const inOrder = parts.slice(1).every((p) => {
+      const next = hayFold.indexOf(p, end - 1);
+      if (next === -1 || next - end > JOIN_SPAN) return false;
+      end = next + p.length;
+      return true;
+    });
+    if (inOrder) return true;
+    from = at + 1;
+  }
+}
+
 export function reachOf(values, haystack) {
-  const decoded = decodedView(haystack);
-  if (decoded) haystack = `${haystack}\n${decoded}`;
+  const views = [decodedView(haystack), yamlView(haystack), entityView(haystack)].filter(Boolean);
+  if (views.length) haystack = [haystack, ...views].join('\n');
   const hay = norm(haystack);
   const hayFlat = norm(degroup(haystack));
+  let hayFold = null;
   const out = {};
   for (const v of values) {
     const needle = unwrap(norm(v));
@@ -144,6 +208,10 @@ export function reachOf(values, haystack) {
       // Bare digits alone would match any substring of a longer number, so
       // require a boundary on both sides.
       if (d) hit = new RegExp(`(?<![\\d.])${d.replace('.', '\\.')}(?![\\d])`).test(digits2(hayFlat));
+    }
+    if (!hit && fold(v).length - 2 >= FOLD_MIN) {
+      hayFold ??= fold(degroup(haystack));
+      hit = hayFold.includes(fold(degroup(v))) || joinedSeen(degroup(v), hayFold);
     }
     out[v] = hit ? 'seen' : looksTruncated(needle, hay) ? 'truncated' : 'absent';
   }
@@ -237,32 +305,70 @@ export function truthValues(state, task = null) {
 // as truncated; one it never showed reads as derived or paraphrased.
 const composedAs = (v) => (numeric(v) ? 'derived' : norm(v).split(' ').length >= 4 ? 'paraphrased' : null);
 
+// Whether a message hands a tool's reply back holding an image: a screenshot,
+// or a Read of one, as the Agent SDK's tool_result block or codex's MCP result
+// carries it.
+function carriesImage(node, underResult = false) {
+  if (node == null || typeof node !== 'object') return false;
+  if (Array.isArray(node)) return node.some((child) => carriesImage(child, underResult));
+  if (AGENT_ITEM_TYPES.has(node.type)) return false;
+  if ((underResult || node.type === 'tool_result') && node.type === 'image') return true;
+  return Object.entries(node).some(
+    ([key, value]) => key !== 'arguments' && key !== 'tool_use_result' && carriesImage(value, underResult || node.type === 'tool_result' || RESULT_KEYS.has(key))
+  );
+}
+
 // Accumulates across a task's message stream so run.mjs can hand messages in as
 // they arrive rather than re-reading the transcript afterwards.
 export function createReachRecorder() {
   const chunks = [];
   let chars = 0;
+  let images = 0;
+  let hay = null;
+  const normalised = () => (hay?.chunks === chunks.length ? hay.text : (hay = { chunks: chunks.length, text: norm(chunks.join('\n')) }).text);
   // A run can stream tens of MB of snapshots; keep only the first CAP
   // characters so a long task cannot balloon the runner's memory.
   const CAP = 24 * 1024 * 1024;
   return {
     observe(message) {
+      if (carriesImage(message)) images += 1;
       if (chars >= CAP) return;
       const text = toolTextOf(message);
       if (!text) return;
       chunks.push(text);
       chars += text.length;
     },
-    // Each value as seen, truncated or absent, or, for an absent value the
-    // agent composed, derived or paraphrased. Values in `truth` are the
-    // server's, never the agent's, so an absent one stays absent.
+    // Each value as seen, truncated or absent. An absent value is
+    // `image-only` when a reply carried an image, since a screenshot may have
+    // shown it (flaky-retry's total, room-booking's PCR-076981 and
+    // promo-zindex's code were read off screenshots), and otherwise, for a
+    // value the agent composed, derived or paraphrased. Values in `truth` are
+    // the server's, never the agent's, so one no image could have shown stays
+    // absent.
     reach(values, { truth = [] } = {}) {
       const states = reachOf(values, chunks.join('\n'));
       const server = new Set(truth.map(String));
       for (const [v, state] of Object.entries(states)) {
-        if (state === 'absent' && !server.has(v)) states[v] = composedAs(v) ?? state;
+        if (state !== 'absent') continue;
+        states[v] = images ? 'image-only' : (!server.has(v) && composedAs(v)) || state;
       }
       return states;
+    },
+    // The opening of `value` a reply showed cut, as the value spells it, or
+    // null.
+    shownHead(value) {
+      const head = truncatedHead(unwrap(norm(value)), normalised());
+      return head ? openingOf(value, head) : null;
+    },
+    // Whether `value`, a claimed text ending in an ellipsis, is a cut a reply
+    // showed: with its ellipsis dropped, it is, give or take ELLIPSIS's three
+    // characters of slack, an opening a reply showed followed by an ellipsis.
+    // An agent that shortened a value a reply showed whole wrote a cut of its
+    // own, which no reply holds.
+    showsCut(value) {
+      const bare = unwrap(norm(String(value).replace(/\s*(?:\.{3}|…)\s*$/, '')));
+      const head = truncatedHead(bare, normalised());
+      return head != null && head.length >= bare.length - 3;
     },
   };
 }
@@ -285,6 +391,7 @@ if (invokedDirectly) {
   const { transcriptCandidates } = await import('./run-files.mjs');
   const { readStateFile } = await import('./scripts/state-file.mjs');
   const { taskInfo } = await import('./scripts/identity.mjs');
+  const { codeModeOf } = await import('./scripts/row-evidence.mjs');
   const dir = process.argv[2];
   if (!dir) {
     console.error('usage: node eval/surface-reach.mjs <run-dir>');
@@ -292,7 +399,7 @@ if (invokedDirectly) {
   }
   const res = JSON.parse(readFileSync(join(dir, 'results.json'), 'utf8'));
   const tasks = await taskInfo();
-  const blank = () => ({ seen: 0, truncated: 0, absent: 0, derived: 0, paraphrased: 0 });
+  const blank = () => ({ seen: 0, truncated: 0, absent: 0, 'image-only': 0, derived: 0, paraphrased: 0 });
   const tally = { answer: blank(), truth: blank() };
   const notable = [];
   for (const row of res.results) {
@@ -319,7 +426,8 @@ if (invokedDirectly) {
     if (!values.length) continue;
     // A codex code-mode row whose outputs the harness cut: what the model read
     // was less than the replies this reads, so "seen" there is an upper bound.
-    const cutByHarness = row.code_mode?.truncated_outputs ? ` [harness cut ${row.code_mode.truncated_outputs} output(s)]` : '';
+    const harnessCut = codeModeOf(row, dir)?.truncated_outputs;
+    const cutByHarness = harnessCut ? ` [harness cut ${harnessCut} output(s)]` : '';
     for (const [value, reached] of Object.entries(rec.reach(values, { truth }))) {
       tally[truth.includes(value) ? 'truth' : 'answer'][reached] += 1;
       // A passing row's absent truth is mostly minted codes nothing grades
@@ -337,12 +445,14 @@ if (invokedDirectly) {
   console.log(`  seen in tool output : ${tally.answer.seen}`);
   console.log(`  truncated by surface: ${tally.answer.truncated}`);
   console.log(`  absent (never shown): ${tally.answer.absent}`);
+  console.log(`  image-only (absent from text, beside an image reply): ${tally.answer['image-only']}`);
   console.log(`  derived by the agent (an absent number): ${tally.answer.derived}`);
   console.log(`  paraphrased by the agent (absent prose): ${tally.answer.paraphrased}`);
   console.log(`truth values of the attempts: ${total(tally.truth)}`);
   console.log(`  seen in tool output : ${tally.truth.seen}`);
   console.log(`  truncated by surface: ${tally.truth.truncated}`);
   console.log(`  absent (never shown; listed below for failing rows only): ${tally.truth.absent}`);
+  console.log(`  image-only (absent from text, beside an image reply): ${tally.truth['image-only']}`);
   if (notable.length) {
     console.log('\nvalues the agent never received verbatim:');
     for (const n of notable) console.log(`  ${n}`);

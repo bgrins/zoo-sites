@@ -84,6 +84,7 @@ import {
   foreignBrowser, OVERLAP_MS, SHELL_AFTER_MS, SURFACE_AFTER_MS, SURFACE_BEFORE_MS, SURFACE_SLACK_MS, tapWindows,
 } from './scripts/foreign-browser.mjs';
 import { taskInfo } from './scripts/identity.mjs';
+import { shellAssisted } from './scripts/row-evidence.mjs';
 import { createReachRecorder, gradedValues, truthValues } from './surface-reach.mjs';
 import { detectScreen, windowGrid } from './window-grid.mjs';
 
@@ -1463,11 +1464,15 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     const states = reach.reach(truth, { truth: named });
     const truncated = Object.keys(states).filter((v) => states[v] === 'truncated');
     const absent = Object.keys(states).filter((v) => states[v] === 'absent');
-    if (!truncated.length && !absent.length) return null;
+    // Absent from every reply's text while a reply carried an image, which may
+    // have shown it (surface-reach.mjs).
+    const imageOnly = Object.keys(states).filter((v) => states[v] === 'image-only');
+    if (!truncated.length && !absent.length && !imageOnly.length) return null;
     const clip = (list) => list.slice(0, 8).map((v) => v.slice(0, 80));
     return {
       ...(truncated.length ? { truncated: clip(truncated) } : {}),
       ...(absent.length ? { absent: clip(absent) } : {}),
+      ...(imageOnly.length ? { image_only: clip(imageOnly) } : {}),
     };
   })();
   const tenth = (ms) => (ms == null ? null : Math.round(ms / 100) / 10);
@@ -1475,8 +1480,9 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   // passing row records none: reused-row's speculative accept_dialog, sent after
   // a click that opened no confirm(), read as an unrecovered tool error on a
   // row that passed. Triage re-reads a row regraded to a failure from its
-  // transcript.
-  const blamed = toolErrors.length && !verdict.pass ? blameToolErrors(toolErrors, truth) : null;
+  // transcript. Only the attempt's truth marks an error as being about the
+  // graded value; a value the answer claimed can be the agent's own mistake.
+  const blamed = toolErrors.length && !verdict.pass ? blameToolErrors(toolErrors, named) : null;
   const { invalid, ...measured } = telemetry;
   const invalidWhy =
     invalid ?? (foreign?.sessions ? 'foreign-browser' : r.codex_isolation ? 'codex-isolation' : null);
@@ -1651,7 +1657,7 @@ function ledgerSummary(ledger) {
 // it: the ledger summary, the difficulty draws, and a copy of the whole state
 // for regrading. A server without a ledger or a draw log (one older than them)
 // leaves those null rather than absent, so every row has the same keys.
-function serverRecord(env, transcript, statesDir) {
+function serverRecord(env, transcript, statesDir, backendName) {
   const state = env.pages.state;
   let draws = null;
   if (Array.isArray(state.draws)) {
@@ -1663,6 +1669,10 @@ function serverRecord(env, transcript, statesDir) {
   }
   const out = {
     ledger: Array.isArray(state.ledger) ? ledgerSummary(state.ledger) : null,
+    // The shell requests a graded route answered (scripts/row-evidence.mjs),
+    // null when there were none: the reports keep such a row out of the
+    // comparisons between conditions.
+    shell_assisted: shellAssisted(state.ledger, { backend: backendName }),
     draws,
     state_file: null,
   };
@@ -1830,7 +1840,7 @@ async function runOne({ backendName, condition, label }, env, item, shared) {
         ...r,
         ...(attempt ? { retries: attempt } : {}),
         ...discardedFields(),
-        ...serverRecord(env, r.transcript, shared.statesDir),
+        ...serverRecord(env, r.transcript, shared.statesDir, backendName),
       };
     } catch (error) {
       const spend = error?.spend;
@@ -1878,7 +1888,7 @@ async function runOne({ backendName, condition, label }, env, item, shared) {
         ...(error?.foreign ? { foreign_browser: error.foreign } : {}),
         ...(error?.provenance ?? {}),
         ...(error?.startedAt ? { started_at: error.startedAt.toISOString() } : {}),
-        ...serverRecord(env, error?.transcript, shared.statesDir),
+        ...serverRecord(env, error?.transcript, shared.statesDir, backendName),
       });
     }
   }

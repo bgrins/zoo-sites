@@ -226,9 +226,17 @@ The grading key, the validator source and the per-attempt server state
 
 - **Output tokens are the comparable efficiency metric.**
 - **Turns compare only between runs whose backend counts a turn the same way.**
-  Codex only approximates a turn, and surfaces pack different amounts of work
-  into one call: a shell-driven surface measures about 1.21 browser operations
-  per turn against 1.00 for a per-tool MCP surface.
+  A turn is a model request: the Agent SDK's own count, and for codex the
+  requests its rollout records, or tool calls plus one on a row without its
+  rollout, which overcounts: one script can make several MCP calls. Surfaces
+  also pack different amounts of work into one call: a shell-driven surface
+  measures about 1.21 browser operations per turn against 1.00 for a per-tool
+  MCP surface.
+- **A shell-assisted row is not a surface pass.** A row marked
+  \`shell_assisted\` got answers through the agent's shell from a graded
+  fixture route (an API or the /collect sink answered 2xx or 5xx, or a page a
+  site hook writes session values into, fetched with a session), so report.md
+  leaves it out of the pass counts it compares between conditions.
 - **Cost compares within one run and never between two.** Every condition in a
   run meets the same prompt cache, so a ratio there is fair; across runs,
   cache-creation volume swings enough to move a ratio from 1.03 to 1.50 at

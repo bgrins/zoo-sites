@@ -147,6 +147,25 @@ const RESTART_TOOL = /^restart_/;
 // firefox-devtools-mcp's stale-uid errors, then playwright-mcp's stale-ref one
 // ("Ref e55 not found in the current page snapshot").
 export const STALE = /stale\/invalid|from a stale snapshot|invalid or from an old snapshot|not found in the current page snapshot/i;
+// firefox-devtools-mcp rewrites every error that mentions a UID to the stale
+// text, its own "Invalid UID format" included, so an agent that sent
+// "uid=1_59" for 1_59 reads as having held a stale uid. Only the argument
+// tells them apart: the tool's validateUid wants a snapshot number before the
+// first underscore, which parseInt must read. Every string under a key ending
+// in "uid" (uid, fromUid, toUid, a fill_form_by_uid element's uid) is tested.
+export function malformedUid(input) {
+  const bad = (uid) => {
+    const [head, ...rest] = String(uid).split('_');
+    return !rest.length || !head || Number.isNaN(parseInt(head, 10));
+  };
+  const walk = (node, key = '') => {
+    if (typeof node === 'string') return /uid$/i.test(key) && bad(node);
+    if (Array.isArray(node)) return node.some((v) => walk(v, key));
+    if (node && typeof node === 'object') return Object.entries(node).some(([k, v]) => walk(v, k));
+    return false;
+  };
+  return walk(input);
+}
 // A script that sleeps before it reads: setTimeout(callback, ms) with a literal
 // delay or a product of literals (5 * 1000), Playwright's waitForTimeout(ms), or
 // a sleep, delay or wait helper called with a literal. A surface without a wait
@@ -181,10 +200,29 @@ const SHELL_SLEEP = /\bsleep\s+\d/g;
 const PERSISTED = '<persisted-output>';
 // The Claude CLI's reply to a call naming a tool the server does not have; the
 // call never reaches the server, so the tap never sees it.
-const NO_SUCH_TOOL = /No such tool available/i;
+export const NO_SUCH_TOOL = /No such tool available/i;
 // What an errored call keeps for the question of whether it carried a graded
 // value.
 const ERROR_KEEP = 4000;
+// Where a surface's replies name a file it wrote: playwright-mcp links one
+// ([Snapshot](downloads/page-...yml)), firefox-devtools-mcp prints "Result
+// saved to: <path> (9.2KB)". Its own output directory, and the attempt's
+// downloads/ and playwright-output/, hold only what a surface wrote.
+const REPLY_LINK = /\[([^\]\n]{1,80})\]\(([^)\s]+)\)/g;
+const SAVED_TO = /\bsaved to:?\s+(\S+)/gi;
+const SURFACE_OUTPUT = /(?:^|\/)(?:downloads|playwright-output)\/|\/\.firefox-devtools-mcp\/output\//;
+const filePath = (raw) => {
+  const p = String(raw ?? '')
+    .trim()
+    .replace(/^['"`]+|['"`),.;:]+$/g, '')
+    .replace(/^file:\/\//, '')
+    .replace(/^(?:\.\/)+/, '');
+  return p && !/^[a-z][a-z0-9+.-]*:\/\//i.test(p) ? p : null;
+};
+// The words of a shell command that can name a file: a path, or a name with
+// an extension.
+const commandPaths = (command) =>
+  String(command ?? '').split(/[\s|;&<>()'"`=]+/).filter((t) => t.includes('/') || /\.\w{1,5}$/.test(t));
 
 // The tools both shipped surfaces annotate readOnlyHint. A failed one left the
 // page as it was, so the agent working on past it is a recovery; a failed
@@ -204,17 +242,55 @@ const urlArg = (c) => {
   }
 };
 
-// Which of `errors` a later call made good: a later call to the same tool (to
-// the same url, for one that takes a url) succeeded, or, for a read-only tool,
-// at least two later surface calls did. Uids and refs change with every
+// The job a page action does, across both surfaces, so a failed call is made
+// good by another tool of its surface doing the same job, firefox-devtools-mcp's
+// pr-review clicking the line a hover_by_uid could not reach, or by a script
+// whose code does that job (SCRIPT_DOES, read from the call's arguments):
+// playwright-mcp's brochure-minimal filled, through browser_run_code, the
+// fields its browser_fill_form and browser_type could not address.
+const ACTION_KIND = {
+  fill: [
+    'fill_by_uid', 'fill_form_by_uid', 'select_option', 'upload_file_by_uid',
+    'browser_type', 'browser_fill_form', 'browser_select_option', 'browser_file_upload', 'browser_drop',
+  ],
+  pointer: ['click_by_uid', 'hover_by_uid', 'drag_by_uid_to_uid', 'browser_click', 'browser_hover', 'browser_drag'],
+  key: ['press_key', 'browser_press_key'],
+  navigate: ['navigate_page', 'new_page', 'navigate_history', 'browser_navigate', 'browser_navigate_back'],
+  dialog: ['accept_dialog', 'dismiss_dialog', 'browser_handle_dialog'],
+};
+const kindOf = new Map(Object.entries(ACTION_KIND).flatMap(([kind, tools]) => tools.map((t) => [t, kind])));
+// The page calls and DOM writes that do each job in a page script or a
+// Playwright one. The arguments are JSON, so a quote in the code is \".
+const Q = String.raw`\\?["'\x60]`;
+const SCRIPT_DOES = {
+  fill: new RegExp(
+    String.raw`\.(?:fill|type|pressSequentially|selectOption|setInputFiles|check|uncheck)\(|\.(?:value|checked|selectedIndex|textContent|innerText)\s*=(?!=)` +
+      String.raw`|execCommand\(${Q}insertText|new\s+(?:Input)?Event\(${Q}(?:input|change)`
+  ),
+  pointer: /\.(?:click|dblclick|hover|tap|dragTo|dispatchEvent)\(|\bmouse\.(?:click|down|up|move)\(|new\s+(?:Mouse|Pointer|Drag)Event\(/,
+  key: /\bkeyboard\.|\.(?:press|type|pressSequentially)\(|new\s+KeyboardEvent\(/,
+  navigate: /\.(?:goto|goBack|goForward|reload)\(|\blocation(?:\.href)?\s*=(?!=)|\blocation\.(?:assign|replace|reload)\(|\bhistory\.(?:back|forward|go)\(|\bwindow\.open\(/,
+  dialog: new RegExp(String.raw`\.(?:accept|dismiss)\(|\.on\(${Q}dialog|\bwindow\.(?:confirm|alert|prompt)\s*=(?!=)`),
+};
+
+// Which of `errors` a later call made good: a later call to the same tool, or
+// to a tool of the same kind (to the same url, for one that takes a url),
+// succeeded, or a later script whose code does the failed action's job did,
+// and a failed script is made good by any later one; or, for a read-only tool,
+// at least two later surface calls succeeded. Uids and refs change with every
 // snapshot, so no other argument has to match.
 function recoveredErrors(own) {
   return own.flatMap((c, i) => {
     if (!c.isError) return [];
     const later = own.slice(i + 1).filter((x) => x.done && !x.isError);
     const url = urlArg(c);
+    const kind = kindOf.get(c.tool);
+    const sameJob = (x) =>
+      (x.tool === c.tool || (kind && kindOf.get(x.tool) === kind)) && (url == null || urlArg(x) === url);
+    const scriptDoes = (x) => EVAL_TOOL.test(x.tool) && (EVAL_TOOL.test(c.tool) || (kind && SCRIPT_DOES[kind].test(x.args ?? '')));
     const recovered =
-      later.some((x) => x.tool === c.tool && (url == null || urlArg(x) === url)) ||
+      later.some(sameJob) ||
+      later.some(scriptDoes) ||
       (READ_ONLY_TOOLS.has(c.tool) && later.length >= 2);
     return [{ seq: i + 1, tool: c.tool, recovered, text: c.errorText ?? '', args: c.args ?? '' }];
   });
@@ -227,9 +303,11 @@ const distinctive = (v) => v.length >= 6 || (v.length >= 3 && /\p{L}/u.test(v) &
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // The surface's own errors a row's failure can be charged to: those no later
-// call made good, and those whose arguments or reply carried a value the task
-// grades or the server minted, as a whole token, whether or not a later call
-// made them good.
+// call made good, and those whose arguments or reply carried one of `values`,
+// the attempt's truth (surface-reach.mjs truthValues), as a whole token,
+// whether or not a later call made them good. A value the answer claimed is
+// no such evidence: formula-repair's agent rewrote E14, its own wrong cell,
+// and a click that carried "e14" read as the tool failing the row.
 export function blameToolErrors(errors, values = []) {
   const wanted = values
     .map((v) => String(v).toLowerCase())
@@ -305,8 +383,50 @@ export function createCallRecorder(surface) {
   // what `args` keeps.
   const argsOf = (tool, input) => {
     const json = JSON.stringify(input ?? {});
-    return { args: json.slice(0, ERROR_KEEP), ...(EVAL_TOOL.test(tool ?? '') ? { sleeps: scriptSleeps(json) } : {}) };
+    return {
+      args: json.slice(0, ERROR_KEEP),
+      ...(EVAL_TOOL.test(tool ?? '') ? { sleeps: scriptSleeps(json) } : {}),
+      ...(malformedUid(input) ? { malformedUid: true } : {}),
+      ...(typeof input?.filename === 'string' ? { saves: input.filename } : typeof input?.saveTo === 'string' ? { saves: input.saveTo } : {}),
+    };
   };
+  // The files the surface wrote where the agent can read them back, by path,
+  // each marked when it holds a snapshot: a name a call passed (playwright-mcp's
+  // filename, firefox-devtools-mcp's saveTo), a link in a reply
+  // ([Snapshot](downloads/page-...yml)) and a "saved to: <path>" line. A
+  // snapshot the agent reads back through the Read tool or its shell reached it
+  // all the same: playwright-mcp's action replies link a snapshot file instead
+  // of printing one.
+  const files = new Map();
+  const addFile = (path, snapshot) => {
+    const p = filePath(path);
+    if (p) files.set(p, Boolean(files.get(p)) || snapshot);
+  };
+  const surfaceFiles = (call, text) => {
+    const snapshot = SNAPSHOT_TOOLS.has(call.tool);
+    if (call.saves) addFile(call.saves, snapshot);
+    for (const [, label, path] of text.matchAll(REPLY_LINK)) addFile(path, snapshot || /^snapshot/i.test(label));
+    for (const [, path] of text.matchAll(SAVED_TO)) addFile(path, snapshot);
+  };
+  // Whether a Read of `path`, or a shell command naming it, reads a file the
+  // surface wrote, and whether that file is a snapshot: a known file, or one
+  // under a surface's output directory, where a YAML file is a playwright-mcp
+  // snapshot.
+  const readOf = (paths) => {
+    let found = null;
+    for (const raw of paths) {
+      const p = filePath(raw);
+      if (!p) continue;
+      for (const [f, snapshot] of files) {
+        if (p === f || p.endsWith(`/${f}`) || f.endsWith(`/${p}`)) found = found === 'snapshot' || snapshot ? 'snapshot' : 'output';
+      }
+      if (!found && SURFACE_OUTPUT.test(p)) found = /\.ya?ml$/i.test(p) ? 'snapshot' : 'output';
+    }
+    return found;
+  };
+  let sdk = false;
+  let apiRetries = 0;
+  let apiRetryMs = 0;
 
   return {
     // `receivedAt` (optional) is when the message arrived, for the backends
@@ -314,6 +434,17 @@ export function createCallRecorder(surface) {
     observe(message, receivedAt = null) {
       if (!message || typeof message !== 'object') return;
       const at = Date.parse(message.timestamp ?? '') || receivedAt;
+      // The Agent SDK opens its stream with system/init; the scripted backend,
+      // which speaks the same message shapes, sends none and retries nothing.
+      if (message.type === 'system' && message.subtype === 'init') sdk = true;
+      // The SDK retries a failed API request itself and says so only in the
+      // stream: playwright-mcp's maze-escape spent 35 retries' waits in its
+      // wall time with nothing on the row.
+      if (message.type === 'system' && message.subtype === 'api_retry') {
+        apiRetries += 1;
+        apiRetryMs += Number(message.retry_delay_ms) || 0;
+        return;
+      }
       // Agent SDK: an MCP tool is mcp__<server>__<tool>; its result comes back
       // as a tool_result block in a later user message.
       if (message.type === 'stream_event' && message.event?.type === 'message_delta') {
@@ -340,7 +471,7 @@ export function createCallRecorder(surface) {
               ? { kind: 'mcp', server: m[1], tool: m[2], ...argsOf(m[2], block.input) }
               : block.name === 'Bash'
                 ? { kind: 'shell', command: String(block.input?.command ?? ''), startAt: at, background: Boolean(block.input?.run_in_background) }
-                : { kind: 'builtin', tool: block.name }
+                : { kind: 'builtin', tool: block.name, ...(block.name === 'Read' && typeof block.input?.file_path === 'string' ? { path: block.input.file_path } : {}) }
           );
         }
         return;
@@ -350,10 +481,13 @@ export function createCallRecorder(surface) {
           if (block?.type !== 'tool_result' || !calls.has(block.tool_use_id)) continue;
           const call = calls.get(block.tool_use_id);
           const text = contentText(block.content);
+          if (call.kind === 'mcp' && call.server === surface) surfaceFiles(call, text);
+          const read = block.is_error ? null : readOf(call.path ? [call.path] : call.kind === 'shell' ? commandPaths(call.command) : []);
           upsert(block.tool_use_id, {
             ...resultOf(text, block.is_error),
             ...(SNAPSHOT_TOOLS.has(call.tool) ? snapshotCuts(text) : {}),
             ...(call.kind === 'shell' ? { endAt: at } : {}),
+            ...(read ? { fileRead: read } : {}),
           });
         }
         return;
@@ -364,11 +498,13 @@ export function createCallRecorder(surface) {
       const completed = message.type === 'item.completed';
       if (item.type === 'mcp_tool_call') {
         const text = contentText(item.result?.content) || String(item.error?.message ?? '');
+        const args = argsOf(item.tool, item.arguments);
+        if (completed && item.server === surface) surfaceFiles({ tool: item.tool, ...args }, text);
         upsert(item.id, {
           kind: 'mcp',
           server: item.server,
           tool: item.tool,
-          ...argsOf(item.tool, item.arguments),
+          ...args,
           ...(completed
             ? {
                 ...resultOf(
@@ -382,14 +518,16 @@ export function createCallRecorder(surface) {
         });
       } else if (item.type === 'command_execution') {
         const known = calls.get(item.id);
+        const command = String(item.command ?? '');
+        const failed = item.exit_code != null && item.exit_code !== 0;
+        const read = completed && !failed ? readOf(commandPaths(command)) : null;
         upsert(item.id, {
           kind: 'shell',
-          command: String(item.command ?? ''),
+          command,
           startAt: known?.startAt ?? at,
           ...(completed ? { endAt: at } : {}),
-          ...(completed
-            ? resultOf(String(item.aggregated_output ?? ''), item.exit_code != null && item.exit_code !== 0)
-            : {}),
+          ...(completed ? resultOf(String(item.aggregated_output ?? ''), failed) : {}),
+          ...(read ? { fileRead: read } : {}),
         });
       }
     },
@@ -428,24 +566,41 @@ export function createCallRecorder(surface) {
         .filter((c) => c.kind === 'shell')
         .reduce((n, c) => n + (c.command.match(SHELL_SLEEP) ?? []).length, 0);
       const scriptSleepCount = own.reduce((n, c) => n + (c.sleeps ?? 0), 0);
+      const reads = (kind) => all.filter((c) => c.fileRead === kind);
+      const snapshotReads = reads('snapshot');
+      const fileChars = snapshotReads.reduce((n, c) => n + (c.chars ?? 0), 0);
       return {
         surface_calls: own.length,
-        foreign_tools: mcp.length - own.length,
+        // Calls to another MCP server only. A call naming a tool the row's own
+        // server lacks (browser_triple_click on firefox-devtools-mcp) is
+        // unknown_tools; a row without friction.malformed_uid, which this
+        // recorder adds, counted it here too.
+        foreign_tools: mcp.filter((c) => c.server !== surface).length,
         foreign_servers: foreign,
         tools,
         snapshot: {
           calls: snaps.length,
-          chars: snaps.reduce((n, c) => n + (c.chars ?? 0), 0),
+          // The snapshot files read back (file_reads, file_chars) included.
+          chars: snaps.reduce((n, c) => n + (c.chars ?? 0), 0) + fileChars,
           truncated: snaps.filter((c) => c.cutAttrs || c.dom || c.lines).length,
           cut_attrs: snaps.reduce((n, c) => n + (c.cutAttrs ?? 0), 0),
           line_cut: snaps.filter((c) => c.lines).length,
           dom_truncated: snaps.filter((c) => c.dom).length,
+          file_reads: snapshotReads.length,
+          file_chars: fileChars,
         },
         friction: {
           actions,
           act_then_snap: actThenSnap,
           eval_calls: own.filter((c) => EVAL_TOOL.test(c.tool)).length,
-          stale_uid: own.filter((c) => c.stale).length,
+          // A stale reply to a call whose uid was malformed is malformed_uid.
+          stale_uid: own.filter((c) => c.stale && !c.malformedUid).length,
+          malformed_uid: own.filter((c) => c.isError && c.malformedUid).length,
+          // The other files the surface wrote that the agent read back: a
+          // saved script result, a network dump, a download.
+          output_file_reads: reads('output').length,
+          output_file_chars: reads('output').reduce((n, c) => n + (c.chars ?? 0), 0),
+          ...(sdk ? { api_retries: apiRetries, api_retry_s: Math.round(apiRetryMs / 100) / 10 } : {}),
           restarts: own.filter((c) => RESTART_TOOL.test(c.tool)).length,
           // Wait-tool calls, shell sleeps, and the sleeps inside script calls,
           // which script_sleeps counts again on its own: a row without it was

@@ -9,11 +9,12 @@ import { join } from 'node:path';
 import { createCallRecorder, withCodeMode } from './mcp-tap.mjs';
 import { rowEvents, SURFACE_SERVER } from './scripts/events.mjs';
 import { foreignBrowser, tapWindows } from './scripts/foreign-browser.mjs';
-import { browserBuilds, buildName, countOf, drawKey, runFlags } from './scripts/identity.mjs';
+import { browserBuilds, buildName, drawKey, foreignCallsOf, runFlags } from './scripts/identity.mjs';
+import { shellAssistedOf, withRolloutFacts } from './scripts/row-evidence.mjs';
 import { readStateFile } from './scripts/state-file.mjs';
 import { runToolStats, sumToolStats } from './scripts/tool-stats.mjs';
 import { classOf, triageLines, triageRun } from './scripts/triage.mjs';
-import { createReachRecorder, gradedValues } from './surface-reach.mjs';
+import { createReachRecorder, gradedValues, truthValues } from './surface-reach.mjs';
 
 const SUMMED = [
   'turns', 'input_tokens', 'cache_creation', 'cache_read', 'output_tokens', 'cost_usd',
@@ -161,10 +162,13 @@ const short = (h) => (h ? String(h).slice(0, 12) : '?');
 // absence marks a row that predates it. With the run directory at hand, a row
 // that predates them is read back from its transcript, state file and tap log
 // instead, so a re-rendered report of an older run shows them too. `sleeps`
-// is re-read with script_sleeps, which it has counted since 2026-09-20.
+// is re-read with script_sleeps, which it has counted since 2026-09-20, and
+// `stale_uid` with malformed_uid: a row without malformed_uid counted a
+// malformed uid's reply as stale. api_retries is only on an Agent SDK row.
 const NEW_FRICTION = {
   tool_search: ['tool_search', 'tool_search_turns', 'tool_search_output_tokens', 'persisted', 'persisted_other', 'unknown_tools'],
   script_sleeps: ['script_sleeps', 'sleeps'],
+  malformed_uid: ['malformed_uid', 'stale_uid', 'output_file_reads', 'output_file_chars', 'api_retries', 'api_retry_s'],
 };
 const DERIVED = new WeakMap();
 function derivedOf(row, runDir) {
@@ -173,15 +177,23 @@ function derivedOf(row, runDir) {
   const out = {};
   const wantsState = row.foreign_browser === undefined || (row.ledger?.non_browser && !row.ledger.non_browser_by_status);
   const stale = Object.keys(NEW_FRICTION).filter((marker) => row.friction?.[marker] == null);
+  // A row whose snapshot counts predate the snapshot files read back.
+  const staleSnapshot = row.snapshot && row.snapshot.file_reads == null;
   let shell = [];
-  if (runDir && (stale.length || wantsState)) {
+  if (runDir && (stale.length || wantsState || staleSnapshot)) {
     const events = rowEvents(runDir, row);
     if (events) {
       const recorder = createCallRecorder(SURFACE_SERVER);
       for (const e of events) recorder.observe(e);
       const summary = recorder.summary();
       if (stale.length) {
-        out.friction = Object.fromEntries(stale.flatMap((marker) => NEW_FRICTION[marker]).map((k) => [k, summary.friction[k]]));
+        out.friction = Object.fromEntries(
+          stale.flatMap((marker) => NEW_FRICTION[marker]).filter((k) => k in summary.friction).map((k) => [k, summary.friction[k]])
+        );
+      }
+      if (staleSnapshot) {
+        const { file_reads, file_chars } = summary.snapshot;
+        out.snapshot = { ...row.snapshot, chars: (row.snapshot.chars ?? 0) + file_chars, file_reads, file_chars };
       }
       shell = summary.shell_windows;
     }
@@ -230,6 +242,15 @@ export function frictionOf(row, runDir = null) {
   const noops = noopsOf(row);
   return { ...withCodeMode(own, row.code_mode), ...(noops ? { noops: noops.count } : {}) };
 }
+// A row's snapshot counts, with the snapshot files the agent read back through
+// the Read tool or its shell counted in `chars` (mcp-tap.mjs): a row that
+// predates that count is re-read from its transcript. playwright-mcp's agents
+// read 558,757 characters of saved snapshots back in 60 reads in the Haiku
+// sweep run-2026-09-20T18-32-34-183Z, which its snapshot count left out.
+export function snapshotOf(row, runDir = null) {
+  if (!row.snapshot) return row.snapshot ?? null;
+  return derivedOf(row, runDir).snapshot ?? row.snapshot;
+}
 const foreignOf = (row, runDir) => (row.foreign_browser !== undefined ? row.foreign_browser : derivedOf(row, runDir).foreign_browser ?? null);
 const shellStatusOf = (row, runDir) => row.ledger?.non_browser_by_status ?? derivedOf(row, runDir).non_browser_by_status ?? null;
 const statusList = (by) => Object.entries(by ?? {}).map(([s, n]) => `${s}: ${n}`).join(', ');
@@ -242,9 +263,13 @@ const round = (x) => (x == null ? null : Math.round(x));
 // carried it whole, with its newlines escaped.
 const SURFACE = new WeakMap();
 function surfaceOf(row, runDir) {
-  if (!runDir || !row.surface?.truncated?.length) return row.surface ?? null;
+  return reread(row, runDir).surface;
+}
+// The row's surface record re-read, and the reach recorder that read it.
+function reread(row, runDir) {
+  if (!runDir || !row.surface?.truncated?.length) return { surface: row.surface ?? null, rec: null };
   if (SURFACE.has(row)) return SURFACE.get(row);
-  let out = row.surface;
+  let out = { surface: row.surface, rec: null };
   const events = rowEvents(runDir, row);
   if (events) {
     // A row records each value cut to 80 characters, so the graded value one
@@ -256,19 +281,75 @@ function surfaceOf(row, runDir) {
     const states = rec.reach(whole);
     const { truncated: recorded, ...rest } = row.surface;
     const truncated = recorded.filter((v, i) => states[whole[i]] === 'truncated');
-    out = { ...rest, ...(truncated.length ? { truncated } : {}) };
+    out = { surface: { ...rest, ...(truncated.length ? { truncated } : {}) }, rec };
   }
   SURFACE.set(row, out);
   return out;
 }
 
+const taskOf = (tasks, id) => {
+  const t = tasks?.get?.(id) ?? tasks?.[id] ?? null;
+  return t?.task ?? t;
+};
+function stateOf(row, runDir) {
+  if (!runDir || !row.state_file) return null;
+  try {
+    return readStateFile(join(runDir, row.state_file)).state;
+  } catch {
+    return null;
+  }
+}
+
+// Whether a passing row still passes with `value` cut back to `head` in its
+// fields and its answer, re-graded against the attempt's state as regrade.mjs
+// grades. Null when that cannot be told: the stored row does not pass again.
+function passesCut(row, task, state, value, head) {
+  const answer = row.answer_full ?? row.answer ?? '';
+  const grade = (text, fields) => {
+    try {
+      return task.validate(text, { pages: { state } }, fields);
+    } catch {
+      return null;
+    }
+  };
+  if (!grade(answer, row.fields)?.pass) return null;
+  const cut = (node) =>
+    node === value
+      ? head
+      : Array.isArray(node)
+        ? node.map(cut)
+        : node && typeof node === 'object'
+          ? Object.fromEntries(Object.entries(node).map(([k, v]) => [k, cut(v)]))
+          : node;
+  const verdict = grade(answer.split(value).join(head), cut(row.fields));
+  return verdict ? Boolean(verdict.pass) : null;
+}
+
 // Graded values a passing row claimed although the surface cut them before
-// they reached the agent: it completed each one without seeing it.
-function guessedValues(row, runDir) {
-  const truncated = surfaceOf(row, runDir)?.truncated ?? [];
+// they reached the agent, and that the pass rested on: the agent completed
+// each one without seeing it. With the task and the attempt's state, the
+// validator is re-run with each such value cut back to the opening the surface
+// showed, and a value whose cut copy still passes passed nothing: embargo-wait
+// grades only the headline's company names, which the cut opening holds, so
+// the tail its agent invented was never graded. A task that names its truth
+// (truth.values) grades those values, so only a claim among them counts.
+// Without a validator to re-run, every cut claim counts.
+function guessedValues(row, runDir, tasks = null) {
+  const { surface, rec } = reread(row, runDir);
+  const truncated = surface?.truncated ?? [];
   if (!row.success || !truncated.length) return [];
-  const graded = new Set(gradedValues(row.fields ?? {}).map((v) => v.slice(0, 80)));
-  return truncated.filter((v) => graded.has(v));
+  const graded = gradedValues(row.fields ?? {});
+  const claimed = truncated.filter((v) => graded.some((g) => g.slice(0, 80) === v));
+  const task = taskOf(tasks, row.task);
+  const state = claimed.length && typeof task?.validate === 'function' ? stateOf(row, runDir) : null;
+  if (!state) return claimed;
+  const named = typeof task.truth?.values === 'function' ? new Set(truthValues(state, task)) : null;
+  return claimed.filter((v) => {
+    const whole = graded.find((g) => g.slice(0, 80) === v);
+    if (named && !named.has(whole)) return false;
+    const head = rec?.shownHead(whole);
+    return !head || passesCut(row, task, state, whole, head) !== true;
+  });
 }
 
 // Whether the Claude CLI deferred MCP tools behind ToolSearch in this run: the
@@ -407,7 +488,7 @@ function invalidLines(results, totals) {
       'through another route and says nothing about the surface:',
   ];
   for (const r of invalid) {
-    const foreign = r.foreign_tools ? `; ${countOf(r.foreign_tools)} call(s) to other MCP servers` : '';
+    const foreign = foreignCallsOf(r) ? `; ${foreignCallsOf(r)} call(s) to other MCP servers` : '';
     const browser = r.foreign_browser?.sessions ? `; ${r.foreign_browser.sessions} foreign browser session(s)` : '';
     lines.push(`  - ${r.condition}/${r.rep ? `${r.task} (r${r.rep})` : r.task}: ${r.invalid}, ${r.success ? 'passed' : 'failed'}${foreign}${browser}`);
   }
@@ -439,6 +520,25 @@ function foreignLines(results, runDir) {
   return lines;
 }
 
+// Rows whose shell got answers from a graded fixture route
+// (scripts/row-evidence.mjs): their pass is not the surface's, so they are
+// listed, and the totals give the pass count without them.
+function shellAssistedLines(results, assisted) {
+  const hit = results.map((r, i) => [r, assisted[i]]).filter(([, a]) => a);
+  if (!hit.length) return [];
+  const lines = [
+    '',
+    `Shell-assisted rows: ${hit.length} row(s) got answers through the agent's shell from a graded fixture route ` +
+      '(an API or the /collect sink answered 2xx or 5xx, or a page a site hook writes session values into, fetched ' +
+      'with a session), so a pass there did not come through the surface alone. ' +
+      '`passed via surface` leaves them out, and eval/ab.mjs pairs without them:',
+  ];
+  for (const [r, a] of hit) {
+    lines.push(`  - ${r.condition}/${r.rep ? `${r.task} (r${r.rep})` : r.task}: ${r.success ? 'passed' : 'failed'}, ${a.requests} request(s): ${a.paths.join(', ')}`);
+  }
+  return lines;
+}
+
 function sumRowTools(rows, runDir = null) {
   const tools = {};
   const ms = {};
@@ -453,19 +553,23 @@ function sumRowTools(rows, runDir = null) {
     }
   }
   for (const [name, list] of Object.entries(ms)) tools[name].p50_ms = median(list);
-  const sum = (group, key) =>
-    rows.some((r) => r[group]?.[key] != null) ? rows.reduce((n, r) => n + (r[group]?.[key] ?? 0), 0) : null;
+  const snapshots = rows.map((r) => snapshotOf(r, runDir));
+  const sum = (key) =>
+    snapshots.some((s) => s?.[key] != null) ? snapshots.reduce((n, s) => n + (s?.[key] ?? 0), 0) : null;
   const friction = rows.map((r) => frictionOf(r, runDir));
   const sumFriction = (key) =>
     friction.some((f) => f[key] != null) ? friction.reduce((n, f) => n + (f[key] ?? 0), 0) : null;
   return {
     rows: rows.length,
     tools,
-    snapshot: { calls: sum('snapshot', 'calls'), chars: sum('snapshot', 'chars'), truncated: sum('snapshot', 'truncated') },
+    snapshot: {
+      calls: sum('calls'), chars: sum('chars'), truncated: sum('truncated'), file_reads: sum('file_reads'), file_chars: sum('file_chars'),
+    },
     friction: Object.fromEntries(
       [
-        'act_then_snap', 'actions', 'eval_calls', 'stale_uid', 'restarts', 'sleeps', 'persisted', 'persisted_other',
-        'unknown_tools', 'tool_search', 'harness_truncated', 'noops',
+        'act_then_snap', 'actions', 'eval_calls', 'stale_uid', 'malformed_uid', 'restarts', 'sleeps', 'persisted',
+        'persisted_other', 'unknown_tools', 'tool_search', 'harness_truncated', 'noops', 'output_file_reads',
+        'api_retries', 'api_retry_s',
       ].map(
         (k) => [k, sumFriction(k)]
       )
@@ -505,10 +609,14 @@ function toolLines(results, runDir) {
     const sn = t.snapshot ?? {};
     const fr = t.friction ?? {};
     const bits = [
-      sn.calls != null && `snapshots ${sn.calls} (${na(sn.chars)} chars, ${na(sn.truncated)} with a cut)`,
+      sn.calls != null &&
+        `snapshots ${sn.calls} (${na(sn.chars)} chars${sn.file_reads ? `, ${sn.file_chars} of them from ${sn.file_reads} snapshot file(s) read back` : ''}, ${na(sn.truncated)} with a cut)`,
       fr.eval_calls != null && `script calls ${fr.eval_calls}`,
       fr.act_then_snap != null && `action then snapshot ${fr.act_then_snap}${fr.actions ? `/${fr.actions}` : ''}`,
       fr.stale_uid != null && `stale uid ${fr.stale_uid}`,
+      fr.malformed_uid ? `malformed uid ${fr.malformed_uid} (the tool replies with its stale text)` : null,
+      fr.output_file_reads ? `other surface files read back ${fr.output_file_reads}` : null,
+      fr.api_retries ? `API retries ${fr.api_retries} (${Math.round(fr.api_retry_s ?? 0)} s waited)` : null,
       fr.restarts != null && `restarts ${fr.restarts}`,
       fr.sleeps != null && `waits ${fr.sleeps}`,
       fr.persisted != null && `results spilled to <persisted-output> ${fr.persisted}${fr.persisted_other ? ` (+${fr.persisted_other} shell or file-tool)` : ''}`,
@@ -763,12 +871,18 @@ function envLines(meta, results = []) {
 // `runDir`, when given, lets the report read the run's transcripts for what
 // older rows do not carry: per-tool telemetry and the evidence triage needs.
 // `tasks` (identity.mjs taskInfo) lets triage test a task's named truth.
-export function markdownReport({ meta, results, totals, runDir = null, tasks = null }) {
+export function markdownReport({ meta, results: stored, totals: given, runDir = null, tasks = null }) {
+  // A codex row that predates row.code_mode is read with its rollout's, and
+  // its turns become the rollout's model requests (row-evidence.mjs), so the
+  // totals are summed again over those rows.
+  const results = stored.map((r) => withRolloutFacts(r, runDir));
+  const totals = results.some((r, i) => r !== stored[i]) ? totalsByCondition(results) : given;
+  const assisted = results.map((r) => shellAssistedOf(r, runDir));
   const models = Object.entries(meta.models ?? {})
     .map(([b, m]) => `${b}: ${m}`)
     .join(', ');
   const mismatches = envMismatches(meta);
-  const flags = runFlags(meta, results);
+  const flags = runFlags(meta, results, { runDir });
   const arms = new Set(results.map((r) => r.condition)).size;
   // Triaged here even when a row carries its own class: only the whole run
   // shows whether every other arm failed the same task alike.
@@ -816,9 +930,24 @@ export function markdownReport({ meta, results, totals, runDir = null, tasks = n
             'see "Condition environment"',
         ]
       : []),
-    `- compare on OUTPUT TOKENS. Turns compare only between runs whose backend ` +
-      `counts a turn the same way (codex only approximates one), and a surface ` +
-      `that packs several browser operations into one call does more per turn.`,
+    `- compare on OUTPUT TOKENS. Turns are model requests: the Agent SDK's ` +
+      `turns, and the requests codex's rollout records (tool calls plus one on ` +
+      `a codex row without its rollout). They compare only between runs whose ` +
+      `backend counts them the same way, and a surface that packs several ` +
+      `browser operations into one call does more per turn.`,
+    ...(results.some((r) => r.turns_counted != null)
+      ? [
+          `- codex turns: ${results.filter((r) => r.turns_counted != null).length} row(s) predate row.code_mode, so their ` +
+            `turns are read from their rollouts' model requests, ${results.reduce((n, r) => n + (r.turns_counted != null ? r.turns : 0), 0)} ` +
+            `against the ${results.reduce((n, r) => n + (r.turns_counted ?? 0), 0)} (tool calls plus one) the rows recorded`,
+        ]
+      : []),
+    ...(assisted.some(Boolean)
+      ? [
+          `- SHELL-ASSISTED: ${assisted.filter(Boolean).length} row(s) got answers through the agent's shell from a ` +
+            'graded fixture route; they stay out of the pass counts compared between conditions (see "Shell-assisted rows")',
+        ]
+      : []),
     `- input columns are additive and comparable: \`input\` is the UNCACHED ` +
       `remainder for every backend, so total input is input + cache write + ` +
       `cache read. Codex reports an inclusive figure upstream and is normalized.`,
@@ -829,7 +958,8 @@ export function markdownReport({ meta, results, totals, runDir = null, tasks = n
     ...(meta.backend.includes('codex')
       ? [
           `- cost: anthropic is SDK-reported; codex is computed from token counts, ` +
-            `spread over its estimated requests, against genai-prices' bundled table, ` +
+            `spread over the requests it priced them as (the rollout's, or tool calls plus one on a row ` +
+            `that predates the rollout count), against genai-prices' bundled table, ` +
             `so the two are not measured the same way`,
         ]
       : []),
@@ -845,18 +975,23 @@ export function markdownReport({ meta, results, totals, runDir = null, tasks = n
     'attempts; spend on discarded attempts (retries, harness stops, errors) is',
     'totalled under "Discarded attempts" below, because it was really spent. A',
     'wall-limit stop is a failure, not infra: the agent spent every retry on the',
-    'clock.',
+    'clock. `shell-assisted` counts rows whose shell got answers from a graded',
+    'route, and `passed via surface` leaves them out of both sides of the pass count.',
     '',
-    '| condition | passed | infra | invalid | turns | input | cache write | cache read | output | cost (USD) | api (s) | wall (s) |',
-    '|---|---|---|---|---|---|---|---|---|---|---|---|',
+    '| condition | passed | infra | invalid | shell-assisted | passed via surface | turns | input | cache write | cache read | output | cost (USD) | api (s) | wall (s) |',
+    '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|',
   ];
   for (const [condition, t] of Object.entries(totals)) {
+    const shelled = results.filter((r, i) => r.condition === condition && assisted[i] && !r.invalid && !r.infra);
+    const shelledPasses = shelled.filter((r) => r.success).length;
     lines.push(
-      `| ${condition} | ${t.passed}/${t.tasks} | ${t.infra} | ${t.invalid ?? 0} | ${na(t.turns)} | ${na(t.input_tokens)} | ` +
+      `| ${condition} | ${t.passed}/${t.tasks} | ${t.infra} | ${t.invalid ?? 0} | ${shelled.length} | ` +
+        `${t.passed - shelledPasses}/${t.tasks - shelled.length} | ${na(t.turns)} | ${na(t.input_tokens)} | ` +
         `${na(t.cache_creation)} | ${na(t.cache_read)} | ${na(t.output_tokens)} | ${na(t.cost_usd)} | ${na(t.api_s)} | ${na(t.wall_s)} |`
     );
   }
   lines.push(...invalidLines(results, totals));
+  lines.push(...shellAssistedLines(results, assisted));
   lines.push(...foreignLines(results, runDir));
   // Extraction spend is reported once for the run, never per condition: the
   // extractor is condition-blind and its usage is excluded from every metric
@@ -896,7 +1031,8 @@ export function markdownReport({ meta, results, totals, runDir = null, tasks = n
   }
   // A pass on a value the surface cut is a pass the agent reached by completing
   // the value itself, which says nothing good about the surface.
-  const guessed = results.map((r) => [r, guessedValues(r, runDir)]).filter(([, g]) => g.length);
+  const guessedOf = new Map(results.map((r) => [r, guessedValues(r, runDir, tasks)]));
+  const guessed = [...guessedOf].filter(([, g]) => g.length);
   if (guessed.length) {
     lines.push(
       '',
@@ -975,8 +1111,11 @@ export function markdownReport({ meta, results, totals, runDir = null, tasks = n
           .join(', ')}`
       : '';
     const cls = r.success ? null : classOf(triages[i]);
-    const guess = guessedValues(r, runDir).length ? 'GUESSED (passed on a value the surface cut) — ' : '';
-    const lead = (r.invalid ? `INVALID (${r.invalid}) — ` : '') + guess + (cls ? `[${cls}] ` : '');
+    const guess = guessedOf.get(r).length ? 'GUESSED (passed on a value the surface cut) — ' : '';
+    const shelled = assisted[i]
+      ? `SHELL-ASSISTED (${assisted[i].requests} shell request(s) answered on graded routes: ${assisted[i].paths.join(', ')}) — `
+      : '';
+    const lead = (r.invalid ? `INVALID (${r.invalid}) — ` : '') + shelled + guess + (cls ? `[${cls}] ` : '');
     // What else reached the fixture or the model outside the surface's own
     // replies: shell requests, another browser, a tap that disagrees with the
     // stream, ToolSearch and spilled results.
@@ -997,6 +1136,8 @@ export function markdownReport({ meta, results, totals, runDir = null, tasks = n
       fr.persisted || fr.persisted_other ? `SPILLED ${(fr.persisted ?? 0) + (fr.persisted_other ?? 0)} result(s) to <persisted-output>` : '',
       fr.harness_truncated ? `HARNESS TRUNCATED ${fr.harness_truncated} tool output(s) before the model read them` : '',
       noopsOf(r)?.count ? `NO-OPS OR MISSES ${noopsOf(r).keys.join(', ')}` : '',
+      fr.malformed_uid ? `${fr.malformed_uid} malformed uid(s) the tool called stale` : '',
+      fr.api_retries ? `API RETRIES ${fr.api_retries} (${fr.api_retry_s} s waited, in wall time)` : '',
     ].filter(Boolean);
     const body =
       (r.extraction_failed ? `${cut}EXTRACTION FAILED (${r.extraction_failed}) — ${noteBase}` : cut + noteBase) + saved;

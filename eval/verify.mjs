@@ -63,6 +63,7 @@ import { DRIVERS, DRIVER_FILES } from './verify-drivers/index.mjs';
 import { makeHelpers, pagesRouting } from './verify-drivers/helpers.mjs';
 import { addSession, textOf } from './verify-drivers/lib.mjs';
 import { gradedValues, mintedValues, reachOf } from './surface-reach.mjs';
+import { ruleCheckFailures } from './scripts/rule-checks.mjs';
 import { checkFixtures } from '../scripts/check-fixtures.mjs';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -310,6 +311,12 @@ function assertReachDecodesScripts() {
 }
 
 assertReachDecodesScripts();
+
+const ruleFailures = ruleCheckFailures();
+if (ruleFailures.length) {
+  for (const name of ruleFailures) console.error(`reporting rule check failed: ${name}`);
+  process.exit(1);
+}
 
 // One isolated worker env: pages server + one firefox-devtools-mcp server
 // over stdio. The server is a child process (see mcp-stdio.mjs), so a worker

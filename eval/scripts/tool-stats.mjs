@@ -8,12 +8,15 @@
 //
 // Codex events carry no timestamps, so p50_ms is null for every codex row.
 // Agent SDK rows time each call from its tool_use message to its tool_result.
+// A codex row folds in what its rollout says its exec cells did (code_mode,
+// read from rollouts/ for a row that predates it), as report.mjs does.
 
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { scriptSleeps, STALE } from '../mcp-tap.mjs';
+import { createCallRecorder, malformedUid, NO_SUCH_TOOL, scriptSleeps, STALE, withCodeMode } from '../mcp-tap.mjs';
 import { rowEvents, SURFACE_SERVER, toolCalls } from './events.mjs';
+import { codeModeOf } from './row-evidence.mjs';
 
 export const SNAPSHOT_TOOL = /^(take_snapshot|browser_snapshot)$/;
 export const SCRIPT_TOOL = /^(evaluate_script|browser_evaluate|browser_run_code\w*)$/;
@@ -84,7 +87,10 @@ function recoversCut(scriptText, cutValues) {
 // shows. `server` is the condition's own browser server.
 export function rowToolStats(events, { server = SURFACE_SERVER } = {}) {
   const calls = toolCalls(events);
-  const surface = calls.filter((c) => c.server === server);
+  // The Claude CLI answers a call to a tool the server lacks itself, so that
+  // call never reached the surface.
+  const unknown = (c) => c.isError && NO_SUCH_TOOL.test(c.text);
+  const surface = calls.filter((c) => c.server === server && !unknown(c));
   const foreign = {};
   for (const c of calls) {
     if (c.server && c.server !== server) foreign[c.server] = (foreign[c.server] ?? 0) + 1;
@@ -107,8 +113,9 @@ export function rowToolStats(events, { server = SURFACE_SERVER } = {}) {
   };
   const friction = {
     actions: 0, act_then_snap: 0, clicks: 0, click_then_snap: 0, eval_calls: 0,
-    eval_after_cut: 0, eval_straight_after_cut: 0, eval_recovers_cut: 0, stale_uid: 0, restarts: 0, browser_lost: 0,
-    sleeps: 0,
+    eval_after_cut: 0, eval_straight_after_cut: 0, eval_recovers_cut: 0, stale_uid: 0, malformed_uid: 0, restarts: 0,
+    browser_lost: 0, sleeps: 0, script_sleeps: 0,
+    unknown_tools: calls.filter((c) => c.server === server && unknown(c)).length,
   };
   const signatures = Object.fromEntries(Object.keys(SIGNATURES).map((k) => [k, 0]));
   let lastCut = [];
@@ -155,18 +162,30 @@ export function rowToolStats(events, { server = SURFACE_SERVER } = {}) {
         if (prev && SNAPSHOT_TOOL.test(prev.tool)) friction.eval_straight_after_cut++;
         if (recoversCut(c.text, lastCut)) friction.eval_recovers_cut++;
       }
-      friction.sleeps += scriptSleeps(c.detail);
+      friction.script_sleeps += scriptSleeps(c.detail);
     }
     if (RESTART_TOOL.test(c.tool)) friction.restarts++;
     if (WAIT_TOOL.test(c.tool)) friction.sleeps++;
     for (const [k, re] of Object.entries(SIGNATURES)) {
       if (re.test(c.text)) signatures[k]++;
     }
+    // firefox-devtools-mcp answers a malformed uid ("uid=1_59") with its
+    // stale text (mcp-tap.mjs malformedUid).
+    if (c.isError && SIGNATURES.staleUid.test(c.text) && malformedUid(c.args)) friction.malformed_uid++;
   });
-  friction.stale_uid = signatures.staleUid;
+  friction.sleeps += friction.script_sleeps;
+  friction.stale_uid = signatures.staleUid - friction.malformed_uid;
   friction.browser_lost = signatures.browserLost;
   const shell = calls.filter((c) => c.tool === 'shell' || c.tool === 'Bash');
   friction.sleeps += shell.filter((c) => /(^|[;&|\s])sleep\s+\d/.test(c.detail)).length;
+  // Snapshot files the agent read back through the Read tool or its shell,
+  // which the tap's recorder tells apart (mcp-tap.mjs).
+  const recorder = createCallRecorder(server);
+  for (const e of events) recorder.observe(e);
+  const files = recorder.summary().snapshot;
+  snapshot.file_reads = files.file_reads;
+  snapshot.file_chars = files.file_chars;
+  snapshot.chars += files.file_chars;
   return {
     surface_calls: surface.length,
     surface_errors: surface.filter((c) => c.isError).length,
@@ -184,7 +203,10 @@ export function rowToolStats(events, { server = SURFACE_SERVER } = {}) {
 export function runToolStats(runDir, results) {
   return results.map((row) => {
     const events = rowEvents(runDir, row);
-    return { row, stats: events ? rowToolStats(events) : null };
+    const stats = events ? rowToolStats(events) : null;
+    const codeMode = codeModeOf(row, runDir);
+    if (stats && codeMode) stats.friction = withCodeMode(stats.friction, codeMode);
+    return { row, stats };
   });
 }
 
@@ -257,7 +279,8 @@ export function formatConditionStats(condition, t) {
       `   snapshots: ${sn.calls}, chars p50 ${quantile(t.snapshot_sizes, 0.5)} p90 ${quantile(t.snapshot_sizes, 0.9)} ` +
         `max ${Math.max(...t.snapshot_sizes)}; with a cut ${sn.truncated}; text values cut ` +
         `${sn.text_cut}/${sn.texts} (${pct(sn.text_cut, sn.texts)}); hrefs cut ${sn.href_cut}/${sn.hrefs} ` +
-        `(${pct(sn.href_cut, sn.hrefs)}); line-cut ${sn.line_cut}; DOM-truncated ${sn.dom_truncated}`
+        `(${pct(sn.href_cut, sn.hrefs)}); line-cut ${sn.line_cut}; DOM-truncated ${sn.dom_truncated}` +
+        (sn.file_reads ? `; ${sn.file_reads} snapshot file(s) read back, ${sn.file_chars} chars, counted in the chars` : '')
     );
   }
   lines.push(
@@ -265,8 +288,11 @@ export function formatConditionStats(condition, t) {
       `${fr.eval_after_cut ?? 0} (straight after it ${fr.eval_straight_after_cut ?? 0}); returned a cut value in full ${fr.eval_recovers_cut ?? 0}`,
     `   action then snapshot: ${fr.act_then_snap ?? 0}/${fr.actions ?? 0} (${pct(fr.act_then_snap, fr.actions)}); ` +
       `click then snapshot ${fr.click_then_snap ?? 0}/${fr.clicks ?? 0} (${pct(fr.click_then_snap, fr.clicks)})`,
-    `   stale uid ${fr.stale_uid ?? 0}, restarts ${fr.restarts ?? 0}, browser lost ${fr.browser_lost ?? 0}, ` +
-      `timeouts ${t.signatures.timeout ?? 0}, empty dialog errors ${t.signatures.emptyDialogError ?? 0}, waits ${fr.sleeps ?? 0}`
+    `   stale uid ${fr.stale_uid ?? 0}, malformed uid ${fr.malformed_uid ?? 0}, restarts ${fr.restarts ?? 0}, browser lost ${fr.browser_lost ?? 0}, ` +
+      `timeouts ${t.signatures.timeout ?? 0}, empty dialog errors ${t.signatures.emptyDialogError ?? 0}, waits ${fr.sleeps ?? 0}, ` +
+      `calls to tools the server lacks ${fr.unknown_tools ?? 0}` +
+      (fr.tool_search ? `, tool discovery ${fr.tool_search}` : '') +
+      (fr.harness_truncated ? `, outputs the harness cut ${fr.harness_truncated}` : '')
   );
   return lines;
 }

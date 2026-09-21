@@ -9,7 +9,10 @@
 // verdict, and the flips. A row whose task definition changed since the run
 // (meta.taskHashes against the current hash) is flagged, because its flip may
 // be the new task rather than the new validator. Rows from runs that kept no
-// state cannot be regraded, and are counted rather than guessed at.
+// state cannot be regraded, and are counted rather than guessed at. Every
+// entry also carries `shellAssisted`, read from the state file's ledger
+// (row-evidence.mjs): a pass whose shell got answers from a graded route is
+// not the surface's, and the summary counts passes without them.
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -17,6 +20,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { originUrls } from '../../manifest.mjs';
 import { enforceQuotes, normalise } from '../extract.mjs';
+import { shellAssisted } from './row-evidence.mjs';
 import { readStateFile } from './state-file.mjs';
 import { PLACEHOLDER_BASE, taskHash } from './identity.mjs';
 
@@ -67,7 +71,7 @@ const git = (gitArgs) => {
 };
 
 const out = [];
-const counts = { regraded: 0, same: 0, flippedUp: 0, flippedDown: 0, noState: 0, noRaw: 0, gone: 0, unreadable: 0, errors: 0 };
+const counts = { regraded: 0, same: 0, flippedUp: 0, flippedDown: 0, noState: 0, noRaw: 0, gone: 0, unreadable: 0, errors: 0, shellAssisted: 0 };
 const current = await tasksFor(PLACEHOLDER_BASE);
 for (const row of run.results ?? []) {
   const entry = { condition: row.condition, task: row.task, rep: row.rep ?? null, was: !!row.success };
@@ -90,6 +94,8 @@ for (const row of run.results ?? []) {
     counts.unreadable++;
     continue;
   }
+  entry.shellAssisted = shellAssisted(file.state?.ledger, { backend: row.backend });
+  if (entry.shellAssisted) counts.shellAssisted++;
   const { base, origins, how } = baseOf(row, file);
   const task = (await tasksFor(base, origins)).get(row.task);
   if (!task) {
@@ -105,7 +111,7 @@ for (const row of run.results ?? []) {
   let fields = null;
   if (task.answerSchema) {
     if (row.extraction_raw) {
-      fields = enforceQuotes(row.extraction_raw, normalise(answer));
+      fields = enforceQuotes(row.extraction_raw, normalise(answer), normalise(task.ask ?? ''));
     } else {
       // Without the raw pairs the gate cannot be re-applied, so the stored
       // fields stand and only the validator is new.
@@ -145,6 +151,26 @@ console.log(
     (counts.unreadable ? `; ${counts.unreadable} state files could not be read` : '') +
     (counts.errors ? `; ${counts.errors} validator errors` : '')
 );
+// Pass counts per condition as regraded, and without the shell-assisted rows.
+const byCondition = {};
+for (const e of out.filter((x) => x.now != null)) {
+  const c = (byCondition[e.condition] ??= { rows: 0, passed: 0, shellRows: 0, shellPassed: 0 });
+  c.rows++;
+  c.passed += e.now ? 1 : 0;
+  if (e.shellAssisted) {
+    c.shellRows++;
+    c.shellPassed += e.now ? 1 : 0;
+  }
+}
+for (const [condition, c] of Object.entries(byCondition)) {
+  console.log(
+    `  ${condition}: ${c.passed}/${c.rows} pass as regraded` +
+      (c.shellRows ? `, ${c.passed - c.shellPassed}/${c.rows - c.shellRows} without its ${c.shellRows} shell-assisted row(s)` : '')
+  );
+}
+for (const e of out.filter((x) => x.shellAssisted)) {
+  console.log(`  SHELL-ASSISTED  ${e.condition}/${e.task}${e.rep ? ` (r${e.rep})` : ''}: ${e.shellAssisted.requests} request(s), ${e.shellAssisted.paths.join(', ')}`);
+}
 for (const f of flips) {
   console.log(
     `  ${f.status}  ${f.condition}/${f.task}${f.rep ? ` (r${f.rep})` : ''}` +

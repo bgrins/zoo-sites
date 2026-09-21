@@ -6,21 +6,24 @@
 //
 // The rules fire in order and the first one names the class; every later rule
 // that also fires is listed as contributing. The order puts the causes that
-// void a row's evidence first (no grade, no surface, a nulled or reworded
-// field), then the provable tool cause (a truncated value), then the
-// comparisons across arms, then the weaker signals (tool errors, outputs the
-// harness cut). A row no rule explains is `unattributed`, which is what a
+// void a row's evidence first (no grade, no surface, a shell that fetched from
+// a graded route, a nulled or reworded field), then the provable tool cause (a
+// truncated value), then the comparisons across arms, then the weaker signals
+// (tool errors, outputs the harness cut). A row no rule explains is `unattributed`, which is what a
 // transcript judge is for.
 //
 // `surface-reach` fires only on a truncated value: the reply carried the value
-// and cut it, which proves the surface had it. A truth value that no reply
-// carried at all is listed as the contributing signal `minted-absent` instead,
+// and cut it, which proves the surface had it, or on a claimed value that is
+// the cut text a reply showed, ending in the truncator's "...". A truth value
+// that no reply carried at all is listed as the contributing signal `minted-absent` instead,
 // because an agent that never opened the page leaves the same trace as a
 // surface that omitted the value. `surface-absent` names the tool only for a
 // truth the task names (truth.values), which the task grades, and only when the
 // other surface under the same backend passed and received its own truth while
 // no arm passed on this surface. For the generic minted codes the same
-// comparison is listed as contributing, beside `minted-absent`.
+// comparison is listed as contributing, beside `minted-absent`. A truth no text
+// reply carried, on a row whose replies held an image, is listed as
+// `image-only` instead of either.
 //
 // Old rows lack the telemetry fields, so the rules fall back to the transcript
 // when one is given, and to the other arms' rows (`peers`) for the comparison.
@@ -33,6 +36,7 @@ import { blameToolErrors, createCallRecorder } from '../mcp-tap.mjs';
 import { createReachRecorder, gradedValues, truthValues } from '../surface-reach.mjs';
 import { readStateFile } from './state-file.mjs';
 import { rowEvents, SURFACE_SERVER } from './events.mjs';
+import { shellAssistedOf, withRolloutFacts } from './row-evidence.mjs';
 import { rowToolStats } from './tool-stats.mjs';
 
 // owner: who a class points at. `tool` classes are the ones a tool change can
@@ -43,12 +47,13 @@ export const FAILURE_CLASSES = {
   error: { owner: 'harness', about: 'the backend or harness failed the attempt' },
   'validator-error': { owner: 'harness', about: 'the validator threw, so the answer was never judged' },
   'no-surface-calls': { owner: 'harness', about: 'the agent never called its own browser server' },
+  'shell-assisted': { owner: 'harness', about: "the agent's shell got answers from a graded fixture route, so the row did not measure the surface alone" },
   extraction: { owner: 'grader', about: 'the answer holds the value, but the extracted field is null' },
   paraphrase: { owner: 'grader', about: 'the extractor reworded a value its quote gives verbatim, and the validator graded the rewording' },
-  'surface-reach': { owner: 'tool', about: 'the surface cut the graded value before it reached the agent' },
+  'surface-reach': { owner: 'tool', about: 'the surface cut the graded value before it reached the agent, or the answer is its cut text' },
   'both-arms': { owner: 'task-or-agent', about: 'every other arm failed the same task the same way' },
   'surface-absent': { owner: 'tool', about: 'no reply carried the graded truth, while a peer arm that passed received its own' },
-  'tool-errors': { owner: 'tool', about: 'a call to the surface failed and nothing later made it good, or it carried a graded value' },
+  'tool-errors': { owner: 'tool', about: "a call to the surface failed and nothing later made it good, or it carried the attempt's truth" },
   'harness-truncated': { owner: 'harness', about: 'the harness cut tool outputs before the model read them, so a value a reply carried may never have reached the agent' },
   unattributed: { owner: 'unattributed', about: 'no rule fired; read the transcript' },
 };
@@ -57,10 +62,14 @@ export const TOOL_CLASSES = new Set(
 );
 // A peer failing for one of these reasons says nothing about the task.
 const VOID_CLASSES = new Set([
-  'infra', 'limit', 'error', 'validator-error', 'no-surface-calls', 'extraction', 'paraphrase', 'harness-truncated',
+  'infra', 'limit', 'error', 'validator-error', 'no-surface-calls', 'shell-assisted', 'extraction', 'paraphrase',
+  'harness-truncated',
 ]);
 
 const CODE = /\b[A-Za-z]{2,6}-[A-Za-z0-9][A-Za-z0-9-]{2,14}\b/g;
+// A value ending in a truncator's mark: firefox-devtools-mcp's "..." after 27
+// characters, or an ellipsis.
+const CUT_TAIL = /\S\s?(?:\.\.\.|…)$/;
 const degroup = (s) => String(s).replace(/(\d)[,   ](?=\d{3}\b)/g, '$1');
 
 // Leaf paths of a fields object, with array indices folded to [] so two answers
@@ -123,19 +132,40 @@ const holdsWord = (answer, value) =>
   new RegExp(`(?:^|[^a-z0-9])${normalise(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|[^a-z0-9])`).test(normalise(degroup(answer)));
 
 // "Label: value" lines of an answer, with the value's emphasis and quotes
-// stripped; `words` splits a field path's last name on camelCase.
+// stripped, each beside the words of the heading it sits under: the last
+// markdown heading or line that ends in a colon ("**Store 3 (Marrowgate):**"
+// above "- Price: $274.50"). `words` splits a name on camelCase.
 const STOP = new Set(['the', 'and', 'for', 'was', 'are', 'with', 'from', 'this', 'that']);
 const words = (s) =>
   String(s).replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3 && !STOP.has(w));
 const REFUSAL = /\b(?:unknown|n\/a|none|unable|not (?:found|shown|available|visible|listed|stated)|could(?:n'?t| not)|did(?:n'?t| not)|cannot)\b/i;
-function labelledValues(answer) {
+export function labelledValues(answer) {
   const out = [];
+  let heading = [];
   for (const line of String(answer).split('\n')) {
+    const bare = line.replace(/[\s*_]+$/, '');
+    if (/^\s*#{1,6}\s/.test(line) || (bare.endsWith(':') && bare.length > 1)) {
+      heading = words(bare);
+      continue;
+    }
     const m = /^[\s>*_#-]*([A-Za-z][A-Za-z0-9 ()/-]{0,48}?)[\s*_]*:\s*(.+?)\s*$/.exec(line);
     const value = m?.[2].replace(/^[*_`"'“”‘’\s]+|[*_`"'“”‘’\s.]+$/g, '');
-    if (value && !REFUSAL.test(value)) out.push([words(m[1]), value]);
+    if (value && !REFUSAL.test(value)) out.push({ label: words(m[1]), heading, value });
   }
   return out;
+}
+
+// Whether a labelled line names the field at `path` as a whole: its label
+// names the leaf, and the label or its heading names every key below the top
+// level. perStore.Gadgetron.price needs "gadgetron" beside a "Price:" label:
+// price-compare's "**Price:** $274.50" was the winner's price, and matching
+// the leaf alone filed the row as a nulled Gadgetron price.
+export function labelNames(path, { label, heading }) {
+  const keys = path.split('.').map((k) => k.replace(/\[\]$/, '')).filter(Boolean);
+  const leaf = words(keys.at(-1));
+  if (!label.some((w) => leaf.includes(w))) return false;
+  const pool = new Set([...label, ...heading]);
+  return keys.slice(1, -1).every((k) => words(k).some((w) => pool.has(w)));
 }
 
 // A value the prompt carries is no sign the agent found anything, since any
@@ -264,11 +294,11 @@ function extractionCandidates(row, peers, state, task, nulls) {
   // applied to 20 files" names the label it applied, not the LB- receipt.
   const labelled = labelledValues(answer);
   for (const path of nulls) {
-    const name = words(path.split('.').pop().replace(/\[\]$/, ''));
     const hit = labelled.find(
-      ([label, value]) => label.some((w) => name.includes(w)) && (!peerPrefix.has(path) || codesIn(value, peerPrefix.get(path)).length)
+      (l) =>
+        labelNames(path, l) && !inPrompt(row, l.value) && (!peerPrefix.has(path) || codesIn(l.value, peerPrefix.get(path)).length)
     );
-    if (hit) add(path, fromText(hit[1]), `${path} is null, but the answer labels a value for it: ${JSON.stringify(hit[1].slice(0, 80))}`);
+    if (hit) add(path, fromText(hit.value), `${path} is null, but the answer labels a value for it: ${JSON.stringify(hit.value.slice(0, 80))}`);
   }
   return out;
 }
@@ -329,15 +359,18 @@ function paraphraseEvidence(row) {
 // another model drives a surface differently, and a pass on this surface
 // under any backend shows the surface can deliver the truth: codex's
 // range-select on firefox-devtools-mcp cut its receipt with its own
-// slice(-500), and Claude's passed on that surface.
+// slice(-500), and Claude's passed on that surface. A shell-assisted pass
+// shows neither, since its truth may have come from the shell's own output.
+// `absent` is the reach states that count as no reply carrying a value.
 const surfaceOfCondition = (c) => String(c).split('/').pop();
-function peerReachEvidence(row, truth, reach, peers, peerEvidence, task) {
-  if (!truth.length || !truth.every((v) => reach[v] === 'absent')) return null;
+function peerReachEvidence(row, truth, reach, peers, peerEvidence, task, absent = ['absent']) {
+  if (!truth.length || !truth.every((v) => absent.includes(reach[v]))) return null;
   const surface = surfaceOfCondition(row.condition);
-  if (peers.some((p) => p.success && surfaceOfCondition(p.condition) === surface)) return null;
+  const earned = (p, i) => p.success && !peerEvidence[i]?.shell;
+  if (peers.some((p, i) => earned(p, i) && surfaceOfCondition(p.condition) === surface)) return null;
   for (const [i, peer] of peers.entries()) {
     const { events, state } = peerEvidence[i] ?? {};
-    if (!peer.success || !events || !state) continue;
+    if (!earned(peer, i) || !events || !state) continue;
     if ((peer.backend ?? null) !== (row.backend ?? null) || surfaceOfCondition(peer.condition) === surface) continue;
     const theirs = truthValues(state, task);
     const seen = Object.entries(reachStates(events, theirs, theirs)).filter(([, s]) => s === 'seen').map(([v]) => v);
@@ -351,29 +384,33 @@ function peerReachEvidence(row, truth, reach, peers, peerEvidence, task) {
   return null;
 }
 
-function reachStates(events, values, truth = []) {
-  if (!events || !values.length) return {};
+function reachRecorderOf(events) {
   const rec = createReachRecorder();
   for (const e of events) rec.observe(e);
-  return rec.reach(values, { truth });
+  return rec;
+}
+function reachStates(events, values, truth = []) {
+  if (!events || !values.length) return {};
+  return reachRecorderOf(events).reach(values, { truth });
 }
 
 // A surface error is charged to the tool only when nothing later made it good
-// or it carried a value the task grades (mcp-tap.mjs blameToolErrors): stored
-// runs charged codex's range-select to a take_snapshot error four working
-// scripts recovered from, while the agent's own slice(-500) cut the receipt. A
-// row that records its blame is read as written; an older one, or one that
-// passed when it was written and so recorded none, is re-read from its
-// transcript, and only without one does any error count.
+// or it carried the attempt's truth (mcp-tap.mjs blameToolErrors): stored runs
+// charged codex's range-select to a take_snapshot error four working scripts
+// recovered from, while the agent's own slice(-500) cut the receipt. A row's
+// transcript is re-read with today's rules, since a recorded blame used the
+// rules of its day: the claimed values, and recovery by the same tool only. A
+// row without one is read as it recorded its blame, and only a row that
+// recorded none counts any error.
 function toolErrorEvidence(row, stats, events, truth) {
   const describe = (blamed) =>
     blamed.length ? blamed.map((b) => `${b.tool} #${b.seq} (${b.why})`).join(', ') : null;
-  if (Array.isArray(row.tool_errors?.blamed)) return describe(row.tool_errors.blamed);
   if (events) {
     const recorder = createCallRecorder(SURFACE_SERVER);
     for (const e of events) recorder.observe(e);
-    return describe(blameToolErrors(recorder.summary().tool_errors, [...gradedValues(row.fields ?? {}), ...truth]));
+    return describe(blameToolErrors(recorder.summary().tool_errors, truth));
   }
+  if (Array.isArray(row.tool_errors?.blamed)) return describe(row.tool_errors.blamed);
   if (row.tools && typeof row.tools === 'object') {
     const failing = Object.entries(row.tools).filter(([, t]) => t?.errors > 0);
     return failing.length ? failing.map(([name, t]) => `${name} x${t.errors}`).join(', ') : null;
@@ -397,12 +434,13 @@ function surfaceCallCount(row, stats) {
 // `events` is the row's transcript (readEvents), `peers` the other conditions'
 // rows for the same task and repeat, `state` the row's server state when a
 // state file was kept, `task` its definition, whose truth.values names the
-// graded truth, and `peerEvidence` each peer's { events, state }. Returns null
-// for a passing row.
+// graded truth, `peerEvidence` each peer's { events, state, shell }, and
+// `shell` the row's scripts/row-evidence.mjs shellAssistedOf. Returns null for
+// a passing row.
 export function failureClass(
   row,
   events = null,
-  { peers = [], peerClasses = null, state = null, task = null, peerEvidence = [] } = {}
+  { peers = [], peerClasses = null, state = null, task = null, peerEvidence = [], shell = null } = {}
 ) {
   if (row.success) return null;
   const stats = events ? rowToolStats(events) : null;
@@ -419,16 +457,26 @@ export function failureClass(
     const others = Object.entries(foreign).map(([s, n]) => `${s} x${n}`).join(', ');
     hit('no-surface-calls', `0 calls to its own browser server${others ? `; called ${others}` : ''}`);
   }
+  if (shell) hit('shell-assisted', `${shell.requests} shell request(s) answered on graded routes: ${shell.paths.join(', ')}`);
   hit('extraction', extractionEvidence(row, peers, state, task));
   hit('paraphrase', paraphraseEvidence(row));
 
   const graded = gradedValues(row.fields ?? {});
   const truth = state ? truthValues(state, task) : [];
-  const reach = reachStates(events, [...new Set([...graded, ...truth])], truth);
+  const rec = events ? reachRecorderOf(events) : null;
+  const values = [...new Set([...graded, ...truth])];
+  const reach = rec && values.length ? rec.reach(values, { truth }) : {};
   // The row's own record is what the recorder that wrote it saw; a transcript
   // is re-read with today's, which decodes a script result's JSON escapes.
   const cut = events ? Object.keys(reach).filter((v) => reach[v] === 'truncated') : row.surface?.truncated ?? [];
   if (cut.length) hit('surface-reach', `truncated before it reached the agent: ${JSON.stringify([...new Set(cut)].slice(0, 3))}`);
+  // A claimed value that is the surface's cut text itself, ellipsis and all,
+  // reads as seen, since the reply held exactly that: news-extract's titles
+  // and modal-escape's "I built a spreadsheet that ..." were copied from
+  // firefox-devtools-mcp's 27-character cut. Only a reply that shows that cut
+  // makes it the surface's; an agent can shorten a value it saw whole.
+  const copiedCuts = rec ? graded.filter((v) => CUT_TAIL.test(v) && rec.showsCut(v)) : [];
+  if (!cut.length && copiedCuts.length) hit('surface-reach', `the answer claimed the surface's cut text: ${JSON.stringify(copiedCuts.slice(0, 3))}`);
 
   const signature = failureSignature(row);
   const alike = peers.filter((p, i) => {
@@ -453,6 +501,7 @@ export function failureClass(
   }
 
   const absentTruth = truth.filter((v) => reach[v] === 'absent');
+  const imageTruth = truth.filter((v) => reach[v] === 'image-only');
   if (!hits.length) {
     hit(
       'unattributed',
@@ -470,6 +519,18 @@ export function failureClass(
     });
     if (peerReach) contributing.push({ class: 'surface-absent', evidence: peerReach });
   }
+  // A truth no text reply carried, on a row whose replies held an image, may
+  // have been shown in one, so surface-absent and minted-absent do not fire on
+  // it; the comparison with the peers is kept here, read as text alone.
+  if (imageTruth.length && events) {
+    const textPeer = peerReachEvidence(row, truth, reach, peers, peerEvidence, task, ['absent', 'image-only']);
+    contributing.push({
+      class: 'image-only',
+      evidence:
+        `no text reply carried ${JSON.stringify(imageTruth.slice(0, 3))}; only an image reply could have shown it` +
+        (textPeer ? `; ${textPeer}` : ''),
+    });
+  }
   return {
     class: primary.class,
     owner: FAILURE_CLASSES[primary.class].owner,
@@ -485,7 +546,10 @@ const peerKey = (r) => `${r.task}#${r.rep ?? 1}`;
 // transcripts and state files of that row's peers. `tasks` (identity.mjs
 // taskInfo, or a Map of id to task) supplies a task's truth.values; without it
 // the truth is the codes the server minted.
-export function triageRun(results, { runDir = null, tasks = null } = {}) {
+export function triageRun(stored, { runDir = null, tasks = null } = {}) {
+  // A stored codex row gets the code_mode its rollout holds, which
+  // harness-truncated reads, whichever report asks.
+  const results = stored.map((r) => withRolloutFacts(r, runDir));
   const byKey = new Map();
   for (const r of results) {
     const k = peerKey(r);
@@ -519,7 +583,7 @@ export function triageRun(results, { runDir = null, tasks = null } = {}) {
   // on one arm cannot make the other arm's failure look shared.
   const solo = new Map();
   const soloOf = (r) => {
-    if (!solo.has(r)) solo.set(r, failureClass(r, eventsOf(r), { state: stateOf(r), task: taskOf(r) }));
+    if (!solo.has(r)) solo.set(r, failureClass(r, eventsOf(r), { state: stateOf(r), task: taskOf(r), shell: shellAssistedOf(r, runDir) }));
     return solo.get(r);
   };
   return results.map((row) => {
@@ -530,7 +594,8 @@ export function triageRun(results, { runDir = null, tasks = null } = {}) {
       peerClasses: peers.map((p) => (p.success ? null : soloOf(p))),
       state: stateOf(row),
       task: taskOf(row),
-      peerEvidence: peers.map((p) => (p.success ? { events: eventsOf(p), state: stateOf(p) } : null)),
+      peerEvidence: peers.map((p) => (p.success ? { events: eventsOf(p), state: stateOf(p), shell: shellAssistedOf(p, runDir) } : null)),
+      shell: shellAssistedOf(row, runDir),
     });
   });
 }

@@ -458,7 +458,7 @@ const USAGE_KEYS = ['input_tokens', 'cached_input_tokens', 'output_tokens'];
 // total_token_usage, `turnContext`, the first turn_context payload, which
 // holds the permissions and subagent version the session ran with, and
 // `imageReads`, the text of every script or call that uses view_image.
-function rolloutFacts(rollout) {
+export function rolloutFacts(rollout) {
   const stats = { requests: 0, execs: 0, discovery_execs: 0, exec_sleeps: 0, truncated_outputs: 0 };
   const sessionTotals = [];
   const imageReads = [];

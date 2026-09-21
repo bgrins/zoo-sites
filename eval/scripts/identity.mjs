@@ -8,6 +8,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { originUrls } from '../../manifest.mjs';
+import { shellAssistedOf } from './row-evidence.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const TASKS_DIR = join(here, '..', 'tasks');
@@ -32,8 +33,9 @@ const backendOf = (r) => r.backend ?? (String(r.condition ?? '').includes('/') ?
 // flags with the reason. `results` adds the row-level evidence. With
 // `condition`, the flags are that condition's: the backend-specific ones follow
 // its backend, and the row counts its rows, so one arm of a mixed-backend run
-// is not flagged for another's defects.
-export function runFlags(meta = {}, results = [], { condition = null } = {}) {
+// is not flagged for another's defects. `runDir` lets a row that predates
+// row.shell_assisted be read from its state file (row-evidence.mjs).
+export function runFlags(meta = {}, results = [], { condition = null, runDir = null } = {}) {
   const flags = [];
   const rows = condition ? results.filter((r) => r.condition === condition) : results;
   const fromRows = [...new Set(rows.map(backendOf).filter(Boolean))];
@@ -58,10 +60,17 @@ export function runFlags(meta = {}, results = [], { condition = null } = {}) {
   if (codex && Date.parse(meta.date ?? '') < PRICING_DATE) {
     flags.push({ flag: 'pricing_v1', why: `${arms(['codex'])}codex cost priced before per-request pricing (${PRICING_COMMIT}), so it overstates spend` });
   }
-  const foreign = rows.filter((r) => countOf(r.foreign_tools) > 0).length;
+  const foreign = rows.filter((r) => foreignCallsOf(r) > 0).length;
   if (foreign) flags.push({ flag: 'foreign-calls', why: `${foreign} row(s) called an MCP server other than their own` });
   const invalid = rows.filter((r) => r.invalid).length;
   if (invalid) flags.push({ flag: 'invalid-rows', why: `${invalid} row(s) are marked invalid` });
+  const assisted = rows.filter((r) => shellAssistedOf(r, runDir)).length;
+  if (assisted) {
+    flags.push({
+      flag: 'shell-assisted',
+      why: `${assisted} row(s) got answers through the agent's shell from a graded fixture route, so their pass counts compare only without them`,
+    });
+  }
   const conditions = new Set(results.map((r) => r.condition));
   if (!meta.seed && conditions.size > 1) {
     flags.push({ flag: 'unseeded', why: 'arms drew their difficulty variants independently' });
@@ -124,6 +133,18 @@ export function countOf(value) {
     return Object.values(value).reduce((n, v) => n + (typeof v === 'number' ? v : countOf(v?.calls ?? v)), 0);
   }
   return 0;
+}
+
+// A row's calls to an MCP server other than its own. A row without
+// friction.malformed_uid, written by an older recorder, counted in
+// foreign_tools the calls its client rejected for naming a tool the row's own
+// server lacks (browser_triple_click and browser_scroll sent to
+// firefox-devtools-mcp), which flagged 11 Haiku rows FOREIGN-CALLS with
+// foreign_servers {}; foreign_servers, which only another server's calls
+// fill, is written wherever foreign_tools is not 0.
+export function foreignCallsOf(row) {
+  const servers = row?.foreign_servers;
+  return servers && typeof servers === 'object' ? countOf(servers) : countOf(row?.foreign_tools);
 }
 
 // The condition a meta.builds entry measured. run.mjs records it as
