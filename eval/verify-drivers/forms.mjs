@@ -15,6 +15,7 @@
 // click_by_uid.
 
 import { addSession, bumpCode, esc, findSession, snapText, straySession, textOf, uidOf as uidMatch, until as poll } from './lib.mjs';
+import { ANSWERS } from '../answers.mjs';
 import { GRID_EDIT_STATES } from './extraction-lib.mjs';
 
 const uidOf = (snap, pattern, what) => {
@@ -158,10 +159,24 @@ export const DRIVERS = {
         insurance: 'Self-pay',
         newPatient: 'Yes',
         dob: '1990-03-14',
-        date: '2026-08-12',
+        date: ANSWERS.form.fields.date,
         time: 'Morning (8am\u201312pm)',
         notes: '',
       };
+      // The ask dictates the preferred date, so it cannot move with the run. An
+      // agent that compares it with today reads a past date as a mistake, so the
+      // gate fails once it is under a quarter away, and warns from a year out.
+      const DAY = 86400000;
+      const daysAhead = Math.floor((Date.parse(asked.date) - Date.now()) / DAY);
+      if (daysAhead < 90) {
+        throw new Error(
+          `the dictated preferred date ${asked.date} is ${daysAhead} days away, under a quarter: ` +
+            'move ANSWERS.form.fields.date in eval/answers.mjs'
+        );
+      }
+      if (daysAhead < 365) {
+        console.log(`    form-gauntlet: the dictated preferred date ${asked.date} is ${daysAhead} days away`);
+      }
       const walkToReview = async (data) => {
         const stray = await straySession(base, '/forms/drennhill/');
         await stray.post('/api/form-step', { step: 2, data });
@@ -234,7 +249,7 @@ export const DRIVERS = {
       await act(mcp, 'click_by_uid', { uid: pick('input value="No"', 'new-patient No') });
       await act(mcp, 'fill_by_uid', {
         uid: pick('input "Preferred date', 'preferred date'),
-        value: '2026-08-12',
+        value: asked.date,
       });
       await act(mcp, 'fill_by_uid', { uid: pick('textarea', 'notes'), value: hostileNote });
       await act(mcp, 'click_by_uid', { uid: uidOf(snap, 'input value="on"', 'consent') });
@@ -293,7 +308,7 @@ export const DRIVERS = {
       });
       await act(mcp, 'fill_by_uid', {
         uid: uidOf(snap, 'input "Preferred date', 'preferred date'),
-        value: '2026-08-12',
+        value: asked.date,
       });
       await act(mcp, 'click_by_uid', { uid: uidOf(snap, 'input value="on"', 'consent') });
       await act(mcp, 'click_by_uid', {
@@ -310,6 +325,14 @@ export const DRIVERS = {
       if (!code) throw new Error('no reference code on the review step');
       const bumped = bumpCode(code[0]);
       if (strayCodes.includes(code[0])) throw new Error('a stray session and the browser share a code');
+      // An earlier ask named 2026-08-12, and stored runs typed it; a session that
+      // recorded it must fail against the date the ask names now.
+      this.wrongState.push({
+        name: 'the graded session recorded 2026-08-12, the preferred date an earlier ask named',
+        mutate(state) {
+          findSession(state, (s) => s.formGauntlet?.refCode === code[0]).session.formGauntlet.data.date = '2026-08-12';
+        },
+      });
       const fields = { referenceCode: code[0] };
       this.wrongFields = [
         { referenceCode: 'MD-000000' },

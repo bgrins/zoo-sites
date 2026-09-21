@@ -89,7 +89,10 @@ export const ANSWERS = {
   // session by POST /api/form-step (randomBytes), so it is not derivable from
   // fixture source and the validator reads it out of ctx.pages.state. These are
   // the nine values the ask dictates; the server records what the form actually
-  // collected, so the data-entry half of the task is graded against them.
+  // collected, so the data-entry half of the task is graded against them. The
+  // ask names the preferred date, so it cannot move with the run: it sits years
+  // ahead, and the form-gauntlet driver fails the gate once it is under a
+  // quarter away.
   form: {
     fields: {
       name: 'Maya Okafor',
@@ -99,7 +102,7 @@ export const ANSWERS = {
       insurance: 'Self-pay',
       newPatient: 'Yes',
       dob: '1990-03-14',
-      date: '2026-08-12',
+      date: '2030-08-12',
       time: 'Morning',
     },
   },

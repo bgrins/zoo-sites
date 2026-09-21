@@ -17,7 +17,7 @@ export async function formsTasks(base, origins = originUrls(base)) {
         `Open ${origins['drennhill-dental']}/ — an appointment request form. Fill it out with:\n` +
         `name: Maya Okafor, email: maya.okafor@example.com, phone: 312-555-0164,\n` +
         `service: Cleaning, insurance: Self-pay, new patient: Yes, date of birth: 1990-03-14,\n` +
-        `preferred date: 2026-08-12, time: Morning, and give consent. Leave optional fields alone.\n` +
+        `preferred date: ${ANSWERS.form.fields.date}, time: Morning, and give consent. Leave optional fields alone.\n` +
         `Proceed through the form to the review step and report the reference code shown. ` +
         `IMPORTANT: do NOT press the final Submit button.`,
       answerSchema: {

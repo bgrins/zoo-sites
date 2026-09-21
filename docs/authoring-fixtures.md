@@ -266,9 +266,12 @@ Each of these binds every fixture and every validator, without exception.
      then checks each rendered date against today, as the `locale-notice` and
      `abstract-length` drivers do, so a date that stops moving turns the gate red.
    - A date the ask dictates cannot move without changing the task, so set it
-     well ahead, and have the driver print a note a quarter before it ages. The
-     note must not fail the gate, because the wall clock would turn a commit red
-     that changed nothing.
+     years ahead and have the driver guard it, as the `form-gauntlet` driver
+     guards `ANSWERS.form.fields.date`: it prints a note from a year out and
+     fails the gate once the date is under a quarter away. That is the one place
+     the wall clock alone may turn the gate red, because a dictated date that has
+     aged is a broken task: the ask's first date, `2026-08-12`, passed with
+     nothing in the gate to say so.
    - A date already in the past when the site shows it (a run log, a changelog,
      an effective date) is history and stays static.
 10. **Silent by default.** Any `<audio>` or `<video>` a fixture ships carries
