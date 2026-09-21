@@ -41,6 +41,7 @@ function consoleState(session) {
       searchHits: 0,
       rawFetches: 0,
       rawNavs: 0,
+      rawScripted: 0,
       offPageReads: 0,
     };
   }
@@ -420,13 +421,16 @@ export function routes(ctx) {
     // The raw-log document, linked from the viewer toolbar. Cookie-gated only,
     // because it is navigated to rather than fetched with a nonce header — and a
     // shell curl can hold a cookie it minted itself, so `rawNavs` counts only
-    // document navigations and the route label also requires a page load.
+    // document navigations and the route label also requires a page load. A
+    // fetch() from the viewer's own page script, the way an agent's script tool
+    // reads it, is `rawScripted`; only a read from neither is off-page.
     if (req.method === 'GET' && pathname0 === '/api/console/raw') {
       const found = getSession(req);
       if (!found) return json(res, 403, { error: 'session required' });
       const con = consoleState(found.session);
       con.rawFetches += 1;
       if (isDocumentNav(req)) con.rawNavs += 1;
+      else if (consoleFromPage(req)) con.rawScripted += 1;
       else con.offPageReads += 1;
       const text = con.lines
         .map(

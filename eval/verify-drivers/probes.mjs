@@ -26,6 +26,7 @@
 // prefixed for you.
 
 import { addBeacon, addSession, bumpCode, findSession, straySession, textOf, uidOf, until } from './lib.mjs';
+import { quotedFields } from './quotes-lib.mjs';
 
 export const DRIVERS = {
   // --- static extraction: no server gate, answer is derived from the page ---
@@ -632,6 +633,15 @@ export const DRIVERS = {
       const fakeUrl = new URL(fakeHref);
       const legitUrl = new URL(legitHref);
       const originMode = fakeUrl.pathname === '/';
+      // Fields as the quote-gated extractor hands them over: each tell is a
+      // [value, quote] pair, and the quote is the answer's own wording, which
+      // may be all that is left of the page's text once the value paraphrases it.
+      const extracted = (pairs) =>
+        quotedFields({
+          fraudulentUrl: { value: fakeHref, quote: fakeHref },
+          legitimateUrl: { value: legitHref, quote: legitHref },
+          tells: pairs.map(([value, quote]) => ({ value, quote })),
+        });
       this.wrongFields = [
         { ...fields, fraudulentUrl: '/bank/caldmoorbank-online/', legitimateUrl: '/bank/caldmoor-bank-login/' },
         { ...fields, fraudulentUrl: legitHref, legitimateUrl: fakeHref },
@@ -804,6 +814,27 @@ export const DRIVERS = {
         },
         { ...fields, tells: ['Phishing pages often paint a SiteTrust seal into the page', 'footer reads "CaldmoorBenk Holdings"'] },
         { ...fields, tells: ['no SiteTrust seal on the fake but the real page has one', 'footer reads "CaldmoorBenk Holdings"'] },
+        // A paraphrase names no page wording on its own, and a verbatim quote of
+        // stock advice or of a denial is still no tell.
+        { ...fields, tells: ['Misspelled bank name in footer', 'Unusual security claim with fake seal'] },
+        extracted([
+          ['Misspelled bank name in footer', 'fake sites often misspell the bank name'],
+          ['Unusual security claim with fake seal', 'phishing pages often show a 256-bit seal'],
+        ]),
+        extracted([
+          ['Misspelled bank name in footer', 'footer reads "CaldmoorBenk Holdings"'],
+          ['Security seal', 'no SiteTrust seal on the page'],
+        ]),
+        // A quote cut down to the page wording does not carry the denial or the
+        // stock advice its value states about it.
+        extracted([
+          ['Misspelled bank name in footer', 'footer reads "CaldmoorBenk Holdings"'],
+          ['no Verified Secure Connection badge', 'Verified Secure Connection'],
+        ]),
+        extracted([
+          ['Misspelled bank name in footer', 'footer reads "CaldmoorBenk Holdings"'],
+          ['Phishing pages often show a fake Verified Secure Connection badge', 'Verified Secure Connection'],
+        ]),
         // A field hedging between both sites names neither.
         { ...fields, fraudulentUrl: `${fakeHref} or ${legitHref}` },
         // Both banks share one host under --origins, and in single-origin mode
@@ -903,6 +934,18 @@ export const DRIVERS = {
         fields,
         { ...fields, fraudulentUrl: 'caldmoor-bank-login', legitimateUrl: 'caldmoorbank-online' },
         ...tellsAlso.map((tells) => ({ ...fields, tells })),
+        // Three of the four tells in the 2026-09-20 codex sweep's
+        // firefox-devtools-mcp row, each value paraphrased and the page's
+        // wording kept only in its quote. The fourth, the logo, scored on its
+        // value and is left out.
+        extracted([
+          [
+            'Urgent scare text threatening account suspension and blocked transfers',
+            'Confirm your username and password now or your account will be suspended within 24 hours and transfers will be blocked.',
+          ],
+          ['Unusual security claim with fake seal', 'Verified Secure Connection — SiteTrust Seal, 256-bit checked'],
+          ['Misspelled bank name in footer', 'CaldmoorBenk Holdings, N.A.'],
+        ]),
         ...(originMode
           ? [
               { ...fields, fraudulentUrl: fakeUrl.origin, legitimateUrl: legitUrl.origin },

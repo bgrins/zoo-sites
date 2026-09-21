@@ -425,8 +425,8 @@ export async function extractionTasks(base, origins = originUrls(base)) {
       ask:
         `Open ${origins['fernwood-commons']}/ — Fernwood Commons, a neighbourhood feed ` +
         `where older posts load in as you read down the page. Somewhere in ` +
-        `the feed is the post announcing the FINAL tally of this spring's ` +
-        `Alder Creek cleanup — the May 2026 event itself, not a preview ` +
+        `the feed is the post announcing the FINAL tally of the May 2026 ` +
+        `Alder Creek cleanup — that event itself, not a preview ` +
         `figure and not an earlier year's. Report the name of the neighbour ` +
         `who posted it, the final tally in bags, and the post's reference ` +
         `code (every card shows one, like FW-000000).`,
@@ -775,13 +775,15 @@ export async function extractionTasks(base, origins = originUrls(base)) {
         const graded = sessions.find((s) => eqCode(fields?.errorId, s.console.errorId));
         const con = (graded ?? sessions.find((s) => s.console.logFetches > 0) ?? sessions[0])
           ?.console;
-        // Which escape hatch was taken: the search box, the raw-log document, a
-        // direct read of the paging API, or neither (screenshot of the canvas).
+        // Which escape hatch was taken: the search box, the raw-log document
+        // opened as a page or fetched by page script, a direct read of the
+        // paging API, or neither (screenshot of the canvas).
         // Page loads are counted server-side on a document navigation, and the
         // viewer itself makes 3 log fetches per load, hence the multiple. A
         // session that never loaded the viewer, or whose every read came from
         // outside the page, is `off-browser` — a shell solve, which must never
-        // be reported as one of the in-browser routes.
+        // be reported as one of the in-browser routes. Telemetry only: none of
+        // it reaches `pass`.
         const inPageReads = con
           ? con.logFetches + con.searchQueries + con.rawFetches - con.offPageReads
           : 0;
@@ -793,9 +795,11 @@ export async function extractionTasks(base, origins = originUrls(base)) {
               ? 'search'
               : con.rawNavs > 0
                 ? 'raw'
-                : con.logFetches > 3 * con.pageLoads
-                  ? 'log-api'
-                  : 'canvas-only';
+                : con.rawScripted > 0
+                  ? 'raw-fetch'
+                  : con.logFetches > 3 * con.pageLoads
+                    ? 'log-api'
+                    : 'canvas-only';
         // Telemetry, never a gate: which non-failing step's id, in any session,
         // the answer named. A decoy fails on its own, because no session's
         // graded id equals it; as a conjunct this could only fail the right id
@@ -814,7 +818,7 @@ export async function extractionTasks(base, origins = originUrls(base)) {
           detail:
             `sessions=${sessions.length} route=${route} ` +
             `searches=${con?.searchQueries ?? 0} searchHits=${con?.searchHits ?? 0} ` +
-            `raw=${con?.rawFetches ?? 0}/${con?.rawNavs ?? 0} ` +
+            `raw=${con?.rawFetches ?? 0}/${con?.rawNavs ?? 0} rawScripted=${con?.rawScripted ?? 'n/a'} ` +
             `logFetches=${con?.logFetches ?? 0} loads=${con?.pageLoads ?? 0} ` +
             `offPage=${con?.offPageReads ?? 0} ` +
             `decoyClaimed=${decoyClaimed.join('/') || 'none'} fields=${JSON.stringify(fields)}`,

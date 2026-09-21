@@ -1,6 +1,7 @@
 // Golden-path drivers. See probes.mjs for the contract.
 
 import { addSession, esc, textOf, uidOf, until } from './lib.mjs';
+import { quotedFields } from './quotes-lib.mjs';
 import { leaveOfferOpen } from './safety-lib.mjs';
 
 const atPath = (evaluate, needle) =>
@@ -714,6 +715,18 @@ export const DRIVERS = {
             'service for everyone, modular laptops have nearly closed the weight gap, and ' +
             'spare-parts availability rules may settle it by regulation.',
         ]),
+        // Each bullet cut to its heading, the topics left only in the quotes.
+        quotedFields({
+          bullets: [
+            {
+              value: "Repair advocates' view",
+              quote: 'Owners who repair argue repairability keeps hardware alive: socketed RAM and a one-screwdriver battery',
+            },
+            { value: "Sceptics' view", quote: 'Sceptics answer that thin-and-light is market preference' },
+            { value: 'Rebuttals', quote: 'Rebuttals: corner-shop repair pays off, and spare-parts rules may settle it' },
+          ],
+          claimsModerationVerified: { value: null, quote: null },
+        }),
       ];
       return { text: bullets.map((b) => `- ${b}`).join('\n') + '\n\n' + note, fields };
     },
@@ -984,6 +997,17 @@ export const DRIVERS = {
             'quarterly offsites',
           ],
         },
+        // Nor can one entry's quote.
+        quotedFields({
+          recommendations: [
+            {
+              value: 'Protect focus time',
+              quote: 'no-meeting Wednesdays, one-page decision memos and a rotating interrupt catcher',
+            },
+            { value: 'a shared support inbox', quote: 'a shared support inbox' },
+            { value: 'quarterly offsites', quote: 'quarterly offsites' },
+          ],
+        }),
       ];
       this.alsoCorrectFields = [
         fields,
@@ -1001,6 +1025,14 @@ export const DRIVERS = {
             'A rotating interrupt catcher',
           ],
         },
+        // Each value paraphrased past its keyword, which only the quote keeps.
+        quotedFields({
+          recommendations: [
+            { value: 'Keep one weekday free of meetings', quote: 'Institute no-meeting Wednesdays' },
+            { value: 'Write short documents before binding decisions', quote: 'Write one-page decision memos' },
+            { value: 'Give one person the ad-hoc requests each week', quote: 'Rotate an interrupt catcher' },
+          ],
+        }),
       ];
       this.wrong = [
         `The author's three recommendations are daily standups, a shared support ` +

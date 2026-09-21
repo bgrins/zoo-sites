@@ -253,6 +253,19 @@ Each of these binds every fixture and every validator, without exception.
 9. **Deterministic.** Ship no wall-clock or random-dependent content unless the
    plan asks for it. Per-session server-issued codes are fine: the validator reads
    them back out of `ctx.pages.state` rather than hardcoding them.
+   - A date that has to stay ahead of the run is the exception: a notice in force,
+     a booking, an appointment, a deadline, an embargo, a validity window. A fixed
+     one ages, and an agent that compares it with today reaches a different
+     answer: the 2026-09-20 sweep read locale-notice's closure as expired, because
+     its page says notices withdraw on their stated end date. Mint such a date in
+     `sites/` as a day offset from the day the session opened, in UTC, and render
+     it into the page, as `sites/intl.mjs` does. A date the ask dictates cannot
+     move without changing the task, so set it well ahead, and have the driver
+     print a note a quarter before it ages, as the `native-permit` driver does.
+     The note must not fail the gate, because the wall clock would turn a
+     commit red that changed nothing. A date already in the past when the site
+     shows it (a run log, a changelog, an effective date) is history and stays
+     static.
 10. **Silent by default.** Any `<audio>` or `<video>` a fixture ships carries
     `muted`, sets `volume = 0` in script, and never autoplays unmuted.
     `eval/verify.mjs` fails the gate on an unmuted media tag under `pages/`, because
@@ -423,6 +436,18 @@ avoid into something measured.
 - Dates: fold the ordinal forms before comparing, through `normaliseDateWords` in
   `eval/extract.mjs`. A bare token test for the day number rejects every correct
   "June 12th".
+- A free-text field matched against page wording reads its quote too. The
+  extractor may paraphrase a value ("Misspelled bank name in footer") while its
+  quote keeps the answer's own words ("CaldmoorBenk Holdings, N.A."), so
+  `quoteOf(container, key)` in `eval/extract.mjs` returns the verified quote
+  behind `container[key]`, and the validator scores the value and the quote each
+  on its own (`phish-pick`, `popup-storm`, `injection-bait`). Validators that
+  never call it see the fields they always saw. A quote can be any span of the
+  answer, so it can keep the page wording and drop the denial around it: where
+  the value-level rules reject negations or stock advice, a value they would
+  reject keeps its quote out, as in `phish-pick`. In the gate, build such a case
+  with `quotedFields` in `eval/verify-drivers/quotes-lib.mjs` from
+  `{ value, quote }` pairs.
 - Multi-session shadowing: a curl probe or a re-minted cookie makes extra sessions,
   so pick the one that actually COMPLETED the flow (see `register-errors`,
   `checkout-stop`), never blindly `[0]`.

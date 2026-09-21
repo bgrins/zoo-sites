@@ -678,7 +678,7 @@ export async function navigationTasks(base, origins = originUrls(base)) {
           .flatMap((s) =>
             (s.intl?.releases ?? [])
               .filter((r) => r.dest === dest && r.locale !== 'en')
-              .map((r) => ({ ...r, refs: s.intl.refs }))
+              .map((r) => ({ ...r, refs: s.intl.refs, dated: s.intl.dated }))
           )
           .sort((a, b) => b.at - a.at);
         if (!releases.length) {
@@ -719,8 +719,11 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         const decoys = Object.entries(record.refs)
           .filter(([d]) => d !== dest)
           .map(([, ref]) => ref);
+        // `dated` is the day every notice date on the site counts from, so a
+        // reader can check an answer's dates, or a claim that the notice has
+        // expired, against the ones this session was shown.
         const detail =
-          `reference=${record.reference} readIn=${record.locale} ` +
+          `reference=${record.reference} readIn=${record.locale} dated=${record.dated ?? 'n/a'} ` +
           `translatedReads=${releases.length} ` +
           `localesRead=${[...new Set(releases.map((r) => r.locale))].join('+')} ` +
           `${editions} sessions=${sessions.length} answerCarriesReference=${refOk} ` +

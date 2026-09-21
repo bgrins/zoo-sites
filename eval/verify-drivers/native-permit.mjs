@@ -106,6 +106,16 @@ export const DRIVERS = {
       if (pack.Date !== longDay || streets?.length !== 4) {
         throw new Error(`unexpected pack ${JSON.stringify(pack)}`);
       }
+      // The office asks for eight weeks' notice (street-closures.html), so a run
+      // inside that window applies late for the pack's closure. Recorded, not
+      // enforced: the wall clock must not turn the gate red on a commit that
+      // changed nothing, so the note starts a quarter early.
+      if (Date.parse(date) < Date.now() + (56 + 90) * 86400000) {
+        console.log(
+          `    native-permit: the pack's closure on ${date} is less than eight weeks ` +
+            'and a quarter ahead: move EVENTS_DATE in sites/events.mjs'
+        );
+      }
       // Every value the form needs is on the page.
       for (const value of [...streets, from, to, soundOff, pack.Equipment, pack.Event, pack.Contact, pack['Contact email']]) {
         if (!packSnap.includes(value)) throw new Error(`pack value "${value}" is not in the includeAll snapshot`);

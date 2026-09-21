@@ -82,38 +82,54 @@ export function normalise(s) {
     .toLowerCase();
 }
 
+const isPair = (node) =>
+  node !== null && typeof node === 'object' && !Array.isArray(node) && 'value' in node && 'quote' in node;
+
+// The quote that let each surviving leaf through, keyed by the object or array
+// enforceQuotes returned and then by the leaf's key or index there. A WeakMap
+// rather than a property, so the fields a validator receives, stores and
+// stringifies are exactly the task's schema shape.
+const QUOTES = new WeakMap();
+
+// The verbatim answer span behind fields[key] (or list[i]), or null. The
+// extractor may paraphrase a value while quoting the answer word for word, so a
+// validator that matches page wording in a free-text field reads both.
+export function quoteOf(container, key) {
+  return (container && QUOTES.get(container)?.[key]) ?? null;
+}
+
 // The deterministic anti-hallucination gate: a value whose quote is not a
 // substring of the answer is nulled. Collapses { value, quote } wrappers back
 // to plain values so validators see the task's own schema shape.
 export function enforceQuotes(node, answerNorm) {
   if (node === null || node === undefined) return null;
-  if (Array.isArray(node)) {
-    return node.map((child) => enforceQuotes(child, answerNorm));
-  }
-  if (typeof node === 'object' && 'value' in node && 'quote' in node) {
-    if (node.value === null) return null;
-    if (typeof node.quote !== 'string') return null;
-    if (answerNorm.includes(normalise(node.quote))) return node.value;
-    // Extractors sometimes splice a faithful quote across markdown structure
-    // (bullet boundaries, joined sentences), which fails whole-string
-    // containment even though every word is verbatim. Accept a quote whose
-    // substantial clauses each appear in the answer; a fabricated quote
-    // still dies because its clauses are nowhere in the text.
-    const clauses = node.quote
-      .split(/[.;\n]+/)
-      .map((c) => normalise(c))
-      .filter((c) => c.length >= 12);
-    if (clauses.length && clauses.every((c) => answerNorm.includes(c))) {
-      return node.value;
-    }
-    return null;
-  }
-  if (typeof node === 'object') {
-    return Object.fromEntries(
-      Object.entries(node).map(([k, v]) => [k, enforceQuotes(v, answerNorm)])
-    );
-  }
-  return null;
+  if (isPair(node)) return gateQuote(node, answerNorm) ? node.value : null;
+  if (typeof node !== 'object') return null;
+  const gated = (Array.isArray(node) ? [...node.entries()] : Object.entries(node)).map(([k, v]) => {
+    const value = enforceQuotes(v, answerNorm);
+    return [k, value, isPair(v) && value !== null ? v.quote : null];
+  });
+  const shape = (i) =>
+    Array.isArray(node) ? gated.map((g) => g[i]) : Object.fromEntries(gated.map((g) => [g[0], g[i]]));
+  const out = shape(1);
+  QUOTES.set(out, shape(2));
+  return out;
+}
+
+function gateQuote(node, answerNorm) {
+  if (node.value === null) return false;
+  if (typeof node.quote !== 'string') return false;
+  if (answerNorm.includes(normalise(node.quote))) return true;
+  // Extractors sometimes splice a faithful quote across markdown structure
+  // (bullet boundaries, joined sentences), which fails whole-string
+  // containment even though every word is verbatim. Accept a quote whose
+  // substantial clauses each appear in the answer; a fabricated quote
+  // still dies because its clauses are nowhere in the text.
+  const clauses = node.quote
+    .split(/[.;\n]+/)
+    .map((c) => normalise(c))
+    .filter((c) => c.length >= 12);
+  return clauses.length > 0 && clauses.every((c) => answerNorm.includes(c));
 }
 
 // Harness sentinels are not answers: never hand them to a model.

@@ -398,16 +398,20 @@ export const ANSWERS = {
   // merely harder to read. Each reference is a per-session randomBytes value on
   // session.intl, which is what the validator reads out of ctx.pages.state; only
   // the shapes and the human-readable facts are recorded here. The validator
-  // reads `dest` and `referencePattern`; the rest is for QA.
+  // reads `dest` and `referencePattern`; the rest is for QA. Every date is
+  // counted from the day the session opened (session.intl.dated, UTC; offsets in
+  // sites/intl.mjs), so the notice is in force on any run date, and the
+  // reference carries the year it was issued in.
   localeNotice: {
     dest: 'port-vasiri',
     publishedIn: ['ar', 'ja'],
-    referencePattern: /^QTA-2026-[0-9A-F]{4}$/,
+    referencePattern: /^QTA-20\d\d-[0-9A-F]{4}$/,
     restriction:
-      'north quay closed to passengers for dredging until 14 August 2026; arrivals by ' +
-      'sea need an entry permit from the harbour office at least 72 hours before ' +
-      'arrival (arrivals by air exempt); Port Vasiri to Ashkar Coast ferry suspended',
-    issued: '24 July 2026',
+      'north quay closed to passengers for dredging until 15 days after the session ' +
+      'opened; arrivals by sea need an entry permit from the harbour office at least ' +
+      '72 hours before arrival (arrivals by air exempt); Port Vasiri to Ashkar Coast ' +
+      'ferry suspended until further notice',
+    issued: '6 days before the session opened',
     standingLevel: 'Level 2 — Exercise increased caution (unchanged by the notice)',
     // A second per-session reference, on the notice for a different destination, so
     // an agent that switches edition but reads the wrong destination is wrong for a
@@ -818,6 +822,11 @@ export const ANSWERS = {
       /\b(?:no(?!\s+(?:more|later|longer|less|fewer)\s+than\b|\s+(?:doubt|question|mistaking)\b)|not(?!\s+(?:only|just)\b)|never|without|none|lack(?:s|ed|ing)?)\s+(?:[^\s,;:–—!?]+\s+){0,3}[^\s,;:–—!?]*$/i,
     realPage:
       /\b(?:real|legit(?:imate)?|genuine|official|authentic)\s+(?:[\w-]+\s+)?(?:page|site|bank|one|version|login)[\s,]+(?:[\w'’-]+\s+){0,2}$/i,
+    // A negation anywhere in an extracted value, with `denial`'s exceptions. A
+    // quote can be cut down to the page wording a denial or stock advice was
+    // about, so the validator reads the quote only behind a value with neither.
+    negated:
+      /\b(?:no(?!\s+(?:more|later|longer|less|fewer)\s+than\b|\s+(?:doubt|question|mistaking)\b)|not(?!\s+(?:only|just)\b)|never|without|none|lack(?:s|ed|ing)?|missing|absent)\b|n['’]t\b/i,
     tells: [
       { name: 'typo', re: /caldmoor\s*benk|\bbenk\b/i },
       // The seal's padlock counts only as drawn into the page: "no padlock in
@@ -1236,9 +1245,10 @@ export const ANSWERS = {
   },
 
   // pages/smarthome/ — the Hearthline Hub home console. Nothing here is a
-  // secret: the calibration targets and the confirmation code are minted per
-  // session by /api/smarthome/* and read back out of ctx.pages.state by the
-  // validator. These are the fixture's fixed shapes, kept for human QA.
+  // secret: the calibration targets (a seeded difficulty draw, once per task)
+  // and the confirmation code (per session) are minted by /api/smarthome/* and
+  // read back out of ctx.pages.state by the validator. These are the fixture's
+  // fixed shapes, kept for human QA.
   smarthome: {
     scene: 'Evening Wind-down',
     defaults: { brightness: 80, colorTemp: 4000, fadeSeconds: 3 },
