@@ -6,7 +6,7 @@
 // fixture source - the page's blur-time standardiser (or the on-page format
 // hint) is what produces it from the raw id the ask supplies.
 import { randomBytes } from 'node:crypto';
-import { SESSION_ROWS, pushTrimmed, round2 } from './lib.mjs';
+import { SESSION_ROWS, pushTrimmed, round2, utcDay } from './lib.mjs';
 import { PdfPage, pdfDocument } from './pdf.mjs';
 
 const UTILITY_ACCOUNT = '44-58291-03';
@@ -91,11 +91,20 @@ const ACCOUNT = {
   route: 'Route 4, bimonthly',
 };
 const ACCOUNT_ACTUAL = 4127;
-// Route read dates, oldest first: bill i runs from READS[i] to READS[i + 1].
-const READS = ['2025-08-26', '2025-10-27', '2025-12-29', '2026-02-26', '2026-04-28', '2026-06-26', '2026-08-27'];
+// Route read dates, oldest first, in days from the latest read: bill i runs
+// from READ_DAYS[i] to READ_DAYS[i + 1]. The latest read is the last Thursday
+// at least 18 days before the UTC day the session opened, so the latest bill,
+// issued 8 days after it and due 21 days after that, is still open on any run
+// date, the oldest bill stays inside the history's twelve months, and every
+// date keeps its weekday.
+const READ_DAYS = [-366, -304, -241, -182, -121, -62, 0];
+const LATEST_READ_AGE = 18;
+const READ_WEEKDAY = 4;
 // The same periods a year earlier, for each bill's usage comparison. The
 // latest bill's comparison row carries the one estimate outside the six bills.
-const PRIOR = ['2024-08-27', '2024-10-28', '2024-12-30', '2025-02-26', '2025-04-28', '2025-06-25', '2025-08-26'];
+const PRIOR_DAYS = [-730, -668, -605, -547, -486, -428, -366];
+// When the balance the oldest bill brings forward was paid.
+const OPENING_PAYMENT_DAYS = -349;
 const RATES = { first: 3.12, firstBlock: 12, above: 3.94, fixed: 21.4, sewer: 0.72 };
 const OPENING_BALANCE = 142.18;
 const CODE_NAMES = { A: 'an actual reading (code A)', C: 'a reading you supplied (code C)' };
@@ -104,6 +113,10 @@ const DAY = 86400000;
 const addDays = (date, n) => new Date(Date.parse(date) + n * DAY).toISOString().slice(0, 10);
 const daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / DAY);
 const usDate = (date) => `${date.slice(5, 7)}/${date.slice(8, 10)}/${date.slice(0, 4)}`;
+function latestRead(openedAt) {
+  const day = new Date(utcDay(openedAt) - LATEST_READ_AGE * DAY);
+  return addDays(day.toISOString().slice(0, 10), -((day.getUTCDay() - READ_WEEKDAY + 7) % 7));
+}
 const money = (n) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const grouped = (n) => n.toLocaleString('en-US');
 
@@ -143,17 +156,21 @@ const FRONT_NOTES = [
 ];
 
 // `estimated` is the position (oldest first, never the latest bill) of the bill
-// issued on an estimate; `bytes` are 16 difficulty bytes for usage and codes.
-export function mintBills(estimated, bytes) {
-  const usage = READS.slice(1).map((_, i) => 24 + (bytes[i] % 17));
-  const prior = READS.slice(1).map((_, i) => 22 + (bytes[6 + i] % 17));
+// issued on an estimate; `bytes` are 16 difficulty bytes for usage and codes;
+// `openedAt` is when the session opened, which dates every bill.
+export function mintBills(estimated, bytes, openedAt = Date.now()) {
+  const latest = latestRead(openedAt);
+  const reads = READ_DAYS.map((n) => addDays(latest, n));
+  const priors = PRIOR_DAYS.map((n) => addDays(latest, n));
+  const usage = reads.slice(1).map((_, i) => 24 + (bytes[i] % 17));
+  const prior = reads.slice(1).map((_, i) => 22 + (bytes[6 + i] % 17));
   // The estimate repeats last year's usage for the period, 7-13 ccf off the
   // true usage, so the corrected bill visibly changes.
   const miss = 7 + (bytes[12] % 7);
   prior[estimated] = bytes[13] & 1 ? usage[estimated] + miss : usage[estimated] - miss;
   const actual = [];
   actual[estimated + 1] = ACCOUNT_ACTUAL;
-  for (let j = estimated + 1; j < READS.length - 1; j++) actual[j + 1] = actual[j] + usage[j];
+  for (let j = estimated + 1; j < reads.length - 1; j++) actual[j + 1] = actual[j] + usage[j];
   for (let j = estimated; j >= 0; j--) actual[j] = actual[j + 1] - usage[j];
   const estimate = actual[estimated] + prior[estimated];
   const others = [0, 1, 2, 3, 4, 5].filter((i) => i !== estimated);
@@ -162,7 +179,7 @@ export function mintBills(estimated, bytes) {
   const secondC = rest[bytes[15] % rest.length];
   const taken = new Set();
   const bills = [];
-  let payment = { amount: OPENING_BALANCE, on: '2025-09-12' };
+  let payment = { amount: OPENING_BALANCE, on: addDays(latest, OPENING_PAYMENT_DAYS) };
   for (let i = 0; i < 6; i++) {
     let number;
     do number = 'GW-B-' + randomBytes(3).toString('hex').toUpperCase();
@@ -171,16 +188,16 @@ export function mintBills(estimated, bytes) {
     const code = i === estimated ? 'E' : i === firstC || i === secondC ? 'C' : 'A';
     const prev = i === estimated + 1 ? estimate : actual[i];
     const pres = i === estimated ? estimate : actual[i + 1];
-    const issued = addDays(READS[i + 1], 8);
+    const issued = addDays(reads[i + 1], 8);
     const bill = {
       index: i,
       number,
       token: randomBytes(9).toString('base64url'),
       issued,
       due: addDays(issued, 21),
-      from: READS[i],
-      to: READS[i + 1],
-      days: daysBetween(READS[i], READS[i + 1]),
+      from: reads[i],
+      to: reads[i + 1],
+      days: daysBetween(reads[i], reads[i + 1]),
       prev,
       pres,
       code,
@@ -191,13 +208,13 @@ export function mintBills(estimated, bytes) {
       previousBalance: payment.amount,
       payment,
       priorPeriod: {
-        from: PRIOR[i],
-        to: PRIOR[i + 1],
-        days: daysBetween(PRIOR[i], PRIOR[i + 1]),
+        from: priors[i],
+        to: priors[i + 1],
+        days: daysBetween(priors[i], priors[i + 1]),
         usage: prior[i],
         code: i === 5 ? 'E' : 'A',
       },
-      note: code === 'E' ? NOTES.E(usDate(READS[i + 1])) : code === 'C' ? NOTES.C : NOTES.A[i % 3],
+      note: code === 'E' ? NOTES.E(usDate(reads[i + 1])) : code === 'C' ? NOTES.C : NOTES.A[i % 3],
       frontNote: FRONT_NOTES[i % 2],
     };
     bill.charges = charges(bill.usage);
@@ -322,7 +339,7 @@ function accountState(session, ctx) {
   const estimated = ctx.pick('utility.estimated-bill', [0, 1, 2, 3, 4]);
   return (session.utilityAccount = {
     estimated,
-    bills: mintBills(estimated, ctx.draw('utility.bills', 16)),
+    bills: mintBills(estimated, ctx.draw('utility.bills', 16), session.createdAt ?? Date.now()),
     listReads: 0,
     pdfFetches: [],
     attempts: [],

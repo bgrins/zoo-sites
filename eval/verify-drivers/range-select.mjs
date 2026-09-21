@@ -112,6 +112,7 @@ export const DRIVERS = {
       if (!job || job.ids.length !== golden.targetIds.length || job.ids.some((id) => !golden.targetIds.includes(id))) {
         throw new Error('the labelled files are not exactly the minted batch');
       }
+      if (job.via?.menu !== 'toolbar') throw new Error(`the label job reports menu ${job.via?.menu}, not toolbar`);
 
       const fields = { receipt: code };
       this.wrongFields = [

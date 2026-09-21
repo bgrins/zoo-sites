@@ -355,6 +355,11 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
     },
     {
       id: 'reused-row',
+      truth: {
+        kind: 'minted',
+        reason: 'the deploy ids are minted per session, but the answer names the build and region the ask dictates',
+        values: () => [],
+      },
       ask:
         `Open ${origins.cindergrid}/queue.html — the Cindergrid production deploy queue. Cancel the ` +
         `queued deploy of orchid-api build 4193 to eu-west, and only that one. Report which ` +

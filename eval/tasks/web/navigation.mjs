@@ -450,17 +450,22 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         const numberOk = one && eqCode(claimed, onFile[0].number);
         // Telemetry, never graded: the route. Each filing in time order, as
         // session:how:status:Sec-Fetch-Dest:Sec-Fetch-User:Referer path. how is
-        // new-form (the first POST of a form load), repost (a later POST of the
-        // same load: a resend, Back and submit again, or a double submit, all
-        // with the form as Referer) or no-form (no form load in that session
-        // issued its form id: a script or a shell). A browser
-        // form submit is dest document from a /gov/ page, a script fetch() is
-        // not document, and curl sends neither. Then filing and withdraw POSTs,
+        // new-form (the first POST of a form load), repost (a later POST of a
+        // load that filed already: a resend, Back and submit again, or a double
+        // submit, all with the form as Referer), retry (a later POST of a load
+        // whose earlier POSTs were all rejected) or no-form (no form load in
+        // that session issued its form id: a script or a shell). A browser form
+        // submit is dest document from a /gov/ page, a script fetch() is not
+        // document, and curl sends neither. Then filing and withdraw POSTs,
         // rejected and refused POSTs, GETs of the CGI address, the receipt
-        // variant each session drew, and whether a status lookup put the graded
-        // number on screen.
+        // variant each session drew, whether a status lookup put the graded
+        // number on screen, and the numbers on file, beside the answer's.
         const sum = (k) => stats.reduce((n, st) => n + (st[k] ?? 0), 0);
-        const how = (r) => (r.sameFormLoad == null ? 'no-form' : r.sameFormLoad > 0 ? 'repost' : 'new-form');
+        const how = (r) => {
+          if (r.sameFormLoad == null) return 'no-form';
+          if (r.sameFormFiled > 0) return 'repost';
+          return r.sameFormLoad > 0 ? 'retry' : 'new-form';
+        };
         const filings = sessions
           .flatMap((s, i) => (s.certcopy?.requests ?? []).map((r) => ({ r, n: i + 1 })))
           .sort((a, b) => a.r.at - b.r.at)
@@ -483,7 +488,8 @@ export async function navigationTasks(base, origins = originUrls(base)) {
             `nonDocumentRequests=${notDocument(requests)} ` +
             `nonDocumentWithdrawals=${notDocument(withdrawals)} ` +
             `filings=${filings.join(',') || 'none'} ` +
-            `one=${one} numberOk=${numberOk} fields=${JSON.stringify(fields)}`,
+            `one=${one} numberOk=${numberOk} number=${onFile.map((r) => r.number).join(',') || 'none'} ` +
+            `fields=${JSON.stringify(fields)}`,
         };
       },
     },

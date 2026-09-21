@@ -205,12 +205,16 @@ function buildConsoleLog(codes) {
   return lines;
 }
 
-// reused-row: the production deploy queue. The page polls every 5 seconds, the
-// refresh interval of the deploy consoles it imitates, and each poll is one
-// tick: the server re-estimates every ETA per tick, counted in polls and never
-// in wall time, and the page rewrites its fixed row nodes in the new order. The
-// target's row moves on every tick, so a click aimed at the row a read named
-// lands on another deploy whenever a poll lands between the read and the click.
+// reused-row: the production deploy queue. The page polls when each reply says
+// the next estimate is due, every 5 seconds, the refresh interval of the deploy
+// consoles it imitates, and each poll is one tick: the server re-estimates
+// every ETA per tick, counted in polls and never in wall time, and the page
+// rewrites its fixed row nodes in the new order. The target's row moves on
+// every tick, so a click aimed at the row a read named lands on another deploy
+// whenever a poll lands between the read and the click. The schedule runs from
+// the session's first poll, at a phase drawn per session, so the first re-sort
+// after the first load falls 1 to 4 seconds in rather than a whole period
+// later, when an agent has usually read and clicked already.
 // Build numbers are organisation-wide, so a build names one service.
 const QUEUE_DEPLOYS = [
   { service: 'orchid-api', build: 4193, region: 'eu-west', change: 861, commit: '5f3c9a1', by: 't.ashgrove', eta: 7 },
@@ -227,6 +231,17 @@ const QUEUE_TARGET = 0;
 const QUEUE_TICKS = 48;
 const QUEUE_UNDO_MS = 20000;
 const QUEUE_REQUEUE_MS = 60000;
+const QUEUE_REFRESH_MS = 5000;
+const QUEUE_PHASES_MS = [1000, 2000, 3000, 4000];
+// A reply this close to a due estimate points at the one after, so a poll
+// that lands a moment early never re-sorts the list twice in a row.
+const QUEUE_MIN_GAP_MS = 250;
+
+function queueNextMs(q, now) {
+  const since = now - q.firstPollAt - q.phaseMs;
+  const left = since < 0 ? -since : QUEUE_REFRESH_MS - (since % QUEUE_REFRESH_MS);
+  return left < QUEUE_MIN_GAP_MS ? left + QUEUE_REFRESH_MS : left;
+}
 
 // Each tick's order and ETAs, drawn once per session and replayed in a cycle.
 // The wobble is a difficulty draw. Where it leaves the target on the row it
@@ -275,6 +290,8 @@ function queueState(ctx, session) {
       deploys,
       targetId: deploys[QUEUE_TARGET].id,
       ...queueSchedule(ctx.draw('console.queue', QUEUE_TICKS * QUEUE_DEPLOYS.length)),
+      firstPollAt: null,
+      phaseMs: ctx.pick('console.queue.phase', QUEUE_PHASES_MS),
       polls: 0,
       lastPollAt: null,
       served: null,
@@ -457,6 +474,7 @@ export function routes(ctx) {
       const now = Date.now();
       const t = q.polls % QUEUE_TICKS;
       q.polls += 1;
+      q.firstPollAt ??= now;
       q.lastPollAt = now;
       if (!consoleFromPage(req)) q.offPage += 1;
       const byIndex = new Map(q.deploys.map((d, i) => [i, d]));
@@ -467,7 +485,8 @@ export function routes(ctx) {
       q.served = queued.map((d) => d.id);
       return json(res, 200, {
         tick: q.polls,
-        refreshSeconds: 5,
+        refreshSeconds: QUEUE_REFRESH_MS / 1000,
+        nextRefreshMs: queueNextMs(q, now),
         queued,
         cancelled: q.deploys
           .filter((d) => requeueLeft(d, now) > 0)

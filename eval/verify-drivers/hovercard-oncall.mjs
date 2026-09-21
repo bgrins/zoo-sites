@@ -14,6 +14,18 @@ export const DRIVERS = {
       // page's, which fails the run.
       const stray = await straySession(ctx.pages.url, '/console/services/orchid-api.html');
 
+      // Before any card opens, the served page names each profile once, in
+      // its owner's row: a card shipped with a profile link filled in would
+      // single out one owner to a reader of the source, with no hover.
+      const served = await (
+        await fetch(`${ctx.pages.url}/console/services/orchid-api.html`, { headers: { cookie: stray.cookie } })
+      ).text();
+      const named = [...served.matchAll(/people\/([a-z]+)\.html/g)].map((m) => m[1]);
+      const rows = [...served.matchAll(/class="owner" href="\.\.\/people\/([a-z]+)\.html"/g)].map((m) => m[1]);
+      if (named.length !== rows.length || new Set(named).size !== named.length) {
+        throw new Error(`the served page names profiles ${named.join(',')} outside the owner rows ${rows.join(',')}`);
+      }
+
       // The slower route works too: the first owner's profile page loads the
       // same record. It is only read here, never paged from.
       await goto('/console/services/orchid-api.html');
@@ -40,7 +52,7 @@ export const DRIVERS = {
         // after that, so wait for this handle's card rather than any card.
         await until(`the card for @${handle}`, () =>
           evaluate(`() => !document.getElementById('card').hidden &&
-            document.getElementById('hc-profile').getAttribute('href').endsWith('/${handle}.html')`)
+            (document.getElementById('hc-profile').getAttribute('href') ?? '').endsWith('/${handle}.html')`)
         );
         const snap = await snapshot();
         const status = snap.match(/"((?:On|Off) call[^"]*)"/)?.[1];

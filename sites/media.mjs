@@ -141,6 +141,7 @@ const DESK_STORIES = [
 const DESK_IDS = DESK_STORIES.map((s) => s.id);
 
 const DESK_SLOT_SECONDS = 270;
+const DESK_MOVES = [5, 6];
 
 // Stories that must move, at fewest: those outside the longest run of
 // `order` already in `target`'s relative order.
@@ -163,10 +164,13 @@ const deskReference = () => 'RO-' + randomBytes(3).toString('hex').toUpperCase()
 
 // The starting order and the editor's order are a difficulty draw, so a seeded
 // run deals paired conditions the same shuffle: five or six stories out of
-// place, never fewer, and a different lead. The lock references, the 18:00 one
-// and the two earlier bulletins' decoys, stay on randomBytes.
-function deskState(session, draw) {
+// place, never fewer, and a different lead. How many is a pick, so a row names
+// it and an experiment can hold it; the shuffle deals until it matches. The
+// lock references, the 18:00 one and the two earlier bulletins' decoys, stay on
+// randomBytes.
+function deskState(session, { draw, pick }) {
   if (!session.mediaDesk) {
+    const needed = pick('media.desk.moves', DESK_MOVES);
     const rand = lcg(draw('media.desk', 4));
     const shuffle = () => {
       const list = [...DESK_IDS];
@@ -181,7 +185,7 @@ function deskState(session, draw) {
     do {
       dealt = shuffle();
       target = shuffle();
-    } while (dealt[0] === target[0] || ![5, 6].includes(deskMovesNeeded(dealt, target)));
+    } while (dealt[0] === target[0] || deskMovesNeeded(dealt, target) !== needed);
     const refs = new Set();
     while (refs.size < 2) refs.add(deskReference());
     const [early, noon] = [...refs];
@@ -189,7 +193,7 @@ function deskState(session, draw) {
       dealt,
       target,
       order: [...dealt],
-      fewestMoves: deskMovesNeeded(dealt, target),
+      fewestMoves: needed,
       earlier: [
         { bulletin: '07:00', reference: early },
         { bulletin: '12:00', reference: noon },
@@ -351,7 +355,7 @@ export function routes(ctx) {
     if (req.method === 'GET' && pathname0 === '/api/media/rundown') {
       const found = requireSession(req, res);
       if (!found) return;
-      const desk = deskState(found.session, ctx.draw);
+      const desk = deskState(found.session, ctx);
       desk.reads += 1;
       if (!deskFromPage(req)) desk.offPage += 1;
       return json(res, 200, deskView(desk));
@@ -369,7 +373,7 @@ export function routes(ctx) {
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload.nonce);
       if (!found) return;
-      const desk = deskState(found.session, ctx.draw);
+      const desk = deskState(found.session, ctx);
       if (desk.lock) {
         desk.refused += 1;
         return json(res, 409, { error: 'The running order is locked.', ...deskView(desk) });
@@ -411,7 +415,7 @@ export function routes(ctx) {
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload.nonce);
       if (!found) return;
-      const desk = deskState(found.session, ctx.draw);
+      const desk = deskState(found.session, ctx);
       if (!['dragstart', 'drop'].includes(payload.type)) return json(res, 400, { error: 'unknown event' });
       if (desk.gestures.length < 200) {
         desk.gestures.push({
@@ -434,7 +438,7 @@ export function routes(ctx) {
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload.nonce);
       if (!found) return;
-      const desk = deskState(found.session, ctx.draw);
+      const desk = deskState(found.session, ctx);
       if (desk.lock) {
         desk.refused += 1;
         return json(res, 409, { error: 'The running order is already locked.', ...deskView(desk) });

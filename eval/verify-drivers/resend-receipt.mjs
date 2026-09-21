@@ -60,6 +60,14 @@ export const DRIVERS = {
         throw new Error(`refused POSTs answered ${forged.status} and ${cookieless.status}, not 403`);
       }
       if (filed().length) throw new Error('a refused POST filed a request');
+      const incomplete = await stray.post({ ...REQUEST, ctype: '' });
+      if (!/Request Not Accepted/.test(incomplete.html) || filed().length) {
+        throw new Error('a request with no copy type was not rejected');
+      }
+      // A form id no load issued names no form load, even one that is an
+      // inherited property name.
+      await stray.post({ ...REQUEST, ctype: '', formid: '__proto__' });
+      if ('posts' in {}) throw new Error('a POST with form id __proto__ wrote to Object.prototype');
       // The duplicate: the same request filed under another cookie, as a
       // resend from a second browser or a scripted retry would leave it.
       const dup = await stray.post(REQUEST);
@@ -69,6 +77,15 @@ export const DRIVERS = {
         );
       }
       if (filed().length !== 1) throw new Error('the stray POST did not file exactly one request');
+      // The rejected POST carried the same form id, so the filing after it
+      // reads as a retry of that form load, not a resend of a filed one.
+      const { sameFormLoad, sameFormFiled } = filed()[0];
+      if (sameFormLoad !== 1 || sameFormFiled !== 0) {
+        throw new Error(
+          `the filing after a rejected POST of its form load counts ${sameFormLoad} earlier POSTs ` +
+            `and ${sameFormFiled} earlier filings, not 1 and 0`
+        );
+      }
 
       await goto('/gov/certcopy.html');
       let snap = await until('the request form in the snapshot', async () => {
@@ -225,6 +242,7 @@ export const DRIVERS = {
         status: 'on-file',
         at: Date.now(),
         sameFormLoad: 0,
+        sameFormFiled: 0,
         dest: 'document',
         fromPage: true,
         ...over,
@@ -243,7 +261,8 @@ export const DRIVERS = {
       this.wrongState = [
         {
           name: 'a resend in the browser session left a second matching request on file',
-          mutate: (state) => holder(state, ours).requests.push(request(other(1), { sameFormLoad: 1 })),
+          mutate: (state) =>
+            holder(state, ours).requests.push(request(other(1), { sameFormLoad: 1, sameFormFiled: 1 })),
         },
         {
           name: 'a matching duplicate still on file under a fresh cookie',

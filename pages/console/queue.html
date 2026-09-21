@@ -194,20 +194,26 @@
     }
   }
 
+  // Each refresh waits for the moment the reply says the next estimate is
+  // due. A paused list schedules none, and Resume polls at once.
+  let timer = null;
+  const schedule = (ms) => {
+    clearTimeout(timer);
+    timer = setTimeout(poll, ms);
+  };
+
   async function poll() {
     if (paused) return;
-    let res;
+    let data;
     try {
-      res = await fetch('/api/cindergrid/queue', { headers: { 'X-Session-Nonce': NONCE } });
+      const res = await fetch('/api/cindergrid/queue', { headers: { 'X-Session-Nonce': NONCE } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      data = await res.json();
     } catch {
       notice.textContent = 'The queue could not be refreshed. Retrying.';
+      schedule(REFRESH_MS);
       return;
     }
-    if (!res.ok) {
-      notice.textContent = 'The queue could not be refreshed. Retrying.';
-      return;
-    }
-    const data = await res.json();
     // A refresh that lands after Pause is dropped, so a paused list holds still.
     if (paused) return;
     notice.textContent = '';
@@ -217,6 +223,7 @@
     cancelled = data.cancelled.map((d) => ({ ...d, until: now + d.requeueSeconds * 1000 }));
     list.dataset.tick = String(data.tick);
     render();
+    schedule(data.nextRefreshMs > 0 ? data.nextRefreshMs : REFRESH_MS);
   }
 
   function showToast(d) {
@@ -297,7 +304,6 @@
     if (!paused) poll();
   });
   filter.addEventListener('input', render);
-  setInterval(poll, REFRESH_MS);
   setInterval(renderCancelled, REFRESH_MS);
   render();
   poll();

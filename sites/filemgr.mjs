@@ -14,12 +14,15 @@ import { SESSION_ROWS, lcg } from './lib.mjs';
 const SCAN_BATCH = '26-14';
 const SCAN_NEIGHBOURS = ['26-11', '26-141'];
 const SCAN_TOTAL = 60;
+// How many files the dictated batch holds, a pick so a row names it.
+const SCAN_RUNS = [18, 19, 20, 21, 22, 23, 24, 25, 26];
 const SCAN_LABELS = ['Retain 1 year', 'Retain 3 years', 'Retain 7 years', 'Retain 10 years'];
 const SCAN_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const SCAN_VIA_MENUS = ['context', 'toolbar', 'keyboard'];
 const SCAN_GESTURES = ['click', 'shift', 'toggle', 'box', 'keys', 'all'];
 
-function scansMint(draw) {
+function scansMint({ draw, pick }) {
+  const run = pick('filemgr.scans.run', SCAN_RUNS);
   const rand = lcg(draw('filemgr.scans', 4));
   const between = (lo, hi) => lo + Math.floor(rand() * (hi - lo + 1));
   // Two distinct numbers in [lo, hi], ascending, skipping any with a 4 or two
@@ -40,7 +43,7 @@ function scansMint(draw) {
     after,
     ...twoOf(150, 199).map((n) => `26-${n}`),
   ];
-  const sizes = [3, 3, between(4, 7), between(18, 26), between(4, 7), 3, 3];
+  const sizes = [3, 3, between(4, 7), run, between(4, 7), 3, 3];
   for (let left = SCAN_TOTAL - sizes.reduce((a, b) => a + b, 0); left > 0; left--) {
     sizes[[0, 1, 5, 6][Math.floor(rand() * 4)]] += 1;
   }
@@ -85,9 +88,9 @@ function scansMint(draw) {
   return { files, targetIds: idsOf(SCAN_BATCH), neighbourIds: [...idsOf(before), ...idsOf(after)] };
 }
 
-function scansState(session, draw) {
+function scansState(session, ctx) {
   if (!session.scans) {
-    const minted = scansMint(draw);
+    const minted = scansMint(ctx);
     session.scans = {
       batch: SCAN_BATCH,
       files: minted.files,
@@ -130,7 +133,7 @@ const scanJobs = (sc) =>
   }));
 
 export function routes(ctx) {
-  const { state, json, readJson, getSession, requireSession, fromPage, draw } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
   // Legibility, never proof: curl can send both headers fromPage reads.
   const fromBoxelder = fromPage('/filemgr/');
   return async (req, res, url, pathname0) => {
@@ -189,7 +192,7 @@ export function routes(ctx) {
     if (req.method === 'GET' && pathname0 === '/api/filemgr/scans') {
       const found = requireSession(req, res);
       if (!found) return;
-      const sc = scansState(found.session, draw);
+      const sc = scansState(found.session, ctx);
       sc.reads += 1;
       return json(res, 200, { folder: 'Scans', files: scanRows(sc), jobs: scanJobs(sc) });
     }
@@ -204,7 +207,7 @@ export function routes(ctx) {
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
-      const sc = scansState(found.session, draw);
+      const sc = scansState(found.session, ctx);
       if (sc.jobs.length >= SESSION_ROWS) {
         sc.refused += 1;
         return json(res, 429, { ok: false, error: 'Too many label changes from this session. Try again later.' });

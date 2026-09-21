@@ -47,6 +47,18 @@ export const DRIVERS = {
         }`);
         return now.tick !== read.tick && now.label && now.label !== 'Cancel 4193 to eu-west' ? now.label : null;
       });
+      // The first re-sort after the load lands at the session's drawn phase,
+      // 1 to 4 seconds after the load's own poll, where an agent's read and
+      // its click fall, and not a whole refresh period later.
+      const opened = findSession(ctx.pages.state, (s) => s.cgQueue?.pageLoads);
+      const { phaseMs } = opened.session.cgQueue;
+      const polls = ctx.pages.state.ledger
+        .filter((r) => r.sid === opened.sid && r.path.startsWith('/api/cindergrid/queue'))
+        .map((r) => r.at);
+      const gap = polls[1] - polls[0];
+      if (!(phaseMs < 5000 && gap >= phaseMs - 5 && gap < phaseMs + 750)) {
+        throw new Error(`the first re-sort came ${gap}ms after the load's poll, drawn at ${phaseMs}ms`);
+      }
       await mcp('click_by_uid', { uid: read.uid });
       const misfire = await until('the cancel toast', () =>
         evaluate(() => (document.getElementById('toast').hidden ? null : document.getElementById('toast-msg').textContent))

@@ -125,15 +125,32 @@ const layout = ctx.pick('boxoffice.layout', ['stalls-first', 'circle-first', 'sp
 - Scope names are per site and per factor (`<site>.<factor>`), so forcing one
   factor never shifts another's sequence.
 
-Five sites use `pick`. Two draw once per task, and later sessions reuse the
+Nine sites use `pick`. Two draw once per task, and later sessions reuse the
 first session's picks: `console.oncall` in `sites/console.mjs` (hovercard-oncall),
 and `smarthome.brightness`, `smarthome.colorTemp` and `smarthome.fadeSeconds` in
-`sites/smarthome.mjs` (scene-calibrate). `gov.certcopy.receipt` in `sites/gov.mjs`
-(resend-receipt),
-`events.equipment` in `sites/events.mjs` (native-permit), and `quotient.omitted`
-and `quotient.decoy` in `sites/quotient.mjs` (silent-throw) pick once per session.
-The sites that call `draw` directly keep their current sequences until they are
-migrated.
+`sites/smarthome.mjs` (scene-calibrate). The others pick once per session:
+
+- `console.queue.phase` in `sites/console.mjs` (reused-row): how long after the
+  session's first queue poll the first re-sort comes.
+- `events.equipment`, `events.event` and `events.contact` in `sites/events.mjs`
+  (native-permit).
+- `filemgr.scans.run` in `sites/filemgr.mjs` (range-select): how many files the
+  dictated batch holds.
+- `gov.certcopy.receipt` in `sites/gov.mjs` (resend-receipt).
+- `lumeva.roaming`, `lumeva.alert`, `lumeva.cap` and `lumeva.atcap` in
+  `sites/telco.mjs` (unsaved-leave).
+- `media.desk.moves` in `sites/media.mjs` (pointer-drag): how many stories the
+  deal puts out of place.
+- `quotient.omitted` and `quotient.decoy` in `sites/quotient.mjs` (silent-throw).
+- `utility.estimated-bill` in `sites/utility.mjs` (pdf-bill).
+
+A deal that is not a choice among variants, such as a shuffle, a folder of files
+or a clock time, stays on `draw`, which `state.draws` does not log. Where such a
+deal has a named factor, the site picks the factor on a scope of its own and
+draws the rest: `media.desk.moves` sets how many stories the `media.desk` shuffle
+puts out of place, `filemgr.scans.run` sets the length of the dictated batch in
+the `filemgr.scans` folder, and `events.event` and `events.contact` finish the
+`events.brief` pack, whose streets and times stay drawn.
 
 ## Request ledger
 

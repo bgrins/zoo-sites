@@ -113,8 +113,10 @@ function mintBrief(draw, pick, date) {
   const end = 19 * 60 + 30 + 15 * Math.floor(rand() * 14);
   const quiet = 19 * 60 + 15 * Math.floor(rand() * ((end - 30 - 19 * 60) / 15 + 1));
   const code = pick('events.equipment', Object.keys(EVENTS_EQUIPMENT_PHRASES));
+  const kind = pick('events.event', EVENT_NAMES);
+  const contactName = pick('events.contact', CONTACTS.map(([name]) => name));
   return {
-    event: `${EVENTS_STREETS.find((s) => s.id === streets[0]).name} ${EVENT_NAMES[Math.floor(rand() * EVENT_NAMES.length)]}`,
+    event: `${EVENTS_STREETS.find((s) => s.id === streets[0]).name} ${kind}`,
     packRef: 'PK-' + randomBytes(2).toString('hex').toUpperCase(),
     streets,
     date,
@@ -122,7 +124,7 @@ function mintBrief(draw, pick, date) {
     end: `${date}T${hhmm(end)}`,
     quiet: hhmm(quiet),
     equipment: code,
-    contact: CONTACTS[Math.floor(rand() * CONTACTS.length)],
+    contact: CONTACTS.find(([name]) => name === contactName),
   };
 }
 

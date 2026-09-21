@@ -509,6 +509,19 @@ export function documents(ctx) {
 
   function fileRequest(req, found, fields) {
     const st = govCopyState(found.session);
+    // Telemetry, never graded: how many earlier POSTs carried this page load's
+    // form id, rejected ones included, how many of those filed a request (a
+    // resend, or Back and submit again, follows a filing; a retry follows only
+    // rejections), and what sent this one. Headers are legibility, never proof:
+    // curl sets them freely. A resend carries the form's Referer, as a
+    // re-submit does, so only the form id tells either from a fresh form; on
+    // devtools alone an accepted resend prompt sends no Sec-Fetch-User
+    // (eval/spikes/resend-receipt.mjs).
+    const formid = String(fields.get('formid') ?? '');
+    const load = Object.hasOwn(st.forms, formid) ? st.forms[formid] : null;
+    const sameFormLoad = load ? load.posts : null;
+    const sameFormFiled = load ? load.filed : null;
+    if (load) load.posts += 1;
     const account = govAccount(fields.get('acct'));
     const document = String(fields.get('doc') ?? '');
     const year = String(fields.get('year') ?? '');
@@ -546,14 +559,6 @@ export function documents(ctx) {
 Please try again on the next business day.</p>`)
       );
     }
-    // Telemetry, never graded: how many earlier POSTs carried this page load's
-    // form id (a resend, or Back and submit again), and what sent this one.
-    // Headers are legibility, never proof: curl sets them freely. A resend
-    // carries the form's Referer, as a re-submit does, so only the form id
-    // tells either from a fresh form; on devtools alone an accepted resend
-    // prompt sends no Sec-Fetch-User (eval/spikes/resend-receipt.mjs).
-    const formid = String(fields.get('formid') ?? '');
-    const load = st.forms[formid] ?? null;
     const request = {
       number,
       account,
@@ -564,14 +569,15 @@ Please try again on the next business day.</p>`)
       delivery,
       status: 'on-file',
       at: Date.now(),
-      sameFormLoad: load ? load.posts : null,
+      sameFormLoad,
+      sameFormFiled,
       dest: req.headers['sec-fetch-dest'] ?? null,
       user: req.headers['sec-fetch-user'] ?? null,
       referer: govReferer(req),
       fromPage: govFromPage(req),
     };
-    if (load) load.posts += 1;
     st.requests.push(request);
+    if (load) load.filed += 1;
     st.receipt ??= pick('gov.certcopy.receipt', GOV_RECEIPT_VARIANTS);
     const numbered = st.receipt === 'numbered';
     return govCgiPage(
@@ -812,7 +818,7 @@ request is not sent and not charged. <a href="request-status.html">Look up anoth
       if (pathname === '/gov/certcopy.html' && body.includes('__GOV_FORM_ID__')) {
         const formid = randomBytes(6).toString('hex');
         const forms = govCopyState(found.session).forms;
-        forms[formid] = { posts: 0, at: Date.now() };
+        forms[formid] = { posts: 0, filed: 0, at: Date.now() };
         const ids = Object.keys(forms);
         if (ids.length > SESSION_ROWS) delete forms[ids[0]];
         return { body: body.replaceAll('__GOV_FORM_ID__', formid) };

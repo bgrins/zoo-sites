@@ -262,9 +262,13 @@ Each of these binds every fixture and every validator, without exception.
      it into the page, as `sites/intl.mjs` and `sites/forms.mjs` (the Nerrow
      Strait calendar) do; `utcDay` and `dayText` in `sites/lib.mjs` count and
      print the days. Move everything the date drags with it: its weekday, the
-     month and year words around it, and the dates it sits between. The driver
-     then checks each rendered date against today, as the `locale-notice` and
-     `abstract-length` drivers do, so a date that stops moving turns the gate red.
+     month and year words around it, and the dates it sits between. A history of
+     dates that ends in one, like a bill run ending in a due date, moves as a
+     whole, and moving it in whole weeks keeps every weekday: `sites/utility.mjs`
+     anchors the pdf-bill account's bills on a Thursday a few weeks before the
+     session. The driver then checks each rendered date against today, as the
+     `locale-notice`, `abstract-length` and `pdf-bill` drivers do, so a date that
+     stops moving turns the gate red.
    - A date the ask dictates cannot move without changing the task, so set it
      years ahead and have the driver guard it, as the `form-gauntlet` driver
      guards `ANSWERS.form.fields.date`: it prints a note from a year out and

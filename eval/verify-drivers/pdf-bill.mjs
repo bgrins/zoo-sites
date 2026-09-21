@@ -2,7 +2,8 @@
 // path opens the bills newest first in Firefox's PDF viewer and reads each one
 // through take_snapshot. Two measured limits shape the reads
 // (eval/spikes/pdf-bill.mjs): each history link carries its bill date in a
-// visually hidden span that the snapshot drops, so the six links read alike
+// visually hidden span, which the snapshot drops from the link's name while it
+// still lists the span as a node of its own, so the six links share one name
 // and are told apart by position; and the default 100-line window stops on
 // page 1 of a bill, so the viewer is read with a raised maxLines. Every table
 // cell of the bill is its own short text run, so the bill number and the
@@ -67,6 +68,16 @@ export const DRIVERS = {
       const stray = await straySession(base, ACCOUNT);
       const strayList = await stray.get('/api/utility/account');
       if (strayList.bills?.length !== 6) throw new Error('the account API did not list six bills');
+      // The latest bill is still open on the day of the run, and the oldest
+      // was issued inside the twelve months the history's caption names.
+      const usDay = (s) => Date.parse(`${s.slice(6, 10)}-${s.slice(0, 2)}-${s.slice(3, 5)}`);
+      const today = Math.floor(Date.now() / 86400000) * 86400000;
+      if (!(usDay(strayList.balance.due) > today) || strayList.bills[0].status !== `Due ${strayList.balance.due}`) {
+        throw new Error(`the latest bill falls due ${strayList.balance.due}, not after today`);
+      }
+      if (!(today - usDay(strayList.bills.at(-1).issued) < 365 * 86400000)) {
+        throw new Error(`the oldest bill was issued ${strayList.bills.at(-1).issued}, over twelve months ago`);
+      }
       const strayBills = [];
       for (const listed of strayList.bills) {
         const res = await fetch(base + listed.pdf, { headers: { cookie: stray.cookie } });
@@ -78,9 +89,10 @@ export const DRIVERS = {
       if ((await fetch(base + strayList.bills[0].pdf)).status !== 403) {
         throw new Error('a bill PDF was served without a session');
       }
+      const dayAfter = new Date(usDay(strayEstimated[0].to) + 86400000).toISOString().slice(0, 10);
       const offDate = await stray.post('/api/utility/reading', {
         billNumber: strayEstimated[0].number,
-        readingDate: '01/02/2026',
+        readingDate: dayAfter,
         reading: String(want.actualReading),
         meterSerial: want.meter,
       });

@@ -20,8 +20,11 @@
   let query = '';
   let menuVia = null;
   let menuFrom = null;
+  let dialogVia = null;
   // How the current selection was built and which menu opened the action, sent
   // with each label job so the workspace can report which entry points get used.
+  // A menu names itself only while it is open, and the label dialog keeps the
+  // menu that opened it only until it closes.
   let gestures = freshGestures();
 
   function freshGestures() {
@@ -418,8 +421,9 @@
       }
       b.addEventListener('click', () => {
         if (item.off) return;
+        const from = menuVia;
         closeMenu(false);
-        item.run();
+        item.run(from);
       });
       menu.appendChild(b);
     }
@@ -438,6 +442,7 @@
 
   function closeMenu(returnFocus) {
     if (menuOpen()) menu.hidePopover();
+    menuVia = null;
     moreBtn.setAttribute('aria-expanded', 'false');
     if (returnFocus && menuFrom) menuFrom.focus({ preventScroll: true });
   }
@@ -479,8 +484,9 @@
     openMenu('toolbar', box.left, box.bottom + 3, box.top - 3, moreBtn);
   });
 
-  function openDialog() {
+  function openDialog(via) {
     if (!selected.size) return;
+    dialogVia = via;
     document.getElementById('labelCount').textContent =
       'Applies to ' + plural(selected.size, 'selected file', 'selected files') + '.';
     labelPick.value = '';
@@ -492,17 +498,18 @@
 
   document.getElementById('labelCancel').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {
+    dialogVia = null;
     const tr = rowOf.get(cursor);
     if (tr) tr.focus({ preventScroll: true });
   });
 
-  async function send(path, body) {
+  async function send(path, body, via) {
     let res;
     try {
       res = await fetch(path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nonce: NONCE, ...body, via: { menu: menuVia, gestures } }),
+        body: JSON.stringify({ nonce: NONCE, ...body, via: { menu: via, gestures } }),
       });
     } catch {
       return { ok: false, error: 'Could not reach the workspace server. Nothing was changed.' };
@@ -528,7 +535,7 @@
       return;
     }
     labelApply.disabled = true;
-    const reply = await send('/api/filemgr/label', { ids: selectedIds(), label });
+    const reply = await send('/api/filemgr/label', { ids: selectedIds(), label }, dialogVia);
     labelApply.disabled = false;
     if (!reply.ok) {
       labelErr.textContent = reply.error;
@@ -538,8 +545,8 @@
     finished(reply, label + ' applied to ' + plural(reply.count, 'file', 'files') + '.');
   });
 
-  async function removeLabel() {
-    const reply = await send('/api/filemgr/label/remove', { ids: selectedIds() });
+  async function removeLabel(via) {
+    const reply = await send('/api/filemgr/label/remove', { ids: selectedIds() }, via);
     if (!reply.ok) {
       note(reply.error, null, true);
       return;
