@@ -144,8 +144,32 @@ const ACTION_TOOLS = new Set([
 ]);
 const WAIT_TOOL = /^(browser_wait_for|wait_for)$/;
 const RESTART_TOOL = /^restart_/;
-// firefox-devtools-mcp's stale-uid errors, then playwright-mcp's stale-ref one.
-const STALE = /stale\/invalid|from a stale snapshot|invalid or from an old snapshot|not found in the current page snapshot/i;
+// firefox-devtools-mcp's stale-uid errors, then playwright-mcp's stale-ref one
+// ("Ref e55 not found in the current page snapshot").
+export const STALE = /stale\/invalid|from a stale snapshot|invalid or from an old snapshot|not found in the current page snapshot/i;
+// A script that sleeps before it reads: setTimeout(callback, ms) with a literal
+// delay or a product of literals (5 * 1000), Playwright's waitForTimeout(ms), or
+// a sleep, delay or wait helper called with a literal. A surface without a wait
+// tool waits this way (embargo-wait's setTimeout(r, 22000)), so counting only
+// wait tools read as that surface never waiting. A pause under SCRIPT_SLEEP_MS
+// is a tick between two reads, not a wait for the page.
+const SCRIPT_SLEEP_MS = 500;
+const DELAY = String.raw`(\d+(?:\.\d+)?(?:e\d+)?)(?:\s*\*\s*(\d+(?:\.\d+)?))?\s*\)`;
+const TIMEOUT_CALL = new RegExp(
+  String.raw`\bsetTimeout\s*\(\s*(?:[\w$.]+|\([^()]*\)\s*=>\s*[\w$.]+\([^()]*\))\s*,\s*` + DELAY,
+  'g'
+);
+const SLEEP_CALL = new RegExp(String.raw`\b(?:waitForTimeout|sleep|delay|wait|pause)\s*\(\s*` + DELAY, 'g');
+export function scriptSleeps(source) {
+  const text = String(source ?? '');
+  let n = 0;
+  for (const re of [TIMEOUT_CALL, SLEEP_CALL]) {
+    for (const [, ms, times] of text.matchAll(re)) {
+      if (Number(ms) * Number(times ?? 1) >= SCRIPT_SLEEP_MS) n += 1;
+    }
+  }
+  return n;
+}
 // firefox-devtools-mcp cuts an attribute value to 27 characters plus "...", and
 // marks a walker cut and a line cap in the reply's header and footer.
 const CUT_ATTR = /="[^"\n]{0,27}\.\.\."/g;
@@ -222,6 +246,27 @@ export function blameToolErrors(errors, values = []) {
   return blamed;
 }
 
+// A codex code-mode row keeps in its exec cells what no MCP event shows
+// (row.code_mode, from the rollout): the waits a cell's own code slept between
+// tool calls, the catalog discovery (ALL_TOOLS) every row opens with, and the
+// outputs codex cut before the model read them. They fold into the counters
+// that mean the same on every other row, so a surface whose agents wait in
+// exec cells does not read as never waiting. exec_sleeps counts every literal
+// delay in a cell's source, the ones inside an evaluate_script function it
+// passes included, and the tap counted those again from the call's arguments
+// (script_sleeps), so the larger of the two stands for both. A row without
+// code_mode is returned as it is.
+export function withCodeMode(friction, codeMode) {
+  if (!codeMode) return friction;
+  const scripts = friction?.script_sleeps ?? 0;
+  return {
+    ...friction,
+    sleeps: (friction?.sleeps ?? 0) - scripts + Math.max(codeMode.exec_sleeps ?? 0, scripts),
+    tool_search: (friction?.tool_search ?? 0) + (codeMode.discovery_execs ?? 0),
+    harness_truncated: codeMode.truncated_outputs ?? 0,
+  };
+}
+
 // Reads one attempt's message stream as it arrives. `surface` is the name the
 // backends register the condition's own browser server under.
 export function createCallRecorder(surface) {
@@ -256,6 +301,12 @@ export function createCallRecorder(surface) {
     dom: text.includes(DOM_TRUNCATED),
     lines: LINE_CUT.test(text),
   });
+  // A script's sleeps are counted from its whole source, which can run past
+  // what `args` keeps.
+  const argsOf = (tool, input) => {
+    const json = JSON.stringify(input ?? {});
+    return { args: json.slice(0, ERROR_KEEP), ...(EVAL_TOOL.test(tool ?? '') ? { sleeps: scriptSleeps(json) } : {}) };
+  };
 
   return {
     // `receivedAt` (optional) is when the message arrived, for the backends
@@ -286,7 +337,7 @@ export function createCallRecorder(surface) {
           upsert(
             block.id,
             m
-              ? { kind: 'mcp', server: m[1], tool: m[2], args: JSON.stringify(block.input ?? {}).slice(0, ERROR_KEEP) }
+              ? { kind: 'mcp', server: m[1], tool: m[2], ...argsOf(m[2], block.input) }
               : block.name === 'Bash'
                 ? { kind: 'shell', command: String(block.input?.command ?? ''), startAt: at, background: Boolean(block.input?.run_in_background) }
                 : { kind: 'builtin', tool: block.name }
@@ -317,7 +368,7 @@ export function createCallRecorder(surface) {
           kind: 'mcp',
           server: item.server,
           tool: item.tool,
-          args: JSON.stringify(item.arguments ?? {}).slice(0, ERROR_KEEP),
+          ...argsOf(item.tool, item.arguments),
           ...(completed
             ? {
                 ...resultOf(
@@ -376,6 +427,7 @@ export function createCallRecorder(surface) {
       const shellSleeps = all
         .filter((c) => c.kind === 'shell')
         .reduce((n, c) => n + (c.command.match(SHELL_SLEEP) ?? []).length, 0);
+      const scriptSleepCount = own.reduce((n, c) => n + (c.sleeps ?? 0), 0);
       return {
         surface_calls: own.length,
         foreign_tools: mcp.length - own.length,
@@ -395,7 +447,11 @@ export function createCallRecorder(surface) {
           eval_calls: own.filter((c) => EVAL_TOOL.test(c.tool)).length,
           stale_uid: own.filter((c) => c.stale).length,
           restarts: own.filter((c) => RESTART_TOOL.test(c.tool)).length,
-          sleeps: shellSleeps + own.filter((c) => WAIT_TOOL.test(c.tool)).length,
+          // Wait-tool calls, shell sleeps, and the sleeps inside script calls,
+          // which script_sleeps counts again on its own: a row without it was
+          // written before sleeps counted them.
+          sleeps: shellSleeps + own.filter((c) => WAIT_TOOL.test(c.tool)).length + scriptSleepCount,
+          script_sleeps: scriptSleepCount,
           // Claude CLI tool discovery: ToolSearch calls, the API turns that
           // called nothing else, and the output those turns spent.
           tool_search: all.filter((c) => c.kind === 'builtin' && c.tool === 'ToolSearch').length,

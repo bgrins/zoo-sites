@@ -12,6 +12,7 @@
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { scriptSleeps, STALE } from '../mcp-tap.mjs';
 import { rowEvents, SURFACE_SERVER, toolCalls } from './events.mjs';
 
 export const SNAPSHOT_TOOL = /^(take_snapshot|browser_snapshot)$/;
@@ -23,10 +24,11 @@ const CLICK_TOOL = /^(click_by_uid|browser_click)$/;
 const RESTART_TOOL = /^(restart_firefox)$/;
 const WAIT_TOOL = /wait/i;
 
-// Error signatures, matched on what a surface call returned.
+// Error signatures, matched on what a surface call returned. The stale-uid one
+// is the tap's, so the two readings of a row count the same replies.
 export const SIGNATURES = {
   browserLost: /ECONNREFUSED|marionette|unexpectedly closed|Process \(pid|session deleted|NoSuchWindow|browsing context/i,
-  staleUid: /stale\/invalid|UIDs? (are )?stale/i,
+  staleUid: STALE,
   timeout: /Timeout \d+ms exceeded|timed out/i,
   emptyDialogError: /Failed to (accept|dismiss) dialog: ?$/m,
 };
@@ -153,7 +155,7 @@ export function rowToolStats(events, { server = SURFACE_SERVER } = {}) {
         if (prev && SNAPSHOT_TOOL.test(prev.tool)) friction.eval_straight_after_cut++;
         if (recoversCut(c.text, lastCut)) friction.eval_recovers_cut++;
       }
-      if (/setTimeout\s*\(\s*\w+\s*,\s*\d{3,}/.test(c.detail)) friction.sleeps++;
+      friction.sleeps += scriptSleeps(c.detail);
     }
     if (RESTART_TOOL.test(c.tool)) friction.restarts++;
     if (WAIT_TOOL.test(c.tool)) friction.sleeps++;

@@ -6,14 +6,14 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { createCallRecorder } from './mcp-tap.mjs';
+import { createCallRecorder, withCodeMode } from './mcp-tap.mjs';
 import { rowEvents, SURFACE_SERVER } from './scripts/events.mjs';
 import { foreignBrowser, tapWindows } from './scripts/foreign-browser.mjs';
 import { browserBuilds, buildName, countOf, drawKey, runFlags } from './scripts/identity.mjs';
 import { readStateFile } from './scripts/state-file.mjs';
 import { runToolStats, sumToolStats } from './scripts/tool-stats.mjs';
 import { classOf, triageLines, triageRun } from './scripts/triage.mjs';
-import { gradedValues } from './surface-reach.mjs';
+import { createReachRecorder, gradedValues } from './surface-reach.mjs';
 
 const SUMMED = [
   'turns', 'input_tokens', 'cache_creation', 'cache_read', 'output_tokens', 'cost_usd',
@@ -157,23 +157,32 @@ const SERVING_NOTE = {
 const na = (x) => (x == null ? 'n/a' : x);
 const short = (h) => (h ? String(h).slice(0, 12) : '?');
 
-// Counters newer than the recorder that wrote a row. With the run directory at
-// hand, a row that predates them is read back from its transcript, state file
-// and tap log instead, so a re-rendered report of an older run shows them too.
-const NEW_FRICTION = ['tool_search', 'tool_search_turns', 'tool_search_output_tokens', 'persisted', 'persisted_other', 'unknown_tools'];
+// Counters newer than the recorder that wrote a row, each under the key whose
+// absence marks a row that predates it. With the run directory at hand, a row
+// that predates them is read back from its transcript, state file and tap log
+// instead, so a re-rendered report of an older run shows them too. `sleeps`
+// is re-read with script_sleeps, which it has counted since 2026-09-20.
+const NEW_FRICTION = {
+  tool_search: ['tool_search', 'tool_search_turns', 'tool_search_output_tokens', 'persisted', 'persisted_other', 'unknown_tools'],
+  script_sleeps: ['script_sleeps', 'sleeps'],
+};
 const DERIVED = new WeakMap();
 function derivedOf(row, runDir) {
+  if (!runDir) return {};
   if (DERIVED.has(row)) return DERIVED.get(row);
   const out = {};
   const wantsState = row.foreign_browser === undefined || (row.ledger?.non_browser && !row.ledger.non_browser_by_status);
+  const stale = Object.keys(NEW_FRICTION).filter((marker) => row.friction?.[marker] == null);
   let shell = [];
-  if (runDir && (row.friction?.tool_search == null || wantsState)) {
+  if (runDir && (stale.length || wantsState)) {
     const events = rowEvents(runDir, row);
     if (events) {
       const recorder = createCallRecorder(SURFACE_SERVER);
       for (const e of events) recorder.observe(e);
       const summary = recorder.summary();
-      if (row.friction?.tool_search == null) out.friction = Object.fromEntries(NEW_FRICTION.map((k) => [k, summary.friction[k]]));
+      if (stale.length) {
+        out.friction = Object.fromEntries(stale.flatMap((marker) => NEW_FRICTION[marker]).map((k) => [k, summary.friction[k]]));
+      }
       shell = summary.shell_windows;
     }
   }
@@ -197,18 +206,69 @@ function derivedOf(row, runDir) {
   DERIVED.set(row, out);
   return out;
 }
-const frictionOf = (row, runDir) => ({ ...(row.friction ?? {}), ...(derivedOf(row, runDir).friction ?? {}) });
+
+// Actions that replied success and did not land, as the validator counted them
+// from what the server saw: a key=value pair of its detail whose key ends in
+// NoOps, noops or misses (pointer-drag's dragNoOps=2 against a
+// drag_by_uid_to_uid that replied "drag 1_80→1_40", scene-calibrate's misses=1
+// against "filled 3 fields"). A miss also counts an apply the agent typed wrong
+// values into, so the count bounds the no-ops from above. The tap cannot see
+// these: the reply was not an error. Null when the validator counts none.
+export function noopsOf(row) {
+  const text = String(row.detail ?? '').replace(/\bfields=[\[{][\s\S]*$/, '');
+  const found = [...text.matchAll(/\b(\w*(?:NoOps|noops|misses))=(\d+)\b/g)];
+  if (!found.length) return null;
+  return { count: found.reduce((n, [, , v]) => n + Number(v), 0), keys: found.map(([, k, v]) => `${k}=${v}`) };
+}
+
+// A row's friction as every reader should count it: the row's own counters,
+// the counters newer than its recorder read back from its transcript, a codex
+// code-mode row's exec cells folded in (mcp-tap.mjs withCodeMode), and the
+// validator's no-op count.
+export function frictionOf(row, runDir = null) {
+  const own = { ...(row.friction ?? {}), ...(derivedOf(row, runDir).friction ?? {}) };
+  const noops = noopsOf(row);
+  return { ...withCodeMode(own, row.code_mode), ...(noops ? { noops: noops.count } : {}) };
+}
 const foreignOf = (row, runDir) => (row.foreign_browser !== undefined ? row.foreign_browser : derivedOf(row, runDir).foreign_browser ?? null);
 const shellStatusOf = (row, runDir) => row.ledger?.non_browser_by_status ?? derivedOf(row, runDir).non_browser_by_status ?? null;
 const statusList = (by) => Object.entries(by ?? {}).map(([s, n]) => `${s}: ${n}`).join(', ');
 const round = (x) => (x == null ? null : Math.round(x));
 
+// A row's surface record as the recorder that wrote it saw the replies. With
+// the run directory, each value it recorded as truncated is re-read from the
+// transcript with today's reachOf, which decodes a script result's JSON
+// escapes: search-decoy's address read as cut on a row whose script reply had
+// carried it whole, with its newlines escaped.
+const SURFACE = new WeakMap();
+function surfaceOf(row, runDir) {
+  if (!runDir || !row.surface?.truncated?.length) return row.surface ?? null;
+  if (SURFACE.has(row)) return SURFACE.get(row);
+  let out = row.surface;
+  const events = rowEvents(runDir, row);
+  if (events) {
+    // A row records each value cut to 80 characters, so the graded value one
+    // opens is tested whole.
+    const graded = gradedValues(row.fields ?? {});
+    const whole = row.surface.truncated.map((v) => graded.find((g) => g.slice(0, 80) === v) ?? v);
+    const rec = createReachRecorder();
+    for (const e of events) rec.observe(e);
+    const states = rec.reach(whole);
+    const { truncated: recorded, ...rest } = row.surface;
+    const truncated = recorded.filter((v, i) => states[whole[i]] === 'truncated');
+    out = { ...rest, ...(truncated.length ? { truncated } : {}) };
+  }
+  SURFACE.set(row, out);
+  return out;
+}
+
 // Graded values a passing row claimed although the surface cut them before
 // they reached the agent: it completed each one without seeing it.
-function guessedValues(row) {
-  if (!row.success || !row.surface?.truncated?.length) return [];
+function guessedValues(row, runDir) {
+  const truncated = surfaceOf(row, runDir)?.truncated ?? [];
+  if (!row.success || !truncated.length) return [];
   const graded = new Set(gradedValues(row.fields ?? {}).map((v) => v.slice(0, 80)));
-  return row.surface.truncated.filter((v) => graded.has(v));
+  return truncated.filter((v) => graded.has(v));
 }
 
 // Whether the Claude CLI deferred MCP tools behind ToolSearch in this run: the
@@ -403,7 +463,10 @@ function sumRowTools(rows, runDir = null) {
     tools,
     snapshot: { calls: sum('snapshot', 'calls'), chars: sum('snapshot', 'chars'), truncated: sum('snapshot', 'truncated') },
     friction: Object.fromEntries(
-      ['act_then_snap', 'actions', 'eval_calls', 'stale_uid', 'restarts', 'sleeps', 'persisted', 'persisted_other', 'unknown_tools'].map(
+      [
+        'act_then_snap', 'actions', 'eval_calls', 'stale_uid', 'restarts', 'sleeps', 'persisted', 'persisted_other',
+        'unknown_tools', 'tool_search', 'harness_truncated', 'noops',
+      ].map(
         (k) => [k, sumFriction(k)]
       )
     ),
@@ -450,6 +513,9 @@ function toolLines(results, runDir) {
       fr.sleeps != null && `waits ${fr.sleeps}`,
       fr.persisted != null && `results spilled to <persisted-output> ${fr.persisted}${fr.persisted_other ? ` (+${fr.persisted_other} shell or file-tool)` : ''}`,
       fr.unknown_tools ? `calls to tools the server lacks ${fr.unknown_tools}` : null,
+      fr.tool_search ? `tool discovery calls ${fr.tool_search}` : null,
+      fr.harness_truncated ? `outputs the harness cut before the model read them ${fr.harness_truncated}` : null,
+      fr.noops ? `no-ops and misses the validators counted ${fr.noops}` : null,
       !tapped && t.no_surface_rows != null && `rows with no surface call ${t.no_surface_rows}`,
       !tapped && t.foreign_rows != null && `rows calling another MCP server ${t.foreign_rows}`,
     ].filter(Boolean);
@@ -696,7 +762,8 @@ function envLines(meta, results = []) {
 
 // `runDir`, when given, lets the report read the run's transcripts for what
 // older rows do not carry: per-tool telemetry and the evidence triage needs.
-export function markdownReport({ meta, results, totals, runDir = null }) {
+// `tasks` (identity.mjs taskInfo) lets triage test a task's named truth.
+export function markdownReport({ meta, results, totals, runDir = null, tasks = null }) {
   const models = Object.entries(meta.models ?? {})
     .map(([b, m]) => `${b}: ${m}`)
     .join(', ');
@@ -705,7 +772,7 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
   const arms = new Set(results.map((r) => r.condition)).size;
   // Triaged here even when a row carries its own class: only the whole run
   // shows whether every other arm failed the same task alike.
-  const triages = triageRun(results, { runDir });
+  const triages = triageRun(results, { runDir, tasks });
   const lines = [
     `# zoo-sites eval report`,
     '',
@@ -814,7 +881,7 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
   // not about the agent, and the pass count alone conflates them. Truncation is
   // reported because it is provable: the value's opening reached the agent with
   // the truncator's ellipsis where the rest should have been.
-  const cutRows = results.filter((r) => r.surface?.truncated?.length);
+  const cutRows = results.filter((r) => surfaceOf(r, runDir)?.truncated?.length);
   if (cutRows.length) {
     const lost = cutRows.filter((r) => !r.success);
     lines.push(
@@ -824,12 +891,12 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
         `tool surface, not the agent; see the per-task notes.`
     );
     for (const r of lost) {
-      lines.push(`  - ${r.condition}/${r.rep ? `${r.task} (r${r.rep})` : r.task}: ${JSON.stringify(r.surface.truncated)}`);
+      lines.push(`  - ${r.condition}/${r.rep ? `${r.task} (r${r.rep})` : r.task}: ${JSON.stringify(surfaceOf(r, runDir).truncated)}`);
     }
   }
   // A pass on a value the surface cut is a pass the agent reached by completing
   // the value itself, which says nothing good about the surface.
-  const guessed = results.map((r) => [r, guessedValues(r)]).filter(([, g]) => g.length);
+  const guessed = results.map((r) => [r, guessedValues(r, runDir)]).filter(([, g]) => g.length);
   if (guessed.length) {
     lines.push(
       '',
@@ -898,8 +965,9 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
         : (r.detail ?? r.error ?? '');
     // A failure whose value the surface truncated is not the same result as a
     // failure the agent owns, so say which in the row rather than only in JSON.
-    const cut = r.surface?.truncated?.length
-      ? `SURFACE TRUNCATED ${JSON.stringify(r.surface.truncated)} — `
+    const surface = surfaceOf(r, runDir);
+    const cut = surface?.truncated?.length
+      ? `SURFACE TRUNCATED ${JSON.stringify(surface.truncated)} — `
       : '';
     const saved = r.downloads?.length
       ? ` — downloaded ${r.downloads
@@ -907,12 +975,15 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
           .join(', ')}`
       : '';
     const cls = r.success ? null : classOf(triages[i]);
-    const guess = guessedValues(r).length ? 'GUESSED (passed on a value the surface cut) — ' : '';
+    const guess = guessedValues(r, runDir).length ? 'GUESSED (passed on a value the surface cut) — ' : '';
     const lead = (r.invalid ? `INVALID (${r.invalid}) — ` : '') + guess + (cls ? `[${cls}] ` : '');
     // What else reached the fixture or the model outside the surface's own
     // replies: shell requests, another browser, a tap that disagrees with the
     // stream, ToolSearch and spilled results.
     const fr = frictionOf(r, runDir);
+    // Every codex code-mode row opens with a catalog exec, which is no
+    // ToolSearch and would flag every row.
+    const searched = (fr.tool_search ?? 0) - (r.code_mode?.discovery_execs ?? 0);
     const foreign = foreignOf(r, runDir);
     const shell = r.ledger?.non_browser
       ? `SHELL ${r.ledger.non_browser} request(s) to the fixtures${shellStatusOf(r, runDir) ? ` (${statusList(shellStatusOf(r, runDir))})` : ''}`
@@ -922,8 +993,10 @@ export function markdownReport({ meta, results, totals, runDir = null }) {
       foreign?.sessions ? `FOREIGN BROWSER ${foreign.sessions} session(s), ${foreign.requests} request(s) (${foreign.method})` : '',
       r.tap_mismatch ? `TAP MISMATCH tap ${r.tap_mismatch.tap} / stream ${r.tap_mismatch.stream}` : '',
       fr.unknown_tools ? `${fr.unknown_tools} call(s) to a tool the server lacks` : '',
-      fr.tool_search ? `ToolSearch ${fr.tool_search} call(s), ${fr.tool_search_turns} ToolSearch-only turn(s)` : '',
+      searched ? `ToolSearch ${searched} call(s), ${fr.tool_search_turns} ToolSearch-only turn(s)` : '',
       fr.persisted || fr.persisted_other ? `SPILLED ${(fr.persisted ?? 0) + (fr.persisted_other ?? 0)} result(s) to <persisted-output>` : '',
+      fr.harness_truncated ? `HARNESS TRUNCATED ${fr.harness_truncated} tool output(s) before the model read them` : '',
+      noopsOf(r)?.count ? `NO-OPS OR MISSES ${noopsOf(r).keys.join(', ')}` : '',
     ].filter(Boolean);
     const body =
       (r.extraction_failed ? `${cut}EXTRACTION FAILED (${r.extraction_failed}) — ${noteBase}` : cut + noteBase) + saved;

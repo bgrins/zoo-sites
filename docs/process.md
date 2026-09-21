@@ -131,7 +131,10 @@ and a golden-path driver.
 3. **Task entry** in the family module under `eval/tasks/web/` (or
    `eval/tasks/devtools.mjs`): `{ id, ask, answerSchema, validate }`, with the answer
    key in `eval/answers.mjs`. A pure-extraction task adds `truth: { kind: 'static',
-   reason }` (see "Fixing a defect", rule 1). `eval/tasks/web.mjs` concatenates the
+   reason }` (see "Fixing a defect", rule 1). A task whose graded value is not
+   code-shaped (a bare number, a word) adds `values: (state) => [...]` to its
+   `truth`, naming each attempt's graded values for surface reach and triage.
+   `eval/tasks/web.mjs` concatenates the
    families, so it needs no edit unless the task starts a new one. Build URLs from the `origins.<key>`
    templates. A new origin is a `manifest.mjs` entry with its `dir` under `pages/`,
    appended at the end, because its port is 8100 plus its index and the_zoo publishes
@@ -248,7 +251,12 @@ and only a late adversarial pass catches it.
    cannot hide behind one. That second check sees only code-shaped values
    (`mintedValues` in `eval/surface-reach.mjs`), so never declare a task static to
    silence a mutant when the server mints its answer: there a surviving mutant is a
-   validator hole.
+   validator hole. Either kind may add `values: (state) => [...]`, the graded values
+   of one attempt, which surface reach and triage then test in place of the
+   code-shaped ones (`truthValues` in `eval/surface-reach.mjs`; `mid-flight-rate` is
+   the example). The gate checks that `values` is a function and returns an array for
+   the golden state. Name only values the validator grades: triage charges the
+   surface when none of them reached a reply and the other surface's did.
 2. **Serialise edits to `eval/run.mjs`, `eval/answers.mjs` and `server.mjs`.** Parallel agents
    cannot speed up a single-writer resource; they can only add a spec-then-integrate
    indirection, and that indirection is its own defect source — wrong line numbers,

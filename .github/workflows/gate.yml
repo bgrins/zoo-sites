@@ -78,6 +78,7 @@ jobs:
           run=$(sed -n 's/^run dir: //p' "$RUNNER_TEMP/sweep.log")
           node eval/run.mjs --report-from "$run" --ab firefox-devtools-mcp@a,firefox-devtools-mcp@b
           node eval/scripts/tool-stats.mjs "$run" --json "$RUNNER_TEMP/tool-stats.json"
+          node eval/surface-reach.mjs "$run" > "$RUNNER_TEMP/reach.txt"
           # One row failed in a copy of the run is what --rerun-failed has to find.
           prior="$RUNNER_TEMP/prior"
           mkdir -p "$prior"
@@ -130,7 +131,7 @@ jobs:
           read -r down_exit down < <(stubbed extractor-down roster-diff)
           node -e '
             const fs = require("fs");
-            const [run, rerun, prior, toolStats, wrong, wrongExit, extracted, extractedExit, misquoted, misquotedExit, down, downExit] = process.argv.slice(1);
+            const [run, rerun, prior, toolStats, wrong, wrongExit, extracted, extractedExit, misquoted, misquotedExit, down, downExit, reachOut] = process.argv.slice(1);
             const problems = [];
             const expect = (ok, what) => ok || problems.push(what);
             const read = (dir) => JSON.parse(fs.readFileSync(`${dir}/results.json`, "utf8"));
@@ -152,10 +153,17 @@ jobs:
               expect(s?.surface_calls === r.surface_calls, `${at}: transcript holds ${s?.surface_calls} of ${r.surface_calls} calls`);
               // The streamed tool results are what surface reach and triage read.
               expect((r.snapshot?.chars ?? 0) === (r.tools?.take_snapshot?.chars ?? 0), `${at}: transcript snapshots ${r.snapshot?.chars} chars, the tap ${r.tools?.take_snapshot?.chars}`);
-              // fee-schedule answers with a total its page never shows, so reach has
-              // to find that one value absent and every other task none.
+              // Every task here shows its minted truth, and the fee-schedule total,
+              // which its page never prints, is arithmetic the agent did rather
+              // than a value the surface withheld, so no row lists one absent.
               const absent = r.surface?.absent ?? [];
-              expect(r.task === "fee-schedule" ? absent.length > 0 : !absent.length, `${at}: surface reach finds [${absent}] absent`);
+              expect(!absent.length, `${at}: surface reach finds [${absent}] absent`);
+            }
+            // surface-reach.mjs, re-reading the transcripts, has to tell that total
+            // apart as derived.
+            const reach = fs.readFileSync(reachOut, "utf8");
+            for (const arm of ["a", "b"]) {
+              expect(new RegExp(`derived +PASS firefox-devtools-mcp@${arm}/fee-schedule +"209"`).test(reach), `surface-reach: the fee-schedule total on arm ${arm} is not read as derived`);
             }
             // A driver goto routed to the single-origin listener still passes, so only
             // the URL shows whether helpers.urlFor mapped it onto the owning origin.
@@ -212,4 +220,4 @@ jobs:
             }
             console.log(`scripted sweep: ${rows.length} rows, report, A/B, transcripts, surface reach, origin routing, rerun, the wrong-fields control and the extractor path as expected`);
           ' "$run" "$rerun" "$prior" "$RUNNER_TEMP/tool-stats.json" "$wrong" "$wrong_exit" \
-            "$extracted" "$extracted_exit" "$misquoted" "$misquoted_exit" "$down" "$down_exit"
+            "$extracted" "$extracted_exit" "$misquoted" "$misquoted_exit" "$down" "$down_exit" "$RUNNER_TEMP/reach.txt"

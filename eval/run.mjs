@@ -83,7 +83,8 @@ import { transcriptName } from './run-files.mjs';
 import {
   foreignBrowser, OVERLAP_MS, SHELL_AFTER_MS, SURFACE_AFTER_MS, SURFACE_BEFORE_MS, SURFACE_SLACK_MS, tapWindows,
 } from './scripts/foreign-browser.mjs';
-import { createReachRecorder, gradedValues, mintedValues } from './surface-reach.mjs';
+import { taskInfo } from './scripts/identity.mjs';
+import { createReachRecorder, gradedValues, truthValues } from './surface-reach.mjs';
 import { detectScreen, windowGrid } from './window-grid.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -1255,11 +1256,11 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   // transcripts are being written, because the answer belongs in the result row.
   const reach = createReachRecorder();
   const calls = createCallRecorder(SURFACE_SERVER);
-  const named = new Set();
+  const namedFiles = new Set();
   spec.onMessage = (message) => {
     reach.observe(message);
     calls.observe(message, Date.now());
-    for (const path of filesNamedIn(message, attemptDir)) named.add(path);
+    for (const path of filesNamedIn(message, attemptDir)) namedFiles.add(path);
     if (transcriptStream) transcriptStream.write(JSON.stringify(message) + '\n');
   };
   // Runaway guards. There is deliberately no turn limit: a "turn" means
@@ -1329,7 +1330,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
       telemetry = { telemetry_error: String(error?.message ?? error) };
     }
     // Hashing a large download stays out of the attempt's wall time.
-    downloads = await attemptDownloads(downloadsDir, named);
+    downloads = await attemptDownloads(downloadsDir, namedFiles);
     provenance = {
       prompt: spec.prompt,
       browser,
@@ -1437,12 +1438,14 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
   }
   // What the surface actually delivered. Two sources, because neither alone is
   // enough: the values the agent reported say whether its answer came off the
-  // page, and the codes the server minted say whether the truth was ever shown
-  // at all. Only the shortfalls are recorded - a row listing everything the
-  // agent could see would dwarf the row itself.
-  const truth = [...gradedValues(fields ?? {}), ...mintedValues(ctx.pages?.state ?? {})];
+  // page, and the truth (the values the task names, else the codes the server
+  // minted) says whether it was ever shown at all. Only the shortfalls are
+  // recorded - a row listing everything the agent could see would dwarf the
+  // row itself - and an answer's own arithmetic and prose are not shortfalls.
+  const named = truthValues(ctx.pages?.state ?? {}, task);
+  const truth = [...gradedValues(fields ?? {}), ...named];
   const surface = (() => {
-    const states = reach.reach(truth);
+    const states = reach.reach(truth, { truth: named });
     const truncated = Object.keys(states).filter((v) => states[v] === 'truncated');
     const absent = Object.keys(states).filter((v) => states[v] === 'absent');
     if (!truncated.length && !absent.length) return null;
@@ -1453,8 +1456,12 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     };
   })();
   const tenth = (ms) => (ms == null ? null : Math.round(ms / 100) / 10);
-  // Triage charges a failure to the tool only through these (triage.mjs).
-  const blamed = toolErrors.length ? blameToolErrors(toolErrors, truth) : [];
+  // Triage charges a failure to the tool only through these (triage.mjs), so a
+  // passing row records none: reused-row's speculative accept_dialog, sent after
+  // a click that opened no confirm(), read as an unrecovered tool error on a
+  // row that passed. Triage re-reads a row regraded to a failure from its
+  // transcript.
+  const blamed = toolErrors.length && !verdict.pass ? blameToolErrors(toolErrors, truth) : null;
   const { invalid, ...measured } = telemetry;
   const invalidWhy =
     invalid ?? (foreign?.sessions ? 'foreign-browser' : r.codex_isolation ? 'codex-isolation' : null);
@@ -1473,7 +1480,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     ...(surface ? { surface } : {}),
     ...(invalidWhy ? { invalid: invalidWhy } : {}),
     ...measured,
-    ...(toolErrors.length ? { tool_errors: { errors: toolErrors.length, blamed } } : {}),
+    ...(toolErrors.length ? { tool_errors: { errors: toolErrors.length, ...(blamed ? { blamed } : {}) } } : {}),
     ...(foreign ? { foreign_browser: foreign } : {}),
     ...provenance,
     started_at: startedAt.toISOString(),
@@ -1683,12 +1690,16 @@ function readRun(dir) {
   return { meta: { ...meta, interrupted: meta.interrupted ?? 'killed' }, results };
 }
 
+// The task definitions the report's triage reads a task's named truth from
+// (surface-reach.mjs truthValues): this run's, or every task's for a re-render.
+let REPORT_TASKS = null;
+
 function writeRun(runDir, meta, results) {
   const totals = totalsByCondition(results);
   const jsonPath = join(runDir, 'results.json');
   const mdPath = join(runDir, 'report.md');
   writeFileSync(jsonPath, JSON.stringify({ meta, results, totals }, null, 2));
-  writeFileSync(mdPath, markdownReport({ meta, results, totals, runDir }));
+  writeFileSync(mdPath, markdownReport({ meta, results, totals, runDir, tasks: REPORT_TASKS }));
   return { totals, jsonPath, mdPath };
 }
 
@@ -2203,6 +2214,7 @@ async function writeAbReport(dir, prior) {
     meta: prior.meta,
     // Rows older than the telemetry fields are read from their transcripts.
     runDir: dir,
+    taskInfo: REPORT_TASKS,
   });
   const name = `ab--${a}--${b}.md`.replaceAll('/', '--');
   writeFileSync(join(dir, name), markdown);
@@ -2216,7 +2228,8 @@ async function main() {
     if (AB) checkAbConditions(dir, prior);
     const totals = totalsByCondition(prior.results);
     const path = join(dir, 'report.md');
-    writeFileSync(path, markdownReport({ ...prior, totals, runDir: dir }));
+    REPORT_TASKS = await taskInfo();
+    writeFileSync(path, markdownReport({ ...prior, totals, runDir: dir, tasks: REPORT_TASKS }));
     console.log(`rewrote ${path} (${prior.results.length} rows)`);
     if (AB) await writeAbReport(dir, prior);
     return;
@@ -2225,6 +2238,7 @@ async function main() {
   if (!selected.length) {
     throw new Error(`no tasks selected (suite=${SUITE}, task=${ONLY_TASK})`);
   }
+  REPORT_TASKS = new Map(selected.map((t) => [t.id, t]));
   for (const name of BACKEND_NAMES) {
     const unsupported = selected.filter((t) => BACKENDS[name].supportsTask?.(t) === false).map((t) => t.id);
     if (unsupported.length) usage(`backend ${name} cannot run ${unsupported.join(', ')}; pick others with --suite or --task`);

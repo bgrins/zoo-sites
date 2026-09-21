@@ -293,6 +293,24 @@ function assertFixturesResolve() {
 
 assertFixturesResolve();
 
+// Surface reach reads what a tool returned, and a script's result arrives
+// JSON-encoded, so a multi-line value that reached the agent only through
+// evaluate_script (search-decoy's mailing address) has to read as seen, not as
+// the cut copy a snapshot holds of it.
+function assertReachDecodesScripts() {
+  const value = 'Declarations Unit\nPO Box 4410, Statehouse Plaza Station';
+  const replies =
+    'uid=3_4 p text="Declarations Unit PO Box 44..."\n' +
+    'Script ran on page and returned:\n```json\n{\n  "address": "Declarations Unit\\n\\nPO Box 4410, Statehouse Plaza Station"\n}\n```';
+  const got = reachOf([value], replies)[value];
+  if (got !== 'seen') {
+    console.error(`surface-reach: a multi-line value a script returned reads as ${got}, not seen`);
+    process.exit(1);
+  }
+}
+
+assertReachDecodesScripts();
+
 // One isolated worker env: pages server + one firefox-devtools-mcp server
 // over stdio. The server is a child process (see mcp-stdio.mjs), so a worker
 // that dies takes its Firefox with it, and FIREFOX_DEVTOOLS_MCP points the
@@ -540,14 +558,29 @@ const MUTANTS = [
 // { kind: 'static', reason } for a pure-extraction task whose answer is
 // published page content (rule 1 in docs/authoring-fixtures.md). A static task
 // is exempt from the mutants, and the gate checks the exemption still holds.
-function truthOf(task) {
+// Either may add `values(state)`, the graded values of one attempt, which
+// surface reach and triage test in place of the code-shaped ones
+// (surface-reach.mjs truthValues); it must return an array for the golden state.
+function truthOf(task, state = null) {
   const t = task.truth;
   if (t === undefined) return { kind: 'minted' };
   const reasoned = typeof t?.reason === 'string' && t.reason.trim();
+  if (t?.values !== undefined) {
+    if (typeof t.values !== 'function') return { invalid: `truth.values must be a function of the state, got ${typeof t.values}` };
+    if (state) {
+      let named;
+      try {
+        named = t.values(state);
+      } catch (error) {
+        return { invalid: `truth.values threw on the golden state: ${error?.message ?? error}` };
+      }
+      if (!Array.isArray(named)) return { invalid: `truth.values must return an array, got ${JSON.stringify(named)}` };
+    }
+  }
   if (t?.kind === 'minted' && (t.reason === undefined || reasoned)) return t;
   if (t?.kind === 'static' && reasoned) return t;
   return {
-    invalid: `truth must be { kind: 'minted' | 'static', reason } (reason required for static), got ${JSON.stringify(t)}`,
+    invalid: `truth must be { kind: 'minted' | 'static', reason, values? } (reason required for static), got ${JSON.stringify(t)}`,
   };
 }
 
@@ -1030,7 +1063,7 @@ async function runOne(worker, id) {
     if (!wrongFields.length) {
       schemaProblems.push('schema task has no wrongFields regression assertions');
     }
-    const truth = truthOf(task);
+    const truth = truthOf(task, pages.state);
     if (truth.invalid) schemaProblems.push(truth.invalid);
     if (schemaProblems.length) {
       fail++;

@@ -19,7 +19,7 @@
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { envMismatches } from './report.mjs';
+import { envMismatches, frictionOf } from './report.mjs';
 import { browserBuilds, buildKey, countOf, drawKey, findBuild, runFlags } from './scripts/identity.mjs';
 import { classOf, FAILURE_CLASSES, TOOL_CLASSES, triageRun } from './scripts/triage.mjs';
 import { runToolStats, sumToolStats } from './scripts/tool-stats.mjs';
@@ -331,7 +331,7 @@ export function abReport(input, options = {}) {
     for (const { row, stats } of runToolStats(runDir, [...rowsA, ...rowsB])) derived.set(row, stats);
   }
   const surfaceCallsOf = (r) => (typeof r.surface_calls === 'number' ? r.surface_calls : derived.get(r)?.surface_calls ?? null);
-  const triages = triageRun(results, { runDir });
+  const triages = triageRun(results, { runDir, tasks: taskInfo });
   const triageOf = new Map(results.map((r, i) => [r, triages[i]]));
 
   // --- validity ---
@@ -581,10 +581,13 @@ export function abReport(input, options = {}) {
           `${col(ta, name, (t) => fmt(median(t.ms), 0))} | ${col(tb, name, (t) => fmt(median(t.ms), 0))} |`
       );
     }
+    // Friction as report.mjs counts it: a row's counters, those newer than its
+    // recorder re-read from its transcript, a codex code-mode row's exec cells
+    // and the validator's no-op count.
     const mech = (side, rows) => {
       const valid = rows.filter((r) => pairedTasks.has(r.task) && !exclusion(r));
       const fr = (k) => {
-        if (valid.every((r) => r.friction)) return valid.reduce((n, r) => n + (r.friction[k] ?? 0), 0);
+        if (valid.every((r) => r.friction)) return valid.reduce((n, r) => n + (frictionOf(r, runDir)[k] ?? 0), 0);
         return side.stats?.friction?.[k] ?? null;
       };
       const sn = (k) => {
@@ -601,6 +604,14 @@ export function abReport(input, options = {}) {
         stale: per(fr('stale_uid')),
         restarts: per(fr('restarts')),
         sleeps: per(fr('sleeps')),
+        discovery: per(fr('tool_search')),
+        // Only a codex code-mode row records the outputs codex cut; with none,
+        // the count is unknown rather than zero.
+        harnessCut: valid.some((r) => r.code_mode) ? per(fr('harness_truncated')) : 'n/a',
+        noops: per(fr('noops')),
+        // A codex row written before row.code_mode existed hides the waits and
+        // the tool discovery its exec cells ran.
+        blind: valid.filter((r) => r.backend === 'codex' && !r.code_mode).length,
       };
     };
     const ma = mech(ta, rowsA);
@@ -617,7 +628,18 @@ export function abReport(input, options = {}) {
       `| stale-uid replies | ${ma.stale} | ${mb.stale} |`,
       `| browser restarts | ${ma.restarts} | ${mb.restarts} |`,
       `| waits and sleeps | ${ma.sleeps} | ${mb.sleeps} |`,
+      `| tool discovery calls | ${ma.discovery} | ${mb.discovery} |`,
+      `| tool outputs the harness cut | ${ma.harnessCut} | ${mb.harnessCut} |`,
+      `| no-ops and misses the validators counted | ${ma.noops} | ${mb.noops} |`,
     );
+    if (ma.blind || mb.blind) {
+      lines.push(
+        '',
+        `Waits and tool discovery leave out what codex exec cells ran on ${ma.blind} A and ${mb.blind} B rows, ` +
+          'which predate row.code_mode: a wait an agent slept in a cell, between tool calls, is in no MCP event. ' +
+          'The outputs the harness cut are not counted on those rows either.'
+      );
+    }
   } else {
     lines.push('', '## Per tool', '', 'Rows carry no `tools` telemetry and no run directory was given to derive it from transcripts.');
   }

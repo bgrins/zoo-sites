@@ -325,10 +325,10 @@ if (invokedDirectly) {
   const conditions = arms ?? [...new Set(results.map((r) => r.condition))];
   const { blinded, labels } = blindLabels(conditions, seed, run.meta);
   const scrub = makeScrub({ blinded, labels, builds: run.meta?.builds ?? [] });
-  // The same triage report.md prints: peers classified on their own first.
-  const triages = triageRun(results, { runDir: dir });
-  const triageOf = new Map(results.map((r, i) => [r, triages[i]]));
   const { PLACEHOLDER_BASE, taskInfo } = await import('./identity.mjs');
+  // The same triage report.md prints: peers classified on their own first.
+  const triages = triageRun(results, { runDir: dir, tasks: await taskInfo() });
+  const triageOf = new Map(results.map((r, i) => [r, triages[i]]));
   // The task text is rebuilt against the loopback origin the agent was sent to,
   // so its URLs match the ones in the transcript.
   const infoByBase = new Map();

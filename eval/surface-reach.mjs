@@ -102,7 +102,36 @@ function looksTruncated(needle, hay) {
 // against a page that ended the sentence differently.
 const unwrap = (s) => s.replace(/^["'“”‘’(\[]+/, '').replace(/["'“”‘’)\].,;:!?]+$/, '').trim();
 
+// A script's result reaches the agent JSON-encoded: evaluate_script fences it
+// as ```json and playwright-mcp's browser_evaluate prints it under "### Result".
+// A returned "Declarations Unit\n\nPO Box 4410" therefore arrives with literal
+// backslash escapes, matches nothing, and its cut copy in a snapshot made
+// search-decoy read as truncated. Every string literal that holds an escape is
+// decoded, and decoded again for a script that returned JSON.stringify of its
+// result, as a second view of the text. A literal never spans a real newline,
+// so a stray quote misaligns one line at most.
+const LITERAL = /"(?:[^"\\\n]|\\.)*"/g;
+export function decodedView(text) {
+  const out = [];
+  let layer = String(text);
+  for (let depth = 0; depth < 2; depth++) {
+    const decoded = [];
+    for (const [literal] of layer.matchAll(LITERAL)) {
+      if (!literal.includes('\\')) continue;
+      try {
+        decoded.push(JSON.parse(literal));
+      } catch {}
+    }
+    if (!decoded.length) break;
+    layer = decoded.join('\n');
+    out.push(layer);
+  }
+  return out.join('\n');
+}
+
 export function reachOf(values, haystack) {
+  const decoded = decodedView(haystack);
+  if (decoded) haystack = `${haystack}\n${decoded}`;
   const hay = norm(haystack);
   const hayFlat = norm(degroup(haystack));
   const out = {};
@@ -147,13 +176,30 @@ export function gradedValues(fields) {
 // server issued ever shown to the agent", which the agent's own answer cannot.
 // The nonce is skipped - every page carries it, and nothing grades it.
 const CODE = /^[A-Za-z]{2,6}-[A-Za-z0-9][A-Za-z0-9-]{2,14}$/;
+// Session state also holds kebab-case slugs and enums of the code's shape that
+// no page need render: same-origin (a Sec-Fetch-Site), login-after-reset (a
+// stage), harbor-east and harlow-dunmere (option values), on-file (a status),
+// rr-104 and zones-1-2 (fixture record ids). A code in capitals is kept, as the
+// shape alone always kept it: a minted LB-B151A0, a VLT-FNYE that promo.mjs
+// draws from a 32-letter alphabet and so can hold no digit, and a static SKU
+// such as VAM-PRO, which its page renders. A lowercase one is kept when its body
+// is six or more hex characters, the randomBytes(3) of console.mjs's dpl- and
+// roles.mjs's alp- ids, whatever letters or digits a draw came out as
+// (dpl-1c579d, dpl-953568), or holds a digit among five or more letters and
+// digits.
+function codeShaped(s) {
+  if (!CODE.test(s)) return false;
+  if (s === s.toUpperCase()) return true;
+  const body = s.slice(s.indexOf('-') + 1);
+  return /^[0-9a-f]{6,}$/i.test(body) || (/\d/.test(body) && body.replace(/[^a-z0-9]/gi, '').length >= 5);
+}
 export function mintedValues(state, limit = 40) {
   const found = new Set();
   const seenObjects = new WeakSet();
   const walk = (node, key) => {
     if (found.size >= limit || node == null) return;
     if (typeof node === 'string') {
-      if (key !== 'nonce' && CODE.test(node)) found.add(node);
+      if (key !== 'nonce' && codeShaped(node)) found.add(node);
       return;
     }
     if (typeof node !== 'object') return;
@@ -168,6 +214,28 @@ export function mintedValues(state, limit = 40) {
   }
   return [...found];
 }
+
+// The graded truth of one attempt: the values its task names, when the task's
+// `truth.values(state)` names them, else the codes the server minted. A truth
+// that is not code-shaped, such as the rate mid-flight-rate mints into a
+// response body, is found only by the task naming it, and a task that names
+// its truth leaves out the codes it does not grade.
+export function truthValues(state, task = null) {
+  const named = task?.truth?.values;
+  if (typeof named !== 'function') return mintedValues(state);
+  try {
+    return [...new Set((named(state) ?? []).filter((v) => v != null && v !== '').map(String))];
+  } catch {
+    return mintedValues(state);
+  }
+}
+
+// Absent says nothing about the surface for a value the agent composed rather
+// than copied: a number it computed (live-auction's 1708 is 1400 x 1.22, which
+// no page prints) or prose in its own words (a summary, a recommendation, an
+// address re-joined with commas). A composed value the surface cut still reads
+// as truncated; one it never showed reads as derived or paraphrased.
+const composedAs = (v) => (numeric(v) ? 'derived' : norm(v).split(' ').length >= 4 ? 'paraphrased' : null);
 
 // Accumulates across a task's message stream so run.mjs can hand messages in as
 // they arrive rather than re-reading the transcript afterwards.
@@ -185,8 +253,16 @@ export function createReachRecorder() {
       chunks.push(text);
       chars += text.length;
     },
-    reach(values) {
-      return reachOf(values, chunks.join('\n'));
+    // Each value as seen, truncated or absent, or, for an absent value the
+    // agent composed, derived or paraphrased. Values in `truth` are the
+    // server's, never the agent's, so an absent one stays absent.
+    reach(values, { truth = [] } = {}) {
+      const states = reachOf(values, chunks.join('\n'));
+      const server = new Set(truth.map(String));
+      for (const [v, state] of Object.entries(states)) {
+        if (state === 'absent' && !server.has(v)) states[v] = composedAs(v) ?? state;
+      }
+      return states;
     },
   };
 }
@@ -207,20 +283,27 @@ if (invokedDirectly) {
   const { readFileSync, existsSync } = await import('node:fs');
   const { join } = await import('node:path');
   const { transcriptCandidates } = await import('./run-files.mjs');
+  const { readStateFile } = await import('./scripts/state-file.mjs');
+  const { taskInfo } = await import('./scripts/identity.mjs');
   const dir = process.argv[2];
   if (!dir) {
     console.error('usage: node eval/surface-reach.mjs <run-dir>');
     process.exit(1);
   }
   const res = JSON.parse(readFileSync(join(dir, 'results.json'), 'utf8'));
-  const tally = { seen: 0, truncated: 0, absent: 0 };
+  const tasks = await taskInfo();
+  const blank = () => ({ seen: 0, truncated: 0, absent: 0, derived: 0, paraphrased: 0 });
+  const tally = { answer: blank(), truth: blank() };
   const notable = [];
   for (const row of res.results) {
-    if (!row.fields) continue;
     const file = transcriptCandidates(row)
       .map((name) => join(dir, 'transcripts', name))
       .find((path) => existsSync(path));
     if (!file) continue;
+    let state = null;
+    try {
+      if (row.state_file) ({ state } = readStateFile(join(dir, row.state_file)));
+    } catch {}
     const rec = createReachRecorder();
     for (const line of readFileSync(file, 'utf8').split('\n')) {
       if (line.trim()) {
@@ -229,22 +312,37 @@ if (invokedDirectly) {
         } catch {}
       }
     }
-    const values = gradedValues(row.fields);
+    // What run.mjs records on a row now: the answer's values and the attempt's
+    // truth, with the truth marked as the server's.
+    const truth = state ? truthValues(state, tasks.get(row.task)?.task) : [];
+    const values = [...new Set([...gradedValues(row.fields ?? {}), ...truth])];
     if (!values.length) continue;
-    for (const [value, state] of Object.entries(rec.reach(values))) {
-      tally[state] += 1;
-      if (state !== 'seen') {
+    // A codex code-mode row whose outputs the harness cut: what the model read
+    // was less than the replies this reads, so "seen" there is an upper bound.
+    const cutByHarness = row.code_mode?.truncated_outputs ? ` [harness cut ${row.code_mode.truncated_outputs} output(s)]` : '';
+    for (const [value, reached] of Object.entries(rec.reach(values, { truth }))) {
+      tally[truth.includes(value) ? 'truth' : 'answer'][reached] += 1;
+      // A passing row's absent truth is mostly minted codes nothing grades
+      // (reused-row's deploy ids), so only a failing row lists its truth.
+      if (reached !== 'seen' && (!row.success || !truth.includes(value))) {
         notable.push(
-          `${state.padEnd(9)} ${row.success ? 'PASS' : 'FAIL'} ${row.condition}/${row.task}  ` +
-            JSON.stringify(value).slice(0, 60)
+          `${reached.padEnd(11)} ${row.success ? 'PASS' : 'FAIL'} ${row.condition}/${row.task}  ` +
+            `${truth.includes(value) ? 'truth ' : ''}${JSON.stringify(value).slice(0, 60)}${cutByHarness}`
         );
       }
     }
   }
-  console.log(`graded values checked: ${tally.seen + tally.truncated + tally.absent}`);
-  console.log(`  seen in tool output : ${tally.seen}`);
-  console.log(`  truncated by surface: ${tally.truncated}`);
-  console.log(`  absent (derived, or never shown): ${tally.absent}`);
+  const total = (counts) => Object.values(counts).reduce((a, b) => a + b, 0);
+  console.log(`graded values the answers claimed: ${total(tally.answer)}`);
+  console.log(`  seen in tool output : ${tally.answer.seen}`);
+  console.log(`  truncated by surface: ${tally.answer.truncated}`);
+  console.log(`  absent (never shown): ${tally.answer.absent}`);
+  console.log(`  derived by the agent (an absent number): ${tally.answer.derived}`);
+  console.log(`  paraphrased by the agent (absent prose): ${tally.answer.paraphrased}`);
+  console.log(`truth values of the attempts: ${total(tally.truth)}`);
+  console.log(`  seen in tool output : ${tally.truth.seen}`);
+  console.log(`  truncated by surface: ${tally.truth.truncated}`);
+  console.log(`  absent (never shown; listed below for failing rows only): ${tally.truth.absent}`);
   if (notable.length) {
     console.log('\nvalues the agent never received verbatim:');
     for (const n of notable) console.log(`  ${n}`);

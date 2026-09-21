@@ -417,11 +417,56 @@ changes a grade. `extraction` fires when a field is null although the answer hol
 value: the extractor's raw pair shows the quote gate nulled it, a passing arm's value
 appears in the answer, the answer holds a code the server minted (from the state file)
 or a value the validator's detail names, or the answer labels a value for the field
-(`Title: ...` for `postTitle`). `surface-reach`, the tool class, fires only when a
-graded or minted value reached the agent truncated. A minted value that no tool reply
-carried at all is listed as the contributing signal `minted-absent`, not as
-`surface-reach`, because an agent that never opened the page leaves the same trace as
-a surface that omitted the value.
+(`Title: ...` for `postTitle`). A value the prompt carries is no evidence, since any
+answer can repeat the ask; the prompt's URLs are left out of that test, and the value
+must stand there as a whole token. When the task and the attempt's state are at hand,
+triage re-runs the validator with the value written into the field, as `regrade.mjs`
+does, and names `extraction` only if the row then passes. When the validator cannot be
+re-run to the stored verdict, the rule stays silent if another `<name>Ok=false` check
+in the detail, about none of the null fields, fails the row on its own. `paraphrase`
+fires when the extractor reworded a value of three words or more that its quote gives
+verbatim, and fewer than half of the value's words are in the quote, because
+validators grade values. `surface-reach`, a tool class, fires only when a graded or
+truth value reached the agent truncated. A truth value that no tool reply carried at
+all is listed as the contributing signal `minted-absent`, because an agent that never
+opened the page leaves the same trace as a surface that omitted the value.
+`surface-absent`, the other tool class, fires instead for a task that names its truth,
+when the other surface under the same backend passed and received its own attempt's
+truth, no arm passed on this surface, and no reply of this row carried any of its
+truth. For the generic minted codes that comparison is listed as contributing, beside
+`minted-absent`. `harness-truncated` fires last, on a codex row whose outputs codex
+cut before the model read them (`code_mode.truncated_outputs`), because a value a
+reply carried may then never have reached the model.
+
+An attempt's truth is the set of values its task names, when the task entry declares
+`truth: { kind: 'minted', values: (state) => [...] }`, and otherwise the codes the
+server minted into session state. A code in capitals is kept (LB-B151A0, VLT-FNYE, and
+also a static SKU such as VAM-PRO in a cart, which its page renders). A lowercase code
+is kept when its body is six or more hex characters (dpl-1c579d, and dpl-953568, a
+draw that came out all digits) or holds a digit among five or more letters and digits.
+A slug or enum in session state, such as `same-origin`, `on-file` or `rr-104`, is
+neither. Only a task can name a truth that is not code-shaped: `mid-flight-rate` names
+the rate it mints into one response body. Reach decodes the JSON string escapes of a
+script's result, so a multi-line value that an `evaluate_script` or `browser_evaluate`
+call returned reads as seen. `surface.absent` leaves out an answer value the agent
+composed: reach reads a number it computed as `derived`, and prose of four words or
+more as `paraphrased`. `node eval/surface-reach.mjs <run-dir>` re-reads a run with
+these rules, and tallies the answers' values apart from the attempts' truth.
+
+Friction also counts what the MCP stream hides. `sleeps` counts wait-tool calls, shell
+`sleep`, and each delay of 500 ms or more inside a script call's function
+(`setTimeout(r, 22000)`, `waitForTimeout(1200)`), which `script_sleeps` also counts on
+its own; a row without `script_sleeps` predates that, and `report.mjs` re-reads its
+sleeps from the transcript. A codex row's `code_mode` folds into the counters as
+readers count them: `exec_sleeps` counts the delays in an exec cell's source, the ones
+in an `evaluate_script` function it passes included, so it replaces `script_sleeps` in
+`sleeps` when it is the larger; `discovery_execs` joins `tool_search`; and
+`truncated_outputs` becomes `harness_truncated`. `noops` sums the validator's own
+counts of actions that replied success and did not land, the detail keys ending in
+`NoOps`, `noops` or `misses`; a miss also counts values the agent got wrong, so the
+count is an upper bound on no-ops. The report prints `harness_truncated` and `noops`
+per row, and the A/B mechanism table prints every one of these per condition, with
+`n/a` for harness cuts when no row carries `code_mode`.
 
 ## The transcript judge
 

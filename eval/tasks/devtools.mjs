@@ -170,6 +170,30 @@ function namesRequest(field, spec) {
 const withoutStatus = (v, code) =>
   typeof v === 'string' ? v.replace(new RegExp(`(?<![\\w-])${code}(?![\\w-])`, 'g'), ' ') : v;
 
+// The rates a correct mid-flight-rate answer may carry for one session: the
+// rate of a Casterway 65 kg quote issued after a Harlow-Dunmere 40 kg one - the
+// asked flow's second quote in the plain case. Both asked shipments must
+// actually have been priced: a session that quoted other lanes or weights has
+// no accepted rates, whatever its second quote was, and an agent that spent an
+// exploratory quote before following the ask is graded on the asked-for
+// shipment rather than failed on an index. A re-quote of the asked pair after
+// the fact also mints an accepted rate: it exercises the same body-read
+// capability, and every accepted rate is minted per call and exists only in
+// one response body.
+function acceptedRates(session) {
+  const quotes = session.quotient.quotes;
+  const list = [];
+  const firstAsked = quotes.findIndex((q) => q.lane === 'harlow-dunmere' && Math.abs(q.weight - 40) < 1e-9);
+  if (firstAsked !== -1) {
+    for (const q of quotes.slice(firstAsked + 1)) {
+      if (q.lane === 'casterway' && Math.abs(q.weight - 65) < 1e-9) list.push(q.rate);
+    }
+  }
+  return list;
+}
+const quotingSessions = (state) =>
+  [...state.sessions.values()].filter((s) => (s.quotient?.quotes?.length ?? 0) > 0);
+
 export async function devtoolsTasks(base, origins = originUrls(base)) {
   const tasks = [
     {
@@ -520,37 +544,16 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
           },
         },
       },
+      // The graded rate is a bare number in a response body, which no
+      // code-shaped scan of session state finds, so the reach checks are
+      // handed it (surface-reach.mjs truthValues).
+      truth: { kind: 'minted', values: (state) => quotingSessions(state).flatMap(acceptedRates) },
       validate: (text, ctx, fields) => {
         const rateEq = (got, want) => typeof got === 'number' && Math.abs(got - want) <= 0.00005;
-        const sessions = [...ctx.pages.state.sessions.values()].filter(
-          (s) => (s.quotient?.quotes?.length ?? 0) > 0
-        );
-        // The rates a correct answer may carry: the rate of a Casterway 65 kg
-        // quote issued after a Harlow-Dunmere 40 kg one - the asked flow's
-        // second quote in the plain case. Both asked shipments must actually
-        // have been priced: a session that quoted other lanes or weights has
-        // no accepted rates, whatever its second quote was, and an agent that
-        // spent an exploratory quote before following the ask is graded on
-        // the asked-for shipment rather than failed on an index. A re-quote
-        // of the asked pair after the fact also mints an accepted rate: it
-        // exercises the same body-read capability, and every accepted rate is
-        // minted per call and exists only in one response body.
-        const accepted = (s) => {
-          const quotes = s.quotient.quotes;
-          const list = [];
-          const firstAsked = quotes.findIndex(
-            (q) => q.lane === 'harlow-dunmere' && Math.abs(q.weight - 40) < 1e-9
-          );
-          if (firstAsked !== -1) {
-            for (const q of quotes.slice(firstAsked + 1)) {
-              if (q.lane === 'casterway' && Math.abs(q.weight - 65) < 1e-9) list.push(q.rate);
-            }
-          }
-          return list;
-        };
+        const sessions = quotingSessions(ctx.pages.state);
         const solved = (s) =>
           s.quotient.quotes.length >= 2 &&
-          accepted(s).some((r) => rateEq(fields?.rateMultiplier, r));
+          acceptedRates(s).some((r) => rateEq(fields?.rateMultiplier, r));
         const graded =
           sessions.find(solved) ??
           sessions
