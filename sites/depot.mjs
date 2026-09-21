@@ -93,6 +93,8 @@ function depotState(session) {
     rosterFailures: 0,
     manifestRef: null,
     manifestHits: 0,
+    shellRef: null,
+    shellHits: 0,
     intake: null,
     intakeStored: 0,
     intakePosts: 0,
@@ -128,7 +130,8 @@ async function depotManifestKeys(ctx) {
 }
 
 export function routes(ctx) {
-  const { json, readJson, getSession, requireSession, draw } = ctx;
+  const { json, readJson, getSession, requireSession, draw, fromPage, isDocumentNav } = ctx;
+  const depotFromPage = fromPage('/depot/');
   return async (req, res, url, pathname0) => {
     if (req.method === 'POST' && pathname0 === '/api/depot/signin') {
       let payload = await readJson(req, res);
@@ -188,16 +191,29 @@ export function routes(ctx) {
       const found = getSession(req);
       if (!found) return json(res, 401, { error: 'session required' });
       const d = depotState(found.session);
-      d.manifestRef ??= 'MR-' + randomBytes(4).toString('hex').toUpperCase();
-      d.manifestHits += 1;
-      // Stable 507, session-stable ref, and the ref lives ONLY in this body:
-      // not a header, not the DOM, not the console. Deliberately NOT one-shot
-      // (per the proposal): an in-page re-fetch is the legitimate recovery for
-      // a surface that cannot read response bodies, and manifestHits is its
-      // measured price. 507 rather than 500 so a guessed modal status fails.
+      // The browser's requests, the page's fetches and a tab navigated to this
+      // URL alike, share one ref. A request from outside the browser, a curl
+      // with the browser's cookie copied out of a network log, gets a ref of
+      // its own, so an answer citing it is legibly one read around the browser
+      // and the validator never credits it. depotFromPage and isDocumentNav
+      // buy legibility, never proof: curl can send the same headers.
+      const browserSide = depotFromPage(req) || isDocumentNav(req);
+      if (browserSide) {
+        d.manifestRef ??= 'MR-' + randomBytes(4).toString('hex').toUpperCase();
+        d.manifestHits += 1;
+      } else {
+        d.shellRef ??= 'MR-' + randomBytes(4).toString('hex').toUpperCase();
+        d.shellHits += 1;
+      }
+      // Stable 507, a session-stable ref per side, and the ref lives ONLY in
+      // this body: not a header, not the DOM, not the console. Deliberately NOT
+      // one-shot (per the proposal): an in-page re-fetch is the legitimate
+      // recovery for a surface that cannot read response bodies, and
+      // manifestHits is its measured price. 507 rather than 500 so a guessed
+      // modal status fails.
       return json(res, 507, {
         error: 'manifest_store_locked',
-        ref: d.manifestRef,
+        ref: browserSide ? d.manifestRef : d.shellRef,
         remedy: 'quote this reference to the ops desk to have the store lock cleared',
       });
     }

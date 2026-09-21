@@ -3,7 +3,7 @@
 //
 // T121 silent-throw: GET /api/quotient/batch is session-gated and ONE-SHOT.
 // The first request of a session gets the reconciliation batch with exactly
-// one of its eight reference fields omitted, drawn by randomBytes; the page
+// one of its eight reference fields omitted, drawn through ctx.pick; the page
 // pipes the payload through the eight helpers in pages/quotient/app.js and
 // the helper that reads the omitted field throws an uncaught TypeError. Every
 // later request answers 410 carrying a reference copy with a DIFFERENT field
@@ -151,15 +151,18 @@ export function routes(ctx) {
       if (!found) return;
       const q = quotientState(found.session);
       if (!q.batch) {
-        const omitIdx = randomBytes(1)[0] % QUOTIENT_BATCH_FIELDS.length;
-        const decoyIdx =
-          (omitIdx + 1 + (randomBytes(1)[0] % (QUOTIENT_BATCH_FIELDS.length - 1))) %
-          QUOTIENT_BATCH_FIELDS.length;
+        // Difficulty draws (sites/README.md), so paired conditions face the
+        // same broken helper: the omitted field, then the decoy among the
+        // other seven.
+        const fields = QUOTIENT_BATCH_FIELDS.map((f) => f.field);
+        const omitted = ctx.pick('quotient.omitted', fields);
+        const decoyField = ctx.pick('quotient.decoy', fields.filter((f) => f !== omitted));
+        const helperOf = (field) => QUOTIENT_BATCH_FIELDS.find((f) => f.field === field).helper;
         q.batch = {
-          omitted: QUOTIENT_BATCH_FIELDS[omitIdx].field,
-          helper: QUOTIENT_BATCH_FIELDS[omitIdx].helper,
-          decoyField: QUOTIENT_BATCH_FIELDS[decoyIdx].field,
-          decoyHelper: QUOTIENT_BATCH_FIELDS[decoyIdx].helper,
+          omitted,
+          helper: helperOf(omitted),
+          decoyField,
+          decoyHelper: helperOf(decoyField),
           servedAt: Date.now(),
           servedFromPage: fromQuotient(req),
           decoyServes: 0,

@@ -21,8 +21,11 @@
 //   extractor path a paid row takes, and the stub returns the driver's fields
 //   for that answer as { value, quote } pairs. 'extracted' appends a
 //   `path = value` line per field and quotes those lines, so every row has to
-//   PASS. 'misquoted' gives the same answer with quotes it never contains, so
-//   the quote gate nulls every field and every row has to FAIL.
+//   PASS. 'misquoted' answers with those lines alone and quotes them in a form
+//   the answer never contains, so the quote gate nulls every field and every
+//   row has to FAIL. The gate keeps a distinctive string the answer states
+//   whatever its quote, so its lines withhold every string value and its
+//   answer drops the driver's prose, which states them.
 //   'extractor-down' makes every extraction throw, so run.mjs grades null
 //   fields, flags extraction_failed, and every row has to FAIL.
 // Every tool call streams to onMessage as an Agent SDK tool_use and tool_result
@@ -70,7 +73,8 @@ const EXTRACTOR_DOWN = Symbol('extractor-down');
 // `value` as the { value, quote } pairs a faithful extractor returns under
 // `schema`, the shape extract.mjs's quotedSchema asks for. Each leaf's line is
 // pushed onto `lines`; its quote is that line, or under `misquote` a form no
-// answer contains, which the quote gate has to null.
+// answer contains, which the quote gate has to null, and the line withholds a
+// string value.
 function quotePairs(value, schema, path, lines, misquote) {
   if (!schema) return null;
   if (schema.type === 'object') {
@@ -88,7 +92,7 @@ function quotePairs(value, schema, path, lines, misquote) {
   }
   if (value === null || value === undefined) return { value: null, quote: null };
   const line = `${path} = ${value}`;
-  lines.push(line);
+  lines.push(misquote && typeof value === 'string' ? `${path} = [withheld]` : line);
   return { value, quote: misquote ? `${path}: «${value}»` : line };
 }
 
@@ -215,7 +219,7 @@ export async function run({ task, pages, model, condition, env, cwd, onMessage, 
   if (TEXT_MODELS.includes(mode)) {
     const lines = [];
     const raw = quotePairs(fields, task.answerSchema, '', lines, mode === 'misquoted');
-    if (lines.length) text = `${text}\n\n${lines.join('\n')}`;
+    if (lines.length) text = mode === 'misquoted' ? lines.join('\n') : `${text}\n\n${lines.join('\n')}`;
     STUB_EXTRACTIONS.set(text, mode === 'extractor-down' ? EXTRACTOR_DOWN : raw);
     fields = undefined;
   }

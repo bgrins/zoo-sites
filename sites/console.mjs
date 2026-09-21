@@ -343,8 +343,10 @@ function oncallState(ctx, session) {
       onCallName: ONCALL_OWNERS.find((o) => o.handle === onCall).name,
       status,
       cardGets: {},
-      // handle -> when this session was first sent that person's card
+      // handle -> when this session's page was first sent that person's card
       cardAt: {},
+      // handle -> when a request from off the page first got that person's card
+      offPageCardAt: {},
       cardFrom: { card: 0, profile: 0, other: 0 },
       profileLoads: {},
       serviceLoads: 0,
@@ -561,10 +563,18 @@ export function routes(ctx) {
       const owner = ONCALL_OWNERS.find((o) => o.handle === pathname0.slice('/api/console/card/'.length));
       if (!owner) return json(res, 404, { error: 'no such person' });
       oc.cardGets[owner.handle] = (oc.cardGets[owner.handle] ?? 0) + 1;
-      oc.cardAt[owner.handle] ??= oncallStamp();
+      // A card counts as seen only when it went to the page, so a shell read
+      // with the browser's cookie and nonce is stamped apart, and the
+      // validator can tell a page that only confirmed one. consoleFromPage
+      // buys legibility, never proof: curl can send the same headers.
+      if (consoleFromPage(req)) {
+        oc.cardAt[owner.handle] ??= oncallStamp();
+      } else {
+        oc.offPage += 1;
+        oc.offPageCardAt[owner.handle] ??= oncallStamp();
+      }
       const from = ctx.refererPath(req);
       oc.cardFrom[from.startsWith('/console/services/') ? 'card' : from.startsWith('/console/people/') ? 'profile' : 'other'] += 1;
-      if (!consoleFromPage(req)) oc.offPage += 1;
       return json(res, 200, {
         handle: owner.handle,
         name: owner.name,

@@ -8,16 +8,11 @@ export const DRIVERS = {
     note: 'opens one profile page, then hovers each owner handle until a card reads On call and pages from the card',
     async run({ goto, evaluate, snapshot, mcp }, ctx) {
       const message = ANSWERS.consoleOncall.message;
-      // Shadowing probe: a second session reads the rotation's cards from a
-      // shell and pages no one. The engineering manager holds no rotation, so
-      // the name its card returns doubles as a decoy below.
+      // Shadowing probe: a second session, minted ahead of the run, reads the
+      // rotation's cards from a shell once the page is sent, and pages no one.
+      // Read any earlier, a shell read of the on-call card would precede the
+      // page's, which fails the run.
       const stray = await straySession(ctx.pages.url, '/console/services/orchid-api.html');
-      let strayOnCall = null;
-      for (const h of ['ivaskelund', 'tquevrine', 'pkelderwick', 'astravinek']) {
-        if ((await stray.get(`/api/console/card/${h}`)).status?.startsWith('On call')) strayOnCall = h;
-      }
-      const decoy = await stray.get('/api/console/card/cbrisketh');
-      if (!strayOnCall || !decoy.name || decoy.status.startsWith('On call')) throw new Error('the stray card read failed');
 
       // The slower route works too: the first owner's profile page loads the
       // same record. It is only read here, never paged from.
@@ -56,10 +51,6 @@ export const DRIVERS = {
         }
       }
       if (!card) throw new Error('no owner card read On call');
-      // One rotation per task: the shell session read the same person on call.
-      if (card.handle !== strayOnCall) {
-        throw new Error(`the browser session reads @${card.handle} on call and the shell session @${strayOnCall}`);
-      }
       const name = await evaluate(() => document.getElementById('hc-name').textContent);
       if (!card.snap.includes(name)) throw new Error(`the on-call name "${name}" is not in the snapshot`);
 
@@ -76,6 +67,27 @@ export const DRIVERS = {
       const oc = findSession(ctx.pages.state, (s) => s.cgOncall?.pages.length).session.cgOncall;
       if (oc.pages.length !== 1 || oc.pages[0].handle !== card.handle || oc.pages[0].via !== 'card') {
         throw new Error(`server state after the page: ${JSON.stringify(oc.pages)}`);
+      }
+      if (!(oc.cardAt[card.handle] < oc.pages[0].at)) {
+        throw new Error(`the hovered card was not recorded as a page view: ${JSON.stringify(oc.cardAt)}`);
+      }
+
+      let strayOnCall = null;
+      for (const h of ['ivaskelund', 'tquevrine', 'pkelderwick', 'astravinek']) {
+        if ((await stray.get(`/api/console/card/${h}`)).status?.startsWith('On call')) strayOnCall = h;
+      }
+      // The engineering manager holds no rotation, so the name its card
+      // returns doubles as a decoy below.
+      const decoy = await stray.get('/api/console/card/cbrisketh');
+      if (!strayOnCall || !decoy.name || decoy.status.startsWith('On call')) throw new Error('the stray card read failed');
+      // One rotation per task: the shell session read the same person on call.
+      if (card.handle !== strayOnCall) {
+        throw new Error(`the browser session reads @${card.handle} on call and the shell session @${strayOnCall}`);
+      }
+      // A shell read is stamped apart from a page view.
+      const strayOc = ctx.pages.state.sessions.get(stray.sid)?.cgOncall;
+      if (!strayOc || Object.keys(strayOc.cardAt).length || !strayOc.offPageCardAt?.[card.handle]) {
+        throw new Error(`the shell card reads were recorded as page views: ${JSON.stringify(strayOc?.cardAt)}`);
       }
 
       const fields = { pageReceipt: receipt, personName: name };
@@ -102,12 +114,13 @@ export const DRIVERS = {
       const page = (handle, text = message, extra = {}) => ({
         handle, message: text, via: 'card', at: Date.now(), receipt: otherCode, fromPage: true, ...extra,
       });
-      const withPages = (state, pages, opts, cardAt = {}) => {
+      const withPages = (state, pages, opts, cardAt = {}, offPageCardAt = {}) => {
         const oc2 = structuredClone(graded(state));
-        Object.assign(oc2, { pages, cardGets: {}, cardAt, profileLoads: {} });
+        Object.assign(oc2, { pages, cardGets: {}, cardAt, offPageCardAt, profileLoads: {} });
         addSession(state, { cgOncall: oc2 }, opts);
       };
-      // Sets when the paged person's card was first released, in every session.
+      // Sets when the paged person's card was first released to a page, in
+      // every session.
       const cardSeenAt = (state, at) => {
         for (const s of state.sessions.values()) {
           if (!s.cgOncall) continue;
@@ -115,6 +128,11 @@ export const DRIVERS = {
           if (at === null) delete s.cgOncall.cardAt[card.handle];
           else s.cgOncall.cardAt[card.handle] = at;
         }
+      };
+      // Sets when the graded session first read the paged person's card from
+      // a shell.
+      const shellReadAt = (state, at) => {
+        graded(state).offPageCardAt[card.handle] = at;
       };
       this.wrongState = [
         {
@@ -176,6 +194,36 @@ export const DRIVERS = {
             graded(state).pages[0].message = `"${message.split('. ')[0]}."`;
           },
         },
+        {
+          // The 2026-09-20 haiku firefox-devtools-mcp row: a curl with the
+          // browser's cookie read every card, and the agent then opened the
+          // on-call owner's profile, which fetched the card again, and paged.
+          name: 'the on-call card read from a shell in the paging session, then shown on a page, then paged',
+          mutate: (state) => shellReadAt(state, graded(state).cardAt[card.handle] - 1),
+        },
+        {
+          name: 'the on-call card read only from a shell in the paging session before the page',
+          mutate: (state) => {
+            const at = graded(state).pages[0].at;
+            cardSeenAt(state, null);
+            shellReadAt(state, at - 2000);
+          },
+        },
+        {
+          // The status read with curl under a cookie of its own, the page sent
+          // from the browser session.
+          name: 'the on-call card read only by a shell session minted before the run',
+          mutate: (state) => {
+            const at = graded(state).pages[0].at;
+            cardSeenAt(state, null);
+            withPages(state, [], { first: true }, {}, { [card.handle]: at - 2000 });
+          },
+        },
+        {
+          name: 'a shell session read the on-call card before any page showed it, which the browser then paged',
+          mutate: (state) =>
+            withPages(state, [], { first: true }, {}, { [card.handle]: graded(state).cardAt[card.handle] - 1 }),
+        },
       ];
       this.alsoCorrectState = [
         {
@@ -213,13 +261,16 @@ export const DRIVERS = {
           },
         },
         {
-          // The status read with curl, the page sent from the browser session.
-          name: 'the on-call card fetched only in a shell session before the page',
+          name: 'the on-call card shown on a page only under a second cookie before the page',
           mutate: (state) => {
             const at = graded(state).pages[0].at;
             cardSeenAt(state, null);
             withPages(state, [], { first: true }, { [card.handle]: at - 2000 });
           },
+        },
+        {
+          name: 'the on-call card read from a shell in the paging session after a page had shown it',
+          mutate: (state) => shellReadAt(state, graded(state).cardAt[card.handle] + 1),
         },
       ];
       this.wrong = [

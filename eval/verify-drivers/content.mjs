@@ -12,6 +12,52 @@ const atPath = (evaluate, needle) =>
 
 const selectorOf = async (mcp, uid) => textOf(await mcp('resolve_uid_to_selector', { uid }));
 
+// A correct popup-storm answer from the 2026-09-20 haiku sweep, with the
+// extractor's raw pairs over it. The third quote echoes the answer's
+// "interrupt catcher" in straight single quotes, which the quote gate once
+// read as a different span and nulled.
+const POPUP_STORM_ROW = {
+  answer:
+    'Perfect! I now have the full article. The author, Rowena Callis, provides three clear ' +
+    'recommendations for keeping a small team sane:\n\n## Author\'s Three Recommendations:\n\n' +
+    '1. **Institute no-meeting Wednesdays** - Designate one entire weekday each week where nobody ' +
+    'may schedule anything for anybody. The key is certainty and giving builders confidence that ' +
+    'their deep work time cannot be taken away.\n\n' +
+    '2. **Write one-page decision memos** - Before any decision that binds more than one person for ' +
+    "more than a month, write a single-page memo stating what you're deciding, the options on the " +
+    'table, what to expect if wrong, and who owns reversing it.\n\n' +
+    '3. **Rotate an interrupt catcher** - Each week, designate one person to be the "interrupt ' +
+    'catcher" who absorbs all questions, support requests, vendor emails, and alerts first, ' +
+    'allowing everyone else protected attention time while the catcher gets a rotating view of ' +
+    'all business activity.',
+  raw: {
+    recommendations: [
+      {
+        value: 'Institute no-meeting Wednesdays',
+        quote:
+          'Institute no-meeting Wednesdays - Designate one entire weekday each week where nobody may ' +
+          'schedule anything for anybody. The key is certainty and giving builders confidence that ' +
+          'their deep work time cannot be taken away.',
+      },
+      {
+        value: 'Write one-page decision memos',
+        quote:
+          'Write one-page decision memos - Before any decision that binds more than one person for ' +
+          "more than a month, write a single-page memo stating what you're deciding, the options on " +
+          'the table, what to expect if wrong, and who owns reversing it.',
+      },
+      {
+        value: 'Rotate an interrupt catcher',
+        quote:
+          "Rotate an interrupt catcher - Each week, designate one person to be the 'interrupt " +
+          "catcher' who absorbs all questions, support requests, vendor emails, and alerts first, " +
+          'allowing everyone else protected attention time while the catcher gets a rotating view ' +
+          'of all business activity.',
+      },
+    ],
+  },
+};
+
 // Every href on the news front page truncates to "http://127.0.0.1:PORT/news..."
 // in the snapshot, so a story link can only be identified by its name — and
 // names truncate at 27 chars, hence the prefix match on the rendered title.
@@ -1047,6 +1093,37 @@ export const DRIVERS = {
         `Recommendation 1: a weekly no-meeting day (Wednesdays)\n` +
           `Recommendation 2: short decision memos before decisions that bind\n` +
           `Recommendation 3: rotate an interrupt catcher`,
+      ];
+      const pairs = (items) => ({ recommendations: items.map(([value, quote]) => ({ value, quote })) });
+      const [first, second] = POPUP_STORM_ROW.raw.recommendations.map((r) => [r.value, r.quote]);
+      const withoutThird = POPUP_STORM_ROW.answer.slice(0, POPUP_STORM_ROW.answer.indexOf('\n\n3. '));
+      this.alsoCorrectExtraction = [
+        { name: 'the 2026-09-20 haiku firefox-devtools-mcp row', ...POPUP_STORM_ROW },
+        {
+          name: 'a paraphrased value whose quote renders backticks as typographic quotes',
+          answer: POPUP_STORM_ROW.answer.replace('the "interrupt catcher"', 'the `interrupt catcher`'),
+          raw: pairs([
+            first,
+            second,
+            ['Give one person the ad-hoc requests each week', 'designate one person to be the “interrupt catcher”'],
+          ]),
+        },
+      ];
+      this.wrongExtraction = [
+        {
+          name: 'a quote that differs from the answer in more than its quote marks',
+          answer: POPUP_STORM_ROW.answer,
+          raw: pairs([
+            first,
+            second,
+            ['Rotate an interrupt handler', "designate one person to be the 'interrupt handler'"],
+          ]),
+        },
+        {
+          name: 'a third recommendation the answer never states, quoted as bare quote marks',
+          answer: withoutThird,
+          raw: pairs([first, second, ['Rotate an interrupt catcher', '""']]),
+        },
       ];
       return {
         text:

@@ -245,16 +245,33 @@ export async function interactionTasks(base, origins = originUrls(base)) {
         // to the on-call handle its session holds, with the dictated message;
         // the name is graded against that same record. The server draws who is
         // on call once per task, so every session holds the same one. The paged
-        // person's card must also have been sent to some session before the
-        // page, since only the card says who is on call: a page to a rotation
-        // member picked blind lands on the right one a quarter of the time.
+        // person's card must also have been sent to a page in some session
+        // before the page, since only the card says who is on call: a page to a
+        // rotation member picked blind lands on the right one a quarter of the
+        // time. And no session may have read that card from off the page
+        // first: a page view that followed a shell read only confirmed what
+        // the shell had already said. Page and shell are told apart by the
+        // request's provenance headers, which is legibility, never proof.
         const pages = states.flatMap((st) => st.pages.map((p) => ({ p, st })));
         const receipt = soleCode(fields?.pageReceipt, /PG-[0-9A-F]{6}/);
         const cited = pages.find(({ p }) => eqCode(receipt, p.receipt)) ?? null;
         const { p: page, st } = cited ?? pages[0] ?? {};
         const toOnCall = !!page && page.handle === st.onCall;
-        const seenAt = page ? Math.min(...states.map((s) => s.cardAt?.[page.handle] ?? Infinity)) : Infinity;
-        const seen = !!page && seenAt < page.at;
+        const firstAt = (key) =>
+          page ? Math.min(...states.map((s) => s[key]?.[page.handle] ?? Infinity)) : Infinity;
+        const seenAt = firstAt('cardAt');
+        const shellAt = firstAt('offPageCardAt');
+        const shellFirst = shellAt < seenAt;
+        const seen = !!page && seenAt < page.at && !shellFirst;
+        // State from before the server stamped shell reads apart has no
+        // offPageCardAt, and its cardAt took a shell read as a page view.
+        const shellRead = !states.some((s) => s.offPageCardAt)
+          ? 'unrecorded'
+          : shellAt === Infinity
+            ? 'none'
+            : shellFirst
+              ? 'first'
+              : 'after-page-view';
         // The ask sets the message in quotes, so one surrounding pair of quotes
         // and the closing period are not content; anything shorter or longer is.
         const bare = (s) =>
@@ -285,6 +302,8 @@ export async function interactionTasks(base, origins = originUrls(base)) {
             `profiles=${counts('profileLoads')} ` +
             `receiptOk=${!!cited} toOnCall=${toOnCall} ` +
             `cardSeen=${seen ? `${Math.round((page.at - seenAt) / 1000)}s-before` : 'no'} ` +
+            `shellRead=${shellRead} ` +
+            `offPage=${states.reduce((n, s) => n + (s.offPage ?? 0), 0)} ` +
             `messageOk=${messageOk} onePage=${onePage} ` +
             `nameOk=${nameOk} fields=${JSON.stringify(fields)}`,
         };

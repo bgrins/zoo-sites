@@ -70,7 +70,14 @@ Rules:
   Referer on the request's own host whose `refererPath` starts with the prefix,
   so an origin-mode page, served at its origin's root, counts too, and another
   origin's page does not. It buys legibility, never proof, and
-  the comment at each use site says so and must keep saying so.
+  the comment at each use site says so and must keep saying so. A route whose
+  reply carries a graded value can record the browser's requests and a shell's
+  apart, so a validator can refuse a fact read around the browser:
+  `sites/console.mjs` stamps a hovercard's first page view apart from its first
+  shell read (hovercard-oncall), and `sites/depot.mjs` answers a request that is
+  neither the page's nor a tab's navigation (`ctx.isDocumentNav`) with a ref of
+  its own (body-only-ref). A tab opened on an API URL sends no Referer and
+  `Sec-Fetch-Site: none`, so `fromPage` alone would count it as a shell.
 - Graded secrets stay server-side, per `docs/authoring-fixtures.md`. Nothing
   here changes the contract that ground truth is never derivable from `pages/`.
 - `node eval/verify.mjs` must be green before any change here is committed.
@@ -110,17 +117,22 @@ const layout = ctx.pick('boxoffice.layout', ['stalls-first', 'circle-first', 'sp
   by index, so an experiment can hold one factor fixed. The row then carries
   `forced: true`. A force that names neither throws, so the request 500s rather
   than quietly drawing. The draw is consumed either way, which keeps the scope's
-  later draws identical between a forced run and an unforced one.
+  later draws identical between a forced run and an unforced one. A pick whose
+  options depend on an earlier pick is forced against the options it was given:
+  `quotient.decoy` picks among the seven fields left after `quotient.omitted`,
+  so its index counts within those seven, and forcing it to the omitted field
+  throws.
 - Scope names are per site and per factor (`<site>.<factor>`), so forcing one
   factor never shifts another's sequence.
 
-Four sites use `pick`. Two draw once per task, and later sessions reuse the
+Five sites use `pick`. Two draw once per task, and later sessions reuse the
 first session's picks: `console.oncall` in `sites/console.mjs` (hovercard-oncall),
 and `smarthome.brightness`, `smarthome.colorTemp` and `smarthome.fadeSeconds` in
 `sites/smarthome.mjs` (scene-calibrate). `gov.certcopy.receipt` in `sites/gov.mjs`
-(resend-receipt) and
-`events.equipment` in `sites/events.mjs` (native-permit) pick once per session. The
-sites that call `draw` directly keep their current sequences until they are
+(resend-receipt),
+`events.equipment` in `sites/events.mjs` (native-permit), and `quotient.omitted`
+and `quotient.decoy` in `sites/quotient.mjs` (silent-throw) pick once per session.
+The sites that call `draw` directly keep their current sequences until they are
 migrated.
 
 ## Request ledger

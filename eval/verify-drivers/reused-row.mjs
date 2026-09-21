@@ -145,6 +145,23 @@ export const DRIVERS = {
         { cancelledBuild: 4193, cancelledRegion: 'EU-WEST' },
         { cancelledBuild: 4193, cancelledRegion: 'eu west' },
       ];
+      // The ask names the target's region, so an answer that restates the ask
+      // holds "eu-west" without saying it cancelled that deploy. The quote gate
+      // lets a string whose quote misses stand on the answer alone only when it
+      // appears nowhere in the ask.
+      this.wrongExtraction = [
+        {
+          name: 'a region echoed from the ask, its quote made up',
+          answer:
+            'You asked me to cancel the queued deploy of orchid-api build 4193 to eu-west. ' +
+            'I cancelled a build 4193 deploy, but the queue kept re-sorting, so I cannot say ' +
+            "which region's row it was.",
+          raw: {
+            cancelledBuild: { value: 4193, quote: 'I cancelled a build 4193 deploy' },
+            cancelledRegion: { value: 'eu-west', quote: 'cancelled build 4193 to eu-west' },
+          },
+        },
+      ];
 
       // State plants. A queue copy for another session starts from the golden
       // one with every deploy queued and no history.

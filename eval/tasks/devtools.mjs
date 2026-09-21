@@ -276,6 +276,13 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
     {
       id: 'body-only-ref',
       tier: 'quick',
+      // The browser's ref only: the one a shell read gets (shellRef) is minted
+      // too, but never graded, so reach and triage must not look for it.
+      truth: {
+        kind: 'minted',
+        values: (state) =>
+          [...state.sessions.values()].flatMap((s) => (s.depot?.manifestHits ? [s.depot.manifestRef] : [])),
+      },
       ask:
         `The manifests page at ${origins['marlowe-depot']}/manifests.html is showing no manifests ` +
         `for the shift. Diagnose why - name the request that fails and its HTTP ` +
@@ -312,6 +319,11 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
         // fabricated one fails. The 507 is
         // deliberate: 500 is the modal guess for a broken API, so a guessed
         // status must fail - the log is the only place to read the real one.
+        // Only the browser's requests count: manifestHits and manifestRef are
+        // the page's fetches and the tab's navigations, and a request from
+        // outside the browser, a shell replaying the browser's cookie, gets
+        // shellRef instead, so the ref it read is a stated ref that is not the
+        // graded one.
         const sessions = [...ctx.pages.state.sessions.values()].filter(
           (s) => (s.depot?.manifestHits ?? 0) > 0
         );
@@ -348,6 +360,16 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
               (/\d/.test(t) && /[a-z]/i.test(t))
           );
         const refFound = Boolean(d) && eqCode(claimed, d.manifestRef);
+        // Telemetry across every session, since a curl under its own cookie
+        // never touches the graded one. State from before the server split the
+        // two sides has no shellHits, and prints ? rather than a zero it never
+        // measured.
+        const depots = [...ctx.pages.state.sessions.values()].map((s) => s.depot).filter(Boolean);
+        const split = depots.some((x) => 'shellHits' in x);
+        const shellHits = split ? depots.reduce((n, x) => n + (x.shellHits ?? 0), 0) : '?';
+        const citesShellRef = split
+          ? depots.some((x) => !!x.shellRef && eqCode(claimed, x.shellRef))
+          : '?';
         return {
           pass:
             Boolean(d) &&
@@ -359,8 +381,9 @@ export async function devtoolsTasks(base, origins = originUrls(base)) {
           // capture.
           detail:
             `sessions=${sessions.length} manifestHits=${d?.manifestHits ?? 0} ` +
+            `shellHits=${shellHits} ` +
             `namesManifests=${namesManifests} refStated=${refStated} ` +
-            `refFound=${refFound} ref=${d?.manifestRef ?? '?'} ` +
+            `refFound=${refFound} citesShellRef=${citesShellRef} ref=${d?.manifestRef ?? '?'} ` +
             `fields=${JSON.stringify(fields)}`,
         };
       },

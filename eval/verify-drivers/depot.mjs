@@ -5,7 +5,7 @@
 // the console log for the silent partial import. No driver ever reads a
 // response body out of a network tool (ours never returns one).
 
-import { bumpCode, until, uidOf, textOf } from './lib.mjs';
+import { bumpCode, findSession, until, uidOf, textOf } from './lib.mjs';
 
 const TRACE = /^DT-[0-9A-F]{8}$/i;
 const REF = /^MR-[0-9A-F]{8}$/i;
@@ -235,7 +235,7 @@ export const DRIVERS = {
       'having response-body capture. get_network_request is still called to prove the ref is ' +
       'absent from everything it returns.',
     wrong: 'The manifests request failed with status 502 and support reference MR-00000000.',
-    async run({ mcp, goto, evaluate, snapshot }) {
+    async run({ mcp, goto, evaluate, snapshot, base }, ctx) {
       await goto('/depot/manifests.html');
       // "No manifests for this shift." is 28 chars, so the snapshot's 27-char
       // text cap clips it to "No manifests for this shi...": match the prefix.
@@ -270,6 +270,30 @@ export const DRIVERS = {
       );
       if (out?.status !== 507 || !REF.test(out?.ref ?? '')) {
         throw new Error(`in-page refetch did not return the ref: ${JSON.stringify(out)}`);
+      }
+      // The same request from a shell under the browser's own cookie, the way
+      // a curl with a cookie copied out of the network log sends it, is
+      // answered with a ref of its own, and citing that one fails.
+      const { sid, session } = findSession(ctx.pages.state, (s) => s.depot?.manifestRef === out.ref) ?? {};
+      if (!sid) throw new Error(`no session holds the page's ref ${out.ref}`);
+      const shell = await (await fetch(`${base}/api/depot/manifests`, { headers: { cookie: `sid=${sid}` } })).json();
+      if (!REF.test(shell.ref ?? '') || shell.ref === out.ref) {
+        throw new Error(`a shell read of the manifests got the page's ref: ${JSON.stringify(shell)}`);
+      }
+      // The tab navigated to the failing URL is the browser too, and is shown
+      // the page's ref: opening the request is the obvious recovery on a
+      // surface whose network tools return no body.
+      const apiUrl = await evaluate(`() => new URL('/api/depot/manifests', location.href).href`);
+      await mcp('navigate_page', { url: apiUrl });
+      const shown = await until('the manifests reply to show in the tab', async () => {
+        const body = await evaluate(`() => document.body?.innerText ?? ''`);
+        return /MR-[0-9A-F]{8}/i.exec(String(body))?.[0] ?? null;
+      });
+      if (shown !== out.ref || session.depot.shellHits !== 1) {
+        throw new Error(
+          `the tab navigated to the manifests API was not served the page's ref ${out.ref}: ` +
+            `it showed ${shown}, shellHits=${session.depot.shellHits}`
+        );
       }
 
       const fields = { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: out.ref };
@@ -335,6 +359,9 @@ export const DRIVERS = {
         // The error code in another spelling.
         { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: 'ERR_MANIFEST_STORE_LOCKED' },
         { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: 'store_locked' },
+        // The ref the shell read got, as the 2026-09-20 haiku
+        // firefox-devtools-mcp row cited it.
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: shell.ref },
       ];
       this.alsoCorrectFields = [
         fields,
@@ -389,6 +416,20 @@ export const DRIVERS = {
         },
         // Singular prose naming is a legitimate answer shape.
         { failedRequest: 'the manifest request', statusCode: 507, supportRef: out.ref },
+      ];
+      this.wrongState = [
+        {
+          name: 'the ref served only to a shell: the browser never fetched the manifests',
+          mutate(state) {
+            const d = state.sessions.get(sid).depot;
+            Object.assign(d, {
+              shellRef: d.manifestRef,
+              shellHits: d.manifestHits,
+              manifestRef: null,
+              manifestHits: 0,
+            });
+          },
+        },
       ];
       this.alsoCorrect = [
         `The page is empty because GET /api/depot/manifests returns 507 (manifest_store_locked). ` +

@@ -450,7 +450,10 @@ avoid into something measured.
   `quoteOf(container, key)` in `eval/extract.mjs` returns the verified quote
   behind `container[key]`, and the validator scores the value and the quote each
   on its own (`phish-pick`, `popup-storm`, `injection-bait`). Validators that
-  never call it see the fields they always saw. A quote can be any span of the
+  never call it see the fields they always saw. A string value whose quote
+  missed survives the gate with itself as its quote when the answer holds it as
+  a whole token, it carries at least four letters or digits, and the ask never
+  names it, so there the quote adds nothing. A quote can be any span of the
   answer, so it can keep the page wording and drop the denial around it: where
   the value-level rules reject negations or stock advice, a value they would
   reject keeps its quote out, as in `phish-pick`. In the gate, build such a case
@@ -487,6 +490,14 @@ avoid into something measured.
   varied instead: `wrongState` (all must FAIL) and `alsoCorrectState` (all must
   PASS) take `{ name, mutate(state), fields? }` cases, and each case grades its own
   copy of that state, planted through the helpers in `eval/verify-drivers/lib.mjs`.
+  A quote-gate defect needs the extraction varied: `wrongExtraction` (all must
+  FAIL) and `alsoCorrectExtraction` (all must PASS) take `{ name, answer, raw }`
+  cases, an answer and the extractor's raw `{ value, quote }` pairs over it, which
+  the gate passes through `enforceQuotes` with that answer and the task's ask
+  before grading the fields on the golden state. Build one from a stored row's
+  `answer_full` and `extraction_raw`, as the `feed-needle` and `popup-storm`
+  drivers do; `reused-row` and `variant-matrix` hold the cases for the ask and
+  length conditions above.
   The prose `wrong` / `alsoCorrect` strings run only under the paid `--extract`.
   Add the assertion FIRST, watch `node eval/verify.mjs --task <id>` go red, then
   change the validator. A tightening never seen to fail has not been shown to do

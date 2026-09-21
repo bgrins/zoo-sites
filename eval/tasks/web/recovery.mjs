@@ -5,7 +5,7 @@
 
 import { originUrls } from '../../../manifest.mjs';
 import { ANSWERS } from '../../answers.mjs';
-import { eqCode, eqEnum, eqMoney, eqName, soleCode } from '../../extract.mjs';
+import { eqCode, eqEnum, eqMoney, eqName, normaliseWords, soleCode } from '../../extract.mjs';
 
 export async function recoveryTasks(base, origins = originUrls(base)) {
   return [
@@ -182,6 +182,22 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
         const target = ANSWERS.press.headlineTokens.every((t) =>
           new RegExp(t, 'i').test(String(fields?.headline ?? ''))
         );
+        // Telemetry for the cut the grade tolerates: `cut` is a leading part
+        // of the full headline (the snapshot's text cap, with or without its
+        // ellipsis), `extended` the full headline plus words the page never
+        // printed, which an agent writes when it completes a cut one.
+        const headlineWords = (s) => normaliseWords(s).trim();
+        const fullHeadline = headlineWords(ANSWERS.press.headline);
+        const claimedHeadline = typeof fields?.headline === 'string' ? headlineWords(fields.headline) : '';
+        const headlineAs = !claimedHeadline
+          ? 'none'
+          : claimedHeadline === fullHeadline
+            ? 'full'
+            : fullHeadline.startsWith(claimedHeadline)
+              ? 'cut'
+              : claimedHeadline.startsWith(`${fullHeadline} `)
+                ? 'extended'
+                : 'other';
         const reference = reported(press?.reference);
         // The ask's "instead of reloading or hammering the page", counted
         // across every session so a second cookie cannot hide either: early
@@ -198,7 +214,7 @@ export async function recoveryTasks(base, origins = originUrls(base)) {
           pass: waited && target && reference && patient,
           detail:
             `sessions=${sessions.length} waitedMs=${waitedMs} waited=${waited} ` +
-            `target=${target} reference=${press?.reference ?? 'none'} ` +
+            `target=${target} headline=${headlineAs} reference=${press?.reference ?? 'none'} ` +
             `reported=${reference} claimed=${claimed.join(',') || 'none'} ` +
             `allEarly=${allEarly} allLoads=${allLoads} patient=${patient} ` +
             `attempts=${press?.attempts ?? 0} early=${press?.earlyAttempts ?? 0} ` +

@@ -48,7 +48,8 @@ incapable of favouring either. Four properties of extraction guarantee it.
   the same guarantee from a read-only sandbox with no network. The agent's chance to
   earn its pass ends when its own session ends, as it did before extraction existed.
 - **The quote gate stops the extractor from supplying an answer.** A field whose quote
-  is absent from the answer text is nulled, and a null field fails.
+  is absent from the answer text is nulled, unless it is a distinctive string the
+  answer states itself (see "The quote gate"), and a null field fails.
 - **Extraction usage is excluded from every per-condition metric.** Output tokens,
   cost, wall time and API time count the main agent run only, and `wall_s` still
   brackets `backend.run` alone. `report.md` states the run's total extraction spend
@@ -96,13 +97,24 @@ validates and surfaces as `structured_output` on the result message.
 ## The quote gate
 
 `enforceQuotes` normalises the answer once — markdown emphasis stripped, dash family
-folded, whitespace collapsed, case dropped, the treatment the validators use — then
-nulls every `{value, quote}` pair whose quote is missing from it and collapses the
-wrappers back to plain values, so a validator sees the shape its own schema declared.
+folded, whitespace collapsed, case dropped, the treatment the validators use — and
+drops every quote mark (straight, typographic, prime, guillemet, fullwidth, corner
+bracket) from the answer and from each quote. It then nulls every `{value, quote}`
+pair whose quote is missing from the answer and collapses the wrappers back to plain
+values, so a validator sees the shape its own schema declared. A quote that folds to
+nothing is missing, and so is one the ask holds and the answer does not: the extractor
+reads the ask too, and its wording is never evidence of what the answer states.
 One allowance keeps faithful extractions alive: extractors sometimes splice a quote
 across markdown structure (bullet boundaries, joined sentences), so a quote whose
-clauses of 12 characters or more each appear in the answer is accepted. A fabricated
-quote still dies, because its clauses appear nowhere.
+clauses of 12 characters or more each appear in the answer is accepted, unless every
+one of them is also in the ask. A fabricated quote still dies, because its clauses
+appear nowhere.
+
+A string value whose quote is missing survives with itself as its quote when the
+answer holds it as a whole token, it carries at least four letters or digits, and the
+ask never names it. Such a value is its own evidence: feed-needle's extractor copied
+the right code out of the answer and took its quote from the ask. Numbers and
+booleans never qualify, because their text turns up in almost any answer.
 
 Sentinel answers skip the call. `isSentinel` matches the harness's
 `[error_max_turns]`-style markers and the empty string, and the task grades with null

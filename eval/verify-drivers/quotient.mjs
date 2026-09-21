@@ -35,7 +35,7 @@ export const DRIVERS = {
     wrong:
       'The reconciliation fails because renderCards throws an uncaught TypeError: ' +
       'the batch response is missing its rows field.',
-    async run({ goto, mcp, snapshot, evaluate, base }) {
+    async run({ goto, mcp, snapshot, evaluate, base }, ctx) {
       // Curl probes sent ahead of the run, each drawing its own one-shot
       // batch: the validator must grade the session that ran the
       // reconciliation through the page, not a stray draw an answer names.
@@ -100,6 +100,12 @@ export const DRIVERS = {
       const decoy = Object.keys(FIELD_HELPERS).find((k) => !replay.keys.includes(k));
       if (!decoy || decoy === field) {
         throw new Error(`the 410 reference copy omits ${decoy}, expected a different field`);
+      }
+      // Both fields are difficulty draws, logged so a row says which pair its
+      // run faced and a seeded pair of conditions faces the same one.
+      const drawn = (scope) => ctx.pages.state.draws.filter((d) => d.scope === scope).map((d) => d.pick);
+      if (!drawn('quotient.omitted').includes(field) || !drawn('quotient.decoy').includes(decoy)) {
+        throw new Error(`the draws log misses the page's ${field}/${decoy}: ${JSON.stringify(ctx.pages.state.draws)}`);
       }
       // A stray draw distinct from both the page's draw and its decoy, so
       // naming it is wrong for a reason no other pin already covers.

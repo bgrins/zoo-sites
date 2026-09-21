@@ -149,6 +149,55 @@ export const DRIVERS = {
           postRef: needle.ref.replace('-', ' '),
         },
       ];
+      // The 2026-09-20 haiku playwright-mcp answer, re-minted with this run's
+      // values: the extractor took postRef's value from the answer and its
+      // quote from the ask.
+      const rowAnswer = (ref) =>
+        `Perfect! I found the post I was looking for. Let me extract the information:\n\n` +
+        `- **Neighbour name**: ${needle.author}\n- **Final tally**: ${needle.count} bags\n` +
+        `- **Reference code**: ${ref}\n` +
+        `- **Date**: May 24 - Alder Creek (confirming it's the May 2026 event)\n\n**Answer:**\n\n` +
+        `${needle.author} posted the final tally of the Alder Creek cleanup (May 2026 event): ` +
+        `**${needle.count} bags** with reference code **${ref}**.`;
+      const askQuote =
+        "reference code (every card shows one, like FW-000000). Report the name of the neighbour " +
+        "who posted it, the final tally in bags, and the post's reference code";
+      const rowRaw = {
+        posterName: { value: needle.author, quote: `Neighbour name: ${needle.author}` },
+        bagCount: { value: needle.count, quote: `Final tally: ${needle.count} bags` },
+        postRef: { value: needle.ref, quote: askQuote },
+      };
+      this.alsoCorrectExtraction = [
+        {
+          name: "the 2026-09-20 row: postRef's code in the answer, its quote from the ask",
+          answer: rowAnswer(needle.ref),
+          raw: rowRaw,
+        },
+      ];
+      this.wrongExtraction = [
+        {
+          name: 'postRef quoted from the ask, and its code nowhere in the answer',
+          answer: rowAnswer('not legible on the card'),
+          raw: rowRaw,
+        },
+        {
+          name: "postRef's code in the answer only as the head of a longer code",
+          answer: rowAnswer(`${needle.ref}7`),
+          raw: rowRaw,
+        },
+        {
+          // Every clause of the quote is the ask's, echoed by the answer, so the
+          // clause fallback that joins a quote split across bullets finds each
+          // one in the answer.
+          name: "postRef quoted from the ask's wording, which the answer echoes, and its code never stated",
+          answer:
+            `Restating the ask: report the name of the neighbour who posted it, the final tally ` +
+            `in bags, and the post's reference code (every card shows one, like FW-000000).\n\n` +
+            `- Neighbour name: ${needle.author}\n- Final tally: ${needle.count} bags\n` +
+            `- Reference code: cut off on the card`,
+          raw: rowRaw,
+        },
+      ];
       this.wrong = [
         this.wrong,
         `${needle.author}'s final tally post (Ref ${needle.ref}) reports ` +

@@ -785,6 +785,22 @@ export const DRIVERS = {
         { size: `${best.size} (800 x 400 mm)`, color: best.color, price: best.price },
         { size: `Size ${best.size}`, color: `${best.color}.`, price: best.price },
       ];
+      // A one-letter size turns up in almost any answer that lists the sizes,
+      // so the quote gate never lets a string that short stand on the answer
+      // alone once its quote misses.
+      this.wrongExtraction = [
+        {
+          name: 'a size the answer never picks, its quote made up',
+          answer:
+            `The cheapest in-stock Norvindle mat is the ${best.color} colourway at ` +
+            `$${best.price.toFixed(2)}. The size selector offers S, M and L.`,
+          raw: {
+            size: { value: best.size, quote: `size ${best.size} in ${best.color}` },
+            color: { value: best.color, quote: `the ${best.color} colourway` },
+            price: { value: best.price, quote: `$${best.price.toFixed(2)}` },
+          },
+        },
+      ];
       const winner = `${best.size}/${best.color}`;
       this.wrongState = [
         {

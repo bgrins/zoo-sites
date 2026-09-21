@@ -5,7 +5,9 @@
 // The extractor is condition-blind (sees only ask + answer + schema, never the
 // transcript or tool surface) and cannot award a pass from nothing: every leaf
 // field carries a `quote` span that must appear verbatim (after normalisation)
-// in the answer, or the field is nulled locally. A null field fails the task.
+// in the answer, or the field is nulled locally, unless the leaf is a string
+// the answer states word for word itself (gatePair). A null field fails the
+// task.
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { agentEnv } from './agent-env.mjs';
@@ -100,14 +102,21 @@ export function quoteOf(container, key) {
 
 // The deterministic anti-hallucination gate: a value whose quote is not a
 // substring of the answer is nulled. Collapses { value, quote } wrappers back
-// to plain values so validators see the task's own schema shape.
-export function enforceQuotes(node, answerNorm) {
+// to plain values so validators see the task's own schema shape. `askNorm` is
+// the task's ask, which the extractor also reads: its wording is never
+// evidence of what the answer states.
+export function enforceQuotes(node, answerNorm, askNorm = '') {
+  return enforceNode(node, { answer: gateText(answerNorm), ask: gateText(askNorm) });
+}
+
+function enforceNode(node, gate) {
   if (node === null || node === undefined) return null;
-  if (isPair(node)) return gateQuote(node, answerNorm) ? node.value : null;
+  if (isPair(node)) return gatePair(node, gate)?.value ?? null;
   if (typeof node !== 'object') return null;
   const gated = (Array.isArray(node) ? [...node.entries()] : Object.entries(node)).map(([k, v]) => {
-    const value = enforceQuotes(v, answerNorm);
-    return [k, value, isPair(v) && value !== null ? v.quote : null];
+    if (!isPair(v)) return [k, enforceNode(v, gate), null];
+    const kept = gatePair(v, gate);
+    return [k, kept?.value ?? null, kept?.quote ?? null];
   });
   const shape = (i) =>
     Array.isArray(node) ? gated.map((g) => g[i]) : Object.fromEntries(gated.map((g) => [g[0], g[i]]));
@@ -116,20 +125,66 @@ export function enforceQuotes(node, answerNorm) {
   return out;
 }
 
-function gateQuote(node, answerNorm) {
-  if (node.value === null) return false;
-  if (typeof node.quote !== 'string') return false;
-  if (answerNorm.includes(normalise(node.quote))) return true;
+// Quote marks carry no content, and the gate compares with every one of them
+// (straight, typographic, prime, guillemet, fullwidth, corner bracket) dropped:
+// an extractor that echoes the answer's "interrupt catcher" as 'interrupt
+// catcher' quotes the same span. Dropping rather than folding to one mark
+// covers backticks too, which normalise already strips as markdown, so a
+// `code` span and its quoted echo meet.
+const QUOTE_MARKS = /['"«»‹›「」『』＂＇]/g;
+const gateText = (s) => normalise(s).replace(QUOTE_MARKS, '').replace(/\s+/g, ' ').trim();
+
+// The { value, quote } that survives the gate, or null.
+function gatePair(node, gate) {
+  if (node.value === null) return null;
+  if (typeof node.quote === 'string' && quoteHolds(node.quote, gate)) {
+    return { value: node.value, quote: node.quote };
+  }
+  // A string value the answer states word for word needs no quote to vouch for
+  // it: an extractor that copied the right code out of the answer but took its
+  // quote from the ask still read it off the answer. The value itself is the
+  // evidence, so it stands as its own quote, and it has to be a whole token
+  // of the answer, carry four letters or digits, and appear nowhere in the
+  // ask, whose example values an answer may echo. Numbers and booleans never
+  // qualify: their text turns up in almost any answer.
+  if (typeof node.value !== 'string') return null;
+  const value = gateText(node.value);
+  if (value.replace(/[^\p{L}\p{N}]+/gu, '').length < 4) return null;
+  return holdsToken(gate.answer, value) && !holdsToken(gate.ask, value)
+    ? { value: node.value, quote: node.value }
+    : null;
+}
+
+function quoteHolds(quote, gate) {
+  const whole = gateText(quote);
+  // A quote of nothing but marks and space folds to '', which every text holds.
+  if (!whole) return false;
+  if (gate.answer.includes(whole)) return true;
+  if (gate.ask.includes(whole)) return false;
   // Extractors sometimes splice a faithful quote across markdown structure
   // (bullet boundaries, joined sentences), which fails whole-string
   // containment even though every word is verbatim. Accept a quote whose
   // substantial clauses each appear in the answer; a fabricated quote
-  // still dies because its clauses are nowhere in the text.
-  const clauses = node.quote
+  // still dies because its clauses are nowhere in the text, and so does one
+  // spliced from the ask's clauses, even where the answer restates them.
+  const clauses = quote
     .split(/[.;\n]+/)
-    .map((c) => normalise(c))
+    .map(gateText)
     .filter((c) => c.length >= 12);
-  return clauses.length > 0 && clauses.every((c) => answerNorm.includes(c));
+  return (
+    clauses.length > 0 &&
+    clauses.every((c) => gate.answer.includes(c)) &&
+    !clauses.every((c) => gate.ask.includes(c))
+  );
+}
+
+// `needle` occurs in `text` with no letter or digit on either side.
+function holdsToken(text, needle) {
+  const alnum = (ch) => ch !== undefined && /[\p{L}\p{N}]/u.test(ch);
+  for (let i = text.indexOf(needle); i !== -1; i = text.indexOf(needle, i + 1)) {
+    if (!alnum(text[i - 1]) && !alnum(text[i + needle.length])) return true;
+  }
+  return false;
 }
 
 // Harness sentinels are not answers: never hand them to a model.
@@ -259,7 +314,7 @@ export async function extractFields({ ask, answer, schema, timeoutMs = 120000 })
   }
   const { raw, model, output_tokens, cost_usd } = extracted;
   return {
-    fields: enforceQuotes(raw, normalise(answer)),
+    fields: enforceQuotes(raw, normalise(answer), normalise(ask)),
     // Pre-enforcement output, for debugging quote-gate nulls.
     raw,
     extraction: {

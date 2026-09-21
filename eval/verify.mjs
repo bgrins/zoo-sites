@@ -58,7 +58,7 @@ import {
 import { detectScreen, windowGrid } from './window-grid.mjs';
 import { startPagesServer } from '../server.mjs';
 import { ORIGINS, originUrls } from '../manifest.mjs';
-import { conforms, enforceQuotes, extractFields, normalise } from './extract.mjs';
+import { conforms, enforceQuotes, extractFields, normalise, quotedSchema } from './extract.mjs';
 import { DRIVERS, DRIVER_FILES } from './verify-drivers/index.mjs';
 import { makeHelpers, pagesRouting } from './verify-drivers/helpers.mjs';
 import { addSession, textOf } from './verify-drivers/lib.mjs';
@@ -437,6 +437,8 @@ const exercised = {
   alsoCorrectFields: 0,
   wrongState: 0,
   alsoCorrectState: 0,
+  wrongExtraction: 0,
+  alsoCorrectExtraction: 0,
   neverAnswered: 0,
   mutantsKilled: 0,
   mutantsRun: 0,
@@ -1041,6 +1043,9 @@ async function runOne(worker, id) {
     const alsoCorrectFields = [driver.alsoCorrectFields ?? []].flat();
     const wrongState = [driver.wrongState ?? []].flat();
     const alsoCorrectState = [driver.alsoCorrectState ?? []].flat();
+    const wrongExtraction = [driver.wrongExtraction ?? []].flat();
+    const alsoCorrectExtraction = [driver.alsoCorrectExtraction ?? []].flat();
+    const rawSchema = quotedSchema(task.answerSchema);
     const schemaProblems = [
       ...conforms(fields, task.answerSchema).map((e) => `driver fields${e}`),
       ...wrongFields.flatMap((wf, i) =>
@@ -1058,6 +1063,13 @@ async function runOne(worker, id) {
             ? []
             : conforms(c.fields, task.answerSchema).map((e) => `${key}[${i}].fields${e}`)),
         ])
+      ),
+      ...Object.entries({ wrongExtraction, alsoCorrectExtraction }).flatMap(([key, cases]) =>
+        cases.flatMap((c, i) =>
+          typeof c?.name === 'string' && typeof c?.answer === 'string' && c?.raw
+            ? conforms(c.raw, rawSchema).map((e) => `${key}[${i}].raw${e}`)
+            : [`${key}[${i}] needs a name, an answer and the extractor's raw pairs`]
+        )
       ),
     ];
     if (!wrongFields.length) {
@@ -1098,6 +1110,24 @@ async function runOne(worker, id) {
       .filter(({ r }) => r.pass !== false);
     const stateRejected = alsoCorrectState
       .map((c) => ({ c, r: gradeState(c) }))
+      .filter(({ r }) => r.pass !== true);
+    // The field arrays hand the validator fields that never met the quote gate.
+    // Extraction cases start one step earlier, from an answer and the
+    // extractor's raw { value, quote } pairs over it, gated against that answer
+    // and the task's ask the way a paid run gates them, then graded against the
+    // golden state.
+    const gradeExtraction = (c) => {
+      try {
+        return task.validate(c.answer, ctx, enforceQuotes(c.raw, normalise(c.answer), normalise(task.ask)));
+      } catch (error) {
+        return { threw: error };
+      }
+    };
+    const extractionAccepted = wrongExtraction
+      .map((c) => ({ c, r: gradeExtraction(c) }))
+      .filter(({ r }) => r.pass !== false);
+    const extractionRejected = alsoCorrectExtraction
+      .map((c) => ({ c, r: gradeExtraction(c) }))
       .filter(({ r }) => r.pass !== true);
     // Never answered: null fields (extraction skipped or failed) and the shapes
     // an answer that states nothing extracts to must fail for every task.
@@ -1147,6 +1177,8 @@ async function runOne(worker, id) {
     exercised.alsoCorrectFields += alsoCorrectFields.length;
     exercised.wrongState += wrongState.length;
     exercised.alsoCorrectState += alsoCorrectState.length;
+    exercised.wrongExtraction += wrongExtraction.length;
+    exercised.alsoCorrectExtraction += alsoCorrectExtraction.length;
     exercised.neverAnswered += unansweredShapes.length;
     const stateWhy = (verb, key, { c, r }) =>
       r.threw
@@ -1162,6 +1194,8 @@ async function runOne(worker, id) {
       ),
       ...stateAccepted.map((s) => stateWhy('ACCEPTED', 'wrongState', s)),
       ...stateRejected.map((s) => stateWhy('REJECTED', 'alsoCorrectState', s)),
+      ...extractionAccepted.map((s) => stateWhy('ACCEPTED', 'wrongExtraction', s)),
+      ...extractionRejected.map((s) => stateWhy('REJECTED', 'alsoCorrectExtraction', s)),
       ...unanswered.map(({ f, r }) =>
         r.threw
           ? `validator threw on never-answered fields ${JSON.stringify(f).slice(0, 70)} — ${r.threw.message}`
@@ -1245,9 +1279,12 @@ async function runOne(worker, id) {
     pass++;
     verdict = 'ok';
     const stateCounts =
-      wrongState.length || alsoCorrectState.length
+      (wrongState.length || alsoCorrectState.length
         ? `; ${wrongState.length} wrong states, ${alsoCorrectState.length} accepted states`
-        : '';
+        : '') +
+      (wrongExtraction.length || alsoCorrectExtraction.length
+        ? `; ${wrongExtraction.length} wrong extractions, ${alsoCorrectExtraction.length} accepted extractions`
+        : '');
     console.log(
       `ok    ${task.id}  (fields; ${wrongFields.length} wrong, ` +
         `${alsoCorrectFields.length} accepted variants${stateCounts}` +
@@ -1491,9 +1528,10 @@ console.log(
     `${restarts ? `, ${restarts} worker restart${restarts === 1 ? '' : 's'} after a transport error` : ''}`
 );
 console.log(
-  `cases exercised: ${exercised.wrongFields} wrongFields and ${exercised.wrongState} wrongState ` +
-    `(must fail), ${exercised.alsoCorrectFields} alsoCorrectFields and ` +
-    `${exercised.alsoCorrectState} alsoCorrectState (must pass), ` +
+  `cases exercised: ${exercised.wrongFields} wrongFields, ${exercised.wrongState} wrongState and ` +
+    `${exercised.wrongExtraction} wrongExtraction (must fail), ${exercised.alsoCorrectFields} ` +
+    `alsoCorrectFields, ${exercised.alsoCorrectState} alsoCorrectState and ` +
+    `${exercised.alsoCorrectExtraction} alsoCorrectExtraction (must pass), ` +
     `${exercised.neverAnswered} never-answered shapes (must fail), ` +
     `${exercised.mutantsKilled}/${exercised.mutantsRun} mutants killed (empty, fresh; must fail), ` +
     `${exercised.shadowsIgnored}/${exercised.shadowsRun} shadow sessions ignored (must pass)`
