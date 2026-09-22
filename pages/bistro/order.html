@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Brindle Fig — Order Ahead</title>
 <link rel="stylesheet" href="bistro.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
   @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
@@ -11,7 +13,7 @@
     margin: 16px 0 6px; font-size: 12px; letter-spacing: 2px;
     text-transform: uppercase; color: var(--gold);
   }
-  .choice { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; }
+  .choice { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; cursor: pointer; }
   .choice .cname { font-size: 15px; }
   .choice .hint { color: var(--faded); font-size: 13px; }
   .echo { margin: 4px 0 12px; min-height: 26px; }
@@ -45,7 +47,7 @@
 <body>
 <header class="masthead">
   <div class="est">Kitchen &amp; Counter · Est. 2011</div>
-  <h1>The Brindle Fig</h1>
+  <h1><a href="index.html">The Brindle Fig</a></h1>
   <div class="rulewrap"></div>
   <nav>
     <a href="index.html">Menu</a><span class="dot">·</span>
@@ -82,7 +84,7 @@
       <p id="empty">Nothing on the ticket yet.</p>
       <ol id="ticket"></ol>
       <p class="totalrow"><span>Ticket total</span> <span id="tickettotal">$0.00</span></p>
-      <button type="button" id="place">Place order</button>
+      <button type="button" id="place" disabled>Place order</button>
       <span class="msg" id="placemsg" role="status"></span>
       <div id="confirm" hidden>
         <h3>Order placed</h3>
@@ -96,12 +98,14 @@
 </main>
 
 <footer>
-  The Brindle Fig · 14 Waldron Lane · (555) 014-0180 · hello@brindlefig.example<br>
+  The Brindle Fig · 14 Waldron Lane · (503) 555-0180 · hello@brindlefig.example<br>
   <a href="hours.html">Hours &amp; directions</a> · Walk-ins welcome · No service charge<br>
   <a href="story.html">Our story</a> ·
   <a href="allergens.html">Allergens &amp; dietary</a> ·
-  <a href="parties.html">Private hire</a><br>
-  &copy; The Brindle Fig. All rights reserved.
+  <a href="parties.html">Private hire</a> ·
+  <a href="privacy.html">Privacy</a> ·
+  <a href="terms.html">Order-ahead terms</a><br>
+  &copy; 2026 Brindle Fig LLC. All rights reserved.
 </footer>
 
 <script>
@@ -114,7 +118,7 @@
   const el = (id) => document.getElementById(id);
 
   function choiceRow(input, name, hint) {
-    const row = document.createElement('div');
+    const row = document.createElement('label');
     row.className = 'choice';
     const cname = document.createElement('span');
     cname.className = 'cname';
@@ -249,15 +253,28 @@
     }
     el('empty').hidden = payload.lines.length > 0;
     el('tickettotal').textContent = money(payload.subtotal);
+    el('place').disabled = payload.lines.length === 0;
+  }
+
+  function resetBuilder() {
+    dish = null;
+    for (const input of document.querySelectorAll('#dishes input')) input.checked = false;
+    el('config').hidden = true;
+    el('buildmsg').textContent = '';
+    el('buildline').innerHTML = '';
   }
 
   async function post(path, body) {
-    const res = await fetch(path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nonce: NONCE, ...body }),
-    });
-    return { ok: res.ok, body: await res.json() };
+    try {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, ...body }),
+      });
+      return { ok: res.ok, body: await res.json() };
+    } catch {
+      return { ok: false, body: { error: 'The kitchen did not answer. Nothing was sent; try again.' } };
+    }
   }
 
   async function removeLine(index) {
@@ -291,15 +308,17 @@
     const msg = el('placemsg');
     msg.className = 'msg';
     msg.textContent = 'Printing the ticket…';
+    el('place').disabled = true;
     const { ok, body } = await post('/api/bistro/order', {});
     if (!ok) {
+      el('place').disabled = el('ticket').children.length === 0;
       msg.className = 'msg bad';
       msg.textContent = body.error || 'The order could not be placed.';
       return;
     }
     msg.textContent = '';
     el('confcode').textContent = 'Order code ' + body.code;
-    el('conftotal').textContent = 'Total charged ' + money(body.total);
+    el('conftotal').textContent = 'Total due at pickup ' + money(body.total);
     const recap = el('conflines');
     recap.innerHTML = '';
     for (const line of body.lines) {
@@ -312,6 +331,7 @@
     el('confnote').textContent = body.message || '';
     el('confirm').hidden = false;
     renderTicket({ lines: [], subtotal: 0 });
+    resetBuilder();
   });
 
   async function load() {

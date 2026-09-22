@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Voltro — Payment</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="checkout.css">
 </head>
 <body>
-<header><b>Voltro</b><span>Secure checkout</span><a href="shipping.html">Back to shipping</a></header>
+<header><a class="wordmark" href="index.html">Voltro</a><span>Secure checkout</span><a class="back" href="shipping.html">Back to shipping</a></header>
 <div class="steps">Cart › Shipping › <b>Payment</b> › Review</div>
 <main>
   <h1>Payment method</h1>
@@ -31,9 +33,7 @@
     <div id="promostatus" role="status"></div>
   </section>
 </main>
-<footer>Card details are encrypted in transit and never stored against your Voltro
-  account. <a href="conditions.html">Conditions of Use</a> &middot; <a href="privacy.html">Privacy Notice</a>
-  &middot; <a href="help.html">Help</a> &middot; © 2026 Voltro Marketplace</footer>
+<footer>Card details are encrypted in transit and never stored against your Voltro account. <a href="conditions.html">Terms of Use</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="returns.html">Delivery &amp; returns</a> &middot; <a href="help.html">Help</a> &middot; &copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000</footer>
 <script>
 const NONCE = '__SESSION_NONCE__';
 const status = document.getElementById('status');
@@ -63,7 +63,7 @@ document.getElementById('applydeal').addEventListener('click', async () => {
     promoStatus.textContent = body.message;
   } catch {
     promoStatus.className = 'error';
-    promoStatus.textContent = 'Network error — try again.';
+    promoStatus.textContent = 'Voltro could not be reached. Check your connection and try again.';
   }
 });
 document.getElementById('pay').addEventListener('submit', async (event) => {
@@ -72,9 +72,20 @@ document.getElementById('pay').addEventListener('submit', async (event) => {
   const exp = document.getElementById('exp').value.trim();
   const cvv = document.getElementById('cvv').value.trim();
   status.className = '';
-  if (!/^\d{16}$/.test(card.replace(/[\s-]/g, '')) || !exp || !cvv) {
+  const month = Number(/^\s*(\d{1,2})\s*[/-]?\s*(?:20)?\d{2}\s*$/.exec(exp)?.[1]);
+  const problem = !/^\d{16}$/.test(card.replace(/[\s-]/g, ''))
+    ? ['card', 'Enter the 16-digit card number.']
+    : !(month >= 1 && month <= 12)
+      ? ['exp', 'Enter the expiry date as MM/YY.']
+      : !/^\d{3,4}$/.test(cvv)
+        ? ['cvv', 'Enter the 3- or 4-digit security code (CVV).']
+        : null;
+  for (const id of ['card', 'exp', 'cvv']) {
+    document.getElementById(id).setAttribute('aria-invalid', String(problem?.[0] === id));
+  }
+  if (problem) {
     status.className = 'error';
-    status.textContent = 'Enter a 16-digit card number, expiry, and CVV.';
+    status.textContent = problem[1];
     return;
   }
   const button = document.getElementById('continue');
@@ -94,7 +105,7 @@ document.getElementById('pay').addEventListener('submit', async (event) => {
     location.href = 'review.html';
   } catch {
     status.className = 'error';
-    status.textContent = 'Network error — try again.';
+    status.textContent = 'Voltro could not be reached. Check your connection and try again.';
   } finally {
     button.disabled = false;
   }

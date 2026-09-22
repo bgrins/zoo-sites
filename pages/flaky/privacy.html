@@ -4,144 +4,38 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy notice — Zellick Analytics</title>
-<style>
-  :root {
-    --rail: #141830;
-    --rail-2: #1e2444;
-    --ink: #1b1f2a;
-    --muted: #6a7285;
-    --line: #d9dde8;
-    --accent: #4636c9;
-    --pos: #0f7a5a;
-    --neg: #b03434;
-    --page: #eef0f6;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--page); color: var(--ink);
-    font-family: Tahoma, "Lucida Grande", "DejaVu Sans", sans-serif;
-    font-size: 13px; line-height: 1.45;
-    display: grid; grid-template-columns: 216px 1fr; min-height: 100vh;
-  }
-  .rail { background: var(--rail); color: #b9c0d6; padding: 0 0 24px; }
-  .brand { padding: 16px 18px 14px; border-bottom: 1px solid #262c4e; }
-  .brand b { display: block; color: #fff; font-size: 14px; letter-spacing: 0.02em; }
-  .brand span { font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: #6f78a0; }
-  .rail nav { padding: 12px 0; }
-  .rail h3 {
-    margin: 14px 18px 6px; font-size: 9px; font-weight: normal; text-transform: uppercase;
-    letter-spacing: 0.18em; color: #5d6690;
-  }
-  .rail a {
-    display: block; padding: 6px 18px; color: #b9c0d6; text-decoration: none;
-    border-left: 3px solid transparent;
-  }
-  .rail a:hover { background: var(--rail-2); color: #fff; }
-  .rail a.on { background: var(--rail-2); color: #fff; border-left-color: #6f5cf0; }
-  .rail .warehouse {
-    margin: 18px 18px 0; padding: 10px 12px; background: #191f3b; border: 1px solid #2a3159;
-    font-size: 11px; color: #8f97b8;
-  }
-  .rail .warehouse b { color: #e8b63d; display: block; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
-
-  .topbar {
-    background: #fff; border-bottom: 1px solid var(--line); padding: 0 26px;
-    display: flex; align-items: center; justify-content: space-between; height: 46px;
-  }
-  .crumbs { color: var(--muted); font-size: 11px; }
-  .crumbs b { color: var(--ink); font-weight: normal; }
-  .chip {
-    border: 1px solid var(--line); padding: 3px 9px; font-size: 11px; color: var(--muted);
-    background: #f7f8fc;
-  }
-  main { padding: 22px 26px 40px; }
-  h1 { margin: 0 0 2px; font-size: 19px; font-weight: normal; letter-spacing: -0.01em; }
-  .sub { margin: 0 0 20px; color: var(--muted); font-size: 12px; }
-
-  .panel { background: #fff; border: 1px solid var(--line); margin-top: 18px; }
-  .panel > header {
-    padding: 10px 16px; border-bottom: 1px solid var(--line); display: flex;
-    align-items: baseline; justify-content: space-between;
-  }
-  .panel > header h2 { margin: 0; font-size: 13px; font-weight: bold; letter-spacing: 0.01em; }
-  .panel > header .meta { font-size: 11px; color: var(--muted); }
-  .panel .body { padding: 16px; }
-  .panel p { margin: 0 0 14px; max-width: 62ch; color: #414958; }
-
-  .notice {
-    border-left: 3px solid var(--accent); background: #f4f3fd; padding: 10px 14px;
-    margin: 0 0 16px; max-width: 62ch;
-  }
-  .notice p { margin: 0; color: #33384a; }
-  .notice p + p { margin-top: 8px; }
-
-  button {
-    font-family: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
-    padding: 8px 16px; background: var(--accent); color: #fff; border: 1px solid #3628a8;
-    cursor: pointer;
-  }
-  button:hover { background: #3a2cb0; }
-  button:disabled { background: #9a94cf; border-color: #9a94cf; cursor: default; }
-
-  .progress { margin-top: 14px; min-height: 34px; }
-  .progress p { margin: 0; font-size: 12px; color: var(--muted); }
-  .progress .elapsed { color: var(--ink); font-variant-numeric: tabular-nums; }
-  .track { margin-top: 7px; height: 4px; width: 260px; background: #e4e7f0; display: none; }
-  .track i { display: block; height: 4px; background: var(--accent); width: 0; }
-  .progress.error p { color: var(--neg); }
-
-  #result { display: none; margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
-  #result .cap {
-    margin: 0 0 4px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.16em;
-    color: var(--muted);
-  }
-  #result .ref {
-    margin: 0 0 12px; font-size: 24px; letter-spacing: 0.04em; color: var(--accent);
-    font-variant-numeric: tabular-nums;
-  }
-  #result .facts { margin: 0; font-size: 12px; color: #414958; }
-  #result .facts span { display: block; }
-
-  .aux { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
-  .aux ul { margin: 0; padding: 0 0 0 16px; font-size: 12px; color: #414958; }
-  .aux li { margin-bottom: 6px; }
-  .aux dl { margin: 0; font-size: 12px; }
-  .aux dt { color: var(--muted); font-size: 11px; }
-  .aux dd { margin: 0 0 9px; font-variant-numeric: tabular-nums; }
-  .fine { margin-top: 26px; font-size: 11px; color: #8b91a2; max-width: 70ch; }
-  .fine a { color: #6a7285; }
-</style>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="zellick.css">
 </head>
 <body>
-<div class="rail">
-  <div class="brand">
-    <b>Zellick Analytics</b>
-    <span>Reporting warehouse</span>
-  </div>
-  <nav>
+<aside class="rail">
+  <a class="brand" href="./"><span class="glyph" aria-hidden="true"></span><b>Zellick Analytics</b><span>Reporting warehouse</span></a>
+  <nav aria-label="Workspace">
     <h3>Workspace</h3>
-    <a href="/flaky/">Quarterly close</a>
+    <a href="./">Quarterly close</a>
     <a href="cohorts.html">Cohort retention</a>
     <a href="margins.html">Margin explorer</a>
     <h3>Administration</h3>
     <a href="sources.html">Data sources</a>
     <a href="extracts.html">Scheduled extracts</a>
-    <a href="slow.html">Archive retrieval</a>
+    <a href="archive.html">Archive retrieval</a>
     <a href="access.html">Access log</a>
   </nav>
   <div class="warehouse">
     <b>Bulletin</b>
     Warehouse node RW-2 is degraded. Report generation may fail on first request.
   </div>
-</div>
+</aside>
 
 <div>
-  <div class="topbar">
+  <header class="topbar">
     <div class="crumbs">Administration / <b>Privacy notice</b></div>
-    <div class="chip">Effective 1 April 2026 &middot; version 4</div>
-  </div>
-  <main class="sheet">
-
+    <div class="right">
+      <div class="chip">Effective 1 April 2026 &middot; version 4</div>
+      <div class="who"><b>M. Drossany</b> &middot; Finance workspace <a href="signout.html">Sign out</a></div>
+    </div>
+  </header>
+  <main>
     <h1>Privacy notice</h1>
     <p class="sub">How Zellick Analytics handles workspace data, customer data and the
     records the warehouse keeps about both.</p>
@@ -201,18 +95,21 @@
         workspace administrator rather than act on it alone. Requests are acknowledged
         within five working days and answered within thirty.</p>
         <p>Write to privacy@zellickanalytics.example, or to the Data Protection Lead,
-        Zellick Analytics Ltd, Suite 3, Marlowe Wharf. Telephone 0808 157 0231. If we
+        Zellick Analytics Ltd, Callowmere House, 40 Orrinford Road, Callowmere CX4 9RT. Telephone 0808 157 0231. If we
         get it wrong, you can complain to your national data protection authority, and
         we would rather you told us first so we can put it right.</p>
       </div>
     </section>
 
-    <p class="fine">Zellick Analytics Ltd &middot; Suite 3, Marlowe Wharf &middot; company
-    number 00000000 &middot; retrieval jobs are logged against your workspace for 18 months.
-    <a href="privacy.html">Privacy notice</a> &middot;
-    <a href="terms.html">Terms of service</a> &middot;
-    <a href="service-levels.html">Service levels</a> &middot;
-    Support: help@zellickanalytics.example</p>
+    <footer class="fine">
+      <p>This notice is reviewed each April and whenever a sub-processor changes.</p>
+      <p>&copy; 2026 Zellick Analytics Ltd &middot; Callowmere House, 40 Orrinford Road, Callowmere CX4 9RT
+      &middot; Registered in England and Wales, company number 00000000 &middot;
+      <a href="privacy.html">Privacy notice</a> &middot;
+      <a href="terms.html">Terms of service</a> &middot;
+      <a href="service-levels.html">Service levels</a> &middot;
+      Support: help@zellickanalytics.example, 0808 157 0231</p>
+    </footer>
   </main>
 </div>
 </body>

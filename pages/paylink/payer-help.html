@@ -4,23 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Payer help — Anverra Pay</title>
+<link rel="icon" href="anverra-icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="anverra.css">
 </head>
 <body>
-<div class="topbar">
+<header class="topbar">
   <span class="mark">Anverra Pay</span>
-  <span class="tag">Authorised payment institution 000000</span>
-</div>
+  <span class="tag">Authorised payment institution, firm reference 000000</span>
+</header>
 
-<div class="shell">
+<main class="shell">
   <div class="card">
     <h1>Payer help</h1>
     <p class="sub">Answers for people asked to approve a payment through Anverra Pay.</p>
 
     <p class="rowlabel">What is this window?</p>
     <p class="hintline">A merchant that uses Anverra Pay never sees your card. When you
-    choose to pay, the merchant opens this window and Anverra Pay takes the
-    authorisation directly. When you approve, the merchant receives only the approval,
+    choose to pay, the merchant opens this window and Anverra Pay confirms the card saved
+    to your account and takes the authorisation directly. When you approve, the merchant receives only the approval,
     never the card details.</p>
 
     <p class="rowlabel">Where is the verification word?</p>
@@ -41,8 +42,8 @@
     <p class="rowlabel">Disputes</p>
     <p class="hintline">Raise a dispute with the payer help desk within 60 days of the
     payment, quoting the processor reference from your approval and the order details
-    from the merchant. Write to payers@anverrapay.example or call (555) 019-7714,
-    Monday to Friday.</p>
+    from the merchant. Write to payers@anverrapay.example or call 0808 157 0114,
+    free from UK landlines and mobiles, Monday to Friday.</p>
 
     <hr>
     <p class="hintline">To finish a payment you were in the middle of, use your
@@ -50,13 +51,21 @@
     from the merchant's checkout page.</p>
   </div>
 
+</main>
+
+<footer class="shell payfoot">
   <div class="secured">
     <span>Anverra Pay Services Ltd</span>
-    <a href="payer-help.html">Payer help</a>
+    <span class="footlinks">
+      <a href="payer-help.html">Payer help</a>
+      <a href="payer-privacy.html">Privacy</a>
+      <a href="payer-terms.html">Terms</a>
+    </span>
   </div>
-  <p class="legal">Anverra Pay Services Ltd is authorised as a payment institution under
-  registration 000000. Authorisation holds the amount shown; the merchant captures it when
-  the order is placed. Disputes are handled through the payer help desk within 60 days.</p>
-</div>
+  <p class="legal">Anverra Pay Services Ltd is an authorised payment institution, firm
+  reference 000000, registered in England and Wales, company number 00000000. Authorisation
+  holds the amount shown; the merchant captures it when the order is placed. Disputes are
+  handled through the payer help desk within 60 days.</p>
+</footer>
 </body>
 </html>

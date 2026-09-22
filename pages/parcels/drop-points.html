@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>Drop points — Corvane Parcel Network</title>
 <link rel="stylesheet" href="corvane.css">
 </head>
@@ -16,7 +17,7 @@
 
 <header class="chrome">
   <div class="bar">
-    <div class="wordmark"><b>Corvane</b><span>Parcel Network</span></div>
+    <a class="wordmark" href="./"><b>Corvane</b><span>Parcel Network</span></a>
     <div class="acct">Guest session &middot; rates shown ex VAT</div>
   </div>
   <nav class="main">
@@ -36,7 +37,7 @@
     <section class="panel">
       <div class="head">
         <h1>Drop points</h1>
-        <div class="tag">247 counters and lockers</div>
+        <div class="tag">6 depot counters &middot; 241 partner sites</div>
       </div>
       <div class="body">
         <p class="lede">Drop points take parcels into the network without a collection
@@ -46,9 +47,10 @@
         <table class="grid">
           <tr><th>Depot</th><th>Address</th><th>Counter hours</th></tr>
           <tr><td>Marbeck sort hall</td><td>Marbeck Distribution Park, Halston HL4 2QR</td><td class="num">Mon-Sat 07:30-19:00</td></tr>
-          <tr><td>Tyburn depot</td><td>4 Weavers Road, Tyburn TY2 8LF</td><td class="num">Mon-Fri 08:00-18:00</td></tr>
-          <tr><td>Ferndale depot</td><td>Unit 2, Croft Lane Estate, Ferndale FD1 6AS</td><td class="num">Mon-Fri 08:00-18:00</td></tr>
-          <tr><td>Northgate depot</td><td>19 Kiln Street, Northgate NG5 3RW</td><td class="num">Mon-Sat 08:00-17:00</td></tr>
+          <tr><td>Halston depot</td><td>Unit 14, Marbeck Distribution Park, Halston HL4 2QR</td><td class="num">Mon-Fri 08:00-18:00</td></tr>
+          <tr><td>Tarnwick depot</td><td>4 Weavers Road, Tarnwick TK2 8LF</td><td class="num">Mon-Fri 08:00-18:00</td></tr>
+          <tr><td>Hollinmere depot</td><td>Unit 2, Croft Lane Estate, Hollinmere HM1 6AS</td><td class="num">Mon-Fri 08:00-18:00</td></tr>
+          <tr><td>Brackwold depot</td><td>19 Kiln Street, Brackwold BW5 3RW</td><td class="num">Mon-Sat 08:00-17:00</td></tr>
           <tr><td>Seddon Vale depot</td><td>Vale Works, Seddon Vale SV3 1JP</td><td class="num">Mon-Fri 08:30-17:30</td></tr>
         </table>
         <h3>Partner counters and lockers</h3>
@@ -57,6 +59,14 @@
         unlabelled parcels must go to a depot counter or a
         <a href="collections.html">booked collection</a>. Partner sites hand parcels to a
         Corvane driver on the next scheduled sweep, usually within one working day.</p>
+        <form class="finder" id="finder" autocomplete="off">
+          <div class="field">
+            <label for="fpc">Your postcode</label>
+            <input id="fpc" type="text" spellcheck="false" placeholder="HL4 2QR">
+          </div>
+          <button type="submit">Find nearby</button>
+        </form>
+        <div class="finder-out" id="finderOut" role="status"></div>
         <p class="rowmeta">Depot collect parcels are held at the chosen counter for 7
         days from arrival, then returned to sender. Bring photo identification matching
         the receiver name on the label.</p>
@@ -111,5 +121,48 @@
     &middot; &copy; 2026 Corvane Parcel Network Ltd. All rights reserved.
   </div>
 </footer>
+<script>
+  const PARTNERS = {
+    HL: [['Ropewalk Newsagents', '31 Ropewalk Lane, Halston', 'Counter', 'Mon-Sat 06:30-20:00'],
+      ['Halston Park forecourt', 'Aldous Road, Halston', 'Locker', 'Open 24 hours'],
+      ['Pellam Street Stores', '8 Pellam Street, Halston', 'Counter', 'Daily 07:00-22:00']],
+    TK: [['Tarnwick Market Kiosk', 'Market Square, Tarnwick', 'Counter', 'Mon-Sat 08:00-18:00'],
+      ['Weavers Road locker bank', 'outside 12 Weavers Road, Tarnwick', 'Locker', 'Open 24 hours']],
+    HM: [['Hollinmere Post and Print', '2 Quay Street, Hollinmere', 'Counter', 'Mon-Fri 08:30-17:30'],
+      ['Croft Lane Service Station', 'Croft Lane, Hollinmere', 'Locker', 'Open 24 hours']],
+    BW: [['Kiln Street Convenience', '44 Kiln Street, Brackwold', 'Counter', 'Daily 07:00-21:00'],
+      ['Brackwold Station locker', 'Station forecourt, Brackwold', 'Locker', 'Open 24 hours']],
+    SV: [['Vale Road Stores', '17 Vale Road, Seddon Vale', 'Counter', 'Mon-Sat 07:30-19:00'],
+      ['Ferry Terminal locker', 'Seddon Vale ferry terminal', 'Locker', 'Sailing hours']],
+  };
+  const finder = document.getElementById('finder');
+  const out = document.getElementById('finderOut');
+  finder.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const pc = document.getElementById('fpc').value.trim().toUpperCase();
+    const m = pc.match(/^([A-Z]{1,2})\d{1,2}[A-Z]?\s*\d[A-Z]{2}$/);
+    out.textContent = '';
+    if (!m) {
+      out.textContent = 'Enter a full postcode, for example HL4 2QR.';
+      return;
+    }
+    const sites = PARTNERS[m[1]];
+    if (!sites) {
+      out.textContent = 'Corvane does not deliver to that postcode area yet, so there are no partner sites near it.';
+      return;
+    }
+    const list = document.createElement('ul');
+    for (const [name, addr, kind, hours] of sites) {
+      const li = document.createElement('li');
+      const b = document.createElement('b');
+      b.textContent = name;
+      li.append(b, ' ' + kind.toLowerCase() + ', ' + addr + '. ' + hours + '.');
+      list.append(li);
+    }
+    const lead = document.createElement('p');
+    lead.textContent = 'Partner sites nearest ' + pc + ':';
+    out.append(lead, list);
+  });
+</script>
 </body>
 </html>

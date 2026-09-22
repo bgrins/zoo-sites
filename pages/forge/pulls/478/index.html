@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#478 docs: rewrite the lane onboarding runbook &middot; hollowmill/brine-gateway &middot; Kettleforge</title>
+<link rel="stylesheet" href="../../forge.css">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="masthead">
+  <a class="mark" href="../../">Kettle<em>forge</em></a>
+  <nav>
+    <a href="../../">Repositories</a>
+    <a href="../../pulls/">Pull requests</a>
+    <a href="../../anvil/">Anvil</a>
+    <a href="../../registry.html">Registry</a>
+  </nav>
+  <span class="who">signed in as <b>r.vandermolen</b></span>
+</header>
+<div class="crumbbar">
+  <div class="crumb"><a href="../../">hollowmill</a><span class="sep">/</span><b>brine-gateway</b><span class="vis">internal</span></div>
+  <div class="tabs">
+    <a href="../../">Code</a>
+    <a href="../../issues/">Issues<span class="n">4</span></a>
+    <span class="here">Pull requests<span class="n">3</span></span>
+    <a href="../../anvil/">Anvil</a>
+    <a href="../../insights.html">Insights</a>
+    <a href="../../settings.html">Settings</a>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="prhead">
+    <h1>docs: rewrite the lane onboarding runbook <span class="num">#478</span></h1>
+    <div class="prmeta">
+      <span class="state">Open</span>
+      <span><b>p.oduvane</b> wants to merge 3 commits into <span class="branch">trunk</span> from <span class="branch">docs-lane-runbook</span></span>
+    </div>
+  </div>
+
+  <nav class="subtabs">
+    <span class="here">Conversation<span class="n">2</span></span>
+    <a href="#commits">Commits<span class="n">3</span></a>
+    <a href="#checks">Checks<span class="n">5</span></a>
+    <a href="#files">Files changed<span class="n">2</span></a>
+  </nav>
+
+  <div class="cols">
+    <div class="main">
+      <div class="card">
+        <div class="cardhead">p.oduvane opened this pull request on 08 July</div>
+        <div class="body">
+          <p>The runbook for bringing a new freight lane onto the gateway still described the
+          tariff table from two releases ago. This rewrites it around the current flow: register
+          the lane, load its rate card, replay a day of traffic, then enable it.</p>
+          <p>Each step now names the Anvil job that proves it, so a reviewer can check the lane
+          against pipeline output rather than against a screenshot.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">anvil-bot commented on 08 July</div>
+        <div class="body">
+          <p>All jobs passed on 9aa04c2. Documentation-only change; contract tests skipped by rule.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">t.ashgrove commented on 09 July</div>
+        <div class="body">
+          <p>Step 3 should say the replay runs against staging, not a local copy. Otherwise this reads well.</p>
+        </div>
+      </div>
+
+      <div class="card" id="commits">
+        <div class="cardhead">3 commits on docs-lane-runbook</div>
+        <table class="filelist">
+          <tbody>
+            <tr><td class="n">d0f3b85</td><td class="msg">docs: new structure for the lane runbook</td><td class="when">08 July</td></tr>
+            <tr><td class="n">71c2e4a</td><td class="msg">docs: name the proving job for each step</td><td class="when">08 July</td></tr>
+            <tr><td class="n">9aa04c2</td><td class="msg">docs: replay step runs against staging</td><td class="when">10 July</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" id="checks">
+        <div class="cardhead">Anvil pipeline for 9aa04c2 - 4 passed, 1 skipped</div>
+        <table class="checklist">
+          <thead>
+            <tr><th>Job</th><th>Result</th><th>Duration</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="job">lint / eslint</td><td><span class="chip pass">passed</span></td><td class="dur">31s</td></tr>
+            <tr><td class="job">build / node-20</td><td><span class="chip pass">passed</span></td><td class="dur">1m 04s</td></tr>
+            <tr><td class="job">unit / gateway</td><td><span class="chip pass">passed</span></td><td class="dur">1m 58s</td></tr>
+            <tr><td class="job">unit / tariff</td><td><span class="chip pass">passed</span></td><td class="dur">1m 39s</td></tr>
+            <tr><td class="job">contract / pact</td><td><span class="chip skip">skipped</span></td><td class="dur">--</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" id="files">
+        <div class="cardhead">2 files changed</div>
+        <table class="filelist">
+          <tbody>
+            <tr><td class="n">docs/lanes/onboarding.md</td><td class="when"><span class="plus">+142</span> <span class="minus">-97</span></td></tr>
+            <tr><td class="n">docs/lanes/README.md</td><td class="when"><span class="plus">+3</span> <span class="minus">-1</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">Merge status</div>
+        <div class="body">
+          <p><span class="chip pass">4 passed</span> <span class="chip skip">1 skipped</span></p>
+          <p class="byline">All required jobs pass. Review from a code owner is required on this repository
+          before Forge merge is enabled.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <div class="cardhead">Details</div>
+        <div class="body">
+          <dl>
+            <dt>Reviewers</dt>
+            <dd>r.vandermolen (you)</dd>
+            <dt>Labels</dt>
+            <dd>docs</dd>
+            <dt>Milestone</dt>
+            <dd>Gateway 4.7</dd>
+            <dt>Head commit</dt>
+            <dd>9aa04c2</dd>
+            <dt>Changed files</dt>
+            <dd>2</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="sitefoot">
+  <div class="links">
+    <a href="../../status.html">Status</a>
+    <a href="../../docs.html">Docs</a>
+    <a href="../../privacy.html">Privacy</a>
+    <a href="../../terms.html">Terms</a>
+    <a href="mailto:support@kettleforge.example">Contact support</a>
+    <a href="../../about.html">About</a>
+    <a href="../../plans.html">Plans</a>
+    <a href="../../security.html">Security</a>
+  </div>
+  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Vellinmouth VM4 3TR.
+  Registered in England and Wales, company number 00000000. &copy; 2026 Bellhollow Systems Ltd.</div>
+</footer>
+</body>
+</html>

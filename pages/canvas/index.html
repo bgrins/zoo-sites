@@ -3,96 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TintForge Studio — Print and ink colour calibration</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: rgb(247, 246, 243); color: rgb(20, 19, 15);
-    font-family: Optima, "Gill Sans", Candara, "Segoe UI", sans-serif;
-    font-size: 15px; line-height: 1.55;
-  }
-  .masthead {
-    border-bottom: 1px solid rgb(20, 19, 15); padding: 26px 40px 18px;
-    display: flex; align-items: flex-end; justify-content: space-between;
-  }
-  .masthead h1 {
-    margin: 0; font-family: Didot, "Hoefler Text", Baskerville, Garamond, serif;
-    font-size: 34px; font-weight: normal; letter-spacing: 0.01em;
-  }
-  .masthead h1 em { font-style: italic; }
-  .masthead .who {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.3em; color: rgb(111, 108, 98);
-  }
-  nav {
-    border-bottom: 1px solid rgb(221, 217, 207); padding: 0 40px;
-    display: flex; gap: 30px;
-  }
-  nav a {
-    display: block; padding: 11px 0; color: rgb(111, 108, 98); text-decoration: none;
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-  }
-  nav a:hover { color: rgb(20, 19, 15); }
-  nav a.here { color: rgb(20, 19, 15); border-bottom-color: rgb(20, 19, 15); }
-  .work { padding: 40px; max-width: 1000px; }
-  h2 {
-    margin: 0 0 4px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 24px; font-weight: normal;
-  }
-  h3.rule {
-    margin: 40px 0 4px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 20px; font-weight: normal;
-  }
-  .deck { margin: 0 0 26px; color: rgb(76, 73, 65); max-width: 52ch; }
-  .lede { margin: 0 0 20px; max-width: 54ch; font-size: 17px; color: rgb(38, 36, 30); }
-  .services { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
-  .panel { padding: 20px 20px 16px; background: rgb(255, 255, 255); border: 1px solid rgb(221, 217, 207); }
-  .panel h4 {
-    margin: 0 0 10px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 18px; font-weight: normal;
-  }
-  .panel p { font-size: 13px; color: rgb(111, 108, 98); margin: 0 0 10px; }
-  .panel p:last-child { margin: 0; }
-  .panel a {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 0.24em;
-    color: rgb(20, 19, 15); text-decoration: none;
-    border-bottom: 1px solid rgb(139, 135, 124); padding-bottom: 2px;
-  }
-  .panel a:hover { border-bottom-color: rgb(20, 19, 15); }
-  ol.bench { margin: 0 0 6px; padding-left: 20px; max-width: 56ch; color: rgb(76, 73, 65); }
-  ol.bench li { margin-bottom: 9px; }
-  dl.contact { margin: 0; max-width: 56ch; }
-  dl.contact dt {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 0.24em; color: rgb(139, 135, 124);
-    margin-top: 14px;
-  }
-  dl.contact dd {
-    margin: 3px 0 0; padding-bottom: 8px; border-bottom: 1px solid rgb(230, 226, 216);
-    font-family: "SFMono-Regular", Menlo, "DejaVu Sans Mono", monospace; font-size: 12px;
-  }
-  dl.contact a { color: rgb(20, 19, 15); }
-  .fine {
-    padding: 0 40px 44px; max-width: 62ch; color: rgb(139, 135, 124); font-size: 11px;
-    letter-spacing: 0.02em;
-  }
-  .fine a { color: rgb(111, 108, 98); }
-</style>
+<title>Velloquin Studio — Print and ink colour calibration</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="studio.css">
 </head>
 <body>
-<div class="masthead">
-  <h1>TintForge <em>Studio</em></h1>
-  <span class="who">Print calibration desk</span>
-</div>
-<nav>
+<div class="register" aria-hidden="true"></div>
+<header class="masthead">
+  <a class="brand" href="index.html">Velloquin <em>Studio</em></a>
+  <span class="who">Ink, proofing and colour calibration</span>
+</header>
+<nav class="studio" aria-label="Studio">
+  <a href="index.html" aria-current="page">Studio</a>
   <a href="libraries.html">Libraries</a>
   <a href="swatch.html">Calibration</a>
   <a href="ink-recipes.html">Ink recipes</a>
   <a href="press-profiles.html">Press profiles</a>
   <a href="archive.html">Archive</a>
 </nav>
-<div class="work">
-  <h2>Colour, held to the sheet</h2>
-  <p class="lede">TintForge is a small studio in Dyehouse Yard that mills ink, keeps
+<main class="work">
+  <h1>Colour, held to the sheet</h1>
+  <p class="lede">Velloquin is a small studio in Dyehouse Yard that mills ink, keeps
   standing swatch libraries, and proofs colour for printers, packers and designers who
   need this year's run to match last year's.</p>
   <p class="deck">Two pressmen and a librarian work the floor. Everything the studio
@@ -101,34 +32,34 @@
   Clients send us the stock, the press profile and the job they are trying to repeat, and
   we send back a proof and a written recipe card.</p>
 
-  <div class="services">
-    <div class="panel">
-      <h4>Ink milling</h4>
+  <div class="grid-panels">
+    <section class="panel">
+      <h3>Ink milling</h3>
       <p>Pigment, vehicle and drier chosen for the stock and the press rather than for
       the swatch book. Each mix travels with a recipe card written at the bench.</p>
-      <p><a href="ink-recipes.html">Recipe practice</a></p>
-    </div>
-    <div class="panel">
-      <h4>Standing libraries</h4>
+      <p class="more"><a href="ink-recipes.html">Recipe practice</a></p>
+    </section>
+    <section class="panel">
+      <h3>Standing libraries</h3>
       <p>Sets held for accounts that reorder, each on its own revision cycle and
       re-pulled against the reference press by the librarian.</p>
-      <p><a href="libraries.html">Library shelf</a></p>
-    </div>
-    <div class="panel">
-      <h4>Proofing and calibration</h4>
+      <p class="more"><a href="libraries.html">Library shelf</a></p>
+    </section>
+    <section class="panel">
+      <h3>Proofing and calibration</h3>
       <p>Proof pulls against a named press profile, plus the desk where a client checks
       their own monitor before signing off on colour remotely.</p>
-      <p><a href="swatch.html">Calibration desk</a></p>
-    </div>
-    <div class="panel">
-      <h4>Press profiling</h4>
+      <p class="more"><a href="swatch.html">Calibration desk</a></p>
+    </section>
+    <section class="panel">
+      <h3>Press profiling</h3>
       <p>House profiles written and re-verified whenever rollers are reset or the fount
       is changed, so a repeat run starts from a known state.</p>
-      <p><a href="press-profiles.html">Press profiles</a></p>
-    </div>
+      <p class="more"><a href="press-profiles.html">Press profiles</a></p>
+    </section>
   </div>
 
-  <h3 class="rule">How a job runs</h3>
+  <h2 class="rule">How a job runs</h2>
   <ol class="bench">
     <li>You send the stock, the press and profile pairing, and whatever reference you
     already have — an old sheet, a library number, or a sample of the finished article.</li>
@@ -136,29 +67,31 @@
     work order onto the proofing press named on it.</li>
     <li>A pressman mills the ink and pulls a proof. An order is pulled up to three times;
     it closes on the first pull you approve.</li>
-    <li>Remote sign-off runs through the calibration desk, so what you approve on your
-    screen is what the press has actually laid down.</li>
+    <li>If you are signing off remotely, you first check your monitor against the press at
+    the calibration desk, then write to the bench with your approval and the calibration
+    code, so what you approve on your screen is what the press has actually laid down.</li>
     <li>The approved sheet is flat-filed with the order and stays available for repeat
     work. Earlier runs are listed in the <a href="archive.html">proof archive</a>.</li>
   </ol>
 
-  <h3 class="rule">Working with the studio</h3>
+  <h2 class="rule">Working with the studio</h2>
   <p class="deck">The desk is staffed from eight in the morning until four in the
   afternoon, Monday to Friday. Bench time is booked a week ahead in ordinary periods and
   rather longer before the autumn catalogue season, so send the stock early if a date
   matters. Collections and deliveries come through the yard gate; there is no counter,
   and visits are by appointment.</p>
-  <dl class="contact">
-    <dt>Studio</dt><dd>Unit 6, Dyehouse Yard</dd>
-    <dt>Telephone</dt><dd>01632 960118</dd>
-    <dt>Enquiries</dt><dd><a href="mailto:studio@tintforge.example">studio@tintforge.example</a></dd>
-    <dt>Bench bookings</dt><dd><a href="mailto:bench@tintforge.example">bench@tintforge.example</a></dd>
+  <dl class="data contact">
+    <dt>Studio</dt><dd>Unit 6, Dyehouse Yard, Lorrimead LQ3 8DW</dd>
+    <dt>Telephone</dt><dd>01632 960962</dd>
+    <dt>Enquiries</dt><dd><a href="mailto:studio@velloquin.example">studio@velloquin.example</a></dd>
+    <dt>Bench bookings</dt><dd><a href="mailto:bench@velloquin.example">bench@velloquin.example</a></dd>
   </dl>
-</div>
-<p class="fine">TintForge Studio &middot; Unit 6, Dyehouse Yard &middot; registered company
-number 00000000 &middot; proofs, recipe cards and library sets remain studio property and
-are released only against the originating order. Terms of trade are supplied with every
-quotation. &middot; <a href="terms.html">Terms of trade</a> &middot;
-<a href="stock.html">Sending stock</a> &middot; <a href="access.html">Visiting the yard</a></p>
+</main>
+<footer class="fine">
+  <p>Proofs, recipe cards and library sets remain studio property and are released only against the originating order. Our terms of trade go out with every quotation and are published here.</p>
+  <p>Velloquin Studio Ltd &middot; Unit 6, Dyehouse Yard, Lorrimead LQ3 8DW &middot; registered in England and Wales, company number 00000000</p>
+  <p><a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms of trade</a> &middot;
+  <a href="stock.html">Sending stock</a> &middot; <a href="access.html">Visiting the yard</a></p>
+</footer>
 </body>
 </html>

@@ -1,5 +1,6 @@
 // pages/kiosk/ - the Verlan Transit ticket kiosk.
 import { randomBytes, randomInt } from 'node:crypto';
+import { SESSION_ROWS, pushTrimmed } from './lib.mjs';
 
 const KIOSK_BASE_CENTS = {
   'adult-single': { 'zone-1': 240, 'zones-1-2': 320, 'zones-1-3': 400 },
@@ -8,7 +9,7 @@ const KIOSK_BASE_CENTS = {
   'reduced-day': { 'zone-1': 240, 'zones-1-2': 320, 'zones-1-3': 400 },
 };
 
-// The time-of-travel adjustment is minted per session and kept off the 5-cent
+// The time-of-travel adjustment is minted per session and kept off the 5p
 // grid every printed base fare sits on, so no quoted fare ever equals a figure
 // on the fares page.
 function mintAdjustmentCents() {
@@ -23,7 +24,7 @@ function baseCentsFor(ticket, zones) {
   return row && Object.hasOwn(row, zones) ? row[zones] : null;
 }
 
-export function kioskState(session) {
+function kioskState(session) {
   return (session.kiosk ??= {
     adjustmentCents: mintAdjustmentCents(),
     quotes: [],
@@ -33,7 +34,7 @@ export function kioskState(session) {
 }
 
 export function routes(ctx) {
-  const { json, readBody, requireSession, fromPage } = ctx;
+  const { json, readJson, requireSession, fromPage } = ctx;
   const fromKiosk = fromPage('/kiosk/');
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/kiosk/fare') {
@@ -45,17 +46,13 @@ export function routes(ctx) {
       const baseCents = baseCentsFor(ticket, zones);
       if (baseCents == null) return json(res, 400, { error: 'unknown ticket or zones' });
       const fareCents = baseCents + k.adjustmentCents;
-      k.quotes.push({ ticket, zones, fareCents, at: Date.now() });
-      return json(res, 200, { ticket, zones, fare: fareCents / 100, currency: 'USD' });
+      pushTrimmed(k.quotes, { ticket, zones, fareCents, at: Date.now() });
+      return json(res, 200, { ticket, zones, fare: fareCents / 100, currency: 'GBP' });
     }
 
     if (req.method === 'POST' && pathname0 === '/api/kiosk/purchase') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -67,7 +64,10 @@ export function routes(ctx) {
       const expectedCents = baseCents + k.adjustmentCents;
       const paidCents = Math.round(Number(payload.fare) * 100);
       const matched = Number.isFinite(paidCents) && paidCents === expectedCents;
-      k.attempts.push({
+      if (matched && k.sales.length >= SESSION_ROWS) {
+        return json(res, 429, { ok: false, error: 'this kiosk cannot sell any more tickets to this card today' });
+      }
+      pushTrimmed(k.attempts, {
         ticket,
         zones,
         fareCents: paidCents,

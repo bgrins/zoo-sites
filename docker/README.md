@@ -9,14 +9,18 @@ need nothing but Docker.
 
 ## What the image is
 
-One node process serves all 66 simulated origins, each on its own port
-(8100-8165), over one shared in-memory state. The server tree needs no
+One node process serves all 67 simulated origins, each on its own port
+(8100-8166), over one shared in-memory state. The server tree needs no
 dependencies beyond node builtins, so the image needs no `npm install`: it is the
 source plus `node:22-slim`.
 
 The image leaves out `eval/answers.mjs` (the answer key), the harness (`eval/run.mjs` and
-`eval/verify.mjs`), the drivers, and both MCP servers: the container is the habitat,
-not the eval. Graded runs (`node eval/run.mjs ...`) stay on the host, in-process with
+`eval/verify.mjs`), the drivers, both MCP servers, and the dev contact sheet
+(`preview.html`): the container is the habitat, not the eval. The server runs as the
+unprivileged `node` user over root-owned sources, and writes nothing to disk. The
+Dockerfile copies those sources with an explicit mode (`--chmod=0755`), so a
+checkout made under a restrictive umask still serves.
+Graded runs (`node eval/run.mjs ...`) stay on the host, in-process with
 their own pages server, because validators read server-observed state (sessions,
 counters, minted codes) directly. The container exposes no state-introspection
 endpoint, deliberately — such an endpoint would hand any agent in the zoo an
@@ -59,11 +63,16 @@ whole reason the variable exists. Overriding it back to `127.0.0.1` inside the
 container makes the published ports unreachable again, so do that only when the
 container is meant to be reachable by nothing.
 
-The `HEALTHCHECK` probes loopback, because `0.0.0.0` is a bind address rather than a
-connectable one. Read it as liveness only: it reports healthy whenever the server is
-up, including the case where the server bound loopback alone and refuses every
-external connection. `ENV ZOO_HOST=0.0.0.0` is what prevents that case, so a healthy
-container is not by itself evidence that the published ports answer.
+The `HEALTHCHECK` probes `127.0.0.1` whatever `ZOO_HOST` says, because `0.0.0.0`
+and `::` are bind addresses rather than connectable ones. Read it as liveness only:
+it reports healthy whenever the server is up, including the case where the server
+bound loopback alone and refuses every external connection. `ENV ZOO_HOST=0.0.0.0`
+is what prevents that case, so a healthy container is not by itself evidence that
+the published ports answer.
+
+The probe fetches `/calc.css` on port 8100 rather than a page. Every cookieless HTML
+response mints a session, and the session map is capped oldest-first, so a probe that
+fetched a page every 30 seconds would start evicting real sessions within two days.
 
 The startup log prints each origin as `http://127.0.0.1:<port>` — the URL to use
 from the host after publishing the ports — and does not report the bind address.
@@ -71,10 +80,10 @@ from the host after publishing the ports — and does not report the bind addres
 ## 3. Run and smoke-test the origins
 
 ```sh
-docker run --rm -p 8100-8165:8100-8165 zoo-sites
+docker run --rm -p 8100-8166:8100-8166 zoo-sites
 ```
 
-The startup log opens with `zoo-sites: 66 origins up (shared state, one
+The startup log opens with `zoo-sites: 67 origins up (shared state, one
 process)`, followed by one line per origin mapping domain to port to `pages/`
 subtree. Then, from the host:
 
@@ -90,6 +99,11 @@ curl -so /dev/null -w '%{http_code}\n' http://127.0.0.1:8163/shop/voltro/basket.
 
 # A foreign site's path on the wrong origin must 404:
 curl -so /dev/null -w '%{http_code}\n' http://127.0.0.1:8163/gov/
+
+# Every origin answers robots.txt (200), and a directory without its slash
+# redirects to the slash form (301, Location: ./departments/):
+curl -so /dev/null -w '%{http_code}\n' http://127.0.0.1:8111/robots.txt
+curl -so /dev/null -w '%{http_code} %{redirect_url}\n' http://127.0.0.1:8111/departments
 
 # API dispatch works on every origin's port (403 = the nonce gate answered,
 # which is the route working):
@@ -108,7 +122,7 @@ docker inspect --format '{{.State.Health.Status}}' <container>
 weekend, which board layout — for a container's lifetime:
 
 ```sh
-docker run --rm -e EVAL_SEED=alpha -p 8100-8165:8100-8165 zoo-sites
+docker run --rm -e EVAL_SEED=alpha -p 8100-8166:8100-8166 zoo-sites
 ```
 
 Two containers started with the same seed deal the same shapes to their first
@@ -124,22 +138,29 @@ node docker/gen-zoo-snippet.mjs > docker/zoo-snippet.yaml
 
 Paste the block into the_zoo's `docker-compose.yaml`. The generator reads
 `manifest.mjs`, so the label cannot drift from what the container serves;
-regenerate rather than hand-edit. The `zoo.domains` label shape matches what the
+regenerate rather than hand-edit. `scripts/check-fixtures.mjs` fails when a
+`domain:port` pair in the committed snippet no longer holds in the manifest, so a
+moved or renamed origin cannot land without a regenerated snippet, which then
+has to be pasted into the_zoo again. The `zoo.domains` label shape matches what the
 zoo's config generator parses: it splits the value on commas and reads each entry
 as `domain` or `domain:port`, so a comma-separated list of `<brand>.zoo:<port>` is
 correct. If that parser changes, fix `zooDomainsLabel()` in `manifest.mjs` and
 regenerate.
 
 The image name follows the repository owner: `.github/workflows/container.yml`
-publishes `ghcr.io/<owner>/zoo-sites` on every push to `main` (tagged `latest`
-and by commit sha) and on a `v*` tag. The generator reads
+publishes `ghcr.io/<owner>/zoo-sites` once `.github/workflows/gate.yml` passes on a
+push to `main` (tagged `sha-<short sha>`, plus `latest` if that commit is still
+main's tip when the publish job runs) or on a `v*` tag that points at a commit on
+`main` (tagged with the tag name and the sha). A red or cancelled gate publishes
+nothing, a tag on a commit that is not on `main` publishes nothing, and a pull
+request builds the image without pushing it. The generator reads
 `GITHUB_REPOSITORY_OWNER`, so set it when regenerating outside Actions:
 
 ```sh
 GITHUB_REPOSITORY_OWNER=<owner> node docker/gen-zoo-snippet.mjs > docker/zoo-snippet.yaml
 ```
 
-The Dockerfile `EXPOSE`s the range 8100-8165. If the zoo's network mode makes
+The Dockerfile `EXPOSE`s the range 8100-8166. If the zoo's network mode makes
 port publishing unnecessary (the proxy sits on the compose network), drop the
 `-p` range from local runs and let the proxy reach the container directly.
 
@@ -150,17 +171,27 @@ each once against the_zoo's proxy, in a real browser pointed at the zoo.
 
 1. **Cookies are per-domain.** Interact on voltro.zoo, then check in devtools
    that its `sid` cookie is NOT sent to marrowgate.zoo. Every origin mints its
-   own session, and that separation is the zoo-mode model.
-2. **Host and sec-fetch metadata pass through.** The gov navigation gates and
-   several provenance signals read `sec-fetch-dest`, `sec-fetch-mode` and
-   `sec-fetch-site`. Open `http://civic-revenue.zoo/gov/legacy/rv3` and follow
-   the notice it returns: the redirect-loop escape (`?v=2`) should serve the
-   archived copy on a real browser navigation and refuse a plain `curl` of the
-   same URL. A proxy that strips sec-fetch headers breaks that refusal first.
+   own session, and that separation is the zoo-mode model. The container's
+   ports on `127.0.0.1` cannot show it, because a browser ignores the port when
+   it sends a cookie. `node serve.mjs --vhosts` reproduces it without the zoo:
+   one port (8099, or `--port`), each origin at `http://<key>.localhost:8099`,
+   which a browser resolves to loopback and keeps cookies for per host.
+2. **Host and navigation metadata pass through.** The navigation gates read
+   `sec-fetch-dest` and `sec-fetch-mode`. A browser sends those only to an https
+   or loopback origin, so over plain `http://<brand>.zoo` it sends none, and the
+   server falls back to the `Accept` header for any request whose Host is not
+   loopback (see `navOf` in `server.mjs`). Open
+   `http://civic-revenue.zoo/gov/legacy/rv3` and follow the notice it returns:
+   the redirect-loop escape (`?v=2`) should serve the archived copy on a real
+   browser navigation and refuse a plain `curl` of the same URL. Repeat over
+   `https://`. A proxy that rewrites Host to a loopback name breaks the
+   plain-http escape first, because the server then expects sec-fetch headers
+   the browser never sent.
 3. **No response caching.** Sessions substitute a per-session nonce into every
-   HTML body, so a cached page would hand one session's nonce to another. Two
-   fresh browser profiles loading the same page must see different `window.NONCE`
-   values (view-source and compare).
+   HTML body, so a cached page would hand one session's nonce to another. HTML goes
+   out with `Cache-Control: no-cache, private`, which a proxy has to honour. Two
+   fresh browser profiles loading the same page must see different
+   `window.NONCE` values (view-source and compare).
 4. **The one cross-origin link resolves.** The maintenance splash comes from the
    gadgetron outage mode, a per-task server mode that is off by default, so this
    check runs against the tree rather than the container. Start the server in

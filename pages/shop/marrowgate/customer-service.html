@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customer service - Marrowgate</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="marrowgate.css">
+<style>
+  .info { margin: 12px 22px 26px; background: #fff; border: 1px solid var(--mg-rule); padding: 16px 18px; max-width: 860px; }
+  .info h2 { font-size: 15px; margin: 18px 0 6px; text-transform: uppercase; letter-spacing: .06em; color: #33405c; }
+  .info h2:first-child { margin-top: 0; }
+  .info p, .info li { font-size: 13px; margin: 0 0 7px; }
+  .info ul { margin: 0 0 8px 18px; padding: 0; }
+  @media (max-width: 700px) { .info { margin: 12px; } }
+  .stores { border-collapse: collapse; font-size: 13px; margin: 6px 0 10px; }
+  .stores th, .stores td { border-bottom: 1px solid var(--mg-rule); padding: 6px 12px 6px 0; text-align: left; }
+</style>
+</head>
+<body>
+<div class="locstrip">
+  <span id="mystore">Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <a href="stores.html">Change store</a>
+  <a href="orderstatus.html">Order status</a>
+  <a href="recycling.html">Trade-in and recycling</a>
+  <a href="customer-service.html">Customer service</a>
+</div>
+<header class="masthead">
+  <a class="wordmark" href="index.html">marrowgate</a>
+  <form class="finder" action="search.html" method="get">
+    <input name="q" aria-label="Search Marrowgate" placeholder="What can we help you find today?">
+    <button type="submit">Search</button>
+  </form>
+  <div class="acct">
+    <a href="account.html">My Marrowgate</a>
+    <a href="promos.html">Offers</a>
+    <a href="basket.html">Basket</a>
+  </div>
+</header>
+<nav class="deptbar" aria-label="Departments">
+  <a href="departments.html#tv">TV &amp; Home Theater</a>
+  <a href="departments.html#computers">Computers &amp; Tablets</a>
+  <a href="index.html">Monitors</a>
+  <a href="departments.html#audio">Audio</a>
+  <a href="departments.html#smarthome">Smart Home</a>
+  <a href="departments.html#cameras">Cameras</a>
+  <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
+  <a href="departments.html#services">Services</a>
+</nav>
+<main>
+<p class="crumbs"><a href="index.html">Home</a> / Customer service</p>
+<div class="pagehead"><h1>Customer service</h1></div>
+<div class="info">
+  <h2>Call or write</h2>
+  <p>Phone 1-616-555-0137, 8:00 am to 9:00 pm Monday to Saturday, 10:00 am to 6:00 pm
+  Sunday. Email help@marrowgate.example; we reply within one business day.</p>
+  <h2>Your store</h2>
+  <p>Stock checks, pickup questions and service bookings go fastest to the store itself:</p>
+  <table class="stores">
+    <thead><tr><th>Store</th><th>Address</th><th>Phone</th></tr></thead>
+    <tbody id="storerows"></tbody>
+  </table>
+  <p><a href="stores.html">Choose your store</a></p>
+  <h2>Orders</h2>
+  <p>Check an order, start a return or print a return label from
+  <a href="orderstatus.html">Order status</a> with the order number (MG followed by nine
+  digits) and the email you used.</p>
+  <h2>Help pages</h2>
+  <ul>
+    <li><a href="basket-help.html">Basket help</a></li>
+    <li><a href="returns.html">Return policy</a></li>
+    <li><a href="price-match.html">Price match guarantee</a></li>
+    <li><a href="recycling.html">Trade-in and recycling</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+  </ul>
+</div>
+</main>
+<footer class="legal">
+  <ul>
+    <li><a href="customer-service.html">Customer service</a></li>
+    <li><a href="basket-help.html">Basket help</a></li>
+    <li><a href="returns.html">Return policy</a></li>
+    <li><a href="price-match.html">Price match</a></li>
+    <li><a href="stores.html">Store directory</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="privacy.html">Privacy policy</a></li>
+    <li><a href="terms.html">Terms of sale</a></li>
+  </ul>
+  Prices shown exclude tax. Online prices may differ from prices in store. &copy; 2026 Marrowgate Retail Group.
+  <p class="regoffice">Marrowgate Retail Group, 1200 Ferrand Boulevard, Skellbourne, MI 48000 &middot; Customer service 1-616-555-0137</p>
+</footer>
+<script src="marrowgate-chrome.js"></script>
+<script>
+const rows = document.getElementById('storerows');
+for (const store of window.MARROWGATE_STORES) {
+  const tr = document.createElement('tr');
+  for (const text of [store.name, store.address, store.phone]) {
+    const td = document.createElement('td');
+    td.textContent = text;
+    tr.appendChild(td);
+  }
+  rows.appendChild(tr);
+}
+</script>
+</body>
+</html>

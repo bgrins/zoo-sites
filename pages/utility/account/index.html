@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<title>My Account — Grelsby Water &amp; Sewer Authority</title>
+<link rel="stylesheet" href="../grelsby.css">
+<link rel="stylesheet" href="account.css">
+</head>
+<body>
+<p class="dutyline">Main break, no water or a sewer backup? Call <b>(802) 555-0122</b> at any hour; after counter hours the line reaches the on-call operator.</p>
+<header class="masthead">
+  <a class="sitehome" href="../index.html"><span class="seal">GW</span><span class="sitename">Grelsby Water &amp; Sewer Authority</span></a>
+  <p class="est">Serving the Borough of Grelsby since 1911</p>
+</header>
+<nav class="navband" aria-label="Main">
+  <a href="../index.html">Home</a>
+  <a href="../rates.html">Rates &amp; Charges</a>
+  <a href="../billing.html">Billing &amp; Payment</a>
+  <a href="../quality.html">Water Quality</a>
+  <a href="../transfer.html">Transfer of Service</a>
+  <a href="../complaints.html">Complaints &amp; Appeals</a>
+</nav>
+<div class="acctbar">
+  <div class="inner">
+    <span class="who">My Account &middot; <b>T. Veltrow</b> &middot; Service account 44-60317-08</span>
+    <nav aria-label="My Account">
+      <a href="index.html" class="here">Account summary</a>
+      <a href="reading.html">Submit a meter reading</a>
+    </nav>
+  </div>
+</div>
+<main>
+  <h1 class="pagehead">Account Summary</h1>
+
+  <div class="duebox" id="duebox">
+    <span class="by" id="dueBy">Loading your balance&hellip;</span>
+    <span class="amt" id="dueAmt"></span>
+  </div>
+
+  <div class="sheet">
+    <h2>Service Account</h2>
+    <div class="kvrow"><span class="k">Service account</span><span class="v">44-60317-08</span></div>
+    <div class="kvrow"><span class="k">Account holder</span><span class="v">T. Veltrow</span></div>
+    <div class="kvrow"><span class="k">Premises</span><span class="v">27 Pumphouse Hill, Grelsby</span></div>
+    <div class="kvrow"><span class="k">Meter</span><span class="v">GW-0051903-C, 5/8&Prime; residential</span></div>
+    <div class="kvrow"><span class="k">Reading cycle</span><span class="v">Route 4, bimonthly</span></div>
+    <div class="kvrow"><span class="k">Last payment</span><span class="v" id="lastPaid">&mdash;</span></div>
+  </div>
+
+  <div class="sheet">
+    <h2>Billing History</h2>
+    <table class="billtable">
+      <caption>Bills issued on this account in the last twelve months, newest first.</caption>
+      <thead>
+        <tr><th scope="col">Bill date</th><th scope="col">Billing period</th><th scope="col" class="num">Amount</th><th scope="col">Status</th><th scope="col">Bill</th></tr>
+      </thead>
+      <tbody id="billRows">
+        <tr><td colspan="5">Loading bills&hellip;</td></tr>
+      </tbody>
+    </table>
+    <p class="stepnote" style="margin-top:12px">Bills open as PDF documents, the same as the
+    paper bill mailed to the premises. Your browser shows them directly or saves
+    them for a PDF reader.</p>
+  </div>
+
+  <div class="printnotice">
+    <p class="nt">Estimated Readings</p>
+    <p>When the route clerk cannot reach a meter, the bill is issued on an
+    estimated reading. If you read the meter yourself on the day of the estimate,
+    use <a href="reading.html">Submit a meter reading</a> and the bill will be
+    recalculated from your reading.</p>
+  </div>
+</main>
+<footer>
+  <p>Grelsby Water &amp; Sewer Authority &middot; Works Yard, 4 Aqueduct Road, Grelsby</p>
+  <p>Customer service (802) 555-0122 &middot; Counter hours Mon&ndash;Fri 8:30 a.m.&ndash;4:00 p.m.</p>
+  <p><a href="../billing.html">Billing &amp; Payment</a> &middot; <a href="../quality.html">Water Quality</a> &middot; <a href="../complaints.html">Complaints &amp; Appeals</a> &middot; <a href="../privacy.html">Privacy Statement</a> &middot; <a href="../terms.html">Terms of Service</a></p>
+  <p>&copy; 2026 Grelsby Water &amp; Sewer Authority. Established by borough ordinance 1911-6.</p>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const money = (n) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  function cell(text, className) {
+    const td = document.createElement('td');
+    if (className) td.className = className;
+    td.textContent = text;
+    return td;
+  }
+
+  async function load() {
+    const rows = document.getElementById('billRows');
+    try {
+      const res = await fetch('/api/utility/account', { headers: { 'X-Session-Nonce': NONCE } });
+      if (!res.ok) throw new Error(String(res.status));
+      const data = await res.json();
+      document.getElementById('dueBy').textContent = 'Amount due by ' + data.balance.due;
+      document.getElementById('dueAmt').textContent = money(data.balance.amount);
+      document.getElementById('lastPaid').textContent =
+        money(data.lastPayment.amount) + ' received ' + data.lastPayment.on + ', thank you';
+      rows.textContent = '';
+      for (const bill of data.bills) {
+        const tr = document.createElement('tr');
+        tr.append(
+          cell(bill.issued),
+          cell(bill.from + ' – ' + bill.to),
+          cell(money(bill.amount), 'num'),
+          cell(bill.status, bill.status === 'Paid' ? '' : 'due')
+        );
+        const td = document.createElement('td');
+        const a = document.createElement('a');
+        a.href = bill.pdf;
+        const hidden = document.createElement('span');
+        hidden.className = 'vh';
+        hidden.textContent = ' of ' + bill.issued;
+        a.append('Bill', hidden, ' (PDF, ' + bill.kb + ' KB)');
+        td.append(a);
+        tr.append(td);
+        rows.append(tr);
+      }
+    } catch {
+      rows.textContent = '';
+      const tr = document.createElement('tr');
+      tr.append(cell('Your bills could not be loaded. Refresh the page, or call customer service.'));
+      tr.firstChild.colSpan = 5;
+      rows.append(tr);
+    }
+  }
+  load();
+</script>
+</body>
+</html>

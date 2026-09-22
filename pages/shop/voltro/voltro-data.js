@@ -1,6 +1,6 @@
 // Voltro monitor listing data: [name, sizeInches, resolution, price, rating, reviews, inStock].
 window.VOLTRO = {
-  promo: 'Lightning Deals: up to 40% off select monitors. Ends tonight.',
+  promo: 'Flash deals: up to 40% off select monitors while stock lasts.',
   products: [
     ['Voltro Vision24 FHD', 24, '1080p', 109.99, 4.3, 8412, true],
     ['ScreenCraft SC-27Q', 27, '1440p', 189.99, 4.5, 3120, true],

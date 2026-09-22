@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Support centre — Overlane Carrier Access</title>
+<title>Support center — Overlane Carrier Access</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="portal.css">
 </head>
 <body>
@@ -18,13 +19,13 @@
     <span class="logo-sub">Carrier Access</span>
   </a>
   <div class="account">
-    <a class="btn btn-quiet" href="index.html" style="text-decoration:none;">Sign in</a>
+    <a class="btn btn-quiet" id="accountLink" href="index.html">Sign in</a>
   </div>
 </header>
 <div class="shell narrow">
   <main class="main">
-    <div class="crumb"><a href="index.html">Carrier Access</a> / Support centre</div>
-    <h1>Support centre</h1>
+    <div class="crumb"><a href="index.html">Carrier Access</a> / Support center</div>
+    <h1>Support center</h1>
     <p class="sub">Help for carriers using Carrier Access, the reports area and the driver app.</p>
     <div class="panel">
       <h2>Contact the service desk</h2>
@@ -64,5 +65,9 @@
   <a href="terms.html">Terms</a> &middot;
   1400 Harbor Way, Suite 620, Tacoma WA 98402
 </footer>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+</script>
+<script src="account.js"></script>
 </body>
 </html>

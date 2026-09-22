@@ -2,11 +2,12 @@
 // the panel is built on demand, so the desktop markup is left alone.
 const MOBILE_NAV = window.matchMedia('(max-width: 600px)');
 const MOBILE_LINKS = [
-  ['All Departments', 'index.html'],
+  ['Monitors', 'index.html'],
   ['Deals of the Day', 'deals.html'],
   ['Desk Setup', 'desk-setup.html'],
-  ['Your Basket', null],
-  ['Customer Service', 'help.html'],
+  ['Your basket', null],
+  ['Orders & returns', 'orders.html'],
+  ['Help', 'help.html'],
 ];
 
 // The department pages and the desk-setup pages keep separate baskets, so a
@@ -38,7 +39,7 @@ function applyMobileNav() {
   panel.hidden = true;
   panel.setAttribute('aria-label', 'Departments');
   panel.innerHTML = MOBILE_LINKS.map(
-    ([label, href]) => `<a href="${href ?? basketHref()}">${label}</a>`
+    ([label, href]) => `<a href="${href ?? basketHref()}">${label.replace('&', '&amp;')}</a>`
   ).join('');
   header.insertAdjacentElement('afterend', panel);
   toggle.addEventListener('click', () => {

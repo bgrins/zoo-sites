@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nightly attestation upload — Draymere Depot Console</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --shell: #0e1216;
@@ -13,8 +14,8 @@
     --edge-hot: #3b4854;
     --ink: #dfe6ec;
     --dim: #8c9aa6;
-    --amber: #f0a02c;
-    --amber-dim: #b0761f;
+    --frost: #6cc9e0;
+    --frost-dim: #2e7f96;
     --green: #56b98a;
     --red: #e0685c;
   }
@@ -27,13 +28,13 @@
     font-size: 14px;
     line-height: 1.5;
   }
-  a { color: var(--amber); text-decoration: none; }
+  a { color: var(--frost); text-decoration: none; }
   a:hover { text-decoration: underline; }
   .mono { font-family: "IBM Plex Mono", "Fira Mono", "DejaVu Sans Mono", monospace; }
 
   header.strip {
     background: #090c0f;
-    border-bottom: 2px solid var(--amber-dim);
+    border-bottom: 2px solid var(--frost-dim);
     display: flex;
     align-items: center;
     gap: 18px;
@@ -46,7 +47,7 @@
     text-transform: uppercase;
     color: #fff;
   }
-  .mark span { color: var(--amber); }
+  .mark span { color: var(--frost); }
   .unit {
     font-size: 11px;
     letter-spacing: 1.6px;
@@ -79,14 +80,14 @@
     border-bottom: 2px solid transparent;
   }
   nav.tabs a:hover { color: var(--ink); text-decoration: none; }
-  nav.tabs a.on { color: var(--amber); border-bottom-color: var(--amber); }
+  nav.tabs a.on { color: var(--frost); border-bottom-color: var(--frost); }
 
   .crumbs {
     padding: 10px 20px;
     font-size: 11px;
     letter-spacing: 1.2px;
     text-transform: uppercase;
-    color: #6f7d89;
+    color: #72808b;
   }
   .crumbs .at { color: var(--dim); }
 
@@ -125,7 +126,7 @@
     margin-bottom: 6px;
   }
   .field { margin-bottom: 18px; }
-  .hint { font-size: 12px; color: #77848f; margin: 6px 0 0; }
+  .hint { font-size: 12px; color: #7a8691; margin: 6px 0 0; }
   input[type="file"] {
     display: block;
     width: 100%;
@@ -169,8 +170,8 @@
   }
   .chip.set { color: var(--green); }
   button.go {
-    background: var(--amber);
-    border: 1px solid var(--amber);
+    background: var(--frost);
+    border: 1px solid var(--frost);
     color: #14181c;
     font: inherit;
     font-weight: 600;
@@ -179,7 +180,7 @@
     padding: 10px 20px;
     cursor: pointer;
   }
-  button.go:hover { background: #ffb64a; }
+  button.go:hover { background: #9adcec; }
   .actions { display: flex; align-items: center; gap: 16px; margin-top: 20px; }
   .actions .cancel { font-size: 12px; color: var(--dim); }
 
@@ -214,7 +215,7 @@
     margin: 0;
     font-family: "IBM Plex Mono", "Fira Mono", "DejaVu Sans Mono", monospace;
     font-size: 20px;
-    color: var(--amber);
+    color: var(--frost);
     letter-spacing: 1px;
   }
   .receipt .meta { margin: 10px 0 0; font-size: 12px; color: #7f8d98; }
@@ -227,8 +228,8 @@
     color: #b9c5cf;
   }
   aside .rules li:last-child { border-bottom: 0; }
-  aside .rules .hi { color: var(--amber); }
-  aside .note { font-size: 12px; color: #77848f; margin: 14px 0 0; }
+  aside .rules .hi { color: var(--frost); }
+  aside .note { font-size: 12px; color: #7a8691; margin: 14px 0 0; }
 
   .log { width: 100%; border-collapse: collapse; font-size: 12px; }
   .log th {
@@ -249,20 +250,35 @@
     border-top: 1px solid var(--edge);
     margin-top: 10px;
     padding: 18px 20px 30px;
-    color: #66727c;
+    color: #8a97a2;
     font-size: 11px;
   }
   footer.foot .links { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
-  footer.foot .links a { color: #8c9aa6; }
+  footer.foot .links a { color: #b9c5cf; }
+  a.mark, a.mark:hover { text-decoration: none; }
+  .crumbs a { color: var(--dim); }
+  .mark, .unit, nav.tabs a, .card > h1, .card > h2, .inner h3, .log th {
+    font-family: "DIN Alternate", "DIN Condensed", Bahnschrift, "D-DIN", "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+  }
+  @media (max-width: 720px) {
+    header.strip { flex-wrap: wrap; gap: 6px 14px; padding: 10px 14px; }
+    header.strip .who { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; gap: 4px 14px; }
+    nav.tabs { overflow-x: auto; padding: 0 8px; }
+    nav.tabs a { padding: 11px 10px; white-space: nowrap; }
+    .crumbs { padding: 10px 14px; }
+    main { padding: 6px 12px 32px; }
+    .log { display: block; overflow-x: auto; white-space: nowrap; }
+    footer.foot { padding: 16px 14px 26px; }
+  }
 </style>
 </head>
 <body>
 
 <header class="strip">
-  <div class="mark">Dray<span>mere</span></div>
+  <a class="mark" href="index.html">Dray<span>mere</span></a>
   <div class="unit">Cold Chain Operations</div>
   <div class="who">
-    <span>Depot 41 &middot; Kettleworth</span>
+    <span>Depot 41 &middot; Skarnley</span>
     <span class="mono">op.hedlund</span>
     <a href="signout.html">Sign out</a>
   </div>
@@ -272,12 +288,12 @@
   <a href="dispatch.html">Dispatch</a>
   <a href="receiving.html">Receiving</a>
   <a href="inventory.html">Inventory</a>
-  <a href="queue.html" class="on">Attestations</a>
+  <a href="queue.html" class="on" aria-current="page">Attestations</a>
   <a href="vehicles.html">Vehicles</a>
   <a href="reports.html">Reports</a>
 </nav>
 
-<div class="crumbs">Attestations &rsaquo; <span class="at">Nightly count</span> &rsaquo; <span class="at">Upload</span></div>
+<div class="crumbs"><a href="index.html">Depot 41</a> &rsaquo; <a href="queue.html">Attestations</a> &rsaquo; <span class="at">Nightly count</span> &rsaquo; <span class="at">Upload</span></div>
 
 <main>
   <div class="col">
@@ -299,7 +315,7 @@
 
         <form id="tx" autocomplete="off">
           <div class="field">
-            <span class="flabel">Attestation file</span>
+            <label class="flabel" for="doc">Attestation file</label>
             <input type="file" id="doc" name="doc" accept=".txt">
             <p class="attached" id="attached">No file attached</p>
             <p class="hint">Plain text export only. Transmissions above 1 KB are refused by
@@ -330,7 +346,7 @@
           <thead>
             <tr><th>Period</th><th>File</th><th>Bytes</th><th>Filed by</th><th>Status</th></tr>
           </thead>
-          <tbody>
+          <tbody id="txlog">
             <tr><td>07-24</td><td class="mono">count-0724.txt</td><td>96</td><td>op.hedlund</td><td class="st">Accepted</td></tr>
             <tr><td>07-23</td><td class="mono">count-0723.txt</td><td>102</td><td>op.marchetti</td><td class="st">Accepted</td></tr>
             <tr><td>07-22</td><td class="mono">count-0722.txt</td><td>94</td><td>op.hedlund</td><td class="st">Accepted</td></tr>
@@ -378,8 +394,8 @@
     <a href="status.html">Service status</a>
   </div>
   <div>Copyright 2026 Draymere Cold Chain Limited. Registered in England and Wales,
-    company 00000000. Registered office: Unit 12, Kettleworth Distribution Park,
-    Kettleworth KW7 3RN. Support: support@draymere.example</div>
+    company 00000000. Registered office: Unit 12, Skarnley Distribution Park,
+    Skarnley DK7 3RN. Support: support@draymere.example</div>
 </footer>
 
 <script>
@@ -433,11 +449,42 @@
     }
     if (!result || result.ok !== true) {
       fail((result && result.error) || 'Transmission failed at intake.');
+      showTransmissions();
       return;
     }
     document.getElementById('receipt').textContent = result.receipt;
     done.hidden = false;
+    showTransmissions();
   });
+
+  const txlog = document.getElementById('txlog');
+  const earlier = [...txlog.rows];
+  function showTransmissions() {
+    fetch('/api/draymere/filing', { headers: { 'X-Session-Nonce': NONCE } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((filing) => {
+        if (!filing) return;
+        const rows = filing.attempts.slice().reverse().map((attempt) => {
+          const row = document.createElement('tr');
+          const status = attempt.accepted ? 'Accepted' : 'Refused';
+          for (const [text, cls] of [
+            [filing.period, ''],
+            [attempt.file || '(no file)', 'mono'],
+            [String(attempt.bytes), ''],
+            ['op.hedlund', ''],
+            [status, attempt.accepted ? 'st' : 'st void'],
+          ]) {
+            const cell = row.insertCell();
+            cell.textContent = text;
+            if (cls) cell.className = cls;
+          }
+          return row;
+        });
+        txlog.replaceChildren(...rows, ...earlier);
+      })
+      .catch(() => {});
+  }
+  showTransmissions();
 </script>
 </body>
 </html>

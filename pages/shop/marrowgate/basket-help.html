@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Basket help - Marrowgate</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="marrowgate.css">
 <style>
-  .info { margin: 12px 22px 26px; background: #fff; border: 1px solid var(--nb-rule); padding: 16px 18px; max-width: 860px; }
+  .info { margin: 12px 22px 26px; background: #fff; border: 1px solid var(--mg-rule); padding: 16px 18px; max-width: 860px; }
   .info h2 { font-size: 15px; margin: 18px 0 6px; text-transform: uppercase; letter-spacing: .06em; color: #33405c; }
   .info h2:first-child { margin-top: 0; }
   .info p, .info li { font-size: 13px; margin: 0 0 7px; }
@@ -14,10 +16,11 @@
 </head>
 <body>
 <div class="locstrip">
-  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <span id="mystore">Store: Riverside Commons &middot; Open until 9:00 pm</span>
   <a href="stores.html">Change store</a>
   <a href="orderstatus.html">Order status</a>
   <a href="recycling.html">Trade-in and recycling</a>
+  <a href="customer-service.html">Customer service</a>
 </div>
 <header class="masthead">
   <a class="wordmark" href="index.html">marrowgate</a>
@@ -41,7 +44,8 @@
   <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
   <a href="departments.html#services">Services</a>
 </nav>
-<p class="crumbs">Home / Help / Basket help</p>
+<main>
+<p class="crumbs"><a href="index.html">Home</a> / <a href="customer-service.html">Help</a> / Basket help</p>
 <div class="pagehead"><h1>Basket help</h1></div>
 <div class="info">
   <h2>Adding items</h2>
@@ -55,20 +59,27 @@
   <p>A state recycling levy is added per display and shown as its own summary line.
   Estimated tax is calculated on the discounted subtotal.</p>
   <h2>Payment</h2>
-  <p>Online payment is settled at the till for the Riverside store. Nothing is charged
-  until you pay in person or the pickup desk confirms your order.</p>
+  <p>Choose Continue to checkout in the basket, then pick up at your store or have the order
+  delivered. Pickup orders are paid at the till when you collect; delivered orders are paid by
+  card to the delivery crew. Nothing is charged on this website.</p>
 </div>
+</main>
 <footer class="legal">
   <ul>
+    <li><a href="customer-service.html">Customer service</a></li>
     <li><a href="basket-help.html">Basket help</a></li>
     <li><a href="returns.html">Return policy</a></li>
     <li><a href="price-match.html">Price match</a></li>
-    <li><a href="accessibility.html">Accessibility</a></li>
     <li><a href="stores.html">Store directory</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="privacy.html">Privacy policy</a></li>
+    <li><a href="terms.html">Terms of sale</a></li>
   </ul>
   Prices shown exclude tax. Online prices may differ from prices in store. Marrowgate
   matches any advertised price from a qualifying local retailer within seven days of
   purchase. &copy; 2026 Marrowgate Retail Group.
+  <p class="regoffice">Marrowgate Retail Group, 1200 Ferrand Boulevard, Skellbourne, MI 48000 &middot; Customer service 1-616-555-0137</p>
 </footer>
+<script src="marrowgate-chrome.js"></script>
 </body>
 </html>

@@ -3,15 +3,12 @@ import { randomBytes } from 'node:crypto';
 
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
+  const fromCanvas = fromPage('/canvas/');
   return async (req, res, url, pathname0) => {
     if (req.method === 'POST' && pathname0 === '/api/canvas/reveal') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -19,9 +16,8 @@ export function routes(ctx) {
       if (!/^C[1-8]R[1-6]$/.test(cell)) {
         return json(res, 400, { error: 'unknown swatch id' });
       }
-      const fromPage =
-        req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/canvas\//.test(req.headers.referer ?? '');
+      // Legibility, never proof: curl sets these headers freely.
+      const fromPage = fromCanvas(req);
       state.beacons.push({
         sid: found.sid,
         kind: 'canvas-pick',

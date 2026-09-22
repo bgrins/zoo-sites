@@ -23,6 +23,7 @@ header {
   font-weight: bold;
   letter-spacing: 3px;
   color: #ffb000;
+  text-decoration: none;
 }
 
 .stop {
@@ -92,6 +93,7 @@ main { max-width: 1060px; margin: 0 auto; padding: 24px 26px 48px; }
 .row .k { color: #9a958a; text-transform: uppercase; letter-spacing: 1px; font-size: 18px; }
 .row .v { font-weight: bold; }
 
+.panel a { color: #ffcf66; }
 .panel .note { color: #9a958a; font-size: 16px; margin: 14px 0 0; }
 .panel .warn { color: #ff9d66; font-size: 17px; margin: 14px 0 0; }
 

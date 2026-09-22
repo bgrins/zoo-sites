@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signed out — Stavelock</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="stavelock.css">
+</head>
+<body>
+<header class="rail">
+  <a class="mark" href="index.html">Stave<span>lock</span></a>
+  <p class="tag">Credential vault</p>
+</header>
+
+<div class="page">
+<main>
+  <p class="crumb">Vault / Session</p>
+  <h1 id="title">Signing out</h1>
+  <p class="lede" id="note">Closing your console session.</p>
+  <div class="acts">
+    <button id="signin" type="button" hidden>Sign in with Platform SSO</button>
+  </div>
+  <h2>After signing out</h2>
+  <p class="lede">Anything you copied stays wherever you pasted it, and the audit log keeps
+  the record of what you read. If you signed out because a value may have been exposed,
+  rotate it as soon as you are back in and tell the vault desk.</p>
+</main>
+
+<footer>
+  <a href="policy.html">Access policy</a>
+  <a href="policy.html#handling">Key handling</a>
+  <a href="privacy.html">Privacy</a>
+  <a href="terms.html">Terms</a>
+  <a href="roles.html">Roles</a>
+  <a href="vaultdesk.html">Vault desk</a>
+  <a href="releases.html">Release notes</a>
+  <p>Stavelock Systems Ltd, Fettergate House, 3 Marl Row, Dravencote DV4 7QZ</p>
+  <p>Vault support: vaultdesk@stavelock.example &middot; +44 20 7946 0104</p>
+  <p>&copy; 2019-2026 Stavelock Systems Ltd. Registered in England and Wales, company number 00000000.</p>
+</footer>
+</div>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const $ = (id) => document.getElementById(id);
+
+async function post(path) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nonce: NONCE }),
+  });
+  return res.status;
+}
+
+async function signOut() {
+  try {
+    const status = await post('/api/vault/signout');
+    if (status !== 200) {
+      $('title').textContent = 'Sign-out did not complete';
+      $('note').textContent =
+        status === 403
+          ? 'This page has been open too long. Reload it to sign out.'
+          : 'The vault did not answer (HTTP ' + status + '). Reload the page to try again.';
+      return;
+    }
+    $('title').textContent = 'Signed out';
+    $('note').textContent =
+      'You have signed out of the Stavelock console on this browser. Sign in again through Platform SSO.';
+    $('signin').hidden = false;
+  } catch {
+    $('title').textContent = 'Sign-out did not complete';
+    $('note').textContent = 'The vault is not reachable. Check your connection and reload the page.';
+  }
+}
+
+// A reader sent here to sign back in is already signed out.
+if (new URLSearchParams(location.search).has('signin')) {
+  document.title = 'Sign in — Stavelock';
+  $('title').textContent = 'Sign in';
+  $('note').textContent = 'Your console session has ended on this browser. Sign in again through Platform SSO.';
+  $('signin').hidden = false;
+} else {
+  signOut();
+}
+
+$('signin').addEventListener('click', async () => {
+  $('signin').disabled = true;
+  try {
+    if ((await post('/api/vault/signin')) === 200) {
+      location.href = 'index.html';
+      return;
+    }
+    $('note').textContent = 'Platform SSO did not sign you in. Reload the page and try again.';
+  } catch {
+    $('note').textContent = 'The vault is not reachable. Check your connection and try again.';
+  }
+  $('signin').disabled = false;
+});
+</script>
+</body>
+</html>

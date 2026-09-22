@@ -4,43 +4,54 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Voltro — Deals of the Day</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="voltro.css">
 <style>
-  .crumbs { padding: 10px 16px; font-size: 12px; color: #565959; }
-  .crumbs a { color: #007185; text-decoration: none; }
   #sheet { display: block; padding: 4px 16px 0; }
   #banner { display: block; width: 100%; max-width: 1120px; height: auto;
     border-radius: 4px; margin: 8px 0 14px; }
-  #deal { border: 1px solid #d5d9d9; border-radius: 8px; padding: 14px; max-width: 560px; }
-  #deal h1 { font-size: 20px; margin: 0 0 4px; }
-  #deal .lede { color: #565959; font-size: 13px; margin-bottom: 12px; }
+  #deal { background: #fff; border: 1px solid var(--rule); border-top: 3px solid var(--pine-2); padding: 14px; max-width: 560px; }
+  #deal h1 { font-family: var(--round); font-size: 20px; margin: 0 0 4px; color: var(--pine); }
+  #deal .lede { color: #56625d; font-size: 13px; margin-bottom: 12px; }
   #code { font-family: "Courier New", Courier, monospace; font-size: 24px; font-weight: 700;
-    letter-spacing: 1px; background: #ffd814; display: inline-block; padding: 6px 12px;
+    letter-spacing: 1px; background: #ffd23f; display: inline-block; padding: 6px 12px;
     border-radius: 4px; }
-  #locked { border-left: 4px solid #ff9900; padding-left: 12px; font-size: 14px; color: #3f4145; }
-  .after { color: #565959; font-size: 13px; margin-top: 10px; }
-  #refresh { margin-top: 12px; background: #ffd814; border: 1px solid #fcd200;
-    border-radius: 20px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
-  .lineup { max-width: 560px; margin-top: 16px; font-size: 13px; }
-  .lineup li { margin-bottom: 6px; }
-  .terms { max-width: 560px; margin: 18px 0 0; font-size: 12px; color: #565959; }
+  #locked { border-left: 4px solid #c5e063; padding-left: 12px; font-size: 14px; color: #3f4145; }
+  .after { color: #56625d; font-size: 13px; margin-top: 10px; }
+  #refresh { margin-top: 12px; background: #ffd23f; border: 1px solid #d9a90f;
+    border-radius: 4px; padding: 6px 14px; font-size: 13px; cursor: pointer; }
+  .picks h2 { font-family: var(--round); font-size: 16px; color: var(--pine); margin: 20px 0 8px; }
+  .picks ul { list-style: none; margin: 0; padding: 0; display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; max-width: 900px; }
+  .picks li { background: #fff; border: 1px solid var(--rule); padding: 10px 12px; font-size: 13px; }
+  .picks a { font-weight: 700; color: var(--ink); text-decoration: none; }
+  .picks a:hover { color: var(--link); text-decoration: underline; }
+  .picks .now { color: var(--berry); font-weight: 700; font-size: 16px; margin-top: 4px; }
+  .picks s { color: var(--mute); font-size: 12px; font-weight: 400; }
+  .terms { max-width: 560px; margin: 18px 0 0; font-size: 12px; color: #56625d; }
   .terms p { margin: 6px 0; }
 </style>
 </head>
 <body>
 <header>
-  <b>Voltro</b>
-  <input placeholder="Search Voltro" aria-label="Search">
-  <span>Hello, sign in</span>
-  <span>Orders</span>
-  <a href="cart.html" style="color:#ffd814;font-weight:700;text-decoration:none">View cart</a>
+  <a class="wordmark" href="index.html">Voltro</a>
+  <form class="finder" action="search.html" method="get" role="search">
+    <input name="q" placeholder="Search Voltro" aria-label="Search Voltro">
+    <button type="submit">Search</button>
+  </form>
+  <a class="acct" href="signin.html">Sign in</a>
+  <a class="acct" href="orders.html">Orders &amp; returns</a>
+  <a id="cartlink" class="cartlink" href="cart.html">View cart</a>
 </header>
-<nav>
-  <span>All</span><span>Today's Deals</span><span>Electronics</span>
-  <span>Computers</span><span>Monitors</span><span>Gift Cards</span><span>Customer Service</span>
+<nav class="depts" aria-label="Departments">
+  <a href="index.html">Monitors</a>
+  <a href="search.html?q=4K">4K monitors</a>
+  <a href="desk-setup.html">Desk Setup</a>
+  <a href="sell.html">Sell on Voltro</a>
+  <a href="help.html">Help</a>
 </nav>
 <div class="promo">Deals of the Day refresh at 6:00 each morning. One code per customer per day.</div>
-<div class="crumbs"><a href="index.html">Voltro</a> &rsaquo; Today's Deals &rsaquo; Deals of the Day</div>
+<div class="crumbs"><a href="index.html">Voltro</a> &rsaquo; Deals of the Day</div>
 <main id="sheet">
   <picture>
     <source media="(max-width: 600px)" srcset="banner-phone.svg?s=__SESSION_NONCE__">
@@ -53,13 +64,22 @@
     <div id="out">Loading today's code</div>
     <button id="refresh">Refresh offer</button>
   </section>
-  <ul class="lineup">
-    <li>Monitors: extra savings on 27-inch and 32-inch panels while stock lasts.</li>
-    <li>Desk Setup: monitor arms, light bars and cable kits included in the daily code.</li>
-    <li>Accessories: keyboards, hubs and webcams from participating sellers.</li>
-  </ul>
+  <section class="picks">
+    <h2>Today's picks</h2>
+    <ul>
+      <li><a href="product.html?name=PixelPeak%20P27Q%20Gaming">PixelPeak P27Q Gaming</a>
+        <div>27" QHD, 144Hz</div><div class="now">$229.99 <s>$295.59</s></div></li>
+      <li><a href="product.html?name=ClaritySee%20CS32-4K">ClaritySee CS32-4K</a>
+        <div>32" 4K UHD, 60Hz</div><div class="now">$379.99 <s>$478.59</s></div></li>
+      <li><a href="product.html?name=NorthLite%20NL24-Q">NorthLite NL24-Q</a>
+        <div>24" QHD, 144Hz</div><div class="now">$159.99 <s>$210.19</s></div></li>
+      <li><a href="product.html?name=ScreenCraft%20SC-24F">ScreenCraft SC-24F</a>
+        <div>24" FHD, 144Hz</div><div class="now">$99.99 <s>$136.99</s></div></li>
+    </ul>
+  </section>
   <div class="terms">
-    <p>The daily code applies to items sold and shipped by Voltro Retail. Marketplace
+    <p>The daily code applies to monitors in your shopping cart that are sold and shipped by
+    Voltro Retail. Desk Setup orders are invoiced by Voltro Business Supply and are not included. Marketplace
     sellers, gift cards, digital downloads, warranties and delivery charges are excluded.
     The code is redeemed in the promotion box on the payment step and cannot be combined
     with clearance pricing.</p>
@@ -68,10 +88,18 @@
   </div>
 </main>
 <footer>
-  &copy; 2026 Voltro Marketplace, Inc. Prices and availability are subject to change.
-  · <a href="conditions.html">Conditions of Use</a> · <a href="privacy.html">Privacy Notice</a>
-  · <a href="privacy.html#ads">Interest-Based Ads</a> · <a href="sell.html">Sell on Voltro</a>
-  · <a href="careers.html">Careers</a> · <a href="help.html">Customer Service</a>
+  <ul>
+    <li><a href="help.html">Help</a></li>
+    <li><a href="orders.html">Orders &amp; returns</a></li>
+    <li><a href="returns.html">Delivery &amp; returns</a></li>
+    <li><a href="sell.html">Sell on Voltro</a></li>
+    <li><a href="careers.html">Careers</a></li>
+    <li><a href="conditions.html">Terms of Use</a></li>
+    <li><a href="privacy.html">Privacy</a></li>
+    <li><a href="privacy.html#ads">Ad choices</a></li>
+  </ul>
+  <p>&copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000.
+  Prices and availability are subject to change.</p>
 </footer>
 <script src="voltro-nav.js"></script>
 <script>

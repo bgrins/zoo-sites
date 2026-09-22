@@ -2,56 +2,89 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Voltro — Privacy Notice</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voltro — Privacy</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="voltro.css">
-<style>
-  .page { max-width: 760px; margin: 0 auto; padding: 8px 16px 28px; }
-  .page h1 { font-size: 22px; margin: 14px 0 6px; }
-  .page h2 { font-size: 16px; margin: 20px 0 6px; }
-  .page p, .page li { font-size: 13px; }
-  .page a { color: #007185; }
-  .rev { color: #565959; font-size: 12px; }
-</style>
 </head>
 <body>
 <header>
-  <b>Voltro</b>
-  <input placeholder="Search Voltro" aria-label="Search">
-  <span>Hello, sign in</span>
-  <span>Orders</span>
-  <a class="cartlink" href="cart.html">View cart</a>
+  <a class="wordmark" href="index.html">Voltro</a>
+  <form class="finder" action="search.html" method="get" role="search">
+    <input name="q" placeholder="Search Voltro" aria-label="Search Voltro">
+    <button type="submit">Search</button>
+  </form>
+  <a class="acct" href="signin.html">Sign in</a>
+  <a class="acct" href="orders.html">Orders &amp; returns</a>
+  <a id="cartlink" class="cartlink" href="cart.html">View cart</a>
 </header>
-<nav>
-  <span>All</span><span>Today's Deals</span><span>Electronics</span>
-  <span>Computers</span><span>Monitors</span><span>Gift Cards</span><span>Customer Service</span>
+<nav class="depts" aria-label="Departments">
+  <a href="index.html">Monitors</a>
+  <a href="search.html?q=4K">4K monitors</a>
+  <a href="desk-setup.html">Desk Setup</a>
+  <a href="sell.html">Sell on Voltro</a>
+  <a href="help.html">Help</a>
 </nav>
-<div class="page">
-  <h1>Privacy Notice</h1>
+<main class="page">
+  <h1>Privacy</h1>
   <p class="rev">Last revised 2026-05-02.</p>
   <h2>What we collect</h2>
   <p>Order details, delivery addresses, and the pages you browse on Voltro. Payment
   card numbers are handled by our payment processor and never stored against your
   Voltro account.</p>
   <h2>How it is used</h2>
-  <p>To fulfil orders, to prevent fraud, and to show you relevant listings. Aggregated,
+  <p>To fulfill orders, to prevent fraud, and to show you relevant listings. Aggregated,
   de-identified figures are shared with sellers about their own listings only.</p>
   <h2 id="cookies">Cookies</h2>
   <p>A session cookie keeps your cart together while you shop; it is essential and
-  cannot be declined. Measurement cookies are optional — the banner on the storefront
+  cannot be declined. Measurement cookies are optional: the banner on the storefront
   lets you accept or decline them, and declining does not change what you can buy.</p>
-  <h2 id="ads">Interest-based ads</h2>
-  <p>Sponsored placements in listings are marked "Sponsored". They are selected from
-  your browsing on Voltro only; we do not buy third-party browsing history. You can
-  opt out of personalised placement by declining measurement cookies.</p>
+  <p id="cookie-choice-line">Your current choice: <b id="cookie-choice">not made yet</b>.
+  <button type="button" class="btn" id="cookie-reset">Change my choice</button></p>
+  <h2 id="ads">Ad choices</h2>
+  <p>Promoted placements in listings are marked "Promoted". They are selected from your
+  browsing on Voltro only; we do not buy third-party browsing history. You can opt out
+  of personalized placement by declining measurement cookies.</p>
   <h2>Your choices</h2>
   <p>Write to privacy@voltro.example to request a copy or deletion of your data.
-  Requests are answered within 30 days.</p>
-</div>
+  Requests are answered within 30 days. Voltro Marketplace, Inc., 2200 Pellmore Road,
+  Vessendale, CO 80000.</p>
+</main>
 <footer>
-  &copy; 2026 Voltro Marketplace, Inc. Prices and availability are subject to change.
-  · <a href="conditions.html">Conditions of Use</a> · <a href="sell.html">Sell on Voltro</a>
-  · <a href="careers.html">Careers</a> · <a href="help.html">Customer Service</a>
+  <ul>
+    <li><a href="help.html">Help</a></li>
+    <li><a href="orders.html">Orders &amp; returns</a></li>
+    <li><a href="returns.html">Delivery &amp; returns</a></li>
+    <li><a href="sell.html">Sell on Voltro</a></li>
+    <li><a href="careers.html">Careers</a></li>
+    <li><a href="conditions.html">Terms of Use</a></li>
+    <li><a href="privacy.html">Privacy</a></li>
+    <li><a href="privacy.html#ads">Ad choices</a></li>
+  </ul>
+  <p>&copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000.
+  Prices and availability are subject to change.</p>
 </footer>
 <script src="voltro-nav.js"></script>
+<script>
+const KEY = 'voltro.cookie-choice';
+const shown = document.getElementById('cookie-choice');
+const read = () => {
+  try {
+    return localStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
+};
+const LABEL = { accepted: 'all cookies accepted', declined: 'non-essential cookies declined' };
+shown.textContent = LABEL[read()] ?? 'not made yet';
+document.getElementById('cookie-reset').addEventListener('click', () => {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+    // Storage refused: there is no saved choice to clear.
+  }
+  shown.textContent = 'not made yet; the storefront will ask again';
+});
+</script>
 </body>
 </html>

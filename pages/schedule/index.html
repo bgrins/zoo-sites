@@ -5,21 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Day book — Peregrine Court Business Rooms</title>
 <link rel="stylesheet" href="schedule.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="masthead">
   <div class="masthead-top">
     <div>
-      <h1 class="wordmark">Peregrine<span>Court</span></h1>
+      <a class="wordmark" href="index.html">Peregrine <span>Court</span></a>
       <p class="sub">Business rooms &middot; Ashgate Quay</p>
     </div>
     <p class="desk">Front desk 0117 496 0144<br>Holds cleared nightly at 19:00</p>
   </div>
+  <nav aria-label="Sections">
   <ul class="tabs">
     <li><a class="on" href="index.html">Day book</a></li>
     <li><a href="rooms.html">Rooms</a></li>
     <li><a href="terms.html">Booking terms</a></li>
   </ul>
+  </nav>
 </header>
 
 <main>
@@ -104,7 +107,7 @@
 </main>
 
 <footer>
-  <p>Peregrine Court Ltd, 14 Wharf Row, Ashgate Quay AQ2 7HN. Registered in England 08841127.</p>
+  <p>Peregrine Court Ltd, 14 Wharf Row, Ashgate Quay AQ2 7HN. Registered in England and Wales, company number 00000000.</p>
   <p><a href="terms.html">Booking terms</a><a href="rooms.html">Room specifications</a><a href="terms.html#privacy">Privacy</a></p>
   <p>&copy; 2026 Peregrine Court Ltd. Rates exclude VAT.</p>
 </footer>
@@ -145,6 +148,13 @@ function renderHead() {
   head.appendChild(second);
 }
 
+// Each client keeps one colour across the week, as the desk's colour key does.
+function clientColour(title) {
+  let h = 0;
+  for (const ch of title) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return 'c' + (h % 5);
+}
+
 function renderBody() {
   const body = document.getElementById('daybookBody');
   body.textContent = '';
@@ -167,7 +177,11 @@ function renderBody() {
         if (covered.has(key)) continue;
         const booking = at.get(key);
         if (booking) {
-          const cell = el('td', booking.mine ? 'hold-mine' : 'held', booking.title);
+          const cell = el(
+            'td',
+            booking.mine ? 'hold-mine' : `held ${clientColour(booking.title)}`,
+            booking.title
+          );
           cell.rowSpan = booking.slots;
           row.appendChild(cell);
         } else {
@@ -222,8 +236,8 @@ function renderMine() {
 }
 
 async function load() {
-  const res = await fetch('/api/schedule/grid', { headers: { 'X-Session-Nonce': NONCE } });
-  if (!res.ok) {
+  const res = await fetch('/api/schedule/grid', { headers: { 'X-Session-Nonce': NONCE } }).catch(() => null);
+  if (!res || !res.ok) {
     document.getElementById('weekRange').textContent = 'The day book is unavailable at this terminal.';
     return;
   }

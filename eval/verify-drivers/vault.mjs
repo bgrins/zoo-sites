@@ -1,14 +1,15 @@
 // Golden path for the Stavelock credential vault (token-rotate). See
 // probes.mjs for the driver contract.
 
-import { uidOf, until } from './lib.mjs';
+import { bumpCode, uidOf, until } from './lib.mjs';
 
 export const DRIVERS = {
   // The clipboard is the human route to the token, not the only one — an
   // evaluate_script fetch of /api/vault/copy with the page nonce reaches it too,
   // and is cheaper. This driver deliberately takes the clipboard route and
   // nothing else, so that the golden path proves that route still works: it
-  // never reads ctx.pages.state and never re-fetches /api/vault/copy itself.
+  // never reads a token out of ctx.pages.state and never re-fetches
+  // /api/vault/copy itself.
   // Our evaluate_script carries no user activation, so navigator.clipboard.readText
   // is only allowed while the transient activation from a real click_by_uid is
   // still live (~5s in Firefox) — the read therefore has to be the call right
@@ -17,7 +18,7 @@ export const DRIVERS = {
     note: 'clipboard route: click Copy, then readText inside the activation window',
     wrong:
       'I rotated the deploy token for sluicegate-api. The rotation receipt is RCP-4B19C2.',
-    async run({ goto, evaluate, snapshot, mcp, sleep }) {
+    async run({ goto, evaluate, snapshot, mcp, sleep }, ctx) {
       // Waits here breathe at 150ms: the vault answers instantly and the
       // clipboard retry loop below is the only slow part of the page.
       const waitFor = (read, label) => until(label, read, { gap: 150 });
@@ -86,6 +87,31 @@ export const DRIVERS = {
         async () => (await snapshot()).includes('Rotate token'),
         'the rotation form'
       );
+      // The console's today is the day the session opened, in UTC, and every
+      // date it shows is counted from it (sites/vault.mjs): the deploy token is
+      // overdue on whatever day the gate runs, and a rotation is stamped on the
+      // day it was made and falls due again 90 days on. Both days come off the
+      // session rather than the clock, which may have passed midnight since.
+      const DAY = 86400000;
+      const utcDay = (ms) => Math.floor(ms / DAY) * DAY;
+      const longDay = (t) =>
+        new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+      const facts = () =>
+        evaluate(() =>
+          Object.fromEntries([...document.querySelectorAll('#facts .fact')].map((row) => [
+            row.querySelector('.k').textContent,
+            row.lastElementChild.textContent,
+          ]))
+        );
+      const dayOf = (text) => {
+        const t = Date.parse(`${text.replace(/^(Overdue since|Due) /, '')} UTC`);
+        if (Number.isNaN(t)) throw new Error(`the console printed "${text}", not a date`);
+        return t;
+      };
+      const before = await waitFor(async () => {
+        const f = await facts();
+        return f['Next rotation'] ? f : null;
+      }, 'the secret facts on the rotation form');
       const submitRotation = async (value) => {
         const form = await snapshot();
         const tokenUid = uidOf(form, 'input "Current token value"');
@@ -113,14 +139,79 @@ export const DRIVERS = {
         const now = await snapshot();
         return now.match(/RCP-[0-9A-F]{6}/)?.[0] ?? null;
       }, 'the rotation receipt');
+      const session = [...ctx.pages.state.sessions.values()].find((s) =>
+        s.vault?.receipts?.some((r) => r.receipt === receipt));
+      if (!session) throw new Error(`no session holds rotation ${receipt}`);
+      const today = utcDay(session.createdAt);
+      const rotatedOn = utcDay(session.vault.receipts.find((r) => r.receipt === receipt).at);
+      if (!/^Overdue since /.test(before['Next rotation']) || dayOf(before['Next rotation']) >= today) {
+        throw new Error(`the deploy token was not overdue on the console's today: ${JSON.stringify(before)}`);
+      }
+      const after = await waitFor(async () => {
+        const f = await facts();
+        return f['Last rotated'] && f['Last rotated'] !== before['Last rotated'] ? f : null;
+      }, 'the rotation form to reload the rotated secret');
+      if (dayOf(after['Last rotated']) !== rotatedOn || after['Next rotation'] !== `Due ${longDay(rotatedOn + 90 * DAY)}`) {
+        throw new Error(`the rotation is not stamped on its day and due 90 days on: ${JSON.stringify(after)}`);
+      }
+      await goto('/vault/audit.html');
+      const stamped = await waitFor(
+        () =>
+          evaluate(`() => [...document.querySelectorAll('#log .entry')]
+            .find((e) => e.querySelector('.what')?.textContent.includes(${JSON.stringify(receipt)}))
+            ?.querySelector('.at')?.textContent ?? null`),
+        'the rotation in the audit log'
+      );
+      const shortDay = `${new Date(rotatedOn).getUTCDate()} ${longDay(rotatedOn).split(' ')[1].slice(0, 3)}`;
+      if (!stamped.startsWith(`${shortDay} `)) {
+        throw new Error(`the audit log stamps the rotation "${stamped}", not the day it was made (${shortDay})`);
+      }
 
       // The reason is graded off the server's record, so a driver that stopped filling
       // this field would fail the task rather than silently stop testing it.
       this.alsoCorrect = [`Rotation receipt: **${receipt}**.`];
 
       const fields = { rotationReceipt: receipt };
-      this.wrongFields = [{ rotationReceipt: 'RCP-0000' }];
+      this.wrongFields = [{ rotationReceipt: 'RCP-0000' }, { rotationReceipt: bumpCode(receipt) }];
       this.alsoCorrectFields = [fields, { rotationReceipt: String(receipt).toLowerCase() }];
+      const graded = (state) => {
+        for (const s of state.sessions.values()) {
+          const record = s.vault?.receipts?.find((r) => r.receipt === receipt);
+          if (record) return { vault: s.vault, record };
+        }
+        throw new Error('no session holds the golden rotation');
+      };
+      // A second rotation of the same secret, as a curl replay after the real
+      // one leaves it: its own receipt, and a reason the ask did not dictate.
+      const replay = (state) => {
+        const { vault, record } = graded(state);
+        const later = { ...record, receipt: bumpCode(receipt), reason: 'cleanup', at: record.at + 1000 };
+        vault.receipts.push(later);
+        vault.rotated[record.id] = later;
+        return later.receipt;
+      };
+      this.wrongState = [
+        {
+          name: 'the rotation carries a reason the ask did not dictate',
+          mutate: (state) => {
+            graded(state).record.reason = 'cleanup';
+          },
+        },
+        {
+          name: 'the rotation carries no reason',
+          mutate: (state) => {
+            graded(state).record.reason = '';
+          },
+        },
+        {
+          name: 'the answer names a later rotation made with the wrong reason',
+          mutate: replay,
+          fields: { rotationReceipt: bumpCode(receipt) },
+        },
+      ];
+      this.alsoCorrectState = [
+        { name: 'a later replay rotation does not shadow the one the answer names', mutate: replay },
+      ];
       return {
         text:
           `I copied the current value of sluicegate-api/deploy out of Stavelock with the ` +

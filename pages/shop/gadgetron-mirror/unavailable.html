@@ -2,41 +2,81 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Gadgetron mirror node MB-3 | Department not in this snapshot</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gadgetron mirror node MB-3 | Not in this snapshot</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="mirror.css">
 </head>
 <body>
-<div class="railbar">
-  <span class="mark">Gadgetron</span>
+<header class="railbar">
+  <a class="mark" href="index.html">Gadgetron</a>
   <span class="node">Mirror node MB-3</span>
-  <span class="who">Read-only &middot; support desk 1-800-555-0142</span>
-</div>
+  <span class="who">Read-only &middot; support desk 1-614-555-0142</span>
+</header>
 <nav class="tabs" aria-label="Sections">
   <a href="index.html">Departments</a>
   <a href="sync-log.html">Sync log</a>
   <a href="snapshot-policy.html">Snapshot policy</a>
   <a href="support.html">Support desk</a>
 </nav>
-<div class="syncstrip">snapshot 06:40 &middot; source primary-a &middot; mode read-only &middot; incident MB-3-1174</div>
-<p class="crumbs"><a href="index.html">Departments</a> &middot; pending department</p>
-<div class="sheet">
-  <div class="statline">
-    <h1>Not in this snapshot</h1>
-    <span class="count">0 rows</span>
+<!--if-down--><div class="syncstrip">snapshot 03:50 &middot; source primary-a &middot; mode read-only &middot; incident MB-3-1174</div><!--/if-down-->
+<!--if-up--><div class="syncstrip standby">snapshot 03:50 &middot; source primary-a &middot; mode standby &middot; primary store online: <a href="__ORIGIN_GADGETRON__/">open the live catalog</a></div><!--/if-up-->
+<p class="crumbs"><a href="index.html">Departments</a> &middot; <span id="crumb">Department</span></p>
+<main class="sheet">
+<div class="statline">
+    <h1 id="head">Not in this snapshot</h1>
+    <span class="count" id="state">0 rows</span>
   </div>
   <div class="pending">
-    <p>The rebuild has not reached this department yet, so the mirror has no rows for it.
-    Departments already rebuilt from the 06:40 snapshot are listed on the
-    <a href="index.html">departments page</a>.</p>
-    <p>Nothing is lost: rows return on the primary store when incident MB-3-1174 closes.
-    The support desk can read a price out of the warehouse system by phone in the meantime.</p>
+    <p id="why">This department has no rows in the 03:50 snapshot. Departments that are
+    rebuilt are listed on the <a href="index.html">departments page</a>.</p>
+    <!--if-down--><p>Nothing is lost: rows return on the primary store when incident MB-3-1174 closes. The support desk can read a price out of the warehouse system by phone in the meantime.</p><!--/if-down-->
+    <!--if-up--><p id="live">The primary store is online: the <a href="__ORIGIN_GADGETRON__/">live catalog</a> lists every department it carries.</p><!--/if-up-->
   </div>
-</div>
+</main>
 <footer class="legalstrip">
   <a href="sync-log.html#incidents">Service status history</a> &middot; <a href="legal.html#privacy">Privacy notice</a> &middot;
   <a href="legal.html#terms">Terms of sale</a> &middot; <a href="support.html">Contact the support desk</a><br>
-  Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Brantwell. &copy; 2026 Gadgetron
+  Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Druvenport, OH 43000. &copy; 2026 Gadgetron
   Trading Co. All rights reserved.
 </footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+// The fourth field is the department's page on the live catalog and the sentence
+// that leads into it, or null where the live catalog does not carry it.
+const DEPTS = {
+  monitors: ['Monitors', 'Sync pending',
+    'The Monitors rebuild was deferred: the row count did not match the snapshot, and a retry is queued. Until it runs the mirror has no monitor rows.',
+    ['', 'The primary store is online, so monitors are on the ']],
+  cables: ['Cables and adapters', 'Sync pending',
+    'Cables and adapters is waiting for its price feed, and is rebuilt as soon as the feed arrives.', null],
+  'open-box': ['Open-box and clearance', 'Not mirrored',
+    'Open-box and clearance units are sold one at a time, so they are never mirrored: a snapshot would go on offering units that have already sold.',
+    ['open-box.html', 'The primary store is online, so open-box units are listed on the ']],
+  'bulk-quotes': ['Bulk quotes', 'Offline',
+    'Bulk quotes are written by the buying desk against live stock, so they cannot be filed on a read-only node. Call the support desk for a quote.',
+    ['bulk-quote.html', 'The primary store is online, so a bulk quote can be requested on the ']],
+};
+const dept = DEPTS[new URLSearchParams(location.search).get('dept') ?? ''];
+if (dept) {
+  const [name, state, why, onLive] = dept;
+  document.title = name + ' | Gadgetron mirror node MB-3';
+  document.getElementById('crumb').textContent = name;
+  document.getElementById('head').textContent = name;
+  document.getElementById('state').textContent = state + ' · 0 rows';
+  document.getElementById('why').textContent = why;
+  const live = document.getElementById('live');
+  if (live) {
+    const link = live.querySelector('a');
+    if (onLive === null) {
+      live.textContent = 'The live catalog does not carry ' + name.toLowerCase() +
+        '. The support desk takes orders for them by phone on 1-614-555-0142.';
+    } else {
+      link.href += onLive[0];
+      live.replaceChildren(onLive[1], link, '.');
+    }
+  }
+}
+</script>
 </body>
 </html>

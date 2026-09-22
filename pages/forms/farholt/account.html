@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Farholt Freight Union — Account</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --bone: #efe9dd; --paper: #f8f5ee; --ink: #1b1714;
@@ -26,6 +27,7 @@
     border: 2px solid var(--bone); padding: 5px 12px;
     text-transform: uppercase; letter-spacing: 3px; font-size: 15px;
   }
+  a.wordmark { color: inherit; text-decoration: none; }
   .masthead .est { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #a99e8c; }
   .masthead .tel { margin-left: auto; font-size: 12px; letter-spacing: 1px; color: #cfc4b0; }
   .tabs { background: var(--paper); border-bottom: 3px solid var(--ink); padding: 0 28px; }
@@ -46,6 +48,7 @@
     margin: 0; background: var(--ink); color: var(--bone);
     font-size: 12px; letter-spacing: 3px; text-transform: uppercase; padding: 8px 16px;
   }
+  .slab .inner a { color: var(--oxblood); }
   .slab .inner { padding: 18px 16px; }
   .slab .inner p { margin: 0 0 12px; max-width: 70ch; }
   .slab .inner p:last-child { margin-bottom: 0; }
@@ -67,29 +70,41 @@
   }
   button:hover { background: #5f1810; border-color: #5f1810; }
   .msg { font-size: 13px; color: var(--oxblood); min-height: 18px; }
+  .err:not(:empty) { margin: 5px 0 0; font-size: 12px; color: var(--oxblood); font-weight: bold; }
+  .err:empty { display: none; }
+  input[aria-invalid="true"] { border-color: var(--oxblood); }
   footer {
     border-top: 3px solid var(--ink); margin-top: 40px; padding: 18px 28px 34px;
     font-size: 12px; color: var(--dim);
   }
   footer a { color: var(--oxblood); text-decoration: none; }
   footer .legal { margin-top: 8px; letter-spacing: 0.4px; }
+  @media (max-width: 640px) {
+    .masthead { flex-wrap: wrap; gap: 8px 14px; padding: 12px 16px; }
+    .masthead .tel { margin-left: 0; flex-basis: 100%; }
+    .tabs { padding: 0 8px; }
+    .tabs a { padding: 10px 10px 7px; }
+    .sheet { padding: 20px 16px 36px; }
+    footer { padding: 16px 16px 28px; }
+  }
 </style>
 </head>
 <body>
-<div class="masthead">
-  <span class="wordmark">Farholt</span>
+<header class="masthead">
+  <a class="wordmark" href="index.html">Farholt</a>
   <span class="est">Freight Union · Customs and cartage since 1934</span>
   <span class="tel">Traffic desk 0808 157 0662</span>
-</div>
-<nav class="tabs">
+</header>
+<nav class="tabs" aria-label="Sections">
   <a href="services.html">Services</a>
   <a href="tariffs.html">Tariffs</a>
+  <a href="network.html">Network</a>
   <a href="office-finder.html">Branch directory</a>
   <a href="claims.html">Claims</a>
-  <a href="account.html" class="here">Account</a>
+  <a href="account.html" class="here" aria-current="page">Account</a>
 </nav>
 
-<div class="sheet">
+<main class="sheet">
   <p class="path"><a href="index.html">Home</a> / Account</p>
   <h1>Account</h1>
   <p class="lede">Regular shippers may settle monthly instead of paying each
@@ -113,15 +128,17 @@
       <div class="field">
         <label for="acct">Account number</label>
         <div>
-          <input id="acct" name="acct" type="text" autocomplete="off">
-          <p class="help">As printed at the head of your monthly statement.</p>
+          <input id="acct" name="acct" type="text" inputmode="numeric" autocomplete="username" aria-describedby="acct-help acct-err">
+          <p class="help" id="acct-help">Eight digits, as printed at the head of your monthly statement.</p>
+          <p class="err" id="acct-err"></p>
         </div>
       </div>
       <div class="field">
         <label for="pass">Counter passphrase</label>
         <div>
-          <input id="pass" name="pass" type="password">
-          <p class="help">Issued when the account was opened.</p>
+          <input id="pass" name="pass" type="password" autocomplete="current-password" aria-describedby="pass-help pass-err">
+          <p class="help" id="pass-help">Issued when the account was opened.</p>
+          <p class="err" id="pass-err"></p>
         </div>
       </div>
       <div class="actions">
@@ -130,20 +147,58 @@
       </div>
     </div>
   </form>
-</div>
+
+  <div class="slab">
+    <h2>Lost passphrase</h2>
+    <div class="inner">
+      <p>Passphrases are never sent by email. Any branch counter will issue a
+      new one on sight of the specimen signature held for the account, or the
+      registry will post one to the registered address on a written request
+      to <a href="mailto:registry@farholt.example">registry@farholt.example</a>.
+      Three failed sign-ins close online access for the rest of the session.</p>
+    </div>
+  </div>
+</main>
 
 <footer>
   Farholt Freight Union · Registry House, 4 Ordnance Wharf, Korrin ·
   <a href="privacy.html">Privacy notice</a> · <a href="terms-of-carriage.html">Terms of carriage</a> ·
-  <a href="traffic-desk.html">Traffic desk</a> · support@halveck-freight.example
-  <div class="legal">Copyright 2026 Farholt Freight Union. Cartage licence 1934/HFU.</div>
+  <a href="traffic-desk.html">Traffic desk</a> · <a href="mailto:support@farholt.example">support@farholt.example</a>
+  <div class="legal">Copyright 2026 Farholt Freight Union. Cartage licence 1934/FFU.</div>
 </footer>
 
 <script>
-  document.getElementById('signin').addEventListener('submit', (event) => {
+  const NONCE = '__SESSION_NONCE__';
+  const msg = document.getElementById('msg');
+  const fieldError = (id, text) => {
+    document.getElementById(id + '-err').textContent = text ?? '';
+    document.getElementById(id).setAttribute('aria-invalid', text ? 'true' : 'false');
+  };
+  document.getElementById('signin').addEventListener('submit', async (event) => {
     event.preventDefault();
-    document.getElementById('msg').textContent =
-      'Account numbers are validated at the counter. This terminal cannot open a settlement session.';
+    const acct = document.getElementById('acct').value.replace(/\s+/g, '');
+    const pass = document.getElementById('pass').value;
+    fieldError('acct', !acct ? 'Enter the account number.' : /^\d{8}$/.test(acct) ? '' : 'Account numbers are eight digits.');
+    fieldError('pass', pass ? '' : 'Enter the counter passphrase.');
+    msg.textContent = '';
+    if (!/^\d{8}$/.test(acct) || !pass) return;
+    msg.textContent = 'Checking with the registry…';
+    try {
+      const res = await fetch('/api/farholt/settlement-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, acct, pass }),
+      });
+      if (![401, 422, 423].includes(res.status)) {
+        msg.textContent = 'The registry could not take this sign-in. Reload the page and try again.';
+        return;
+      }
+      const body = await res.json();
+      for (const [id, text] of Object.entries(body.errors ?? {})) fieldError(id, text);
+      msg.textContent = body.error ?? '';
+    } catch {
+      msg.textContent = 'The registry did not answer. Try again, or ring the traffic desk.';
+    }
   });
 </script>
 </body>

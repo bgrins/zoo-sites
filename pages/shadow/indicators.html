@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Indicator and Event Reference — Metronome Systems</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   body {
     margin: 0; background: #23262a;
@@ -75,7 +76,7 @@
     flex: 0 0 132px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
     color: #a8b0ab; padding-top: 1px;
   }
-  .refs .body { flex: 1; font-size: 12px; line-height: 1.7; color: #79817c; }
+  .refs .body { flex: 1; font-size: 12px; line-height: 1.7; color: #7b837e; }
   .refs .body em { font-style: normal; color: #a8b0ab; }
   .tags { margin: 0; font-size: 12px; line-height: 1.75; }
   .tags dt {
@@ -86,28 +87,33 @@
   footer {
     margin-top: 30px; border-top: 2px solid #14161a; background: #1b1e21;
     padding: 14px 26px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: #5c6360; display: flex; justify-content: space-between; gap: 18px;
+    color: #8b938e; display: flex; justify-content: space-between; gap: 18px;
   }
-  footer a { color: #7f8783; text-decoration: none; }
+  footer a { color: #a8b0ab; text-decoration: none; }
   footer a:hover { color: #d9a406; }
   footer .flinks { display: flex; gap: 16px; }
+  @media (max-width: 700px) {
+    header, footer, .strip, nav.sheets, footer .flinks { flex-wrap: wrap; }
+    header, footer { gap: 8px 18px; }
+  }
+  header h1 a.home { color: inherit; text-decoration: none; }
 </style>
 </head>
 <body>
 <div class="hazard"></div>
 <header>
   <div class="plate">
-    <h1>Metronome Systems</h1>
+    <h1><a class="home" href="index.html">Metronome Systems</a></h1>
     <span class="unit">FAC-CONSOLE / 07</span>
   </div>
   <span class="unit">REFERENCE CARD RC-04</span>
 </header>
-<div class="strip">
+<nav class="strip" aria-label="Console sheets">
   <a href="index.html">Console</a>
   <a href="clearance.html">Clearance procedure</a>
-  <a href="indicators.html" class="on">Indicator reference</a>
+  <a href="indicators.html" class="on" aria-current="page">Indicator reference</a>
   <a href="escalation.html">Escalation</a>
-</div>
+</nav>
 <main>
   <p class="instr"><b>RC-04 / WHAT THE CONSOLE IS TELLING YOU</b><br>
   Lamp meanings and event log tags for the clearance module. Print side is laminated and
@@ -163,17 +169,21 @@
     per shift, shortly after rotation.</dd>
     <dt>door</dt>
     <dd>A door state change worth recording, with the numbered door and the duration it was
-    held. Routine closures are not logged.</dd>
+    held, and the closure that ended a hold.</dd>
     <dt>stage two</dt>
     <dd>The stage armed, cleared or dropped. A drop always carries a reason.</dd>
-    <dt>latch</dt>
-    <dd>Three rejections in a shift. The entry names the shift line that latched the module
-    and stays until a duty engineer releases it.</dd>
+    <dt>keypad</dt>
+    <dd>A rejected clearance entry, with the number of rejections so far this shift. Granted
+    clearances go to the site access record, not to this log.</dd>
+    <dt>duty engineer</dt>
+    <dd>The console paged the duty engineer after a third rejection in the shift.</dd>
   </dl>
 </main>
 <footer>
   <span>Metronome Systems facility terminal &middot; build 7.2.19 &middot; reference RC-04</span>
   <span class="flinks">
+    <a href="privacy.html">Privacy and monitoring</a>
+    <a href="terms.html">Terms of use</a>
     <a href="clearance.html">Clearance procedure</a>
     <a href="escalation.html">Escalation</a>
     <a href="index.html">Console</a>

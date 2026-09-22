@@ -1,4 +1,4 @@
-// Marrowgate big-box catalogue: one horizontal result row per SKU, revealed in
+// Marrowgate big-box catalog: one horizontal result row per SKU, revealed in
 // batches of PAGE_SIZE by the "Load more results" control. The refine bar
 // filters and sorts the feed client-side and restarts the batching.
 
@@ -61,7 +61,7 @@ function rowMarkup(item) {
       ${
         ready
           ? `<a class="basket" data-add="${item.sku}" href="basket.html">Add to basket</a>`
-          : '<a class="basket off" href="account.html">Notify me when available</a>'
+          : `<a class="basket off" href="notify.html?sku=${item.sku}">Notify me when available</a>`
       }
       <a class="compare-link" data-compare="${item.sku}" href="compare.html">${
         compareSelected.has(item.sku) ? 'Remove from compare' : 'Add to compare'
@@ -83,7 +83,7 @@ function renderBatch() {
   const left = list.length - shown;
   tally.textContent = list.length
     ? `Showing ${shown} of ${list.length} items in Monitors. ` +
-      `Prices and availability are for the Riverside store.`
+      `Pickup store: ${window.marrowgateStore().name}.`
     : 'No items match the current refinements.';
   if (left > 0) {
     if (!moreButton.isConnected) moreWrap.insertBefore(moreButton, moreNote);

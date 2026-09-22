@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vacancy record — Alderpost</title>
 <link rel="stylesheet" href="roles.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="masthead">
   <div class="masthead-in">
     <div class="brandline">
-      <p class="brand">Alderpost</p>
+      <a class="brand" href="./">Alderpost</a>
       <span class="brandsub">Built environment recruitment</span>
       <span class="deskbar">Northern desk &middot; consultant view</span>
     </div>
@@ -42,8 +43,8 @@
 
 <footer class="sitefoot">
   <div class="wrap">
-    <p>Alderpost Recruitment Ltd, 4 Wharfeside Row, Leeds LS1 4QT. Registered in England 00000000.</p>
-    <p>desk@alderpost.example &middot; 0113 496 0180 &middot; <a href="notes.html">Desk notes</a> &middot; <a href="clients.html">Clients</a> &middot; <a href="about.html">About Alderpost</a> &middot; <a href="apply.html">How to apply</a> &middot; <a href="accessibility.html">Accessibility</a></p>
+    <p>Alderpost Recruitment Ltd, 4 Wharfeside Row, Wendersby WY3 2QT. Registered in England and Wales, company number 00000000.</p>
+    <p>desk@alderpost.example &middot; 01632 960653 &middot; <a href="notes.html">Desk notes</a> &middot; <a href="clients.html">Clients</a> &middot; <a href="about.html">About Alderpost</a> &middot; <a href="apply.html">How to apply</a> &middot; <a href="accessibility.html">Accessibility</a> &middot; <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms</a></p>
   </div>
 </footer>
 
@@ -57,8 +58,9 @@ async function load() {
   });
   if (!response.ok) {
     document.getElementById('v-title').textContent = 'Record not available';
-    document.getElementById('v-employer').textContent =
-      'This vacancy is not on the desk. Go back to the vacancy search.';
+    document.getElementById('v-employer').textContent = response.status === 404
+      ? 'This vacancy is not on the desk. It may have been filled; go back to the vacancy search.'
+      : 'The desk did not answer just now. Reload the record in a moment.';
     return;
   }
   const data = await response.json();

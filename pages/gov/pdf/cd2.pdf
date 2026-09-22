@@ -3,41 +3,90 @@
 << /Type /Catalog /Pages 2 0 R >>
 endobj
 2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
 endobj
 3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
 endobj
 4 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
 endobj
 5 0 obj
-<< /Length 976 >>
+<< /Length 2454 >>
 stream
-BT /F1 12 Tf 72 740 Td (BUREAU OF CIVIC REVENUE) Tj ET
-BT /F1 10 Tf 72 722 Td (An agency of the Commonwealth) Tj ET
-BT /F1 14 Tf 72 704 Td (FORM CD-2 - COMBINED DECLARATION, JOINT FILERS) Tj ET
-BT /F1 10 Tf 72 686 Td (Rev. 01/25) Tj ET
-BT /F1 10 Tf 72 650 Td (Type or print clearly in black ink. Complete every line that applies;) Tj ET
-BT /F1 10 Tf 72 632 Td (enter NONE where a line does not apply. Read the instructions for this) Tj ET
-BT /F1 10 Tf 72 614 Td (form and consult the Schedule of Filing Fees before filing.) Tj ET
-BT /F1 10 Tf 72 596 Td (Line 1  Name of filer  ______________________________________________) Tj ET
-BT /F1 10 Tf 72 578 Td (Line 2  Account number  ___________________________________________) Tj ET
-BT /F1 10 Tf 72 560 Td (Line 3  Mailing address  __________________________________________) Tj ET
-BT /F1 10 Tf 72 542 Td (Sign and date the declaration on page 2. An unsigned filing is) Tj ET
-BT /F1 10 Tf 72 524 Td (returned unprocessed.) Tj ET
+BT /F2 11 Tf 54 748 Td (BUREAU OF CIVIC REVENUE) Tj ET
+BT /F1 8 Tf 54 735 Td (An agency of the Commonwealth) Tj ET
+BT /F2 9 Tf 400 748 Td (Form CD-2) Tj ET
+BT /F1 8 Tf 400 735 Td (Rev. 01/25) Tj ET
+1.4 w 54 726 m 558 726 l S
+BT /F2 13 Tf 54 706 Td (COMBINED DECLARATION, JOINT FILERS) Tj ET
+0.6 w 54 44 m 558 44 l S
+BT /F1 7 Tf 54 32 Td (Form CD-2 \(Rev. 01/25\)) Tj ET
+BT /F1 7 Tf 500 32 Td (Page 1 of 1) Tj ET
+0.9 g 54 668 504 16 re f 0 g
+BT /F2 9 Tf 58 672 Td (Part A. Filers) Tj ET
+BT /F1 8 Tf 54 650 Td (First filer: name and Bureau account number) Tj ET
+0.6 w 54 636 m 558 636 l S
+BT /F1 8 Tf 54 622 Td (Second filer: name and Bureau account number) Tj ET
+0.6 w 54 608 m 558 608 l S
+BT /F1 8 Tf 54 594 Td (Mailing address \(number and street, city, ZIP code\)) Tj ET
+0.6 w 54 580 m 558 580 l S
+0.9 g 54 554 504 16 re f 0 g
+BT /F2 9 Tf 58 558 Td (Part B. Combined income and assessment) Tj ET
+BT /F2 9 Tf 54 536 Td (Line 1) Tj ET
+BT /F1 9 Tf 98 536 Td (Wages, salaries and tips, both filers) Tj ET
+0.6 w 360 534 m 558 534 l S
+BT /F2 9 Tf 54 516 Td (Line 2) Tj ET
+BT /F1 9 Tf 98 516 Td (Interest and dividends, both filers) Tj ET
+0.6 w 360 514 m 558 514 l S
+BT /F2 9 Tf 54 496 Td (Line 3) Tj ET
+BT /F1 9 Tf 98 496 Td (Other income \(attach statement\)) Tj ET
+0.6 w 360 494 m 558 494 l S
+BT /F2 9 Tf 54 476 Td (Line 4) Tj ET
+BT /F1 9 Tf 98 476 Td (Total income. Add Lines 1 through 3) Tj ET
+0.6 w 360 474 m 558 474 l S
+BT /F2 9 Tf 54 456 Td (Line 5) Tj ET
+BT /F1 9 Tf 98 456 Td (Deductions from Schedule D) Tj ET
+0.6 w 360 454 m 558 454 l S
+BT /F2 9 Tf 54 436 Td (Line 6) Tj ET
+BT /F1 9 Tf 98 436 Td (Assessable income. Line 4 less Line 5) Tj ET
+0.6 w 360 434 m 558 434 l S
+BT /F2 9 Tf 54 416 Td (Line 7) Tj ET
+BT /F1 9 Tf 98 416 Td (Assessment from the joint rate table in the instructions) Tj ET
+0.6 w 360 414 m 558 414 l S
+BT /F2 9 Tf 54 396 Td (Line 8) Tj ET
+BT /F1 9 Tf 98 396 Td (Payments and credits, both filers) Tj ET
+0.6 w 360 394 m 558 394 l S
+BT /F2 9 Tf 54 376 Td (Line 9) Tj ET
+BT /F1 9 Tf 98 376 Td (Balance due, or overpayment to be refunded) Tj ET
+0.6 w 360 374 m 558 374 l S
+0.9 g 54 344 504 16 re f 0 g
+BT /F2 9 Tf 58 348 Td (Part C. Declaration \(both filers must sign\)) Tj ET
+BT /F1 9 Tf 54 326 Td (We declare that this declaration is true, correct and complete to the best of our knowledge.) Tj ET
+0.6 w 54 296 m 330 296 l S
+0.6 w 360 296 m 558 296 l S
+BT /F1 7 Tf 54 286 Td (Signature) Tj ET
+BT /F1 7 Tf 360 286 Td (Date) Tj ET
 endstream
 endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Title (Form CD-2 Combined Declaration, Joint Filers) /Author (Bureau of Civic Revenue) >>
+endobj
 xref
-0 6
+0 8
 0000000000 65535 f 
 0000000009 00000 n 
 0000000058 00000 n 
 0000000115 00000 n 
-0000000241 00000 n 
-0000000311 00000 n 
+0000000212 00000 n 
+0000000314 00000 n 
+0000002820 00000 n 
+0000002956 00000 n 
 trailer
-<< /Size 6 /Root 1 0 R >>
+<< /Size 8 /Root 1 0 R /Info 7 0 R >>
 startxref
-1337
+3065
 %%EOF

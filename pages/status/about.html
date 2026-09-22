@@ -4,15 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>About this page - Nimbrel Edge status</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/atom+xml" title="Nimbrel Edge incident history" href="history.atom">
 <link rel="stylesheet" href="status.css">
 </head>
 <body>
 <header class="mast">
   <div class="mast-inner">
-    <span class="mark">Nimbrel <b>Edge</b></span>
-    <nav>
+    <a class="mark" href="index.html">Nimbrel <b>Edge</b></a>
+    <nav aria-label="Status pages">
       <a href="index.html">Status</a>
       <a href="history.html">Incident history</a>
+      <a href="subscribe.html">Subscribe</a>
     </nav>
     <span class="tz">All times UTC</span>
   </div>
@@ -43,9 +46,9 @@
 
   <section class="panel">
     <h2>Who updates it</h2>
-    <p>The network operations centre owns this page and staffs it continuously. The engineer
+    <p>The network operations center owns this page and staffs it continuously. The engineer
     holding the incident opens the record, writes every update on it, and closes it; nothing on
-    this page is written by an automated summariser, which is why an update can lag detection by
+    this page is written by an automated summarizer, which is why an update can lag detection by
     a few minutes and why the wording changes between updates as understanding improves.</p>
     <p>Our commitment during an incident is an opening note within fifteen minutes of the
     component changing state, and an update at least every thirty minutes after that until the
@@ -68,9 +71,9 @@
   <section class="panel">
     <h2>Reaching a person</h2>
     <p>If what you are seeing does not match this page, tell us rather than waiting for it to
-    catch up. Write to the network operations centre with the affected component, the region you
+    catch up. Write to the network operations center with the affected component, the region you
     are served from, and a probe code if you have one. Customers on a support plan with
-    telephone escalation can reach the centre on (555) 0148 at any hour.</p>
+    telephone escalation can reach the center on (415) 555-0148 at any hour.</p>
     <p class="more"><a href="subscribe.html">Subscribe to updates</a> to be told when a
     component changes state, or read the <a href="definitions.html">status definitions</a> for
     what each state commits us to.</p>
@@ -84,10 +87,12 @@
       <a href="history.html">Incident history</a>
       <a href="about.html">About this page</a>
       <a href="subscribe.html">Subscribe to updates</a>
+      <a href="history.atom">Incident feed</a>
       <a href="definitions.html">Status definitions</a>
     </div>
-    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay.</p>
-    <p>Network operations centre: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
+    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay, CA.
+    <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms</a></p>
+    <p>Network operations center: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
   </div>
 </footer>
 </body>

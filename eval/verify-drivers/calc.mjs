@@ -3,14 +3,21 @@
 // Driven entirely through the snapshot surface — take_snapshot / click_by_uid /
 // fill_by_uid, no evaluate_script — because the point of the task is whether the
 // dual representation of a cell (value in the grid, formula in the formula bar)
-// reaches us at all. It does NOT for the grid: the sheet is a <table>, which the
-// walker drops wholesale, so every number on this page is invisible to us. It
-// DOES for the formula bar, because the walker reads the `value` DOM property of
-// inputs. The route below is the only snapshot-visible one: the formula-audit
-// pane's flag buttons select cells, and the formula bar then shows each flagged
-// cell's definition one at a time.
+// reaches us at all. On firefox-devtools-mcp 0.9.15 and 0.10.3 it does NOT for the grid:
+// the sheet is a <table>, which the walker drops wholesale, so every number on
+// this page is invisible to us (the table-cells probe in eval/spikes/probes.mjs
+// measures that; this driver does not depend on it). It DOES for the formula
+// bar, because the walker reads the `value` DOM property of inputs. The route
+// below needs nothing from the grid: the formula-audit pane's flag buttons
+// select cells, and the formula bar then shows each flagged cell's definition
+// one at a time.
+//
+// Two exceptions use evaluate. One checks the fixture's shape and reads nothing
+// the answer uses. The other is the keyboard regression after the repair: the
+// surface has no key tool, so it dispatches the keys shortcuts.html documents
+// with evaluate, and reads what they did from the snapshot and the server state.
 
-import { bumpCode, uidOf } from './lib.mjs';
+import { bumpCode, snapText, straySession, uidOf } from './lib.mjs';
 
 function flagButtons(snap) {
   return [...snap.matchAll(/uid=(\S+) button "([A-E]\d{1,2})"/g)].map((m) => ({
@@ -63,7 +70,11 @@ export const DRIVERS = {
       'The workbook total was short because the August column total in C14 used a split ' +
         'range. I replaced it with =SUM(C2:C13) and the sheet reconciles now.',
     ],
-    async run({ goto, mcp, snapshot, sleep }) {
+    async run({ base, goto, mcp, sleep, evaluate }, ctx) {
+      // The whole 500-line window on every read: a walker that emits the grid's
+      // cells would push the audit pane and the formula bar past the default
+      // 100 lines.
+      const snapshot = () => snapText(mcp, { maxLines: 500 });
       await goto('/calc/');
 
       let snap = '';
@@ -74,8 +85,29 @@ export const DRIVERS = {
       }
       const flags = flagButtons(snap).map((f) => f.ref);
       if (flags.length < 8) throw new Error(`formula audit listed ${flags.length} flags, expected 8`);
-      if (/Ardsley|Havenscar|Lowdham/.test(snap)) {
-        throw new Error('grid text unexpectedly present in the snapshot; fixture markup changed');
+      // The task rests on the grid being a <table>, whose cells the 0.9.15 and
+      // 0.10.3 walkers drop: a fixture edit that puts the depot names or figures
+      // outside table cells hands an agent the numbers. Checked in the DOM, so
+      // it holds on any build.
+      const grid = await evaluate(() => {
+        const cells = [...document.querySelectorAll('#grid-body td[data-ref]')];
+        const texts = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let names = 0;
+        let outside = 0;
+        for (let n = texts.nextNode(); n; n = texts.nextNode()) {
+          if (!/Ardsley|Havenscar|Lowdham/.test(n.textContent)) continue;
+          names += 1;
+          if (!n.parentElement.closest('table td')) outside += 1;
+        }
+        return {
+          figures: cells.filter((td) => /^-?[\d,]+\.\d\d$/.test(td.textContent.trim())).length,
+          inTable: cells.every((td) => td.closest('table')),
+          names,
+          outside,
+        };
+      });
+      if (!grid.inTable || grid.figures < 10 || grid.names < 3 || grid.outside) {
+        throw new Error(`the grid is no longer table cells holding its figures; fixture markup changed: ${JSON.stringify(grid)}`);
       }
 
       // Open each flagged cell in the formula bar and keep the one whose formula
@@ -153,16 +185,129 @@ export const DRIVERS = {
       }
       if (!checksum) throw new Error('the workbook never issued a reconciliation checksum');
 
+      // Focus and selection are one cursor, and the documented shortcuts work.
+      // All of this happens after the repair, so it changes nothing graded:
+      // reads after the repairing commit never count, and nothing is edited.
+      const graded = [...ctx.pages.state.sessions.values()].find((s) => s.calc?.checksum === checksum)?.calc;
+      if (!graded) throw new Error('no session holds the reconciled sheet');
+      const nameBoxSays = async (ref) => {
+        for (let i = 0; i < 60; i += 1) {
+          if (nameBox(await snapshot()).value === ref) return true;
+          await sleep(200);
+        }
+        return false;
+      };
+      const key = (init) =>
+        evaluate(`() => {
+          const target = document.activeElement || document.body;
+          target.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...${JSON.stringify(init)} }));
+        }`);
+      await evaluate(() => document.querySelector('#grid-body td[data-ref="B3"]').focus());
+      if (!(await nameBoxSays('B3'))) throw new Error('focusing cell B3 did not select it');
+      await key({ key: 'ArrowDown' });
+      if (!(await nameBoxSays('B4'))) throw new Error('ArrowDown from B3 did not move the selection to B4');
+      const bulkBefore = graded.formulaReads.filter((r) => r.bulk).length;
+      await key({ key: '`', code: 'Backquote', ctrlKey: true });
+      for (let i = 0; i < 60 && graded.formulaReads.filter((r) => r.bulk).length === bulkBefore; i += 1) await sleep(200);
+      const bulk = graded.formulaReads.filter((r) => r.bulk);
+      if (bulk.length !== bulkBefore + 1 || !bulk.at(-1).fromPage) {
+        throw new Error('Ctrl+` did not load Show formulas through the recorded bulk read');
+      }
+      const focusB4 = () => evaluate(() => document.querySelector('#grid-body td[data-ref="B4"]')?.focus());
+      await focusB4();
+      await key({ key: 'F2' });
+      const editing = await evaluate(() => document.activeElement?.id ?? '');
+      if (editing !== 'formula') throw new Error(`F2 on a cell focused "${editing}", not the formula bar`);
+      await focusB4();
+      await key({ key: '`', code: 'Backquote', ctrlKey: true });
+      for (let i = 0; i < 60; i += 1) {
+        if ((await evaluate(() => document.getElementById('btn-showformulas').getAttribute('aria-pressed'))) === 'false') break;
+        await sleep(200);
+      }
+
+      // Curl sessions that reconcile their own sheets by routes the grade has to
+      // tell apart. A probe's culprit comes out of the server state, because the
+      // point of each is the ORDER of its reads and edits, not how it found the
+      // cell.
+      const canonical = (ref) =>
+        Number(ref.slice(1)) === 14
+          ? `=SUM(${ref[0]}2:${ref[0]}13)`
+          : `=SUM(B${ref.slice(1)}:D${ref.slice(1)})`;
+      const probeSheet = async () => {
+        const probe = await straySession(base, '/calc/', { nonceHeader: 'always', reply: 'response' });
+        const { body } = await probe.get('/api/calc/sheet');
+        const calc = ctx.pages.state.sessions.get(probe.sid)?.calc;
+        if (!Array.isArray(body.audit) || !calc) throw new Error('probe could not open its sheet');
+        const commit = async (ref, input) => {
+          const r = await probe.post('/api/calc/cell', { ref, input });
+          if (r.status !== 200) throw new Error(`probe edit ${ref} ${input} refused: ${r.body.error}`);
+          return r.body;
+        };
+        return { probe, audit: body.audit, culprit: calc.culprit, commit };
+      };
+      // A blind sweep: every flagged cell rewritten to its canonical formula
+      // with no formula read at all, reporting the cell whose commit flipped the
+      // sheet to reconciled.
+      const blind = await probeSheet();
+      let blindFields = null;
+      for (const ref of blind.audit) {
+        const body = await blind.commit(ref, canonical(ref));
+        if (body.reconciled && !blindFields) blindFields = { cellReference: ref, checksum: body.checksum };
+      }
+      if (!blindFields) throw new Error('the blind sweep never reconciled its sheet');
+      // Repaired after reading the culprit, then broken again: the sheet no
+      // longer reconciles, although its checksum was issued once.
+      const rebroken = await probeSheet();
+      await rebroken.probe.get(`/api/calc/cell?ref=${rebroken.culprit.ref}`);
+      const repaired = await rebroken.commit(rebroken.culprit.ref, canonical(rebroken.culprit.ref));
+      if (!repaired.reconciled) throw new Error('the re-break probe never reconciled');
+      await rebroken.commit(rebroken.culprit.ref, rebroken.culprit.broken);
+      // A wrong but accepted first attempt, then a read of the culprit, then the
+      // repair: the read precedes the commit that repaired the cell.
+      const retried = await probeSheet();
+      const retryRow = retried.culprit.ref.slice(1);
+      const wrongTry = retryRow === '14' ? '=SUM(E2:E12)' : `=B${retryRow}+C${retryRow}`;
+      await retried.commit(retried.culprit.ref, wrongTry);
+      await retried.probe.get(`/api/calc/cell?ref=${retried.culprit.ref}`);
+      const fixed = await retried.commit(retried.culprit.ref, canonical(retried.culprit.ref));
+      if (!fixed.reconciled) throw new Error('the retry probe never reconciled');
+      // ROUND with an absurd digits argument must not leave NaN on the sheet.
+      const rounding = await probeSheet();
+      const round = await rounding.probe.post('/api/calc/cell', {
+        ref: 'E2',
+        input: '=ROUND(SUM(B2:D2),400)',
+      });
+      if (
+        round.status === 200 &&
+        Object.values(round.body.display ?? {}).some((v) => /NaN|Infinity/.test(v))
+      ) {
+        throw new Error('ROUND(..., 400) was accepted and left a non-finite value on the sheet');
+      }
+
       const fields = { cellReference: culprit.ref, checksum };
+      const decoyFlag = flags.find((ref) => ref !== culprit.ref);
       this.wrongFields = [
         { cellReference: culprit.ref, checksum: 'RC-000000' },
         { cellReference: 'B2', checksum },
+        { cellReference: decoyFlag, checksum },
+        { cellReference: `${culprit.ref} or ${decoyFlag}`, checksum },
+        { cellReference: `'Q3 Recovery'!${decoyFlag}`, checksum },
+        blindFields,
+        { cellReference: rebroken.culprit.ref, checksum: repaired.checksum },
+        { cellReference: rebroken.culprit.ref, checksum: `Checksum ${repaired.checksum}` },
+        // A hedge whose second checksum is quoted bare, with no digit to show it.
+        { cellReference: culprit.ref, checksum: `${checksum} or FEDCBA` },
       ];
       this.alsoCorrectFields = [
         fields,
         { cellReference: `$${culprit.ref[0]}$${culprit.ref.slice(1)}`, checksum: checksum.slice(3) },
+        { cellReference: `'Q3 Recovery'!${culprit.ref}`, checksum },
+        { cellReference: `Sheet1!${culprit.ref}`, checksum },
+        { cellReference: `cell ${culprit.ref}.`, checksum },
+        { cellReference: retried.culprit.ref, checksum: fixed.checksum },
+        // Labelled as the reconciliation panel prints it.
+        { cellReference: culprit.ref, checksum: `Reconciliation checksum ${checksum}` },
       ];
-      const decoyFlag = flags.find((ref) => ref !== culprit.ref);
       this.wrong = [
         this.wrong[0],
         `The audit flag on ${decoyFlag} was the fault; after tidying that formula ` +

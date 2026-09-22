@@ -4,74 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Thornbury Trust — My Applications</title>
-<style>
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    margin: 0;
-    font-family: "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", "DejaVu Sans", sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
-    color: #2c2622;
-    background: #f6f1e7;
-  }
-  a { color: #a8442a; }
-  .masthead {
-    background: #fffdf8;
-    border-bottom: 1px solid #ddd2be;
-    padding: 18px 28px 14px;
-    display: flex;
-    align-items: flex-end;
-    gap: 18px;
-  }
-  .mark span { display: block; font-size: 11px; letter-spacing: 2.4px; text-transform: uppercase; color: #8a7f70; margin-top: 3px; }
-  .mark .name {
-    font-size: 23px; font-weight: 600; letter-spacing: 0.2px;
-    text-transform: none; color: #2c2622; margin-top: 0;
-  }
-  .round { margin-left: auto; text-align: right; font-size: 12px; color: #6f6558; }
-  .round strong { display: block; color: #a8442a; font-size: 13px; letter-spacing: 0.4px; }
-  nav.tabs { background: #fffdf8; border-bottom: 1px solid #ddd2be; padding: 0 28px; }
-  nav.tabs a {
-    display: inline-block; padding: 9px 0 7px; margin-right: 26px;
-    font-size: 12.5px; letter-spacing: 0.6px; text-transform: uppercase;
-    color: #6f6558; text-decoration: none; border-bottom: 3px solid transparent;
-  }
-  nav.tabs a:hover { color: #2c2622; }
-  .crumbs { padding: 12px 28px 0; font-size: 12px; color: #8a7f70; }
-  .crumbs a { text-decoration: none; }
-  .layout { display: flex; gap: 30px; padding: 8px 28px 40px; align-items: flex-start; }
-  .col { flex: 1; min-width: 0; max-width: 760px; }
-  h1 { font-size: 26px; font-weight: 500; margin: 8px 0 2px; letter-spacing: -0.2px; }
-  .sub { color: #6f6558; margin: 0 0 20px; font-size: 13px; }
-  .panel { background: #fffdf8; border: 1px solid #ddd2be; padding: 20px 22px 22px; margin-bottom: 18px; }
-  .panel h2 {
-    margin: 0 0 4px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
-    color: #a8442a; font-weight: 600;
-  }
-  .panel p.lede { margin: 0 0 16px; color: #4d453c; font-size: 13px; }
-  table { border-collapse: collapse; width: 100%; font-size: 13px; }
-  th {
-    text-align: left; font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase;
-    color: #8a7f70; font-weight: 600; padding: 6px 14px 6px 0; border-bottom: 1px solid #ddd2be;
-  }
-  td { padding: 10px 14px 10px 0; border-bottom: 1px dotted #d6cab4; color: #4d453c; vertical-align: top; }
-  .status { color: #c98a2e; font-weight: 600; }
-  .aside { width: 250px; flex: 0 0 250px; font-size: 12.5px; color: #5d5343; }
-  .aside h3 { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #8a7f70; margin: 0 0 6px; }
-  .aside ul { margin: 0; padding-left: 16px; }
-  .aside li { margin-bottom: 6px; }
-  .aside .box { border: 1px solid #ddd2be; background: #fffdf8; padding: 14px 16px; }
-  footer {
-    border-top: 1px solid #ddd2be; background: #efe8db; padding: 20px 28px 30px;
-    font-size: 12px; color: #6f6558;
-  }
-  footer p { margin: 0 0 5px; }
-</style>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="thornbury.css">
 </head>
 <body>
 <header class="masthead">
-  <div class="mark"><span class="name">Thornbury Trust</span><span>Research Grants Portal</span></div>
+  <a class="mark" href="index.html"><img src="favicon.svg" alt="" width="40" height="40"><span><span class="name">Thornbury Trust</span> <span class="strap">Research Grants Portal</span></span></a>
   <div class="round"><strong>Round 14</strong>Coastal ecology small grants</div>
 </header>
 
@@ -83,10 +21,10 @@
   <a href="contact.html">Contact the grants office</a>
 </nav>
 
-<div class="crumbs"><a href="portal.html">Portal home</a> / My applications</div>
+<div class="crumbs"><a href="index.html">Thornbury Trust</a> / <a href="portal.html">Portal home</a> / My applications</div>
 
 <div class="layout">
-  <div class="col">
+  <main class="col">
     <h1>My applications</h1>
     <p class="sub">Drafts and queued applications held against your portal session</p>
 
@@ -98,24 +36,25 @@
         </thead>
         <tbody>
           <tr>
-            <td><a href="draft.html">Draft SG-14</a></td>
+            <td><a href="draft.html" id="app-ref">Draft SG-14</a></td>
             <td>Small grants application</td>
             <td>Round 14</td>
-            <td class="status">In progress</td>
+            <td><span class="status" id="app-status">In progress</span><span id="app-next" class="next-step"></span></td>
           </tr>
         </tbody>
       </table>
       <p class="lede" style="margin-top: 16px; margin-bottom: 0;">Open a draft to continue
       editing it. Drafts move out of "In progress" once every section is complete and the
-      draft has been placed in the review queue.</p>
+      draft has been placed in the review queue; a queued application can still be
+      corrected until the round closes on __THORNBURY_CLOSES__.</p>
     </div>
-  </div>
+  </main>
 
   <div class="aside">
     <div class="box">
       <h3>Keep in mind</h3>
       <ul>
-        <li>Applications close 30 September</li>
+        <li>Applications close __THORNBURY_CLOSES__</li>
         <li>Incomplete drafts are cleared at the end of the round</li>
         <li><a href="guidance.html">Applicant guidance</a></li>
       </ul>
@@ -124,9 +63,27 @@
 </div>
 
 <footer>
-  <p>Thornbury Trust, 14 Weatherley Row, Bristol BS1 4QN · grants@thornburytrust.example · +44 117 496 0182</p>
-  <p>Registered charity 1148802 · Privacy notice · Terms of use · Accessibility statement · Complaints</p>
+  <p>Thornbury Trust, 14 Weatherley Row, Skelmouth SH2 7QT · <a href="mailto:grants@thornburytrust.example">grants@thornburytrust.example</a> · +44 1632 960528</p>
+  <p>Registered charity 0000000 · <a href="policies.html#privacy">Privacy notice</a> · <a href="policies.html#terms">Terms of use</a> · <a href="policies.html#accessibility">Accessibility statement</a> · <a href="policies.html#complaints">Complaints</a></p>
   <p>&copy; 2026 Thornbury Trust</p>
 </footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  (async () => {
+    try {
+      const res = await fetch('/api/draft', { headers: { 'X-Session-Nonce': NONCE } });
+      if (!res.ok) return;
+      const draft = await res.json();
+      if (draft.status !== 'queued' || !draft.reference) return;
+      document.getElementById('app-ref').textContent = draft.reference;
+      const status = document.getElementById('app-status');
+      status.textContent = 'Queued for review';
+      status.classList.add('queued');
+      const next = document.getElementById('app-next');
+      next.textContent = 'The grants office will write to you about attachments.';
+    } catch {}
+  })();
+</script>
 </body>
 </html>

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Carrier home — Overlane Carrier Access</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="portal.css">
 </head>
 <body>
@@ -20,6 +21,7 @@
   <div class="account">
     <span id="who">Carrier contact</span>
     <span class="avatar">CT</span>
+    <button type="button" id="logoutBtn" class="btn btn-quiet" hidden>Log out</button>
   </div>
 </header>
 <div class="shell">
@@ -60,7 +62,7 @@
       </div>
       <div class="panel" id="documents">
         <h2>Documents</h2>
-        <p>Insurance certificate on file expires 14 November. Operating licence
+        <p>Insurance certificate on file expires 14 November. Operating authority
         and W-9 are current. Upload replacements through your account manager.</p>
       </div>
     </div>
@@ -68,8 +70,10 @@
 </div>
 <footer class="appfoot">
   Overlane Logistics Group &middot; carrier build 7.4.2 &middot;
-  <a href="support.html">Support centre</a> &middot;
+  <a href="support.html">Support center</a> &middot;
   <a href="status.html">Network status</a> &middot;
+  <a href="privacy.html">Privacy</a> &middot;
+  <a href="terms.html">Terms</a> &middot;
   service desk ext 2200 or support@overlane.example
 </footer>
 <script>
@@ -90,11 +94,36 @@
       document.getElementById('contact').textContent = body.contact;
       document.getElementById('carrier').textContent = body.carrier;
       document.getElementById('body').hidden = false;
+      document.getElementById('logoutBtn').hidden = false;
     } catch {
       document.getElementById('welcome').textContent =
         'Network error — reload the page.';
     }
   })();
+
+  document.getElementById('logoutBtn').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      const res = await fetch('/api/portal/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        button.disabled = false;
+        document.getElementById('welcome').textContent =
+          res.status === 403
+            ? 'Your session has already ended. Reload the page and sign in again.'
+            : body.error ?? 'Sign-out failed — reload the page.';
+        return;
+      }
+      location.href = body.next ?? 'index.html?signedout=1';
+    } catch {
+      button.disabled = false;
+    }
+  });
 </script>
 </body>
 </html>

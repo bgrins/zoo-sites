@@ -3,78 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ink Recipes — TintForge Studio</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: rgb(247, 246, 243); color: rgb(20, 19, 15);
-    font-family: Optima, "Gill Sans", Candara, "Segoe UI", sans-serif;
-    font-size: 15px; line-height: 1.55;
-  }
-  .masthead {
-    border-bottom: 1px solid rgb(20, 19, 15); padding: 26px 40px 18px;
-    display: flex; align-items: flex-end; justify-content: space-between;
-  }
-  .masthead h1 {
-    margin: 0; font-family: Didot, "Hoefler Text", Baskerville, Garamond, serif;
-    font-size: 34px; font-weight: normal; letter-spacing: 0.01em;
-  }
-  .masthead h1 em { font-style: italic; }
-  .masthead .who {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.3em; color: rgb(111, 108, 98);
-  }
-  nav {
-    border-bottom: 1px solid rgb(221, 217, 207); padding: 0 40px;
-    display: flex; gap: 30px;
-  }
-  nav a {
-    display: block; padding: 11px 0; color: rgb(111, 108, 98); text-decoration: none;
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-  }
-  nav a:hover { color: rgb(20, 19, 15); }
-  nav a.here { color: rgb(20, 19, 15); border-bottom-color: rgb(20, 19, 15); }
-  .work { padding: 40px; max-width: 1000px; }
-  h2 {
-    margin: 0 0 4px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 24px; font-weight: normal;
-  }
-  .deck { margin: 0 0 26px; color: rgb(76, 73, 65); max-width: 52ch; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; margin-top: 26px; }
-  .panel { padding: 20px 20px 16px; background: rgb(255, 255, 255); border: 1px solid rgb(221, 217, 207); }
-  .panel h3 {
-    margin: 0 0 10px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 18px; font-weight: normal;
-  }
-  .panel dt {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 0.24em; color: rgb(139, 135, 124);
-    margin-top: 12px;
-  }
-  .panel dd {
-    margin: 3px 0 0; padding-bottom: 8px; border-bottom: 1px solid rgb(230, 226, 216);
-    font-family: "SFMono-Regular", Menlo, "DejaVu Sans Mono", monospace; font-size: 12px;
-  }
-  .panel dl { margin: 0; }
-  .fine {
-    padding: 0 40px 44px; max-width: 62ch; color: rgb(139, 135, 124); font-size: 11px;
-    letter-spacing: 0.02em;
-  }
-</style>
+<title>Ink Recipes — Velloquin Studio</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="studio.css">
 </head>
 <body>
-<div class="masthead">
-  <h1>TintForge <em>Studio</em></h1>
-  <span class="who">Print calibration desk</span>
-</div>
-<nav>
+<div class="register" aria-hidden="true"></div>
+<header class="masthead">
+  <a class="brand" href="index.html">Velloquin <em>Studio</em></a>
+  <span class="who">Ink, proofing and colour calibration</span>
+</header>
+<nav class="studio" aria-label="Studio">
+  <a href="index.html">Studio</a>
   <a href="libraries.html">Libraries</a>
   <a href="swatch.html">Calibration</a>
-  <a href="ink-recipes.html" class="here">Ink recipes</a>
+  <a href="ink-recipes.html" aria-current="page">Ink recipes</a>
   <a href="press-profiles.html">Press profiles</a>
   <a href="archive.html">Archive</a>
 </nav>
-<div class="work">
-  <h2>Recipe practice</h2>
+<main class="work">
+  <h1>Recipe practice</h1>
   <p class="deck">Every ink the studio mills is written up the same way: pigment first,
   then vehicle, then drier. The card records the character of each component rather than
   weights or ratios — the milling book at the bench holds the working quantities, and
@@ -82,40 +30,41 @@
   <p class="deck">A recipe card is never a formulation. When a client asks for a repeat,
   the pressman pulls the card, checks it against the standing library entry, and mixes
   to the reference draw-down rather than to any figure on paper.</p>
-  <div class="cards">
-    <div class="panel">
+  <div class="grid-panels after">
+    <section class="panel">
       <h3>Harbour Deep</h3>
-      <dl>
+      <dl class="data">
         <dt>Pigment</dt><dd>Milled marine blue, fine grind</dd>
         <dt>Vehicle</dt><dd>Linseed base, medium tack</dd>
         <dt>Drier</dt><dd>Standard paste, light hand</dd>
         <dt>Notes</dt><dd>Runs cool on coated stock</dd>
       </dl>
-    </div>
-    <div class="panel">
+    </section>
+    <section class="panel">
       <h3>Foundry No. 3</h3>
-      <dl>
+      <dl class="data">
         <dt>Pigment</dt><dd>Carbon black with grey extender</dd>
         <dt>Vehicle</dt><dd>Stiff litho varnish</dd>
         <dt>Drier</dt><dd>None; oxidises overnight</dd>
         <dt>Notes</dt><dd>Duotone shadow plate only</dd>
       </dl>
-    </div>
-    <div class="panel">
+    </section>
+    <section class="panel">
       <h3>Meadow Leaf</h3>
-      <dl>
+      <dl class="data">
         <dt>Pigment</dt><dd>Blended green, coarse cut</dd>
         <dt>Vehicle</dt><dd>Soy-modified base, low tack</dd>
         <dt>Drier</dt><dd>Standard paste, full measure</dd>
         <dt>Notes</dt><dd>Holds well on uncoated sheets</dd>
       </dl>
-    </div>
+    </section>
   </div>
-</div>
-<p class="fine">TintForge Studio &middot; Unit 6, Dyehouse Yard &middot; recipe cards are
-studio property and stay with the milling book between jobs.
-&middot; <a href="terms.html" style="color: rgb(111, 108, 98)">Terms of trade</a> &middot;
-<a href="stock.html" style="color: rgb(111, 108, 98)">Sending stock</a> &middot;
-<a href="access.html" style="color: rgb(111, 108, 98)">Visiting the yard</a></p>
+</main>
+<footer class="fine">
+  <p>Recipe cards are studio property and stay with the milling book between jobs.</p>
+  <p>Velloquin Studio Ltd &middot; Unit 6, Dyehouse Yard, Lorrimead LQ3 8DW &middot; registered in England and Wales, company number 00000000</p>
+  <p><a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms of trade</a> &middot;
+  <a href="stock.html">Sending stock</a> &middot; <a href="access.html">Visiting the yard</a></p>
+</footer>
 </body>
 </html>

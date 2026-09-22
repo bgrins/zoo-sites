@@ -3,24 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Drive handbook — Kestrel 4 — Ostara Surface Systems</title>
+<title>Drive handbook — Orvaken 4 — Ostara Surface Systems</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="maze.css">
 </head>
 <body>
-<div class="mast">
-  <span class="org">Ostara Surface Systems</span>
+<header class="mast">
+  <a class="org" href="index.html">Ostara Surface Systems</a>
   <span class="div">Surface fleet operations</span>
-  <span class="who">drive team 2 &middot; k.oyelaran@ostara-surface.example</span>
-</div>
+  <details class="who">
+    <summary>drive team 2 &middot; k.oyelaran@ostara-surface.example</summary>
+    <div class="menu">
+      <a href="handbook.html#handover">Hand over the console</a>
+      <a href="signout.html">Signing out</a>
+    </div>
+  </details>
+</header>
 <div class="chips">
   <span class="chip">Sol 214</span>
   <span class="chip">Site Vantor Basin</span>
-  <span class="chip">Rover Kestrel 4</span>
+  <span class="chip">Rover Orvaken 4</span>
   <span class="chip">Panel drive handbook</span>
 </div>
 <div class="shell">
   <nav class="rail">
-    <h2>Kestrel 4</h2>
+    <p class="railhead">Orvaken 4</p>
     <a href="index.html">Traverse</a>
     <a href="survey.html">Survey record</a>
     <a href="power.html">Power and thermal</a>
@@ -68,6 +75,15 @@
         single drives at the frontier.</p>
       </section>
 
+      <section class="deck deck-map" id="handover">
+        <h2>Shift handover</h2>
+        <p class="legend">A console session belongs to one operator. At handover the outgoing
+        driver reads the rover's position, the queue and the last three telemetry lines to the
+        incoming driver on the ops voice loop, then signs out of fleet single sign-on; the
+        incoming driver signs in on their own credentials and confirms the position against the survey record before
+        issuing a drive. The rover holds its position and its record across the change.</p>
+      </section>
+
       <section class="deck deck-map">
         <h2>Closing a sol plan</h2>
         <p class="legend">When the rover reaches the designated extraction pad the console
@@ -80,15 +96,15 @@
     </div>
   </main>
 </div>
-<div class="foot">
+<footer class="foot">
   <p class="links">
     <a href="data-policy.html">Data policy</a>
     <a href="terms.html">Operating terms</a>
     <a href="contact.html">Contact the drive desk</a>
   </p>
-  <p>&copy; 2026 Ostara Surface Systems Ltd. Registered office: 14 Bellamy Wharf,
-  Tarnbridge TR4 2QN. Flight operations support: ops-desk@ostara-surface.example,
+  <p>&copy; 2026 Ostara Surface Systems Ltd. Registered office: Unit 9, Theodolite Row,
+  Tarnbridge ZT4 9FR. Registered in England and Wales, company number 00000000. Flight operations support: ops-desk@ostara-surface.example,
   +44 20 7946 0812.</p>
-</div>
+</footer>
 </body>
 </html>

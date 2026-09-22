@@ -5,15 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Freight quotes — Quotient</title>
 <link rel="stylesheet" href="quotient.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <div class="frame">
   <aside class="side">
-    <p class="brand"><a href="/quotient/">Quotient</a></p>
+    <p class="brand"><a href="./">Quotient</a></p>
     <p class="org">Ashline Bindery Ltd</p>
     <div class="navgroup">Workspace</div>
     <nav>
-      <a href="/quotient/">Overview</a>
+      <a href="./">Overview</a>
       <a href="reconcile.html">Reconciliation</a>
       <span class="here">Freight quotes</span>
       <a href="exports.html">Exports</a>
@@ -24,6 +25,7 @@
       <a href="legal.html">Terms &amp; privacy</a>
     </nav>
     <div class="period">Period open<br><b>July 2026</b></div>
+    <div class="me">Ruth Quarnaby<br><span>Reviewer</span></div>
   </aside>
   <main class="main">
     <h1>Freight quotes</h1>
@@ -54,14 +56,25 @@
         <div class="figurenote" id="resultnote"></div>
       </div>
     </div>
+    <div class="panel" id="recent" hidden>
+      <h2>Quotes this session</h2>
+      <table class="plain">
+        <thead>
+          <tr><th>Quote</th><th>Lane</th><th>Weight</th><th>Total</th></tr>
+        </thead>
+        <tbody id="recent-body"></tbody>
+      </table>
+    </div>
     <h2>Lane notes</h2>
     <p class="lede">Rate card v14 applies from 1 July 2026 and covers consignments
     from 1 to 200 kg. Heavier consignments are priced by the carrier desk under the
     groupage schedule. The market rate multiplier moves with the carrier index and
     is fixed per quote at the moment it is issued.</p>
     <footer class="site">
-      &copy; 2026 Quotient Software Ltd &middot; 4 Millpond Row, Harwell Point &middot;
-      <a href="legal.html">Terms &amp; privacy</a> &middot; support@quotientledger.example
+      &copy; 2026 Quotient Software Ltd, 4 Millpond Row, Pellingstow PW2 6HT. Registered in
+      England and Wales, company number 00000000.<br>
+      <a href="legal.html#terms">Terms</a> &middot; <a href="legal.html#privacy">Privacy</a> &middot;
+      <a href="mailto:support@quotientledger.example">support@quotientledger.example</a> &middot; 0113 496 0582
     </footer>
   </main>
 </div>

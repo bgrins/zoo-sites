@@ -5,14 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Recording purged - Skerrow Coastal Radio</title>
 <link rel="stylesheet" href="station.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="masthead">
-  <p class="callsign">SKERROW</p>
+  <p class="callsign"><a href="./">SKERROW</a></p>
   <p class="strap">Coastal Radio &middot; Station SKW &middot; Marine safety broadcast service</p>
 </header>
 <nav class="bar">
-  <a href="index.html">Recorded bulletins</a>
+  <a href="index.html" aria-current="true">Recorded bulletins</a>
   <a href="areas.html">Sea areas</a>
   <a href="schedule.html">Transmission times</a>
 </nav>
@@ -26,15 +27,7 @@
 
   <main>
     <h1>Recording purged</h1>
-    <p class="sub" id="purged">This transmission is older than the six hour retention window.</p>
-    <script>
-      const t = new URLSearchParams(location.search).get('t');
-      if (t && /^\d{4}$/.test(t)) {
-        document.getElementById('purged').textContent =
-          'The 25 Jul ' + t.slice(0, 2) + ':' + t.slice(2) +
-          ' transmission is older than the six hour retention window.';
-      }
-    </script>
+    <p class="sub" id="purged">__SKW_PURGED__</p>
 
     <div class="card">
       <h2>What is still available</h2>
@@ -49,6 +42,7 @@
   <p>Skerrow Coastal Radio, Harbour Station, Cape Ardnoy Road, Skerrow ARD 2LX.</p>
   <p>Duty desk 0117 496 0261 &middot; <a href="mailto:duty@skerrowcoastal.example">duty@skerrowcoastal.example</a></p>
   <p><a href="listen.html">How to listen</a> &middot; <a href="about.html">About the station</a> &middot; <a href="contact.html">Contact us</a></p>
+  <p><a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of use</a> &middot; <a href="accessibility.html">Accessibility</a></p>
   <p>Copyright 2026 Skerrow Coastal Radio. Forecast material reproduced under marine safety licence MS-114.</p>
 </footer>
 </body>

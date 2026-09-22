@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<title>Apply for a street closure - Ivrelby Events Office</title>
+<link rel="stylesheet" href="ivrelby.css">
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="mast">
+  <div class="mast-in">
+    <a class="brand" href="index.html"><span class="glyph" aria-hidden="true"></span><span class="brand-name">Ivrelby Borough Council</span></a>
+    <p class="brand-sub">Events Office</p>
+  </div>
+</header>
+<nav class="tabs" aria-label="Events office">
+  <div class="tabs-in">
+    <a href="index.html">Events home</a>
+    <a href="street-closures.html" class="on">Street closures</a>
+    <a href="contact.html">Contact us</a>
+  </div>
+</nav>
+<main id="content" class="page">
+<p class="crumbs"><a href="index.html">Events office</a> / <a href="street-closures.html">Street closures</a> / Apply</p>
+<div class="grid">
+  <aside class="side"><p class="stage">Step 1 of 3</p><p class="stage-name">Before you start</p></aside>
+  <section class="body">
+    <h1>Apply for a street closure</h1>
+    <p class="lede">The application takes about ten minutes. Have your organiser pack in front of you: the form asks for the details it sets out.</p>
+    <section class="pack" aria-labelledby="pack-h">
+      <div class="pack-head"><h2 id="pack-h">Your organiser pack</h2><span class="pack-ref" id="pack-ref"></span></div>
+      <div class="pack-body" id="pack-body"><p class="pack-wait">Loading your organiser pack</p></div>
+    </section>
+    <p>You will be able to check your answers before you submit the application.</p>
+    <p><a class="btn btn-start" href="apply.html">Start now</a></p>
+    <h2>Conditions in every pack</h2>
+    <ul>
+      <li>Barriers are staffed by at least two stewards while the road is closed.</li>
+      <li>Access for emergency vehicles is kept at all times.</li>
+      <li>The street is left clear and swept when the closure ends.</li>
+    </ul>
+  </section>
+</div>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const body = document.getElementById('pack-body');
+const row = (k, v) => {
+  const div = document.createElement('div');
+  div.className = 'kv';
+  const key = document.createElement('span');
+  key.className = 'k';
+  key.textContent = k;
+  const value = document.createElement('span');
+  value.className = 'v';
+  if (Array.isArray(v)) {
+    const ul = document.createElement('ul');
+    for (const item of v) {
+      const li = document.createElement('li');
+      li.textContent = item;
+      ul.appendChild(li);
+    }
+    value.appendChild(ul);
+  } else {
+    value.textContent = v;
+  }
+  div.append(key, value);
+  return div;
+};
+fetch('/api/events/brief', { headers: { 'X-Session-Nonce': NONCE } })
+  .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+  .then((p) => {
+    document.getElementById('pack-ref').textContent = 'Pack ' + p.packRef;
+    body.replaceChildren(
+      row('Event', p.event),
+      row('Organiser', p.organiser),
+      row('Contact', p.contact),
+      row('Contact email', p.contactEmail),
+      row('Date', p.date),
+      row('Streets to close', p.streets),
+      row('Road closed', p.closureFrom + ' to ' + p.closureTo),
+      row('Amplified sound off by', p.soundOffBy),
+      row('Equipment', p.equipment)
+    );
+  })
+  .catch(() => {
+    body.innerHTML = '<p class="pack-wait">We could not load your organiser pack. Refresh the page, or call the events office.</p>';
+  });
+</script>
+</main>
+<footer class="foot">
+  <div class="foot-in">
+    <p>Ivrelby Borough Council Events Office, Town Hall, Civic Square, Ivrelby QV6 2JE</p>
+    <p>Telephone 0151 496 0873, Monday to Friday 9:00 to 16:30</p>
+    <p><a href="contact.html">Contact the events office</a> <a href="privacy.html">Privacy notice</a> <a href="terms.html">Terms of use</a></p>
+    <p>Copyright Ivrelby Borough Council 2026</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,8 +1,9 @@
-// pages/maze/ - Kestrel 4 traverse grid (maze-escape). The wall map is minted per session.
+// pages/maze/ - Orvaken 4 traverse grid (maze-escape). The wall map is minted per session.
 import { randomBytes } from 'node:crypto';
+import { lcg } from './lib.mjs';
 
-// pages/maze/ — Kestrel 4 traverse grid. The 6x6 wall map is minted per session
-// from randomBytes and never leaves the server: the page is told only the clear
+// pages/maze/ — Orvaken 4 traverse grid. The 6x6 wall map is minted per session
+// from ctx.draw and never leaves the server: the page is told only the clear
 // headings of cells the rover has actually entered. Each hex digit of a row is
 // the set of CLEAR headings out of one cell (N=1, E=2, S=4, W=8). Layouts are
 // rejection-sampled so every session faces comparable work: all 36 cells
@@ -191,15 +192,11 @@ function mazeBraid(open, rand) {
   return mazeDeadEnds(open).every((d) => d.depth <= 3);
 }
 
-// Seeded from randomBytes so the layout a graded session faces exists nowhere on
+// Seeded from ctx.draw so the layout a graded session faces exists nowhere on
 // disk. Rejection sampling costs a few hundred candidates (~10 ms); the first
 // carve is kept as a fallback so minting always terminates.
-function mazeMint(draw = (_scope, n) => randomBytes(n)) {
-  let seed = draw('maze', 4).readUInt32BE(0);
-  const rand = () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
+function mazeMint(draw) {
+  const rand = lcg(draw('maze', 4));
   let fallback = null;
   for (let tries = 0; tries < 4000; tries++) {
     const open = mazeCarve(rand);
@@ -218,7 +215,7 @@ function mazeMint(draw = (_scope, n) => randomBytes(n)) {
   return fallback;
 }
 
-function mazeRover(session, draw = (_scope, n) => randomBytes(n)) {
+function mazeRover(session, draw) {
   if (!session.maze) {
     const { open, optimal } = mazeMint(draw);
     session.maze = {
@@ -255,7 +252,7 @@ function mazeView(m) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage, draw } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage, draw } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/maze/state') {
       const found = requireSession(req, res);
@@ -264,12 +261,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/maze/move') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;

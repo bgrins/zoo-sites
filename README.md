@@ -1,13 +1,13 @@
 # zoo-sites
 
-A set of simulated websites, served locally. 66 origins across 53 site trees: a
+A set of simulated websites, served locally. 67 origins across 54 site trees: a
 storefront, a legacy government portal, a dark ops console, a bank, a newsroom, a
 1930s freight registry, and so on. Every one is invented, and every one carries its
 own design language rather than a shared template.
 
 ```sh
 node server.mjs --port 8907   # every site on one port; / is an index, /_preview a contact sheet
-node serve.mjs                # all 66 origins, one per port from 8100, one process
+node serve.mjs                # all 67 origins, one per port from 8100, one process
 ```
 
 No dependencies: the server is node builtins only. `docker/README.md` runs the same
@@ -25,11 +25,16 @@ domain, phone number, email address, policy document, news article, and bank.
 
 - Domains and email addresses use RFC 2606 reserved names (`.example`,
   `example.com`, `<brand>.example.net`). Phone numbers use ranges reserved for
-  fiction: the NANP `(555) 01xx` block, and Ofcom's UK drama ranges
-  (`0113/0117/0151/0161 496 0xxx`, `0808 157 0xxx`, `01632 960xxx`,
-  `03069 990xxx`). Company and VAT numbers are zero sentinels.
+  fiction: Ofcom's UK drama ranges (`020 7946 0xxx`, `0113/0117/0151/0161 496
+  0xxx`, `01632 960xxx`, `0808 157 0xxx`, `03069 990xxx`, some written in `+44`
+  form), and the NANP `555-0100` to `555-0199` block under a geographic area code
+  (`541-555-0142`, `1-614-555-0142`, `(415) 555-0104`, `+1 206 555 0148`). The
+  one exception is `pages/gov/`, whose `(555) 014-xxxx` numbers put 555 in the
+  area-code slot: outside the reserved block, but never a working line, because
+  no NANP exchange code starts with 0. Company, charity, VAT and regulator
+  register numbers are zero sentinels.
 - The fixtures contain a **phishing lookalike**: two near-identical bank origins, one
-  fraudulent with four seeded tells.
+  fraudulent with six seeded tells.
 - The fixtures contain **prompt-injection bait** in page content, **dark-pattern nag
   flows**, and **checkout upsells** meant to be declined.
 - Nothing under `pages/` says or implies that a site is a test fixture. That silence
@@ -54,8 +59,9 @@ Anyone exposing these servers, in a container or otherwise, accepts that they:
 - **accept credentials into forms that go nowhere**, styled to look like they mean it;
 - are **built to look convincing**, including the phishing lookalike, so a human who
   reaches one by accident has no in-page signal that it is fake;
-- serve **no-cache HTML carrying a per-session nonce**, so a caching proxy in front of
-  them will hand one session's nonce to another.
+- serve **HTML carrying a per-session nonce**. It goes out with `Cache-Control:
+  no-cache, private`, but a caching proxy in front of them that ignores that header
+  will hand one session's nonce to another.
 
 Keep them on loopback, or on a private network you control whose users know what they
 are. `sites/bank.mjs` authenticates nothing and never records a password — it stores
@@ -68,9 +74,10 @@ the submitted username and the *length* of the password field.
 | `server.mjs` | Fixture server core: sessions, static serving, site dispatch. Node builtins only. |
 | `serve.mjs` | Multi-origin entry, what the container runs. `--print-zoo-label` emits the compose label. |
 | `manifest.mjs` | The origin manifest: key, pages dir, `.zoo` domain, port — one row per origin. |
-| `pages/` | 651 HTML fixtures in 53 site trees. |
+| `pages/` | 969 HTML fixtures in 54 site trees. |
 | `sites/` | Per-site backends: session state, minted codes, the APIs each page calls. |
-| `scripts/gen/` | Generators for the bulk fixture trees (`pages/gov/departments`, `pages/ledger`). |
+| `scripts/` | `check-fixtures.mjs`, the static link, origin and site-convention check; `crawl.mjs`, which loads every page in Firefox in each serving mode. |
+| `scripts/gen/` | Generators for the bulk fixture trees (`pages/gov/departments`, `pages/ledger`) and the gallery's product photos (`pages/gallery/img`). |
 | `eval/` | The browser-agent eval: tasks, validators, golden-path drivers, runners. |
 | `docker/` | Container build and compose integration with [the_zoo](https://github.com/bgrins/the_zoo). |
 | `docs/` | Fixture authoring rules, grading design, working notes. |

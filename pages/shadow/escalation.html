@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Escalation and Duty Contacts — Metronome Systems</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   body {
     margin: 0; background: #23262a;
@@ -63,7 +64,7 @@
     flex: 0 0 168px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
     color: #a8b0ab;
   }
-  .desks .how { flex: 1; font-size: 12px; line-height: 1.7; color: #79817c; }
+  .desks .how { flex: 1; font-size: 12px; line-height: 1.7; color: #7b837e; }
   .desks .how em { font-style: normal; color: #d9a406; letter-spacing: 0.06em; }
   ol.tiers { margin: 0 0 12px; padding-left: 26px; font-size: 12px; line-height: 1.75; color: #9aa29d; }
   ol.tiers li { margin-bottom: 7px; }
@@ -78,28 +79,33 @@
   footer {
     margin-top: 30px; border-top: 2px solid #14161a; background: #1b1e21;
     padding: 14px 26px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: #5c6360; display: flex; justify-content: space-between; gap: 18px;
+    color: #8b938e; display: flex; justify-content: space-between; gap: 18px;
   }
-  footer a { color: #7f8783; text-decoration: none; }
+  footer a { color: #a8b0ab; text-decoration: none; }
   footer a:hover { color: #d9a406; }
   footer .flinks { display: flex; gap: 16px; }
+  @media (max-width: 700px) {
+    header, footer, .strip, nav.sheets, footer .flinks { flex-wrap: wrap; }
+    header, footer { gap: 8px 18px; }
+  }
+  header h1 a.home { color: inherit; text-decoration: none; }
 </style>
 </head>
 <body>
 <div class="hazard"></div>
 <header>
   <div class="plate">
-    <h1>Metronome Systems</h1>
+    <h1><a class="home" href="index.html">Metronome Systems</a></h1>
     <span class="unit">FAC-CONSOLE / 07</span>
   </div>
   <span class="unit">CONTACT SHEET CS-02</span>
 </header>
-<div class="strip">
+<nav class="strip" aria-label="Console sheets">
   <a href="index.html">Console</a>
   <a href="clearance.html">Clearance procedure</a>
   <a href="indicators.html">Indicator reference</a>
-  <a href="escalation.html" class="on">Escalation</a>
-</div>
+  <a href="escalation.html" class="on" aria-current="page">Escalation</a>
+</nav>
 <main>
   <p class="instr"><b>CS-02 / WHO TO CALL</b><br>
   Escalation order for the facility access console. Work down the list; do not skip a tier
@@ -110,9 +116,9 @@
     <li><b>Operations desk.</b> Codes not issued, a code that will not take, a visitor
     waiting, a door held by a crew you cannot reach on the radio. The desk is staffed
     whenever the stage is armed.</li>
-    <li><b>Duty engineer.</b> A latched module, a lamp that fails self-test, an interlock
-    that will not prove, anything under a maintenance bypass permit. The duty engineer is
-    the only person who releases a latch.</li>
+    <li><b>Duty engineer.</b> A third rejection in a shift, a lamp that fails self-test, an interlock
+    that will not prove, anything under a maintenance bypass permit. The console pages
+    the duty engineer on its own after a third rejection.</li>
     <li><b>Site engineering.</b> Console faults that survive a duty engineer visit,
     reference sheets that no longer match the plant, and requests to change a procedure.
     Weekdays only, and never in the middle of a shift problem.</li>
@@ -138,7 +144,7 @@
     </div>
     <div class="row">
       <div class="who">Facilities duty manager</div>
-      <div class="how"><em>01632 960118</em> &middot; out of hours only.</div>
+      <div class="how"><em>01632 960726</em> &middot; out of hours only.</div>
     </div>
     <div class="row">
       <div class="who">Access records office</div>
@@ -164,6 +170,8 @@
 <footer>
   <span>Metronome Systems facility terminal &middot; build 7.2.19 &middot; contacts CS-02</span>
   <span class="flinks">
+    <a href="privacy.html">Privacy and monitoring</a>
+    <a href="terms.html">Terms of use</a>
     <a href="clearance.html">Clearance procedure</a>
     <a href="indicators.html">Indicator reference</a>
     <a href="index.html">Console</a>

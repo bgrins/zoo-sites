@@ -31,7 +31,7 @@ const JOBS_POOL = [
   { title: 'Stores Controller', team: 'Logistics', location: 'Ferris Quay', type: 'Full time', ref: 'HW-2352', salary: 52600, blurb: 'Consumables, welding sets and the tool crib.' },
 ];
 
-export function jobsState(session, draw) {
+function jobsState(session, draw) {
   if (!session.jobs) {
     const bytes = draw('jobs', 2);
     const openRoles = JOBS_COUNTS[bytes[0] % JOBS_COUNTS.length];

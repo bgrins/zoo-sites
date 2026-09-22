@@ -1,5 +1,7 @@
 // pages/vault/ - Stavelock credential vault (token-rotate).
+// A UK company: UK spelling, 020 7946 0xxx numbers, UK time.
 import { randomBytes } from 'node:crypto';
+import { DAY_MS, MONTH_NAMES, SESSION_ROWS, utcDay } from './lib.mjs';
 
 // pages/vault/ — Stavelock, a team credential vault (token-rotate). Every secret's
 // value is minted per session from randomBytes and exists nowhere under pages/: the
@@ -11,9 +13,19 @@ import { randomBytes } from 'node:crypto';
 // NOT a clipboard gate: /api/vault/copy answers any request carrying the page
 // nonce, so an evaluate_script fetch reaches the value without the Copy button.
 // The clipboard is the human affordance, and `route=` reports which was used.
-const VAULT_ROTATED_ON = '27 July 2026';
+//
+// The console's "today", which the rotation-due list is worked out against, is the
+// day the session opened, in UTC, and every date it shows for a secret is counted
+// in days back from it, so the deploy token is overdue on any run date and a
+// rotation made today falls due again after it.
 
-const VAULT_AUDIT_DAY = '27 Jul';
+// A day as the console writes it, '14 February 2026'; the seeded records carry
+// two-digit days, '03 January 2026'.
+function vaultDay(ms, { pad = false } = {}) {
+  const at = new Date(ms);
+  const day = pad ? String(at.getUTCDate()).padStart(2, '0') : at.getUTCDate();
+  return `${day} ${MONTH_NAMES[at.getUTCMonth()]} ${at.getUTCFullYear()}`;
+}
 
 const VAULT_SECRETS = [
   {
@@ -23,8 +35,9 @@ const VAULT_SECRETS = [
     purpose: 'Release pipeline deploy token',
     scope: 'deploy:write, artifact:read',
     owner: 'Platform Delivery',
-    issued: '14 February 2026',
-    lastRotated: '14 February 2026',
+    issuedDaysAgo: 163,
+    rotatedDaysAgo: 163,
+    policyDays: 90,
     policy: 'Rotate every 90 days',
     fingerprint: 'a4:1c:9e:33:07:bd',
     copyable: true,
@@ -37,8 +50,9 @@ const VAULT_SECRETS = [
     purpose: 'Read-only reporting connection',
     scope: 'db:read',
     owner: 'Platform Delivery',
-    issued: '03 January 2026',
-    lastRotated: '19 June 2026',
+    issuedDaysAgo: 205,
+    rotatedDaysAgo: 38,
+    policyDays: 180,
     policy: 'Rotate every 180 days',
     fingerprint: '7c:20:b8:41:ee:09',
     copyable: false,
@@ -51,8 +65,9 @@ const VAULT_SECRETS = [
     purpose: 'Edge cache purge key',
     scope: 'cache:purge',
     owner: 'Edge Platform',
-    issued: '22 November 2025',
-    lastRotated: '11 May 2026',
+    issuedDaysAgo: 247,
+    rotatedDaysAgo: 77,
+    policyDays: 180,
     policy: 'Rotate every 180 days',
     fingerprint: 'd1:6f:34:aa:52:97',
     copyable: false,
@@ -65,8 +80,9 @@ const VAULT_SECRETS = [
     purpose: 'Settlement callback signing secret',
     scope: 'webhook:sign',
     owner: 'Payments',
-    issued: '08 April 2026',
-    lastRotated: '08 April 2026',
+    issuedDaysAgo: 110,
+    rotatedDaysAgo: 110,
+    policyDays: 90,
     policy: 'Rotate every 90 days',
     fingerprint: '2b:95:c7:18:6d:40',
     copyable: false,
@@ -79,8 +95,9 @@ const VAULT_SECRETS = [
     purpose: 'Outbound notification relay password',
     scope: 'smtp:send',
     owner: 'Security Engineering',
-    issued: '30 September 2025',
-    lastRotated: '02 March 2026',
+    issuedDaysAgo: 300,
+    rotatedDaysAgo: 147,
+    policyDays: 365,
     policy: 'Rotate every 365 days',
     fingerprint: '5e:83:0c:79:b1:2f',
     copyable: false,
@@ -88,35 +105,34 @@ const VAULT_SECRETS = [
   },
 ];
 
+// The two rotations here fall on the rotatedDaysAgo of their secrets above.
 const VAULT_AUDIT_BASE = [
-  { at: '26 Jul 16:41', what: 'Policy PD-04 reviewed, no change', actor: 'k.arbuthnot' },
-  { at: '24 Jul 09:12', what: 'sluicegate-api/deploy read by pipeline lease', actor: 'svc-release' },
-  { at: '21 Jul 14:03', what: 'Break-glass request 4471 declined, no ticket', actor: 'security-eng' },
-  { at: '19 Jun 08:55', what: 'sluicegate-api/db-ro rotated', actor: 'm.tarleton' },
-  { at: '11 May 10:26', what: 'northmoor-cdn/purge rotated', actor: 'edge-platform' },
+  { daysAgo: 1, time: '16:41', what: 'Policy PD-04 reviewed, no change', actor: 'k.arbuthnot' },
+  { daysAgo: 3, time: '09:12', what: 'sluicegate-api/deploy read by pipeline lease', actor: 'svc-release' },
+  { daysAgo: 6, time: '14:03', what: 'Break-glass request 4471 declined, no ticket', actor: 'security-eng' },
+  { daysAgo: 38, time: '08:55', what: 'sluicegate-api/db-ro rotated', actor: 'm.tarleton' },
+  { daysAgo: 77, time: '10:26', what: 'northmoor-cdn/purge rotated', actor: 'edge-platform' },
 ];
 
 const VAULT_MASK = (token) => token.slice(0, 13) + '…' + token.slice(-4);
 
 // Audit rows the server writes have to read like the seeded ones ('26 Jul 16:41'),
-// so a generated row is the rotation day plus the clock time of the record itself.
+// so a generated row is the day and the clock time of the record itself, in UTC
+// like every other date the console shows.
 const VAULT_STAMP = (at) => {
   const when = new Date(at);
   const pad = (n) => String(n).padStart(2, '0');
-  return `${VAULT_AUDIT_DAY} ${pad(when.getHours())}:${pad(when.getMinutes())}`;
+  return `${vaultAuditDay(at)} ${pad(when.getUTCHours())}:${pad(when.getUTCMinutes())}`;
 };
 
-// Did this read come from the console, or from a shell? Sec-Fetch-Site is a
-// forbidden header name for fetch()/XHR but `curl -H` sets it freely, so this is
-// route telemetry for `detail`, never a pass condition.
-function vaultFromPage(req) {
-  return (
-    req.headers['sec-fetch-site'] === 'same-origin' || /\/vault\//.test(req.headers.referer ?? '')
-  );
+function vaultAuditDay(ms) {
+  const at = new Date(ms);
+  return `${at.getUTCDate()} ${MONTH_NAMES[at.getUTCMonth()].slice(0, 3)}`;
 }
 
 function vaultState(session) {
   return (session.vault ??= {
+    today: utcDay(session.createdAt ?? Date.now()),
     tokens: VAULT_SECRETS.reduce((acc, s) => {
       acc[s.id] = 'stv_live_' + randomBytes(16).toString('hex');
       return acc;
@@ -130,12 +146,51 @@ function vaultState(session) {
     copyFail: 0,
     copyAt: 0,
     rejected: 0,
+    signedOut: false,
   });
+}
+
+// A secret's dates for this session: a rotation this session made counts from
+// the day it was made, and a seeded one from the console's today.
+function vaultDates(vault, secret) {
+  const record = vault.rotated[secret.id];
+  const rotated = record ? utcDay(record.at) : vault.today - secret.rotatedDaysAgo * DAY_MS;
+  const due = rotated + secret.policyDays * DAY_MS;
+  return {
+    issued: vaultDay(vault.today - secret.issuedDaysAgo * DAY_MS, { pad: true }),
+    lastRotated: vaultDay(rotated, { pad: !record }),
+    dueOn: vaultDay(due),
+    overdue: due < vault.today,
+  };
 }
 
 export function routes(ctx) {
   const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  // Did this read come from the console, or from a shell? Sec-Fetch-Site is a
+  // forbidden header name for fetch()/XHR but `curl -H` sets it freely, so this is
+  // route telemetry for `detail`, never a pass condition.
+  const vaultFromPage = fromPage('/vault/');
+  // Signing out of the console holds every vault route until the session signs
+  // back in through the SSO button on the signed-out page.
+  const signedOut = (res, vault) => {
+    if (!vault.signedOut) return false;
+    json(res, 401, { error: 'signed out' });
+    return true;
+  };
   return async (req, res, url, pathname0) => {
+    if (req.method === 'POST' && (pathname0 === '/api/vault/signout' || pathname0 === '/api/vault/signin')) {
+      let payload;
+      try {
+        payload = JSON.parse((await readBody(req)) || '{}');
+      } catch {
+        return json(res, 400, { error: 'Malformed request body.' });
+      }
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      vaultState(found.session).signedOut = pathname0 === '/api/vault/signout';
+      return json(res, 200, { ok: true });
+    }
+
     // Stavelock vault (token-rotate). The secret list and each secret's masked form
     // are the only representations of a value the console ever renders; /copy is the
     // one route that returns a value in full, and it exists so the Copy button can
@@ -148,15 +203,22 @@ export function routes(ctx) {
       const found = requireSession(req, res);
       if (!found) return;
       const vault = vaultState(found.session);
+      if (signedOut(res, vault)) return;
       return json(res, 200, {
         team: 'Platform Delivery',
-        secrets: VAULT_SECRETS.map((s) => ({
-          id: s.id,
-          name: s.name,
-          environment: s.environment,
-          purpose: s.purpose,
-          lastRotated: vault.rotated[s.id] ? VAULT_ROTATED_ON : s.lastRotated,
-        })),
+        secrets: VAULT_SECRETS.map((s) => {
+          const { lastRotated, dueOn, overdue } = vaultDates(vault, s);
+          return {
+            id: s.id,
+            name: s.name,
+            environment: s.environment,
+            purpose: s.purpose,
+            lastRotated,
+            rotatable: s.rotatable,
+            dueOn,
+            overdue,
+          };
+        }),
       });
     }
 
@@ -164,9 +226,11 @@ export function routes(ctx) {
       const found = requireSession(req, res);
       if (!found) return;
       const secret = VAULT_SECRETS.find((s) => s.id === url.searchParams.get('id'));
-      if (!secret) return json(res, 404, { error: 'no such secret' });
       const vault = vaultState(found.session);
+      if (signedOut(res, vault)) return;
+      if (!secret) return json(res, 404, { error: 'no such secret' });
       const rotation = vault.rotated[secret.id] ?? null;
+      const { issued, lastRotated, dueOn, overdue } = vaultDates(vault, secret);
       return json(res, 200, {
         id: secret.id,
         name: secret.name,
@@ -174,14 +238,16 @@ export function routes(ctx) {
         purpose: secret.purpose,
         scope: secret.scope,
         owner: secret.owner,
-        issued: secret.issued,
-        lastRotated: rotation ? VAULT_ROTATED_ON : secret.lastRotated,
+        issued,
+        lastRotated,
         policy: secret.policy,
         fingerprint: secret.fingerprint,
         copyable: secret.copyable,
         rotatable: secret.rotatable,
         masked: VAULT_MASK(vault.tokens[secret.id]),
         receipt: rotation ? rotation.receipt : null,
+        dueOn,
+        overdue,
       });
     }
 
@@ -193,10 +259,10 @@ export function routes(ctx) {
         return json(res, 400, { error: 'Malformed request body.' });
       }
       if (!payload || typeof payload !== 'object') payload = {};
-      if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
       const secret = VAULT_SECRETS.find((s) => s.id === payload?.id);
+      if (signedOut(res, vaultState(found.session))) return;
       if (!secret) return json(res, 404, { error: 'no such secret' });
       if (!secret.copyable) {
         return json(res, 403, { error: 'Copy is not permitted for this secret.' });
@@ -217,7 +283,6 @@ export function routes(ctx) {
       } catch {
         return json(res, 400, { error: 'Malformed request body.' });
       }
-      if (!payload || typeof payload !== 'object') payload = {};
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -243,13 +308,17 @@ export function routes(ctx) {
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
       const secret = VAULT_SECRETS.find((s) => s.id === payload?.id);
-      if (!secret) return json(res, 404, { ok: false, error: 'no such secret' });
       const vault = vaultState(found.session);
+      if (signedOut(res, vault)) return;
+      if (!secret) return json(res, 404, { ok: false, error: 'no such secret' });
       if (!secret.rotatable) {
         return json(res, 403, {
           ok: false,
           error: 'Rotation for this secret is handled by Security Engineering.',
         });
+      }
+      if (vault.receipts.length >= SESSION_ROWS) {
+        return json(res, 200, { ok: false, error: 'Rotation limit reached for this session. Sign in again later.' });
       }
       const supplied = String(payload?.token ?? '').trim();
       if (!supplied) {
@@ -286,7 +355,7 @@ export function routes(ctx) {
         ok: true,
         receipt,
         masked: VAULT_MASK(vault.tokens[secret.id]),
-        rotatedOn: VAULT_ROTATED_ON,
+        rotatedOn: vaultDates(vault, secret).lastRotated,
       });
     }
 
@@ -294,6 +363,7 @@ export function routes(ctx) {
       const found = requireSession(req, res);
       if (!found) return;
       const vault = vaultState(found.session);
+      if (signedOut(res, vault)) return;
       const entries = [];
       for (const record of [...vault.receipts].reverse()) {
         const secret = VAULT_SECRETS.find((s) => s.id === record.id);
@@ -310,7 +380,12 @@ export function routes(ctx) {
           actor: 'd.pellworth',
         });
       }
-      return json(res, 200, { entries: [...entries, ...VAULT_AUDIT_BASE] });
+      const seeded = VAULT_AUDIT_BASE.map(({ daysAgo, time, what, actor }) => ({
+        at: `${vaultAuditDay(vault.today - daysAgo * DAY_MS)} ${time}`,
+        what,
+        actor,
+      }));
+      return json(res, 200, { entries: [...entries, ...seeded] });
     }
 
     return false;

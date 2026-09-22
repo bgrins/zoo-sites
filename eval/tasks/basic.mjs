@@ -2,9 +2,10 @@
 // Factory contract: (base) => task[] - see web.mjs for the full field set.
 import { originUrls } from '../../manifest.mjs';
 import { ANSWERS } from '../answers.mjs';
+import { tagTasks } from './web.mjs';
 
 export function basicTasks(base, origins = originUrls(base)) {
-  return [
+  const tasks = [
     {
       id: 'title',
       ask: `Open ${origins.basic}/title.html in the browser. Report the exact page title.`,
@@ -25,4 +26,5 @@ export function basicTasks(base, origins = originUrls(base)) {
       expect: new RegExp(ANSWERS.basic.greeting),
     },
   ];
+  return tagTasks(tasks, 'basic');
 }

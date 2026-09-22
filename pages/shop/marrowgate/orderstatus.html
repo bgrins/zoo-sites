@@ -2,27 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Order status - Marrowgate</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="marrowgate.css">
 <style>
-  .info { margin: 12px 22px 26px; background: #fff; border: 1px solid var(--nb-rule); padding: 16px 18px; max-width: 640px; }
+  .info { margin: 12px 22px 26px; background: #fff; border: 1px solid var(--mg-rule); padding: 16px 18px; max-width: 640px; }
   .info h2 { font-size: 15px; margin: 18px 0 6px; text-transform: uppercase; letter-spacing: .06em; color: #33405c; }
   .info h2:first-child { margin-top: 0; }
   .info p { font-size: 13px; margin: 0 0 7px; }
   .lookup label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #5b6478; margin: 10px 0 3px; }
-  .lookup input { width: 100%; max-width: 320px; font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--nb-rule); }
+  .lookup input { width: 100%; max-width: 320px; font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--mg-rule); }
   .lookup button { display: block; margin-top: 12px; font: inherit; font-weight: bold; font-size: 13px;
-    background: var(--nb-blue); color: #fff; border: 0; padding: 9px 18px; cursor: pointer; }
+    background: var(--mg-blue); color: #fff; border: 0; padding: 9px 18px; cursor: pointer; }
   #verdict { font-size: 13px; margin-top: 12px; min-height: 17px; }
   #verdict.bad { color: #8f1220; font-weight: bold; }
+  #verdict.good { color: #1d5c2c; font-weight: bold; }
+  #found { border-top: 1px solid var(--mg-rule); margin-top: 14px; padding-top: 10px; }
+  #found ul { margin: 0 0 8px 18px; padding: 0; font-size: 13px; }
+  #startreturn { font: inherit; font-size: 13px; background: #fff; border: 1px solid var(--mg-blue); color: var(--mg-blue); padding: 6px 12px; cursor: pointer; }
+  @media (max-width: 700px) { .info { margin: 12px; } }
 </style>
 </head>
 <body>
 <div class="locstrip">
-  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <span id="mystore">Store: Riverside Commons &middot; Open until 9:00 pm</span>
   <a href="stores.html">Change store</a>
   <a href="orderstatus.html">Order status</a>
   <a href="recycling.html">Trade-in and recycling</a>
+  <a href="customer-service.html">Customer service</a>
 </div>
 <header class="masthead">
   <a class="wordmark" href="index.html">marrowgate</a>
@@ -46,52 +54,103 @@
   <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
   <a href="departments.html#services">Services</a>
 </nav>
-<p class="crumbs">Home / Order status</p>
+<main>
+<p class="crumbs"><a href="index.html">Home</a> / Order status</p>
 <div class="pagehead"><h1>Order status</h1></div>
 <div class="info">
   <h2>Look up an order</h2>
   <p>Order numbers are printed on the till receipt and on your confirmation email
-  (format NB followed by nine digits).</p>
+  (format MG followed by nine digits).</p>
   <form class="lookup" id="lookup" novalidate>
     <label for="ordno">Order number</label>
-    <input id="ordno" autocomplete="off" placeholder="NB-000000000">
+    <input id="ordno" autocomplete="off" placeholder="MG-000000000">
     <label for="email">Email used at purchase</label>
     <input id="email" type="email" autocomplete="off">
     <button type="submit">Check status</button>
     <p id="verdict" role="status"></p>
   </form>
+  <div id="found" hidden>
+    <h2 id="foundhead"></h2>
+    <ul id="foundlines"></ul>
+    <p id="foundstatus"></p>
+    <p><button type="button" id="startreturn">Start a return</button></p>
+    <p id="returnnote" role="status"></p>
+  </div>
   <h2>Signed-in customers</h2>
   <p>Orders on a My Marrowgate membership appear under <a href="account.html">My
   Marrowgate</a> as soon as the till issues the receipt. Guest orders can only be traced
   with the lookup above.</p>
 </div>
+</main>
 <footer class="legal">
   <ul>
+    <li><a href="customer-service.html">Customer service</a></li>
     <li><a href="basket-help.html">Basket help</a></li>
     <li><a href="returns.html">Return policy</a></li>
     <li><a href="price-match.html">Price match</a></li>
-    <li><a href="accessibility.html">Accessibility</a></li>
     <li><a href="stores.html">Store directory</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="privacy.html">Privacy policy</a></li>
+    <li><a href="terms.html">Terms of sale</a></li>
   </ul>
   Prices shown exclude tax. Online prices may differ from prices in store.
   &copy; 2026 Marrowgate Retail Group.
+  <p class="regoffice">Marrowgate Retail Group, 1200 Ferrand Boulevard, Skellbourne, MI 48000 &middot; Customer service 1-616-555-0137</p>
 </footer>
+<script src="marrowgate-chrome.js"></script>
 <script>
-document.getElementById('lookup').addEventListener('submit', (event) => {
+const NONCE = '__SESSION_NONCE__';
+const verdict = document.getElementById('verdict');
+const found = document.getElementById('found');
+document.getElementById('lookup').addEventListener('submit', async (event) => {
   event.preventDefault();
-  const verdict = document.getElementById('verdict');
-  const ordno = document.getElementById('ordno').value.trim();
+  found.hidden = true;
+  const number = document.getElementById('ordno').value.trim();
   const email = document.getElementById('email').value.trim();
-  verdict.className = '';
-  if (!ordno || !email) {
-    verdict.className = 'bad';
+  verdict.className = 'bad';
+  if (!number || !email) {
     verdict.textContent = 'Enter the order number and the email used at purchase.';
     return;
   }
-  verdict.className = 'bad';
-  verdict.textContent =
-    'No order matches that number and email. Guest orders appear here about 15 ' +
-    'minutes after the till issues the receipt.';
+  verdict.className = '';
+  verdict.textContent = 'Looking up your order...';
+  let res;
+  let body;
+  try {
+    res = await fetch('/api/marrowgate/order-lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, number, email }),
+    });
+    body = await res.json();
+  } catch {
+    verdict.className = 'bad';
+    verdict.textContent = 'Marrowgate could not be reached. Check your connection and try again.';
+    return;
+  }
+  if (!res.ok) {
+    verdict.className = 'bad';
+    verdict.textContent = res.status === 404 ? body.error : 'Order status is not answering. Try again in a minute.';
+    return;
+  }
+  verdict.className = 'good';
+  verdict.textContent = 'Order found.';
+  document.getElementById('foundhead').textContent = 'Order ' + body.number;
+  const list = document.getElementById('foundlines');
+  list.replaceChildren(...body.lines.map((line) => {
+    const li = document.createElement('li');
+    li.textContent = line;
+    return li;
+  }));
+  document.getElementById('foundstatus').textContent =
+    body.status + ' Order total $' + body.total.toFixed(2) + '.';
+  document.getElementById('returnnote').textContent = '';
+  found.hidden = false;
+});
+document.getElementById('startreturn').addEventListener('click', () => {
+  document.getElementById('returnnote').textContent =
+    'Bring the items and this order number to any Marrowgate store within the return window. ' +
+    'Items not yet collected or delivered are canceled at no charge by the store that holds them.';
 });
 </script>
 </body>

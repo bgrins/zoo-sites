@@ -7,11 +7,11 @@
   --card: #ffffff;
   --rule: #c3ccd5;
   --rule-soft: #dde3e9;
-  --muted: #5d6a7a;
+  --muted: #5b6777;
   --flag: #b5490f;
   --flag-soft: #fbeee5;
   --ok: #1c6448;
-  --ui: Corbel, "Noto Sans", Calibri, "Segoe UI", sans-serif;
+  --ui: "PT Sans", Corbel, "Noto Sans", Calibri, "Segoe UI", sans-serif;
   --num: "Iowan Old Style", "Palatino Linotype", Palatino, serif;
 }
 
@@ -40,6 +40,8 @@ a { color: var(--indigo); }
 
 .wordmark {
   align-self: center;
+  color: inherit;
+  text-decoration: none;
   font-size: 17px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -81,11 +83,26 @@ a { color: var(--indigo); }
 
 .operator {
   align-self: center;
-  margin-left: 22px;
+  margin-left: 12px;
   font-size: 12px;
   color: #b9c4d2;
   letter-spacing: 0.04em;
 }
+
+.user { align-self: center; position: relative; font-size: 12px; }
+.user summary {
+  cursor: pointer; list-style: none; padding: 5px 10px; border: 1px solid #3b4a6b;
+  border-radius: 3px; color: #eef2f6;
+}
+.user summary::-webkit-details-marker { display: none; }
+.user summary::after { content: " \25BE"; color: #9fb0c6; }
+.user[open] summary { background: var(--indigo-dk); }
+.user .menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; min-width: 200px;
+  background: var(--card); border: 1px solid var(--rule); box-shadow: 0 6px 16px rgba(23, 33, 58, 0.18);
+}
+.user .menu a { display: block; padding: 8px 12px; color: var(--ink); text-decoration: none; }
+.user .menu a:hover { background: var(--paper); }
 
 .crumbs {
   padding: 7px 20px;
@@ -110,7 +127,7 @@ a { color: var(--indigo); }
   padding: 16px 14px 30px;
 }
 
-.rail h2, .drawer h2 {
+.rail .rail-h, .drawer h2 {
   margin: 0 0 8px;
   font-size: 11px;
   letter-spacing: 0.16em;
@@ -129,6 +146,9 @@ a { color: var(--indigo); }
   color: var(--muted);
   font-size: 13px;
 }
+
+.levels li.nosheet { color: #636b76; }
+.levels li.nosheet span { font-size: 11px; margin-left: 6px; }
 
 .levels li.active {
   border-left-color: var(--flag);
@@ -228,7 +248,7 @@ a { color: var(--indigo); }
 
 .tag {
   pointer-events: none;
-  font-family: Corbel, Calibri, sans-serif;
+  font-family: var(--ui);
   font-size: 15px;
   font-weight: 700;
   fill: #24303f;
@@ -236,16 +256,16 @@ a { color: var(--indigo); }
 
 .tag-sub {
   pointer-events: none;
-  font-family: Corbel, Calibri, sans-serif;
+  font-family: var(--ui);
   font-size: 11px;
   fill: #55637a;
 }
 
 .desk { pointer-events: none; fill: #8fa0b4; }
-.plan-note { pointer-events: none; font-size: 11px; fill: #6b7889; font-family: Corbel, Calibri, sans-serif; }
+.plan-note { pointer-events: none; font-size: 11px; fill: #6b7889; font-family: var(--ui); }
 .rose { fill: none; stroke: #3f4d61; stroke-width: 1.5; }
 .rose-arrow { fill: #b5490f; }
-.rose-label { pointer-events: none; font-size: 13px; font-weight: 700; fill: #3f4d61; font-family: Corbel, Calibri, sans-serif; }
+.rose-label { pointer-events: none; font-size: 13px; font-weight: 700; fill: #3f4d61; font-family: var(--ui); }
 
 .sheet.no-tint svg .room { fill: #e6ebef; }
 .sheet.no-desks .desk { display: none; }
@@ -361,3 +381,31 @@ footer {
 
 footer p { margin: 2px 0; }
 footer a { color: var(--indigo); }
+
+.notice {
+  max-width: 620px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--indigo);
+  padding: 14px 18px;
+}
+
+@media (max-width: 900px) {
+  .topbar { flex-wrap: wrap; gap: 8px 16px; padding: 8px 14px 0; }
+  .wordmark { font-size: 15px; }
+  .operator { margin-left: 0; }
+  .user { margin-left: auto; }
+  .tabs { order: 5; width: 100%; margin: 0 -14px; padding: 0 8px; overflow-x: auto; }
+  .tabs a { padding: 10px 12px; white-space: nowrap; }
+  .crumbs { padding: 7px 14px; }
+  .shell { flex-direction: column; min-height: 0; }
+  .rail, .drawer { width: auto; flex: none; border: 0; border-bottom: 1px solid var(--rule); }
+  .rail { display: flex; flex-wrap: wrap; gap: 0 24px; padding: 14px 14px 4px; }
+  .rail-block { margin-bottom: 12px; }
+  .canvas { padding: 16px 14px 20px; }
+  .drawer { order: 2; border-top: 1px solid var(--rule); padding: 14px; }
+  .sheet-foot { flex-wrap: wrap; gap: 4px 16px; }
+  .page { padding: 18px 14px 32px; }
+  .tickets { display: block; overflow-x: auto; }
+  footer { padding: 14px 14px 22px; }
+}

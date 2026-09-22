@@ -3,18 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Alerts &middot; Northgate Media &middot; Halbeck</title>
+<title>Alerts &middot; Skelvane Media &middot; Halbeck</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="halbeck.css">
 </head>
 <body>
 <div class="bar">
-  <span class="logo">Hal<i>beck</i></span>
-  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <a class="logo" href="index.html">halbeck</a>
+  <button class="wsw" type="button"><span>workspace</span> Skelvane Media</button>
   <span class="spacer"></span>
   <a class="lnk" href="sources.html">Data sources</a>
   <a class="lnk" href="alerts.html">Alerts</a>
   <a class="lnk" href="docs.html">Docs</a>
-  <span class="who">NM</span>
+  <button class="who" type="button" aria-label="Account menu for r.calloway">RC</button>
 </div>
 
 <div class="shell">
@@ -37,7 +38,7 @@
   </nav>
 
   <main>
-    <p class="crumbs"><a href="overview.html">Northgate Media</a> / Alerts</p>
+    <p class="crumbs"><a href="overview.html">Skelvane Media</a> / Alerts</p>
     <h1>Alerts</h1>
     <p class="sub">Rules that watch a series and notify a channel when a condition holds at
     refresh time. An alert fires once per breach and again only after the series recovers.</p>
@@ -46,7 +47,7 @@
       <header><h2>Rules</h2><span class="meta">5 enabled</span></header>
       <div class="pad">
         <ul class="events">
-          <li><span class="when">seats</span><span class="what">Active seats falls more than 5% month over month &mdash; email the analytics list</span><span class="tag">enabled</span></li>
+          <li><span class="when">seats</span><span class="what">Active seats falls more than 15% month over month &mdash; email the analytics list</span><span class="tag">enabled</span></li>
           <li><span class="when">seats</span><span class="what">Tracked seats reach 90% of the pool ceiling &mdash; email finance</span><span class="tag">enabled</span></li>
           <li><span class="when">sources</span><span class="what">Any connector misses its freshness window &mdash; email workspace admins</span><span class="tag">enabled</span></li>
           <li><span class="when">product</span><span class="what">session.start volume halves week over week &mdash; email the analytics list</span><span class="tag">enabled</span></li>
@@ -59,7 +60,7 @@
       <header><h2>Recent activity</h2><span class="meta">last 90 days</span></header>
       <div class="pad">
         <ul class="events">
-          <li><span class="when">05 Apr</span><span class="what">Source freshness: product stream held back during the archive backfill, recovered same day</span><span class="tag">fired</span></li>
+          <li><span class="when">08 Apr</span><span class="what">Source freshness: product stream held back during the archive backfill, recovered same day</span><span class="tag">fired</span></li>
           <li><span class="when">27 Apr</span><span class="what">Seat fall rule armed after the Brackhill licence ended; no breach at month close</span><span class="tag">watch</span></li>
         </ul>
       </div>
@@ -68,12 +69,13 @@
 </div>
 
 <footer class="foot">
-  <span>Halbeck Analytics Ltd</span>
+  <span>&copy; 2026 Halbeck Analytics Ltd</span>
   <a href="status.html">Status</a>
   <a href="privacy.html">Privacy notice</a>
   <a href="terms.html">Terms of service</a>
   <a href="support.html">Support</a>
-  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+  <span class="push">Registered in England and Wales, company number 00000000 &middot; 14 Tannery Yard, Thrushby TY4 7HB &middot; support@halbeck.example</span>
 </footer>
+<script src="halbeck.js"></script>
 </body>
 </html>

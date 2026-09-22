@@ -1,10 +1,12 @@
 // pages/depot/ - Marlowe Depot Systems warehouse ops console (devtools suite:
 // shard-forensics, body-only-ref, partial-import). Every graded value is minted
-// server-side from randomBytes and exists in exactly one HTTP response: the
-// failing roster shard and its X-Depot-Trace header, the manifest store ref
-// (body only, never a header or the DOM), and the intake rejects + diag code
-// (streamed line results only). pages/ holds the menu, never the answers.
+// server-side (the shard and reject picks from ctx.draw, every code from
+// randomBytes) and exists in exactly one HTTP response: the failing roster
+// shard and its X-Depot-Trace header, the manifest store ref (body only, never
+// a header or the DOM), and the intake rejects + diag code (streamed line
+// results only). pages/ holds the menu, never the answers.
 import { randomBytes } from 'node:crypto';
+import { pushTrimmed } from './lib.mjs';
 
 const DEPOT_OPERATOR = { id: 'm.osei', pin: '4417' };
 
@@ -15,7 +17,7 @@ const DEPOT_INTAKE_LINES = 40;
 const DEPOT_INTAKE_REJECTS = 3;
 
 const DEPOT_ROSTER_LIVE = {
-  shiftDate: 'Mon 28 Jul',
+  shiftDate: 'Tue 28 Jul',
   source: 'live',
   rows: [
     { bay: 'B1', operator: 'K. Ademi', role: 'Reach truck', window: '06:00-14:00' },
@@ -41,7 +43,7 @@ const DEPOT_PANELS = {
       { bay: 'D8', trailer: 'TRL-4479', carrier: 'Ferrant & Blythe', state: 'Sealed', tone: 'ok' },
       { bay: 'D9', trailer: '-', carrier: '-', state: 'Open', tone: 'hold' },
       { bay: 'D10', trailer: 'TRL-4471', carrier: 'Cardew Freight', state: 'Tipping', tone: 'ok' },
-      { bay: 'D11', trailer: 'TRL-4468', carrier: 'Northgate Pallet Co-op', state: 'Held', tone: 'stop' },
+      { bay: 'D11', trailer: 'TRL-4468', carrier: 'Skarrowby Pallet Co-op', state: 'Held', tone: 'stop' },
     ],
   },
   '/api/depot/moves': {
@@ -92,6 +94,8 @@ function depotState(session) {
     rosterFailures: 0,
     manifestRef: null,
     manifestHits: 0,
+    shellRef: null,
+    shellHits: 0,
     intake: null,
     intakeStored: 0,
     intakePosts: 0,
@@ -101,7 +105,7 @@ function depotState(session) {
 }
 
 // Rejection-sampled so the per-session draws carry no modulo bias.
-function depotDraw(n, draw = (_scope, n) => randomBytes(n)) {
+function depotDraw(n, draw) {
   for (;;) {
     const b = draw('depot', 1)[0];
     if (b < 256 - (256 % n)) return b % n;
@@ -127,15 +131,12 @@ async function depotManifestKeys(ctx) {
 }
 
 export function routes(ctx) {
-  const { json, readBody, getSession, requireSession, draw } = ctx;
+  const { json, readJson, getSession, requireSession, draw, fromPage, isDocumentNav } = ctx;
+  const depotFromPage = fromPage('/depot/');
   return async (req, res, url, pathname0) => {
     if (req.method === 'POST' && pathname0 === '/api/depot/signin') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -148,8 +149,8 @@ export function routes(ctx) {
       const d = depotState(found.session);
       d.signins += 1;
       d.signedIn = true;
-      // The shard draw and the trace are minted once per session, from
-      // randomBytes rather than the page-exposed nonce, so a re-signin (the
+      // The shard draw (ctx.draw) and the trace (randomBytes) are minted once
+      // per session, never from the page-exposed nonce, so a re-signin (the
       // recovery path for a surface whose network log died at navigation)
       // re-serves the SAME failure with the SAME trace.
       if (d.shard === null) {
@@ -191,27 +192,36 @@ export function routes(ctx) {
       const found = getSession(req);
       if (!found) return json(res, 401, { error: 'session required' });
       const d = depotState(found.session);
-      d.manifestRef ??= 'MR-' + randomBytes(4).toString('hex').toUpperCase();
-      d.manifestHits += 1;
-      // Stable 507, session-stable ref, and the ref lives ONLY in this body:
-      // not a header, not the DOM, not the console. Deliberately NOT one-shot
-      // (per the proposal): an in-page re-fetch is the legitimate recovery for
-      // a surface that cannot read response bodies, and manifestHits is its
-      // measured price. 507 rather than 500 so a guessed modal status fails.
+      // The browser's requests, the page's fetches and a tab navigated to this
+      // URL alike, share one ref. A request from outside the browser, a curl
+      // with the browser's cookie copied out of a network log, gets a ref of
+      // its own, so an answer citing it is legibly one read around the browser
+      // and the validator never credits it. depotFromPage and isDocumentNav
+      // buy legibility, never proof: curl can send the same headers.
+      const browserSide = depotFromPage(req) || isDocumentNav(req);
+      if (browserSide) {
+        d.manifestRef ??= 'MR-' + randomBytes(4).toString('hex').toUpperCase();
+        d.manifestHits += 1;
+      } else {
+        d.shellRef ??= 'MR-' + randomBytes(4).toString('hex').toUpperCase();
+        d.shellHits += 1;
+      }
+      // Stable 507, a session-stable ref per side, and the ref lives ONLY in
+      // this body: not a header, not the DOM, not the console. Deliberately NOT
+      // one-shot (per the proposal): an in-page re-fetch is the legitimate
+      // recovery for a surface that cannot read response bodies, and
+      // manifestHits is its measured price. 507 rather than 500 so a guessed
+      // modal status fails.
       return json(res, 507, {
         error: 'manifest_store_locked',
-        ref: d.manifestRef,
+        ref: browserSide ? d.manifestRef : d.shellRef,
         remedy: 'quote this reference to the ops desk to have the store lock cleared',
       });
     }
 
     if (req.method === 'POST' && pathname0 === '/api/depot/intake') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -258,24 +268,35 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/depot/incident') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
+      const description = String(payload.description ?? '').trim().slice(0, 2000);
+      if (!description) return json(res, 400, { error: 'description_required' });
       const d = depotState(found.session);
       const ticket = 'IN-' + randomBytes(2).toString('hex').toUpperCase();
-      d.incidents.push({
+      pushTrimmed(d.incidents, {
         ticket,
-        category: String(payload.category ?? ''),
-        location: String(payload.location ?? ''),
+        category: String(payload.category ?? '').slice(0, 80),
+        location: String(payload.location ?? '').slice(0, 80),
+        description,
         at: Date.now(),
       });
       return json(res, 200, { ok: true, ticket });
+    }
+
+    // This terminal's tickets, newest first, for the Recent tickets panel.
+    if (req.method === 'GET' && pathname0 === '/api/depot/incidents') {
+      const found = getSession(req);
+      const mine = found?.session.depot?.incidents ?? [];
+      return json(res, 200, {
+        tickets: mine
+          .slice()
+          .reverse()
+          .map((t) => ({ ticket: t.ticket, category: t.category, location: t.location, state: 'Review' })),
+      });
     }
 
     return false;

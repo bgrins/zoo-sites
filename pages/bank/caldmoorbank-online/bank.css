@@ -2,16 +2,19 @@ body { font-family: "Segoe UI", "Helvetica Neue", system-ui, sans-serif; margin:
 a { color: #123a6b; }
 header.top { background: #fff; border-bottom: 3px solid #123a6b; }
 .bar { max-width: 960px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
 .wordmark { font-size: 21px; font-weight: 700; letter-spacing: -0.3px; }
 .bar nav { margin-left: auto; }
 .bar nav a { margin-left: 18px; text-decoration: none; font-size: 14px; font-weight: 600; }
+.signin-link { margin-left: 22px; padding: 7px 16px; background: #123a6b; color: #fff; border-radius: 3px; text-decoration: none; font-size: 14px; font-weight: 600; }
+.signin-link:hover { background: #0d2b50; }
 .strip { background: #123a6b; color: #dce6f4; font-size: 12px; }
 .strip div { max-width: 960px; margin: 0 auto; padding: 6px 20px; }
 main { max-width: 960px; margin: 22px auto; padding: 0 20px; display: flex; gap: 26px; align-items: flex-start; }
 .col-a { flex: 1 1 340px; }
 .col-b { flex: 1 1 420px; }
 .card { background: #fff; border: 1px solid #ccd5e0; border-radius: 5px; padding: 20px 22px; }
-.card h2 { margin: 0 0 4px; font-size: 19px; }
+.card h1, .card h2 { margin: 0 0 4px; font-size: 19px; }
 .card h3 { font-size: 15px; margin: 0 0 6px; }
 label { display: block; margin: 14px 0 4px; font-weight: 600; font-size: 13px; }
 input[type=text], input[type=password] { width: 100%; box-sizing: border-box; padding: 9px; font-size: 15px; border: 1px solid #9fb0c4; border-radius: 3px; }
@@ -37,3 +40,14 @@ footer { border-top: 1px solid #ccd5e0; margin-top: 30px; background: #f7f9fc; }
 footer .inner { max-width: 960px; margin: 0 auto; padding: 18px 20px 30px; font-size: 12px; color: #5a6675; }
 footer nav a { margin-right: 14px; font-size: 12px; }
 footer p { margin: 8px 0 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+@media (max-width: 760px) {
+  .bar { flex-wrap: wrap; row-gap: 8px; }
+  .bar nav { order: 3; width: 100%; margin-left: 0; display: flex; gap: 18px; overflow-x: auto; }
+  .bar nav a { margin-left: 0; white-space: nowrap; }
+  .signin-link { margin-left: auto; }
+  main { flex-direction: column; align-items: stretch; }
+  .col-a, .col-b { flex: 1 1 auto; width: 100%; }
+  .tiles { flex-direction: column; }
+  footer nav a { display: inline-block; margin: 0 14px 6px 0; }
+}

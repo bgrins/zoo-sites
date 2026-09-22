@@ -12,7 +12,7 @@
 //     shows the first ten months and silently cuts the rest. Both have to be set.
 // Neither is worked around in the fixture.
 
-import { textOf, uidOf, until } from './lib.mjs';
+import { addSession, findSession, textOf, uidOf, until } from './lib.mjs';
 
 const PATH = '/metrics/';
 
@@ -30,6 +30,32 @@ async function readTable(mcp) {
 export const DRIVERS = {
   'chart-escape': {
     note: 'canvas-only metric: takes the Table toggle, reads rows via includeAll+maxLines',
+    alsoCorrectState: [
+      {
+        // Every session mints its own series, so a probe's target differs.
+        name: 'a stray session minted first reads its own series',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.metrics);
+          const m = session.metrics;
+          addSession(
+            state,
+            {
+              metrics: {
+                ...m,
+                points: m.points.map((p) => ({ ...p, value: p.value + 7 })),
+                target: { ...m.target, value: m.target.value + 7, from: m.target.from + 7 },
+                runnerUp: { ...m.runnerUp, value: m.runnerUp.value + 7, from: m.runnerUp.from + 7 },
+                seriesReads: 1,
+                directReads: 1,
+                tableViews: 0,
+                csvReads: 0,
+              },
+            },
+            { first: true }
+          );
+        },
+      },
+    ],
     async run({ goto, mcp, snapshot }) {
       await goto(PATH);
       const chartSnap = await until('the seat series to load', async () => {
@@ -109,12 +135,51 @@ export const DRIVERS = {
         ];
       }
       const fields = { month: month.label, activeSeats: month.value };
+      const FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+        'August', 'September', 'October', 'November', 'December'];
+      const parts = (label) => {
+        const [mon, year] = label.split(' ');
+        const m = FULL.findIndex((f) => f.startsWith(mon));
+        return { mon, full: FULL[m], mm: String(m + 1).padStart(2, '0'), year: Number(year) };
+      };
+      const t = parts(month.label);
+      const r = parts(second.label);
+      const otherYear = t.year === 2026 ? 2025 : 2026;
+      const yy = String(t.year).slice(2);
+      const otherYY = String(otherYear).slice(2);
       this.wrongFields = [
         { month: second.label, activeSeats: second.value },
         { month: month.label, activeSeats: second.value },
         { month: month.label, activeSeats: null },
+        // A wrong month beside the target's exact figure, so each fails on the
+        // month alone.
+        { month: second.label, activeSeats: month.value },
+        { month: target.from.label, activeSeats: month.value },
+        { month: `${t.mon} ${otherYear}`, activeSeats: month.value },
+        { month: `${t.mon} '${otherYY}`, activeSeats: month.value },
+        { month: `${t.mon}-${otherYY}`, activeSeats: month.value },
+        { month: `${t.mon} ${otherYY}`, activeSeats: month.value },
+        { month: `${r.mm}/${r.year}`, activeSeats: month.value },
+        // The runner-up's month may be the target's in the other year; the
+        // prior month keeps the case count fixed across draws.
+        { month: r.full === t.full ? parts(target.from.label).full : r.full, activeSeats: month.value },
       ];
-      this.alsoCorrectFields = [fields, { month: month.label.toLowerCase(), activeSeats: month.value }];
+      // The ask never asks for a year, and the exact figure already names one
+      // point, so a yearless month, a two-digit year (the axis ticks' own
+      // "Mar'25") and a numeric month all pass, as does a field that names the
+      // answer first and the month it fell from after.
+      this.alsoCorrectFields = [
+        fields,
+        { month: month.label.toLowerCase(), activeSeats: month.value },
+        { month: t.full, activeSeats: month.value },
+        { month: `${t.mon} '${yy}`, activeSeats: month.value },
+        { month: `${t.mon}'${yy}`, activeSeats: month.value },
+        { month: `${t.mon}-${yy}`, activeSeats: month.value },
+        { month: `${t.mon} ${yy}`, activeSeats: month.value },
+        { month: `${t.mm}/${t.year}`, activeSeats: month.value },
+        { month: `${t.year}-${t.mm}`, activeSeats: month.value },
+        { month: `${month.label} (down from ${target.from.label})`, activeSeats: month.value },
+      ];
       return { text: answer, fields };
     },
   },

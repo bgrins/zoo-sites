@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reports - Kelsmere CRM</title>
 <link rel="stylesheet" href="crm.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="topbar">
-  <span class="brand">Kelsmere CRM</span>
+  <a class="brand" href="./"><span class="mark" aria-hidden="true">K</span>Kelsmere CRM</a>
   <span class="ws">wkspc northfield-supply &middot; fiscal 2026 &middot; role: analyst</span>
   <span class="who">dana.kessler@northfield.example</span>
 </header>
@@ -28,7 +29,8 @@
 <main class="main">
   <h1>Reports</h1>
   <p class="sub">Report catalog for fiscal 2026. Output opens in the operator console; delivery is disabled on shared workspace links.</p>
-  <table class="grid">
+  <div class="gridwrap">
+  <table class="grid" data-sort="reports">
     <thead>
       <tr><th>Report</th><th>Source</th><th>Status</th><th>Last run</th></tr>
     </thead>
@@ -41,28 +43,31 @@
       <tr><td>Territory coverage map</td><td>Customers</td><td>Retired</td><td>2025-12-19</td></tr>
     </tbody>
   </table>
+  </div>
   <div class="cards" style="margin-top: 14px;">
     <section class="card">
       <h2>Region rollup</h2>
       <p><span class="warn">Retired</span></p>
-      <p>Retired with the v3 warehouse migration. Region totals are no longer
-      published anywhere in this workspace. Operators who need them must
-      compile figures from Orders and Customers until the replacement ships.</p>
-      <p class="muted">No replacement date has been announced.</p>
+      <p>Retired with the v3 warehouse migration; no replacement date has been
+      announced. Until one ships, region figures are compiled from Orders and
+      Customers.</p>
     </section>
     <section class="card">
       <h2>Scheduling</h2>
       <p>Available reports rebuild with the nightly warehouse snapshot at 02:00.
       Manual reruns are reserved for workspace owners.</p>
-      <p class="muted">Saved report views are read-only on shared workspace links.</p>
     </section>
   </div>
 </main>
 <footer class="siteftr">
-  Kelsmere CRM &middot; workspace data is confidential to northfield-supply.
-  Support: help.kelsmerecrm.example &middot; Status &middot; Keyboard shortcuts &middot;
-  Terms &middot; Privacy &middot; <a href="guide.html">Operator guide</a> &middot;
-  <a href="glossary.html">Glossary</a> &middot; <a href="notices.html">Service notices</a>
+  Kelsmere CRM &middot; workspace data is confidential to northfield-supply &middot;
+  &copy; 2026 Kelsmere Software, Inc.<br>
+  Support: <a href="mailto:support@kelsmerecrm.example">support@kelsmerecrm.example</a> &middot;
+  <a href="status.html">Status</a> &middot; <a href="shortcuts.html">Keyboard shortcuts</a> &middot;
+  <a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  <a href="guide.html">Operator guide</a> &middot; <a href="glossary.html">Glossary</a> &middot;
+  <a href="notices.html">Service notices</a>
 </footer>
+<script src="crm.js"></script>
 </body>
 </html>

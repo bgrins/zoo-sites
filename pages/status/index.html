@@ -4,15 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nimbrel Edge status</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/atom+xml" title="Nimbrel Edge incident history" href="history.atom">
 <link rel="stylesheet" href="status.css">
 </head>
 <body>
 <header class="mast">
   <div class="mast-inner">
-    <span class="mark">Nimbrel <b>Edge</b></span>
-    <nav>
+    <a class="mark" href="index.html">Nimbrel <b>Edge</b></a>
+    <nav aria-label="Status pages">
       <a href="index.html" class="on">Status</a>
       <a href="history.html">Incident history</a>
+      <a href="subscribe.html">Subscribe</a>
     </nav>
     <span class="tz">All times UTC</span>
   </div>
@@ -76,24 +79,27 @@
       <span class="sys-pct">99.62%</span>
       <span class="chip chip-degraded">Degraded</span>
     </div>
-    <p class="sys-legend">Uptime over the trailing 90 days. Relay path checks run against the
+    <p class="sys-legend">Daily uptime, oldest day on the left. Relay path checks run against the
     relay mesh serving your route and do not affect the figures above.</p>
+  </section>
+
+  <section class="panel active-inc">
+    <h2>Active incident</h2>
+    <div class="inc">
+      <h3><a href="incidents/ne-2d08f.html">Log streaming delivering with delay</a></h3>
+      <div class="inc-meta">
+        <span class="inc-ref">NE-2D08F</span>
+        <span class="inc-ts">opened 2 hr 18 min ago</span>
+        <span class="chip chip-degraded">Monitoring</span>
+      </div>
+      <p><b>Monitoring</b> &middot; 25 min ago &middot; Ingest is running on standby capacity and the backlog is draining. Delivery continues with a delay of up to four minutes. No records have been lost, and records already delayed will arrive in order.</p>
+    </div>
   </section>
 
   <section class="panel">
     <h2>Past incidents</h2>
     <div class="inc">
-      <h3>Log streaming delivering with delay</h3>
-      <div class="inc-meta">
-        <span class="inc-ref">NE-2D08F</span>
-        <span class="inc-ts">opened 2026-07-28 06:12</span>
-        <span class="chip chip-degraded">Monitoring</span>
-      </div>
-      <p>Ingest for the EU-West point of presence is being rebalanced onto standby capacity.
-      Delivery continues with a delay of up to four minutes.</p>
-    </div>
-    <div class="inc">
-      <h3>Elevated relay latency on trans-Atlantic routes</h3>
+      <h3><a href="incidents/ne-c214a.html">Elevated relay latency on trans-Atlantic routes</a></h3>
       <div class="inc-meta">
         <span class="inc-ref">NE-C214A</span>
         <span class="inc-ts">2026-07-21 09:14 to 11:47</span>
@@ -103,7 +109,7 @@
       was steered to the Vireo ring until the carrier restored the segment.</p>
     </div>
     <div class="inc">
-      <h3>Control panel sign-in errors</h3>
+      <h3><a href="incidents/ne-77d02.html">Control panel sign-in errors</a></h3>
       <div class="inc-meta">
         <span class="inc-ref">NE-77D02</span>
         <span class="inc-ts">2026-07-14 15:03 to 15:26</span>
@@ -123,10 +129,12 @@
       <a href="history.html">Incident history</a>
       <a href="about.html">About this page</a>
       <a href="subscribe.html">Subscribe to updates</a>
+      <a href="history.atom">Incident feed</a>
       <a href="definitions.html">Status definitions</a>
     </div>
-    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay.</p>
-    <p>Network operations centre: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
+    <p>&copy; 2026 Nimbrel Networks, Inc. 4180 Carraway Street, Suite 900, Delmont Bay, CA.
+    <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms</a></p>
+    <p>Network operations center: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
   </div>
 </footer>
 

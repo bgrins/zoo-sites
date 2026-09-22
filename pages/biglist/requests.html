@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>People Hub — Request queue — Quennell Group</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="directory.css">
+<style>
+.fields {
+  margin: 0 34px 22px;
+  max-width: 900px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(58, 34, 69, 0.05);
+}
+.field {
+  padding: 15px 20px;
+  border-bottom: 1px solid #f1eaf4;
+}
+.field:last-child { border-bottom: 0; }
+.field h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: var(--plum);
+}
+.field p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 70ch;
+}
+.field .owner {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--plum-soft);
+  background: #f7f1fa;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.prose {
+  margin: 0 34px 22px;
+  max-width: 900px;
+}
+.prose h2 {
+  margin: 22px 0 6px;
+  font-size: 16px;
+  color: var(--plum);
+}
+.prose p, .prose li {
+  font-size: 13px;
+  color: var(--ink);
+  max-width: 72ch;
+}
+.prose p { margin: 0 0 10px; }
+.prose ol { margin: 0 0 10px; padding-left: 22px; }
+.prose li { margin-bottom: 5px; }
+.callout {
+  margin: 0 34px 20px;
+  max-width: 900px;
+  background: #f7f1fa;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--amber);
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 13px;
+}
+
+.form {
+  margin: 0 34px 22px;
+  max-width: 640px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px 20px;
+}
+.form label { display: block; font-weight: 700; font-size: 13px; margin: 12px 0 4px; }
+.form label:first-child { margin-top: 0; }
+.form .help { font-size: 12px; color: var(--muted); margin: 0 0 4px; }
+.form select, .form input, .form textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 12px;
+  border: 1px solid #ddd2e3;
+  border-radius: 10px;
+  background: #faf7fb;
+}
+.form textarea { min-height: 96px; resize: vertical; }
+.form [aria-invalid="true"] { border-color: #b0413e; background: #fdf3f3; }
+.form .err { color: #9c2f2c; font-size: 12px; margin: 4px 0 0; }
+.form button {
+  margin-top: 16px;
+  font: inherit;
+  font-weight: 700;
+  color: #fff;
+  background: var(--plum);
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 20px;
+  cursor: pointer;
+}
+.form button:hover { background: var(--plum-deep); }
+#result { margin: 12px 0 0; font-size: 13px; }
+#result.ok { color: #2f6b3f; }
+#result.bad { color: #9c2f2c; }
+.queue {
+  margin: 0 34px 22px;
+  max-width: 900px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.queue .item { padding: 12px 20px; border-bottom: 1px solid #f1eaf4; font-size: 13px; }
+.queue .item:last-child { border-bottom: 0; }
+.queue .item b { color: var(--plum); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.queue .empty { padding: 14px 20px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body class="shell">
+<aside class="rail">
+  <a class="mark" href="./">Quennell</a>
+  <div class="group">People Hub 4.2</div>
+  <nav>
+    <a href="overview.html">Overview</a>
+    <a href="./">Directory</a>
+    <a href="teams.html">Teams</a>
+    <a href="onboarding.html">Onboarding</a>
+    <a href="badge-records.html">Badge records</a>
+    <a href="requests.html" class="on">Requests</a>
+  </nav>
+  <div class="group">Reference</div>
+  <nav>
+    <a href="data-standards.html">Data standards</a>
+    <a href="access.html">Access and roles</a>
+    <a href="release-notes.html">Release notes</a>
+  </nav>
+  <p class="rail-foot">Directory service: connected</p>
+</aside>
+<div class="pane">
+  <div class="topbar">
+    <span class="crumbs">Workspace / People / Request queue</span>
+    <span class="who">S. Okonkwo, HR Operations</span>
+  </div>
+  <main>
+  <h1>Request queue</h1>
+  <p class="lede">Raise a directory correction, a role request, a copy of your badge record or
+  an onboarding follow-up. Each request goes to the team that owns it, and you get a reference
+  to quote.</p>
+  <form class="form" id="reqForm" novalidate>
+    <label for="category">What is it about?</label>
+    <select id="category" name="category" aria-describedby="categoryErr">
+      <option value="">Choose a category</option>
+      <option value="correction">People / Directory correction</option>
+      <option value="access">People / Hub access</option>
+      <option value="badge-copy">People / Badge record copy</option>
+      <option value="onboarding">People / Onboarding follow-up</option>
+    </select>
+    <p class="err" id="categoryErr" hidden></p>
+    <label for="badge">Badge number of the entry (optional)</label>
+    <p class="help">For a correction, quote the badge number shown in the directory.</p>
+    <input id="badge" name="badge" autocomplete="off" aria-describedby="badgeErr">
+    <p class="err" id="badgeErr" hidden></p>
+    <label for="details">Details</label>
+    <textarea id="details" name="details" aria-describedby="detailsErr"></textarea>
+    <p class="err" id="detailsErr" hidden></p>
+    <button type="submit">Raise request</button>
+    <p id="result" role="status"></p>
+  </form>
+  <div class="queue" id="queue"><div class="empty">Loading your requests&hellip;</div></div>
+  <p class="fine">Requests are triaged each working morning. Owners and response times are
+  set out under <a href="data-standards.html">data standards</a> and
+  <a href="access.html">access and roles</a>.</p>
+  </main>
+  <footer class="sitefoot">
+    <span>&copy; 2026 Quennell Group</span>
+    <a href="privacy.html">Employee privacy notice</a>
+    <a href="terms.html">Terms of use</a>
+    <a href="requests.html">Request queue</a>
+    <span>IT service desk 01632 960539, weekdays 07:30&ndash;18:00</span>
+  </footer>
+</div>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const form = document.getElementById('reqForm');
+  const result = document.getElementById('result');
+  const queue = document.getElementById('queue');
+  const preset = new URLSearchParams(location.search).get('category');
+  if (preset) form.category.value = preset;
+
+  function renderQueue(list) {
+    queue.textContent = '';
+    if (!list.length) {
+      const none = document.createElement('div');
+      none.className = 'empty';
+      none.textContent = 'You have no open requests.';
+      queue.appendChild(none);
+      return;
+    }
+    for (const r of list) {
+      const div = document.createElement('div');
+      div.className = 'item';
+      const ref = document.createElement('b');
+      ref.textContent = r.reference;
+      div.append(ref, ' \u2014 ' + r.category + (r.badge ? ', ' + r.badge : '') + ' \u2014 ' + r.status);
+      queue.appendChild(div);
+    }
+  }
+
+  async function loadQueue() {
+    try {
+      const res = await fetch('/api/biglist/requests', { headers: { 'X-Session-Nonce': NONCE } });
+      if (!res.ok) throw new Error(String(res.status));
+      renderQueue((await res.json()).requests ?? []);
+    } catch {
+      queue.textContent = '';
+      const bad = document.createElement('div');
+      bad.className = 'empty';
+      bad.textContent = 'Your requests could not be loaded. Reload the page to try again.';
+      queue.appendChild(bad);
+    }
+  }
+
+  function showErrors(errors) {
+    for (const name of ['category', 'badge', 'details']) {
+      const field = form[name];
+      const msg = document.getElementById(name + 'Err');
+      if (errors[name]) {
+        field.setAttribute('aria-invalid', 'true');
+        msg.textContent = errors[name];
+        msg.hidden = false;
+      } else {
+        field.removeAttribute('aria-invalid');
+        msg.hidden = true;
+      }
+    }
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    result.className = '';
+    result.textContent = 'Sending\u2026';
+    let res;
+    try {
+      res = await fetch('/api/biglist/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nonce: NONCE,
+          category: form.category.value,
+          badge: form.badge.value,
+          details: form.details.value,
+        }),
+      });
+    } catch {
+      result.className = 'bad';
+      result.textContent = 'The request queue could not be reached. Nothing was sent.';
+      return;
+    }
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 422) {
+      showErrors(body.errors ?? {});
+      result.className = 'bad';
+      result.textContent = 'Check the highlighted fields.';
+      return;
+    }
+    if (!res.ok) {
+      result.className = 'bad';
+      result.textContent =
+        res.status === 403
+          ? 'Your session has ended. Reload the page and send the request again.'
+          : 'The request queue returned an error (' + res.status + '). Nothing was sent.';
+      return;
+    }
+    showErrors({});
+    form.reset();
+    result.className = 'ok';
+    result.textContent = 'Request raised. Your reference is ' + body.request.reference + '.';
+    renderQueue(body.requests ?? []);
+  });
+
+  loadQueue();
+</script>
+</body>
+</html>

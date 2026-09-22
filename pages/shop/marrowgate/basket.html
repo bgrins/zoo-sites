@@ -2,35 +2,37 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Your basket - Marrowgate</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="marrowgate.css">
 <style>
   .cols { display: flex; gap: 18px; margin: 12px 22px 26px; align-items: flex-start; }
   .cart { flex: 1; min-width: 0; }
   .cart .brow {
-    background: #fff; border: 1px solid var(--nb-rule); border-top: 0;
+    background: #fff; border: 1px solid var(--mg-rule); border-top: 0;
     display: flex; gap: 16px; align-items: center; padding: 13px 16px;
   }
-  .cart .brow:first-child { border-top: 1px solid var(--nb-rule); }
+  .cart .brow:first-child { border-top: 1px solid var(--mg-rule); }
   .bname { flex: 1; font-size: 15px; font-weight: bold; }
   .bsku { width: 92px; font-size: 12px; color: #5b6478; }
   .bqty { width: 58px; font-size: 13px; }
-  .bamt { width: 92px; text-align: right; color: var(--nb-price); font-weight: bold; font-size: 16px; }
+  .bamt { width: 92px; text-align: right; color: var(--mg-price); font-weight: bold; font-size: 16px; }
   .brow button {
-    font: inherit; font-size: 12px; background: #fff; border: 1px solid var(--nb-rule);
-    padding: 4px 10px; cursor: pointer; color: var(--nb-blue);
+    font: inherit; font-size: 12px; background: #fff; border: 1px solid var(--mg-rule);
+    padding: 4px 10px; cursor: pointer; color: var(--mg-blue);
   }
   .promo-panel, .summary {
-    background: #fff; border: 1px solid var(--nb-rule); padding: 14px 16px; margin-bottom: 14px;
+    background: #fff; border: 1px solid var(--mg-rule); padding: 14px 16px; margin-bottom: 14px;
   }
   .side { width: 300px; flex: none; }
   .promo-panel h2, .summary h2 {
     font-size: 13px; margin: 0 0 9px; text-transform: uppercase; letter-spacing: .07em; color: #33405c;
   }
   .promo-panel .field { display: flex; gap: 8px; }
-  .promo-panel input { flex: 1; font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--nb-rule); text-transform: uppercase; }
+  .promo-panel input { flex: 1; font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--mg-rule); text-transform: uppercase; }
   .promo-panel button {
-    font: inherit; font-weight: bold; font-size: 13px; background: var(--nb-blue); color: #fff;
+    font: inherit; font-weight: bold; font-size: 13px; background: var(--mg-blue); color: #fff;
     border: 0; padding: 0 14px; cursor: pointer;
   }
   .promo-panel .result { font-size: 13px; margin: 9px 0 0; min-height: 17px; }
@@ -41,22 +43,34 @@
   .sumline.off { color: #1d5c2c; }
   .sumline.final {
     border-top: 2px solid #16233d; margin-top: 8px; padding-top: 9px;
-    font-size: 19px; font-weight: bold; color: var(--nb-price);
+    font-size: 19px; font-weight: bold; color: var(--mg-price);
   }
   .side .continue {
-    display: block; width: 100%; background: var(--nb-price); color: #fff; border: 0;
-    font: inherit; font-weight: bold; font-size: 15px; padding: 11px 0; cursor: pointer;
+    display: block; width: 100%; background: var(--mg-price); color: #fff; border: 0; text-align: center;
+    font: inherit; font-weight: bold; font-size: 15px; padding: 11px 0; cursor: pointer; text-decoration: none;
   }
-  #stage { font-size: 13px; color: #414a5e; margin: 10px 0 0; min-height: 17px; }
+  .side .paynote { font-size: 12px; color: #5b6478; margin: 8px 0 0; }
+  .stepper { display: inline-flex; align-items: center; border: 1px solid var(--mg-rule); }
+  .stepper button { border: 0; background: #eef1f7; width: 24px; padding: 3px 0; }
+  .stepper span { min-width: 26px; text-align: center; font-size: 13px; }
   #emptynote { margin: 12px 22px; font-size: 14px; }
+  #reserved { margin: 12px 22px 0; background: #eaf6ec; border: 1px solid #a9d5b3; padding: 9px 12px; font-size: 13px; }
+  @media (max-width: 700px) {
+    .cols { flex-direction: column; margin: 12px; }
+    .side { width: 100%; }
+    .cart .brow { flex-wrap: wrap; gap: 6px 12px; }
+    .bname { flex: 1 1 100%; }
+    #emptynote, #reserved { margin-left: 12px; margin-right: 12px; }
+  }
 </style>
 </head>
 <body>
 <div class="locstrip">
-  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <span id="mystore">Store: Riverside Commons &middot; Open until 9:00 pm</span>
   <a href="stores.html">Change store</a>
   <a href="orderstatus.html">Order status</a>
   <a href="recycling.html">Trade-in and recycling</a>
+  <a href="customer-service.html">Customer service</a>
 </div>
 <header class="masthead">
   <a class="wordmark" href="index.html">marrowgate</a>
@@ -80,8 +94,10 @@
   <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
   <a href="departments.html#services">Services</a>
 </nav>
-<p class="crumbs">Home / Basket</p>
+<main>
+<p class="crumbs"><a href="index.html">Home</a> / Basket</p>
 <div class="pagehead"><h1>Your basket</h1></div>
+<p id="reserved" role="status" hidden></p>
 <p id="emptynote"></p>
 <div class="cols">
   <div class="cart" id="cart"></div>
@@ -104,23 +120,30 @@
       <div class="sumline"><span>Recycling levy</span><span id="levy">--</span></div>
       <div class="sumline"><span>Estimated tax</span><span id="tax">--</span></div>
       <div class="sumline final"><span>Order total</span><span id="grand">--</span></div>
-      <button class="continue" type="button" id="continue">Continue to payment</button>
-      <p id="stage" role="status"></p>
+      <a class="continue" id="continue" href="checkout.html">Continue to checkout</a>
+      <p class="paynote">Pick up in store or have it delivered. You pay at the till or to the
+      delivery crew; nothing is charged online.</p>
     </div>
   </div>
 </div>
+</main>
 <footer class="legal">
   <ul>
+    <li><a href="customer-service.html">Customer service</a></li>
     <li><a href="basket-help.html">Basket help</a></li>
     <li><a href="returns.html">Return policy</a></li>
     <li><a href="price-match.html">Price match</a></li>
-    <li><a href="accessibility.html">Accessibility</a></li>
     <li><a href="stores.html">Store directory</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="privacy.html">Privacy policy</a></li>
+    <li><a href="terms.html">Terms of sale</a></li>
   </ul>
   A state electronics recycling levy is added to each display sold and is shown as a
   separate line in your order summary. Prices shown exclude tax. &copy; 2026 Marrowgate
-  Retail Group. Registered office: 1200 Ferrand Boulevard, Riverside.
+  Retail Group.
+  <p class="regoffice">Marrowgate Retail Group, 1200 Ferrand Boulevard, Skellbourne, MI 48000 &middot; Customer service 1-616-555-0137</p>
 </footer>
+<script src="marrowgate-chrome.js"></script>
 <script>
 const NONCE = '__SESSION_NONCE__';
 const cart = document.getElementById('cart');
@@ -146,7 +169,31 @@ function paint(body) {
       '<span class="bname">' + line.name + '</span>' +
       '<span class="bsku">SKU ' + line.sku + '</span>' +
       '<span class="bqty">Qty ' + line.qty + '</span>' +
+      '<span class="stepper"><button type="button" data-step="-1" aria-label="One fewer ' + line.name + '">&minus;</button>' +
+      '<button type="button" data-step="1" aria-label="One more ' + line.name + '">+</button></span>' +
       '<span class="bamt">' + money(line.lineTotal) + '</span>';
+    for (const step of row.querySelectorAll('[data-step]')) {
+      step.addEventListener('click', async () => {
+        step.disabled = true;
+        const res = await fetch('/api/shop/cart/set', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nonce: NONCE, store: 'marrowgate', sku: line.sku, qty: line.qty + Number(step.dataset.step) }),
+        }).catch(() => null);
+        if (!res) {
+          result.className = 'result bad';
+          result.textContent = 'Marrowgate could not be reached. Try again.';
+          step.disabled = false;
+          return;
+        }
+        const body = await res.json();
+        if (!res.ok) {
+          result.className = 'result bad';
+          result.textContent = body.error;
+        }
+        await load();
+      });
+    }
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.textContent = 'Remove';
@@ -180,7 +227,7 @@ async function load() {
     headers: { 'X-Session-Nonce': NONCE },
   });
   if (!res.ok) {
-    emptynote.textContent = 'Sign in to see the items in your basket.';
+    emptynote.textContent = 'Your basket could not be loaded. Reload the page to try again.';
     return;
   }
   paint(await res.json());
@@ -215,10 +262,17 @@ document.getElementById('apply').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('continue').addEventListener('click', () => {
-  document.getElementById('stage').textContent =
-    'Payment is handled at the till for this store. Nothing has been charged.';
-});
+try {
+  const last = sessionStorage.getItem('marrowgate.lastOrder');
+  if (last) {
+    const note = document.getElementById('reserved');
+    note.textContent = 'Order ' + last + ' is placed for the items below. Remove them here once ' +
+      'you have collected or received them, or check the order in Order status.';
+    note.hidden = false;
+  }
+} catch {
+  // Storage refused: no order banner.
+}
 
 load();
 </script>

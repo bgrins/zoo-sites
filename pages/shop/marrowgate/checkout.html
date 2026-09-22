@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkout - Marrowgate</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="marrowgate.css">
+<style>
+  .mgform label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #5b6478; margin: 10px 0 3px; }
+  .mgform input, .mgform select { width: 100%; max-width: 340px; font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--mg-rule); background: #fff; }
+  .mgform button { display: block; margin-top: 14px; font: inherit; font-weight: bold; font-size: 14px;
+    background: var(--mg-blue); color: #fff; border: 0; padding: 10px 18px; cursor: pointer; }
+  .mgform button[disabled] { background: #9aa6c2; cursor: default; }
+  .verdict { font-size: 13px; margin-top: 12px; min-height: 17px; }
+  .verdict.bad { color: #8f1220; font-weight: bold; }
+  .verdict.good { color: #1d5c2c; font-weight: bold; }
+  .cols { display: flex; gap: 18px; margin: 12px 22px 26px; align-items: flex-start; }
+  .main { flex: 1; min-width: 0; }
+  .panel { background: #fff; border: 1px solid var(--mg-rule); padding: 14px 16px; margin-bottom: 14px; }
+  .panel h2 { font-size: 13px; margin: 0 0 9px; text-transform: uppercase; letter-spacing: .07em; color: #33405c; }
+  .panel p { font-size: 13px; margin: 0 0 6px; }
+  .mgform .choice { display: block; font-size: 14px; margin: 6px 0; text-transform: none; letter-spacing: 0; color: inherit; }
+  .mgform .choice input { width: auto; margin-right: 6px; }
+  .row3 { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row3 > div { flex: 1; min-width: 110px; }
+  .side { width: 300px; flex: none; }
+  .sumline { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; gap: 12px; }
+  .sumline.final { border-top: 2px solid #16233d; margin-top: 8px; padding-top: 9px; font-size: 19px; font-weight: bold; color: var(--mg-price); }
+  #place { width: 100%; max-width: none; background: var(--mg-price); font-size: 15px; }
+  #done h2 { color: #1d5c2c; }
+  #orderno { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 20px; font-weight: bold; margin: 6px 0 10px; }
+  @media (max-width: 700px) { .cols { flex-direction: column; margin: 12px; } .side { width: 100%; } }
+</style>
+</head>
+<body>
+<div class="locstrip">
+  <span id="mystore">Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <a href="stores.html">Change store</a>
+  <a href="orderstatus.html">Order status</a>
+  <a href="recycling.html">Trade-in and recycling</a>
+  <a href="customer-service.html">Customer service</a>
+</div>
+<header class="masthead">
+  <a class="wordmark" href="index.html">marrowgate</a>
+  <form class="finder" action="search.html" method="get">
+    <input name="q" aria-label="Search Marrowgate" placeholder="What can we help you find today?">
+    <button type="submit">Search</button>
+  </form>
+  <div class="acct">
+    <a href="account.html">My Marrowgate</a>
+    <a href="promos.html">Offers</a>
+    <a href="basket.html">Basket</a>
+  </div>
+</header>
+<nav class="deptbar" aria-label="Departments">
+  <a href="departments.html#tv">TV &amp; Home Theater</a>
+  <a href="departments.html#computers">Computers &amp; Tablets</a>
+  <a href="index.html">Monitors</a>
+  <a href="departments.html#audio">Audio</a>
+  <a href="departments.html#smarthome">Smart Home</a>
+  <a href="departments.html#cameras">Cameras</a>
+  <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
+  <a href="departments.html#services">Services</a>
+</nav>
+<main>
+<p class="crumbs"><a href="index.html">Home</a> / <a href="basket.html">Basket</a> / Checkout</p>
+<div class="pagehead"><h1>Checkout</h1></div>
+<p id="emptynote" class="tally" hidden>Your basket is empty. <a href="index.html">Shop monitors</a>.</p>
+<div class="cols" id="checkout" hidden>
+  <div class="main">
+    <form class="mgform" id="orderform" novalidate>
+      <div class="panel">
+        <h2>How do you want it?</h2>
+        <label class="choice"><input type="radio" name="fulfilment" value="pickup" checked> Pick up at <span id="pickupstore">Riverside Commons</span> (free, pay at the till)</label>
+        <label class="choice"><input type="radio" name="fulfilment" value="delivery"> Deliver to my address (free, pay the crew by card)</label>
+        <p><a href="stores.html">Change store</a></p>
+      </div>
+      <div class="panel">
+        <h2>Contact</h2>
+        <label for="name">Full name</label>
+        <input id="name" autocomplete="name">
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="email">
+        <label for="phone">Phone</label>
+        <input id="phone" type="tel" autocomplete="tel">
+      </div>
+      <div class="panel" id="addresspanel" hidden>
+        <h2>Delivery address</h2>
+        <label for="street">Street address</label>
+        <input id="street" autocomplete="address-line1">
+        <div class="row3">
+          <div><label for="city">City</label><input id="city" autocomplete="address-level2"></div>
+          <div><label for="state">State</label><input id="state" maxlength="2" autocomplete="address-level1" placeholder="MI"></div>
+          <div><label for="zip">ZIP code</label><input id="zip" inputmode="numeric" maxlength="5" autocomplete="postal-code"></div>
+        </div>
+      </div>
+      <div class="panel" id="planpanel" hidden>
+        <h2>Protection plan</h2>
+        <label class="choice"><input type="checkbox" id="plan"> Add two extra years of cover, $29.99 per monitor</label>
+        <p>Covers breakdowns and dead pixels after the maker's warranty ends. Optional.</p>
+      </div>
+    </form>
+  </div>
+  <div class="side">
+    <div class="panel">
+      <h2>Review your order</h2>
+      <div id="lines"></div>
+      <div class="sumline"><span>Subtotal</span><span id="sub">--</span></div>
+      <div id="offrow"></div>
+      <div class="sumline"><span>Recycling levy</span><span id="levy">--</span></div>
+      <div class="sumline" id="planrow" hidden><span>Protection plan</span><span id="plancost">--</span></div>
+      <div class="sumline"><span>Estimated tax</span><span id="tax">--</span></div>
+      <div class="sumline final"><span>Order total</span><span id="grand">--</span></div>
+      <div class="mgform"><button type="button" id="place">Place order</button></div>
+      <p class="verdict" id="verdict" role="status"></p>
+      <p style="font-size:12px;color:#5b6478">Nothing is charged online. See the
+      <a href="terms.html">terms of sale</a>.</p>
+    </div>
+  </div>
+</div>
+<div class="cols" id="done" hidden>
+  <div class="main panel">
+    <h2>Order placed</h2>
+    <p>Your order number is</p>
+    <div id="orderno"></div>
+    <p id="donetext"></p>
+    <p>Check it any time from <a href="orderstatus.html">Order status</a> with the order
+    number and your email.</p>
+  </div>
+</div>
+</main>
+<footer class="legal">
+  <ul>
+    <li><a href="customer-service.html">Customer service</a></li>
+    <li><a href="basket-help.html">Basket help</a></li>
+    <li><a href="returns.html">Return policy</a></li>
+    <li><a href="price-match.html">Price match</a></li>
+    <li><a href="stores.html">Store directory</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="privacy.html">Privacy policy</a></li>
+    <li><a href="terms.html">Terms of sale</a></li>
+  </ul>
+  A state electronics recycling levy is added to each display sold. Prices shown exclude tax. &copy; 2026 Marrowgate Retail Group.
+  <p class="regoffice">Marrowgate Retail Group, 1200 Ferrand Boulevard, Skellbourne, MI 48000 &middot; Customer service 1-616-555-0137</p>
+</footer>
+<script src="marrowgate-chrome.js"></script>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const money = (n) => '$' + Number(n).toFixed(2);
+const verdict = document.getElementById('verdict');
+const store = window.marrowgateStore();
+document.getElementById('pickupstore').textContent = store.name;
+let basket = null;
+
+function planCost() {
+  if (!document.getElementById('plan').checked || !basket) return 0;
+  const units = basket.lines.reduce((n, l) => n + (l.monitor ? l.qty : 0), 0);
+  return Math.round(29.99 * units * 100) / 100;
+}
+
+function paint() {
+  const lines = document.getElementById('lines');
+  lines.replaceChildren();
+  for (const line of basket.lines) {
+    const row = document.createElement('div');
+    row.className = 'sumline';
+    const name = document.createElement('span');
+    name.textContent = line.qty + ' x ' + line.name;
+    const amt = document.createElement('span');
+    amt.textContent = money(line.lineTotal);
+    row.append(name, amt);
+    lines.appendChild(row);
+  }
+  const plan = planCost();
+  const planTax = Math.round(plan * basket.taxRate * 100) / 100;
+  document.getElementById('sub').textContent = money(basket.subtotal);
+  document.getElementById('offrow').innerHTML = basket.coupon
+    ? '<div class="sumline off"><span>Code ' + basket.coupon.code + '</span><span>-' + money(basket.discount) + '</span></div>'
+    : '';
+  document.getElementById('levy').textContent = money(basket.levy);
+  document.getElementById('planrow').hidden = !plan;
+  document.getElementById('plancost').textContent = money(plan);
+  document.getElementById('tax').textContent = money(basket.tax + planTax);
+  document.getElementById('grand').textContent = money(basket.total + plan + planTax);
+}
+
+(async () => {
+  try {
+    const res = await fetch('/api/shop/cart?store=marrowgate', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) throw new Error('basket ' + res.status);
+    basket = await res.json();
+  } catch {
+    document.getElementById('emptynote').textContent =
+      'Your basket could not be loaded. Reload the page to try again.';
+    document.getElementById('emptynote').hidden = false;
+    return;
+  }
+  if (!basket.lines.length) {
+    document.getElementById('emptynote').hidden = false;
+    return;
+  }
+  document.getElementById('planpanel').hidden = !basket.lines.some((l) => l.monitor);
+  paint();
+  document.getElementById('checkout').hidden = false;
+})();
+
+for (const radio of document.querySelectorAll('input[name="fulfilment"]')) {
+  radio.addEventListener('change', () => {
+    document.getElementById('addresspanel').hidden =
+      document.querySelector('input[name="fulfilment"]:checked').value !== 'delivery';
+  });
+}
+document.getElementById('plan').addEventListener('change', paint);
+
+document.getElementById('place').addEventListener('click', async () => {
+  const place = document.getElementById('place');
+  const value = (id) => document.getElementById(id).value.trim();
+  verdict.className = 'verdict';
+  verdict.textContent = '';
+  place.disabled = true;
+  try {
+    const res = await fetch('/api/marrowgate/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nonce: NONCE,
+        fulfilment: document.querySelector('input[name="fulfilment"]:checked').value,
+        store: store.id,
+        name: value('name'),
+        email: value('email'),
+        phone: value('phone'),
+        street: value('street'),
+        city: value('city'),
+        state: value('state'),
+        zip: value('zip'),
+        plan: document.getElementById('plan').checked,
+      }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      verdict.className = 'verdict bad';
+      verdict.textContent = body.error ?? 'The order could not be placed.';
+      place.disabled = false;
+      return;
+    }
+    try {
+      sessionStorage.setItem('marrowgate.lastOrder', body.number);
+    } catch {
+      // Storage refused: the basket just will not show the order banner.
+    }
+    document.getElementById('checkout').hidden = true;
+    document.getElementById('orderno').textContent = body.number;
+    document.getElementById('donetext').textContent =
+      body.message + ' Order total ' + money(body.total) + '.';
+    document.getElementById('done').hidden = false;
+  } catch {
+    verdict.className = 'verdict bad';
+    verdict.textContent = 'Marrowgate could not be reached. Check your connection and try again.';
+    place.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

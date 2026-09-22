@@ -4,21 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Move requests, Ostmark House &mdash; Cadre Workplace</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="cadre.css">
 </head>
 <body>
-<div class="topbar">
-  <span class="wordmark">Cadre <span>Workplace</span></span>
-  <nav class="tabs">
+<header class="topbar">
+  <a class="wordmark" href="index.html">Cadre <span>Workplace</span></a>
+  <nav class="tabs" aria-label="Console">
     <a href="index.html">Space plan</a>
-    <a class="here" href="moves.html">Move requests</a>
+    <a class="here" aria-current="page" href="moves.html">Move requests</a>
     <a href="standards.html">Workplace standards</a>
+    <a href="support.html">Help</a>
   </nav>
   <span class="operator">Halverd Estates Management</span>
-</div>
+  <details class="user">
+    <summary>M. Vesquier &middot; Record reader</summary>
+    <div class="menu">
+      <a href="access.html">Your role and access</a>
+      <a href="signout.html">Signing out</a>
+    </div>
+  </details>
+</header>
 <div class="crumbs">Portfolio / Ostmark House / Move requests</div>
 
-<div class="page">
+<main class="page">
   <h1>Move requests</h1>
   <p class="hint">Tickets raised against Ostmark House in the current quarter. Closing a ticket does
   not update the sheet; Estates CAD reissues the sheet at the end of each quarter, and the space
@@ -69,7 +78,7 @@
     </tr>
     <tr>
       <td>FM-4491</td><td>11 Jun</td><td>SW-4</td>
-      <td>Two hoteling desks removed from the west run, floor box capped.</td>
+      <td>Two hotelling desks removed from the west run, floor box capped.</td>
       <td class="state">Closed</td>
     </tr>
     <tr>
@@ -83,17 +92,18 @@
   <p class="hint">Tickets are raised through the Estates helpdesk, not in this console. Quote the
   building, the level and the room code from the sheet. Tickets that name a person rather than a
   room code are returned to the requester.</p>
-</div>
+</main>
 
 <footer>
   <p>Cadre Workplace 4.6 &middot; space records are the system of record for occupancy reporting.</p>
-  <p>Halverd Estates Management, 14 Ostmark Row, Denhollow DH2 8QP &middot;
+  <p>Halverd Estates Management, 14 Ostmark Row, Denhollow DQ3 5JX &middot;
   <a href="standards.html">Workplace standards</a> &middot;
   <a href="index.html">Space plan</a> &middot;
   <a href="booking.html">Booking space</a> &middot;
   <a href="access.html">Console access</a> &middot;
   <a href="support.html">Service desk</a> &middot; estates.support@halverd-estates.example</p>
-  <p>&copy; 2026 Halverd Estates Management Ltd. Registered in Denhollow, company 00000000.</p>
+  <p>&copy; 2026 Halverd Estates Management Ltd. Registered in England and Wales, company number 00000000.
+  &middot; <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of use</a></p>
 </footer>
 </body>
 </html>

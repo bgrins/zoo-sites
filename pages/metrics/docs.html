@@ -4,17 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Docs &middot; Halbeck</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="halbeck.css">
 </head>
 <body>
 <div class="bar">
-  <span class="logo">Hal<i>beck</i></span>
-  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <a class="logo" href="index.html">halbeck</a>
+  <button class="wsw" type="button"><span>workspace</span> Skelvane Media</button>
   <span class="spacer"></span>
   <a class="lnk" href="sources.html">Data sources</a>
   <a class="lnk" href="alerts.html">Alerts</a>
   <a class="lnk" href="docs.html">Docs</a>
-  <span class="who">NM</span>
+  <button class="who" type="button" aria-label="Account menu for r.calloway">RC</button>
 </div>
 
 <div class="shell">
@@ -40,19 +41,19 @@
     <p class="crumbs">Halbeck / Docs</p>
     <h1>Docs</h1>
     <p class="sub">The short guide to reading a Halbeck workspace. Product-wide documentation;
-    nothing here is specific to Northgate Media.</p>
+    nothing here is specific to Skelvane Media.</p>
 
     <section class="panel">
       <header><h2>Reading a dashboard</h2></header>
       <div class="pad">
         <dl class="defn">
           <dt>Views</dt>
-          <dd>Every series panel offers a chart and a table of the same data; the toggle is in
-          the panel header. The table is the citable form &mdash; figures in it match exports
-          exactly.</dd>
+          <dd>Every series panel shows its data as a table. Panels that also draw a chart carry a
+          Chart/Table toggle in the panel header. The table is the citable form &mdash; figures in
+          it match exports exactly.</dd>
           <dt>Exports</dt>
-          <dd>Export CSV in a panel header downloads the series behind that panel. Scheduled
-          exports are configured per saved view.</dd>
+          <dd>Export CSV in a panel header downloads the data behind that panel. Scheduled
+          exports are configured per saved view by its owner.</dd>
           <dt>Freshness</dt>
           <dd>A panel whose source has not landed a batch inside its window is held back rather
           than shown stale; see <a href="sources.html">Data sources</a> for connector health.</dd>
@@ -92,12 +93,13 @@
 </div>
 
 <footer class="foot">
-  <span>Halbeck Analytics Ltd</span>
+  <span>&copy; 2026 Halbeck Analytics Ltd</span>
   <a href="status.html">Status</a>
   <a href="privacy.html">Privacy notice</a>
   <a href="terms.html">Terms of service</a>
   <a href="support.html">Support</a>
-  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+  <span class="push">Registered in England and Wales, company number 00000000 &middot; 14 Tannery Yard, Thrushby TY4 7HB &middot; support@halbeck.example</span>
 </footer>
+<script src="halbeck.js"></script>
 </body>
 </html>

@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard - Kelsmere CRM</title>
 <link rel="stylesheet" href="crm.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="topbar">
-  <span class="brand">Kelsmere CRM</span>
+  <a class="brand" href="./"><span class="mark" aria-hidden="true">K</span>Kelsmere CRM</a>
   <span class="ws">wkspc northfield-supply &middot; fiscal 2026 &middot; role: analyst</span>
   <span class="who">dana.kessler@northfield.example</span>
 </header>
@@ -40,15 +41,14 @@
     <section class="card">
       <h2>Release notes 3.14</h2>
       <p><a href="orders.html">Orders</a> and <a href="customers.html">Customers</a> now run on the
-      v3 grid engine. Column widths and sort order persist per operator.</p>
-      <p class="muted">Saved views are read-only on shared workspace links.</p>
+      v3 grid engine. Click a column heading to sort; account ids on an order open the account.</p>
+      <p class="muted">Sort order is kept per operator, or for the browser session on a shared link.</p>
     </section>
     <section class="card">
       <h2>Region rollup</h2>
-      <p class="warn">Rebuilding</p>
-      <p>This report was retired with the v3 warehouse migration and region
-      totals are no longer published here. Compile them from Orders and
-      Customers until the replacement ships.</p>
+      <p><span class="warn">Retired</span></p>
+      <p>Retired with the v3 warehouse migration. See <a href="reports.html">Reports</a>
+      for the catalogue.</p>
     </section>
     <section class="card">
       <h2>Order feed (tail)</h2>
@@ -68,10 +68,14 @@
   </div>
 </main>
 <footer class="siteftr">
-  Kelsmere CRM &middot; workspace data is confidential to northfield-supply.
-  Support: help.kelsmerecrm.example &middot; Status &middot; Keyboard shortcuts &middot;
-  Terms &middot; Privacy &middot; <a href="guide.html">Operator guide</a> &middot;
-  <a href="glossary.html">Glossary</a> &middot; <a href="notices.html">Service notices</a>
+  Kelsmere CRM &middot; workspace data is confidential to northfield-supply &middot;
+  &copy; 2026 Kelsmere Software, Inc.<br>
+  Support: <a href="mailto:support@kelsmerecrm.example">support@kelsmerecrm.example</a> &middot;
+  <a href="status.html">Status</a> &middot; <a href="shortcuts.html">Keyboard shortcuts</a> &middot;
+  <a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  <a href="guide.html">Operator guide</a> &middot; <a href="glossary.html">Glossary</a> &middot;
+  <a href="notices.html">Service notices</a>
 </footer>
+<script src="crm.js"></script>
 </body>
 </html>

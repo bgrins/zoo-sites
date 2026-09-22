@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gadgetron | Search results</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="gadgetron.css">
 <style>
   .crumbline { background: #fff5e0; border-bottom: 1px solid #e8d49c; padding: 5px 14px; font-size: 12px; }
@@ -12,8 +14,8 @@
 </style>
 </head>
 <body>
-<div class="railbar">
-  <span class="mark">Gadgetron</span>
+<header class="railbar">
+  <a class="mark" href="index.html">Gadgetron</a>
   <span class="tagline">Spec index and price engine</span>
   <form action="search.html" method="get">
     <input id="finder" name="q" aria-label="Search part numbers or models" placeholder="Model, brand or part no.">
@@ -21,7 +23,7 @@
   </form>
   <span class="who">Guest &middot; <a href="signin.html">sign in</a> &middot;
     <a href="order-list.html">order list</a></span>
-</div>
+</header>
 <nav class="tabs" aria-label="Sections">
   <a href="index.html">Catalog</a>
   <a href="compare.html">Compare</a>
@@ -31,7 +33,7 @@
   <a href="bulk-quote.html">Bulk quote</a>
 </nav>
 <div class="crumbline">Catalog &rsaquo; Search results</div>
-<div class="layout">
+<main class="layout">
   <section class="sheet">
     <div class="statline">
       <h1>Search results</h1>
@@ -48,34 +50,34 @@
       <thead>
         <tr>
           <th>Model</th>
-          <th class="num">Diag in</th>
-          <th>Native res</th>
-          <th>Class</th>
-          <th class="num">Rating</th>
+          <th>Part no.</th>
+          <th>Description</th>
           <th>Stock</th>
           <th class="num">Price USD</th>
+          <th>Order</th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
     </table>
     <p class="rowsnote" id="rowsnote"></p>
   </section>
-</div>
+</main>
 <footer class="legalstrip">
   <a href="warehouse-policy.html#status">Warehouse status codes</a> &middot;
   <a href="warehouse-policy.html#returns">Return window</a> &middot;
   <a href="methodology.html">Price engine methodology</a> &middot;
   <a href="seller-terms.html">Marketplace seller terms</a> &middot;
   <a href="service-status.html">Service status history</a> &middot;
+  <a href="terms.html">Terms of sale</a> &middot;
   <a href="privacy.html">Privacy notice</a> &middot;
   <a href="support.html">Support desk</a><br>
   Listings are supplied by marketplace sellers; Gadgetron is not the seller of record for
   marketplace items. Specifications are provided by the manufacturer. &copy; 2026 Gadgetron
-  Trading Co.
+  Trading Co., 4180 Halverson Way, Suite 300, Druvenport, OH 43000.
 </footer>
 <script src="gadgetron-data.js"></script>
 <script>
-const MIN_TERM = 3;
+const MIN_TERM = 2;
 const NATIVE = { '1080p': '1920x1080', '1440p': '2560x1440', '4K': '3840x2160' };
 const CLASS_LABEL = { '1080p': 'FHD', '1440p': 'QHD', '4K': 'UHD-4K' };
 const OK_ICON =
@@ -115,16 +117,30 @@ if (term.length < MIN_TERM) {
     'box above, then submit it.'
   );
 } else {
-  const needle = term.toLowerCase();
-  const hits = GADGETRON_ROWS.filter((row) => row.model.toLowerCase().includes(needle));
+  const WORDS = { '1080p': 'fhd full hd 1080p', '1440p': 'qhd quad hd 1440p', '4K': 'uhd 4k uhd-4k 2160p' };
+  const tokens = term.toLowerCase().split(/[\s,]+/).filter(Boolean)
+    .map((t) => t.replace(/^(\d+)(?:in|inch|")$/, '$1'));
+  const has = (text) => tokens.every((t) => text.toLowerCase().includes(t));
+  const hits = [
+    ...GADGETRON_ROWS.map((row) => ({
+      ...row,
+      text: [row.model, row.part, row.diag + ' in', NATIVE[row.res], WORDS[row.res], 'monitor monitors'].join(' '),
+      desc: row.diag + ' in ' + CLASS_LABEL[row.res] + ' ' + NATIVE[row.res] + ', IPS, rated ' + row.rating.toFixed(1),
+    })),
+    ...GADGETRON_ACCESSORIES.map((row) => ({
+      ...row,
+      text: [row.model, row.part, row.blurb, 'dock docks docking hub hubs station'].join(' '),
+      desc: row.blurb,
+    })),
+  ].filter((row) => has(row.text));
   document.title = 'Gadgetron | Search results for ' + term;
   matched.textContent =
     hits.length + ' result' + (hits.length === 1 ? '' : 's') + ' for "' + term + '"';
   if (!hits.length) {
     showNotice(
       'No part number matches',
-      'No model in the monitor spec index contains that text. Check the spelling, or ' +
-      'search on a shorter fragment of the part number.'
+      'Nothing in the index matches every word of that search. Check the part number, ' +
+      'or search on a brand, a diagonal such as 27, or a class such as QHD.'
     );
   } else {
     document.getElementById('rows').innerHTML = hits
@@ -132,21 +148,22 @@ if (term.length < MIN_TERM) {
         (row) =>
           '<tr>' +
           '<td class="model">' + esc(row.model) + '</td>' +
-          '<td class="num">' + row.diag + '</td>' +
-          '<td class="mono">' + NATIVE[row.res] + '</td>' +
-          '<td>' + CLASS_LABEL[row.res] + '</td>' +
-          '<td class="num">' + row.rating.toFixed(1) + '</td>' +
+          '<td class="mono">' + esc(row.part) + '</td>' +
+          '<td>' + esc(row.desc) + '</td>' +
           '<td class="stock">' + (row.stock === 'y' ? OK_ICON : NO_ICON) +
           '<span class="offscreen">' +
           (row.stock === 'y' ? 'In stock' : 'Sold out online') + '</span></td>' +
           '<td class="price">' + row.price.toFixed(2) + '</td>' +
+          '<td class="order">' + (row.stock === 'y'
+            ? '<a href="order-list.html?part=' + encodeURIComponent(row.part) + '&amp;qty=1">Order</a>'
+            : '<a href="substitutions.html">See alternate</a>') + '</td>' +
           '</tr>'
       )
       .join('');
     document.getElementById('grid').hidden = false;
     rowsnote.textContent =
-      'Rows 1-' + hits.length + ' of ' + GADGETRON_ROWS.length + ' indexed SKUs. Prices ' +
-      'are per unit in USD, excluding tax and recycling levy.';
+      'Rows 1-' + hits.length + ' of ' + (GADGETRON_ROWS.length + GADGETRON_ACCESSORIES.length) +
+      ' indexed SKUs. Prices are per unit in USD, excluding tax and recycling levy.';
   }
 }
 </script>

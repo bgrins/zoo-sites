@@ -191,6 +191,10 @@ button.linky {
   color: #56687f;
 }
 
+.footlinks a { margin-left: 12px; }
+
+.shell.payfoot { margin-top: 0; }
+
 .legal {
   margin: 22px 4px 0;
   font-size: 11px;

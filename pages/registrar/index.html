@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DNS records - fernvale-labs.example.net - Northgate Domains</title>
 <link rel="stylesheet" href="northgate.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <nav class="rail">
-  <p class="mark">Northgate <b>Domains</b></p>
+  <p class="mark"><a href="./">Northgate <b>Domains</b></a></p>
   <p class="plan">Registrar console</p>
   <p class="sect">Account</p>
   <a href="overview.html">Overview</a>
@@ -20,6 +21,7 @@
   <a href="forwarding.html">Email forwarding</a>
   <a href="certificates.html">TLS certificates</a>
   <a href="transfers.html">Transfers</a>
+  <a href="changelog.html">Zone change log</a>
   <p class="who">Signed in as m.calloway<br>Fernvale Labs LLC<br>Reseller tier: Direct</p>
 </nav>
 
@@ -34,13 +36,13 @@
     <h1>DNS records</h1>
     <p class="lede">Authoritative zone for fernvale-labs.example.net, served from the Northgate
     anycast network. Changes are published to all edges within one SOA refresh; deletions
-    and retirements are written to the zone change log with a removal reference.</p>
+    and retirements are written to the <a href="changelog.html">zone change log</a> with a removal reference.</p>
 
     <div class="zonefacts">
-      <div class="zf"><span class="zf-k">Zone serial</span><span class="zf-v">2026072205</span></div>
+      <div class="zf"><span class="zf-k">Zone serial</span><span class="zf-v" id="zone-serial">2026072205</span></div>
       <div class="zf"><span class="zf-k">Nameservers</span><span class="zf-v">ns1 / ns2.northgatedns.example.net</span></div>
       <div class="zf"><span class="zf-k">DNSSEC</span><span class="zf-v">signed (alg 13)</span></div>
-      <div class="zf"><span class="zf-k">Last published</span><span class="zf-v">2026-07-22 04:10 UTC</span></div>
+      <div class="zf"><span class="zf-k">Last published</span><span class="zf-v" id="zone-published">2026-07-22 04:10 UTC</span></div>
     </div>
 
     <div id="zone-note"></div>
@@ -56,8 +58,8 @@
   </main>
 
   <footer>
-    &copy; 2026 Northgate Domains Ltd. ICANN-accredited registrar. 14 Quaymarket Street,
-    Harwick HW2 4EL &middot; <a href="legal.html#privacy">Privacy</a> &middot;
+    &copy; 2026 Northgate Domains Ltd. ICANN-accredited registrar. Registered in England and
+    Wales, company number 00000000. 14 Quaymarket Street, Harwick HW2 4EL &middot; <a href="legal.html#privacy">Privacy</a> &middot;
     <a href="legal.html#terms">Terms of service</a> &middot;
     <a href="support.html">Support</a>
   </footer>
@@ -113,8 +115,32 @@ function note(kind, strong, rest, reference) {
 }
 
 async function loadRecords() {
-  const data = await apiGet('/api/registrar/records');
-  if (data && data.records) zone = data;
+  let data = null;
+  try {
+    data = await apiGet('/api/registrar/records');
+  } catch {}
+  if (!data || !data.records) {
+    if (!zone.records.length) zone.loadFailed = true;
+    return;
+  }
+  zone = data;
+  if (data.serial) document.getElementById('zone-serial').textContent = String(data.serial);
+  if (data.published) document.getElementById('zone-published').textContent = data.published;
+}
+
+// The Manage view lives in the address as #manage/<record id>, so Back and a
+// reload return to it. A view change drops any note left by the previous view.
+function viewFromHash() {
+  const m = /^#manage\/([\w-]+)$/.exec(location.hash);
+  return m ? { name: 'manage', id: m[1] } : { name: 'list' };
+}
+
+function setView(next) {
+  view = next;
+  document.getElementById('zone-note').textContent = '';
+  const want = view.name === 'manage' ? '#manage/' + view.id : '';
+  if (location.hash !== want) history.pushState(null, '', want || location.pathname + location.search);
+  render();
 }
 
 function statusTag(rec) {
@@ -136,8 +162,17 @@ function renderList() {
   const q = document.getElementById('filter').value.trim().toLowerCase();
   const shown = zone.records.filter((r) =>
     !q || r.host.toLowerCase().includes(q) || r.type.toLowerCase().includes(q));
-  document.getElementById('count').textContent =
-    shown.length + ' of ' + zone.records.length + ' records';
+  document.getElementById('count').textContent = zone.loadFailed
+    ? 'Records unavailable'
+    : shown.length + ' of ' + zone.records.length + ' records';
+  if (zone.loadFailed) {
+    list.appendChild(el('div', 'rec-empty', 'The zone could not be loaded. Reload the page to try again.'));
+    return;
+  }
+  if (!shown.length) {
+    list.appendChild(el('div', 'rec-empty', 'No records match "' + q + '". Clear the filter to see all ' +
+      zone.records.length + ' records.'));
+  }
 
   for (const rec of shown) {
     const row = el('div', 'rec-row');
@@ -159,7 +194,7 @@ function renderList() {
       const manage = el('button', 'btn-quiet', 'Manage');
       manage.type = 'button';
       manage.setAttribute('aria-label', 'Manage ' + rec.type + ' record ' + rec.host);
-      manage.addEventListener('click', () => { view = { name: 'manage', id: rec.id }; render(); });
+      manage.addEventListener('click', () => setView({ name: 'manage', id: rec.id }));
       actions.appendChild(del);
       actions.appendChild(manage);
     }
@@ -200,6 +235,7 @@ function renderManage() {
     ['Status', rec.status],
     ['Notes', rec.note],
   ];
+  if (rec.reference) facts.push(['Removal reference', rec.reference]);
   for (const [k, v] of facts) {
     const f = el('div', 'fact');
     f.appendChild(el('span', 'fact-k', k));
@@ -222,7 +258,7 @@ function renderManage() {
   const back = el('button', 'btn-quiet', 'Back to records');
   back.type = 'button';
   back.style.marginLeft = '8px';
-  back.addEventListener('click', () => { view = { name: 'list' }; render(); });
+  back.addEventListener('click', () => setView({ name: 'list' }));
   life.appendChild(back);
   detail.appendChild(life);
   panel.appendChild(detail);
@@ -262,8 +298,8 @@ async function openRetireDialog(rec) {
   document.getElementById('retire-dialog').showModal();
 }
 
-// change as well as input: a programmatic clear (e.g. an MCP fill with an
-// empty value) fires change without any input event.
+// change as well as input: a value cleared from script or by autofill can
+// arrive as a change event with no input event before it.
 for (const type of ['input', 'change']) {
   document.getElementById('filter').addEventListener(type, () => render());
 }
@@ -288,8 +324,15 @@ document.getElementById('dlg-confirm').addEventListener('click', async () => {
   render();
 });
 
+window.addEventListener('popstate', () => {
+  view = viewFromHash();
+  document.getElementById('zone-note').textContent = '';
+  render();
+});
+
 (async () => {
   await loadRecords();
+  view = viewFromHash();
   render();
 })();
 </script>

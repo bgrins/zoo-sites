@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docs &middot; Kettleforge</title>
+<link rel="stylesheet" href="forge.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="masthead">
+  <a class="mark" href="./">Kettle<em>forge</em></a>
+  <nav>
+    <a href="./">Repositories</a>
+    <a href="pulls/">Pull requests</a>
+    <a href="anvil/">Anvil</a>
+    <a href="registry.html">Registry</a>
+  </nav>
+  <span class="who">signed in as <b>r.vandermolen</b></span>
+</header>
+
+<main class="wrap">
+  <div class="prhead">
+    <h1>Documentation</h1>
+    <div class="prmeta">
+      <span>How review, pipelines and the registry work on Kettleforge. For anything not covered, write to support@kettleforge.example.</span>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="main">
+      <div class="card" id="review">
+        <div class="cardhead">Reviewing a pull request</div>
+        <div class="body">
+          <p>Open the Files changed tab and use the plus button in a line's gutter to write a
+          comment on that line. Comments are staged, not published, until you submit the review
+          with a summary and a verdict: Comment, Approve or Request changes. A repository can
+          require a code owner's approval before Forge merge is enabled.</p>
+          <p>You can submit more than one review. The latest verdict from each reviewer is the one
+          Merge status shows.</p>
+        </div>
+      </div>
+
+      <div class="card" id="anvil">
+        <div class="cardhead">Anvil pipelines</div>
+        <div class="body">
+          <p>A pipeline runs on every push, from the definition in <code>.anvil/</code>. Jobs a
+          repository marks as required block Forge merge while they fail. Open a failing job from
+          the pull request's Checks tab to read its output.</p>
+        </div>
+      </div>
+
+      <div class="card" id="registry">
+        <div class="cardhead">Registry</div>
+        <div class="body">
+          <p>Pipelines publish container images and npm packages to the repository's registry.
+          Each version records the pipeline and commit that built it, so an artefact can be traced
+          back to its source.</p>
+        </div>
+      </div>
+
+      <div class="card" id="tokens">
+        <div class="cardhead">Tokens and access</div>
+        <div class="body">
+          <p>Access tokens are scoped to repositories and expire on a date you choose. A token is
+          shown once when it is created; store it then. See <a href="security.html">security</a> for
+          how tokens found in public repositories are revoked.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="sitefoot">
+  <div class="links">
+    <a href="status.html">Status</a>
+    <a href="docs.html">Docs</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a href="mailto:support@kettleforge.example">Contact support</a>
+    <a href="about.html">About</a>
+    <a href="plans.html">Plans</a>
+    <a href="security.html">Security</a>
+  </div>
+  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Vellinmouth VM4 3TR.
+  Registered in England and Wales, company number 00000000. &copy; 2026 Bellhollow Systems Ltd.</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — Draymere Depot Console</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --shell: #0e1216; --panel: #161c22; --panel-2: #1d252d;
+    --edge: #2b353f; --ink: #dfe6ec; --dim: #8c9aa6;
+    --frost: #6cc9e0; --frost-dim: #2e7f96;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--shell); color: var(--ink);
+    font-family: "IBM Plex Sans", "Fira Sans", "Noto Sans", "Liberation Sans", sans-serif;
+    font-size: 14px; line-height: 1.5; }
+  a { color: var(--frost); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .mono { font-family: "IBM Plex Mono", "Fira Mono", "DejaVu Sans Mono", monospace; }
+  header.strip { background: #090c0f; border-bottom: 2px solid var(--frost-dim);
+    display: flex; align-items: center; gap: 18px; padding: 10px 20px; }
+  .mark { font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #fff; }
+  .mark span { color: var(--frost); }
+  .unit { font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--dim);
+    border-left: 1px solid var(--edge); padding-left: 18px; }
+  .crumbs { padding: 10px 20px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #72808b; }
+  .crumbs .at { color: var(--dim); }
+  main { max-width: 1080px; margin: 0 auto; padding: 6px 20px 40px; }
+  .card { background: var(--panel); border: 1px solid var(--edge); }
+  .card > h1, .card > h2 { margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--edge);
+    background: var(--panel-2); font-size: 14px; font-weight: 600; letter-spacing: 0.4px; }
+  .card .inner { padding: 18px; }
+  .lede { margin: 0 0 16px; color: var(--dim); max-width: 62ch; }
+  .note { font-size: 12px; color: #7a8691; margin: 14px 0 0; }
+  footer.foot { border-top: 1px solid var(--edge); margin-top: 10px; padding: 18px 20px 30px;
+    color: #8a97a2; font-size: 11px; }
+  footer.foot .links { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+  footer.foot .links a { color: #b9c5cf; }
+  a.mark, a.mark:hover { text-decoration: none; }
+  .crumbs a { color: var(--dim); }
+  .mark, .unit, .card > h1, .card > h2, .inner h3 {
+    font-family: "DIN Alternate", "DIN Condensed", Bahnschrift, "D-DIN", "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+  }
+  @media (max-width: 720px) {
+    header.strip { flex-wrap: wrap; gap: 6px 14px; padding: 10px 14px; }
+    .crumbs { padding: 10px 14px; }
+    main { padding: 6px 12px 32px; }
+    footer.foot { padding: 16px 14px 26px; }
+  }
+  .field { margin-bottom: 16px; }
+  .flabel { display: block; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); margin-bottom: 6px; }
+  .field input { display: block; width: 100%; max-width: 320px; background: #0b0f13; border: 1px solid #3b4854; color: var(--ink); padding: 9px; font: inherit; }
+  .alert { border-left: 3px solid #e0685c; background: #211615; color: #f3b3ac; padding: 10px 14px; margin: 0 0 16px; font-size: 13px; max-width: 420px; }
+  button.go { background: var(--frost); border: 1px solid var(--frost); color: #14181c; font: inherit; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; padding: 10px 20px; cursor: pointer; }
+  button.go:hover { background: #9adcec; }
+</style>
+</head>
+<body>
+
+<header class="strip">
+  <a class="mark" href="signin.html">Dray<span>mere</span></a>
+  <div class="unit">Cold Chain Operations</div>
+</header>
+
+<div class="crumbs">Session &rsaquo; <span class="at">Sign in</span></div>
+
+<main>
+<section class="card">
+    <h1>Sign in &mdash; depot 41 console</h1>
+    <div class="inner">
+      <p class="lede">Use the operator code and PIN from your handheld. Codes are
+        personal; never sign in under another operator's code.</p>
+      <form id="signin" novalidate>
+        <div class="field">
+          <label class="flabel" for="operator">Operator code</label>
+          <input id="operator" name="operator" autocomplete="username" spellcheck="false" placeholder="op.surname">
+        </div>
+        <div class="field">
+          <label class="flabel" for="pin">PIN</label>
+          <input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="4">
+        </div>
+        <p class="alert" id="err" role="alert" hidden></p>
+        <button type="submit" class="go">Sign in</button>
+      </form>
+      <p class="note">Locked out? The depot manager resets PINs during office hours;
+        out of hours, call the regional operations desk on
+        <span class="mono">+44 1632 960 415</span>.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="links">
+    <a href="legal.html#privacy">Privacy notice</a>
+    <a href="legal.html#terms">Terms of service</a>
+    <a href="status.html">Service status</a>
+  </div>
+  <div>Copyright 2026 Draymere Cold Chain Limited. Registered in England and Wales,
+    company 00000000. Registered office: Unit 12, Skarnley Distribution Park,
+    Skarnley DK7 3RN. Support: support@draymere.example</div>
+</footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const err = document.getElementById('err');
+  document.getElementById('signin').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    err.hidden = true;
+    const operator = document.getElementById('operator').value.trim().toLowerCase();
+    const pin = document.getElementById('pin').value.trim();
+    const problem = !operator ? 'Enter your operator code.' : !/^\d{4}$/.test(pin) ? 'The PIN is four digits.' : '';
+    if (problem) {
+      err.textContent = problem;
+      err.hidden = false;
+      return;
+    }
+    try {
+      const res = await fetch('/api/draymere/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, operator, pin }),
+      });
+      const body = [401, 422, 423].includes(res.status) ? await res.json() : {};
+      err.textContent = body.error ||
+        'Sign-in did not reach the console. Reload this page and try again.';
+    } catch {
+      err.textContent = 'The console did not respond. Try again.';
+    }
+    err.hidden = false;
+  });
+</script>
+</body>
+</html>

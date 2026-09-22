@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Brindle Fig — Menu</title>
 <link rel="stylesheet" href="bistro.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   .mrow { display: flex; align-items: baseline; gap: 8px; margin: 14px 0 0; }
   .mname { font-size: 17px; white-space: nowrap; }
@@ -18,12 +20,23 @@
   }
   .orderbar a { color: var(--wine); }
   #menu .pending { text-align: center; color: var(--faded); font-style: italic; margin: 18px 0; }
+  .diet {
+    font-size: 11px; letter-spacing: 1px; color: var(--gold); margin-left: 6px;
+    vertical-align: 2px;
+  }
+  .counteronly { text-align: center; font-size: 13px; color: var(--faded); margin: 18px 0 0; }
+  .dietkey { text-align: center; font-size: 12px; color: var(--faded); margin: 10px 0 0; }
+  .dietkey a { color: var(--wine); }
+  @media (max-width: 520px) {
+    .mname { white-space: normal; }
+    .mrow { gap: 6px; }
+  }
 </style>
 </head>
 <body>
 <header class="masthead">
   <div class="est">Kitchen &amp; Counter · Est. 2011</div>
-  <h1>The Brindle Fig</h1>
+  <h1><a href="index.html">The Brindle Fig</a></h1>
   <div class="rulewrap"></div>
   <nav>
     <a href="index.html" class="on">Menu</a><span class="dot">·</span>
@@ -40,6 +53,25 @@
     <h2>Daytime Menu</h2>
     <p class="sizesnote">Prices shown medium / large. Every dish can be built to order.</p>
     <div id="menu"><p class="pending">Fetching today's card from the kitchen.</p></div>
+
+    <div class="course">Sides</div>
+    <div class="mrow"><span class="mname">Wood-oven bread, cultured butter<span class="diet">V</span></span><span class="leader"></span><span class="mprice">$4.50</span></div>
+    <div class="mrow"><span class="mname">Charred greens, lemon and chili<span class="diet">VG GF</span></span><span class="leader"></span><span class="mprice">$5.25</span></div>
+    <div class="mrow"><span class="mname">Rosemary potatoes<span class="diet">VG GF</span></span><span class="leader"></span><span class="mprice">$5.75</span></div>
+
+    <div class="course">Sweet</div>
+    <div class="mrow"><span class="mname">Brown butter fig cake<span class="diet">V</span></span><span class="leader"></span><span class="mprice">$6.50</span></div>
+    <div class="mrow"><span class="mname">Buttermilk panna cotta, honey<span class="diet">V GF</span></span><span class="leader"></span><span class="mprice">$6.25</span></div>
+
+    <div class="course">To Drink</div>
+    <div class="mrow"><span class="mname">Drip coffee</span><span class="leader"></span><span class="mprice">$3.25</span></div>
+    <div class="mrow"><span class="mname">Loose-leaf tea</span><span class="leader"></span><span class="mprice">$3.00</span></div>
+    <div class="mrow"><span class="mname">Fig leaf lemonade</span><span class="leader"></span><span class="mprice">$4.25</span></div>
+    <div class="mrow"><span class="mname">House red or white, by the glass</span><span class="leader"></span><span class="mprice">$9.00</span></div>
+
+    <p class="counteronly">Sides, sweets and drinks are ordered at the counter when you collect.</p>
+    <p class="dietkey">V vegetarian · VG vegan · GF made without gluten, though not free of
+    cross-contact. See <a href="allergens.html">allergens &amp; dietary</a>.</p>
     <div class="orderbar">
       Skip the queue: <a href="order.html">build your ticket online</a> and
       collect at the counter in about fifteen minutes.
@@ -48,12 +80,14 @@
 </main>
 
 <footer>
-  The Brindle Fig · 14 Waldron Lane · (555) 014-0180 · hello@brindlefig.example<br>
+  The Brindle Fig · 14 Waldron Lane · (503) 555-0180 · hello@brindlefig.example<br>
   <a href="hours.html">Hours &amp; directions</a> · Walk-ins welcome · No service charge<br>
   <a href="story.html">Our story</a> ·
   <a href="allergens.html">Allergens &amp; dietary</a> ·
-  <a href="parties.html">Private hire</a><br>
-  &copy; The Brindle Fig. All rights reserved.
+  <a href="parties.html">Private hire</a> ·
+  <a href="privacy.html">Privacy</a> ·
+  <a href="terms.html">Order-ahead terms</a><br>
+  &copy; 2026 Brindle Fig LLC. All rights reserved.
 </footer>
 
 <script>
@@ -68,7 +102,7 @@
       body = await res.json();
       if (!res.ok) throw new Error(body.error || 'menu unavailable');
     } catch {
-      box.innerHTML = '<p class="pending">The kitchen could not be reached. Refresh to try again.</p>';
+      box.innerHTML = '<p class="pending">The kitchen could not be reached, so the dish list is missing. Refresh to try again.</p>';
       return;
     }
     box.innerHTML = '';
@@ -87,6 +121,12 @@
         const name = document.createElement('span');
         name.className = 'mname';
         name.textContent = item.name;
+        if (item.diet && item.diet.length) {
+          const diet = document.createElement('span');
+          diet.className = 'diet';
+          diet.textContent = item.diet.join(' ');
+          name.append(diet);
+        }
         const leader = document.createElement('span');
         leader.className = 'leader';
         const price = document.createElement('span');

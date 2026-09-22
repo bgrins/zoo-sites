@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Boxelder Workspace — Files</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="boxelder.css">
 </head>
 <body>
 <header class="appbar">
-  <span class="brand"><span class="mark">bx</span><span class="name">Boxelder</span></span>
+  <a class="brand" href="./" title="Boxelder home"><span class="mark">bx</span><span class="name">Boxelder</span></a>
   <button class="workspace" type="button">Marketing team <span class="caret">&#9662;</span></button>
   <span class="searchwrap">
     <input id="search" type="search" autocomplete="off" placeholder="Search Working files" aria-label="Search Working files">
@@ -46,32 +47,33 @@
       <div class="group">Places</div>
       <a class="place" href="my-files.html">My files</a>
       <span class="place" aria-current="true">Shared drive</span>
-      <a class="place sub" href="/filemgr/" aria-current="true">Working files</a>
+      <a class="place sub" href="./" aria-current="true">Working files</a>
       <a class="place sub" href="brand-assets.html">Brand assets</a>
       <a class="place sub" href="campaign-26.html">Campaign 26</a>
+      <a class="place sub" href="scans.html">Scans</a>
       <a class="place sub" href="archive.html">Archive</a>
       <a class="place" href="recent.html">Recent</a>
       <a class="place" href="trash.html">Trash</a>
       <div class="group">Tags</div>
-      <span class="place">Campaign 26</span>
-      <span class="place">Needs review</span>
+      <a class="place tag" href="tag-campaign-26.html">Campaign 26</a>
+      <a class="place tag" href="tag-needs-review.html">Needs review</a>
       <div class="storage">
         <div class="label">Shared drive storage</div>
         <div class="meter"><span></span></div>
-        <div>62.4 GB of 100 GB used</div>
+        <div>1.4 GB of 100 GB used</div>
         <a href="storage.html">Manage storage</a>
       </div>
     </div>
-    <div class="pane">
+    <main class="pane">
       <div id="loading">Loading file list…</div>
       <table id="files" style="display:none;">
         <thead>
-          <tr><th class="sorted">Name</th><th>Kind</th><th>Size</th><th>Modified</th><th></th></tr>
+          <tr><th aria-sort="ascending">Name</th><th>Kind</th><th>Size</th><th>Modified</th><th></th></tr>
         </thead>
         <tbody id="rows"></tbody>
       </table>
       <div id="empty">No files in this folder match your search.</div>
-    </div>
+    </main>
   </div>
   <div class="statusbar">
     <span id="count">Reading workspace…</span>
@@ -82,7 +84,7 @@
   <span class="msg" id="toastMsg"></span>
   <button id="refreshBtn" type="button">Refresh</button>
 </div>
-<div class="sitefoot">
+<footer class="sitefoot">
   <ul>
     <li><a href="help.html">Help centre</a></li>
     <li><a href="shortcuts.html">Keyboard shortcuts</a></li>
@@ -92,8 +94,9 @@
     <li><a href="contact.html">Contact support</a></li>
   </ul>
   <p>Changes sync to every collaborator on this link. Deleted items stay recoverable for 30 days.</p>
-  <p>Boxelder Software Ltd, 7 Calder Wharf, Leeds LS10 1QP &middot; support@boxelder.example</p>
-</div>
+  <p>&copy; 2026 Boxelder Software Ltd, registered in England and Wales, company number 00000000 &middot;
+  Unit 3, Rope Walk, Wrexbury WX2 6BE &middot; support@boxelder.example</p>
+</footer>
 <script>
   const NONCE = '__SESSION_NONCE__';
   let files = [];
@@ -113,13 +116,83 @@
     return KINDS[name.slice(dot + 1).toLowerCase()] ?? 'Document';
   }
 
+  function loadFailed(message) {
+    files = [];
+    const loading = document.getElementById('loading');
+    loading.className = 'loaderr';
+    loading.textContent = message + ' ';
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'rowbtn';
+    retry.textContent = 'Retry';
+    retry.addEventListener('click', loadFiles);
+    loading.appendChild(retry);
+    loading.style.display = 'block';
+    document.getElementById('files').style.display = 'none';
+    document.getElementById('empty').style.display = 'none';
+    document.getElementById('count').textContent = 'Working files unavailable';
+  }
+
   async function loadFiles() {
-    const res = await fetch('/api/files', { headers: { 'X-Session-Nonce': NONCE } });
-    const body = await res.json();
+    const loading = document.getElementById('loading');
+    loading.className = '';
+    loading.textContent = 'Loading file list…';
+    loading.style.display = 'block';
+    let res;
+    try {
+      res = await fetch('/api/files', { headers: { 'X-Session-Nonce': NONCE } });
+    } catch {
+      loadFailed('Could not reach the workspace server. Check your connection.');
+      return;
+    }
+    if (res.status === 401 || res.status === 403) {
+      loadFailed('Could not load Working files: your session has expired. Reload the page to sign in again.');
+      return;
+    }
+    if (!res.ok) {
+      loadFailed('Could not load Working files (server error ' + res.status + ').');
+      return;
+    }
+    let body;
+    try {
+      body = await res.json();
+    } catch {
+      loadFailed('The workspace server sent an unreadable file list.');
+      return;
+    }
     files = body.files ?? [];
-    document.getElementById('loading').style.display = 'none';
+    loading.style.display = 'none';
     document.getElementById('files').style.display = 'table';
     render();
+  }
+
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const UNITS = { KB: 1, MB: 1024, GB: 1024 * 1024 };
+  const SORTERS = {
+    name: (f) => f.name.toLowerCase(),
+    kind: (f) => kindOf(f.name),
+    size: (f) => {
+      const m = /([\d.]+)\s*(KB|MB|GB)/.exec(f.size);
+      return m ? Number(m[1]) * UNITS[m[2]] : 0;
+    },
+    modified: (f) => {
+      const [d, mon, y] = f.modified.split(' ');
+      return Number(y) * 10000 + MONTHS.indexOf(mon) * 100 + Number(d);
+    },
+  };
+  let sort = { key: 'name', dir: 1 };
+  document.addEventListener('boxelder:sort', (event) => {
+    sort = event.detail;
+    render();
+  });
+
+  function sorted(list) {
+    const key = SORTERS[sort.key] ?? SORTERS.name;
+    return list.slice().sort((a, b) => {
+      const x = key(a);
+      const y = key(b);
+      return (x < y ? -1 : x > y ? 1 : 0) * sort.dir;
+    });
   }
 
   function visibleFiles() {
@@ -132,7 +205,7 @@
   function render() {
     const tbody = document.getElementById('rows');
     tbody.textContent = '';
-    const shown = visibleFiles();
+    const shown = sorted(visibleFiles());
     for (const file of shown) {
       const tr = document.createElement('tr');
       tr.dataset.id = file.id;
@@ -200,6 +273,10 @@
     save.addEventListener('click', () => commit(file, input.value));
     input.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') commit(file, input.value);
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        render();
+      }
     });
     input.focus();
     input.select();

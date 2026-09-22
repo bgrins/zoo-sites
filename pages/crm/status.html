@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status - Kelsmere CRM</title>
+<link rel="stylesheet" href="crm.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="./"><span class="mark" aria-hidden="true">K</span>Kelsmere CRM</a>
+  <span class="ws">wkspc northfield-supply &middot; fiscal 2026 &middot; role: analyst</span>
+  <span class="who">dana.kessler@northfield.example</span>
+</header>
+<nav class="tabs">
+  <a href="index.html">Dashboard</a>
+  <a href="orders.html">Orders</a>
+  <a href="customers.html">Customers</a>
+  <a href="pipeline.html">Pipeline</a>
+  <a href="reports.html">Reports</a>
+  <a href="tasks.html">Tasks</a>
+  <a href="admin.html">Admin</a>
+</nav>
+<div class="pathbar">
+  <span>northfield-supply / status</span>
+  <span class="build">grid engine v3 &middot; build 3.14.2</span>
+</div>
+<main class="main">
+<h1>Status</h1>
+  <p class="sub">Current state of the Kelsmere service for this workspace's region. Updated by Kelsmere operations.</p>
+  <div class="tiles">
+    <div class="tile"><span class="tk">Console</span><span class="tv">Operational</span></div>
+    <div class="tile"><span class="tk">Grids</span><span class="tv">Operational</span></div>
+    <div class="tile"><span class="tk">Reports</span><span class="tv">Operational</span></div>
+    <div class="tile"><span class="tk">Nightly rebuild</span><span class="tv">Completed 02:41</span></div>
+  </div>
+  <div class="gridwrap">
+  <table class="grid">
+    <thead>
+      <tr><th>Component</th><th>State</th><th>Last incident</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Console and sign-in</td><td><span class="ok">Operational</span></td><td>2026-06-11</td></tr>
+      <tr><td>v3 grid engine</td><td><span class="ok">Operational</span></td><td>2026-07-02</td></tr>
+      <tr><td>Report builds</td><td><span class="ok">Operational</span></td><td>2026-05-19</td></tr>
+      <tr><td>Warehouse snapshot</td><td><span class="ok">Operational</span></td><td>2026-07-14</td></tr>
+      <tr><td>Email reminders</td><td><span class="ok">Operational</span></td><td>2026-03-28</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <h2>Recent incidents</h2>
+  <div class="cards">
+    <section class="card">
+      <h2>2026-07-14 &middot; Late snapshot</h2>
+      <p>The nightly rebuild finished at 05:10 instead of 02:00 after a storage failover.
+      Grids showed the previous day's data until it completed. No records were lost.</p>
+    </section>
+    <section class="card">
+      <h2>2026-07-02 &middot; Column widths reset</h2>
+      <p>Grid column widths reset on narrow displays after the 3.14.0 release. Fixed in
+      3.14.1 the same afternoon.</p>
+    </section>
+  </div>
+  <p class="muted" style="margin-top: 14px;">Workspace-specific notices, such as maintenance
+  windows, are on <a href="notices.html">service notices</a>.</p>
+</main>
+<footer class="siteftr">
+  Kelsmere CRM &middot; workspace data is confidential to northfield-supply &middot;
+  &copy; 2026 Kelsmere Software, Inc.<br>
+  Support: <a href="mailto:support@kelsmerecrm.example">support@kelsmerecrm.example</a> &middot;
+  <a href="status.html">Status</a> &middot; <a href="shortcuts.html">Keyboard shortcuts</a> &middot;
+  <a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  <a href="guide.html">Operator guide</a> &middot; <a href="glossary.html">Glossary</a> &middot;
+  <a href="notices.html">Service notices</a>
+</footer>
+<script src="crm.js"></script>
+</body>
+</html>

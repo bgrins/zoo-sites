@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usage alerts — My account — Lumeva Mobile</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../lumeva.css">
+<link rel="stylesheet" href="account.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="wordmark" href="../">lumeva</a>
+  <nav aria-label="Main">
+    <a href="../">Plans</a>
+    <a href="../network.html">Network</a>
+    <a href="../help.html">Help</a>
+    <a href="./" class="here">My account</a>
+  </nav>
+  <span class="care">Care team 1-512-555-0142</span>
+</header>
+
+<main>
+<div class="acct-band">
+  <div class="inner">
+    <h1>My account</h1>
+    <p class="acct-meta">Account <strong id="acctNumber">…</strong> &middot; <span id="acctPlan">Signal Plus</span></p>
+    <nav class="acct-tabs" aria-label="Account sections">
+      <a href="./">Overview</a>
+      <a href="usage.html" aria-current="page">Usage alerts</a>
+      <a href="roaming.html">Roaming</a>
+    </nav>
+  </div>
+</div>
+
+<div class="acct-body">
+  <div class="inner">
+    <p class="acct-error" id="acctError" role="alert" hidden>We could not load your account just now. Refresh the page to try again, or call the care team.</p>
+    <h2>Usage alerts</h2>
+    <p class="lede">Each line on Signal Plus gets 30 GB of high-speed data a month. Tell us when to warn you
+    as a line works through it. Lines keep working at reduced speed after that, with no overage charges.</p>
+
+    <form class="panel" id="usageForm" novalidate>
+      <fieldset class="plain" id="formBody" disabled>
+        <div class="setting">
+          <div>
+            <label class="name" for="alertPct">Usage alert threshold</label>
+            <p class="hint" id="alertHint">We send an alert when a line has used this share of its monthly high-speed data.</p>
+          </div>
+          <div class="control">
+            <input id="alertPct" name="alertPct" type="number" min="50" max="100" step="5" inputmode="numeric" aria-describedby="alertHint">
+            <span class="unit">% of allowance</span>
+          </div>
+        </div>
+        <div class="setting">
+          <div>
+            <span class="name" id="notifyName">Send alerts by</span>
+            <p class="hint">Text alerts go to the line that crossed the threshold.</p>
+          </div>
+          <div class="choices" role="group" aria-labelledby="notifyName">
+            <label><input type="checkbox" id="notifyText" name="notifyText"> <span>Text message to the line</span></label>
+            <label><input type="checkbox" id="notifyEmail" name="notifyEmail"> <span>Email to the account holder</span></label>
+          </div>
+        </div>
+        <div class="setting">
+          <div>
+            <span class="name" id="weeklyName">Weekly summary</span>
+            <p class="hint">A Monday email with each line's usage so far this bill.</p>
+          </div>
+          <div class="choices" role="group" aria-labelledby="weeklyName">
+            <label><input type="checkbox" id="weeklySummary" name="weeklySummary"> <span>Email me a weekly usage summary</span></label>
+          </div>
+        </div>
+      </fieldset>
+      <div class="savebar">
+        <span class="dirty-pill" id="dirtyPill" hidden>Unsaved changes</span>
+        <p id="saveNote" role="status"></p>
+        <button type="button" class="btn-ghost" id="discardBtn" disabled>Discard</button>
+        <button type="submit" class="btn" id="saveBtn" disabled>Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="inner">
+    Lumeva Wireless LLC &middot; 55 Caliche Row, Duneport, TX &middot; care@lumeva.example &middot; 1-512-555-0142<br>
+    <a href="../network.html">Network coverage</a> &middot;
+    <a href="../help.html">Help center</a> &middot;
+    <a href="../terms.html">Terms of service</a> &middot;
+    <a href="../privacy.html">Privacy notice</a> &middot;
+    <a href="../legal.html">Legal and disclosures</a><br>
+    Coverage and speeds vary by location and load. &copy; 2026 Lumeva Wireless LLC. Lumeva Mobile is a service of Lumeva Wireless LLC.
+  </div>
+</footer>
+
+<script>const NONCE = '__SESSION_NONCE__';</script>
+<script src="account.js"></script>
+<script>
+  (async () => {
+    const $ = (id) => document.getElementById(id);
+    const form = LumevaAccount.settingsForm({
+      tab: 'usage',
+      form: $('usageForm'),
+      read: () => ({
+        alertPct: $('alertPct').value === '' ? null : Number($('alertPct').value),
+        notifyText: $('notifyText').checked,
+        notifyEmail: $('notifyEmail').checked,
+        weeklySummary: $('weeklySummary').checked,
+      }),
+      write: (v) => {
+        $('alertPct').value = String(v.alertPct);
+        $('notifyText').checked = v.notifyText;
+        $('notifyEmail').checked = v.notifyEmail;
+        $('weeklySummary').checked = v.weeklySummary;
+      },
+    });
+    const acct = await LumevaAccount.load();
+    form.start(acct.usage);
+  })();
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>Sign in — Corvane Parcel Network</title>
 <link rel="stylesheet" href="corvane.css">
 </head>
@@ -16,7 +17,7 @@
 
 <header class="chrome">
   <div class="bar">
-    <div class="wordmark"><b>Corvane</b><span>Parcel Network</span></div>
+    <a class="wordmark" href="./"><b>Corvane</b><span>Parcel Network</span></a>
     <div class="acct">Guest session &middot; rates shown ex VAT</div>
   </div>
   <nav class="main">
@@ -51,6 +52,18 @@
           <button type="submit">Sign in</button>
         </form>
         <div class="note" id="signinNote" role="status"></div>
+        <h3>Forgotten your password?</h3>
+        <form class="stack" id="reset" autocomplete="off" novalidate>
+          <div class="field">
+            <label for="resetEmail">Email address on the account</label>
+            <input id="resetEmail" type="email" spellcheck="false">
+          </div>
+          <button type="submit">Send reset link</button>
+        </form>
+        <div class="note" id="resetNote" role="status"></div>
+        <p class="rowmeta">No account? You can <a href="collections.html">book a collection</a>
+        as a guest, or <a href="business.html">open a business account</a> from 20 parcels a
+        week.</p>
       </div>
     </section>
   </main>
@@ -132,7 +145,20 @@
       password.focus();
       return;
     }
-    setNote('bad', 'We could not match those details to an account. Check the address and password, or call 0808 157 0420 if you believe the account exists.');
+    setNote('bad', 'We could not match those details to an account. Check the address and password, or reset the password below.');
+  });
+
+  document.getElementById('reset').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const out = document.getElementById('resetNote');
+    const addr = document.getElementById('resetEmail').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) {
+      out.className = 'note warn';
+      out.textContent = 'Enter the email address the account was opened with.';
+      return;
+    }
+    out.className = 'note good';
+    out.textContent = 'If an account uses ' + addr + ', a reset link is on its way. It works for one hour.';
   });
 </script>
 </body>

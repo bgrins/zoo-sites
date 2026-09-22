@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkout — Lumeva Mobile</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="lumeva.css">
+<style>
+  .inner { max-width: 880px; }
+  h1.doc { font-size: 32px; margin: 0 0 6px; }
+  .lede { color: var(--muted); margin: 0 0 26px; }
+  .draft { border: 2px solid var(--ink); border-radius: 14px; padding: 18px 22px; margin: 0 0 26px; }
+  .draft h2 { margin: 0 0 10px; font-size: 17px; letter-spacing: 1.2px; text-transform: uppercase; }
+  .draft .row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .draft .row:last-of-type { border-bottom: 0; font-weight: bold; }
+  .draft .k { color: var(--muted); }
+  .draft .empty { margin: 0; color: var(--body); }
+  fieldset { border: 0; margin: 0 0 22px; padding: 0; }
+  legend { font-weight: bold; font-size: 17px; margin-bottom: 8px; }
+  .opt { display: flex; gap: 10px; align-items: flex-start; border: 2px solid var(--line); border-radius: 10px; padding: 11px 14px; margin: 0 0 8px; cursor: pointer; }
+  .opt:has(input:checked) { border-color: var(--ink); background: var(--wash); }
+  .opt small { display: block; color: var(--muted); font-size: 13.5px; }
+  #reserveNote { min-height: 22px; margin: 12px 0 0; color: #8a2a12; }
+  .done { border: 2px solid var(--ink); border-radius: 14px; background: var(--volt); padding: 20px 22px; margin: 0 0 26px; }
+  .done h2 { margin: 0 0 6px; font-size: 20px; }
+  .done .ref { font-size: 30px; font-weight: bold; letter-spacing: 1px; margin: 4px 0 8px; }
+  .done p { margin: 0 0 6px; color: #25300a; }
+  .stores { margin-top: 30px; border-top: 1px solid var(--line); padding-top: 20px; }
+  .stores h2 { font-size: 19px; margin: 0 0 10px; }
+  .stores ul { margin: 0; padding-left: 20px; color: var(--body); }
+  .stores li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="wordmark" href="./">lumeva</a>
+  <nav aria-label="Main">
+    <a href="./">Plans</a>
+    <a href="network.html">Network</a>
+    <a href="help.html">Help</a>
+    <a href="account/">My account</a>
+  </nav>
+  <span class="care">Care team 1-512-555-0142</span>
+</header>
+
+<main>
+<section>
+  <div class="inner">
+    <h1 class="doc">Checkout</h1>
+    <p class="lede">Reserve the plan you built. Nothing is billed until the order is completed
+    in a Lumeva store or with our care team.</p>
+
+    <div class="draft" id="draft">
+      <h2>Your draft order</h2>
+      <p class="empty" id="draftState">Loading your draft order.</p>
+    </div>
+
+    <div id="doneSlot"></div>
+
+    <form id="reserve" novalidate>
+      <fieldset>
+        <legend>Phones</legend>
+        <label class="opt"><input type="radio" name="device" value="byo" checked><span>Bring my own phone<small>Unlocked phones from any carrier work on Lumeva.</small></span></label>
+        <label class="opt"><input type="radio" name="device" value="buy"><span>Choose a new phone in store<small>Store staff set it up and move your contacts.</small></span></label>
+      </fieldset>
+      <fieldset>
+        <legend>Numbers</legend>
+        <label class="opt"><input type="radio" name="numbers" value="port" checked><span>Keep my current numbers<small>Have each old account PIN ready; ports complete within a few hours.</small></span></label>
+        <label class="opt"><input type="radio" name="numbers" value="new"><span>Give me new Lumeva numbers</span></label>
+      </fieldset>
+      <fieldset>
+        <legend>SIM</legend>
+        <label class="opt"><input type="radio" name="sim" value="esim" checked><span>eSIM<small>Activates in minutes on supported phones.</small></span></label>
+        <label class="opt"><input type="radio" name="sim" value="physical"><span>Physical SIM card<small>Picked up in store, or mailed in 2-3 business days.</small></span></label>
+      </fieldset>
+      <button type="submit" class="btn" id="reserveBtn" disabled>Reserve this order</button>
+      <p id="reserveNote" role="status"></p>
+    </form>
+
+    <div class="stores">
+      <h2>Finish in a Lumeva store</h2>
+      <ul>
+        <li>Duneport Harborside, 210 Caliche Row. Mon-Sat 10 a.m.-8 p.m., Sun 11 a.m.-6 p.m. &middot; 1-512-555-0167</li>
+        <li>Duneport North, 4480 Mesa Ridge Parkway. Daily 10 a.m.-9 p.m. &middot; 1-512-555-0183</li>
+        <li>Varrelo Crossing, 17 Varrelo Plaza. Mon-Sat 9 a.m.-7 p.m. &middot; 1-512-555-0129</li>
+      </ul>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="inner">
+    Lumeva Wireless LLC &middot; 55 Caliche Row, Duneport, TX &middot; care@lumeva.example &middot; 1-512-555-0142<br>
+    <a href="network.html">Network coverage</a> &middot;
+    <a href="help.html">Help center</a> &middot;
+    <a href="terms.html">Terms of service</a> &middot;
+    <a href="privacy.html">Privacy notice</a> &middot;
+    <a href="legal.html">Legal and disclosures</a><br>
+    Coverage and speeds vary by location and load. &copy; 2026 Lumeva Wireless LLC. Lumeva Mobile is a service of Lumeva Wireless LLC.
+  </div>
+</footer>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const draft = document.getElementById('draft');
+  const draftState = document.getElementById('draftState');
+  const form = document.getElementById('reserve');
+  const btn = document.getElementById('reserveBtn');
+  const note = document.getElementById('reserveNote');
+
+  function row(k, v) {
+    const r = document.createElement('div');
+    r.className = 'row';
+    const a = document.createElement('span');
+    a.className = 'k';
+    a.textContent = k;
+    const b = document.createElement('span');
+    b.textContent = v;
+    r.append(a, b);
+    return r;
+  }
+
+  async function load() {
+    try {
+      const res = await fetch('/api/telco/draft', { headers: { 'x-session-nonce': NONCE } });
+      if (!res.ok) throw new Error('draft');
+      const body = await res.json();
+      if (!body.current) {
+        draftState.innerHTML = 'You have no draft order yet. <a href="./#builder">Build your plan</a> first.';
+        return;
+      }
+      draftState.remove();
+      draft.append(
+        row('Plan', body.current.plan),
+        row('Lines', String(body.current.lines)),
+        row('Monthly total', '$' + body.current.quote.toFixed(2))
+      );
+      btn.disabled = false;
+    } catch {
+      draftState.textContent = 'We could not load your draft order just now. Refresh the page to try again.';
+    }
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    btn.disabled = true;
+    note.textContent = '';
+    const pick = (name) => form.querySelector('input[name="' + name + '"]:checked').value;
+    try {
+      const res = await fetch('/api/telco/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, device: pick('device'), numbers: pick('numbers'), sim: pick('sim') }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        note.textContent = body.error || 'We could not reserve the order. Try again.';
+        btn.disabled = false;
+        return;
+      }
+      const done = document.createElement('div');
+      done.className = 'done';
+      const h = document.createElement('h2');
+      h.textContent = 'Order reserved';
+      const ref = document.createElement('p');
+      ref.className = 'ref';
+      ref.textContent = body.reservation;
+      const p1 = document.createElement('p');
+      p1.textContent = body.plan + ', ' + body.lines + (body.lines === 1 ? ' line' : ' lines') +
+        ', $' + body.monthlyQuote.toFixed(2) + ' a month, held for seven days.';
+      const p2 = document.createElement('p');
+      p2.textContent = 'Bring this reference and a photo ID to a Lumeva store, or call 1-512-555-0142, to finish the order.';
+      done.append(h, ref, p1, p2);
+      document.getElementById('doneSlot').append(done);
+      form.hidden = true;
+    } catch {
+      note.textContent = 'The connection dropped before the reservation was confirmed. Try again.';
+      btn.disabled = false;
+    }
+  });
+
+  load();
+</script>
+</body>
+</html>

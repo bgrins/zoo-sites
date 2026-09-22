@@ -1,8 +1,9 @@
 // pages/schedule/ - Peregrine Court day book (room-booking).
 import { randomBytes } from 'node:crypto';
+import { lcg, pushTrimmed } from './lib.mjs';
 
 // pages/schedule/ — Peregrine Court's week day book. Both the request card and the
-// occupancy are minted per session from a randomBytes seed, so the constraints and
+// occupancy are minted per session from a seedable ctx.draw, so the constraints and
 // the free slots (and therefore the answer) exist nowhere on disk and move between
 // runs. The mint rejection-samples until the EARLIEST window that meets the whole
 // request card is unique, at least three later windows meet it too, and each of the
@@ -255,16 +256,12 @@ function scheduleFillDay(rand, out, room, day, gapProb) {
   }
 }
 
-// Seeded from randomBytes so neither the week nor the card a graded session faces is
+// Seeded from ctx.draw so neither the week nor the card a graded session faces is
 // on disk. The card is drawn once and the week rejection-sampled against it, so the
 // card's distribution stays flat; the first draw is kept as a fallback so minting
 // always terminates.
-function scheduleMint(draw = (_scope, n) => randomBytes(n)) {
-  let seed = draw('schedule', 4).readUInt32BE(0);
-  const rand = () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
+function scheduleMint(draw) {
+  const rand = lcg(draw('schedule', 4));
   const brief = scheduleMintBrief(rand);
   const cells = SCHEDULE_ROOMS.length * SCHEDULE_DAYS.length * SCHEDULE_SLOT_COUNT;
   // A longer letting needs longer gaps to sit in, so the week is drawn emptier.
@@ -426,7 +423,7 @@ function scheduleParseRoom(raw) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage, draw } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage, draw } = ctx;
   return async (req, res, url, pathname0) => {
     // T111 room-booking: the day book behind pages/schedule/. The week and the
     // request card are minted on first read and pinned to the session, so
@@ -447,13 +444,8 @@ export function routes(ctx) {
     // slot is entered as a hold and told plainly that it carries no reference,
     // which is what makes a near miss legible instead of looking like a failure.
     if (req.method === 'POST' && pathname0 === '/api/schedule/book') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
-      if (!payload || typeof payload !== 'object') payload = {};
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload.nonce);
       if (!found) return;
@@ -468,10 +460,10 @@ export function routes(ctx) {
         desk.refused = Math.max(0, SCHEDULE_PATIENCE - SCHEDULE_PATIENCE_REFUND);
       }
       const record = (outcome, extra = {}) => {
-        desk.attempts.push({
-          day: day ?? String(payload.day ?? ''),
-          start: start >= 0 ? SCHEDULE_SLOTS[start] : String(payload.start ?? ''),
-          room: room ?? String(payload.room ?? ''),
+        pushTrimmed(desk.attempts, {
+          day: day ?? String(payload.day ?? '').slice(0, 40),
+          start: start >= 0 ? SCHEDULE_SLOTS[start] : String(payload.start ?? '').slice(0, 40),
+          room: room ?? String(payload.room ?? '').slice(0, 40),
           outcome,
           at: now,
         });
@@ -539,7 +531,7 @@ export function routes(ctx) {
         (h) => h.day === day && h.room === room && h.start === start
       );
       if (sameSlot?.reference) {
-        desk.attempts.push({
+        pushTrimmed(desk.attempts, {
           day,
           start: SCHEDULE_SLOTS[start],
           room,
@@ -622,7 +614,7 @@ export function routes(ctx) {
         };
       }
       desk.holds.push(hold);
-      desk.attempts.push({
+      pushTrimmed(desk.attempts, {
         day,
         start: SCHEDULE_SLOTS[start],
         room,

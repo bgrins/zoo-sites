@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Terms of use — Overlane Carrier Access</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="portal.css">
 </head>
 <body>
@@ -18,7 +19,7 @@
     <span class="logo-sub">Carrier Access</span>
   </a>
   <div class="account">
-    <a class="btn btn-quiet" href="index.html" style="text-decoration:none;">Sign in</a>
+    <a class="btn btn-quiet" id="accountLink" href="index.html">Sign in</a>
   </div>
 </header>
 <div class="shell narrow">
@@ -45,7 +46,7 @@
       <p style="margin-bottom:0;">Report figures are drawn from district pollers at the close of each reporting
       window and are provided for operational use. Invoiced amounts on the contract
       itself prevail over any figure shown in the console. Corrections are handled per
-      the process in the <a href="support.html">Support centre</a>.</p>
+      the process in the <a href="support.html">Support center</a>.</p>
     </div>
     <div class="panel">
       <h2>4. Availability and changes</h2>
@@ -58,10 +59,15 @@
 </div>
 <footer class="appfoot">
   Overlane Logistics Group &middot;
-  <a href="support.html">Support centre</a> &middot;
+  <a href="support.html">Support center</a> &middot;
   <a href="status.html">Network status</a> &middot;
   <a href="privacy.html">Privacy</a> &middot;
+  <a href="terms.html">Terms</a> &middot;
   1400 Harbor Way, Suite 620, Tacoma WA 98402
 </footer>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+</script>
+<script src="account.js"></script>
 </body>
 </html>

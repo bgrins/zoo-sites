@@ -1,10 +1,10 @@
 # Working on zoo-sites
 
-This repository holds two things: 66 locally-served simulated origins, across 53
+This repository holds two things: 67 locally-served simulated origins, across 54
 fixture trees under `pages/` with their backends in `sites/`, and a browser-agent
-eval over them in `eval/`. The eval runs 94 tasks — 86 web, 5 devtools, 3 basic
+eval over them in `eval/`. The eval runs 102 tasks — 94 web, 5 devtools, 3 basic
 smoke — and grades each on what the site's server observed, not on what the agent
-claimed. The tool surface is a configurable condition, so the same 94 tasks measure
+claimed. The tool surface is a configurable condition, so the same 102 tasks measure
 whichever stdio MCP browser server you point them at. The eval measures how that
 surface shapes a run rather than scoring models, and the signal lives in efficiency
 and in the rare failure, not in the pass rate.
@@ -16,19 +16,38 @@ eval.
 ## The gate
 
 ```sh
-node eval/verify.mjs                              # full gate, ~4 min, no API budget
+node eval/verify.mjs                              # full gate, under 2 min, no API budget
 node eval/verify.mjs --task cart-math,pr-review   # narrow while iterating
 node eval/verify.mjs --list                       # every task, and its driver kind
+node eval/verify.mjs --origins                    # every site on its own port, the container's shape
 ```
 
 Run the gate after touching any fixture, validator, or server code, and get it
-green before committing. It drives 91 golden paths through real headless Firefox
+green before committing. It drives 99 golden paths through real headless Firefox
 and this repo's MCP client, asserting per task that the validator accepts a
 correct answer and rejects a wrong one. Nothing else catches a well-meaning edit
 that silently breaks a task, and a restyle can change measured behaviour with no
 logic change at all. Validators that reject correct answers are the defect to
 watch for most closely. `node eval/verify.mjs --extract` adds the real extraction model
-over driver answers and costs money, so it sits outside the free gate.
+over driver answers and costs about $3.50, so it sits outside the free gate.
+
+The default gate serves every site under a path prefix on one port. The container
+(`serve.mjs`) serves each site on its own port with the site's directory at `/`, so
+a bug that only exists there, such as a Referer check that expects the prefix, passes
+the default gate. `--origins` runs the gate in the container's shape: each worker
+binds every origin on an ephemeral port, and the asks carry the origin URLs.
+`--vhosts` serves every site on one port under its own host name, the way the_zoo's
+proxy separates them. In both, only navigation is mapped: `goto` sends a driver's
+single-origin path to the site that owns it, so a driver runs in every mode without
+an edit. The answer a driver
+returns is not mapped. A driver that builds an answer value from `helpers.base` or
+a prefixed path such as `/bank/caldmoor-bank-login/` still reports the
+single-origin answer. The validator accepts that answer, and the task goes green,
+while an agent that reports the origin URL it actually read fails. A green
+`--origins` run therefore proves the sites and their server state work in the
+container's shape, not that every task grades an origin-mode answer correctly. A
+driver whose answer names a URL proves the second only when it reads the URL off
+the page (`location.href`) or out of the ask.
 
 Read the failures block, never the exit status of a piped gate: `node eval/verify.mjs
 | tail` reports tail's status, which hides a red gate.
@@ -68,10 +87,15 @@ site server itself uses node builtins. The `firefox-devtools-mcp` condition and 
    `dist/index.js` is used; the checkout must have been built (`npm run build`)
 3. the `@mozilla/firefox-devtools-mcp` dependency installed by `npm install`
 
-Without one of the last two the gate throws before its first task, naming the path
-it looked for. Export the env var to measure your own build of
+A `firefox-devtools-mcp@<label>` condition skips that order and runs the root, or the
+dependency, that its `--devtools-build <label>=<root|dep>` names. Without one of the
+last two the gate throws before its first task, naming the path it looked for.
+Export the env var to measure your own build of
 `firefox-devtools-mcp` in both the gate and paid runs; pass `--mcp-command` to
 measure another MCP browser server in place of the built-in one.
+`EVAL_DEVTOOLS_FIREFOX=playwright` runs the built-in server on Playwright's Firefox,
+the build playwright-mcp drives, in place of the installed one (`eval/README.md`,
+"What a paid run pins").
 
 Browsing the sites needs none of that. Both servers bind `127.0.0.1`; keep them
 off public networks, for the reasons README gives under "Do not serve these
@@ -109,11 +133,17 @@ and a golden-path driver.
    module contract in `sites/README.md`. The graded value is minted here.
 3. **Task entry** in the family module under `eval/tasks/web/` (or
    `eval/tasks/devtools.mjs`): `{ id, ask, answerSchema, validate }`, with the answer
-   key in `eval/answers.mjs`. `eval/tasks/web.mjs` concatenates the families, so it needs no
-   edit unless the task starts a new one. Build URLs from the `origins.<key>`
-   templates; a new origin is a `manifest.mjs` entry keyed by domain, with its
-   `dir` under `pages/`. Per-task turn limits are deliberately absent: runaway
-   protection lives in `--max-wall` and `--max-output`.
+   key in `eval/answers.mjs`. A pure-extraction task adds `truth: { kind: 'static',
+   reason }` (see "Fixing a defect", rule 1). A task whose graded value is not
+   code-shaped (a bare number, a word) adds `values: (state) => [...]` to its
+   `truth`, naming each attempt's graded values for surface reach and triage.
+   `eval/tasks/web.mjs` concatenates the
+   families, so it needs no edit unless the task starts a new one. Build URLs from the `origins.<key>`
+   templates. A new origin is a `manifest.mjs` entry with its `dir` under `pages/`,
+   appended at the end, because its port is 8100 plus its index and the_zoo publishes
+   the ports; regenerate `docker/zoo-snippet.yaml` with it (`docker/README.md`,
+   section 5) and widen the Dockerfile's port range. Per-task turn limits are
+   deliberately absent: runaway protection lives in `--max-wall` and `--max-output`.
 4. **Golden-path driver** in `eval/verify-drivers/<family>.mjs`, merged by
    `eval/verify-drivers/index.mjs`: it navigates, clicks by uid, and returns the answer
    a correct agent would produce, having genuinely satisfied the server-observed
@@ -165,13 +195,22 @@ not. Only a deliberate capability spike distinguishes those.
 
 So drive a capability through the tool surface before you build a task on it, and
 spike the tools no task exercises. A tool that reports success while doing nothing
-is the failure mode to expect, and `drag_by_uid_to_uid` is the standing example.
-`set_viewport_size` silently clamps, `evaluate_script` caps at 5s, `fill` on
-`type=date` and `type=range` silently no-ops, and a wrapping label does not name an
-input; design around each rather than discovering it mid-build. A task built on a
-capability that does not work grades the tool's bug instead of the agent. Keyboard
-input, scroll, `select_option` and coordinate clicks are the standing examples of
-unexercised surface.
+is the failure mode to expect, and `drag_by_uid_to_uid` is the standing example: it
+sends only untrusted dragstart and drop events, so a pointer-driven list does not
+move while the tool reports a drag. `set_viewport_size` silently clamps,
+`evaluate_script` times out at 5s by default and at 10s whatever timeout it is given,
+and a wrapping label does not name an input. `fill` on
+`type=range` silently keeps the old value. On `type=date` it takes an ISO value and
+silently leaves the field empty for the locale's typed order (03/04/2027), and on
+`datetime-local` it is the reverse: an ISO value silently stores a wrong date, and
+only the locale's typed order lands. On `select[multiple]` it leaves one option selected. Design around each
+rather than discovering it mid-build. A task built on a capability that does not work
+grades the tool's bug instead of the agent.
+
+The spikes live in `eval/spikes/`, one script per capability, each keyed to the tool
+versions it was measured on; `eval/spikes/README.md` lists what each measured and
+how to rerun them all after a version bump. No spike covers scroll or coordinate
+clicks yet, and `eval/spikes/tools.mjs` lists every devtools tool no driver calls.
 
 ## Fixing a defect
 
@@ -187,6 +226,48 @@ and only a late adversarial pass catches it.
    exercises the field arrays. The plain-string `wrong`/`alsoCorrect` arrays run
    under `--extract`, which costs API budget, so an assertion written there stays
    green in the gate you actually run.
+
+   The field arrays vary only the answer, always against the golden run's server
+   state, so they cannot catch a hole in the state half of a validator: a conjunct
+   such as "no purchase" that has gone always-true, or a cross-session hole such as
+   a purchase made under a second cookie. Write those as `wrongState` (must fail) or
+   `alsoCorrectState` (must pass), a list of `{ name, mutate(state), fields? }`
+   cases. Each case's `mutate` plants the hole in a copy of the golden state, and the
+   validator grades that copy with the driver's own fields unless the case gives
+   `fields`. `addSession`, `findSession` and `addBeacon` in
+   `eval/verify-drivers/lib.mjs` cover the common plants, and the `lexvane-hard`
+   driver is the worked example.
+
+   The quote gate sits between an answer and its fields, so neither kind of case can
+   catch a hole in it. Write those as `wrongExtraction` (must fail) or
+   `alsoCorrectExtraction` (must pass), a list of `{ name, answer, raw }` cases: the
+   gate passes `raw`, the extractor's `{ value, quote }` pairs, through
+   `enforceQuotes` with that answer and the task's ask, and the validator grades the
+   result on the golden state. The `popup-storm` and `feed-needle` drivers build
+   theirs from stored rows.
+
+   The gate also grades every task against three generic state mutants, so a state
+   half that reads nothing fails without anyone writing a case for it. Each mutant
+   is a copy of the state, graded with the driver's own fields. `empty` is the state as `reset()`
+   left it before the driver ran, `fresh` adds one session that never acted, and
+   `shadow` is the golden state with an unused session minted ahead of the run's, the
+   one a curl probe leaves. A task's truth is minted by default: `empty` and `fresh`
+   must fail, and `shadow` must pass. A pure-extraction task whose answer is published
+   page content (hard rule 1 in `docs/authoring-fixtures.md`) declares
+   `truth: { kind: 'static', reason }` on its task entry instead (`{ kind: 'minted' }`
+   states the default). The gate exempts a static task from the mutants and names it
+   after the totals, but checks the declaration twice: the task must still pass
+   `empty`, so a declaration the validator has outgrown fails, and its golden answer
+   must carry no code the server minted into session state, so a holed validator
+   cannot hide behind one. That second check sees only code-shaped values
+   (`mintedValues` in `eval/surface-reach.mjs`), so never declare a task static to
+   silence a mutant when the server mints its answer: there a surviving mutant is a
+   validator hole. Either kind may add `values: (state) => [...]`, the graded values
+   of one attempt, which surface reach and triage then test in place of the
+   code-shaped ones (`truthValues` in `eval/surface-reach.mjs`; `mid-flight-rate` is
+   the example). The gate checks that `values` is a function and returns an array for
+   the golden state. Name only values the validator grades: triage charges the
+   surface when none of them reached a reply and the other surface's did.
 2. **Serialise edits to `eval/run.mjs`, `eval/answers.mjs` and `server.mjs`.** Parallel agents
    cannot speed up a single-writer resource; they can only add a spec-then-integrate
    indirection, and that indirection is its own defect source — wrong line numbers,
@@ -208,10 +289,15 @@ and only a late adversarial pass catches it.
    `docs/authoring-fixtures.md` first: re-reporting a constraint the fixtures
    deliberately design around is the most common false positive here.
 
-Those assertions accumulate into the gate's memory. All 91 drivers carry them, and a
-full run exercises 242 wrong answers that must all fail and 187 accepted variants
-that must all pass, so a change that re-breaks one fails the run and names it. Read
-the current counts off `node eval/verify.mjs`, which prints them per task.
+Those assertions accumulate into the gate's memory. Every driver carries them, and a
+full run exercises every wrong answer, wrong server state, wrong extraction and
+never-answered shape, which must all fail, and every accepted answer, state and
+extraction, which must all pass, so a change that re-breaks one fails the run and
+names it. The generic mutants add two erased states that must fail and one shadow
+session that must be ignored per minted-truth task. The counts grow with every fix, so
+read them off `node eval/verify.mjs`, which prints them per task and totals them in
+its `cases exercised` line, the mutants as `mutants killed` and `shadow sessions
+ignored`, and names the static tasks after the totals.
 
 A review of N findings is a QUEUE. Rank it, work it in small verified increments,
 and expect the tail to be wrong: cosmetic items reported once and never reproduced
@@ -239,11 +325,23 @@ work:
 
 ## Reading results honestly
 
+- **Read a run's health before its numbers.** `node eval/scripts/run-health.mjs
+  <run-dir>` checks that the run's files agree with each other: every selected row
+  is there, costs recompute from tokens, the tap and the transcript count the same
+  calls, paired arms faced the same draws in the pinned environment on one browser
+  and one tool build (a `--devtools-firefox` pin on one label is a WARN, not a
+  FAIL), the quote gate reproduces the graded fields, and report.md prints what
+  report.mjs computes now. report.md's header sums it up in one line. A FAIL is a
+  harness defect to fix or a run to leave unquoted; a WARN names a confound or a
+  field the run predates.
 - **Output tokens are the comparable efficiency metric.**
 - **Turns compare only between runs whose backend counts a turn the same way.**
-  Codex only approximates a turn, and surfaces pack different amounts of work into
-  one call: a shell-driven surface measures about 1.21 browser operations per turn
-  against 1.00 for a per-tool MCP surface.
+  A turn is a model request: the Agent SDK counts its own, and a codex row's are the
+  requests its rollout records. A codex row without its rollout falls back to tool
+  calls plus one, which overcounts, since one script can make several MCP calls; the
+  reports read a stored row's rollout instead. Surfaces also pack different amounts
+  of work into one call: a shell-driven surface measures about 1.21 browser
+  operations per turn against 1.00 for a per-tool MCP surface.
 - **Cost compares within one run and never between two.** Every condition in a run
   meets the same prompt cache, so a ratio there is fair; across runs, cache-creation
   volume swings enough to move a ratio from 1.03 to 1.50 at identical turn counts.
@@ -262,6 +360,65 @@ work:
   snapshot-only path existed.** An agent looks cheap there largely because it stops
   snapshotting and starts scripting — a fact about the path it took, not about the
   surface it took it through.
+- **A row that did not measure its surface is not a data point.** A row that never
+  called its own browser server is marked `invalid`, and report.md keeps it out of
+  every total. A row that called any other MCP server measured a mix of tools. Every
+  codex run from before `CODEX_HOME` isolation (b9ff01d) is contaminated as a whole:
+  in the 172-row sweep of 2026-08-18, 170 transcripts read the operator's `~/.codex`,
+  144 rows called its MCP servers, and 9 never called their own. Quote none of those
+  figures as a measurement; they name defects, not sizes. Runs since b9ff01d are
+  isolated: in the codex sweep (`eval/results/run-2026-09-20T17-48-17-298Z`) and the
+  Haiku sweep (`eval/results/run-2026-09-20T18-32-34-183Z`), both of
+  firefox-devtools-mcp 0.9.15 against playwright-mcp, no row called another MCP
+  server. Both ran from a dirty tree at 2b16e96 and hold no A/A pair, and both predate
+  the shells' network lock (0577dd5), so their shell-assisted rows stay out of the
+  figures (below).
+- **A pass the shell earned is not a surface pass.** A row whose agent's shell got an
+  answer from a graded fixture route (an `/api/` route or `/collect`, answered 2xx or
+  5xx, or a page a site's `documents()` hook writes session values into, fetched with
+  a session) is `shell_assisted`. Until 0577dd5 took both agents' shells off the
+  network, a shell could open a session route with a cookie the surface printed: in
+  the Haiku sweep of 2026-09-20, body-only-ref's ref came only from a curl'd 507 body,
+  and hovercard-oncall's on-call status only from curl'd cards. No shell reaches
+  loopback now, and every row still records the flag. report.md prints such a row as
+  SHELL-ASSISTED and gives the pass count without it, `eval/ab.mjs` pairs without it
+  and gives the figures with it as a sensitivity, and triage files a failed one as
+  `shell-assisted`. A shell's curl of a static page is the page the browser shows,
+  and does not count.
+- **Compare tools inside one run, as a paired A/B.** Put both builds in one seeded,
+  interleaved run as conditions, and read `eval/ab.mjs`. Across runs, cost never
+  compares and prompt caches differ, so `eval/scripts/compare.mjs` refuses two runs
+  whose backend, model, effort, codex tool mode
+  (`meta.isolation.toolPolicy.codex.toolMode`), seed, eval commit, eval diff
+  (`diffSha256`), suite, serving, extractor or browser pins (`meta.envPins`) differ,
+  refuses a run that is contaminated or predates isolation, and leaves shell-assisted
+  rows out.
+  An unseeded run gives each arm its own difficulty draws, so its paired difference
+  carries draw noise too.
+- **Quote the geometric-mean ratio with its interval, never a ratio of sums.** A few
+  long tasks dominate a sum: the 2026-08-18 sweep gives 1.336 as a ratio of sums and
+  1.209 as a geometric mean over tasks.
+- **A difference counts only once it clears the noise between identical arms.** Run
+  an A/A pair, two conditions of one build, in the same run until its noise is known,
+  and read the minimum detectable effect the A/B report prints before claiming a
+  change smaller than it.
+- **Read a pass flip through its triage before counting it.** In the 2026-08-18
+  sweep, 10 of the 11 discordant pairs came from rows that never called their surface
+  or from quote-gate nulls of a value the answer held; one (mfa-login) was the tool.
+  `eval/scripts/triage.mjs` names the class of every failure.
+- **Regrade before comparing across a validator change.** A run that kept its server
+  state can be re-graded for free with today's validators (`eval/scripts/regrade.mjs`);
+  a run that did not belongs to its own grading epoch.
+
+## Measuring a tool change
+
+A firefox-devtools-mcp build is judged by what it changes in agent runs, and the eval
+measures that in a fixed order of cost: the free gate twice, the free spikes and
+snapshot census, then a targeted paid A/B of the candidate against the baseline and an
+A/A copy of the baseline, in one seeded run. The steps, the commands, the sample sizes
+and the ship rule are in `eval/README.md`, "Measuring a tool change", in one copy.
+Those steps rest on the rules above: nothing quoted from a contaminated run, nothing
+compared across runs, and no difference inside the A/A band.
 
 ## Standing decisions
 
@@ -282,6 +439,18 @@ work:
   page nonce. The allowlist in `server.mjs` is exhaustive and was derived, not
   guessed; regenerate it with both greps named in the comment above it, because some
   pages post through a helper.
+- **The eval drops nothing a validator reads.** Validators grade beacon rows by
+  absence and by order, and read sessions across cookies. Under a cap, anything
+  holding a page nonce can flood the beacon log, and any client can mint sessions
+  with cookieless page loads, until an incriminating row or session falls off the
+  front. So the server-wide caps in `server.mjs`, on the beacon, collect, ledger and
+  draw logs and the session map, apply only under `capped`, which `serve.mjs` sets
+  for the standing habitat and the eval never does. A session's own records are
+  bounded in every mode, the eval's included, as `sites/README.md` lists: a record a
+  site only reports is trimmed oldest-first, and a record a validator grades refuses
+  the request at `SESSION_ROWS` rather than drop a row, or keeps no more than its
+  validator grades (status keeps its newest 50 probe checks, and status-flash grades
+  the latest alone).
 - **A readiness poll must require something that did not exist before the action.**
   A predicate the previous state already satisfies returns immediately and the driver
   acts on stale data: "no row is pending" is true before a re-render starts, and a
@@ -312,7 +481,10 @@ work:
 - `click_by_uid` can report a successful click that never navigated, and the uid can
   go stale. `clickToPath` in `eval/verify-drivers/lib.mjs` re-resolves a fresh uid per
   attempt and confirms the document changed; use it for link navigation rather than
-  clicking and polling for content.
+  clicking and polling for content. A control that posts cannot be re-clicked on a
+  hunch, because the second click may post twice. The `policy-quote` driver arms a
+  listener on the button to learn whether a click reached it, and re-reads the
+  server's step before it clicks again.
 
 ## Lessons the design encodes
 

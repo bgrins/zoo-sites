@@ -1,7 +1,6 @@
 // Golden-path driver for pages/bistro/ (order-modifiers). See probes.mjs for
 // the contract.
-import { straySession } from './probes.mjs';
-import { until, uidOf, snapText, bumpCode } from './lib.mjs';
+import { addSession, bumpCode, findSession, snapText, straySession, uidOf, until } from './lib.mjs';
 
 // The ticket column and the Place order button sit past the default 100-line
 // snapshot cap once both builder and ticket are populated (and `firefox-cli
@@ -30,13 +29,16 @@ export const DRIVERS = {
     note: 'derives the upcharge and surcharge deltas from the echo line itself',
     wrong: ['The order was placed. Order code BF-000000, total charged $28.95.'],
     async run(h, ctx) {
-      // A stray curl session that places a DIFFERENT ticket first: the graded
-      // session must be the one that built the requested order, and the stray
-      // order's code and total must be rejected as an answer.
+      // A stray curl session that builds a DIFFERENT ticket first and places
+      // nothing: exploring the counter is not ordering, so it must not fail the
+      // run, and the graded session must be the one that built the request.
       const stray = await straySession(h.base, '/bistro/order.html');
-      await stray.post('/api/bistro/cart', { item: 'beet-flatbread', size: 'medium' });
-      const strayOrder = await stray.post('/api/bistro/order', {});
-      if (!strayOrder.ok) throw new Error('stray probe could not place its decoy order');
+      const strayLine = await stray.post('/api/bistro/cart', { item: 'beet-flatbread', size: 'medium' });
+      if (!strayLine.ok) throw new Error('stray probe could not build its decoy ticket');
+      // An extra named after a prototype key must be refused, not priced as
+      // undefined into a NaN ticket total.
+      const protoAdd = await stray.post('/api/bistro/cart', { item: 'grain-bowl', added: ['__proto__'] });
+      if (protoAdd.ok) throw new Error('an extra named __proto__ was accepted onto the ticket');
 
       await h.goto('/bistro/order.html');
       await waitFor(
@@ -44,6 +46,23 @@ export const DRIVERS = {
         () => document.querySelectorAll('#dishes input').length >= 4,
         'dish radios'
       );
+      // An empty ticket cannot be placed, and a dish is chosen by clicking its
+      // name as well as its radio.
+      const before = await h.evaluate(() => {
+        const name = [...document.querySelectorAll('#dishes .cname')].find(
+          (n) => n.textContent === 'Smoked Tomato Bisque'
+        );
+        name?.click();
+        const radio = [...document.querySelectorAll('#dishes input')].find(
+          (i) => i.getAttribute('aria-label') === 'Smoked Tomato Bisque'
+        );
+        return {
+          placeDisabled: document.getElementById('place').disabled,
+          nameSelects: !!radio?.checked && !document.getElementById('config').hidden,
+        };
+      });
+      if (!before.placeDisabled) throw new Error('Place order is live on an empty ticket');
+      if (!before.nameSelects) throw new Error('clicking a dish name does not choose the dish');
       let snap = await snapshot(h);
       await h.mcp('click_by_uid', {
         uid: uid(snap, 'input "Charred Beet Flatbread"', 'flatbread radio'),
@@ -190,8 +209,15 @@ export const DRIVERS = {
       if (!shownCode || shownCode[1] !== conf.code) {
         throw new Error(`order code missing from the confirmation page`);
       }
-      if (!confText.includes(`Total charged $${conf.total.toFixed(2)}`)) {
-        throw new Error('total charged missing from the confirmation page');
+      if (!confText.includes(`Total due at pickup $${conf.total.toFixed(2)}`)) {
+        throw new Error('total due missing from the confirmation page');
+      }
+      const after = await h.evaluate(() => ({
+        placeDisabled: document.getElementById('place').disabled,
+        buildmsg: document.getElementById('buildmsg').textContent,
+      }));
+      if (!after.placeDisabled || after.buildmsg) {
+        throw new Error(`after the order the builder still reads "${after.buildmsg}" and Place order is ${after.placeDisabled ? 'off' : 'live'}`);
       }
 
       const fields = { orderCode: conf.code, total: conf.total };
@@ -201,9 +227,77 @@ export const DRIVERS = {
         { orderCode: conf.code, total: round2(conf.total - largeUpcharge) },
         { orderCode: bumped, total: conf.total },
         { orderCode: conf.code, total: round2(conf.total + 1) },
-        { orderCode: strayOrder.code, total: strayOrder.total },
+        { orderCode: `**${bumped}**`, total: conf.total },
       ];
-      this.alsoCorrectFields = [fields, { orderCode: conf.code.toLowerCase(), total: conf.total }];
+      this.alsoCorrectFields = [
+        fields,
+        { orderCode: conf.code.toLowerCase(), total: conf.total },
+        { orderCode: `**${conf.code}**`, total: conf.total },
+        { orderCode: `${conf.code}.`, total: conf.total },
+      ];
+      const reported = (state) =>
+        findSession(state, (s) => s.bistro?.orders?.some((o) => o.code === conf.code)).session;
+      // The wrong ticket an unchecked build places: the flatbread at medium with
+      // its red onion kept, beside the right bowl.
+      const wrongOrder = (state) => {
+        const [placed] = reported(state).bistro.orders;
+        return {
+          code: bumped,
+          total: round2(conf.total - largeUpcharge),
+          lines: placed.lines.map((l) =>
+            l.item === 'beet-flatbread' ? { ...l, size: 'medium', removed: [] } : l
+          ),
+          placedAt: placed.placedAt - 60000,
+        };
+      };
+      // The one placed order's flatbread line rewritten, so the single-ticket
+      // count holds and only the modifier check can refuse it.
+      const rebuildFlatbread = (state, change) => {
+        const [placed] = reported(state).bistro.orders;
+        placed.lines = placed.lines.map((l) => (l.item === 'beet-flatbread' ? { ...l, ...change(l) } : l));
+        return placed;
+      };
+      this.wrongState = [
+        {
+          name: 'the only order kept the red onion on the flatbread',
+          mutate: (state) => rebuildFlatbread(state, () => ({ removed: [] })),
+        },
+        {
+          name: 'the only order left the feta off the flatbread, and the answer reports its total',
+          mutate(state) {
+            const placed = rebuildFlatbread(state, (l) => ({ added: l.added.filter((a) => a !== 'feta') }));
+            placed.total = round2(conf.total - fetaSurcharge);
+          },
+          fields: { orderCode: conf.code, total: round2(conf.total - fetaSurcharge) },
+        },
+        {
+          name: 'the reported session placed a wrong ticket before the right one',
+          mutate: (state) => reported(state).bistro.orders.unshift(wrongOrder(state)),
+        },
+        {
+          name: 'the reported session placed the same order twice',
+          mutate(state) {
+            const { orders } = reported(state).bistro;
+            orders.push({ ...structuredClone(orders[0]), code: bumped });
+          },
+        },
+        {
+          name: 'an earlier session placed a wrong ticket',
+          mutate: (state) =>
+            addSession(state, { bistro: { cart: [], orders: [wrongOrder(state)], rejects: [] } }, { first: true }),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'an earlier session built the same ticket and placed nothing',
+          mutate: (state) =>
+            addSession(
+              state,
+              { bistro: { cart: structuredClone(reported(state).bistro.orders[0].lines), orders: [], rejects: [] } },
+              { first: true }
+            ),
+        },
+      ];
       this.wrong = [
         this.wrong[0],
         `Order placed. The code is ${conf.code} and the total charged was ` +
@@ -219,7 +313,7 @@ export const DRIVERS = {
           `I placed the order: a large Charred Beet Flatbread with feta added and the red ` +
           `onion left off ($${line1.toFixed(2)}), and a medium Harvest Grain Bowl with ` +
           `smoked almonds added ($${line2.toFixed(2)}). The order code is ${conf.code} ` +
-          `and the exact total charged is $${conf.total.toFixed(2)}.`,
+          `and the exact total due is $${conf.total.toFixed(2)}.`,
         fields,
       };
     },

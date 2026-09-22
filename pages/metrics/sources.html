@@ -3,18 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Data sources &middot; Northgate Media &middot; Halbeck</title>
+<title>Data sources &middot; Skelvane Media &middot; Halbeck</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="halbeck.css">
 </head>
 <body>
 <div class="bar">
-  <span class="logo">Hal<i>beck</i></span>
-  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <a class="logo" href="index.html">halbeck</a>
+  <button class="wsw" type="button"><span>workspace</span> Skelvane Media</button>
   <span class="spacer"></span>
   <a class="lnk" href="sources.html">Data sources</a>
   <a class="lnk" href="alerts.html">Alerts</a>
   <a class="lnk" href="docs.html">Docs</a>
-  <span class="who">NM</span>
+  <button class="who" type="button" aria-label="Account menu for r.calloway">RC</button>
 </div>
 
 <div class="shell">
@@ -37,7 +38,7 @@
   </nav>
 
   <main>
-    <p class="crumbs"><a href="overview.html">Northgate Media</a> / Admin / Data sources</p>
+    <p class="crumbs"><a href="overview.html">Skelvane Media</a> / Admin / Data sources</p>
     <h1>Data sources</h1>
     <p class="sub">Connectors feeding this workspace. A source that has not landed a batch
     within its freshness window is held back from dashboards until it catches up, so a
@@ -47,7 +48,7 @@
       <header><h2>Connected</h2><span class="meta">4 active, 1 paused</span></header>
       <div class="pad">
         <ul class="events">
-          <li><span class="when">identity</span><span class="what">Fernway SSO directory, nightly at 04:15</span><span class="tag">healthy</span></li>
+          <li><span class="when">identity</span><span class="what">Ondrexa SSO directory, nightly at 04:15</span><span class="tag">healthy</span></li>
           <li><span class="when">product</span><span class="what">Sign-in event stream, continuous</span><span class="tag">healthy</span></li>
           <li><span class="when">billing</span><span class="what">Seat pool and plan tier, hourly</span><span class="tag">healthy</span></li>
           <li><span class="when">support</span><span class="what">Case and contact history, every 6 hours</span><span class="tag">healthy</span></li>
@@ -69,7 +70,8 @@
           <dd>Every dashboard series can be exported from the panel it appears in.
           Scheduled exports are configured per saved view.</dd>
           <dt>Contact</dt>
-          <dd>Platform Analytics, analytics@halbeck.example</dd>
+          <dd>Platform Analytics, Skelvane Media: analytics@skelvanemedia.example. Connector
+          faults go to Halbeck support.</dd>
         </dl>
       </div>
     </section>
@@ -77,12 +79,13 @@
 </div>
 
 <footer class="foot">
-  <span>Halbeck Analytics Ltd</span>
+  <span>&copy; 2026 Halbeck Analytics Ltd</span>
   <a href="status.html">Status</a>
   <a href="privacy.html">Privacy notice</a>
   <a href="terms.html">Terms of service</a>
   <a href="support.html">Support</a>
-  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+  <span class="push">Registered in England and Wales, company number 00000000 &middot; 14 Tannery Yard, Thrushby TY4 7HB &middot; support@halbeck.example</span>
 </footer>
+<script src="halbeck.js"></script>
 </body>
 </html>

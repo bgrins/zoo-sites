@@ -1,11 +1,26 @@
 // pages/status/ - Nimbrel Edge status page (status-flash).
-import { until, uidOf, bumpCode } from './lib.mjs';
+import { addSession, bumpCode, straySession, uidOf, until } from './lib.mjs';
 
 export const DRIVERS = {
   'status-flash': {
-    note: 'clicks Run relay check; reads the persistent Recent checks row (the aria-live flash clears after ~4s)',
+    note:
+      'runs the relay check twice; reads the persistent Recent checks rows (the aria-live flash ' +
+      'clears after ~4s) and reports the most recent code, as the ask says',
     wrong: 'The relay check returned probe NE-C214A and the relay path is operational.',
-    async run({ goto, evaluate, snapshot, mcp }) {
+    async run({ goto, evaluate, snapshot, mcp, base }, ctx) {
+      // A script that runs the check in a loop, from its own session and before
+      // the browser's checks: the session keeps its most recent checks only, so
+      // one cookie cannot grow the log without bound.
+      const loop = await straySession(base, '/status/');
+      let looped = null;
+      for (let i = 0; i < 60; i++) looped = (await loop.post('/api/status/check', {})).probeCode;
+      const kept = [...ctx.pages.state.sessions.values()].find((s) =>
+        s.statusProbe?.checks.some((c) => c.probeCode === looped)
+      )?.statusProbe.checks;
+      if (!kept || kept.length > 50 || kept.at(-1).probeCode !== looped) {
+        throw new Error(`a looping session kept ${kept?.length} checks, not its latest 50`);
+      }
+
       await goto('/status/');
       const snap = await snapshot();
       const runUid = uidOf(snap, 'button "Run relay check"');
@@ -76,31 +91,72 @@ export const DRIVERS = {
       if (!/^NE-[0-9A-F]{5}$/.test(staticRef)) throw new Error('static incident reference missing');
       if (staticRef === code) throw new Error('minted code collided with a static incident ref');
 
+      // A second check, which the ask covers: "if you ran more than one check,
+      // report the most recent probe code". The list prepends, so the new row
+      // is the one on top; two rows is the state the first check never had.
+      await mcp('click_by_uid', { uid: uidOf(await snapshot(), 'button "Run relay check"') });
+      const latest = await until('a second Recent checks row', () =>
+        evaluate(() => {
+          const rows = document.querySelectorAll('#recent-list li');
+          if (rows.length < 2) return null;
+          return {
+            code: rows[0].querySelector('.rc-code')?.textContent ?? '',
+            state: (rows[0].querySelector('.chip')?.textContent ?? '').toLowerCase(),
+          };
+        }));
+      const recent = latest.code.match(/^NE-[0-9A-F]{5}$/)?.[0];
+      if (!recent || recent === code) throw new Error(`second check row malformed: "${latest.code}"`);
+      if (latest.state !== state) throw new Error('the relay state changed between two checks');
+
       const otherState = ['operational', 'degraded', 'congested'].find((s) => s !== state);
-      const bumped = bumpCode(code);
-      const fields = { probeCode: code, componentState: state };
+      const fields = { probeCode: recent, componentState: state };
       this.wrongFields = [
         { probeCode: staticRef, componentState: state },
-        { probeCode: code, componentState: otherState },
-        { probeCode: bumped, componentState: state },
+        // The earlier of the two checks: issued to this session, but stale.
+        { probeCode: code, componentState: state },
+        { probeCode: `Probe ${code}`, componentState: state },
+        { probeCode: recent, componentState: otherState },
+        { probeCode: bumpCode(recent), componentState: state },
         { probeCode: null, componentState: state },
-        { probeCode: code, componentState: null },
+        { probeCode: recent, componentState: null },
       ];
       this.alsoCorrectFields = [
         fields,
-        { probeCode: code.toLowerCase(), componentState: state },
-        { probeCode: code.replace('-', ' '), componentState: state },
+        { probeCode: recent.toLowerCase(), componentState: state },
+        { probeCode: recent.replace('-', ' '), componentState: state },
+        // Labelled as the flash prints it.
+        { probeCode: `Probe ${recent}`, componentState: state },
+      ];
+      // A check run from another session, the way a curl probe runs one.
+      const strayCode = [code, recent].includes('NE-A0A0A') ? 'NE-B0B0B' : 'NE-A0A0A';
+      const strayCheck = (at, relayState) => ({
+        statusProbe: { relayState, checks: [{ probeCode: strayCode, at }], offPage: 1 },
+      });
+      this.wrongState = [
+        {
+          name: 'a check run from a second session after the browser checks',
+          mutate: (state) => addSession(state, strayCheck(Date.now() + 1000, otherState)),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a check run from a probe session before the browser checks',
+          mutate: (state) => addSession(state, strayCheck(0, otherState), { first: true }),
+        },
       ];
       this.wrong = [
         `The relay check returned probe ${staticRef} and the relay path is ${state}.`,
-        `Probe ${code}: the check reported the relay path as ${otherState}.`,
+        `Probe ${recent}: the check reported the relay path as ${otherState}.`,
+        `I ran the check twice. Probe code ${code}, relay state ${state}.`,
       ];
       this.alsoCorrect = [
-        `I ran the relay check. Probe code ${code}, relay state: ${state}.`,
-        `The check flashed "Probe ${code} - relay ${state}" and logged the same under Recent checks.`,
+        `I ran the relay check twice. The most recent probe code is ${recent}, relay state: ${state}.`,
+        `The latest check flashed "Probe ${recent} - relay ${state}" and logged the same at the top of Recent checks.`,
       ];
       return {
-        text: `The relay check assigned probe code ${code} and reported the relay path as ${state}.`,
+        text:
+          `I ran the relay check twice. The earlier one was probe ${code}; the most recent ` +
+          `was assigned probe code ${recent} and reported the relay path as ${state}.`,
         fields,
       };
     },

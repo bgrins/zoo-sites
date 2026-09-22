@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Run 4192 - orchid-api - Cindergrid</title>
 <link rel="stylesheet" href="console.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="topbar">
@@ -23,14 +24,21 @@
     <a href="secrets.html">Secrets</a>
     <a href="settings.html">Settings</a>
     <a href="support.html">Support</a>
+    <span class="rail-label">Organisation</span>
+    <a href="queue.html">Deploy queue</a>
+    <a href="services/orchid-api.html">Services</a>
   </nav>
 
   <main>
     <div class="runhead">
       <h1>Run 4192</h1>
       <span class="chip chip-fail">Failed</span>
+      <span class="spacer"></span>
+      <button type="button" class="act" disabled aria-describedby="rerun-why">Re-run</button>
     </div>
     <p class="subhead">orchid-api to production, change 861. Stopped at step release/gate.</p>
+    <p class="rolenote" id="rerun-why">Re-running a production promotion needs the deployer role. Your
+    role (member) can read this run; ask grid-admins@cindergrid.example.net to re-run it.</p>
 
     <div class="facts">
       <div class="fact"><span class="fact-k">Commit</span><span class="fact-v">5f3c9a1</span></div>
@@ -77,10 +85,11 @@
 </div>
 
 <footer>
-  Cindergrid Systems Ltd, 4 Alder Wharf, Bristol BS1 4RN, United Kingdom<br>
+  Cindergrid Systems Ltd, 4 Brevel Yard, Drisselby DB3 7NQ, United Kingdom.
+  Registered in England and Wales, company number 00000000.<br>
   <a href="status.html">Status</a> &middot; <a href="docs.html">Documentation</a> &middot;
   <a href="terms.html">Terms of service</a> &middot; <a href="privacy.html">Privacy</a> &middot;
-  support@cindergrid.example.net<br>
+  <a href="mailto:support@cindergrid.example.net">support@cindergrid.example.net</a><br>
   &copy; 2026 Cindergrid Systems Ltd
 </footer>
 
@@ -127,9 +136,9 @@
       const line = buffer[first + i];
       if (!line) break;
       const y = i * LINE_H + LINE_H / 2;
-      ctx.fillStyle = '#3f4a56';
+      ctx.fillStyle = '#56616d';
       ctx.fillText(String(line.n).padStart(4, ' '), PAD_X, y);
-      ctx.fillStyle = '#55606d';
+      ctx.fillStyle = '#7a8591';
       ctx.fillText(line.ts, PAD_X + 46, y);
       ctx.fillStyle = COLOURS[line.level] || '#ccd6e0';
       ctx.fillText(line.level, PAD_X + 152, y);
@@ -183,6 +192,12 @@
     term.textContent = `query ${data.query}`;
     head.append(count, term);
     hits.append(head);
+    if (data.total > data.matches.length) {
+      const cut = document.createElement('p');
+      cut.className = 'hint';
+      cut.textContent = `Showing the first ${data.matches.length} of ${data.total} matching lines. Refine the search to narrow them.`;
+      hits.append(cut);
+    }
     if (!data.matches.length) {
       const none = document.createElement('p');
       none.className = 'hint';
@@ -191,7 +206,8 @@
       return;
     }
     for (const line of data.matches) {
-      const row = document.createElement('div');
+      const row = document.createElement('button');
+      row.type = 'button';
       row.className = 'hit';
       const n = document.createElement('span');
       n.className = 'hit-n';

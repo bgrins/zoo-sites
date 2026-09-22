@@ -1,5 +1,5 @@
 // pages/news/consent.html - the 3-layer consent wall.
-import { randomBytes } from 'node:crypto';
+import { SESSION_ROWS } from './lib.mjs';
 
 // pages/news/consent.html — the 3-layer consent wall over the Millrace front
 // page. The CMP posts its whole toggle map to /api/consent/save; the submitted
@@ -52,7 +52,7 @@ const consentTierOf = (key) =>
   ) ?? null;
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/consent/state') {
       const found = requireSession(req, res);
@@ -84,12 +84,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/consent/save') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -120,7 +116,10 @@ export function routes(ctx) {
       }
       const optional = CONSENT_TOGGLES.filter((key) => key !== 'essential');
       const optionalOn = optional.filter((key) => toggles[key]).length;
-      const via = String(payload.via ?? 'save');
+      if (consent.saves.length >= SESSION_ROWS) {
+        return json(res, 429, { error: 'Too many changes to your cookie choices. Try again later.' });
+      }
+      const via = String(payload.via ?? 'save').slice(0, 40);
       if (via === 'accept-all' || optionalOn === optional.length) {
         consent.acceptAlls += 1;
       }

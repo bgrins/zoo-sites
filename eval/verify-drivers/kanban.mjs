@@ -10,10 +10,11 @@
 //     elements, so it works here only because the board's drop handler appends to
 //     whichever lane received the event. clientX/clientY arrive as 0, so any board
 //     that derived an insertion index from the pointer would land the card wrong;
-//   - every move re-renders the board, and a re-render plus the fresh snapshot
-//     invalidates every uid, so a four-card triage costs a snapshot per card.
+//   - every move re-renders the board, rebuilding every card, so a card's uid
+//     dies with it on 0.10 as every uid does at the next snapshot on 0.9.15,
+//     and a four-card triage costs a snapshot per card on either build.
 
-import { snapText, until } from './lib.mjs';
+import { snapText, straySession, until } from './lib.mjs';
 
 const PATH = '/kanban/';
 const LANES = { backlog: 'Backlog', doing: 'Doing', done: 'Done' };
@@ -45,7 +46,7 @@ const wantedLane = (card) =>
 export const DRIVERS = {
   'kanban-triage': {
     note: 'the only driver that calls drag_by_uid_to_uid; drags all four cards',
-    async run({ goto, mcp }) {
+    async run({ base, goto, mcp, evaluate }) {
       await goto(PATH);
       const snapshot = () => snapText(mcp, { maxLines: 400 });
 
@@ -60,8 +61,8 @@ export const DRIVERS = {
 
       const dragged = [];
       for (let guard = 0; guard < 10; guard++) {
-        // Re-read every pass: the board re-renders after each drop and a new
-        // snapshot invalidates the previous uids either way.
+        // Re-read every pass: the board rebuilds its cards after each drop,
+        // and on 0.9.15 a new snapshot invalidates the previous uids too.
         const board = readBoard(await snapshot());
         const next = board.cards.find((c) => wantedLane(c) && wantedLane(c) !== c.lane);
         if (!next) break;
@@ -94,6 +95,30 @@ export const DRIVERS = {
         return snap.match(/text="(CM-[0-9A-F]{6})"/)?.[1] ?? null;
       });
 
+      // A lane-button move re-renders every lane; focus has to come back to the
+      // moved card rather than drop to <body>. Checked after the graded save, so
+      // the unsaved move reaches no layout the validator reads, then discarded.
+      const saved = await snapshot();
+      const moveBtn = saved.match(/uid=(\S+) button "Move (WO-\d+) to (?:Backlog|Doing|Done)"/);
+      if (!moveBtn) throw new Error('no per-card move button in the snapshot');
+      await mcp('click_by_uid', { uid: moveBtn[1] });
+      await until(`focus to return to ${moveBtn[2]} after a button move`, async () => {
+        const at = await evaluate(() =>
+          document.activeElement?.closest('article')?.getAttribute('aria-label') ??
+          document.activeElement?.tagName ?? ''
+        );
+        return String(at).startsWith(moveBtn[2]) ? at : null;
+      }, { tries: 12 });
+      const discard = (await snapshot()).match(/uid=(\S+) button "Discard changes"/)?.[1];
+      if (!discard) throw new Error('no Discard changes button in the snapshot');
+      await mcp('click_by_uid', { uid: discard });
+      await until('the discarded move to revert to the saved board', async () => {
+        const now = readBoard(await snapshot());
+        const card = now.cards.find((c) => c.ref === moveBtn[2]);
+        const was = beforeSave.cards.find((c) => c.ref === moveBtn[2]);
+        return card && was && card.lane === was.lane ? true : null;
+      });
+
       // A wrong answer that looks right: the same prose, a revision the server
       // never issued. The validator has to reject it or it is grading nothing.
       this.wrong = [
@@ -108,11 +133,53 @@ export const DRIVERS = {
           `the page reported revision ${revision.slice(3)}.`,
         `Saved by drag-and-drop between lanes; the board revision is ${revision.toLowerCase()}.`,
       ];
+      // Curl sessions that save their own boards: one saves the dealt board
+      // untouched, one triages but also shifts a Routine card, and one saves the
+      // dealt board before triaging and saving again. Each revision is real, so
+      // each must fail on the layout it was issued for.
+      const probeBoard = async () => {
+        const probe = await straySession(base, PATH, { nonceHeader: 'always', reply: 'response' });
+        const { body } = await probe.get('/api/kanban/board');
+        if (!Array.isArray(body.cards)) throw new Error('probe could not read its board');
+        const save = async (place) => {
+          const columns = { backlog: [], doing: [], done: [] };
+          for (const card of body.cards) columns[place(card)].push(card.id);
+          const r = await probe.post('/api/kanban/layout', { columns, moves: [] });
+          if (!r.body.ok) throw new Error(`probe save refused: ${JSON.stringify(r.body)}`);
+          return r.body.revision;
+        };
+        const triaged = (card) =>
+          card.tag === 'urgent' ? 'done' : card.tag === 'blocked' ? 'backlog' : card.col;
+        return { cards: body.cards, save, triaged };
+      };
+      const untouched = await probeBoard();
+      const untouchedRevision = await untouched.save((card) => card.col);
+      const shuffled = await probeBoard();
+      const nudged = shuffled.cards.find((card) => card.tag === 'routine');
+      const routineRevision = await shuffled.save((card) =>
+        card === nudged ? (card.col === 'doing' ? 'done' : 'doing') : shuffled.triaged(card)
+      );
+      const twice = await probeBoard();
+      const staleRevision = await twice.save((card) => card.col);
+      await twice.save(twice.triaged);
+
       const fields = { boardRevision: revision };
-      this.wrongFields = [{ boardRevision: 'CM-000000' }];
+      this.wrongFields = [
+        { boardRevision: 'CM-000000' },
+        { boardRevision: untouchedRevision },
+        { boardRevision: routineRevision },
+        { boardRevision: staleRevision },
+        { boardRevision: `Board revision ${staleRevision}` },
+        { boardRevision: `Board revision ${String(staleRevision).replace(/^CM-/i, '')}` },
+        // A hedge whose second revision is quoted bare, with no digit to show it.
+        { boardRevision: `${revision} or FACADE` },
+      ];
       this.alsoCorrectFields = [
         fields,
         { boardRevision: String(revision).replace(/^CM-/i, '') },
+        // Labelled as the board prints it.
+        { boardRevision: `Board revision ${revision}` },
+        { boardRevision: `Board revision ${String(revision).replace(/^CM-/i, '')}` },
       ];
       return {
         text:

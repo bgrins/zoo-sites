@@ -3,18 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Saved views &middot; Northgate Media &middot; Halbeck</title>
+<title>Saved views &middot; Skelvane Media &middot; Halbeck</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="halbeck.css">
 </head>
 <body>
 <div class="bar">
-  <span class="logo">Hal<i>beck</i></span>
-  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <a class="logo" href="index.html">halbeck</a>
+  <button class="wsw" type="button"><span>workspace</span> Skelvane Media</button>
   <span class="spacer"></span>
   <a class="lnk" href="sources.html">Data sources</a>
   <a class="lnk" href="alerts.html">Alerts</a>
   <a class="lnk" href="docs.html">Docs</a>
-  <span class="who">NM</span>
+  <button class="who" type="button" aria-label="Account menu for r.calloway">RC</button>
 </div>
 
 <div class="shell">
@@ -37,87 +38,155 @@
   </nav>
 
   <main>
-    <p class="crumbs"><a href="overview.html">Northgate Media</a> / Saved views</p>
+    <p class="crumbs"><a href="overview.html">Skelvane Media</a> / Saved views</p>
     <h1>Saved views</h1>
     <p class="sub">Views saved from the analysis editor by workspace members. A saved view keeps
     its query, filters and schedule; anyone with viewer access can open it, only its owner can
     change it.</p>
 
     <section class="panel" id="seats-by-plan-tier">
-      <header><h2>Seats by plan tier</h2><span class="meta">saved by r.calloway</span></header>
+      <header><h2>Seats by plan tier</h2><span class="meta">saved by r.calloway &middot; June 2026</span><span class="push"></span><a class="tool" href="#" data-export="skelvane-seats-by-plan-tier.csv">Export CSV</a></header>
       <div class="pad">
-        <dl class="defn">
-          <dt>Definition</dt>
-          <dd>Active seats split by the plan tier of the owning team, as a share of the total.</dd>
-          <dt>Grain</dt>
-          <dd>Calendar month, most recent closed month.</dd>
-          <dt>Schedule</dt>
-          <dd>Refreshed with the monthly seat rollup; emailed to the commercial list on close.</dd>
-          <dt>Last refreshed</dt>
-          <dd>03 Jul 2026, 04:31</dd>
-        </dl>
+        <div class="two">
+          <div class="tablewrap">
+            <table class="data">
+              <thead>
+                <tr><th scope="col">Plan tier</th><th scope="col">Share of active seats</th><th scope="col">Change on May</th></tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">Scale</th><td class="num">46.2%</td><td class="num">+0.8 pts</td></tr>
+                <tr><th scope="row">Growth</th><td class="num">31.5%</td><td class="num">-0.3 pts</td></tr>
+                <tr><th scope="row">Starter</th><td class="num">17.9%</td><td class="num">-0.2 pts</td></tr>
+                <tr><th scope="row">Trial</th><td class="num">4.4%</td><td class="num">-0.3 pts</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <dl class="defn">
+            <dt>Definition</dt>
+            <dd>Active seats split by the plan tier of the owning team, as a share of the total.</dd>
+            <dt>Grain</dt>
+            <dd>Calendar month, most recent closed month.</dd>
+            <dt>Schedule</dt>
+            <dd>Refreshed with the monthly seat rollup; emailed to the commercial list on close.</dd>
+            <dt>Last refreshed</dt>
+            <dd>03 Jul 2026, 04:31</dd>
+          </dl>
+        </div>
       </div>
     </section>
 
     <section class="panel" id="weekly-actives">
-      <header><h2>Weekly actives</h2><span class="meta">saved by j.penhale</span></header>
+      <header><h2>Weekly actives</h2><span class="meta">saved by j.penhale &middot; last six weeks</span><span class="push"></span><a class="tool" href="#" data-export="skelvane-weekly-actives.csv">Export CSV</a></header>
       <div class="pad">
-        <dl class="defn">
-          <dt>Definition</dt>
-          <dd>Distinct members with a sign-in per ISO week &mdash; the fast-moving companion to
-          the monthly seat series.</dd>
-          <dt>Grain</dt>
-          <dd>ISO week, trailing 26 weeks.</dd>
-          <dt>Schedule</dt>
-          <dd>Refreshed Monday 05:00 after the week closes.</dd>
-          <dt>Last refreshed</dt>
-          <dd>22 Jun 2026, 05:02</dd>
-        </dl>
+        <div class="two">
+          <div class="tablewrap">
+            <table class="data">
+              <thead>
+                <tr><th scope="col">Week closing</th><th scope="col">Distinct members</th><th scope="col">Change on prior week</th></tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">31 May 2026</th><td class="num">19,284</td><td class="num">-1.1%</td></tr>
+                <tr><th scope="row">7 Jun 2026</th><td class="num">19,902</td><td class="num">+3.2%</td></tr>
+                <tr><th scope="row">14 Jun 2026</th><td class="num">20,117</td><td class="num">+1.1%</td></tr>
+                <tr><th scope="row">21 Jun 2026</th><td class="num">19,760</td><td class="num">-1.8%</td></tr>
+                <tr><th scope="row">28 Jun 2026</th><td class="num">20,341</td><td class="num">+2.9%</td></tr>
+                <tr><th scope="row">5 Jul 2026</th><td class="num">18,873</td><td class="num">-7.2%</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <dl class="defn">
+            <dt>Definition</dt>
+            <dd>Distinct members with a sign-in per ISO week &mdash; the fast-moving companion to
+            the monthly seat series. The dip in the week closing 5 Jul follows the start of the
+            editorial desks' summer rota.</dd>
+            <dt>Grain</dt>
+            <dd>ISO week, trailing 26 weeks; the six most recent are shown here.</dd>
+            <dt>Schedule</dt>
+            <dd>Refreshed Monday 05:00 after the week closes.</dd>
+            <dt>Last refreshed</dt>
+            <dd>06 Jul 2026, 05:02</dd>
+          </dl>
+        </div>
       </div>
     </section>
 
     <section class="panel" id="trial-conversions">
-      <header><h2>Trial conversions</h2><span class="meta">saved by r.calloway</span></header>
+      <header><h2>Trial conversions</h2><span class="meta">saved by r.calloway &middot; by month of trial end</span><span class="push"></span><a class="tool" href="#" data-export="skelvane-trial-conversions.csv">Export CSV</a></header>
       <div class="pad">
-        <dl class="defn">
-          <dt>Definition</dt>
-          <dd>Teams whose trial converted to a paid tier within 30 days of trial end.</dd>
-          <dt>Grain</dt>
-          <dd>Calendar month of trial end.</dd>
-          <dt>Schedule</dt>
-          <dd>Refreshed hourly with the billing connector.</dd>
-          <dt>Last refreshed</dt>
-          <dd>today, on the hour</dd>
-        </dl>
+        <div class="two">
+          <div class="tablewrap">
+            <table class="data">
+              <thead>
+                <tr><th scope="col">Trial ended</th><th scope="col">Teams</th><th scope="col">Converted</th><th scope="col">Rate</th></tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">Jan 2026</th><td class="num">38</td><td class="num">14</td><td class="num">36.8%</td></tr>
+                <tr><th scope="row">Feb 2026</th><td class="num">41</td><td class="num">17</td><td class="num">41.5%</td></tr>
+                <tr><th scope="row">Mar 2026</th><td class="num">35</td><td class="num">12</td><td class="num">34.3%</td></tr>
+                <tr><th scope="row">Apr 2026</th><td class="num">44</td><td class="num">19</td><td class="num">43.2%</td></tr>
+                <tr><th scope="row">May 2026</th><td class="num">39</td><td class="num">15</td><td class="num">38.5%</td></tr>
+                <tr><th scope="row">Jun 2026</th><td class="num">42</td><td class="num">&mdash;</td><td class="num">&mdash;</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <dl class="defn">
+            <dt>Definition</dt>
+            <dd>Teams whose trial converted to a paid tier within 30 days of trial end. A month
+            shows a dash until its 30-day window has closed.</dd>
+            <dt>Grain</dt>
+            <dd>Calendar month of trial end.</dd>
+            <dt>Schedule</dt>
+            <dd>Refreshed hourly with the billing connector.</dd>
+            <dt>Last refreshed</dt>
+            <dd>today, on the hour</dd>
+          </dl>
+        </div>
       </div>
     </section>
 
     <section class="panel" id="support-touched-accounts">
-      <header><h2>Support-touched accounts</h2><span class="meta">saved by a.merrow</span></header>
+      <header><h2>Support-touched accounts</h2><span class="meta">saved by a.merrow &middot; open and closed in 30 days</span><span class="push"></span><a class="tool" href="#" data-export="skelvane-support-touched.csv">Export CSV</a></header>
       <div class="pad">
-        <dl class="defn">
-          <dt>Definition</dt>
-          <dd>Accounts with an open or recently closed support case, joined to their seat and
-          plan activity for churn review.</dd>
-          <dt>Grain</dt>
-          <dd>Account, refreshed with the 6-hourly support connector.</dd>
-          <dt>Schedule</dt>
-          <dd>Reviewed in the Monday churn meeting.</dd>
-          <dt>Last refreshed</dt>
-          <dd>today, 06:14</dd>
-        </dl>
+        <div class="two">
+          <div class="tablewrap">
+            <table class="data">
+              <thead>
+                <tr><th scope="col">Account</th><th scope="col">Tier</th><th scope="col">Seats</th><th scope="col">Cases</th><th scope="col">Status</th></tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">Picture desk</th><td>Scale</td><td class="num">412</td><td class="num">3</td><td>Open</td></tr>
+                <tr><th scope="row">Regional newsrooms</th><td>Scale</td><td class="num">1,086</td><td class="num">2</td><td>Open</td></tr>
+                <tr><th scope="row">Syndication</th><td>Growth</td><td class="num">148</td><td class="num">1</td><td>Open</td></tr>
+                <tr><th scope="row">Audience team</th><td>Growth</td><td class="num">96</td><td class="num">2</td><td>Closed</td></tr>
+                <tr><th scope="row">Podcasts</th><td>Starter</td><td class="num">37</td><td class="num">1</td><td>Closed</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <dl class="defn">
+            <dt>Definition</dt>
+            <dd>Accounts with an open or recently closed support case, joined to their seat and
+            plan activity for churn review.</dd>
+            <dt>Grain</dt>
+            <dd>Account, refreshed with the 6-hourly support connector.</dd>
+            <dt>Schedule</dt>
+            <dd>Reviewed in the Monday churn meeting.</dd>
+            <dt>Last refreshed</dt>
+            <dd>today, 06:14</dd>
+          </dl>
+        </div>
       </div>
     </section>
   </main>
 </div>
 
 <footer class="foot">
-  <span>Halbeck Analytics Ltd</span>
+  <span>&copy; 2026 Halbeck Analytics Ltd</span>
   <a href="status.html">Status</a>
   <a href="privacy.html">Privacy notice</a>
   <a href="terms.html">Terms of service</a>
   <a href="support.html">Support</a>
-  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+  <span class="push">Registered in England and Wales, company number 00000000 &middot; 14 Tannery Yard, Thrushby TY4 7HB &middot; support@halbeck.example</span>
 </footer>
+<script src="halbeck.js"></script>
 </body>
 </html>

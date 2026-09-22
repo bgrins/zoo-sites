@@ -5,28 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>#482 tariff: cache lane quotes and align rate windows &middot; hollowmill/brine-gateway &middot; Kettleforge</title>
 <link rel="stylesheet" href="../../forge.css">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="masthead">
-  <span class="mark">Kettle<em>forge</em></span>
+  <a class="mark" href="../../">Kettle<em>forge</em></a>
   <nav>
-    <a href="/forge/">Repositories</a>
-    <a href="/forge/pulls/">Pull requests</a>
-    <a href="/forge/">Anvil</a>
-    <a href="/forge/">Registry</a>
+    <a href="../../">Repositories</a>
+    <a href="../../pulls/">Pull requests</a>
+    <a href="../../anvil/">Anvil</a>
+    <a href="../../registry.html">Registry</a>
   </nav>
   <span class="who">signed in as <b>r.vandermolen</b></span>
 </header>
 
 <div class="crumbbar">
-  <div class="crumb"><a href="/forge/">hollowmill</a><span class="sep">/</span><b>brine-gateway</b><span class="vis">internal</span></div>
+  <div class="crumb"><a href="../../">hollowmill</a><span class="sep">/</span><b>brine-gateway</b><span class="vis">internal</span></div>
   <div class="tabs">
-    <a href="/forge/">Code</a>
-    <a href="/forge/">Issues<span class="n">12</span></a>
+    <a href="../../">Code</a>
+    <a href="../../issues/">Issues<span class="n">4</span></a>
     <span class="here">Pull requests<span class="n">3</span></span>
-    <a href="/forge/">Anvil</a>
-    <a href="/forge/">Insights</a>
-    <a href="/forge/">Settings</a>
+    <a href="../../anvil/">Anvil</a>
+    <a href="../../insights.html">Insights</a>
+    <a href="../../settings.html">Settings</a>
   </div>
 </div>
 
@@ -76,7 +77,7 @@
       </div>
 
       <div class="card">
-        <div class="cardhead">p.okonkwo commented on 15 July</div>
+        <div class="cardhead">p.oduvane commented on 15 July</div>
         <div class="body">
           <p>Shape of this looks right to me and the eviction path is a good addition. Two
           things that are not blocking: I would rather see <code>digest()</code> live in a
@@ -96,13 +97,14 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="merge-card">
         <div class="cardhead">Merge status</div>
         <div class="body">
           <p><span class="chip fail">1 failing</span> <span class="chip pass">3 passed</span>
           <span class="chip skip">1 skipped</span> &mdash; <a href="./checks.html">Anvil pipeline for c41f9ad</a></p>
           <p class="byline">Forge merge is blocked while a required job is failing. Review from a
           code owner is also required on this repository.</p>
+          <p class="verdictline" id="review-state" hidden></p>
         </div>
       </div>
     </div>
@@ -114,7 +116,7 @@
           <dl>
             <dt>Reviewers</dt>
             <dd>r.vandermolen (you)</dd>
-            <dd>p.okonkwo</dd>
+            <dd>p.oduvane</dd>
             <dt>Labels</dt>
             <dd>tariff, performance</dd>
             <dt>Milestone</dt>
@@ -129,8 +131,8 @@
       <div class="card">
         <div class="cardhead">Linked issues</div>
         <div class="body">
-          <p><a href="/forge/">#1188</a> Quote latency spikes at window rollover</p>
-          <p><a href="/forge/">#1201</a> Reconciliation disagrees with pricing on window edges</p>
+          <p><a href="../../issues/1188.html">#1188</a> Quote latency spikes at window rollover</p>
+          <p><a href="../../issues/1201.html">#1201</a> Reconciliation disagrees with pricing on window edges</p>
         </div>
       </div>
     </div>
@@ -139,17 +141,85 @@
 
 <footer class="sitefoot">
   <div class="links">
-    <a href="/forge/">Status</a>
-    <a href="/forge/">Docs</a>
-    <a href="/forge/">Keyboard shortcuts</a>
-    <a href="/forge/">Privacy</a>
-    <a href="/forge/">Terms</a>
-    <a href="/forge/">Contact support</a>
-    <a href="/forge/about.html">About</a>
-    <a href="/forge/plans.html">Plans</a>
-    <a href="/forge/security.html">Security</a>
+    <a href="../../status.html">Status</a>
+    <a href="../../docs.html">Docs</a>
+    <a href="../../privacy.html">Privacy</a>
+    <a href="../../terms.html">Terms</a>
+    <a href="mailto:support@kettleforge.example">Contact support</a>
+    <a href="../../about.html">About</a>
+    <a href="../../plans.html">Plans</a>
+    <a href="../../security.html">Security</a>
   </div>
-  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Ashcombe AS4 2QN. &copy; 2026 Bellhollow Systems Ltd.</div>
+  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Vellinmouth VM4 3TR.
+  Registered in England and Wales, company number 00000000. &copy; 2026 Bellhollow Systems Ltd.</div>
 </footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+
+const VERDICT = {
+  changes: ['requested changes', 'Changes requested by'],
+  approve: ['approved these changes', 'Approved by'],
+  comment: ['reviewed', 'Commented on by'],
+};
+
+function reviewCard(reviewer, review) {
+  const card = document.createElement('div');
+  card.className = 'card review ' + review.verdict;
+  const head = document.createElement('div');
+  head.className = 'cardhead';
+  head.textContent = reviewer + ' ' + VERDICT[review.verdict][0] + ' \u00b7 ' + review.id;
+  const body = document.createElement('div');
+  body.className = 'body';
+  if (review.summary.trim()) {
+    const p = document.createElement('p');
+    p.textContent = review.summary;
+    body.append(p);
+  }
+  for (const c of review.comments) {
+    const block = document.createElement('div');
+    block.className = 'linecomment';
+    const where = document.createElement('span');
+    where.className = 'where';
+    where.textContent = c.file + ' line ' + c.line;
+    const text = document.createElement('p');
+    text.textContent = c.body;
+    block.append(where, text);
+    body.append(block);
+  }
+  if (!body.childElementCount) {
+    const p = document.createElement('p');
+    p.className = 'byline';
+    p.textContent = 'No summary or line comments.';
+    body.append(p);
+  }
+  card.append(head, body);
+  return card;
+}
+
+async function loadReviews() {
+  const state = document.getElementById('review-state');
+  let data;
+  try {
+    const res = await fetch('/api/forge/reviews', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) throw new Error('reviews ' + res.status);
+    data = await res.json();
+  } catch {
+    state.textContent = 'Reviews could not be loaded. Reload the page to try again.';
+    state.hidden = false;
+    return;
+  }
+  const merge = document.getElementById('merge-card');
+  for (const review of data.reviews) merge.before(reviewCard(data.reviewer, review));
+  const last = data.reviews.at(-1);
+  if (last) {
+    state.classList.add(last.verdict);
+    state.textContent = VERDICT[last.verdict][1] + ' ' + data.reviewer + ' (' + last.id + ').';
+    state.hidden = false;
+  }
+}
+
+loadReviews();
+</script>
 </body>
 </html>

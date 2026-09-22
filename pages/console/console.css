@@ -4,8 +4,8 @@
   --panel-2: #161c23;
   --line: #232b34;
   --ink: #ccd6e0;
-  --ink-dim: #7d8b9b;
-  --ink-faint: #55606d;
+  --ink-dim: #93a0ad;
+  --ink-faint: #7a8591;
   --lime: #b6f24a;
   --coral: #ff6f5e;
   --amber: #f2b23a;
@@ -167,6 +167,30 @@ h2 {
   margin: 6px 0 0;
 }
 
+.act {
+  background: transparent;
+  border: 1px solid #3c5a18;
+  color: var(--lime);
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.act:disabled {
+  border-color: var(--line);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+.rolenote {
+  margin: 4px 0 0;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
 .facts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -313,8 +337,22 @@ h2 {
 .hit {
   display: flex;
   gap: 12px;
+  width: 100%;
   padding: 3px 10px;
+  border: 0;
   border-bottom: 1px solid #141a20;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hit:hover,
+.hit:focus-visible {
+  background: #131a21;
+  outline: 1px solid #2c3742;
+  outline-offset: -1px;
 }
 
 .hit-n {
@@ -567,4 +605,47 @@ fieldset.settings legend {
 
 .status-row .run-state.ok {
   color: #8fbf6a;
+}
+
+.run-state.done {
+  color: var(--ink-dim);
+}
+
+.status-row .run-when {
+  overflow-wrap: anywhere;
+}
+
+.incidents .run-row {
+  align-items: flex-start;
+}
+
+.incidents .run-msg {
+  white-space: normal;
+}
+
+.run-id a {
+  color: var(--sky);
+}
+
+.log-excerpt {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: #070a0d;
+  color: var(--ink);
+  font: 12px/1.65 ui-monospace, Menlo, Consolas, monospace;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.log-excerpt .lvl-error {
+  color: var(--coral);
+}
+
+.log-excerpt .lvl-warn {
+  color: var(--amber);
+}
+
+.log-excerpt .ts {
+  color: var(--ink-faint);
 }

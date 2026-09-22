@@ -3,18 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Product events &middot; Northgate Media &middot; Halbeck</title>
+<title>Product events &middot; Skelvane Media &middot; Halbeck</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="halbeck.css">
 </head>
 <body>
 <div class="bar">
-  <span class="logo">Hal<i>beck</i></span>
-  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <a class="logo" href="index.html">halbeck</a>
+  <button class="wsw" type="button"><span>workspace</span> Skelvane Media</button>
   <span class="spacer"></span>
   <a class="lnk" href="sources.html">Data sources</a>
   <a class="lnk" href="alerts.html">Alerts</a>
   <a class="lnk" href="docs.html">Docs</a>
-  <span class="who">NM</span>
+  <button class="who" type="button" aria-label="Account menu for r.calloway">RC</button>
 </div>
 
 <div class="shell">
@@ -37,14 +38,14 @@
   </nav>
 
   <main>
-    <p class="crumbs"><a href="overview.html">Northgate Media</a> / Analytics / Product events</p>
+    <p class="crumbs"><a href="overview.html">Skelvane Media</a> / Analytics / Product events</p>
     <h1>Product events</h1>
     <p class="sub">Volumes from the continuous sign-in and product event stream, aggregated by
     event name. Weekly figures close on Sunday night; the current week is excluded until it
     closes.</p>
 
     <section class="panel">
-      <header><h2>Event volumes</h2><span class="meta">week closing 21 Jun 2026</span></header>
+      <header><h2>Event volumes</h2><span class="meta">week closing 5 Jul 2026</span><span class="push"></span><a class="tool" href="#" data-export="skelvane-event-volumes.csv">Export CSV</a></header>
       <div class="pad">
         <div class="tablewrap">
           <table class="data">
@@ -77,7 +78,7 @@
           <dt>Source</dt>
           <dd>product.event_stream, continuous ingest.</dd>
           <dt>Owner</dt>
-          <dd>Platform Analytics, Northgate Media</dd>
+          <dd>Platform Analytics, Skelvane Media</dd>
         </dl>
       </div>
     </section>
@@ -85,12 +86,13 @@
 </div>
 
 <footer class="foot">
-  <span>Halbeck Analytics Ltd</span>
+  <span>&copy; 2026 Halbeck Analytics Ltd</span>
   <a href="status.html">Status</a>
   <a href="privacy.html">Privacy notice</a>
   <a href="terms.html">Terms of service</a>
   <a href="support.html">Support</a>
-  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+  <span class="push">Registered in England and Wales, company number 00000000 &middot; 14 Tannery Yard, Thrushby TY4 7HB &middot; support@halbeck.example</span>
 </footer>
+<script src="halbeck.js"></script>
 </body>
 </html>

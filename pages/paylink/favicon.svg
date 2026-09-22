@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#f8f3e8"/>
+  <rect x="2" y="2" width="28" height="28" fill="none" stroke="#24211c" stroke-width="1.5"/>
+  <text x="16" y="22.5" text-anchor="middle" font-family="Palatino, 'Palatino Linotype', Georgia, serif" font-size="19" fill="#9c3b24">&amp;</text>
+</svg>

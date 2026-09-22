@@ -4,175 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Embargoed release 26-118 — Northwind Industrial Group Newsroom</title>
-<style>
-  :root {
-    --petrol: #0d3b3f;
-    --petrol-soft: #14555a;
-    --paper: #f5f0e6;
-    --card: #fffdf8;
-    --ink: #23201b;
-    --quiet: #6b6459;
-    --rule: #d8cfbd;
-    --copper: #b4552d;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: "Trebuchet MS", "Lucida Grande", Tahoma, sans-serif;
-    font-size: 15px;
-    line-height: 1.6;
-  }
-  a { color: var(--petrol-soft); }
-  .masthead { background: var(--petrol); color: #eae3d5; }
-  .masthead .bar {
-    max-width: 1080px; margin: 0 auto; padding: 18px 28px 14px;
-    display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
-  }
-  .wordmark { font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; }
-  .wordmark b {
-    display: block; font-size: 23px; font-weight: normal; letter-spacing: 0.06em;
-    text-transform: uppercase; color: #fffdf8;
-  }
-  .wordmark span {
-    display: block; font-family: "Trebuchet MS", Tahoma, sans-serif; font-size: 10px;
-    letter-spacing: 0.28em; text-transform: uppercase; color: #8fb0ad; margin-top: 5px;
-  }
-  .utility { font-size: 12px; letter-spacing: 0.06em; }
-  .utility a { color: #cfe0dd; text-decoration: none; margin-left: 20px; }
-  .utility a:hover { color: #fffdf8; text-decoration: underline; }
-  .tabs { background: #0a2e31; border-bottom: 3px solid var(--copper); }
-  .tabs ul {
-    max-width: 1080px; margin: 0 auto; padding: 0 28px; list-style: none;
-    display: flex; gap: 2px;
-  }
-  .tabs a {
-    display: block; padding: 9px 16px; font-size: 12px; letter-spacing: 0.14em;
-    text-transform: uppercase; color: #9fbcb9; text-decoration: none;
-  }
-  .tabs a:hover { color: #fffdf8; background: #123c40; }
-  .tabs li.here a { background: var(--paper); color: var(--petrol); }
-
-  .shell { max-width: 1080px; margin: 0 auto; padding: 0 28px 56px; }
-  .crumbs {
-    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--quiet); padding: 16px 0 22px;
-  }
-  .crumbs a { color: var(--quiet); text-decoration: none; }
-  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 268px; gap: 40px; }
-
-  .eyebrow {
-    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
-    color: var(--copper); margin: 0 0 10px;
-  }
-  h1 {
-    font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-    font-size: 34px; font-weight: normal; line-height: 1.18; margin: 0 0 12px;
-    letter-spacing: -0.01em;
-  }
-  .standfirst { font-size: 17px; color: #3f3a32; margin: 0 0 22px; max-width: 60ch; }
-  .filed {
-    border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
-    padding: 9px 0; font-size: 12px; color: var(--quiet);
-    display: flex; gap: 26px; flex-wrap: wrap; margin-bottom: 28px;
-  }
-  .filed b { font-weight: normal; color: var(--ink); }
-
-  .embargo {
-    background: var(--card); border: 1px solid var(--rule);
-    border-left: 5px solid var(--copper); padding: 20px 22px 22px; margin-bottom: 30px;
-  }
-  .embargo h2 {
-    font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-    font-size: 20px; font-weight: normal; margin: 0 0 8px;
-  }
-  .embargo p { margin: 0 0 12px; max-width: 62ch; color: #45403a; font-size: 14px; }
-  #clock {
-    font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-    font-size: 27px; letter-spacing: 0.01em; color: var(--petrol); margin: 4px 0 10px;
-  }
-  #status { font-size: 13px; color: var(--quiet); min-height: 20px; }
-  #status.held { color: var(--copper); }
-  button {
-    font-family: inherit; font-size: 13px; padding: 8px 20px; border-radius: 3px;
-    background: var(--petrol); color: #fffdf8; border: 1px solid var(--petrol); cursor: pointer;
-  }
-  button:hover { background: var(--petrol-soft); border-color: var(--petrol-soft); }
-  button:disabled { background: #b6b0a4; border-color: #b6b0a4; color: #f3efe6; cursor: default; }
-
-  #announcement { display: none; }
-  #announcement.out { display: block; }
-  #announcement .release {
-    background: var(--card); border: 1px solid var(--rule); padding: 26px 28px 8px;
-  }
-  #announcement h2 {
-    font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-    font-size: 29px; font-weight: normal; line-height: 1.2; margin: 0 0 6px;
-  }
-  #announcement .dateline { font-size: 13px; color: var(--quiet); margin: 0 0 4px; }
-  #announcement .ref {
-    font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--copper); margin: 0 0 18px;
-  }
-  #announcement .prose p { margin: 0 0 16px; max-width: 62ch; }
-  #announcement .prose p.lede { font-size: 16px; }
-  .boiler { font-size: 13px; color: #4d473f; border-top: 1px solid var(--rule); padding-top: 16px; }
-  .boiler h3 {
-    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
-    color: var(--quiet); margin: 0 0 6px; font-weight: normal;
-  }
-  .boiler p { margin: 0 0 14px; max-width: 62ch; }
-
-  .rail section { margin-bottom: 26px; }
-  .rail h3 {
-    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--petrol);
-    border-bottom: 1px solid var(--rule); padding-bottom: 6px; margin: 0 0 10px; font-weight: normal;
-  }
-  .rail p, .rail li { font-size: 13px; color: #4d473f; margin: 0 0 8px; }
-  .rail ul { list-style: none; padding: 0; margin: 0; }
-  .rail ul li { border-bottom: 1px dotted var(--rule); padding-bottom: 7px; margin-bottom: 7px; }
-  .rail ul a { text-decoration: none; }
-  .rail .date { display: block; font-size: 11px; color: var(--quiet); letter-spacing: 0.06em; }
-  .rail .ticker {
-    background: var(--petrol); color: #dfe9e7; padding: 12px 14px; font-size: 13px;
-  }
-  .rail .ticker b { display: block; font-size: 21px; color: #fffdf8; font-weight: normal; }
-  .rail .ticker span { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8fb0ad; }
-
-  footer {
-    border-top: 1px solid var(--rule); background: #ece5d7; color: #575045;
-  }
-  footer .inner {
-    max-width: 1080px; margin: 0 auto; padding: 24px 28px 34px; font-size: 12px; color: #5f584c;
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;
-  }
-  footer h4 {
-    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--petrol);
-    margin: 0 0 8px; font-weight: normal;
-  }
-  footer a { color: #5f584c; text-decoration: none; display: block; margin-bottom: 4px; }
-  footer a:hover { text-decoration: underline; }
-  .legal { max-width: 1080px; margin: 0 auto; padding: 0 28px 30px; font-size: 11px; color: #7a7365; }
-</style>
+<link rel="stylesheet" href="press.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="masthead">
   <div class="bar">
-    <div class="wordmark">
+    <a class="wordmark" href="index.html">
       <b>Northwind Industrial Group</b>
       <span>Newsroom and investor relations</span>
-    </div>
+    </a>
     <div class="utility">
       <a href="investors.html">Investor relations</a>
       <a href="governance.html">Governance</a>
-      <a href="media-assets.html">Media kit</a>
+      <a href="alerts.html">Email alerts</a>
       <a href="contacts.html">Contacts</a>
     </div>
   </div>
   <nav class="tabs">
     <ul>
-      <li class="here"><a href="releases.html">Press releases</a></li>
+      <li class="here"><a href="releases.html" aria-current="true">Press releases</a></li>
       <li><a href="financial-calendar.html">Financial calendar</a></li>
       <li><a href="regulatory-filings.html">Regulatory filings</a></li>
       <li><a href="media-assets.html">Media assets</a></li>
@@ -182,35 +33,34 @@
 </header>
 
 <div class="shell">
-  <div class="crumbs"><a href="releases.html">Newsroom</a> / <a href="releases.html">Press releases</a> / 2026 / Embargoed 26-118</div>
+  <div class="crumbs"><a href="releases.html">Newsroom</a> / <a href="releases.html">Press releases</a> / 2026 / Release 26-118</div>
 
   <div class="layout">
     <main>
-      <p class="eyebrow">Under embargo</p>
-      <h1>Embargoed release 26-118</h1>
-      <p class="standfirst">This release has been distributed to accredited media under
-      embargo. The text is withheld by the newsroom until the embargo expires, at which
-      point it is published to this page.</p>
+      <p class="eyebrow" id="pageEyebrow">Under embargo</p>
+      <h1 id="pageHeading">Embargoed release 26-118</h1>
+      <p class="standfirst" id="pageStandfirst">This release has been distributed to accredited
+      media under embargo. The text is withheld by the newsroom until the embargo expires, at
+      which point it is published to this page.</p>
       <div class="filed">
         <span>Category <b>Group announcement</b></span>
         <span>Distribution <b>Wire and accredited media</b></span>
         <span>Release <b>26-118</b></span>
       </div>
 
-      <section class="embargo">
+      <section class="embargo" id="embargoBox">
         <h2>Embargo status</h2>
-        <p>The embargo is about to lift; this page publishes the release the moment it does. The release text is
-        published here automatically when it does; there is nothing to submit and no need
-        to reload.</p>
+        <p>The release text is published on this page automatically the moment the embargo
+        lifts. There is nothing to submit and no need to reload.</p>
         <div id="clock">Embargo lifts in 20 s</div>
         <div id="status" role="status">Holding release text.</div>
-        <p style="margin: 16px 0 0"><button id="check" type="button">Check embargo status</button></p>
+        <p class="actions"><button id="check" type="button">Check embargo status</button></p>
       </section>
 
       <section id="announcement" aria-live="polite"></section>
 
       <section class="boiler">
-        <h3>Notes to editors</h3>
+        <h2>Notes to editors</h2>
         <p>Accredited media may request the full media pack, including executive
         photography and a group fact sheet, from the press office. Interview requests are
         handled in the order received and are subject to availability on the day.</p>
@@ -227,7 +77,7 @@
         Last close, main market
       </section>
       <section>
-        <h3>Recent releases</h3>
+        <h2>Recent releases</h2>
         <ul>
           <li><a href="release-26-117-half-year-results.html">Half-year results for the period to 30 June</a><span class="date">14 July 2026</span></li>
           <li><a href="release-26-116-audit-committee-chair.html">Board appoints new chair of the audit committee</a><span class="date">2 July 2026</span></li>
@@ -236,12 +86,12 @@
         </ul>
       </section>
       <section>
-        <h3>Press office</h3>
-        <p>Media enquiries only, 08:30 to 18:00 GMT.</p>
+        <h2>Press office</h2>
+        <p>Media enquiries only, 08:30 to 18:00 UK time.</p>
         <p>press@northwind-group.example<br>+44 20 7946 0180</p>
       </section>
       <section>
-        <h3>Embargo policy</h3>
+        <h2>Embargo policy</h2>
         <p>Embargoed copy is supplied on the condition that nothing is published, briefed
         or aggregated before the stated time. Breaches are reported to the group's
         distribution partners.</p>
@@ -253,26 +103,26 @@
 <footer>
   <div class="inner">
     <div>
-      <h4>Newsroom</h4>
+      <h2>Newsroom</h2>
       <a href="releases.html">Press releases</a>
       <a href="media-assets.html">Media assets</a>
       <a href="alerts.html">Subscribe to alerts</a>
     </div>
     <div>
-      <h4>Investors</h4>
+      <h2>Investors</h2>
       <a href="results.html">Results and reports</a>
       <a href="shareholder-services.html">Shareholder services</a>
       <a href="regulatory-filings.html">Regulatory filings</a>
     </div>
     <div>
-      <h4>Group</h4>
+      <h2>Group</h2>
       <a href="privacy.html">Privacy notice</a>
       <a href="terms.html">Terms of use</a>
       <a href="modern-slavery.html">Modern slavery statement</a>
     </div>
   </div>
   <p class="legal">Northwind Industrial Group plc, registered in England and Wales no.
-  04182233. Registered office: Ravenscourt House, 12 Ferrier Street, London.
+  00000000. Registered office: Ostrevan House, 12 Callerby Street, London EC9 4RW.
   &copy; 2026 Northwind Industrial Group plc. All rights reserved.</p>
 </footer>
 
@@ -315,6 +165,14 @@
     status.className = '';
     status.textContent = 'Release published below.';
     check.disabled = true;
+    check.hidden = true;
+    document.getElementById('embargoBox').classList.add('lifted');
+    document.getElementById('pageEyebrow').textContent = 'Group announcement';
+    document.getElementById('pageHeading').textContent = 'Release 26-118';
+    document.getElementById('pageStandfirst').textContent =
+      'Published by the newsroom when the embargo lifted, at the same time as the wire ' +
+      'distribution to accredited media.';
+    document.title = 'Release 26-118 — Northwind Industrial Group Newsroom';
     const wrap = document.createElement('div');
     wrap.className = 'release';
     const eyebrow = document.createElement('p');

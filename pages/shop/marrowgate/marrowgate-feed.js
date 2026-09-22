@@ -1,4 +1,4 @@
-// Marrowgate monitor catalogue feed, shared by the listing, product and compare pages.
+// Marrowgate monitor catalog feed, shared by the listing, product and compare pages.
 window.MARROWGATE_FEED = [
   { sku: '6428193', title: 'ClaritySee CS27-4K', screen: 27, res: '4K', price: 274.5, rating: 4.4, reviews: 2731, availability: 'ships' },
   { sku: '6428194', title: 'ClaritySee CS27-4K Refurbished', screen: 27, res: '4K', price: 239.99, rating: 4.0, reviews: 312, availability: 'sold-out' },
@@ -25,4 +25,12 @@ window.MARROWGATE_FEED = [
   { sku: '6302266', title: 'NorthLite NL24-Q Slim', screen: 24, res: '1440p', price: 139.99, rating: 4.2, reviews: 1450, availability: 'ships' },
   { sku: '6377840', title: 'PixelPeak P27U Mini-LED', screen: 27, res: '4K', price: 549.0, rating: 4.8, reviews: 204, availability: 'ships' },
   { sku: '6419755', title: 'ScreenCraft SC-27Q Pro', screen: 27, res: '1440p', price: 259.99, rating: 4.5, reviews: 1733, availability: 'ships' },
+];
+
+// Desk accessories listed on desk-accessories.html. The Norvindle mat is priced per
+// size and color on its own page, so it carries no price here.
+window.MARROWGATE_ACCESSORIES = [
+  { sku: '6510042', title: 'Marrowgate Basics monitor riser', price: 24.99, blurb: 'Bamboo monitor riser with a storage shelf, 22 x 9 in' },
+  { sku: '6510157', title: 'Marrowgate Basics USB-C hub, 6-port', price: 39.99, blurb: 'HDMI, two USB-A, SD and microSD, 100 W passthrough' },
+  { sku: '6510263', title: 'Marrowgate Basics LED desk lamp', price: 49.99, blurb: 'Dimmable LED desk lamp with a USB charging port' },
 ];

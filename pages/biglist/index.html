@@ -4,18 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>People Hub — Directory — Quennell Group</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="directory.css">
 </head>
 <body class="shell">
 <aside class="rail">
-  <div class="mark">Quennell</div>
+  <a class="mark" href="./">Quennell</a>
   <div class="group">People Hub 4.2</div>
   <nav>
-    <a href="/biglist/overview.html">Overview</a>
-    <a href="/biglist/" class="on">Directory</a>
-    <a href="/biglist/teams.html">Teams</a>
-    <a href="/biglist/onboarding.html">Onboarding</a>
-    <a href="/biglist/badge-records.html">Badge records</a>
+    <a href="overview.html">Overview</a>
+    <a href="./" class="on">Directory</a>
+    <a href="teams.html">Teams</a>
+    <a href="onboarding.html">Onboarding</a>
+    <a href="badge-records.html">Badge records</a>
+    <a href="requests.html">Requests</a>
   </nav>
   <p class="rail-foot">Directory service: connected</p>
 </aside>
@@ -24,12 +26,14 @@
     <span class="crumbs">Workspace / People / Directory</span>
     <span class="who">S. Okonkwo, HR Operations</span>
   </div>
+  <main>
   <h1>Directory</h1>
   <p class="lede">Every one of the 5,000 people on the Quennell Group roster, ordered by hire
   record. The directory service streams rows in batches of 250 as you scroll, so the list
   stays light no matter how far down you go.</p>
   <section class="card">
     <div class="searchbar">
+      <label class="vh" for="filter">Search name, badge, or department</label>
       <input id="filter" type="search" placeholder="Search name, badge, or department" autocomplete="off">
       <span id="status" role="status"></span>
     </div>
@@ -44,10 +48,19 @@
   </section>
   <p class="fine">Quennell Group internal directory &middot; sourced from the HR record
   and refreshed nightly. Badge numbers are not access credentials and floor assignments
-  change without notice. Report an incorrect entry to the people team. Reference:
-  <a href="/biglist/data-standards.html">data standards</a>,
-  <a href="/biglist/access.html">access and roles</a>,
-  <a href="/biglist/release-notes.html">release notes</a>.</p>
+  change without notice. <a href="requests.html?category=correction">Report an incorrect
+  entry</a> to the people team. Reference:
+  <a href="data-standards.html">data standards</a>,
+  <a href="access.html">access and roles</a>,
+  <a href="release-notes.html">release notes</a>.</p>
+  </main>
+  <footer class="sitefoot">
+    <span>&copy; 2026 Quennell Group</span>
+    <a href="privacy.html">Employee privacy notice</a>
+    <a href="terms.html">Terms of use</a>
+    <a href="requests.html">Request queue</a>
+    <span>IT service desk 01632 960539, weekdays 07:30&ndash;18:00</span>
+  </footer>
 </div>
 <script>window.NONCE = '__SESSION_NONCE__';</script>
 <script src="app.js"></script>

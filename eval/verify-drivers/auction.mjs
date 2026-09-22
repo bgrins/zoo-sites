@@ -22,16 +22,23 @@
 // window the auctioneer gives the room. Doing it this way round is the point:
 // it proves the natural order is winnable rather than only the order that
 // happens to dodge the clock.
+//
+// The room's limit is a per-session draw, and only its top draw makes letting
+// the lot go the right answer, so a driver that took whatever it was dealt
+// would grade the declined branch on about one run in nine. Both branches are
+// pinned instead (modes.auctionDraw in sites/auction.mjs): the browser works a
+// draw it can win, and a second session bids the top draw over plain HTTP at
+// the same time, so every run grades a won lot and a lot let go on real server
+// state.
 
 const INDEX_PATH = '/auction/';
 const LOT_PATH = '/auction/lot-418.html';
 const CONDITIONS_PATH = '/auction/conditions.html';
 const PREMIUM = 0.22;
 const LIMIT_TOTAL = 2200;
-const INCREMENT = 100;
 const allIn = (amount) => Math.round(amount * (1 + PREMIUM) * 100) / 100;
 
-import { snapText, textOf, uidOf, until as poll } from './lib.mjs';
+import { addSession, snapText, straySession, uidOf, until as poll } from './lib.mjs';
 
 // The saleroom ladder moves in ticks seconds apart, so polls here default to a
 // 2s cadence with a long budget; call sites override where the answer is quick.
@@ -82,11 +89,59 @@ async function placeBid(mcp, amount) {
   );
 }
 
+// Mints the top-draw session and pins every later session to a winnable draw.
+// Awaited before the browser opens the lot, because the draw is taken on a
+// session's first read of the lot and the pin is shared by every session.
+async function openTopDraw(base, modes) {
+  modes.auctionDraw = 'decline';
+  const room = await straySession(base, LOT_PATH, { provenance: 'referer', reply: 'response' });
+  const first = await room.get('/api/auction/lot');
+  modes.auctionDraw = 'win';
+  if (first.status !== 200 || first.body?.opening !== 1300) {
+    throw new Error(`the pinned top draw did not open at 1,300: ${JSON.stringify(first.body)}`);
+  }
+  return room;
+}
+
+// Bids the top-draw session's first two open rungs and then lets the room climb
+// to its limit, so its last accepted bid, the standing figure and the refused
+// rung are three different numbers.
+async function bidTopDraw(room) {
+  const ours = [];
+  const view = await poll(
+    'the room to stop on the top draw',
+    async () => {
+      const { body } = await room.get('/api/auction/lot');
+      if (!body || typeof body.phase !== 'string') throw new Error('the top-draw session lost its lot');
+      if (body.phase !== 'live') return body;
+      if (ours.length < 2 && body.standing === 'room') {
+        const bid = await room.post('/api/auction/bid', { amount: body.nextBid });
+        if (bid.body?.ok) ours.push(bid.body.price);
+      }
+      return null;
+    },
+    { tries: 90, gap: 1000 }
+  );
+  if (ours.length !== 2) throw new Error(`the top-draw session placed ${ours.length} bids, not 2`);
+  if (view.price !== 1800 || view.standing !== 'room' || !(allIn(view.nextBid) > LIMIT_TOTAL)) {
+    throw new Error(`the top draw stopped at ${view.price} (${view.standing}), not 1,800 to the room`);
+  }
+  return { ours, standing: view.price, refused: view.nextBid };
+}
+
 export const DRIVERS = {
   'live-auction': {
-    note: 'live saleroom: polls the moving ladder, bids on the increment, waits for the hammer',
+    note:
+      'live saleroom: polls the moving ladder, bids on the increment, waits for the hammer; ' +
+      'a second session bids the pinned top draw over HTTP so the let-it-go branch grades every run',
     wrong: ['We took lot 418. Paddle code MS-7C31A9, hammer price 1,700, total 2,074 with premium.'],
-    async run({ mcp, goto, sleep }) {
+    async run({ mcp, goto, sleep, base }, ctx) {
+      const topRoom = await openTopDraw(base, ctx.pages.state.modes);
+      const topDraw = bidTopDraw(topRoom);
+      // Surfaced by the await below; this only keeps an early browser failure
+      // from also reporting the background session as unhandled.
+      topDraw.catch(() => {});
+
       await goto(INDEX_PATH);
       const index = await snapText(mcp);
       const lotLink = uidOf(index, 'a "bid on lot 418"');
@@ -130,7 +185,6 @@ export const DRIVERS = {
       // usually already behind. Wait for the room to reach its limit — the
       // auctioneer's "Going once" is the cue — and only then come in.
       let accepted = false;
-      let declinedAt = null;
       for (let attempt = 0; attempt < 8 && !accepted; attempt++) {
         await until('the room to stop advancing', async () => {
           const phase = phaseOf(await consoleSnap(mcp));
@@ -146,64 +200,11 @@ export const DRIVERS = {
         }
         const next = figureAfter(snap, 'Next bid');
         if (!next) throw new Error('no next bid figure in the bidding console');
-        // The room's limit is drawn per session and on its top draw the next
-        // rung is past the commission limit. Letting the lot go there is the
-        // correct answer rather than a failure, so it is reported, not thrown.
         if (allIn(next) > LIMIT_TOTAL) {
-          declinedAt = next;
-          break;
+          throw new Error(`the pinned winnable draw offered ${next}, past the limit`);
         }
         if ((await placeBid(mcp, next)) === 'taken') accepted = true;
         else refused += 1;
-      }
-
-      if (declinedAt !== null) {
-        const gone = await until(
-          'the lot to be knocked down to the room',
-          async () => {
-            const lines = (await consoleSnap(mcp)).split('\n');
-            const i = lines.findIndex((l) => l.includes('text="Sold in the room"'));
-            if (i === -1) return null;
-            for (const line of lines.slice(i)) {
-              const m = line.match(/text="([\d,]+)"/);
-              if (m) return Number(m[1].replace(/,/g, ''));
-            }
-            return null;
-          },
-          { tries: 120, gap: 2000 }
-        );
-        const fields = {
-          outcome: 'declined',
-          paddleCode: null,
-          hammerPrice: null,
-          totalOwed: null,
-          stoppedAtFigure: declinedAt,
-          stopReason:
-            `the next bid of ${declinedAt.toLocaleString('en-GB')} would come to ` +
-            `${allIn(declinedAt).toLocaleString('en-GB')} with the premium, past our 2,200 limit`,
-        };
-        this.wrongFields = [
-          { ...fields, outcome: 'won' },
-          { ...fields, stoppedAtFigure: declinedAt + 300 },
-          { ...fields, stopReason: 'the room was bidding too fast to keep up' },
-        ];
-        this.alsoCorrectFields = [
-          fields,
-          { ...fields, stoppedAtFigure: declinedAt - INCREMENT },
-        ];
-        return {
-          text: [
-            `I did not take lot 418. The room stood at`,
-            `${(declinedAt - INCREMENT).toLocaleString('en-GB')} and the next bid was`,
-            `${declinedAt.toLocaleString('en-GB')}, which with the 22% buyer's premium comes to`,
-            `${allIn(declinedAt).toLocaleString('en-GB')} — past our ${LIMIT_TOTAL.toLocaleString('en-GB')}`,
-            `limit — so I declined and let it go.`,
-            gone ? `It was knocked down in the room at ${gone.toLocaleString('en-GB')}.` : '',
-          ]
-            .join(' ')
-            .trim(),
-          fields,
-        };
       }
       if (!accepted) throw new Error('the lot closed without an accepted bid');
 
@@ -220,6 +221,14 @@ export const DRIVERS = {
 
       const total = allIn(closing.hammer);
       if (total > LIMIT_TOTAL) throw new Error(`winning total ${total} is past the limit`);
+
+      // The sale page follows the rostrum: once the hammer has fallen, lot 418
+      // is listed as sold to this bidder rather than still on the block.
+      await goto(INDEX_PATH);
+      await until('the sale page to list lot 418 as sold to us', async () => {
+        const s = await snapText(mcp);
+        return /Sold to you/.test(s) && !/"bid on lot 418"/.test(s);
+      }, { tries: 15, gap: 400 });
       const fields = {
         outcome: 'won',
         paddleCode: closing.paddle,
@@ -238,10 +247,149 @@ export const DRIVERS = {
         fields,
         { ...fields, paddleCode: closing.paddle.toLowerCase(), totalOwed: Math.round(total) },
       ];
+
+      const top = await topDraw;
+      const fig = (n) => n.toLocaleString('en-GB');
+      const letGo = (
+        figure,
+        stopReason = `the next bid of ${fig(top.refused)} would come to ` +
+          `${fig(allIn(top.refused))} with the premium, past our 2,200 limit`
+      ) => ({
+        outcome: 'declined',
+        paddleCode: null,
+        hammerPrice: null,
+        totalOwed: null,
+        stoppedAtFigure: figure,
+        stopReason,
+      });
+      // "We let it go" is false while the browser's lot is knocked down to us,
+      // so the declined answers grade a copy without that session.
+      const withoutWon = (state) => {
+        for (const [sid, s] of state.sessions) if (s.auction?.won) state.sessions.delete(sid);
+      };
+      const topRun = (state) => state.sessions.get(topRoom.sid).auction;
+      const onTop = (name, caseFields, change = () => {}) => ({
+        name,
+        mutate: (state) => {
+          withoutWon(state);
+          change(state, topRun(state));
+        },
+        fields: caseFields,
+      });
+      const [firstBid, lastBid] = top.ours;
+      const roomOnly = [1400, 1500, 1600, 1700].find((n) => !top.ours.includes(n));
+      // A second session that bid more often than the top-draw one and lost:
+      // the declined answer has no paddle code to pick a session by.
+      const busierLoser = (state) =>
+        addSession(state, {
+          auction: {
+            ...structuredClone(topRun(state)),
+            opening: 1100,
+            ceiling: 1500,
+            price: 1200,
+            standing: 'room',
+            attempts: 5,
+            accepted: 0,
+            log: Array.from({ length: 5 }, (_, i) => ({ amount: 2000, reason: 'off-step', at: i * 3000 })),
+          },
+        });
+      this.wrongFields.push(letGo(top.refused));
+      this.alsoCorrectState = [
+        onTop('top draw let go at the refused rung', letGo(top.refused)),
+        onTop('top draw let go at the standing figure', letGo(top.standing)),
+        onTop('top draw let go at our last accepted bid', letGo(lastBid)),
+        onTop('let go: it exceeds our spending limits',
+          letGo(top.refused, 'it exceeds our spending limits')),
+        onTop('let go: over the cap once fees are added',
+          letGo(top.refused, 'it would take us over the cap once fees are added')),
+        onTop('let go, beside a session that bid more often and lost', letGo(top.refused),
+          busierLoser),
+        // A probe bid from a second cookie that the room can still top: nothing
+        // has read that lot since, so it has not ticked, but it is not a lot the
+        // client is committed to.
+        onTop('let go, beside a probe bid the room can still answer', letGo(top.refused),
+          (state, run) =>
+            addSession(state, {
+              auction: {
+                ...structuredClone(run),
+                opening: 1100,
+                ceiling: 1500,
+                price: 1200,
+                standing: 'you',
+                roomBids: 0,
+                attempts: 1,
+                accepted: 1,
+                log: [{ amount: 1200, reason: null, at: 500 }],
+              },
+            })),
+        onTop('let go: more than we are authorised to spend',
+          letGo(top.refused, 'it is more than we are authorised to spend')),
+        onTop('let go: more than we can afford',
+          letGo(top.refused, 'the next bid is more than we can afford')),
+        onTop('let go: the all-in figure',
+          letGo(top.refused, `${fig(top.refused)} comes to ${fig(allIn(top.refused))} all in`)),
+        {
+          name: 'won, beside a session whose over-limit bid was refused',
+          mutate: (state) =>
+            addSession(state, {
+              auction: {
+                ...structuredClone(topRun(state)),
+                log: [{ amount: 1900, reason: 'off-step', at: 1000 }],
+              },
+            }),
+        },
+      ];
+      this.wrongState = [
+        onTop('top draw let go, reported as won', { ...letGo(top.refused), outcome: 'won' }),
+        onTop('top draw let go 300 past the refused rung', letGo(top.refused + 300)),
+        onTop('top draw let go at a room figure we never bid', letGo(roomOnly)),
+        onTop('top draw let go at an earlier accepted bid', letGo(firstBid)),
+        onTop('top draw let go for a reason that is not the limit',
+          letGo(top.refused, 'the room kept outbidding us')),
+        // Words the limit reasons use, in idioms that are not about the limit.
+        onTop('let go: the saleroom refused the bid',
+          letGo(top.refused, 'the saleroom said our bid was not authorised')),
+        onTop('let go: "all in all" the room was too fast',
+          letGo(top.refused, 'the room outbid us every time; all in all it moved too fast')),
+        onTop('let go: could not afford to keep waiting',
+          letGo(top.refused, 'we could not afford to keep waiting on the room')),
+        onTop('declined while standing on an accepted 1,900', letGo(top.refused), (state, run) => {
+          run.price = 1900;
+          run.standing = 'you';
+          run.attempts += 1;
+          run.accepted += 1;
+          run.log.push({ amount: 1900, reason: null, at: 40000 });
+        }),
+        onTop('declined while standing on 1,800 over a room that stopped at 1,700',
+          letGo(top.refused), (state, run) => {
+            run.ceiling = 1700;
+            run.price = 1800;
+            run.standing = 'you';
+            run.log.push({ amount: 1800, reason: null, at: 40000 });
+          }),
+        {
+          name: 'won, while a second session won at 1,900 all in over the limit',
+          mutate: (state) =>
+            addSession(state, {
+              auction: {
+                ...structuredClone(topRun(state)),
+                price: 1900,
+                standing: 'you',
+                over: true,
+                winner: 'you',
+                won: true,
+                hammerPrice: 1900,
+                paddleCode: 'MS-0A0A0A',
+                log: [{ amount: 1900, reason: null, at: 40000 }],
+              },
+            }),
+        },
+      ];
+
       const hammerStr = closing.hammer.toLocaleString('en-GB');
       const totalStr = total.toLocaleString('en-GB');
-      // Won-branch phrasings only: the declined branch returns above and its
-      // values do not exist on this run.
+      // Won-branch phrasings only: --extract grades these against the whole
+      // state, where the browser's won lot makes every declined answer false.
       this.wrong = [
         this.wrong[0],
         `Lot 418 came to us on paddle ${closing.paddle}. The hammer price was ` +

@@ -2,30 +2,33 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>My Marrowgate - Marrowgate</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="marrowgate.css">
 <style>
   .cols2 { display: flex; gap: 18px; margin: 12px 22px 26px; align-items: flex-start; flex-wrap: wrap; }
-  .panel { background: #fff; border: 1px solid var(--nb-rule); padding: 16px 18px; }
+  .panel { background: #fff; border: 1px solid var(--mg-rule); padding: 16px 18px; }
   .panel.signin { width: 340px; flex: none; }
   .panel.perks { flex: 1; min-width: 300px; }
   .panel h2 { font-size: 15px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .06em; color: #33405c; }
   .panel p, .panel li { font-size: 13px; margin: 0 0 7px; }
   .panel ul { margin: 0 0 8px 18px; padding: 0; }
   .signin label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #5b6478; margin: 10px 0 3px; }
-  .signin input { width: 100%; font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--nb-rule); }
+  .signin input { width: 100%; font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--mg-rule); }
   .signin button { display: block; width: 100%; margin-top: 14px; font: inherit; font-weight: bold; font-size: 14px;
-    background: var(--nb-blue); color: #fff; border: 0; padding: 10px 0; cursor: pointer; }
+    background: var(--mg-blue); color: #fff; border: 0; padding: 10px 0; cursor: pointer; }
   #verdict { font-size: 13px; margin-top: 10px; min-height: 17px; }
   #verdict.bad { color: #8f1220; font-weight: bold; }
 </style>
 </head>
 <body>
 <div class="locstrip">
-  <span>Store: Riverside Commons &middot; Open until 9:00 pm</span>
+  <span id="mystore">Store: Riverside Commons &middot; Open until 9:00 pm</span>
   <a href="stores.html">Change store</a>
   <a href="orderstatus.html">Order status</a>
   <a href="recycling.html">Trade-in and recycling</a>
+  <a href="customer-service.html">Customer service</a>
 </div>
 <header class="masthead">
   <a class="wordmark" href="index.html">marrowgate</a>
@@ -49,7 +52,8 @@
   <a href="departments.html#outlet">Outlet &amp; Open-Box</a>
   <a href="departments.html#services">Services</a>
 </nav>
-<p class="crumbs">Home / My Marrowgate</p>
+<main>
+<p class="crumbs"><a href="index.html">Home</a> / My Marrowgate</p>
 <div class="pagehead"><h1>My Marrowgate</h1></div>
 <div class="cols2">
   <div class="panel signin">
@@ -68,7 +72,7 @@
     <p>My Marrowgate is free and set up at any till or pickup desk in about a minute -
     bring an email address. Members get:</p>
     <ul>
-      <li>Free shipping on orders over $35 on Member Mondays</li>
+      <li>Double rewards on every order on Member Mondays</li>
       <li>Order history and e-receipts under one account</li>
       <li>Stock alerts for sold-out items, by email</li>
       <li>Extended 45-day returns on most products (displays stay at 15 days)</li>
@@ -77,17 +81,23 @@
     promotion codes work without one.</p>
   </div>
 </div>
+</main>
 <footer class="legal">
   <ul>
+    <li><a href="customer-service.html">Customer service</a></li>
     <li><a href="basket-help.html">Basket help</a></li>
     <li><a href="returns.html">Return policy</a></li>
     <li><a href="price-match.html">Price match</a></li>
-    <li><a href="accessibility.html">Accessibility</a></li>
     <li><a href="stores.html">Store directory</a></li>
+    <li><a href="accessibility.html">Accessibility</a></li>
+    <li><a href="privacy.html">Privacy policy</a></li>
+    <li><a href="terms.html">Terms of sale</a></li>
   </ul>
   Prices shown exclude tax. Online prices may differ from prices in store.
   &copy; 2026 Marrowgate Retail Group.
+  <p class="regoffice">Marrowgate Retail Group, 1200 Ferrand Boulevard, Skellbourne, MI 48000 &middot; Customer service 1-616-555-0137</p>
 </footer>
+<script src="marrowgate-chrome.js"></script>
 <script>
 document.getElementById('signin').addEventListener('submit', (event) => {
   event.preventDefault();

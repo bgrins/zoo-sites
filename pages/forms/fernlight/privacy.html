@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fernlight — Privacy notice</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --ink: #16161a;
+    --dim: #6c6c78;
+    --hair: #dedbd4;
+    --paper: #fbfbf9;
+    --accent: #5b4bd6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: 14px; line-height: 1.65;
+  }
+  a { color: var(--accent); }
+  header.bar {
+    border-bottom: 1px solid var(--hair); background: #fff;
+    display: flex; align-items: center; gap: 18px; padding: 10px 22px; font-size: 13px;
+  }
+  header.bar .brand { font-weight: 700; letter-spacing: -0.3px; }
+  header.bar .ver { border: 1px solid var(--hair); padding: 0 6px; color: var(--dim); font-size: 11px; }
+  header.bar nav { margin-left: auto; display: flex; gap: 16px; }
+  header.bar nav a { text-decoration: none; color: var(--dim); }
+  header.bar nav a[aria-current] { color: var(--ink); border-bottom: 2px solid var(--accent); }
+  main { max-width: 74ch; margin: 0 auto; padding: 30px 22px 64px; }
+  .crumbs { color: var(--dim); font-size: 12px; margin: 0 0 18px; }
+  h1 { font-size: 22px; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.5px; }
+  h1::before { content: "# "; color: var(--accent); }
+  .tagline { color: var(--dim); margin: 0 0 22px; font-size: 13px; }
+  h2 {
+    font-size: 14px; font-weight: 700; margin: 34px 0 8px;
+    padding-bottom: 5px; border-bottom: 1px solid var(--hair);
+  }
+  h2::before { content: "## "; color: var(--accent); font-weight: 400; }
+  p { margin: 0 0 14px; }
+  code { background: #fff; border: 1px solid var(--hair); padding: 0 4px; font-size: 13px; }
+  footer {
+    border-top: 1px solid var(--hair); margin-top: 44px; padding: 16px 22px;
+    font-size: 12px; color: var(--dim);
+  }
+  header.bar a.brand { color: var(--ink); text-decoration: none; }
+  footer a { color: var(--dim); }
+  @media (max-width: 640px) {
+    header.bar { flex-wrap: wrap; row-gap: 4px; padding: 10px 16px; }
+    header.bar nav, header.bar nav.links { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; gap: 2px 16px; }
+    main { padding: 22px 16px 48px; }
+    footer { padding: 16px; }
+  }
+  ul { margin: 0 0 14px; padding-left: 22px; }
+  li { margin: 0 0 6px; }
+  .toc { font-size: 12.5px; color: var(--dim); }
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="index.html">fernlight/atlas</a>
+  <span class="ver">beta 3.0.0-rc4</span>
+  <nav>
+    <a href="docs.html">docs</a>
+    <a href="changelog.html">changelog</a>
+    <a href="beta-terms.html">terms</a>
+    <a href="beta-signup.html">waitlist</a>
+  </nav>
+</header>
+
+<main>
+<p class="crumbs"><a href="index.html">atlas</a> / legal / privacy</p>
+<h1>Privacy notice</h1>
+<p class="tagline">What Fernlight Software Ltd collects, and why. Version 2.1.</p>
+
+<h2 id="who">Who we are</h2>
+<p>Fernlight Software Ltd, 42 Marrask Row, Suite 5, Pellowick PW4 7AL, is the controller of the personal
+data described here. Write to <a href="mailto:privacy@fernlight.example">privacy@fernlight.example</a>
+with any question about it.</p>
+
+<h2 id="waitlist">Waitlist requests</h2>
+<p>A waitlist request records your name, your email address, the referral
+field and the time it arrived. We use them to place the request in the queue,
+to send your install link and workspace key when a seat opens, and to answer
+you if you write to us about the request. The record is deleted when the
+programme ends, as clause 3 of the <a href="beta-terms.html">beta terms</a>
+describes.</p>
+
+<h2 id="telemetry">Client telemetry</h2>
+<p>The beta client reports crash traces, timing samples and feature usage
+counts, tied to the workspace rather than to a named person. Clause 7 of the
+beta terms explains why telemetry cannot be switched off during the beta; the
+<a href="docs.html#telemetry">telemetry settings</a> explain how to reduce it and
+how to inspect a payload before it is sent.</p>
+
+<h2 id="site">This site</h2>
+<p>These pages set one session cookie, which the waitlist form needs to accept
+a request. There is no advertising or cross-site tracking.</p>
+
+<h2 id="rights">Your rights</h2>
+<p>You can ask for a copy of what we hold about you, ask us to correct it, or
+ask us to delete it, and we answer within one month. If you are unhappy with
+our answer you may complain to the UK data protection regulator.</p>
+</main>
+
+<footer>
+  Fernlight Software Ltd · 42 Marrask Row, Suite 5, Pellowick PW4 7AL · Registered in England and Wales,
+  company number 00000000 · Support Mon–Fri ·
+  <a href="mailto:beta@fernlight.example">beta@fernlight.example</a><br>
+  <a href="beta-terms.html">Beta terms</a> · <a href="privacy.html">Privacy</a> ·
+  <a href="security.html">Security</a> · <a href="status.html">Status</a> ·
+  Atlas is a trademark of Fernlight Software Ltd.
+</footer>
+</body>
+</html>

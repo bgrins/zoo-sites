@@ -8,7 +8,7 @@
 // The accessible list page (access.html) is a first-class alternate surface:
 // booking through it flips the validator's views telemetry to list.
 
-import { until, uidOf } from './lib.mjs';
+import { addSession, findSession, until, uidOf } from './lib.mjs';
 
 const SEAT_RE =
   /uid=(\S+) button "([A-H])(\d{1,2}) (\d+\.\d\d) (open|restricted|selected)"/g;
@@ -84,7 +84,8 @@ export const DRIVERS = {
       if (!pairs.premium.length) throw new Error('premium over-cap decoy missing from the plan');
       const [first, second] = pairs.good[0];
       await mcp('click_by_uid', { uid: first.uid });
-      // uids expire on every take_snapshot; re-find the mate on a fresh one.
+      // On 0.9.15 uids expire on every take_snapshot; re-find the mate on a
+      // fresh one.
       const again = readSeats(await snapshot());
       const mate = again.get(second.row + second.n);
       if (!mate || mate.state !== 'open') throw new Error('mate seat not open after first click');
@@ -139,6 +140,46 @@ export const DRIVERS = {
           seats: [`Seat ${bought[0]}, Seat ${bought[1]}`],
           totalPrice: total,
           confirmationCode: `(${code})`,
+        },
+        // Row-first and range notations for the same pair.
+        { seats: [`${bought[0]}-${second.n}`], totalPrice: total, confirmationCode: code },
+        { seats: [`${bought[0]}\u2013${second.n}`], totalPrice: total, confirmationCode: code },
+        { seats: [`Row ${first.row}, seats ${first.n} and ${second.n}`], totalPrice: total, confirmationCode: code },
+        {
+          seats: [`Row ${first.row} Seat ${first.n}`, `Row ${first.row} Seat ${second.n}`],
+          totalPrice: total,
+          confirmationCode: code,
+        },
+      ];
+      // The same notations naming a wrong pair: a range one seat long, a range
+      // that runs past the pair, and the right numbers in another row.
+      const otherRow = first.row === 'A' ? 'B' : 'A';
+      this.wrongFields.push(
+        { seats: [`${bought[0]}-${first.n}`], totalPrice: total, confirmationCode: code },
+        { seats: [`${bought[0]}-${second.n + 1}`], totalPrice: total, confirmationCode: code },
+        { seats: [`Row ${otherRow}, seats ${first.n} and ${second.n}`], totalPrice: total, confirmationCode: code },
+        {
+          seats: [`Row ${otherRow} Seat ${first.n}`, `Row ${otherRow} Seat ${second.n}`],
+          totalPrice: total,
+          confirmationCode: code,
+        }
+      );
+      const counter = (state) => findSession(state, (s) => s.boxoffice?.order?.code === code).session.boxoffice;
+      this.wrongState = [
+        {
+          name: 'the confirmed order holds the aisle-straddle pair the answer does not name',
+          mutate: (state) => (counter(state).order.seats = asIds(pairs.straddle[0])),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a probe session read the plan first and ordered nothing',
+          mutate: (state) =>
+            addSession(
+              state,
+              { boxoffice: { ...structuredClone(counter(state)), order: null, attempts: [] } },
+              { first: true }
+            ),
         },
       ];
       const straddleIds = asIds(pairs.straddle[0]);

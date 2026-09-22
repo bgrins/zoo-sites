@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voltro — Desk Setup checkout</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="checkout.css">
+<style>
+  .row2 { display: flex; gap: 12px; flex-wrap: wrap; }
+  .row2 > div { flex: 1; min-width: 120px; }
+  .row2 input { max-width: none; }
+  #done { background: #fff; border: 1px solid var(--rule); border-top: 3px solid var(--pine-2); padding: 16px 20px; }
+  #done .hash { margin: 6px 0 10px; }
+  .fine { font-size: 12px; color: var(--mute); }
+</style>
+</head>
+<body>
+<header><a class="wordmark" href="index.html">Voltro</a><span>Voltro Business Supply checkout</span><a class="back" href="basket.html">Back to Desk basket</a></header>
+<div class="steps">Desk basket › <b>Delivery and invoice</b> › Pay invoice</div>
+<main>
+  <h1>Delivery and invoice</h1>
+  <p id="empty" hidden>Your Desk basket is empty. <a href="desk-setup.html">Browse Desk Setup</a>.</p>
+  <div id="order" hidden>
+    <table>
+      <thead><tr><th>Item</th><th>Amount</th></tr></thead>
+      <tbody id="items"></tbody>
+      <tfoot>
+        <tr class="muted"><td>Items subtotal</td><td id="sub"></td></tr>
+        <tr class="muted"><td>Sales tax (8%)</td><td id="tax"></td></tr>
+        <tr class="total"><td>Invoice total</td><td id="grand"></td></tr>
+      </tfoot>
+    </table>
+    <form id="deliver" novalidate>
+      <label for="name">Full name</label>
+      <input id="name" autocomplete="name">
+      <label for="email">Email for the invoice</label>
+      <input id="email" type="email" autocomplete="email">
+      <label for="street">Street address</label>
+      <input id="street" autocomplete="address-line1">
+      <div class="row2">
+        <div><label for="city">City</label><input id="city" autocomplete="address-level2"></div>
+        <div><label for="state">State</label><input id="state" maxlength="2" autocomplete="address-level1" placeholder="CO"></div>
+        <div><label for="zip">ZIP code</label><input id="zip" inputmode="numeric" maxlength="5" autocomplete="postal-code"></div>
+      </div>
+      <button type="submit" id="send">Book delivery and email my invoice</button>
+      <p class="fine">Nothing is charged on this page. Voltro Business Supply emails an
+      invoice with a secure payment link; your items ship the business day after it is paid.</p>
+    </form>
+  </div>
+  <div id="done" hidden>
+    <p>Invoice requested. Your invoice number is</p>
+    <div class="hash" id="ref"></div>
+    <p id="donetext"></p>
+    <p class="fine">Track it from <a href="orders.html">Orders &amp; returns</a> with the invoice
+    number and your last name. Your Desk basket keeps these items until the invoice is paid.</p>
+  </div>
+  <div id="status" role="status"></div>
+</main>
+<footer><a href="conditions.html">Terms of Use</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="returns.html">Delivery &amp; returns</a> &middot; <a href="help.html">Help</a> &middot; &copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const status = document.getElementById('status');
+const money = (n) => '$' + Number(n).toFixed(2);
+
+(async () => {
+  let body;
+  try {
+    const res = await fetch('/api/shop/cart?store=voltro', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) throw new Error('cart ' + res.status);
+    body = await res.json();
+  } catch {
+    status.className = 'error';
+    status.textContent = 'Your Desk basket could not be loaded. Reload the page to try again.';
+    return;
+  }
+  if (!body.lines.length) {
+    document.getElementById('empty').hidden = false;
+    return;
+  }
+  const rows = document.getElementById('items');
+  for (const line of body.lines) {
+    const tr = document.createElement('tr');
+    const name = document.createElement('td');
+    name.textContent = line.qty + ' x ' + line.name;
+    const amount = document.createElement('td');
+    amount.textContent = money(line.lineTotal);
+    tr.append(name, amount);
+    rows.appendChild(tr);
+  }
+  document.getElementById('sub').textContent = money(body.subtotal);
+  document.getElementById('tax').textContent = money(body.tax);
+  document.getElementById('grand').textContent = money(body.total);
+  document.getElementById('order').hidden = false;
+})();
+
+document.getElementById('deliver').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const send = document.getElementById('send');
+  const value = (id) => document.getElementById(id).value.trim();
+  status.className = '';
+  status.textContent = '';
+  send.disabled = true;
+  try {
+    const res = await fetch('/api/shop/desk-invoice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nonce: NONCE,
+        name: value('name'),
+        email: value('email'),
+        street: value('street'),
+        city: value('city'),
+        state: value('state'),
+        zip: value('zip'),
+      }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      status.className = 'error';
+      status.textContent = body.error ?? 'The invoice could not be requested.';
+      send.disabled = false;
+      return;
+    }
+    document.getElementById('order').hidden = true;
+    document.getElementById('ref').textContent = body.ref;
+    document.getElementById('donetext').textContent =
+      'An invoice for ' + money(body.total) + ' is on its way to ' + body.email + '.';
+    document.getElementById('done').hidden = false;
+  } catch {
+    status.className = 'error';
+    status.textContent = 'Voltro could not be reached. Check your connection and try again.';
+    send.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

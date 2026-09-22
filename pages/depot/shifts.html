@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shift dashboard - Marlowe Depot Systems</title>
 <link rel="stylesheet" href="depot.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="mast">
   <img class="mark" src="assets/mark.svg" alt="" width="26" height="26">
-  <span class="brand">Marlowe Depot Systems</span>
+  <a class="brand" href="./">Marlowe Depot Systems</a>
   <span class="site">Yard 4 &middot; Grenford</span>
   <span class="grow"></span>
   <span class="meta">Ops console 6.2.4</span>
@@ -23,7 +24,8 @@
   <a href="index.html" class="signout" data-tab="signin">Sign in</a>
 </nav>
 
-<div class="wrap">
+<main class="wrap">
+  <h1 class="pagehead">Shift dashboard</h1>
   <div class="cols">
     <div class="col">
       <section class="panel">
@@ -65,7 +67,7 @@
 
     <div class="col">
       <section class="panel">
-        <h2>Ops day &middot; Mon 28 Jul</h2>
+        <h2>Ops day &middot; Tue 28 Jul</h2>
         <div class="bd"><div class="kv" id="kpis"><span class="muted">Loading...</span></div></div>
       </section>
 
@@ -101,10 +103,10 @@
       </section>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="foot">
-  <span>&copy; 2026 Marlowe Depot Systems Ltd. Registered office: Unit 9, Grenford Trade Park, Grenford GR2 4LX.</span>
+  <span>&copy; 2026 Marlowe Depot Systems Ltd. Registered in England and Wales, company number 00000000. Registered office: Unit 9, Grenford Trade Park, Grenford GR2 4LX.</span>
   <a href="legal.html#privacy">Privacy</a>
   <a href="legal.html#terms">Terms</a>
   <a href="incidents.html">Report an incident</a>
@@ -130,11 +132,17 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
     roster.rows.length + ' operators rostered.';
 })();
 
-async function fill(path, render) {
+// A panel that cannot be read says so, rather than sitting on "Loading...".
+async function fill(path, render, box) {
   try {
     const r = await fetch(path);
-    if (r.ok) render(await r.json());
+    if (r.ok) return render(await r.json());
   } catch {}
+  const el = document.getElementById(box);
+  const note = 'Panel unavailable. Refresh the page to retry.';
+  el.innerHTML = el.tagName === 'TABLE'
+    ? '<tr><td class="muted">' + note + '</td></tr>'
+    : '<span class="muted">' + note + '</span>';
 }
 
 fill('/api/depot/bays', (d) => {
@@ -144,7 +152,7 @@ fill('/api/depot/bays', (d) => {
       '<tr><td>' + esc(b.bay) + '</td><td>' + esc(b.trailer) + '</td><td>' +
       esc(b.carrier) + '</td><td><span class="pill ' + esc(b.tone) + '">' +
       esc(b.state) + '</span></td></tr>').join('');
-});
+}, 'bays-table');
 
 fill('/api/depot/moves', (d) => {
   document.getElementById('moves-table').innerHTML =
@@ -153,7 +161,7 @@ fill('/api/depot/moves', (d) => {
       '<tr><td>' + esc(m.at) + '</td><td>' + esc(m.unit) + '</td><td>' +
       esc(m.from) + '</td><td>' + esc(m.to) + '</td><td>' + esc(m.tug) +
       '</td></tr>').join('');
-});
+}, 'moves-table');
 
 const kvRows = (pairs) => pairs.map((p) =>
   '<span class="k">' + esc(p[0]) + '</span><span class="v">' + esc(p[1]) + '</span>').join('');
@@ -165,7 +173,7 @@ fill('/api/depot/kpis', (d) => {
     ['Putaway backlog', d.putawayBacklog],
     ['Late departures', d.lateDepartures],
   ]);
-});
+}, 'kpis');
 
 fill('/api/depot/dock-status', (d) => {
   document.getElementById('docks').innerHTML = kvRows([
@@ -174,13 +182,13 @@ fill('/api/depot/dock-status', (d) => {
     ['Doors down', d.down],
     ['Next arrival', d.nextArrival],
   ]);
-});
+}, 'docks');
 
 fill('/api/depot/alerts', (d) => {
   document.getElementById('alerts-table').innerHTML = d.alerts.map((a) =>
     '<tr><td><span class="pill ' + esc(a.tone) + '">' + esc(a.level) +
     '</span></td><td>' + esc(a.text) + '</td></tr>').join('');
-});
+}, 'alerts-table');
 
 fill('/api/depot/equipment', (d) => {
   document.getElementById('equip-table').innerHTML =
@@ -188,7 +196,7 @@ fill('/api/depot/equipment', (d) => {
     d.units.map((u) =>
       '<tr><td>' + esc(u.unit) + '</td><td>' + esc(u.holder) + '</td><td>' +
       esc(u.due) + '</td></tr>').join('');
-});
+}, 'equip-table');
 
 fill('/api/depot/throughput', (d) => {
   document.getElementById('throughput').innerHTML = kvRows([
@@ -197,13 +205,13 @@ fill('/api/depot/throughput', (d) => {
     ['Cross-dock', d.crossDock],
     ['Returns', d.returns],
   ]);
-});
+}, 'throughput');
 
 fill('/api/depot/notices', (d) => {
   document.getElementById('notices-table').innerHTML = d.notices.map((n) =>
     '<tr><td class="muted">' + esc(n.posted) + '</td><td>' + esc(n.text) +
     '</td></tr>').join('');
-});
+}, 'notices-table');
 </script>
 <script src="depot.js"></script>
 </body>

@@ -2,10 +2,10 @@
   --cream: #f5eddb;
   --paper: #fdf8ec;
   --ink: #3a2a22;
-  --faded: #7c6a57;
+  --faded: #796755;
   --wine: #5c1a24;
   --wine-deep: #431019;
-  --gold: #a2823f;
+  --gold: #806732;
   --rule: #d8c7a4;
 }
 * { box-sizing: border-box; }
@@ -24,6 +24,7 @@ body {
   font-variant: small-caps; color: var(--wine);
 }
 .masthead .rulewrap { width: 220px; margin: 8px auto 10px; border-bottom: 3px double var(--wine); }
+.masthead h1 a { color: inherit; text-decoration: none; }
 .masthead nav { font-size: 14px; letter-spacing: 1px; }
 .masthead nav a { color: var(--wine); text-decoration: none; font-variant: small-caps; padding: 0 4px; }
 .masthead nav a:hover { color: var(--wine-deep); text-decoration: underline; }

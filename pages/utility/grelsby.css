@@ -1,20 +1,35 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  font-family: "Lucida Sans Unicode", "Lucida Grande", "DejaVu Sans", sans-serif;
-  font-size: 13px;
-  line-height: 1.5;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 14px;
+  line-height: 1.55;
   color: #23323d;
   background: #eef0ef;
 }
+main a { color: #17456e; }
+main a:visited { color: #3b2f63; }
+.dutyline {
+  margin: 0;
+  background: #0e2c47;
+  color: #dce6ee;
+  text-align: center;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 11px;
+  padding: 5px 12px;
+}
+.dutyline b { color: #fff; letter-spacing: 0.5px; }
 .masthead {
   background: #fff;
   text-align: center;
   padding: 18px 16px 10px;
   border-bottom: 1px solid #17456e;
 }
+.sitehome { display: inline-block; color: #17456e; text-decoration: none; }
 .masthead .seal {
-  display: inline-block;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
   border: 2px solid #17456e;
   border-radius: 50%;
   width: 34px;
@@ -25,7 +40,8 @@ body {
   color: #17456e;
   margin-bottom: 6px;
 }
-.masthead h1 {
+.masthead .sitename {
+  display: block;
   margin: 0;
   font-family: Cambria, "Times New Roman", serif;
   font-size: 21px;
@@ -36,6 +52,7 @@ body {
 }
 .masthead .est {
   margin: 2px 0 0;
+  font-family: Verdana, Geneva, sans-serif;
   font-size: 10.5px;
   letter-spacing: 1.2px;
   text-transform: uppercase;
@@ -48,6 +65,7 @@ body {
 }
 .navband a {
   display: inline-block;
+  font-family: Verdana, Geneva, sans-serif;
   color: #dce6ee;
   text-decoration: none;
   font-size: 10.5px;
@@ -64,6 +82,15 @@ main {
   margin: 22px auto 40px;
   padding: 0 16px;
 }
+.pagehead {
+  margin: 0 0 14px;
+  font-family: Cambria, "Times New Roman", serif;
+  font-size: 22px;
+  font-weight: normal;
+  color: #17456e;
+  border-bottom: 3px double #b9c3ca;
+  padding-bottom: 6px;
+}
 .sheet {
   background: #fff;
   border: 1px solid #b9c3ca;
@@ -72,7 +99,8 @@ main {
 }
 .sheet h2 {
   margin: 0 0 12px;
-  font-size: 12px;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 11.5px;
   letter-spacing: 1.6px;
   text-transform: uppercase;
   color: #17456e;
@@ -89,6 +117,7 @@ main {
 }
 .printnotice .nt {
   text-align: center;
+  font-family: Verdana, Geneva, sans-serif;
   font-size: 11px;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -96,10 +125,11 @@ main {
   margin: 0 0 8px;
   font-weight: bold;
 }
-.printnotice p { margin: 0 0 6px; font-size: 12px; color: #37424c; }
+.printnotice p { margin: 0 0 6px; font-size: 13px; color: #37424c; }
 .kvrow { display: flex; gap: 10px; padding: 3px 0; }
 .kvrow .k {
   flex: 0 0 190px;
+  font-family: Verdana, Geneva, sans-serif;
   font-size: 10px;
   letter-spacing: 1.2px;
   text-transform: uppercase;
@@ -116,6 +146,7 @@ main {
 }
 .field .cap {
   display: block;
+  font-family: Verdana, Geneva, sans-serif;
   font-size: 9.5px;
   letter-spacing: 1.3px;
   text-transform: uppercase;
@@ -169,6 +200,7 @@ main {
 .refuseline .rl { font-weight: bold; margin-right: 6px; }
 button.action {
   font: inherit;
+  font-family: Verdana, Geneva, sans-serif;
   font-size: 11px;
   letter-spacing: 1.4px;
   text-transform: uppercase;
@@ -183,6 +215,7 @@ button.action:hover { background: #0e2c47; }
 .ratesrow .rk { flex: 1; }
 .ratesrow .rv { flex: 0 0 130px; text-align: right; font-family: "Courier New", monospace; }
 footer {
+  font-family: Verdana, Geneva, sans-serif;
   border-top: 3px double #4a5560;
   margin-top: 30px;
   padding: 14px 16px 26px;
@@ -193,3 +226,10 @@ footer {
 }
 footer p { margin: 2px 0; }
 footer a { color: #17456e; }
+
+@media (max-width: 600px) {
+  .navband a { padding: 7px 10px; }
+  .kvrow { flex-direction: column; gap: 0; padding: 5px 0; }
+  .kvrow .k { flex: none; }
+  .ratesrow .rv { flex-basis: 110px; }
+}

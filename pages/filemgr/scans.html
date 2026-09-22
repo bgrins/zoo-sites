@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boxelder Workspace &#8212; Scans</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="boxelder.css">
+<link rel="stylesheet" href="scans.css">
+</head>
+<body>
+<header class="appbar">
+  <a class="brand" href="./" title="Boxelder home"><span class="mark">bx</span><span class="name">Boxelder</span></a>
+  <button class="workspace" type="button">Marketing team <span class="caret">&#9662;</span></button>
+  <span class="searchwrap">
+    <input id="search" type="search" autocomplete="off" placeholder="Search Scans by file name" aria-label="Search Scans by file name">
+  </span>
+  <span class="right">
+    <span class="plan">Team plan &middot; 12 seats</span>
+    <button class="invite" type="button">Invite people</button>
+    <span class="avatar" title="Signed in as Ada Reinholt">AR</span>
+  </span>
+</header>
+<nav class="menubar" aria-label="Application menu">
+  <button type="button">File</button>
+  <button type="button">Edit</button>
+  <button type="button">View</button>
+  <button type="button">Go</button>
+  <button type="button">Share</button>
+  <button type="button">Help</button>
+  <span class="synced">All changes synced</span>
+</nav>
+<div class="shell">
+  <div class="toolbar">
+    <button class="tbtn" type="button" disabled title="Your workspace role cannot create folders here">New folder</button>
+    <button class="tbtn" type="button" disabled title="Scans arrive from the post room scanner">Upload</button>
+    <button class="tbtn" id="moreBtn" type="button" aria-haspopup="menu" aria-expanded="false">More <span class="caret">&#9662;</span></button>
+    <span class="selcount" id="selCount">No files selected</span>
+    <span class="seg">
+      <button type="button" aria-pressed="true">List</button>
+      <button type="button" aria-pressed="false" disabled title="Grid view is unavailable on shared drives">Grid</button>
+    </span>
+  </div>
+  <div class="crumbbar">
+    <span>Shared drive</span><span>/</span><span>Marketing</span><span>/</span><b>Scans</b>
+  </div>
+  <div class="frame">
+    <div class="sidebar">
+      <div class="group">Places</div>
+      <a class="place" href="my-files.html">My files</a>
+      <span class="place" aria-current="true">Shared drive</span>
+      <a class="place sub" href="./">Working files</a>
+      <a class="place sub" href="brand-assets.html">Brand assets</a>
+      <a class="place sub" href="campaign-26.html">Campaign 26</a>
+      <a class="place sub" href="scans.html" aria-current="true">Scans</a>
+      <a class="place sub" href="archive.html">Archive</a>
+      <a class="place" href="recent.html">Recent</a>
+      <a class="place" href="trash.html">Trash</a>
+      <div class="group">Tags</div>
+      <a class="place tag" href="tag-campaign-26.html">Campaign 26</a>
+      <a class="place tag" href="tag-needs-review.html">Needs review</a>
+      <div class="storage">
+        <div class="label">Shared drive storage</div>
+        <div class="meter"><span></span></div>
+        <div>1.4 GB of 100 GB used</div>
+        <a href="storage.html">Manage storage</a>
+      </div>
+    </div>
+    <main class="pane">
+      <div class="folderhead">
+        <p>Signed releases, supplier invoices and delivery notes from the post room land here, one intake batch per scanning run, until each batch is checked and given its retention label.</p>
+        <a href="help.html#labels">About retention labels</a>
+      </div>
+      <div class="jobnote" id="jobNote" role="status">
+        <span class="msg" id="jobMsg"></span>
+        <span id="jobRef"></span>
+        <button class="rowbtn" id="jobClose" type="button">Dismiss</button>
+      </div>
+      <div id="loading">Loading scans&hellip;</div>
+      <table id="scans" class="scans" role="grid" aria-multiselectable="true" aria-label="Scans" style="display:none;">
+        <thead>
+          <tr>
+            <th class="check"><input type="checkbox" id="selectAll" aria-label="Select all files"></th>
+            <th data-key="name" aria-sort="ascending">Name</th>
+            <th data-key="batch">Batch</th>
+            <th class="pages" data-key="pages">Pages</th>
+            <th data-key="size">Size</th>
+            <th class="mod" data-key="scanned">Scanned</th>
+            <th data-key="label">Label</th>
+          </tr>
+        </thead>
+        <tbody id="scanRows"></tbody>
+      </table>
+      <div id="empty">No scans match your search.</div>
+      <section class="history" id="history" aria-labelledby="historyTitle" hidden>
+        <h2 id="historyTitle">Label activity</h2>
+        <ol id="historyList"></ol>
+      </section>
+    </main>
+  </div>
+  <div class="statusbar">
+    <span id="count">Reading workspace&hellip;</span>
+    <span>Labels sync to the records schedule overnight</span>
+  </div>
+</div>
+<div id="ctxMenu" class="ctxmenu" popover="manual" role="menu" aria-label="File actions"></div>
+<dialog id="labelDialog" class="labeldlg" aria-labelledby="labelTitle">
+  <h2 id="labelTitle">Apply a retention label</h2>
+  <p class="dlgcount" id="labelCount"></p>
+  <label for="labelPick">Retention label</label>
+  <select id="labelPick">
+    <option value="">Choose a label</option>
+    <option>Retain 1 year</option>
+    <option>Retain 3 years</option>
+    <option>Retain 7 years</option>
+    <option>Retain 10 years</option>
+  </select>
+  <p class="hint">A file carries one retention label. Applying a label replaces the one it has.</p>
+  <p class="dlgerr" id="labelErr" role="alert"></p>
+  <div class="dlgbtns">
+    <button type="button" id="labelCancel">Cancel</button>
+    <button type="button" class="primary" id="labelApply">Apply label</button>
+  </div>
+</dialog>
+<footer class="sitefoot">
+  <ul>
+    <li><a href="help.html">Help centre</a></li>
+    <li><a href="shortcuts.html">Keyboard shortcuts</a></li>
+    <li><a href="status.html">Status</a></li>
+    <li><a href="privacy.html">Privacy</a></li>
+    <li><a href="terms.html">Terms</a></li>
+    <li><a href="contact.html">Contact support</a></li>
+  </ul>
+  <p>Changes sync to every collaborator on this link. Deleted items stay recoverable for 30 days.</p>
+  <p>&copy; 2026 Boxelder Software Ltd, registered in England and Wales, company number 00000000 &middot;
+  Unit 3, Rope Walk, Wrexbury WX2 6BE &middot; support@boxelder.example</p>
+</footer>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+</script>
+<script src="scans.js"></script>
+<script src="chrome.js"></script>
+</body>
+</html>

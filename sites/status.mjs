@@ -8,6 +8,15 @@ import { randomBytes } from 'node:crypto';
 // them; a minted code therefore never equals a reference readable on disk.
 const STATUS_RELAY_STATES = ['operational', 'degraded', 'congested'];
 
+// A session keeps its most recent checks only: the validator grades the latest,
+// the page lists eight, and a script looping the check cannot grow the log (or
+// the collision set the mint scans) without bound.
+const STATUS_CHECKS_KEPT = 50;
+
+const STATUS_COMPONENTS = ['edge', 'relay', 'api', 'panel', 'logs'];
+
+const STATUS_SCOPES = ['all', 'unplanned', 'major'];
+
 const STATUS_STATIC_REFS = new Set([
   'NE-2D08F', 'NE-C214A', 'NE-77D02', 'NE-4B9E1',
   'NE-05F1B', 'NE-E60D3', 'NE-1A9C4', 'NE-B7730',
@@ -58,6 +67,7 @@ export function routes(ctx) {
         at: Date.now(),
       };
       probe.checks.push(check);
+      if (probe.checks.length > STATUS_CHECKS_KEPT) probe.checks.shift();
       // Legibility, never proof (curl sets these headers freely): a shell
       // check holding a live cookie still mints, it is just visible as
       // off-page in the validator's detail line.
@@ -68,6 +78,33 @@ export function routes(ctx) {
         state: probe.relayState,
         at: check.at,
       });
+    }
+
+    // The subscribe page's confirmation step. Ungraded; the list lives on the
+    // session so state.reset() clears it.
+    if (req.method === 'POST' && pathname0 === '/api/status/subscribe') {
+      let payload;
+      try {
+        payload = JSON.parse((await readBody(req)) || '{}');
+      } catch {
+        return json(res, 400, { ok: false, error: 'Malformed request body.' });
+      }
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      const addr = String(payload.addr ?? '').trim().slice(0, 254);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) {
+        return json(res, 422, { ok: false, error: 'That email address is not complete.' });
+      }
+      const components = (Array.isArray(payload.components) ? payload.components : [])
+        .filter((c) => STATUS_COMPONENTS.includes(c));
+      if (!components.length) {
+        return json(res, 422, { ok: false, error: 'Pick at least one component to follow.' });
+      }
+      const scope = STATUS_SCOPES.includes(payload.scope) ? payload.scope : STATUS_SCOPES[0];
+      const subs = (found.session.statusSubs ??= []);
+      if (subs.length < STATUS_CHECKS_KEPT) subs.push({ addr, components, scope, at: Date.now() });
+      return json(res, 200, { ok: true, addr, components, scope, confirmed: false });
     }
 
     return false;

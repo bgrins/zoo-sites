@@ -4,76 +4,85 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lexvane — the daily five from Marrowfield Press</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
-    --pine: #14442f;
-    --pine-deep: #0b2b1d;
-    --lime: #cde36f;
-    --ochre: #c98f2b;
-    --stone: #8b8478;
-    --bone: #f2ece0;
-    --paper: #fffdf7;
-    --rule: #ddd4c2;
-    --ink: #22201b;
+    --ink-blue: #1f3a5f;
+    --ink-blue-deep: #13263f;
+    --coral: #ffb4a2;
+    --green: #2f6b3f;
+    --ochre: #a8721c;
+    --stone: #7d8590;
+    --bone: #eceae4;
+    --paper: #ffffff;
+    --rule: #d5d3cc;
+    --ink: #1b1d21;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans Unicode", Tahoma, sans-serif;
+    font-family: Superclarendon, "Clarendon URW", "Roboto Slab", Rockwell, serif;
     color: var(--ink);
     background-color: var(--bone);
     background-image: radial-gradient(var(--rule) 1px, transparent 1px);
     background-size: 18px 18px;
     line-height: 1.5;
   }
-  a { color: var(--pine); }
+  a { color: var(--ink-blue); }
 
-  .mast { background: var(--pine); color: var(--paper); border-bottom: 5px solid var(--lime); }
+  .mast { background: var(--paper); color: var(--ink); border-top: 6px solid var(--coral); }
   .mast-inner {
     max-width: 660px; margin: 0 auto; padding: 18px 20px 14px;
     display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
   }
   .kicker {
-    font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
-    font-style: italic; font-size: 13px; color: var(--lime); letter-spacing: .02em;
+    font-family: Athelas, "Iowan Old Style", "Libre Baskerville", serif;
+    font-style: italic; font-size: 13px; color: #b3402a; letter-spacing: .02em;
   }
   .wordmark {
-    font-size: 34px; font-weight: bold; letter-spacing: .22em;
-    text-transform: uppercase; line-height: 1.05;
+    display: block; color: inherit; text-decoration: none;
+    font-size: 36px; font-weight: bold; letter-spacing: -.01em;
+    line-height: 1.05;
   }
-  .tagline { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #a9c4b1; }
-  .mast-side { text-align: right; font-size: 12px; color: #a9c4b1; }
+  .tagline { font-family: Athelas, "Iowan Old Style", "Libre Baskerville", serif; font-style: italic; font-size: 15px; color: #55606e; }
+  .mast-side { text-align: right; font-size: 12px; color: #55606e; }
   .mast-side .sub {
     display: inline-block; margin-top: 6px; padding: 5px 11px;
-    background: var(--lime); color: var(--pine-deep); font-weight: bold;
+    background: var(--coral); color: var(--ink-blue-deep); font-weight: bold;
     border-radius: 999px; text-decoration: none; letter-spacing: .04em;
   }
-  .mast-nav { background: var(--pine-deep); }
+  .mast-nav { background: var(--paper); border-top: 1px solid var(--ink); border-bottom: 3px double var(--ink); }
   .mast-nav-inner { max-width: 660px; margin: 0 auto; padding: 0 20px; display: flex; flex-wrap: wrap; }
   .mast-nav a {
-    color: #cfe0d3; text-decoration: none; font-size: 12px; letter-spacing: .12em;
-    text-transform: uppercase; padding: 9px 14px 9px 0;
+    color: var(--ink); text-decoration: none; font-size: 14px;
+    padding: 9px 18px 9px 0;
   }
-  .mast-nav a.here { color: var(--lime); font-weight: bold; }
+  .mast-nav a.here { color: var(--ink-blue); font-weight: bold; text-decoration: underline; text-decoration-color: var(--coral); text-decoration-thickness: 3px; text-underline-offset: 5px; }
 
   main { max-width: 660px; margin: 0 auto; padding: 22px 20px 8px; }
   .card {
-    background: var(--paper); border: 3px solid var(--pine); border-radius: 12px;
-    box-shadow: 7px 7px 0 rgba(20, 68, 47, .14);
+    background: var(--paper); border: 3px solid var(--ink-blue); border-radius: 12px;
+    box-shadow: 7px 7px 0 rgba(31, 58, 95, .14);
     padding: 20px; margin-bottom: 20px;
   }
 
   h1 { font-size: 23px; margin: 0; letter-spacing: .01em; }
   .pdate {
-    font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
-    font-size: 14px; color: #5d6b60; margin-top: 2px;
+    font-family: Athelas, "Iowan Old Style", "Libre Baskerville", serif;
+    font-size: 14px; color: #55606e; margin-top: 2px;
   }
   .stats { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
   .chip {
     font-size: 12px; letter-spacing: .05em; padding: 4px 11px; border-radius: 999px;
-    background: #e9f0dd; border: 2px solid var(--pine); color: var(--pine);
+    background: #fde8e2; border: 2px solid var(--ink-blue); color: var(--ink-blue);
   }
-  .chip.hot { background: var(--lime); font-weight: bold; }
+  .chip.hot { background: var(--coral); font-weight: bold; }
+  .modeline { margin: 10px 0 0; font-size: 13px; }
+  .modeline a { font-weight: bold; }
+  .daynote {
+    margin: 12px 0 0; padding: 8px 12px; font-size: 14px;
+    background: #f4f3f0; border-left: 6px solid var(--ochre); border-radius: 0 8px 8px 0;
+  }
 
   .rules-row {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -82,13 +91,13 @@
   .rules-row .lede { margin: 0; font-size: 15px; font-weight: bold; }
   .ghost {
     font: inherit; font-size: 13px; padding: 6px 13px; cursor: pointer;
-    background: var(--paper); color: var(--pine); border: 2px solid var(--pine);
+    background: var(--paper); color: var(--ink-blue); border: 2px solid var(--ink-blue);
     border-radius: 999px; letter-spacing: .03em;
   }
-  .ghost:hover { background: #e9f0dd; }
+  .ghost:hover { background: #fde8e2; }
   #howto {
     display: none; margin-top: 12px; padding: 14px 16px;
-    background: #f6f3e8; border-left: 6px solid var(--lime); border-radius: 0 8px 8px 0;
+    background: #f4f3f0; border-left: 6px solid var(--coral); border-radius: 0 8px 8px 0;
     font-size: 14px;
   }
   #howto div { margin-bottom: 5px; }
@@ -104,68 +113,71 @@
     display: flex; align-items: center; justify-content: center;
     position: relative;
   }
-  .row > div.correct { background: var(--pine); border-color: var(--pine); color: var(--paper); }
-  .row > div.present { background: var(--ochre); border-color: var(--ochre); color: #fffdf7; }
-  .row > div.absent  { background: var(--stone); border-color: var(--stone); color: #fffdf7; }
+  .row > div.correct { background: var(--green); border-color: var(--green); color: var(--paper); }
+  .row > div.present { background: var(--ochre); border-color: var(--ochre); color: #ffffff; }
+  .row > div.absent  { background: var(--stone); border-color: var(--stone); color: #ffffff; }
   /* second, non-colour channel for the three states */
   .row > div.correct::after, .row > div.present::after {
     content: ""; position: absolute; left: 11px; right: 11px; bottom: 6px; height: 4px;
     border-radius: 2px;
   }
-  .row > div.correct::after { background: var(--lime); }
-  .row > div.present::after { border-top: 4px dotted #fffdf7; height: 0; }
+  .row > div.correct::after { background: var(--coral); }
+  .row > div.present::after { border-top: 4px dotted #ffffff; height: 0; }
 
   #counter {
-    text-align: center; font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
-    color: #5d6b60; margin-bottom: 16px;
+    text-align: center; font-size: 13px;
+    color: #55606e; margin-bottom: 16px;
   }
 
   #guessForm { display: flex; gap: 10px; justify-content: center; align-items: stretch; }
   #guessInput {
     font: inherit; font-size: 22px; font-weight: bold; letter-spacing: .35em;
     text-transform: uppercase; text-align: center; width: 9em; padding: 10px 8px 10px 14px;
-    border: 3px solid var(--pine); border-radius: 9px; background: var(--paper); color: var(--ink);
+    border: 3px solid var(--ink-blue); border-radius: 9px; background: var(--paper); color: var(--ink);
   }
-  #guessInput:focus { outline: 3px solid var(--lime); outline-offset: 1px; }
-  #guessInput:disabled { background: #eee9dd; color: #8b8478; border-color: var(--stone); }
+  #guessInput.wide { width: 12em; }
+  #guessInput:focus { outline: 3px solid var(--coral); outline-offset: 1px; }
+  #guessInput:disabled { background: #ebeae6; color: #7d8590; border-color: var(--stone); }
   .submit {
     font: inherit; font-size: 15px; font-weight: bold; letter-spacing: .06em; cursor: pointer;
-    padding: 0 22px; background: var(--lime); color: var(--pine-deep);
-    border: 3px solid var(--pine); border-radius: 9px; box-shadow: 3px 3px 0 var(--pine);
+    padding: 0 22px; background: var(--coral); color: var(--ink-blue-deep);
+    border: 3px solid var(--ink-blue); border-radius: 9px; box-shadow: 3px 3px 0 var(--ink-blue);
   }
-  .submit:hover { background: #d8ec86; }
+  .submit:hover { background: #ffc9bb; }
   .submit:active { transform: translate(3px, 3px); box-shadow: none; }
-  .submit:disabled { background: #e4e0d4; color: #8b8478; border-color: var(--stone); box-shadow: none; cursor: default; }
+  .submit:disabled { background: #e2e1dc; color: #7d8590; border-color: var(--stone); box-shadow: none; cursor: default; }
 
   .legend { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 16px 0 6px; }
   .legend span {
     font-size: 12px; padding: 3px 10px; border-radius: 6px; border: 2px solid var(--rule);
-    background: #f6f3e8; color: #4a5a4e;
+    background: #f4f3f0; color: #46505c;
   }
   #letters { margin: 10px 0 0; }
   #letters div {
-    font-size: 13px; letter-spacing: .12em; padding: 3px 0; color: #3f4c43;
+    font-size: 13px; letter-spacing: .12em; padding: 3px 0; color: #3c4550;
     border-bottom: 1px dotted var(--rule);
   }
   #feedback { margin: 12px 0 0; }
   #feedback div {
     font-family: "Courier New", monospace; font-size: 13px; letter-spacing: .06em;
-    padding: 4px 9px; background: #f6f3e8; border-left: 4px solid var(--pine);
+    padding: 4px 9px; background: #f4f3f0; border-left: 4px solid var(--ink-blue);
     margin-bottom: 4px; border-radius: 0 5px 5px 0;
   }
-  #status { margin-top: 14px; font-size: 18px; font-weight: bold; color: var(--pine); }
+  #status { margin-top: 14px; font-size: 18px; font-weight: bold; color: var(--ink-blue); }
   #answerLine {
-    font-size: 16px; letter-spacing: .1em; color: var(--pine-deep);
-    font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+    font-size: 16px; letter-spacing: .1em; color: var(--ink-blue-deep);
+    font-family: Athelas, "Iowan Old Style", "Libre Baskerville", serif;
   }
   #share {
     display: none; white-space: pre; font-family: "Courier New", monospace; font-size: 14px;
-    margin-top: 12px; padding: 10px 14px; background: var(--pine); color: var(--lime);
-    border-radius: 9px; width: max-content;
+    margin-top: 12px; padding: 10px 14px; background: var(--ink-blue); color: var(--coral);
+    border-radius: 9px; width: max-content; max-width: 100%;
   }
+  #copyShare { margin-top: 10px; }
+  #copyNote { margin-left: 10px; font-size: 13px; color: #55606e; }
 
   .kb-head {
-    font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #5d6b60;
+    font-size: 14px; color: #55606e;
     margin-bottom: 10px;
   }
   .krow { display: flex; gap: 6px; justify-content: center; margin-bottom: 6px; }
@@ -173,25 +185,43 @@
     font: inherit; font-size: 15px; font-weight: bold; cursor: pointer;
     min-width: 38px; height: 48px; padding: 0 6px;
     background: var(--paper); color: var(--ink);
-    border: 2px solid var(--pine); border-radius: 7px;
+    border: 2px solid var(--ink-blue); border-radius: 7px;
   }
-  .key:hover { background: #e9f0dd; }
-  .key.wide { min-width: 62px; font-size: 12px; letter-spacing: .06em; background: #e9f0dd; }
-  .key.correct { background: var(--pine); border-color: var(--pine); color: var(--paper); }
-  .key.present { background: var(--ochre); border-color: var(--ochre); color: #fffdf7; }
-  .key.absent  { background: #d9d3c6; border-color: #c4bdae; color: #6f6a60; }
+  .key:hover { background: #fde8e2; }
+  .key.wide { min-width: 62px; font-size: 12px; letter-spacing: .06em; background: #fde8e2; }
+  .key.correct { background: var(--green); border-color: var(--green); color: var(--paper); }
+  .key.present { background: var(--ochre); border-color: var(--ochre); color: #ffffff; }
+  .key.absent  { background: #d7d6d1; border-color: #c2c1bb; color: #55585e; }
 
-  .more h2 { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 10px; color: #5d6b60; }
+  .more h2 { font-size: 16px; margin: 0 0 10px; color: #1b1d21; }
   .more ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; }
   .more a { font-size: 14px; font-weight: bold; text-decoration: none; }
   .more a:hover { text-decoration: underline; }
 
-  footer { background: var(--pine-deep); color: #b8cbbd; margin-top: 10px; }
+  footer { background: var(--ink-blue-deep); color: #c3cedd; margin-top: 10px; }
   .foot-inner { max-width: 660px; margin: 0 auto; padding: 24px 20px 30px; font-size: 12.5px; }
   .foot-inner p { margin: 0 0 8px; }
-  .foot-links a { color: var(--lime); text-decoration: none; margin-right: 14px; }
+  .foot-links a { color: var(--coral); text-decoration: none; margin-right: 14px; }
   .foot-links a:hover { text-decoration: underline; }
-  .foot-rule { border-top: 1px solid #24503a; margin: 14px 0 12px; }
+  .foot-rule { border-top: 1px solid #2e4a70; margin: 14px 0 12px; }
+
+  @media (max-width: 480px) {
+    .mast-inner { padding: 14px 14px 10px; }
+    .wordmark { font-size: 30px; }
+    .mast-nav-inner { padding: 0 14px; }
+    main { padding: 16px 10px 8px; }
+    .card { padding: 14px 12px; box-shadow: 4px 4px 0 rgba(31, 58, 95, .14); }
+    .row { gap: 5px; margin-bottom: 5px; }
+    .row > div { width: 52px; height: 52px; font-size: 25px; }
+    #board.wide .row > div { width: 38px; height: 44px; font-size: 20px; border-radius: 6px; }
+    #guessForm { flex-wrap: wrap; }
+    #guessInput, #guessInput.wide { width: 100%; }
+    .submit { width: 100%; padding: 12px; }
+    .krow { gap: 4px; }
+    .key { flex: 1 1 0; min-width: 0; padding: 0; height: 46px; font-size: 14px; }
+    .key.wide { flex: 1.7 1 0; min-width: 0; font-size: 11px; letter-spacing: 0; }
+    .foot-inner { padding: 20px 14px 26px; }
+  }
 </style>
 </head>
 <body>
@@ -199,7 +229,7 @@
   <div class="mast-inner">
     <div>
       <div class="kicker">Marrowfield Press</div>
-      <div class="wordmark">Lexvane</div>
+      <a class="wordmark" href="./">Lexvane</a>
       <div class="tagline">The daily five</div>
     </div>
     <div class="mast-side">
@@ -224,11 +254,13 @@
     <h1 id="puzzleNo">Lexvane No. 1481</h1>
     <div class="pdate" id="puzzleDate">Sunday, 3 May 2026</div>
     <div class="stats">
-      <span class="chip hot">Streak 12</span>
-      <span class="chip">Played 217</span>
-      <span class="chip">Win rate 91%</span>
-      <span class="chip">Best run 46</span>
+      <span class="chip hot" id="statStreak">Streak 0</span>
+      <span class="chip" id="statPlayed">Played 0</span>
+      <span class="chip" id="statRate">Win rate &ndash;</span>
+      <span class="chip" id="statBest">Best run 0</span>
     </div>
+    <p class="modeline"><a id="modeLink" href="?mode=hard">Play today's hard mode</a> &middot; seven letters, five tries</p>
+    <p class="daynote" id="dayNote" hidden></p>
 
     <div class="rules-row">
       <p class="lede" id="lede">Six tries. Five letters.</p>
@@ -265,6 +297,7 @@
     <div id="status" role="status"></div>
     <div id="answerLine"></div>
     <div id="share"></div>
+    <button type="button" class="ghost" id="copyShare" hidden>Copy result</button><span id="copyNote" role="status"></span>
   </section>
 
   <section class="card">
@@ -290,7 +323,7 @@
       <a href="archive.html">Puzzle archive</a><a href="help.html">How to play</a><a href="help.html#subscribers">Subscriber help</a><a href="legal.html#privacy">Privacy notice</a><a href="legal.html#terms">Terms of use</a><a href="help.html#contact">Contact the games desk</a>
     </p>
     <div class="foot-rule"></div>
-    <p>Marrowfield Press Ltd, 8 Calder Wharf, Bramlington BR4 2QN. Registered in England and Wales, no. 00000000.</p>
+    <p>Marrowfield Press Ltd, 8 Calder Wharf, Bramlington LX7 3WB. Registered in England and Wales, no. 00000000.</p>
     <p>Subscriber enquiries: help@marrowfieldpress.example &middot; 03069 990402</p>
     <p>&copy; 2026 Marrowfield Press Ltd. All rights reserved.</p>
   </div>
@@ -323,10 +356,24 @@
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
-  const issue = new Date(Date.UTC(2026, 4, 3) + (Number.isFinite(DAY) ? DAY : 0) * 86400000);
-  document.getElementById('puzzleNo').textContent = 'Lexvane No. ' + (1481 + (Number.isFinite(DAY) ? DAY : 0));
-  document.getElementById('puzzleDate').textContent = DAY_NAMES[issue.getUTCDay()] + ', ' +
-    issue.getUTCDate() + ' ' + MONTH_NAMES[issue.getUTCMonth()] + ' ' + issue.getUTCFullYear();
+  let puzzleNumber = 1481 + (Number.isFinite(DAY) ? DAY : 0);
+  function label(day) {
+    const issue = new Date(Date.UTC(2026, 4, 3) + day * 86400000);
+    puzzleNumber = 1481 + day;
+    document.getElementById('puzzleNo').textContent = 'Lexvane No. ' + puzzleNumber;
+    document.getElementById('puzzleDate').textContent = DAY_NAMES[issue.getUTCDay()] + ', ' +
+      issue.getUTCDate() + ' ' + MONTH_NAMES[issue.getUTCMonth()] + ' ' + issue.getUTCFullYear();
+  }
+  label(Number.isFinite(DAY) ? DAY : 0);
+
+  function showStats(stats) {
+    if (!stats) return;
+    document.getElementById('statStreak').textContent = 'Streak ' + stats.streak;
+    document.getElementById('statPlayed').textContent = 'Played ' + stats.played;
+    document.getElementById('statRate').textContent = 'Win rate ' +
+      (stats.played ? Math.round((100 * stats.won) / stats.played) + '%' : '\u2013');
+    document.getElementById('statBest').textContent = 'Best run ' + stats.best;
+  }
 
   const howtoBtn = document.getElementById('howtoBtn');
   const howto = document.getElementById('howto');
@@ -349,8 +396,12 @@
     chip.textContent = 'Hard mode';
     document.querySelector('.stats').appendChild(chip);
     // Replace the easy-mode rules outright: leaving them above would contradict
-    // hard mode ("any five-letter word", "six tries"), and each line truncates
-    // in an accessibility snapshot, so the leading words must be the true ones.
+    // hard mode ("any five-letter word", "six tries"), and most readers take in
+    // only the first few words of each line, so those must be the true ones.
+    const modeLink = document.getElementById('modeLink');
+    modeLink.href = './';
+    modeLink.textContent = 'Back to the daily five';
+    modeLink.parentNode.lastChild.textContent = ' \u00b7 five letters, six tries';
     howto.textContent = '';
     for (const line of [
       'Seven letters. Five tries.',
@@ -371,7 +422,7 @@
     document.getElementById('letters').prepend(hintReuse);
     document.getElementById('letters').prepend(hintFixed);
     guessInput.maxLength = WORD_LEN;
-    guessInput.style.width = '12em';
+    guessInput.classList.add('wide');
   }
 
   for (let r = 0; r < MAX_GUESSES; r++) {
@@ -470,10 +521,21 @@
     guessInput.setAttribute('aria-disabled', 'true');
     submitButton.setAttribute('aria-disabled', 'true');
     const share = document.getElementById('share');
-    share.textContent = 'Lexvane ' + (guesses <= MAX_GUESSES ? guesses : 'X') + '/' + MAX_GUESSES + '\n' +
-      marksHistory.map(glyphs).join('\n');
+    share.textContent = 'Lexvane ' + puzzleNumber + (HARD ? ' hard ' : ' ') + (reveal ? guesses : 'X') +
+      '/' + MAX_GUESSES + '\n' + marksHistory.map(glyphs).join('\n');
     share.style.display = 'block';
+    document.getElementById('copyShare').hidden = false;
   }
+
+  document.getElementById('copyShare').addEventListener('click', async () => {
+    const note = document.getElementById('copyNote');
+    try {
+      await navigator.clipboard.writeText(document.getElementById('share').textContent);
+      note.textContent = 'Copied to the clipboard.';
+    } catch {
+      note.textContent = 'Copying was blocked; select the grid above and copy it by hand.';
+    }
+  });
 
   function play(guess, marks) {
     marksHistory.push(marks);
@@ -532,10 +594,29 @@
     guessInput.value = '';
     play(guess, view.marks);
     showHints(view);
+    showStats(view.stats);
     if (view.over) {
       finish(view.message || 'Out of guesses.', view.won ? guess : null);
     }
   }
+
+  // Letters typed anywhere on the page land in the guess box, as in any word
+  // game. Keys aimed at another control, or carrying a modifier, are left alone.
+  document.addEventListener('keydown', (event) => {
+    if (done || pending || event.ctrlKey || event.metaKey || event.altKey) return;
+    const t = event.target;
+    if (t && t.closest && t.closest('input, textarea, select, button, a, [contenteditable]')) return;
+    if (/^[a-z]$/i.test(event.key)) {
+      guessInput.value = (guessInput.value + event.key).slice(0, WORD_LEN).toUpperCase();
+    } else if (event.key === 'Backspace') {
+      guessInput.value = guessInput.value.slice(0, -1);
+    } else if (event.key === 'Enter') {
+      guessForm.requestSubmit();
+    } else {
+      return;
+    }
+    event.preventDefault();
+  });
 
   guessForm.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -569,7 +650,16 @@
     } catch {
       return;
     }
-    if (!view || !Array.isArray(view.played) || !view.played.length) return;
+    if (!view || !Array.isArray(view.played)) return;
+    showStats(view.stats);
+    if (Number.isInteger(view.day) && (!view.available || view.day !== DAY)) {
+      const asked = Number.isFinite(DAY) ? 'No. ' + (1481 + DAY) : 'That puzzle';
+      label(view.day);
+      const note = document.getElementById('dayNote');
+      note.textContent = asked + ' is not open on the games desk, so this is No. ' + puzzleNumber + '.';
+      note.hidden = false;
+    }
+    if (!view.played.length) return;
     // Only rehydrate a board that is still empty: if a guess already landed
     // while this fetch was in flight, replaying would double-render rows and
     // run off the end of the grid.

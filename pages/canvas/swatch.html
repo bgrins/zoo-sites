@@ -1,106 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Swatch Calibration — TintForge Studio</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: #f7f6f3; color: #14130f;
-    font-family: Optima, "Gill Sans", Candara, "Segoe UI", sans-serif;
-    font-size: 15px; line-height: 1.55;
-  }
-  .masthead {
-    border-bottom: 1px solid #14130f; padding: 26px 40px 18px;
-    display: flex; align-items: flex-end; justify-content: space-between;
-  }
-  .masthead h1 {
-    margin: 0; font-family: Didot, "Hoefler Text", Baskerville, Garamond, serif;
-    font-size: 34px; font-weight: normal; letter-spacing: 0.01em;
-  }
-  .masthead h1 em { font-style: italic; }
-  .masthead .who {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.3em; color: #6f6c62;
-  }
-  nav {
-    border-bottom: 1px solid #ddd9cf; padding: 0 40px;
-    display: flex; gap: 30px;
-  }
-  nav a {
-    display: block; padding: 11px 0; color: #6f6c62; text-decoration: none;
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-  }
-  nav a:hover { color: #14130f; }
-  nav a.here { color: #14130f; border-bottom-color: #14130f; }
-
-  .work { display: grid; grid-template-columns: 1fr 250px; gap: 52px; padding: 40px; max-width: 1000px; }
-  h2 {
-    margin: 0 0 4px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 24px; font-weight: normal;
-  }
-  .deck { margin: 0 0 26px; color: #4c4941; max-width: 52ch; }
-  .proof {
-    display: inline-block; padding: 20px 20px 16px; background: #fff;
-    border: 1px solid #ddd9cf;
-  }
-  #grid { display: block; margin: 0; cursor: crosshair; }
-  .proof .caption {
-    margin-top: 12px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.24em;
-    color: #8b877c; display: flex; justify-content: space-between; gap: 30px;
-  }
-  #revealed {
-    margin-top: 22px; min-height: 22px; font-size: 14px; letter-spacing: 0.02em;
-    color: #4c4941;
-  }
-  #revealed.ok {
-    font-family: "SFMono-Regular", Menlo, "DejaVu Sans Mono", monospace; font-size: 15px;
-    color: #14130f; border-left: 3px solid #14130f; padding-left: 12px;
-  }
-  #revealed.error { color: #8f2d1c; border-left: 3px solid #8f2d1c; padding-left: 12px; }
-
-  aside dl { margin: 0; }
-  aside dt {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 0.24em; color: #8b877c;
-    margin-top: 18px;
-  }
-  aside dd {
-    margin: 3px 0 0; padding-bottom: 10px; border-bottom: 1px solid #e6e2d8;
-    font-family: "SFMono-Regular", Menlo, "DejaVu Sans Mono", monospace; font-size: 12px;
-  }
-  aside h3 {
-    margin: 0; font-size: 10px; text-transform: uppercase; letter-spacing: 0.24em;
-    color: #14130f; padding-bottom: 8px; border-bottom: 1px solid #14130f;
-  }
-  aside p { font-size: 12px; color: #6f6c62; line-height: 1.6; }
-  .fine {
-    padding: 0 40px 44px; max-width: 62ch; color: #8b877c; font-size: 11px;
-    letter-spacing: 0.02em;
-  }
-</style>
+<title>Swatch Calibration — Velloquin Studio</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="studio.css">
 </head>
 <body>
-<div class="masthead">
-  <h1>TintForge <em>Studio</em></h1>
-  <span class="who">Print calibration desk</span>
-</div>
-<nav>
+<div class="register" aria-hidden="true"></div>
+<header class="masthead">
+  <a class="brand" href="index.html">Velloquin <em>Studio</em></a>
+  <span class="who">Ink, proofing and colour calibration</span>
+</header>
+<nav class="studio" aria-label="Studio">
+  <a href="index.html">Studio</a>
   <a href="libraries.html">Libraries</a>
-  <a href="swatch.html" class="here">Calibration</a>
+  <a href="swatch.html" aria-current="page">Calibration</a>
   <a href="ink-recipes.html">Ink recipes</a>
   <a href="press-profiles.html">Press profiles</a>
   <a href="archive.html">Archive</a>
 </nav>
-<div class="work">
+<main class="work split">
   <section>
-    <h2>Swatch calibration check</h2>
+    <h1>Swatch calibration check</h1>
     <p class="deck">The sheet below is rendered straight onto a canvas, exactly as it comes
     off the proofing press — no separate tiles, no labels. Confirm your monitor against
     the press by picking the swatch that matches the target hue on the work order. A
     correct pick releases the calibration code for this session.</p>
     <div class="proof">
-      <canvas id="grid" width="320" height="240"></canvas>
+      <canvas id="grid" width="320" height="240" role="img" aria-label="Proof sheet 14, eight swatches across and six down"></canvas>
       <div class="caption">
         <span>Sheet 14 &middot; 8 across, 6 down</span>
         <span>Proof pull 3</span>
@@ -108,24 +37,25 @@
     </div>
     <div id="revealed" role="status"></div>
   </section>
-  <aside>
-    <h3>Work order</h3>
-    <dl>
+  <aside class="order">
+    <h2>Work order</h2>
+    <dl class="data">
       <dt>Order</dt><dd>WO-4471</dd>
       <dt>Target hue</dt><dd>Warm amber, process orange</dd>
       <dt>Substrate</dt><dd>Coated matte 170 gsm</dd>
-      <dt>Press</dt><dd>Heidel 4C, profile TF-2</dd>
+      <dt>Press</dt><dd>Vallom 4C, profile VQ-2</dd>
       <dt>Tolerance</dt><dd>dE 2.0 max</dd>
     </dl>
-    <p>Only one swatch on this sheet carries the target hue. Everything else on the
-    sheet is a distractor pulled from the studio's standing library.</p>
+    <p>Only one swatch on this sheet carries the target hue. The rest of the sheet is made
+    up of reference patches pulled from the studio's standing libraries.</p>
   </aside>
-</div>
-<p class="fine">TintForge Studio &middot; Unit 6, Dyehouse Yard &middot; a calibration code
-is issued for each proof run and must accompany any reprint request.
-&middot; <a href="terms.html" style="color: #6f6c62">Terms of trade</a> &middot;
-<a href="stock.html" style="color: #6f6c62">Sending stock</a> &middot;
-<a href="access.html" style="color: #6f6c62">Visiting the yard</a></p>
+</main>
+<footer class="fine">
+  <p>A calibration code is issued for each proof run and must accompany any approval or reprint request.</p>
+  <p>Velloquin Studio Ltd &middot; Unit 6, Dyehouse Yard, Lorrimead LQ3 8DW &middot; registered in England and Wales, company number 00000000</p>
+  <p><a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms of trade</a> &middot;
+  <a href="stock.html">Sending stock</a> &middot; <a href="access.html">Visiting the yard</a></p>
+</footer>
 <script>
   const NONCE = '__SESSION_NONCE__';
   const CELL = 40;
@@ -166,8 +96,8 @@ is issued for each proof run and must accompany any reprint request.
   const revealed = document.getElementById('revealed');
   canvas.addEventListener('click', async (event) => {
     const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const x = (event.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (event.clientY - rect.top) * (canvas.height / rect.height);
     const col = Math.floor(x / CELL);
     const row = Math.floor(y / CELL);
     if (col < 0 || col >= COLS || row < 0 || row >= ROWS) {

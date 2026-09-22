@@ -1,17 +1,12 @@
 // pages/intake/ - onboarding portal (intake-carryover). Document lists are server-issued, keyed off the stored path choice.
-import { randomBytes } from 'node:crypto';
-
+import { SESSION_ROWS } from './lib.mjs';
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'POST' && pathname0 === '/api/intake/choice') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -23,15 +18,33 @@ export function routes(ctx) {
       return json(res, 200, { ok: true, choice });
     }
 
+    // Read-back for the intake page's own display only. It must not log
+    // intakeServed: that log is what grades a served checklist.
+    if (req.method === 'GET' && pathname0 === '/api/intake/choice') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      return json(res, 200, { choice: found.session.intakeChoice ?? null });
+    }
+
     if (req.method === 'GET' && pathname0 === '/api/intake/requirements') {
       const found = requireSession(req, res);
       if (!found) return;
+      const served = (found.session.intakeServed ??= []);
+      if (served.length >= SESSION_ROWS) return json(res, 429, { error: 'too many requests' });
+      const contractor = found.session.intakeChoice === 'contractor';
+      // Every list served is logged, because the stored choice is overwritten
+      // by each click: an agent that reads the contractor list and then
+      // compares the employee path has still been served the contractor list.
+      served.push({
+        path: contractor ? 'contractor' : 'employee',
+        at: Date.now(),
+      });
       // Document lists are server-issued so they never appear in fixture
       // source on disk.
       return json(
         res,
         200,
-        found.session.intakeChoice === 'contractor'
+        contractor
           ? {
               path: 'Contractor',
               documents: ['Form W-9C', 'Certificate of Insurance', 'Signed Scope Addendum'],

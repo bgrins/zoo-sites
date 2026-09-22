@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Access on the ridge — Tamarack Hollow</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   * { box-sizing: border-box; }
   body {
@@ -18,7 +19,7 @@
     border-bottom: 6px double #c9a04b;
   }
   .masthead { max-width: 960px; margin: 0 auto; }
-  .brand { font-size: 26px; letter-spacing: 1px; }
+  .brand { display: inline-block; font-size: 26px; letter-spacing: 1px; color: inherit; text-decoration: none; }
   .brand small {
     display: block; font-size: 11px; letter-spacing: 4px;
     text-transform: uppercase; color: #cdbf9a; margin-top: 2px;
@@ -28,6 +29,8 @@
     color: #f6f0e1; text-decoration: none; text-transform: uppercase;
     letter-spacing: 2px; font-size: 12px; margin-right: 22px;
   }
+  nav a[aria-current] { border-bottom: 2px solid #c9a04b; }
+  nav a { display: inline-block; white-space: nowrap; margin-bottom: 6px; }
   main { max-width: 960px; margin: 0 auto; padding: 26px 24px 40px; }
   h1 { font-size: 24px; color: #1e4632; margin: 0 0 14px; }
   h2 {
@@ -55,12 +58,15 @@
 <body>
 <header>
   <div class="masthead">
-    <div class="brand">Tamarack Hollow<small>Cabin lettings on the Fernlee ridge</small></div>
+    <a class="brand" href="index.html">Tamarack Hollow<small>Cabin lettings on the Fernlee ridge</small></a>
   </div>
-  <nav>
-    <a href="index.html">Back to the cabin</a>
+  <nav aria-label="Site">
+    <a href="index.html">The cabin</a>
+    <a href="index.html#book">Availability</a>
     <a href="arrival.html">Before you arrive</a>
-    <a href="ridge.html">Walks from the door</a>
+    <a href="ridge.html">Walks</a>
+    <a href="getting-about.html" aria-current="page">Access</a>
+    <a href="policies.html">Policies</a>
   </nav>
 </header>
 <main>
@@ -103,7 +109,7 @@
         <li>Loft reached by a ladder stair of nine open treads</li>
         <li>Loft headroom stands full only along the ridge line</li>
         <li>Washroom door narrower than the front door</li>
-        <li>Deep bath with no shower over it and no grab rail</li>
+        <li>Washstand and basin; no bath, no shower and no grab rail</li>
       </ul>
     </div>
   </div>
@@ -118,7 +124,9 @@
   wood stove, which needs laying, lighting and feeding through the evening; it
   is the only heating in the building, and the cabin cools quickly once it goes
   out. Water is one cold tap at the sink, drawn from the spring behind the
-  woodshed. Carrying water and carrying wood are both part of staying here.</p>
+  woodshed. Hot water comes from the kettle on the stove, and the sauna hut on
+  the tarn shore, thirty metres down a stepped path, is where guests wash
+  properly. Carrying water and carrying wood are both part of staying here.</p>
 
   <h2>Help, and how far away it is</h2>
   <p>The gate lodge is four kilometres down the track and attended mornings.
@@ -131,11 +139,16 @@
 </main>
 <footer>
   <div class="inner">
-    &copy; 2026 Tamarack Hollow Lettings &middot; Gate lodge, Millbrook Road,
-    Fernlee &middot; stay@tamarackhollow.example &middot; 01632 960 177 &middot;
-    <a href="index.html">The cabin</a> &middot;
+    Tamarack Hollow Lettings Ltd &middot; Gate lodge, Millbrook Road, Fernlee FL4 7RT
+    &middot; stay@tamarackhollow.example &middot; 01632 960 177<br>
+    <a href="index.html#book">Availability</a> &middot;
+    <a href="arrival.html">Before you arrive</a> &middot;
     <a href="ridge.html">Walks from the door</a> &middot;
-    <a href="policies.html#terms">Booking terms</a>
+    <a href="getting-about.html">Access on the ridge</a> &middot;
+    <a href="policies.html#terms">Booking terms</a> &middot;
+    <a href="policies.html#privacy">Privacy</a><br>
+    &copy; 2026 Tamarack Hollow Lettings Ltd. Registered in England and Wales,
+    company number 00000000.
   </div>
 </footer>
 </body>

@@ -4,28 +4,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Inbox — Fernmail</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="fernmail.css">
 </head>
 <body>
 <header class="mailbar">
+  <button type="button" class="menubtn" id="menuBtn" aria-label="Mailboxes" aria-expanded="false">
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+    </svg>
+  </button>
   <a class="brand" href="index.html">
-    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 19c1-8 6-13 15-14-1 9-6 13-15 14z" fill="#e8a72d"></path>
-      <path d="M4 19c3.5-4 7-6.5 12-8" stroke="#101319" stroke-width="1.4" fill="none"></path>
+    <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 19c1-8 6-13 15-14-1 9-6 13-15 14z" fill="#1e7a4c"></path>
+      <path d="M4 19c3.5-4 7-6.5 12-8" stroke="#ffffff" stroke-width="1.4" fill="none"></path>
     </svg>
     <span class="brand-word">Fern<b>mail</b></span>
   </a>
   <div class="searchwrap">
     <input id="search" type="search" placeholder="Search mail" autocomplete="off" aria-label="Search mail">
   </div>
-  <div class="who">
+  <a class="who" href="settings.html" title="Account settings">
     <span id="account">casey@fernmail.example</span>
-    <span class="chip">CT</span>
-  </div>
+    <span class="chip" aria-hidden="true">CT</span>
+  </a>
 </header>
 
-<div class="mail">
-  <nav class="rail">
+<div class="mail" id="mail">
+  <nav class="rail" aria-label="Mailboxes">
     <button type="button" class="compose" id="composeBtn">New message</button>
     <div class="rail-label">Mailboxes</div>
     <div id="folders"></div>
@@ -36,43 +42,50 @@
     </div>
   </nav>
 
-  <section class="pane">
-    <div class="empty" id="paneEmpty">Select a message to read it.</div>
-    <article id="reader" hidden>
-      <h1 id="rSubject"></h1>
-      <div class="head">
-        <span id="rFrom"></span>
-        <span class="addr" id="rAddr"></span>
-        <span class="stamp" id="rStamp"></span>
+  <main class="panes">
+    <h1 class="sr-only" id="pageTitle">Inbox — casey@fernmail.example</h1>
+    <section class="pane" aria-label="Reading pane">
+      <button type="button" class="back" id="backBtn">Back to messages</button>
+      <div class="empty" id="paneEmpty">Select a message to read it.</div>
+      <article id="reader" hidden>
+        <h2 class="subjectline" id="rSubject"></h2>
+        <div class="head">
+          <span id="rFrom"></span>
+          <span class="addr" id="rAddr"></span>
+          <span class="stamp" id="rStamp"></span>
+        </div>
+        <div class="to" id="rTo"></div>
+        <div class="readbody" id="rBody"></div>
+        <button type="button" class="actionbtn" id="replyBtn">Reply</button>
+        <button type="button" class="actionbtn" id="forwardBtn">Forward</button>
+        <button type="button" class="actionbtn" id="starBtn" aria-pressed="false">Star</button>
+      </article>
+      <form id="compose" hidden novalidate>
+        <h2 class="subjectline">New message</h2>
+        <div class="to" id="cFrom">From casey@fernmail.example</div>
+        <div class="composefields">
+          <input id="cTo" type="text" placeholder="To" aria-label="To" autocomplete="off">
+          <input id="cSubject" type="text" placeholder="Subject" aria-label="Subject" autocomplete="off">
+          <textarea id="cBody" rows="10" aria-label="Message"></textarea>
+        </div>
+        <button type="submit" class="actionbtn primary" id="sendBtn">Send</button>
+        <button type="button" class="actionbtn" id="discardBtn">Discard</button>
+        <span id="cStatus" class="cstatus" role="status"></span>
+      </form>
+    </section>
+    <section class="list" aria-labelledby="listTitle">
+      <div class="listbar">
+        <h2 id="listTitle">Inbox</h2>
+        <button type="button" class="tool" id="refreshBtn">Refresh</button>
+        <button type="button" class="tool" id="readBtn" disabled>Mark unread</button>
+        <button type="button" class="tool" id="archiveBtn" disabled>Archive</button>
+        <button type="button" class="tool" id="deleteBtn" disabled>Delete</button>
       </div>
-      <div class="to" id="rTo"></div>
-      <div class="readbody" id="rBody"></div>
-      <button type="button" class="actionbtn" id="replyBtn">Reply</button>
-      <button type="button" class="actionbtn" id="forwardBtn">Forward</button>
-    </article>
-    <form id="compose" hidden>
-      <h1>New message</h1>
-      <div class="to">From casey@fernmail.example</div>
-      <div class="readbody">
-        <p><input id="cTo" type="text" placeholder="To" aria-label="To"></p>
-        <p><input id="cSubject" type="text" placeholder="Subject" aria-label="Subject"></p>
-        <p><textarea id="cBody" rows="8" aria-label="Message"></textarea></p>
-      </div>
-      <button type="submit" class="actionbtn">Send</button>
-      <span id="cStatus" class="to"></span>
-    </form>
-  </section>
-  <section class="list">
-    <div class="listbar">
-      <h2 id="listTitle">Inbox</h2>
-      <button type="button" class="tool" id="refreshBtn">Refresh</button>
-      <button type="button" class="tool" id="readBtn" disabled>Mark read</button>
-      <button type="button" class="tool" id="archiveBtn" disabled>Archive</button>
-    </div>
-    <ul class="msgs" id="msgs"></ul>
-    <div class="empty" id="listEmpty" hidden>Nothing here.</div>
-  </section>
-
+      <p class="notice" id="listNotice" role="status" hidden></p>
+      <ul class="msgs" id="msgs"></ul>
+      <div class="empty" id="listEmpty" hidden>Nothing here.</div>
+    </section>
+  </main>
 </div>
 
 <footer class="mailfoot">
@@ -86,36 +99,68 @@
 
 <script>
   const NONCE = '__SESSION_NONCE__';
+  const OVERLANE = '__ORIGIN_OVERLANE__';
   const FOLDERS = ['Inbox', 'Starred', 'Sent', 'Archive', 'Spam', 'Trash'];
+  const ADDRESS = /^[^\s@<>,]+@[^\s@<>,]+\.[^\s@<>,]+$/;
 
+  let prefs = {};
+  try {
+    prefs = JSON.parse(localStorage.getItem('fernmail-prefs') ?? '{}') || {};
+  } catch {}
+
+  let account = 'casey@fernmail.example';
+  let ownerName = 'Casey Trelane';
   let messages = [];
   let folder = 'Inbox';
   let selected = null;
+  let replyingTo = null;
 
-  const msgs = document.getElementById('msgs');
-  const listEmpty = document.getElementById('listEmpty');
-  const listTitle = document.getElementById('listTitle');
-  const search = document.getElementById('search');
-  const reader = document.getElementById('reader');
-  const paneEmpty = document.getElementById('paneEmpty');
-  const compose = document.getElementById('compose');
-  const readBtn = document.getElementById('readBtn');
-  const archiveBtn = document.getElementById('archiveBtn');
+  const $ = (id) => document.getElementById(id);
+  const mail = $('mail');
+  const msgs = $('msgs');
+  const listEmpty = $('listEmpty');
+  const listNotice = $('listNotice');
+  const search = $('search');
+  const reader = $('reader');
+  const paneEmpty = $('paneEmpty');
+  const compose = $('compose');
+  const readBtn = $('readBtn');
+  const archiveBtn = $('archiveBtn');
+  const deleteBtn = $('deleteBtn');
+
+  if (prefs.denserList) msgs.classList.add('dense');
+
+  const nameOf = (addr) => String(addr ?? '').replace(/\s*<[^>]*>\s*$/, '').trim() || String(addr ?? '');
+  const bareAddr = (addr) => String(addr ?? '').replace(/^.*<([^>]*)>.*$/, '$1').replace(/[<>]/g, '').trim();
+  const selectedMessage = () => messages.find((x) => x.id === selected);
+
+  function inView(m) {
+    if (folder === 'Starred') return m.starred && m.folder !== 'Trash' && m.folder !== 'Spam';
+    return m.folder === folder;
+  }
 
   function visible() {
     const q = search.value.trim().toLowerCase();
     return messages.filter((m) => {
-      if (m.folder !== folder) return false;
+      if (!inView(m)) return false;
       if (!q) return true;
-      return (m.subject + ' ' + m.from + ' ' + m.snippet).toLowerCase().includes(q);
+      return (m.subject + ' ' + m.from + ' ' + (m.to ?? '') + ' ' + m.snippet).toLowerCase().includes(q);
     });
   }
 
+  function notify(text) {
+    listNotice.textContent = text;
+    listNotice.hidden = !text;
+  }
+
+  const STAR =
+    '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l1.9 4.1 4.5.5-3.4 3 1 4.4L8 11.4l-4 2.2 1-4.4-3.4-3 4.5-.5z" fill="currentColor"></path></svg>';
+
   function renderFolders() {
-    const box = document.getElementById('folders');
+    const box = $('folders');
     box.textContent = '';
     for (const name of FOLDERS) {
-      const unread = messages.filter((m) => m.folder === name && m.unread).length;
+      const unread = messages.filter((m) => (name === 'Starred' ? false : m.folder === name) && m.unread).length;
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'folder';
@@ -132,6 +177,8 @@
       button.addEventListener('click', () => {
         folder = name;
         selected = null;
+        document.body.classList.remove('rail-open');
+        $('menuBtn').setAttribute('aria-expanded', 'false');
         showEmptyPane();
         render();
       });
@@ -140,12 +187,16 @@
   }
 
   function renderList() {
-    listTitle.textContent = folder;
+    $('listTitle').textContent = folder;
+    $('pageTitle').textContent = folder + ' — ' + account;
+    document.title = folder + ' — Fernmail';
     msgs.textContent = '';
     const rows = visible();
     listEmpty.hidden = rows.length > 0;
     if (!rows.length) {
-      listEmpty.textContent = 'No messages in ' + folder + '.';
+      listEmpty.textContent = search.value.trim()
+        ? 'No messages in ' + folder + ' match your search.'
+        : 'No messages in ' + folder + '.';
     }
     for (const m of rows) {
       const item = document.createElement('li');
@@ -159,7 +210,7 @@
       top.className = 'top';
       const from = document.createElement('span');
       from.className = 'from';
-      from.textContent = m.from;
+      from.textContent = m.folder === 'Sent' ? 'To: ' + nameOf(m.to) : m.from;
       const when = document.createElement('span');
       when.className = 'when';
       when.textContent = m.when;
@@ -174,38 +225,60 @@
 
       button.append(top, subject, snippet);
       button.addEventListener('click', () => open(m.id));
-      item.append(button);
+
+      const star = document.createElement('button');
+      star.type = 'button';
+      star.className = 'star';
+      star.innerHTML = STAR;
+      star.setAttribute('aria-pressed', String(!!m.starred));
+      star.setAttribute('aria-label', m.starred ? 'Unstar' : 'Star');
+      star.title = m.starred ? 'Starred' : 'Not starred';
+      star.addEventListener('click', () => update(m.id, { starred: !m.starred }));
+      item.append(button, star);
       msgs.append(item);
     }
+  }
+
+  function renderTools() {
+    const m = selectedMessage();
+    readBtn.disabled = !m;
+    archiveBtn.disabled = !m;
+    deleteBtn.disabled = !m;
+    readBtn.textContent = m && m.unread ? 'Mark read' : 'Mark unread';
+    archiveBtn.textContent = m && m.folder !== 'Inbox' && m.folder !== 'Sent' ? 'Move to Inbox' : 'Archive';
+    if (m && m.folder === 'Trash') deleteBtn.disabled = true;
+    const starBtn = $('starBtn');
+    starBtn.textContent = m && m.starred ? 'Unstar' : 'Star';
+    starBtn.setAttribute('aria-pressed', String(!!(m && m.starred)));
   }
 
   function render() {
     renderFolders();
     renderList();
-    readBtn.disabled = !selected;
-    archiveBtn.disabled = !selected;
+    renderTools();
   }
 
   function showEmptyPane() {
     reader.hidden = true;
     compose.hidden = true;
     paneEmpty.hidden = false;
+    mail.classList.remove('reading');
   }
 
   function open(id) {
     const m = messages.find((x) => x.id === id);
     if (!m) return;
     selected = id;
-    m.unread = false;
     paneEmpty.hidden = true;
     compose.hidden = true;
     reader.hidden = false;
-    document.getElementById('rSubject').textContent = m.subject;
-    document.getElementById('rFrom').textContent = m.from;
-    document.getElementById('rAddr').textContent = m.addr;
-    document.getElementById('rStamp').textContent = m.stamp;
-    document.getElementById('rTo').textContent = 'To ' + (m.to ?? 'casey@fernmail.example');
-    const body = document.getElementById('rBody');
+    mail.classList.add('reading');
+    $('rSubject').textContent = m.subject;
+    $('rFrom').textContent = m.from;
+    $('rAddr').textContent = m.addr;
+    $('rStamp').textContent = m.stamp;
+    $('rTo').textContent = 'To ' + (m.to ?? account);
+    const body = $('rBody');
     body.textContent = '';
     for (const line of m.body ?? []) {
       const p = document.createElement('p');
@@ -213,15 +286,18 @@
       body.append(p);
     }
     if (m.link) {
+      const url = m.link.url.startsWith('/portal/')
+        ? OVERLANE + m.link.url.slice('/portal'.length)
+        : m.link.url;
       const p = document.createElement('p');
       const a = document.createElement('a');
-      a.href = m.link.url;
+      a.href = url;
       a.textContent = m.link.text;
       p.append(a);
       body.append(p);
       const raw = document.createElement('p');
       raw.className = 'rawurl';
-      raw.textContent = m.link.url;
+      raw.textContent = url;
       body.append(raw);
     }
     for (const line of m.tail ?? []) {
@@ -229,13 +305,42 @@
       p.textContent = line;
       body.append(p);
     }
-    render();
+    if (m.unread) update(id, { unread: false });
+    else render();
   }
 
-  // Messages sent from this tab live client-side only, so a refresh of the
-  // server list must not drop them.
-  const outbox = [];
-  let outboxSeq = 0;
+  async function post(path, body) {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, ...body }),
+    });
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {}
+    return { ok: res.ok, status: res.status, data };
+  }
+
+  async function update(id, change) {
+    const m = messages.find((x) => x.id === id);
+    if (!m) return;
+    const before = { folder: m.folder, unread: m.unread, starred: m.starred };
+    Object.assign(m, change);
+    render();
+    let problem = '';
+    try {
+      const r = await post('/api/inbox/update', { id, ...change });
+      if (r.ok) Object.assign(m, r.data.message ?? {});
+      else if (r.status === 403) problem = 'This page has been open too long. Reload it to keep working.';
+      else problem = 'That change was not saved: ' + (r.data.error || 'HTTP ' + r.status) + '.';
+    } catch {
+      problem = 'Fernmail is not reachable, so that change was not saved. Try again.';
+    }
+    if (problem) Object.assign(m, before);
+    notify(problem);
+    render();
+  }
 
   async function load() {
     try {
@@ -245,71 +350,105 @@
       if (!res.ok) {
         msgs.textContent = '';
         listEmpty.hidden = false;
-        listEmpty.textContent = 'Mailbox unavailable. Reload the page.';
+        listEmpty.textContent =
+          res.status === 403
+            ? 'This page has been open too long. Reload it to see your mail.'
+            : 'Your mail could not be loaded (HTTP ' + res.status + '). Reload the page to try again.';
         return;
       }
       const data = await res.json();
-      document.getElementById('account').textContent = data.account;
-      const keep = new Map(messages.map((m) => [m.id, m.unread]));
-      messages = [
-        ...outbox,
-        ...data.messages.map((m) => ({
-          ...m,
-          unread: keep.has(m.id) ? keep.get(m.id) : m.unread,
-        })),
-      ];
+      account = data.account;
+      ownerName = data.name || ownerName;
+      $('account').textContent = account;
+      messages = data.messages;
+      if (selected && !messages.some((m) => m.id === selected)) selected = null;
+      notify('');
       render();
     } catch {
       listEmpty.hidden = false;
-      listEmpty.textContent = 'Network error. Reload the page.';
+      listEmpty.textContent = 'Fernmail is not reachable. Check your connection, then reload the page.';
     }
   }
 
   search.addEventListener('input', renderList);
-  document.getElementById('refreshBtn').addEventListener('click', load);
+  $('refreshBtn').addEventListener('click', load);
 
-  readBtn.addEventListener('click', () => {
-    const m = messages.find((x) => x.id === selected);
-    if (m) m.unread = false;
-    render();
+  $('menuBtn').addEventListener('click', () => {
+    const openNow = document.body.classList.toggle('rail-open');
+    $('menuBtn').setAttribute('aria-expanded', String(openNow));
   });
 
-  archiveBtn.addEventListener('click', () => {
-    const m = messages.find((x) => x.id === selected);
-    if (m) m.folder = 'Archive';
+  $('backBtn').addEventListener('click', () => {
     selected = null;
     showEmptyPane();
     render();
   });
 
-  function openCompose(to, subject, bodyText) {
+  readBtn.addEventListener('click', () => {
+    const m = selectedMessage();
+    if (m) update(m.id, { unread: !m.unread });
+  });
+
+  archiveBtn.addEventListener('click', () => {
+    const m = selectedMessage();
+    if (!m) return;
+    const target = m.folder !== 'Inbox' && m.folder !== 'Sent' ? 'Inbox' : 'Archive';
     selected = null;
+    showEmptyPane();
+    update(m.id, { folder: target });
+  });
+
+  deleteBtn.addEventListener('click', () => {
+    const m = selectedMessage();
+    if (!m || m.folder === 'Trash') return;
+    selected = null;
+    showEmptyPane();
+    update(m.id, { folder: 'Trash' });
+  });
+
+  $('starBtn').addEventListener('click', () => {
+    const m = selectedMessage();
+    if (m) update(m.id, { starred: !m.starred });
+  });
+
+  function signature() {
+    const sig = String(prefs.signature ?? '').trim();
+    return sig ? '\n\n-- \n' + sig : '';
+  }
+
+  function openCompose(to, subject, bodyText, original = null) {
+    selected = null;
+    replyingTo = original;
     paneEmpty.hidden = true;
     reader.hidden = true;
     compose.hidden = false;
-    document.getElementById('cTo').value = to;
-    document.getElementById('cSubject').value = subject;
-    document.getElementById('cBody').value = bodyText;
-    document.getElementById('cStatus').textContent = '';
+    mail.classList.add('reading');
+    const name = String(prefs.displayName ?? '').trim() || ownerName;
+    $('cFrom').textContent = 'From ' + name + ' <' + account + '>';
+    $('cTo').value = to;
+    $('cSubject').value = subject;
+    $('cBody').value = bodyText;
+    $('cStatus').textContent = '';
+    $('cStatus').className = 'cstatus';
     render();
   }
 
-  document.getElementById('composeBtn').addEventListener('click', () => {
-    openCompose('', '', '');
+  $('composeBtn').addEventListener('click', () => {
+    document.body.classList.remove('rail-open');
+    openCompose('', '', signature());
   });
 
-  const bareAddr = (addr) => String(addr ?? '').replace(/[<>]/g, '');
-
-  document.getElementById('replyBtn').addEventListener('click', () => {
-    const m = messages.find((x) => x.id === selected);
+  $('replyBtn').addEventListener('click', () => {
+    const m = selectedMessage();
     if (!m) return;
     const subject = /^re:/i.test(m.subject) ? m.subject : 'Re: ' + m.subject;
     const quoted = (m.body ?? []).map((line) => '> ' + line).join('\n');
-    openCompose(bareAddr(m.addr), subject, '\n\nOn ' + m.stamp + ', ' + m.from + ' wrote:\n' + quoted);
+    const to = m.folder === 'Sent' ? m.to : bareAddr(m.addr);
+    openCompose(to, subject, signature() + '\n\nOn ' + m.stamp + ', ' + m.from + ' wrote:\n' + quoted, m);
   });
 
-  document.getElementById('forwardBtn').addEventListener('click', () => {
-    const m = messages.find((x) => x.id === selected);
+  $('forwardBtn').addEventListener('click', () => {
+    const m = selectedMessage();
     if (!m) return;
     const subject = /^fwd:/i.test(m.subject) ? m.subject : 'Fwd: ' + m.subject;
     const original =
@@ -317,39 +456,68 @@
       'From: ' + m.from + ' ' + (m.addr ?? '') + '\n' +
       'Date: ' + m.stamp + '\nSubject: ' + m.subject + '\n\n' +
       (m.body ?? []).join('\n');
-    openCompose('', subject, original);
+    openCompose('', subject, signature() + original);
   });
 
-  compose.addEventListener('submit', (event) => {
+  $('discardBtn').addEventListener('click', () => {
+    replyingTo = null;
+    showEmptyPane();
+    render();
+  });
+
+  compose.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const to = document.getElementById('cTo').value.trim();
-    const subject = document.getElementById('cSubject').value.trim();
-    const bodyText = document.getElementById('cBody').value;
-    const cStatus = document.getElementById('cStatus');
+    const to = $('cTo').value.trim();
+    const cStatus = $('cStatus');
+    cStatus.className = 'cstatus err';
     if (!to) {
       cStatus.textContent = 'Add at least one recipient.';
       return;
     }
-    const sent = {
-      id: 'm-out-' + ++outboxSeq,
-      folder: 'Sent',
-      from: to,
-      addr: '<' + to + '>',
-      to,
-      subject: subject || '(no subject)',
-      when: 'Today',
-      stamp: 'Today',
-      unread: false,
-      snippet: bodyText.split('\n').find((l) => l.trim()) ?? '',
-      body: bodyText.split('\n\n').map((s) => s.trim()).filter(Boolean),
-    };
-    outbox.unshift(sent);
-    messages.unshift(sent);
-    document.getElementById('cTo').value = '';
-    document.getElementById('cSubject').value = '';
-    document.getElementById('cBody').value = '';
-    cStatus.textContent = 'Message sent. A copy is in Sent.';
-    render();
+    const bad = to
+      .split(/[,;]/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .find((addr) => !ADDRESS.test(bareAddr(addr)));
+    if (bad) {
+      cStatus.textContent = 'Check the address "' + bad + '" in To.';
+      return;
+    }
+    const sendBtn = $('sendBtn');
+    sendBtn.disabled = true;
+    cStatus.className = 'cstatus';
+    cStatus.textContent = 'Sending…';
+    try {
+      const r = await post('/api/inbox/send', {
+        name: String(prefs.displayName ?? '').trim(),
+        to,
+        subject: $('cSubject').value,
+        body: $('cBody').value,
+      });
+      if (!r.ok) {
+        cStatus.className = 'cstatus err';
+        cStatus.textContent =
+          r.status === 403
+            ? 'This page has been open too long. Reload it, then send again.'
+            : r.data.error || 'The message was not sent (HTTP ' + r.status + ').';
+        return;
+      }
+      const original = replyingTo;
+      replyingTo = null;
+      $('cTo').value = '';
+      $('cSubject').value = '';
+      $('cBody').value = signature();
+      cStatus.textContent = 'Message sent. A copy is in Sent.';
+      await load();
+      if (original && prefs.archiveOnReply && original.folder === 'Inbox') {
+        await update(original.id, { folder: 'Archive' });
+      }
+    } catch {
+      cStatus.className = 'cstatus err';
+      cStatus.textContent = 'Fernmail is not reachable, so the message was not sent. Try again.';
+    } finally {
+      sendBtn.disabled = false;
+    }
   });
 
   load();

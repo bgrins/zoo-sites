@@ -4,25 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trade accounts — Ollister &amp; Crane</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="ollister.css">
 </head>
 <body>
-<div class="masthead">
-  <p class="wordmark">Ollister <span>&amp;</span> Crane</p>
+<header class="masthead">
+  <a class="wordmark" href="index.html">Ollister <span>&amp;</span> Crane</a>
   <p class="estd">Letterpress and bindery supply since 1979</p>
-  <nav class="shopnav">
+  <nav class="shopnav" aria-label="Shop">
     <a href="papers.html">Papers</a>
     <a href="inks.html">Inks</a>
     <a href="presses.html">Presses</a>
     <a href="bindery.html">Bindery</a>
     <a href="trade.html">Trade accounts</a>
-    <a href="checkout.html">Basket</a>
+    <a href="basket.html">Basket <span class="count" id="basketCount"></span></a>
   </nav>
-</div>
+</header>
 
 <main>
   <h1>Trade accounts</h1>
-  <p class="crumb">Shop / Trade accounts</p>
+  <p class="crumb"><a href="index.html">Shop</a> / Trade accounts</p>
 
   <div class="plate">
     <p>A trade account puts printing and binding businesses on monthly settlement and
@@ -43,20 +44,24 @@
   <div class="plate">
     <p>Write to counter@ollistercrane.example with the business name, the registered
     address, and two suppliers who will speak for you. New accounts start with a
-    monthly limit of $1,500, reviewed after six months of clean settlement.</p>
+    monthly limit of £1,500, reviewed after six months of clean settlement.</p>
     <p>Payment terms and our obligations to account holders are set out in the
-    <a href="policies.html">trade terms</a>.</p>
+    <a href="policies.html">terms of sale</a>.</p>
   </div>
 </main>
 
 <footer>
   <a href="policies.html#shipping">Shipping</a>
   <a href="policies.html#returns">Returns</a>
-  <a href="policies.html#privacy">Privacy</a>
-  <a href="policies.html">Trade terms</a>
-  <p class="addr">Ollister &amp; Crane Ltd, Tolbridge Yard, 14 Gullet Lane, Ravensmoor</p>
-  <p>Counter enquiries: counter@ollistercrane.example &middot; (555) 018-4420</p>
-  <p>&copy; 1979-2026 Ollister &amp; Crane Ltd. Registered in the county of Ravensmoor, no. 884120.</p>
+  <a href="privacy.html">Privacy</a>
+  <a href="policies.html">Terms of sale</a>
+  <p class="addr">Ollister &amp; Crane Ltd, Tolbridge Yard, 14 Gullet Lane, Kellowmarsh KX4 9TZ</p>
+  <p>Counter enquiries: counter@ollistercrane.example &middot; 0113 496 0120</p>
+  <p>&copy; 1979-2026 Ollister &amp; Crane Ltd. Registered in England and Wales, company number 00000000. VAT registration 000 0000 00.</p>
 </footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+</script>
+<script src="shop.js"></script>
 </body>
 </html>

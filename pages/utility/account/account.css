@@ -1,0 +1,73 @@
+.acctbar {
+  background: #f6f7f6;
+  border-bottom: 1px solid #b9c3ca;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 11px;
+  color: #37424c;
+}
+.acctbar .inner {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 7px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 18px;
+}
+.acctbar .who b { color: #17456e; }
+.acctbar nav a {
+  color: #17456e;
+  margin-left: 14px;
+  text-decoration: none;
+  border-bottom: 1px dotted #17456e;
+}
+.acctbar nav a:first-child { margin-left: 0; }
+.acctbar nav a.here { color: #23323d; border-bottom: 2px solid #23323d; font-weight: bold; }
+.duebox {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border: 3px double #17456e;
+  padding: 10px 16px;
+  margin: 0 0 16px;
+  background: #fff;
+}
+.duebox .amt {
+  font-family: "Courier New", monospace;
+  font-size: 22px;
+  font-weight: bold;
+  color: #17324a;
+}
+.duebox .by { font-family: Verdana, Geneva, sans-serif; font-size: 11px; color: #5a6b7a; }
+table.billtable { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.billtable caption {
+  text-align: left;
+  font-size: 12.5px;
+  color: #5a6b7a;
+  padding-bottom: 8px;
+}
+table.billtable th {
+  text-align: left;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 9.5px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #5a6b7a;
+  font-weight: normal;
+  border-bottom: 1px solid #98a4ad;
+  padding: 4px 8px 5px 0;
+}
+table.billtable td { border-bottom: 1px dotted #b9c3ca; padding: 6px 8px 6px 0; vertical-align: top; }
+table.billtable td.num { font-family: "Courier New", monospace; text-align: right; padding-right: 18px; }
+table.billtable th.num { text-align: right; padding-right: 18px; }
+table.billtable td.due { color: #8c2f22; }
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.field label.cap { display: block; }
+.stepnote { font-size: 12.5px; color: #37424c; margin: 0 0 14px; max-width: 76ch; }

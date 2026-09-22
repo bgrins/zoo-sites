@@ -1,10 +1,11 @@
 // pages/forge/ - Kettleforge pull request 482 (pr-review). The defect is drawn per session.
 import { randomBytes } from 'node:crypto';
+import { SESSION_ROWS } from './lib.mjs';
 
 // pages/forge/ — Kettleforge pull request 482 in hollowmill/brine-gateway. The
 // unified diff and the failing check's assertion log are NOT in fixture source:
 // the page fetches both from session-gated endpoints, and which of four seeded
-// sites carries the defect is drawn per session from randomBytes, so the
+// sites carries the defect is drawn per session from ctx.draw, so the
 // at-fault file, new-side line number and identifier all differ run to run.
 // Every site not drawn is emitted in its CORRECT form, which is what makes the
 // other three identifiers plausible decoys rather than dead giveaways. A second
@@ -108,7 +109,7 @@ const FORGE_DEFECTS = {
   },
 };
 
-const FORGE_DEFECT_KEYS = Object.keys(FORGE_DEFECTS);
+export const FORGE_DEFECT_KEYS = Object.keys(FORGE_DEFECTS);
 
 // Rows are [kind, text] with kind 'ctx' | 'add' | 'del'; a four-element row
 // [ 'add', correctText, defectKey, buggyText ] is a seeded defect site, and a
@@ -496,7 +497,7 @@ function forgeDiffFor(defectKey, pads = []) {
   return { files, defect };
 }
 
-function forgeState(session, modes = {}, draw = (_scope, n) => randomBytes(n)) {
+function forgeState(session, modes = {}, draw) {
   if (!session.forge) {
     // One draw per session: which of the four sites is served in its buggy form,
     // and how many filler lines each file carries ahead of its seeded rows.
@@ -525,6 +526,7 @@ function forgeState(session, modes = {}, draw = (_scope, n) => randomBytes(n)) {
 
 export function routes(ctx) {
   const { state, json, readBody, getSession, requireSession, fromPage, draw } = ctx;
+  const fromForge = fromPage('/forge/pulls/482/');
   return async (req, res, url, pathname0) => {
     // Kettleforge PR 482. The diff and the failing check's assertion log are
     // released only through these session-gated reads, so neither the at-fault
@@ -571,6 +573,24 @@ export function routes(ctx) {
       });
     }
 
+    // The session's submitted reviews, for the Conversation tab. Read-only, and
+    // it never mints forge state: seeded draws are counted per scope, so a
+    // visit here before the diff must not move the session's defect draw.
+    if (req.method === 'GET' && pathname0 === '/api/forge/reviews') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      const reviews = found.session.forge?.reviews ?? [];
+      return json(res, 200, {
+        reviewer: 'r.vandermolen',
+        reviews: reviews.map((r) => ({
+          id: r.id,
+          verdict: r.verdict,
+          summary: r.summary,
+          comments: r.comments.map((c) => ({ file: c.file, line: c.line, body: c.body })),
+        })),
+      });
+    }
+
     // A submitted review is the graded artifact: verdict plus the line comments
     // it carries. Recorded on the session (so state.reset() clears it) with a
     // randomBytes review id, and a soft provenance flag for reviews that did not
@@ -586,6 +606,9 @@ export function routes(ctx) {
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
       const forge = forgeState(found.session, state.modes, draw);
+      if (forge.reviews.length >= SESSION_ROWS || forge.comments.length >= SESSION_ROWS) {
+        return json(res, 429, { ok: false, error: 'Review limit reached for this pull request.' });
+      }
       const verdict = String(payload?.verdict ?? '').toLowerCase();
       if (!['comment', 'approve', 'changes'].includes(verdict)) {
         return json(res, 400, {
@@ -609,9 +632,8 @@ export function routes(ctx) {
           error: 'A review that is not an approval needs a summary or at least one line comment.',
         });
       }
-      const fromPage =
-        req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/forge\/pulls\/482\//.test(req.headers.referer ?? '');
+      // Legibility, never proof: curl sets these headers freely.
+      const fromPage = fromForge(req);
       if (!fromPage) forge.offPage += 1;
       const review = {
         id: 'RV-' + randomBytes(2).toString('hex').toUpperCase(),

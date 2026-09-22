@@ -4,7 +4,7 @@
   --plum-soft: #6d4a7d;
   --amber: #d98324;
   --ink: #2f2a33;
-  --muted: #7c7286;
+  --muted: #756b7e;
   --line: #e6e0ea;
   --canvas: #f7f4f9;
 }
@@ -33,6 +33,8 @@ body.shell {
 }
 
 .mark {
+  color: inherit;
+  text-decoration: none;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -43,7 +45,7 @@ body.shell {
 }
 
 .mark::before {
-  content: "H";
+  content: "Q";
   flex: 0 0 auto;
   width: 30px;
   height: 30px;
@@ -97,10 +99,10 @@ body.shell {
   padding-bottom: 40px;
 }
 
-.pane > h1,
-.pane > .lede,
-.pane > .card,
-.pane > .fine {
+.pane > main > h1,
+.pane > main > .lede,
+.pane > main > .card,
+.pane > main > .fine {
   margin-left: 34px;
   margin-right: 34px;
 }
@@ -380,18 +382,78 @@ h1 {
   margin-top: 22px;
   margin-bottom: 0;
   font-size: 12px;
-  color: #9c92a4;
+  color: #736c79;
   max-width: 74ch;
+}
+
+.fine a {
+  color: var(--plum-soft);
+  text-decoration-color: #d8c7e1;
+  text-underline-offset: 2px;
+}
+
+.fine a:hover {
+  color: var(--plum);
+  text-decoration-color: currentColor;
+}
+
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.sitefoot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 26px 34px 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: #6f6579;
+}
+
+.sitefoot a {
+  color: var(--plum-soft);
+  text-decoration: none;
+}
+
+.sitefoot a:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 720px) {
   body { flex-direction: column; }
-  .rail { width: auto; flex: 0 0 auto; }
-  .row, .listhead {
-    grid-template-columns: 34px minmax(120px, 1fr) 62px;
+  .rail { width: auto; flex: 0 0 auto; padding: 14px 0 12px; }
+  .rail nav { display: flex; flex-wrap: wrap; }
+  .rail nav a { padding: 6px 14px; border-left: 0; border-bottom: 3px solid transparent; }
+  .rail nav a.on { border-bottom-color: var(--amber); }
+  .rail-foot { display: none; }
+  .topbar, .pane > main > h1, .pane > main > .lede, .pane > main > .card, .pane > main > .fine {
+    margin-left: 14px;
+    margin-right: 14px;
   }
-  .row .badge, .row .dept,
-  .listhead span:nth-child(2), .listhead span:nth-child(3) {
-    display: none;
+  .topbar { margin: 0; padding: 10px 14px; }
+  .sitefoot { margin: 22px 14px 0; }
+  /* Badge and department drop to a second line inside the fixed 40px row
+     pitch that app.js positions rows on. */
+  .row {
+    grid-template-columns: 34px auto minmax(0, 1fr) 40px;
+    grid-template-rows: 20px 16px;
+    grid-template-areas: "av name name floor" "av badge dept floor";
+    row-gap: 0;
+    column-gap: 8px;
+    align-content: center;
   }
+  .row::before { grid-area: av; }
+  .row .name { grid-area: name; font-size: 13.5px; }
+  .row .badge { grid-area: badge; font-size: 10.5px; padding: 0 5px; line-height: 15px; }
+  .row .dept { grid-area: dept; font-size: 10.5px; padding: 0 7px; line-height: 13px; justify-self: start; }
+  .row .floor { grid-area: floor; }
+  .listhead { grid-template-columns: 34px minmax(0, 1fr) 40px; }
+  .listhead span:nth-child(2), .listhead span:nth-child(3) { display: none; }
 }

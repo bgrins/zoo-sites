@@ -4,75 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Weekly Promotions — Larkfield Market</title>
+<link rel="stylesheet" href="larkfield.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
-  :root {
-    --ink: #180b2e;
-    --pink: #ff1f6b;
-    --grape: #6b1fd6;
-    --cyan: #00e0d0;
-    --cream: #fff6ef;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--cream); color: var(--ink);
-    font-family: "Trebuchet MS", Verdana, sans-serif; font-size: 16px; line-height: 1.5;
-  }
-  h1, h2, h3, .shout {
-    font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
-    font-weight: normal; letter-spacing: 0.01em; text-transform: uppercase;
-  }
-  .topbar {
-    background: var(--ink); color: #fff; padding: 8px 20px; font-size: 12px;
-    display: flex; justify-content: space-between; letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .topbar b { color: var(--cyan); }
-  .topbar a { color: #fff; text-decoration: none; margin-left: 18px; }
-  .topbar a:hover { color: var(--cyan); }
-  .topbar .links { display: flex; }
-  .hero {
-    background: linear-gradient(115deg, var(--grape), var(--pink) 60%, #ff8a3d);
-    color: #fff; padding: 30px 24px 34px; text-align: center;
-    border-bottom: 6px solid var(--ink);
-  }
-  .hero .mark {
-    display: inline-block; background: #fff; color: var(--ink); padding: 4px 14px;
-    border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink);
-    font-size: 22px; transform: rotate(-2deg);
-  }
-  .hero h1 { margin: 20px 0 6px; font-size: 54px; line-height: 0.92; text-shadow: 5px 5px 0 rgba(24,11,46,0.55); }
-  .hero p { margin: 0; font-size: 15px; font-weight: bold; letter-spacing: 0.14em; text-transform: uppercase; }
-  .ribbon {
-    background: var(--cyan); color: var(--ink); border-bottom: 4px solid var(--ink);
-    padding: 9px 20px; font-size: 13px; font-weight: bold; letter-spacing: 0.16em;
-    text-transform: uppercase; text-align: center;
-  }
-  .catnav {
-    background: #fff; border-bottom: 4px solid var(--ink);
-    display: flex; flex-wrap: wrap; justify-content: center; gap: 2px;
-    padding: 0 12px;
-  }
-  .catnav a {
-    display: block; padding: 11px 15px; color: var(--ink); text-decoration: none;
-    font-size: 13px; font-weight: bold; letter-spacing: 0.1em; text-transform: uppercase;
-    border-bottom: 5px solid transparent;
-  }
-  .catnav a:hover { color: var(--pink); border-bottom-color: var(--pink); }
-  .catnav a[aria-current="page"] { color: var(--grape); border-bottom-color: var(--grape); }
-  .storebar {
-    display: flex; flex-wrap: wrap; gap: 8px 34px; justify-content: center;
-    background: #fff3d6; border-bottom: 4px solid var(--ink);
-    padding: 10px 20px; font-size: 13px;
-  }
-  .storebar b { text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; }
-  .storebar a { color: var(--grape); }
-  main { max-width: 720px; margin: 0 auto; padding: 26px 20px 10px; }
-  .lede { font-size: 17px; font-weight: bold; margin: 0 0 6px; }
-  .lede-sub { margin: 0 0 18px; font-size: 14px; color: #55407a; }
-
-  .stack { position: relative; height: 300px; }
+  .hero { padding: 30px 24px 34px; }
+  .hero .mark { font-size: 22px; }
+  .hero h1 { margin: 20px 0 6px; font-size: 54px; }
+  .hero p { font-size: 15px; }
+  /* Both offers share one grid cell, so they overlap exactly at any width and
+     the stack grows with the taller one instead of clipping it. */
+  .stack { display: grid; min-height: 300px; }
   .offer {
-    position: absolute; inset: 0; box-sizing: border-box;
+    grid-area: 1 / 1; position: relative;
     padding: 24px 28px 26px;
     border: 5px solid var(--ink); box-shadow: 10px 10px 0 var(--ink);
     display: flex; flex-direction: column; align-items: flex-start; overflow: hidden;
@@ -87,7 +30,7 @@
   .offer .burst {
     position: absolute; top: 18px; right: 18px; pointer-events: none;
     width: 104px; height: 104px; display: grid; place-items: center; text-align: center;
-    background: var(--pink); color: #fff; border: 4px solid var(--ink);
+    background: var(--pink); color: var(--ink); border: 4px solid var(--ink);
     border-radius: 50%; transform: rotate(11deg);
     font-family: Impact, "Arial Black", sans-serif; font-size: 15px; line-height: 1.05;
     text-transform: uppercase; box-shadow: 4px 4px 0 var(--ink);
@@ -103,7 +46,6 @@
   .offer button:active { box-shadow: 2px 2px 0 var(--cyan); transform: translate(4px, 4px); }
   #offer-under { z-index: 10; background: #ffe9b0; }
   #offer-top { z-index: 20; background: #ffffff; }
-
   #result {
     margin-top: 26px; padding: 12px 16px; min-height: 26px; font-size: 17px;
     font-weight: bold; border: 4px dashed transparent;
@@ -111,24 +53,7 @@
   #result:empty { display: none; }
   #result.ok { color: #0b6b34; border-color: #0b6b34; background: #e6ffef; }
   #result.err { color: #a3103d; border-color: #a3103d; background: #ffe9ef; }
-
-  .strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 30px; }
-  .mini {
-    border: 4px solid var(--ink); background: #fff; padding: 14px;
-    box-shadow: 6px 6px 0 rgba(24,11,46,0.18);
-  }
-  .mini h3 { margin: 0 0 4px; font-size: 19px; }
-  .mini .price { font-family: Impact, "Arial Black", sans-serif; font-size: 26px; color: var(--pink); }
-  .mini span { display: block; font-size: 12px; color: #6d5b8c; }
-  .fine { color: #6d5b8c; font-size: 12px; margin: 34px 0 0; }
-  .board-note {
-    margin-top: 18px; border-left: 6px solid var(--grape); background: #f3ecff;
-    padding: 12px 16px; font-size: 14px;
-  }
-  .section-head {
-    margin: 34px 0 12px; font-size: 24px; border-bottom: 4px solid var(--ink);
-    padding-bottom: 6px;
-  }
+  .strip { margin-top: 30px; }
   .clubband {
     margin-top: 30px; background: var(--grape); color: #fff;
     border: 5px solid var(--ink); box-shadow: 10px 10px 0 var(--ink);
@@ -143,42 +68,29 @@
     letter-spacing: 0.06em; text-transform: uppercase;
     padding: 11px 24px; border: 4px solid var(--ink);
   }
-  footer {
-    margin-top: 30px; background: var(--ink); color: #cbb9ec; padding: 26px 20px 18px;
-    font-size: 13px;
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 38px; }
+    .offer { padding: 20px 18px 22px; }
+    .offer h2 { font-size: 30px; max-width: 66%; }
+    .offer p { max-width: none; }
+    .offer .burst { width: 84px; height: 84px; font-size: 13px; top: 14px; right: 14px; }
+    .clubband { padding: 18px; }
   }
-  .footcols {
-    max-width: 900px; margin: 0 auto; display: grid; gap: 20px 26px;
-    grid-template-columns: repeat(4, 1fr);
-  }
-  .footcols h4 {
-    margin: 0 0 8px; color: var(--cyan); font-size: 12px; letter-spacing: 0.14em;
-    text-transform: uppercase; font-family: "Trebuchet MS", Verdana, sans-serif;
-  }
-  .footcols ul { list-style: none; margin: 0; padding: 0; }
-  .footcols li { margin-bottom: 5px; }
-  .footcols a { color: #e8dcff; text-decoration: none; }
-  .footcols a:hover { color: #fff; text-decoration: underline; }
-  .legal {
-    max-width: 900px; margin: 22px auto 0; border-top: 1px solid #3c2a5e;
-    padding-top: 14px; font-size: 11.5px; color: #a794cc; line-height: 1.7;
-  }
-  .legal a { color: #a794cc; }
 </style>
 </head>
 <body>
 <div class="topbar">
   <span>Larkfield Market &middot; members club</span>
-  <span class="links"><span><b>Free pickup</b> on orders over 40</span>
+  <span class="links"><span><b>Free pickup</b> on orders over £40</span>
     <a href="stores.html">Store finder</a><a href="weekly-ad.html">Weekly ad</a><a href="members.html#signin">Sign in</a></span>
 </div>
 <div class="hero">
-  <span class="mark shout">Larkfield Market</span>
+  <a class="mark shout" href="./">Larkfield Market</a>
   <h1>Deal Days<br>Are Here</h1>
   <p>Members only &middot; this week only</p>
 </div>
 <nav class="catnav" aria-label="Departments">
-  <a href="/promo/" aria-current="page">Deal days</a>
+  <a href="./" aria-current="page">Deal days</a>
   <a href="weekly-ad.html#produce">Fresh produce</a>
   <a href="weekly-ad.html#bakery">Bakery</a>
   <a href="weekly-ad.html#butcher">Butcher &amp; deli</a>
@@ -225,12 +137,12 @@
 
   <h2 class="section-head">Price drops this week</h2>
   <div class="strip">
-    <div class="mini"><h3>Crate melons</h3><div class="price">2.40</div><span>each, field grade</span></div>
-    <div class="mini"><h3>Larkfield oats</h3><div class="price">1.85</div><span>900 g bag</span></div>
-    <div class="mini"><h3>Cold press cider</h3><div class="price">4.10</div><span>1 L bottle</span></div>
-    <div class="mini"><h3>Harbour cheddar</h3><div class="price">3.75</div><span>250 g block</span></div>
-    <div class="mini"><h3>Seeded tin loaf</h3><div class="price">1.20</div><span>800 g, baked daily</span></div>
-    <div class="mini"><h3>Laundry powder</h3><div class="price">6.95</div><span>2 kg box</span></div>
+    <div class="mini"><h3>Crate melons</h3><div class="price">£2.40</div><span>each, field grade</span></div>
+    <div class="mini"><h3>Larkfield oats</h3><div class="price">£1.85</div><span>900 g bag</span></div>
+    <div class="mini"><h3>Cold press cider</h3><div class="price">£4.10</div><span>1 L bottle</span></div>
+    <div class="mini"><h3>Harbour cheddar</h3><div class="price">£3.75</div><span>250 g block</span></div>
+    <div class="mini"><h3>Seeded tin loaf</h3><div class="price">£1.20</div><span>800 g, baked daily</span></div>
+    <div class="mini"><h3>Laundry powder</h3><div class="price">£6.95</div><span>2 kg box</span></div>
   </div>
 
   <div class="clubband">
@@ -251,7 +163,7 @@
     <div>
       <h4>Shop</h4>
       <ul>
-        <li><a href="/promo/">Deal days</a></li>
+        <li><a href="./">Deal days</a></li>
         <li><a href="weekly-ad.html">Weekly ad</a></li>
         <li><a href="help.html#collect">Order and collect</a></li>
         <li><a href="help.html#giftcards">Gift cards</a></li>

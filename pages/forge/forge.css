@@ -50,8 +50,10 @@ a:hover { color: var(--ember); }
   text-transform: uppercase;
   font-weight: bold;
   color: #f0e7d8;
+  text-decoration: none;
 }
-.masthead .mark em { font-style: normal; color: var(--ember); }
+.masthead .mark:hover { color: #fff; }
+.masthead .mark em { font-style: normal; color: #e2683f; }
 .masthead nav { display: flex; gap: 14px; font-size: 12px; }
 .masthead nav a { color: var(--chrome-dim); text-decoration: none; }
 .masthead nav a:hover { color: #fff; }
@@ -65,9 +67,10 @@ a:hover { color: var(--ember); }
   border-bottom: 1px solid var(--rule);
 }
 .crumbbar .crumb { font-size: 15px; font-family: var(--mono); }
+.crumbbar h1.crumb { margin: 0; font-weight: normal; }
 .crumbbar .crumb a { color: #cbb8e2; text-decoration: none; }
 .crumbbar .crumb a:hover { text-decoration: underline; }
-.crumbbar .crumb .sep { color: #7c6d90; padding: 0 4px; }
+.crumbbar .crumb .sep { color: #9a8faa; padding: 0 4px; }
 .crumbbar .crumb b { color: #fff; font-weight: bold; }
 .crumbbar .vis {
   font-size: 10px;
@@ -227,7 +230,7 @@ table.diff td.gut {
   min-width: 46px;
   text-align: right;
   padding: 0 8px 0 6px;
-  color: #948aa0;
+  color: #6f6680;
   background: #f7f4f1;
   border-right: 1px solid var(--rule-soft);
   user-select: none;
@@ -309,6 +312,20 @@ pre.joblog .l { display: block; }
 .prlist .sub { font-size: 11px; color: var(--dim); margin-left: auto; font-family: var(--mono); }
 
 .gate { padding: 12px; font-size: 12px; color: var(--fail-ink); }
+.pagetitle { font-size: 18px; font-weight: normal; margin: 2px 0 12px; }
+.filelist .plus { color: var(--pass-ink); font-family: var(--mono); }
+.filelist .minus { color: var(--fail-ink); font-family: var(--mono); }
+.checklist a { color: #4a2f6b; }
+.card.review { border-left: 3px solid var(--skip-ink); }
+.card.review.changes { border-left-color: var(--fail-ink); }
+.card.review.approve { border-left-color: var(--pass-ink); }
+.card.review .linecomment { border-top: 1px solid var(--rule-soft); padding-top: 8px; margin-top: 8px; }
+.card.review .linecomment:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+.card.review .linecomment .where { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+.card.review .linecomment p { margin: 3px 0 0; }
+.verdictline { font-weight: bold; color: var(--fail-ink); }
+.verdictline.approve { color: var(--pass-ink); }
+.verdictline.comment { color: var(--skip-ink); }
 .cols { display: flex; gap: 16px; align-items: flex-start; }
 .cols .main { flex: 1 1 auto; min-width: 0; }
 .cols .side { flex: 0 0 260px; }
@@ -328,3 +345,16 @@ pre.joblog .l { display: block; }
 }
 .sitefoot a { color: #5a4370; }
 .sitefoot .links { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+
+@media (max-width: 640px) {
+  .masthead { flex-wrap: wrap; row-gap: 4px; }
+  .masthead .who { display: none; }
+  .crumbbar { padding-left: 12px; padding-right: 12px; }
+  .tabs, .subtabs { overflow-x: auto; }
+  .tabs a, .tabs span.here, .subtabs a, .subtabs span.here { flex: none; }
+  .wrap { padding-left: 12px; padding-right: 12px; }
+  .cols { flex-direction: column; align-items: stretch; }
+  .cols .side { flex: none; }
+  .prlist li { flex-wrap: wrap; }
+  .prlist .sub { margin-left: 0; }
+}

@@ -4,64 +4,66 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>More puzzles — the games desk at Marrowfield Press</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
-    --pine: #14442f; --pine-deep: #0b2b1d; --lime: #cde36f;
-    --stone: #8b8478; --bone: #f2ece0; --paper: #fffdf7;
-    --rule: #ddd4c2; --ink: #22201b;
+    --ink-blue: #1f3a5f; --ink-blue-deep: #13263f; --coral: #ffb4a2;
+    --stone: #7d8590; --bone: #eceae4; --paper: #ffffff;
+    --rule: #d5d3cc; --ink: #1b1d21;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans Unicode", Tahoma, sans-serif;
+    font-family: Superclarendon, "Clarendon URW", "Roboto Slab", Rockwell, serif;
     color: var(--ink); background-color: var(--bone);
     background-image: radial-gradient(var(--rule) 1px, transparent 1px);
     background-size: 18px 18px; line-height: 1.5;
   }
-  a { color: var(--pine); }
-  .mast { background: var(--pine); color: var(--paper); border-bottom: 5px solid var(--lime); }
+  a { color: var(--ink-blue); }
+  .mast { background: var(--paper); color: var(--ink); border-top: 6px solid var(--coral); }
   .mast-inner {
     max-width: 660px; margin: 0 auto; padding: 18px 20px 14px;
     display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
   }
   .kicker {
-    font-family: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
-    font-style: italic; font-size: 13px; color: var(--lime); letter-spacing: .02em;
+    font-family: Athelas, "Iowan Old Style", "Libre Baskerville", serif;
+    font-style: italic; font-size: 13px; color: #b3402a; letter-spacing: .02em;
   }
-  .wordmark { font-size: 34px; font-weight: bold; letter-spacing: .22em; text-transform: uppercase; line-height: 1.05; }
-  .tagline { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #a9c4b1; }
-  .mast-side { text-align: right; font-size: 12px; color: #a9c4b1; }
+  .wordmark { display: block; color: inherit; text-decoration: none; font-size: 36px; font-weight: bold; letter-spacing: -.01em; line-height: 1.05; }
+  .tagline { font-family: Athelas, "Iowan Old Style", "Libre Baskerville", serif; font-style: italic; font-size: 15px; color: #55606e; }
+  .mast-side { text-align: right; font-size: 12px; color: #55606e; }
   .mast-side .sub {
     display: inline-block; margin-top: 6px; padding: 5px 11px;
-    background: var(--lime); color: var(--pine-deep); font-weight: bold;
+    background: var(--coral); color: var(--ink-blue-deep); font-weight: bold;
     border-radius: 999px; text-decoration: none; letter-spacing: .04em;
   }
-  .mast-nav { background: var(--pine-deep); }
+  .mast-nav { background: var(--paper); border-top: 1px solid var(--ink); border-bottom: 3px double var(--ink); }
   .mast-nav-inner { max-width: 660px; margin: 0 auto; padding: 0 20px; display: flex; flex-wrap: wrap; }
   .mast-nav a {
-    color: #cfe0d3; text-decoration: none; font-size: 12px; letter-spacing: .12em;
-    text-transform: uppercase; padding: 9px 14px 9px 0;
+    color: var(--ink); text-decoration: none; font-size: 14px;
+    padding: 9px 18px 9px 0;
   }
-  .mast-nav a.here { color: var(--lime); font-weight: bold; }
+  .mast-nav a.here { color: var(--ink-blue); font-weight: bold; text-decoration: underline; text-decoration-color: var(--coral); text-decoration-thickness: 3px; text-underline-offset: 5px; }
   main { max-width: 660px; margin: 0 auto; padding: 22px 20px 8px; }
   .card {
-    background: var(--paper); border: 3px solid var(--pine); border-radius: 12px;
-    box-shadow: 7px 7px 0 rgba(20, 68, 47, .14); padding: 20px; margin-bottom: 20px;
+    background: var(--paper); border: 3px solid var(--ink-blue); border-radius: 12px;
+    box-shadow: 7px 7px 0 rgba(31, 58, 95, .14); padding: 20px; margin-bottom: 20px;
   }
   h1 { font-size: 23px; margin: 0 0 6px; letter-spacing: .01em; }
-  h2 { font-size: 18px; margin: 0; color: var(--pine); }
+  h2 { font-size: 18px; margin: 0; color: var(--ink-blue); }
   .card p { font-size: 14px; margin: 8px 0 0; }
   .chip {
     display: inline-block; margin-top: 10px; font-size: 12px; letter-spacing: .05em;
     padding: 4px 11px; border-radius: 999px;
-    background: #e9f0dd; border: 2px solid var(--pine); color: var(--pine);
+    background: #fde8e2; border: 2px solid var(--ink-blue); color: var(--ink-blue);
   }
-  footer { background: var(--pine-deep); color: #b8cbbd; margin-top: 10px; }
+  footer { background: var(--ink-blue-deep); color: #c3cedd; margin-top: 10px; }
   .foot-inner { max-width: 660px; margin: 0 auto; padding: 24px 20px 30px; font-size: 12.5px; }
   .foot-inner p { margin: 0 0 8px; }
-  .foot-links a { color: var(--lime); text-decoration: none; margin-right: 14px; }
+  .foot-links a { color: var(--coral); text-decoration: none; margin-right: 14px; }
   .foot-links a:hover { text-decoration: underline; }
-  .foot-rule { border-top: 1px solid #24503a; margin: 14px 0 12px; }
+  .foot-rule { border-top: 1px solid #2e4a70; margin: 14px 0 12px; }
+  .gate { margin-left: 8px; font-size: 13px; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -69,7 +71,7 @@
   <div class="mast-inner">
     <div>
       <div class="kicker">Marrowfield Press</div>
-      <div class="wordmark">Lexvane</div>
+      <a class="wordmark" href="./">Lexvane</a>
       <div class="tagline">The daily five</div>
     </div>
     <div class="mast-side">
@@ -92,35 +94,36 @@
   <section class="card">
     <h1>More from the games desk</h1>
     <p>Lexvane shares its page with four other puzzles. All are set in-house at
-    Calder Wharf, and all appear in both the print and digital editions.</p>
+    Calder Wharf, and all appear in both the print and digital editions. Lexvane is free;
+    the other four are played online with either <a href="subscribe.html">subscription</a>.</p>
   </section>
   <section class="card" id="mini-crossword">
     <h2>Mini crossword</h2>
     <p>A pocket grid you can finish with your morning tea: general-knowledge clues,
     nothing obscure, and never more than a dozen entries. The setters aim for a
     two-minute solve; readers report anything from one minute to twenty.</p>
-    <span class="chip">Published daily</span>
+    <span class="chip">Published daily</span> <a class="gate" href="subscribe.html">Play with a subscription</a>
   </section>
   <section class="card" id="numberline">
     <h2>Numberline</h2>
     <p>Arithmetic without algebra. Place the given digits along the line so every
     bracket balances; one arrangement works, and the desk promises it can be found
     without trial and error.</p>
-    <span class="chip">Published Monday to Friday</span>
+    <span class="chip">Published Monday to Friday</span> <a class="gate" href="subscribe.html">Play with a subscription</a>
   </section>
   <section class="card" id="anagram-ladder">
     <h2>Anagram ladder</h2>
     <p>Climb from the bottom rung to the top, rearranging as you go: each rung is
     clued, and each is built from the letters of the rung below plus one more. The
     ladder gets taller through the week.</p>
-    <span class="chip">Published daily</span>
+    <span class="chip">Published daily</span> <a class="gate" href="subscribe.html">Play with a subscription</a>
   </section>
   <section class="card" id="saturday-cryptic">
     <h2>Saturday cryptic</h2>
     <p>The desk's flagship: a full-size cryptic crossword from a rotating panel of
     setters, each with a signature style and a pseudonym readers argue about. The
     solution and setters' notes run the following Saturday.</p>
-    <span class="chip">Published Saturday</span>
+    <span class="chip">Published Saturday</span> <a class="gate" href="subscribe.html">Play with a subscription</a>
   </section>
 </main>
 <footer>
@@ -130,7 +133,7 @@
       <a href="archive.html">Puzzle archive</a><a href="help.html">How to play</a><a href="help.html#subscribers">Subscriber help</a><a href="legal.html#privacy">Privacy notice</a><a href="legal.html#terms">Terms of use</a><a href="help.html#contact">Contact the games desk</a>
     </p>
     <div class="foot-rule"></div>
-    <p>Marrowfield Press Ltd, 8 Calder Wharf, Bramlington BR4 2QN. Registered in England and Wales, no. 00000000.</p>
+    <p>Marrowfield Press Ltd, 8 Calder Wharf, Bramlington LX7 3WB. Registered in England and Wales, no. 00000000.</p>
     <p>Subscriber enquiries: help@marrowfieldpress.example &middot; 03069 990402</p>
     <p>&copy; 2026 Marrowfield Press Ltd. All rights reserved.</p>
   </div>

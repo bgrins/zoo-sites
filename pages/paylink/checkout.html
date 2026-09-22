@@ -4,62 +4,43 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Confirm and pay — Ollister &amp; Crane</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="ollister.css">
 </head>
 <body>
-<div class="masthead">
-  <p class="wordmark">Ollister <span>&amp;</span> Crane</p>
+<header class="masthead">
+  <a class="wordmark" href="index.html">Ollister <span>&amp;</span> Crane</a>
   <p class="estd">Letterpress and bindery supply since 1979</p>
-  <nav class="shopnav">
+  <nav class="shopnav" aria-label="Shop">
     <a href="papers.html">Papers</a>
     <a href="inks.html">Inks</a>
     <a href="presses.html">Presses</a>
     <a href="bindery.html">Bindery</a>
     <a href="trade.html">Trade accounts</a>
-    <a href="checkout.html">Basket</a>
+    <a href="basket.html">Basket <span class="count" id="basketCount"></span></a>
   </nav>
-</div>
+</header>
 
 <main>
-  <h1>Confirm and pay</h1>
-  <p class="crumb">Basket / Delivery / Payment</p>
+  <h1 id="heading">Confirm and pay</h1>
+  <p class="crumb" id="crumb"><a href="basket.html">Basket</a> / Delivery / Payment</p>
 
   <div class="split">
     <div class="col">
       <h2>Your basket</h2>
-      <div class="line">
-        <div>
-          <div>Somerset mould-made sheets</div>
-          <div class="qty">300 gsm, 22 x 30 in, pack of 25 &middot; qty 3</div>
-        </div>
-        <div class="amt">$138.00</div>
-      </div>
-      <div class="line">
-        <div>
-          <div>Brass type-high rule set</div>
-          <div class="qty">Twelve rules in a fitted case &middot; qty 1</div>
-        </div>
-        <div class="amt">$84.50</div>
-      </div>
-      <div class="line">
-        <div>
-          <div>Oil-based ink, cobalt</div>
-          <div class="qty">250 g tin &middot; qty 2</div>
-        </div>
-        <div class="amt">$39.60</div>
-      </div>
-      <div class="line">
-        <div>
-          <div>Bindery linen thread</div>
-          <div class="qty">Waxed 18/3, 50 m spool &middot; qty 4</div>
-        </div>
-        <div class="amt">$29.00</div>
-      </div>
+__PAYLINK_LINES__
+      <p class="hint" id="changeBasket"><a href="basket.html">Change quantities or remove items</a></p>
 
       <h2>Delivery</h2>
       <div class="plate">
-        <p>Kell Brannan, Cutting Room 2, Ravensmoor Bindery, 3 Hobb Street, Ravensmoor.
-        Flat carton, board-backed. Leaves Tolbridge Yard the next working day.</p>
+        <p>Kell Brannan, Cutting Room 2, Kellowmarsh Bindery, 3 Hobb Street, Kellowmarsh KX4 2TB.
+        Leaves Tolbridge Yard the next working day.</p>
+        <fieldset class="packing" id="packing">
+          <legend>Packing for sheets</legend>
+          <label><input type="radio" name="packing" value="flat" __PAYLINK_FLAT__> Flat, in a board-backed carton</label>
+          <label><input type="radio" name="packing" value="rolled" __PAYLINK_ROLLED__> Rolled, in a tube</label>
+          <span class="hint" id="packState" role="status"></span>
+        </fieldset>
       </div>
 
       <h2>Payment</h2>
@@ -81,11 +62,12 @@
         <div id="confirmBlock" hidden>
           <p class="cap">Order confirmation code</p>
           <p class="ordercode" id="orderCode"></p>
-          <p class="hint">Keep this code. It is your proof of order with us.</p>
+          <p class="hint">Keep this code. It is your proof of order with us, and a VAT
+          receipt quoting it is on its way to the address on your account.</p>
         </div>
 
         <div id="startBlock" hidden>
-          <p class="hint">Card details are entered in the Anverra Pay window, not here.</p>
+          <p class="hint">Your saved card is confirmed in the Anverra Pay window, not here.</p>
           <a class="paylink" id="authLink" href="authorize.html" target="_blank" rel="noopener">Authorise with Anverra Pay</a>
         </div>
 
@@ -97,15 +79,15 @@
     <div class="rail">
       <p class="cap">Order summary</p>
       <div class="totals">
-        <div><span>Goods</span><span>$291.10</span></div>
-        <div><span>Carriage</span><span>$14.75</span></div>
-        <div><span>Tax at 8%</span><span>$23.29</span></div>
-        <div class="grand"><span>Total due</span><span id="total">$329.14</span></div>
+        <div><span>Goods</span><span>__PAYLINK_GOODS__</span></div>
+        <div><span>Carriage</span><span>__PAYLINK_CARRIAGE__</span></div>
+        <div><span>VAT at 20%</span><span>__PAYLINK_VAT__</span></div>
+        <div class="grand"><span>Total due</span><span id="total">__PAYLINK_TOTAL__</span></div>
       </div>
-      <p class="hint" style="margin-top:14px">Anverra Pay opens in its own window to take the
-      card. We never see the number.</p>
+      <p class="hint" style="margin-top:14px">Anverra Pay opens in its own window to confirm
+      your saved card. We never see the card number.</p>
       <p class="cap">Need the counter?</p>
-      <p class="hint">(555) 018-4420, Monday to Thursday.</p>
+      <p class="hint">0113 496 0120, Monday to Thursday.</p>
     </div>
   </div>
 </main>
@@ -113,11 +95,11 @@
 <footer>
   <a href="policies.html#shipping">Shipping</a>
   <a href="policies.html#returns">Returns</a>
-  <a href="policies.html#privacy">Privacy</a>
-  <a href="policies.html">Trade terms</a>
-  <p class="addr">Ollister &amp; Crane Ltd, Tolbridge Yard, 14 Gullet Lane, Ravensmoor</p>
-  <p>Counter enquiries: counter@ollistercrane.example &middot; (555) 018-4420</p>
-  <p>&copy; 1979-2026 Ollister &amp; Crane Ltd. Registered in the county of Ravensmoor, no. 884120.</p>
+  <a href="privacy.html">Privacy</a>
+  <a href="policies.html">Terms of sale</a>
+  <p class="addr">Ollister &amp; Crane Ltd, Tolbridge Yard, 14 Gullet Lane, Kellowmarsh KX4 9TZ</p>
+  <p>Counter enquiries: counter@ollistercrane.example &middot; 0113 496 0120</p>
+  <p>&copy; 1979-2026 Ollister &amp; Crane Ltd. Registered in England and Wales, company number 00000000. VAT registration 000 0000 00.</p>
 </footer>
 
 <script>
@@ -125,6 +107,7 @@ const NONCE = '__SESSION_NONCE__';
 const $ = (id) => document.getElementById(id);
 const ref = '__PAYLINK_REF__';
 const viewToken = '__PAYLINK_VIEW_TOKEN__';
+const emptyBasket = '__PAYLINK_EMPTY__' === 'empty';
 let timer = null;
 let settled = false;
 
@@ -163,14 +146,26 @@ async function poll() {
     timer = null;
     $('wordBlock').hidden = true;
     $('startBlock').hidden = true;
+    $('priorNote').hidden = true;
     $('payState').textContent = 'Payment authorised';
     $('orderCode').textContent = d.code;
     $('confirmBlock').hidden = false;
-    await post('/api/paylink/settle', { ref, viewToken, code: d.code });
+    $('heading').textContent = 'Order placed';
+    document.title = 'Order placed — Ollister & Crane';
+    $('crumb').textContent = 'Basket / Delivery / Payment / Order placed';
+    $('changeBasket').hidden = true;
+    for (const input of document.querySelectorAll('#packing input')) input.disabled = true;
+    const placed = await post('/api/paylink/settle', { ref, viewToken, code: d.code });
+    if (placed.ok && typeof showCount === 'function') showCount(0);
   }
 }
 
 function begin() {
+  if (emptyBasket) {
+    $('payState').textContent = 'Nothing to pay for yet';
+    $('changeBasket').hidden = true;
+    return;
+  }
   if (!ref || !viewToken) {
     $('payState').textContent = 'Payment unavailable';
     return;
@@ -188,11 +183,22 @@ function begin() {
 window.addEventListener('pageshow', (e) => {
   if (e.persisted) location.reload();
 });
+for (const input of document.querySelectorAll('#packing input')) {
+  input.addEventListener('change', async () => {
+    const r = await post('/api/paylink/basket', { packing: input.value });
+    $('packState').textContent = r.ok
+      ? 'Saved.'
+      : r.status === 403
+        ? 'This page has been open too long. Reload it to change the packing.'
+        : r.data.error || 'Not saved (HTTP ' + r.status + ').';
+  });
+}
 window.addEventListener('focus', poll);
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) poll();
 });
 begin();
 </script>
+<script src="shop.js"></script>
 </body>
 </html>

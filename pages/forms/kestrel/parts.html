@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kestrel Peak Trailers — Service and Parts</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --char: #17140f;
     --cream: #f6f1e7;
     --sand: #cfc3ae;
     --rust: #9c4a2f;
-    --stone: #7a7266;
+    --stone: #6d6559;
   }
   * { box-sizing: border-box; }
   body {
@@ -38,14 +40,14 @@
   .hero {
     position: relative; min-height: 240px; display: flex; align-items: flex-end;
     padding: 0 34px 36px; color: #fff; overflow: hidden;
-    background: linear-gradient(180deg, #2c3a4a 0%, #5b6472 42%, #8a7a68 74%, #b09a80 100%);
+    background: linear-gradient(180deg, #2c3a4a 0%, #5b6472 42%, #7a6c5c 74%, #a08c74 100%);
   }
   .hero .ridge {
     position: absolute; left: 0; right: 0; bottom: 0; height: 130px; background: #22271f;
     clip-path: polygon(0 70%, 10% 52%, 22% 68%, 34% 44%, 48% 62%, 60% 46%, 74% 66%, 86% 50%, 100% 68%, 100% 100%, 0 100%);
   }
   .hero .copy { position: relative; }
-  .kicker { text-transform: uppercase; letter-spacing: 4px; font-size: 11px; color: var(--sand); margin: 0 0 8px; }
+  .kicker { text-transform: uppercase; letter-spacing: 4px; font-size: 11px; color: #fff; margin: 0 0 8px; }
   .hero h1 { margin: 0; font-size: 44px; line-height: 0.96; font-weight: 600; text-transform: uppercase; }
   .strip {
     background: var(--char); color: var(--sand);
@@ -66,11 +68,24 @@
   .card th { text-transform: uppercase; letter-spacing: 1.6px; font-size: 11px; color: var(--stone); font-weight: 600; }
   footer { background: var(--char); color: var(--sand); padding: 30px 34px; font-size: 12.5px; }
   footer .cols { display: flex; flex-wrap: wrap; gap: 6px 40px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; }
+  nav.top a.word { color: #fff; }
+  footer a { color: var(--sand); }
+  @media (max-width: 720px) {
+    nav.top { flex-wrap: wrap; gap: 6px 18px; padding: 10px 18px; }
+    nav.top .word { flex-basis: 100%; }
+    nav.top .tel { margin-left: 0; }
+    .hero { min-height: 260px; padding: 0 18px 26px; }
+    .hero h1 { font-size: 40px; }
+    .strip { padding: 12px 18px; gap: 4px 22px; }
+    .layout { padding: 30px 18px 50px; gap: 30px; }
+    .grid { grid-template-columns: 1fr; }
+    footer { padding: 24px 18px; }
+  }
 </style>
 </head>
 <body>
 <nav class="top">
-  <span class="word">Kestrel Peak</span>
+  <a class="word" href="index.html">Kestrel Peak</a>
   <a href="models.html">Models</a>
   <a href="build.html">Build yours</a>
   <a href="owners.html">Owners</a>
@@ -88,13 +103,13 @@
 </header>
 
 <div class="strip">
-  <span>Aluminium monocoque</span>
+  <span>Aluminum monocoque</span>
   <span>Three chassis lengths</span>
   <span>Six-year frame warranty</span>
   <span>Made in Oregon</span>
 </div>
 
-<div class="layout">
+<main class="layout">
   <section class="card">
     <h2>Where work gets done</h2>
     <p>Bearings, brakes, seals, hinges and electrics are ordinary trailer work, and any
@@ -127,7 +142,7 @@
     <h2>Parts by mail</h2>
     <p>Parts ship from the shop, usually the same week. Call or write with your VIN rather
     than a part description: the three chassis share most of their hardware but not all of
-    it, and the wrong hinge is a wasted fortnight.</p>
+    it, and the wrong hinge costs you two weeks.</p>
     <table>
       <tr><th>Group</th><th>What we hold</th></tr>
       <tr><td>Running gear</td><td>Bearings, races, seals, brake shoes, hub caps</td></tr>
@@ -149,18 +164,22 @@
     replacement copy free of charge. Warranty coverage and the service interval table sit
     on the <a href="owners.html">owners page</a>.</p>
   </section>
-</div>
+</main>
 
 <footer>
   <div class="cols">
     <span>Showroom open Tue–Sat</span>
-    <span>1180 Switchback Rd, Bldg C</span>
+    <span>1180 Switchback Rd, Bldg C, Galtrow, Oregon</span>
     <span>541-555-0142</span>
   </div>
   © 2026 Kestrel Peak Trailers, Inc. ·
-  <a href="parts.html" style="color:var(--sand)">Service and parts</a> ·
-  <a href="accessibility.html" style="color:var(--sand)">Accessibility</a> ·
-  <a href="contact.html" style="color:var(--sand)">Contact</a>
+  <a href="owners.html#warranty">Warranty</a> ·
+  <a href="privacy.html">Privacy</a> ·
+  <a href="terms.html">Terms of sale</a> ·
+  <a href="dealers.html">Dealer locator</a> ·
+  <a href="parts.html">Service and parts</a> ·
+  <a href="accessibility.html">Accessibility</a> ·
+  <a href="contact.html">Contact</a>
 </footer>
 </body>
 </html>

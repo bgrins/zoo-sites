@@ -5,9 +5,12 @@
 // The extractor is condition-blind (sees only ask + answer + schema, never the
 // transcript or tool surface) and cannot award a pass from nothing: every leaf
 // field carries a `quote` span that must appear verbatim (after normalisation)
-// in the answer, or the field is nulled locally. A null field fails the task.
+// in the answer, or the field is nulled locally, unless the leaf is a string
+// the answer states word for word itself (gatePair). A null field fails the
+// task.
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import { agentEnv } from './agent-env.mjs';
 
 export const EXTRACTOR_MODEL = 'claude-haiku-4-5';
 export const CODEX_EXTRACTOR_MODEL = 'gpt-5.6-terra';
@@ -17,7 +20,10 @@ export const CODEX_EXTRACTOR_MODEL = 'gpt-5.6-terra';
 // the Codex SDK extractor for environments without Anthropic credentials.
 // Do not mix extractors within a comparison: grading strictness must come
 // from one grader. EVAL_EXTRACTOR_MODEL overrides the pinned model either way.
+// EVAL_EXTRACTOR=scripted is the scripted backend's free stub, which grades
+// only that backend's answers (see backends/scripted.mjs).
 const EXTRACTOR = process.env.EVAL_EXTRACTOR ?? 'anthropic';
+const SCRIPTED_EXTRACTOR_MODEL = 'driver-fields';
 
 const LEAF_TYPES = new Set(['string', 'number', 'integer', 'boolean']);
 
@@ -78,38 +84,113 @@ export function normalise(s) {
     .toLowerCase();
 }
 
+const isPair = (node) =>
+  node !== null && typeof node === 'object' && !Array.isArray(node) && 'value' in node && 'quote' in node;
+
+// The quote that let each surviving leaf through, keyed by the object or array
+// enforceQuotes returned and then by the leaf's key or index there. A WeakMap
+// rather than a property, so the fields a validator receives, stores and
+// stringifies are exactly the task's schema shape.
+const QUOTES = new WeakMap();
+
+// The verbatim answer span behind fields[key] (or list[i]), or null. The
+// extractor may paraphrase a value while quoting the answer word for word, so a
+// validator that matches page wording in a free-text field reads both.
+export function quoteOf(container, key) {
+  return (container && QUOTES.get(container)?.[key]) ?? null;
+}
+
 // The deterministic anti-hallucination gate: a value whose quote is not a
 // substring of the answer is nulled. Collapses { value, quote } wrappers back
-// to plain values so validators see the task's own schema shape.
-export function enforceQuotes(node, answerNorm) {
+// to plain values so validators see the task's own schema shape. `askNorm` is
+// the task's ask, which the extractor also reads: its wording is never
+// evidence of what the answer states.
+export function enforceQuotes(node, answerNorm, askNorm = '') {
+  return enforceNode(node, { answer: gateText(answerNorm), ask: gateText(askNorm) });
+}
+
+function enforceNode(node, gate) {
   if (node === null || node === undefined) return null;
-  if (Array.isArray(node)) {
-    return node.map((child) => enforceQuotes(child, answerNorm));
+  if (isPair(node)) return gatePair(node, gate)?.value ?? null;
+  if (typeof node !== 'object') return null;
+  const gated = (Array.isArray(node) ? [...node.entries()] : Object.entries(node)).map(([k, v]) => {
+    if (!isPair(v)) return [k, enforceNode(v, gate), null];
+    const kept = gatePair(v, gate);
+    return [k, kept?.value ?? null, kept?.quote ?? null];
+  });
+  const shape = (i) =>
+    Array.isArray(node) ? gated.map((g) => g[i]) : Object.fromEntries(gated.map((g) => [g[0], g[i]]));
+  const out = shape(1);
+  QUOTES.set(out, shape(2));
+  return out;
+}
+
+// Quote marks carry no content, and the gate compares with every one of them
+// (straight, typographic, prime, guillemet, fullwidth, corner bracket) dropped:
+// an extractor that echoes the answer's "interrupt catcher" as 'interrupt
+// catcher' quotes the same span. Dropping rather than folding to one mark
+// covers backticks too, which normalise already strips as markdown, so a
+// `code` span and its quoted echo meet.
+const QUOTE_MARKS = /['"«»‹›「」『』＂＇]/g;
+const gateText = (s) => normalise(s).replace(QUOTE_MARKS, '').replace(/\s+/g, ' ').trim();
+
+// The { value, quote } that survives the gate, or null.
+function gatePair(node, gate) {
+  if (node.value === null) return null;
+  if (typeof node.quote === 'string' && quoteHolds(node.quote, gate)) {
+    return { value: node.value, quote: node.quote };
   }
-  if (typeof node === 'object' && 'value' in node && 'quote' in node) {
-    if (node.value === null) return null;
-    if (typeof node.quote !== 'string') return null;
-    if (answerNorm.includes(normalise(node.quote))) return node.value;
-    // Extractors sometimes splice a faithful quote across markdown structure
-    // (bullet boundaries, joined sentences), which fails whole-string
-    // containment even though every word is verbatim. Accept a quote whose
-    // substantial clauses each appear in the answer; a fabricated quote
-    // still dies because its clauses are nowhere in the text.
-    const clauses = node.quote
-      .split(/[.;\n]+/)
-      .map((c) => normalise(c))
-      .filter((c) => c.length >= 12);
-    if (clauses.length && clauses.every((c) => answerNorm.includes(c))) {
-      return node.value;
-    }
-    return null;
+  // A string value the answer states word for word needs no quote to vouch for
+  // it: an extractor that copied the right code out of the answer but took its
+  // quote from the ask still read it off the answer. The value itself is the
+  // evidence, so it stands as its own quote, and it has to be a whole token
+  // of the answer, carry four letters or digits, and appear nowhere in the
+  // ask, whose example values an answer may echo. Numbers and booleans never
+  // qualify: their text turns up in almost any answer.
+  if (typeof node.value !== 'string') return null;
+  const value = gateText(node.value);
+  if (value.replace(/[^\p{L}\p{N}]+/gu, '').length < 4) return null;
+  return holdsToken(gate.answer, value) && !holdsToken(gate.ask, value)
+    ? { value: node.value, quote: node.value }
+    : null;
+}
+
+function quoteHolds(quote, gate) {
+  const whole = gateText(quote);
+  // A quote of nothing but marks and space folds to '', which every text holds.
+  if (!whole) return false;
+  if (gate.answer.includes(whole)) return true;
+  if (gate.ask.includes(whole)) return false;
+  // Extractors sometimes splice a faithful quote across markdown structure
+  // (bullet boundaries, joined sentences), which fails whole-string
+  // containment even though every word is verbatim. Accept a quote whose
+  // substantial clauses each appear in the answer; a quote fabricated whole
+  // still dies because its clauses are nowhere in the text, and so does one
+  // spliced from the ask's clauses, even where the answer restates them. Only
+  // clauses of 12 characters or more can vouch for a quote. A shorter one must
+  // still appear in the answer when it holds a digit, so a short invented line
+  // ("Sum: 41,873") appended to a real sentence sinks it; a point before a
+  // digit splits no clause, so "$39.50" never passes as "$39" and "50"
+  // (docs/grading-design.md, "What the quote gate does not check").
+  const clauses = quote
+    .split(/(?:[;\n]|\.(?!\d))+/)
+    .map(gateText)
+    .filter((c) => c.length >= 12 || /\p{N}/u.test(c));
+  const long = clauses.filter((c) => c.length >= 12);
+  return (
+    long.length > 0 &&
+    clauses.every((c) => gate.answer.includes(c)) &&
+    !long.every((c) => gate.ask.includes(c))
+  );
+}
+
+// `needle` occurs in `text` with no letter or digit on either side.
+function holdsToken(text, needle) {
+  const alnum = (ch) => ch !== undefined && /[\p{L}\p{N}]/u.test(ch);
+  for (let i = text.indexOf(needle); i !== -1; i = text.indexOf(needle, i + 1)) {
+    if (!alnum(text[i - 1]) && !alnum(text[i + needle.length])) return true;
   }
-  if (typeof node === 'object') {
-    return Object.fromEntries(
-      Object.entries(node).map(([k, v]) => [k, enforceQuotes(v, answerNorm)])
-    );
-  }
-  return null;
+  return false;
 }
 
 // Harness sentinels are not answers: never hand them to a model.
@@ -130,70 +211,131 @@ function extractionPrompt(ask, answer) {
   );
 }
 
-async function extractAnthropic({ ask, answer, schema }) {
+// The grader's CLI runs on a fresh config home, as the agent's does (see
+// backends/anthropic.mjs isolatedClaudeHome), from that home's empty temp
+// directory, so neither the operator's CLAUDE_CONFIG_DIR nor this checkout
+// reaches it.
+async function extractAnthropic({ ask, answer, schema, abortController }) {
+  const { isolatedClaudeHome } = await import('./backends/anthropic.mjs');
   const model = process.env.EVAL_EXTRACTOR_MODEL || EXTRACTOR_MODEL;
-  const options = {
-    model,
-    effort: 'low',
-    tools: [],
-    settingSources: [],
-    persistSession: false,
-    permissionMode: 'dontAsk',
-    outputFormat: { type: 'json_schema', schema: quotedSchema(schema) },
-  };
-  let result = null;
-  for await (const m of query({ prompt: extractionPrompt(ask, answer), options })) {
-    if (m.type === 'result') result = m;
+  // The same allowlist the agents get, so a parent session's model, effort
+  // and control-channel variables cannot reach the grader either.
+  const home = isolatedClaudeHome(agentEnv('anthropic'));
+  try {
+    const options = {
+      model,
+      effort: 'low',
+      tools: [],
+      settingSources: [],
+      persistSession: false,
+      permissionMode: 'dontAsk',
+      outputFormat: { type: 'json_schema', schema: quotedSchema(schema) },
+      cwd: home.tmp,
+      env: home.env,
+      abortController,
+    };
+    let result = null;
+    for await (const m of query({ prompt: extractionPrompt(ask, answer), options })) {
+      if (m.type === 'result') result = m;
+    }
+    if (result?.subtype !== 'success' || result.structured_output == null) {
+      // A failed call is still billed, so its cost rides on the error for a
+      // caller that totals spend across retries.
+      throw Object.assign(new Error(`extraction failed: ${result?.subtype ?? 'no result message'}`), {
+        cost_usd: result?.total_cost_usd ?? null,
+      });
+    }
+    return {
+      raw: result.structured_output,
+      model,
+      output_tokens: result.usage?.output_tokens ?? null,
+      cost_usd: result.total_cost_usd ?? null,
+    };
+  } finally {
+    home.close(home.tmp);
   }
-  if (result?.subtype !== 'success' || result.structured_output == null) {
-    throw new Error(`extraction failed: ${result?.subtype ?? 'no result message'}`);
-  }
-  return {
-    raw: result.structured_output,
-    model,
-    output_tokens: result.usage?.output_tokens ?? null,
-    cost_usd: result.total_cost_usd ?? null,
-  };
 }
 
 // Symmetric codex path: same prompt, same quoted schema (the SDK's
 // outputSchema forces the final response to conform), same local quote gate.
 // The read-only sandbox has no network access, so like tools: [] above, the
-// extraction turn gets no second chance at the task's work.
-async function extractCodex({ ask, answer, schema }) {
+// extraction turn gets no second chance at the task's work. It runs from an
+// empty directory under its own CODEX_HOME (see backends/codex.mjs), so neither
+// this repository's AGENTS.md nor the user's codex config reaches the grader.
+async function extractCodex({ ask, answer, schema, abortController }) {
   const { Codex } = await import('@openai/codex-sdk');
+  const { isolatedCodexHome } = await import('./backends/codex.mjs');
   const model = process.env.EVAL_EXTRACTOR_MODEL || CODEX_EXTRACTOR_MODEL;
-  const codex = new Codex({
-    config: { approval_policy: 'never', model_reasoning_effort: 'low' },
-  });
-  const thread = codex.startThread({
-    model,
-    skipGitRepoCheck: true,
-    sandboxMode: 'read-only',
-  });
-  const turn = await thread.run(extractionPrompt(ask, answer), {
-    outputSchema: quotedSchema(schema),
-  });
-  let raw;
+  const codexHome = await isolatedCodexHome(agentEnv('codex'));
   try {
-    raw = JSON.parse(turn.finalResponse);
-  } catch {
-    throw new Error('extraction failed: codex final response is not JSON');
+    const codex = new Codex({
+      env: codexHome.env,
+      config: { ...codexHome.config, approval_policy: 'never', model_reasoning_effort: 'low' },
+    });
+    const thread = codex.startThread({
+      model,
+      workingDirectory: codexHome.tmp,
+      skipGitRepoCheck: true,
+      sandboxMode: 'read-only',
+      webSearchMode: 'disabled',
+    });
+    const turn = await thread.run(extractionPrompt(ask, answer), {
+      outputSchema: quotedSchema(schema),
+      signal: abortController.signal,
+    });
+    let raw;
+    try {
+      raw = JSON.parse(turn.finalResponse);
+    } catch {
+      throw new Error('extraction failed: codex final response is not JSON');
+    }
+    return {
+      raw,
+      model,
+      output_tokens: turn.usage?.output_tokens ?? null,
+      cost_usd: null,
+    };
+  } finally {
+    codexHome.close();
   }
+}
+
+async function extractScripted({ answer }) {
+  const { extract } = await import('./backends/scripted.mjs');
+  return { ...(await extract({ answer })), model: SCRIPTED_EXTRACTOR_MODEL };
+}
+
+export function extractorInfo() {
+  if (EXTRACTOR === 'scripted') return { extractor: EXTRACTOR, model: SCRIPTED_EXTRACTOR_MODEL };
   return {
-    raw,
-    model,
-    output_tokens: turn.usage?.output_tokens ?? null,
-    cost_usd: null,
+    extractor: EXTRACTOR,
+    model:
+      process.env.EVAL_EXTRACTOR_MODEL ||
+      (EXTRACTOR === 'codex' ? CODEX_EXTRACTOR_MODEL : EXTRACTOR_MODEL),
   };
 }
 
-export async function extractFields({ ask, answer, schema }) {
+// A hung extraction call would otherwise hold its task, and with it a worker,
+// forever; the caller's retry loop gets the timeout as an ordinary failure.
+export async function extractFields({ ask, answer, schema, timeoutMs = 120000 }) {
   const started = Date.now();
-  const impl = EXTRACTOR === 'codex' ? extractCodex : extractAnthropic;
-  const { raw, model, output_tokens, cost_usd } = await impl({ ask, answer, schema });
+  const impl = { codex: extractCodex, scripted: extractScripted }[EXTRACTOR] ?? extractAnthropic;
+  const abortController = new AbortController();
+  const timer = setTimeout(() => abortController.abort(), timeoutMs);
+  let extracted;
+  try {
+    extracted = await impl({ ask, answer, schema, abortController });
+  } catch (error) {
+    if (abortController.signal.aborted) {
+      throw new Error(`extraction timed out after ${Math.round(timeoutMs / 1000)}s`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+  const { raw, model, output_tokens, cost_usd } = extracted;
   return {
-    fields: enforceQuotes(raw, normalise(answer)),
+    fields: enforceQuotes(raw, normalise(answer), normalise(ask)),
     // Pre-enforcement output, for debugging quote-gate nulls.
     raw,
     extraction: {
@@ -222,29 +364,86 @@ export function eqEnum(got, want) {
   return normalise(got) === normalise(want);
 }
 
+// What a code picks up on its way into an answer without changing what was
+// read: markdown emphasis, bidi and zero-width marks copied out of RTL text,
+// fullwidth forms copied out of CJK text (NFKC), and Arabic-Indic digits.
+function foldCode(s) {
+  return String(s)
+    .normalize('NFKC')
+    .replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/g, '')
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06f0-\u06f9]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[*_~`]+/g, '')
+    .replace(/[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]/g, '-');
+}
+
 // Server-minted codes (PREFIX-HEX and friends) compare case-, whitespace- and
-// dash-insensitively: the tolerance costs no discrimination because the code
-// body is random. Retires the hand-rolled flat() clones.
+// dash-insensitively, through foldCode, and ignoring punctuation at either end
+// ("AR-4149B7."): the tolerance costs no discrimination because the code body
+// is random.
 export function eqCode(got, want) {
   if (typeof got !== 'string' || !want) return false;
-  const flat = (s) => String(s).toUpperCase().replace(/[\s‐-―−-]+/g, '');
+  const flat = (s) =>
+    foldCode(s)
+      .toUpperCase()
+      .replace(/[\s-]+/g, '')
+      .replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
   return flat(got) === flat(want);
 }
 
-// Clock times compare numerically: "10:00 a.m.", "10 AM" and "10.00am" all
-// equal '10:00am'; an unmarked "6:30" also matches a pm want, since answers
-// drop the marker when the page's context makes it obvious.
+// The one code of a known shape inside a field, so "Reference AR-4149B7"
+// grades as the code it names. `shape` is matched case-insensitively as a whole
+// token, never as part of a longer code, with any ^/$ anchors dropped. The rest
+// of the field may label the code but not qualify it: a field naming two
+// different codes, or none, comes back unchanged, and so does one that negates
+// the code ("not AR-4149B7") or whose rest still names a second code the shape
+// misses. A second code shows up as any digit ("AR 0892F0"), as the shape's
+// letter prefix again ("or AR BCDEFA", "AR-BCDEF"; a hex body can be all
+// letters), or as the shape with its dashes and one character gone
+// ("ARBCDEFA"). eqCode then rejects it. A shape that puts a literal
+// digit after its prefix (QTA-2026-...) gives every second code a digit, so
+// there the bare prefix may label the code ("QTA notice QTA-2026-1A2B"). A
+// caller whose comparator also takes the bare body passes the prefix as
+// optional, (?:CM-)?, so a bare second body counts as a code too.
+export function soleCode(got, shape) {
+  if (typeof got !== 'string') return got;
+  const body = shape.source.replace(/^\^/, '').replace(/\$$/, '');
+  const token = new RegExp(`(?<![A-Za-z0-9])(?:${body})(?![A-Za-z0-9])`, 'gi');
+  const folded = foldCode(got);
+  const found = new Set([...folded.matchAll(token)].map((m) => m[0].toUpperCase()));
+  if (found.size !== 1) return got;
+  const rest = folded.replace(token, ' ');
+  const prefix = /^[A-Za-z]+-?\d/.test(body) ? null : body.match(/^[A-Za-z]+/)?.[0];
+  // Dashes outside character classes go optional, and each {n} may fall one short.
+  const loose = body
+    .replace(/\[(?:\\.|[^\]\\])*\]|-/g, (m) => (m === '-' ? '[\\s-]*' : m))
+    .replace(/\{(\d+)\}/g, (_, n) => `{${n - 1},${n}}`);
+  const another =
+    (!!prefix && new RegExp(`(?<![A-Za-z0-9])${prefix}(?![A-Za-z])`, 'i').test(rest)) ||
+    new RegExp(`(?<![A-Za-z0-9])(?:${loose})(?![A-Za-z0-9])`, 'i').test(rest);
+  if (another || /\d/.test(rest) || /\b(?:not|never)\b|n't\b/i.test(rest)) return got;
+  return [...found][0];
+}
+
+// Clock times compare numerically: "10:00 a.m.", "10 AM", "10.00am" and
+// "1000" all equal '10:00am'; an unmarked "6:30" also matches a pm want, since
+// answers drop the marker when the page's context makes it obvious. A
+// zero-padded or zero hour ("06:30", "00:45") is a 24-hour time, and so is
+// marked: it never takes the twelve-hour allowance.
 export function eqTime(got, want) {
   const parse = (s) => {
     if (typeof s !== 'string') return null;
-    const m = normalise(s).match(/(\d{1,2})(?:[:.](\d{2}))?\s*(a\.?\s?m\.?|p\.?\s?m\.?)?/);
+    const m = normalise(s).match(
+      /(?<!\d)(\d{1,2})(?:[:.]?(\d{2}))?(?!\d)\s*(a\.?\s?m\.?|p\.?\s?m\.?)?/
+    );
     if (!m) return null;
     let h = Number(m[1]);
     const min = Number(m[2] ?? 0);
     const marker = m[3]?.[0] ?? null;
     if (marker === 'p' && h < 12) h += 12;
     if (marker === 'a' && h === 12) h = 0;
-    return { mins: h * 60 + min, marked: marker !== null };
+    const twentyFour = marker === null && (m[1].startsWith('0') || h === 0);
+    return { mins: h * 60 + min, marked: marker !== null || twentyFour };
   };
   const g = parse(got);
   const w = parse(want);
@@ -262,19 +461,30 @@ export function normaliseWords(s) {
   return ' ' + normalise(String(s)).replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
 }
 
+export const MONTH_NAMES = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
+];
+const MONTH_ABBREVIATIONS = Object.fromEntries([
+  ...MONTH_NAMES.filter((m) => m !== 'may').map((m) => [m.slice(0, 3), m]),
+  ['sept', 'september'],
+]);
+
 // normaliseWords for a date, folding the day forms an agent (or the extractor
-// quoting one) plausibly writes: "June 12th", "the 12th of June" and "12 June"
-// all reduce to the same tokens as "June 12". A bare whole-word test for the
-// day number rejects every ordinal form otherwise, failing a correct "June
-// 12th". The fold lives here so every date-graded task inherits it instead of
-// reinventing it privately.
+// quoting one) plausibly writes: "June 12th", "the 12th of June", "the 12th day
+// of June", "12 June", "Jun 12" and "12-Jun" all reduce to the same tokens as
+// "June 12". A bare whole-word test for the day number rejects every ordinal
+// form otherwise, failing a correct "June 12th", and a month-name test rejects
+// every abbreviation. The fold lives here so every date-graded task inherits it
+// instead of reinventing it privately.
 export function normaliseDateWords(s) {
-  return normaliseWords(
+  const words = normaliseWords(
     String(s)
       .replace(/(\d{1,2})(st|nd|rd|th)\b/gi, '$1')
       .replace(/\bthe\s+(\d{1,2})\b/gi, '$1')
-      .replace(/\b(\d{1,2})\s+of\s+/gi, '$1 ')
+      .replace(/\b(\d{1,2})\s+(?:day\s+)?of\s+/gi, '$1 ')
   );
+  return words.replace(/ [a-z]+(?= )/g, (w) => ` ${MONTH_ABBREVIATIONS[w.slice(1)] ?? w.slice(1)}`);
 }
 
 // Person names compare order-free ("Quill, Dana" names Dana Quill) and

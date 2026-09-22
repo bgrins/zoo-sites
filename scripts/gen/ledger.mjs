@@ -3,12 +3,13 @@
 //   the last page carries one extra entry, so pages x rows-per-page is the
 //   WRONG total)
 //   sites/ledger-rows.mjs  (row source of truth; the CSV export endpoint in
-//   server.mjs reads this file)
+//   sites/ledger.mjs reads this file)
 // This generator and the row source both live OUTSIDE pages/ so neither is
 // reachable over HTTP from the served static root.
 // Run: node scripts/gen/ledger.mjs
 // The generated answers (hardware total, max amount, row count) are printed at
-// the end for copying into answers.mjs.
+// the end for copying into answers.mjs. A graded figure found in the output
+// prints LEAK instead and exits 1.
 
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -222,6 +223,7 @@ const head = (title, subtitle) => `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title}</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   html { background: #d9d3c4; }
   body { font-family: "Palatino Linotype", Palatino, "Book Antiqua", "URW Palladio L", serif;
@@ -233,7 +235,15 @@ const head = (title, subtitle) => `<!doctype html>
   .sheet { background: #fdfbf5; border: 1px solid #c9c0ac; border-top: 0;
     box-shadow: 0 2px 6px rgba(60, 48, 36, 0.18); padding: 30px 40px 34px; }
   .masthead { display: flex; align-items: baseline; justify-content: space-between; }
-  .masthead .org { font-size: 21px; letter-spacing: 0.09em; text-transform: uppercase; }
+  .masthead .org { font-size: 21px; letter-spacing: 0.09em; text-transform: uppercase; color: inherit;
+    text-decoration: none; }
+  .deck { display: flex; flex-wrap: wrap; gap: 6px 18px; border-top: 1px solid #ddd3bf;
+    padding: 9px 0 0; margin-bottom: 14px; font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; }
+  .deck a { color: #4d1f27; text-decoration: none; border-bottom: 1px solid #c4a8ac; }
+  .deck a:hover { border-bottom-color: #4d1f27; }
+  .deck .here { color: #6b5f52; }
+  footer a { color: #4d1f27; }
   .masthead .folio { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #6b5f52; }
   .rule { border-bottom: 3px solid #4d1f27; margin-top: 7px; }
   .rule-thin { border-bottom: 1px solid #4d1f27; margin-top: 2px; margin-bottom: 18px; }
@@ -280,9 +290,22 @@ const head = (title, subtitle) => `<!doctype html>
     color: #6b5f52; margin: 0; }
   footer { border-top: 1px solid #ddd3bf; margin-top: 24px; padding-top: 10px; font-size: 11px;
     line-height: 1.5; color: #74695c; }
+  @media (max-width: 480px) {
+    .strip .inner { padding: 0 14px; flex-wrap: wrap; gap: 2px 12px; }
+    .sheet { padding: 22px 14px 26px; }
+    .masthead { flex-wrap: wrap; gap: 4px 12px; }
+    .masthead .org { font-size: 18px; }
+    dl.facts { grid-template-columns: 1fr; gap: 0; }
+    dl.facts dd { margin-bottom: 6px; }
+    .toolbar { flex-wrap: wrap; }
+    #export-status { margin-left: 0; }
+    th, td { padding: 3px 4px; }
+    td.date { font-size: 11px; }
+    td.amount { font-size: 12px; }
+  }
   @media print {
     html, .sheet { background: #fff; }
-    .strip, .toolbar, .pager { display: none; }
+    .strip, .toolbar, .pager, .deck { display: none; }
     .sheet { border: 0; box-shadow: none; max-width: none; padding: 0; }
   }
 </style>
@@ -334,7 +357,7 @@ function renderPage(rows, page) {
     'Fiscal 2026 &middot; unaudited'
   )}<main class="sheet">
   <div class="masthead">
-    <span class="org">${ORG}</span>
+    <a class="org" href="index.html">${ORG}</a>
     <span class="folio">Folio ${page}</span>
   </div>
   <div class="rule"></div>
@@ -348,6 +371,12 @@ function renderPage(rows, page) {
   </dl>
   <p class="note">Amounts are entered as posted. Subtotals shown at the foot of each
   folio cover that folio only and are not carried forward.</p>
+  <div class="deck">
+    <span class="here">Transaction ledger</span>
+    <a href="about-the-fund.html">About the fund</a>
+    <a href="reading-a-folio.html">Reading a folio</a>
+    <a href="access.html">Access and retention</a>
+  </div>
   <div class="toolbar">
     <button id="export" type="button">Export CSV</button>
     <span class="hint">Exports every posting in the ledger, not just this folio.</span>
@@ -365,9 +394,10 @@ ${body}
       <tr><td colspan="3">Folio subtotal</td><td class="amount">$${money(subtotal)}</td></tr>
     </tfoot>
   </table>
-${pager}  <footer>${ORG} &middot; Old Creamery Road, Trelowen &middot; registered
-  charity no. 08-2247. Postings are reviewed annually by Harrow &amp; Pike, chartered
-  accountants. Queries about an entry: bookkeeping@trelowentrust.example</footer>
+${pager}  <footer>${ORG} &middot; Old Creamery Road, Trelowen, Maine &middot; a 501(c)(3)
+  nonprofit, EIN 00-0000000. Postings are reviewed annually by Tamsett &amp; Kearle,
+  certified public accountants. Queries about an entry: bookkeeping@trelowentrust.example
+  &middot; <a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms of use</a></footer>
 </main>
 <script>
   const NONCE = '__SESSION_NONCE__';
@@ -449,20 +479,24 @@ for (let page = 1; page <= PAGE_COUNT; page++) {
 }
 
 // The graded figures must not appear anywhere an agent can read: the served
-// fixture (read back off disk), the row source, or this generator itself.
+// fixture (read back off disk), the row source, or this generator itself. The
+// row source is exempt from the row-count test alone, because its header states
+// the count and its array has that many entries by construction.
 const rendered = [
   ...(await Promise.all(pageFiles.map((file) => readFile(file, 'utf8')))),
   await readFile(self, 'utf8'),
 ].join('\n');
+const rowSource = await readFile(ROWS_MODULE, 'utf8');
 const leaks = [
   [
     'hardware total',
     new RegExp(
       money(stats.tagTotals.hardware).replace(',', '[,\\s]?').replace('.', '\\.')
     ),
+    [rendered, rowSource],
   ],
-  ['row count', new RegExp(`(?<![\\d,.])${TOTAL_ROWS}(?!\\d|,\\d|\\.\\d)`)],
-].filter(([, re]) => re.test(rendered));
+  ['row count', new RegExp(`(?<![\\d,.])${TOTAL_ROWS}(?!\\d|,\\d|\\.\\d)`), [rendered]],
+].filter(([, re, texts]) => texts.some((text) => re.test(text)));
 
 console.log(`seed ${seed}`);
 console.log(`rows ${rows.length} (pages 1-6 x ${PER_PAGE}, page ${PAGE_COUNT} x ${pageSlice(rows, PAGE_COUNT).length})`);
@@ -472,13 +506,13 @@ console.log('page totals', stats.pageTotals.map(money).join('  '));
 console.log('hardware rows per page', stats.pageHardware.join(' '));
 console.log(`grand total $${money(stats.grand)}`);
 console.log(`largest amount $${money(stats.max)} (runner-up $${money(stats.runnerUp)})`);
-console.log(
-  leaks.length
-    ? `LEAK in fixture: ${leaks.map(([what]) => what).join(', ')}`
-    : 'no graded figure leaks into fixture source'
-);
-console.log('\nanswers.mjs entry:\n');
-console.log(`  // pages/ledger/ (generated by gen/ledger.mjs, seed ${seed}) — the ledger
+if (leaks.length) {
+  console.error(`LEAK in fixture: ${leaks.map(([what]) => what).join(', ')}`);
+  process.exitCode = 1;
+} else {
+  console.log('no graded figure leaks into fixture source');
+  console.log('\nanswers.mjs entry:\n');
+  console.log(`  // pages/ledger/ (generated by scripts/gen/ledger.mjs, seed ${seed}) — the ledger
   // is static page content, so the answer key lives here only. The hardware
   // total ($${money(stats.tagTotals.hardware)}) collides with no other tag total, page subtotal,
   // grand total, or single amount (asserted at generation time); the largest
@@ -490,3 +524,4 @@ console.log(`  // pages/ledger/ (generated by gen/ledger.mjs, seed ${seed}) — 
     hardwareTotal: ${stats.tagTotals.hardware},
     maxAmount: ${stats.max},
   },`);
+}

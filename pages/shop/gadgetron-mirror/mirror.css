@@ -12,7 +12,7 @@ a { color: #0d5c8a; }
 }
 .railbar .mark {
   font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: .16em;
-  color: #ffb020;
+  color: #ffb020; text-decoration: none;
 }
 .railbar .node {
   font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: #9aa2b1;
@@ -55,7 +55,7 @@ a { color: #0d5c8a; }
 }
 .depts .state {
   margin-left: auto; font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
-  color: #8b93a3;
+  color: #6c737f;
 }
 .depts .state.synced { color: #1d7a3c; font-weight: bold; }
 table.grid { border-collapse: collapse; width: 100%; font-size: 12px; }
@@ -101,3 +101,16 @@ td.stock { text-align: center; }
   font-size: 11px; padding: 14px; line-height: 1.6;
 }
 .legalstrip a { color: #cfd4de; }
+.syncstrip.standby { background: #eaf4ec; color: #2c5a37; }
+.syncstrip a { color: #14562a; }
+[hidden] { display: none !important; }
+.tablewrap { overflow-x: auto; }
+@media (max-width: 700px) {
+  .railbar { flex-wrap: wrap; gap: 6px 12px; }
+  .railbar .who { margin-left: 0; flex: 1 1 100%; }
+  .tabs { overflow-x: auto; white-space: nowrap; }
+  .sheet { padding: 8px 12px 22px; }
+  .detail .specs { min-width: 0; }
+  .buybox { width: 100%; box-sizing: border-box; }
+  td.model { white-space: normal; }
+}

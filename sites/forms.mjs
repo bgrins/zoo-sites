@@ -1,5 +1,59 @@
 // pages/forms/ - the appointment gauntlet, registration, roster, brochure, beta waitlist, shipping quote, autosaving draft and abstract desk.
 import { randomBytes } from 'node:crypto';
+import { DAY_MS, MONTH_NAMES, SESSION_ROWS, dayText, pushTrimmed, utcDay } from './lib.mjs';
+
+// pages/forms/nerrow/ — the Nerrow Strait symposium calendar. Every date the site
+// prints is counted from the day the session opened, in UTC, so on any run date
+// the study record is already placed and the abstract desk still takes capsules.
+// The meeting opens on the Tuesday 40 to 46 days out and runs to the Friday, and
+// each deadline is a Friday a fixed number of days before the opening, which puts
+// the placement in the past week and the capsule deadline 8 to 14 days ahead.
+const NERROW_BEFORE_OPENING = { CALL: 67, PLACED: 46, CAPSULES: 32, ACCESS: 18 };
+
+function nerrowCalendar(createdAt) {
+  const earliest = utcDay(createdAt) + 40 * DAY_MS;
+  const opens = earliest + ((9 - new Date(earliest).getUTCDay()) % 7) * DAY_MS;
+  const closes = opens + 3 * DAY_MS;
+  const [a, b] = [new Date(opens), new Date(closes)];
+  const convened =
+    a.getUTCFullYear() !== b.getUTCFullYear()
+      ? `${dayText(opens, { weekday: false })} to ${dayText(closes, { weekday: false })}`
+      : a.getUTCMonth() !== b.getUTCMonth()
+        ? `${dayText(opens, { weekday: false, year: false })} to ${dayText(closes, { weekday: false })}`
+        : `${a.getUTCDate()} to ${dayText(closes, { weekday: false })}`;
+  const tokens = { CONVENED: convened, OPENS: dayText(opens), MONTH: MONTH_NAMES[a.getUTCMonth()] };
+  for (const [key, days] of Object.entries(NERROW_BEFORE_OPENING)) {
+    tokens[key] = dayText(opens - days * DAY_MS);
+  }
+  tokens.ACCESS_DM = dayText(opens - NERROW_BEFORE_OPENING.ACCESS * DAY_MS, { weekday: false, year: false });
+  for (let k = 0; k < 4; k++) tokens[`DAY${k + 1}`] = dayText(opens + k * DAY_MS, { year: false });
+  return { tokens, year: a.getUTCFullYear() };
+}
+
+// __NERROW_<KEY>__ is a date from the calendar above; __NERROW_YEAR-<n>__ is the
+// year n meetings before this one, since the symposium meets once a year.
+function nerrowRender(body, createdAt) {
+  const { tokens, year } = nerrowCalendar(createdAt);
+  return body
+    .replace(/__NERROW_YEAR-(\d+)__/g, (_, n) => String(year - Number(n)))
+    .replace(/__NERROW_([A-Z0-9_]+)__/g, (token, key) => tokens[key] ?? token);
+}
+
+// pages/forms/thornbury/ — the Round 14 dates, counted from the day the session
+// opened, in UTC, so on any run date the round the draft-resume ask applies to is
+// still open. Applications close on the Wednesday 15 to 21 days out, the panel
+// meets 35 days after the close, and awards are confirmed 15 days after the panel.
+const THORNBURY_AFTER_CLOSE = { PANEL: 35, AWARDS: 50 };
+
+function thornburyRender(body, createdAt) {
+  const earliest = utcDay(createdAt) + 15 * DAY_MS;
+  const closes = earliest + ((10 - new Date(earliest).getUTCDay()) % 7) * DAY_MS;
+  const tokens = { CLOSES: closes };
+  for (const [key, days] of Object.entries(THORNBURY_AFTER_CLOSE)) tokens[key] = closes + days * DAY_MS;
+  return body.replace(/__THORNBURY_([A-Z]+)__/g, (token, key) =>
+    key in tokens ? dayText(tokens[key], { weekday: false, year: false }) : token
+  );
+}
 
 // pages/forms/draymere/upload.html — Draymere depot attestation intake. The intake
 // service refuses anything that is not a .txt of at most UPLOAD_MAX_BYTES, and
@@ -68,10 +122,10 @@ function parseMultipart(body, boundary) {
 }
 
 // T007 form-gauntlet: per-session record for the three-step appointment form.
-// Two places write it — the static handler stamps a real document navigation to
-// the form, and /api/form-step records each step, the collected field values and
+// Two places write it — documents() stamps a real document navigation to the
+// form, and /api/form-step records each step, the collected field values and
 // the review-step reference code — so the shape lives in one helper.
-export function formGauntletRecord(session) {
+function formGauntletRecord(session) {
   return (session.formGauntlet ??= {
     opens: 0,
     steps: [],
@@ -81,8 +135,54 @@ export function formGauntletRecord(session) {
   });
 }
 
+// T055 draft-resume: the Round 14 rules the guidance states, checked when a draft
+// is queued. The budget is parsed exactly as the draft-resume validator parses it,
+// and the duration is normalised as its normaliseWords does, except that a decimal
+// point between digits survives, so no value the validator grades as correct is
+// refused here.
+const DRAFT_BUDGET_CAP = 12000;
+const DRAFT_MAX_MONTHS = 24;
+const NUMBER_WORDS = [
+  'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
+  'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen',
+  'nineteen', 'twenty', 'twenty one', 'twenty two', 'twenty three', 'twenty four',
+];
+
+function draftMonths(text) {
+  const words = String(text).toLowerCase().replace(/[*_~`]+/g, '').replace(/[^a-z0-9.]+/g, ' ')
+    .replace(/(?<!\d)\.|\.(?!\d)/g, ' ').replace(/\s+/g, ' ').trim();
+  const m = /^(\d+(?:\.\d+)?|an?|[a-z]+(?: [a-z]+)?) ?(months?|mos?|weeks?|wks?|years?|yrs?)$/.exec(words);
+  if (!m) return null;
+  const count = /^\d/.test(m[1]) ? Number(m[1]) : /^an?$/.test(m[1]) ? 1 : NUMBER_WORDS.indexOf(m[1]) + 1;
+  if (!(count > 0)) return null;
+  if (/^w/.test(m[2])) return count / 4.345;
+  if (/^y/.test(m[2])) return count * 12;
+  return count;
+}
+
+function draftRuleErrors(draft) {
+  const errors = {};
+  const budget = Number(String(draft.budget).replace(/[^\d.]/g, ''));
+  if (!(budget > 0)) errors.budget = 'Give the requested budget as a figure in whole pounds, for example 4800.';
+  else if (budget % 1 !== 0) errors.budget = 'Give the requested budget in whole pounds.';
+  else if (budget > DRAFT_BUDGET_CAP) {
+    errors.budget = 'Round 14 caps awards at £12,000. Budgets over the cap are returned unassessed.';
+  }
+  const months = draftMonths(draft.duration);
+  if (months === null) errors.duration = 'Give the project duration in months, for example 9 months.';
+  else if (months > DRAFT_MAX_MONTHS) errors.duration = 'Work must conclude within 24 months of the award.';
+  return errors;
+}
+
+// Every per-session record here but freightReferrals and draymereSignins is
+// graded, so its route refuses a request once the record is full rather than
+// trimming it.
+const full = (list) => (list?.length ?? 0) >= SESSION_ROWS;
+
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readJson, requireSession, refererPath } = ctx;
+  const refuse = (res) =>
+    json(res, 429, { ok: false, error: 'Too many requests from this session. Try again later.' });
   return async (req, res, url, pathname0) => {
     // T052 file-upload: the depot attestation intake. Every graded fact is
     // server-observed — the received filename, byte count and content are kept
@@ -104,6 +204,7 @@ export function routes(ctx) {
       const parsed = parseMultipart(raw.body, (marker[1] ?? marker[2]).trim());
       const found = requireSession(req, res, parsed.fields.nonce);
       if (!found) return;
+      if (full(found.session.uploads)) return refuse(res);
       const filename = String(parsed.file?.filename ?? '')
         .split(/[\\/]/)
         .pop();
@@ -117,7 +218,7 @@ export function routes(ctx) {
       // that a browser did it — the validator reports it either way.
       const fromPage =
         req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/forms\/upload\.html(?:[?#]|$)/.test(req.headers.referer ?? '');
+        refererPath(req) === '/forms/draymere/upload.html';
       let error = null;
       if (!filename) error = 'Attach an attestation file.';
       else if (!/\.txt$/i.test(filename)) error = 'Refused: plain .txt files only.';
@@ -151,25 +252,64 @@ export function routes(ctx) {
       });
     }
 
+    // The rest of the Draymere console reads tonight's filing back from the
+    // session. The receipt is deliberately absent: upload.html stays the one
+    // place it is shown.
+    if (req.method === 'GET' && pathname0 === '/api/draymere/filing') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      const attempts = (found.session.uploads ?? []).map((u) => ({
+        file: u.filename,
+        bytes: u.bytes,
+        accepted: u.accepted,
+      }));
+      return json(res, 200, { period: '07-25', filed: attempts.some((a) => a.accepted), attempts });
+    }
+
+    // Draymere sign-in. Operator PINs live on the depot handhelds, so no web
+    // visitor holds one: every well-formed attempt is refused, recorded on the
+    // session, and the third refusal locks sign-in for the session, after which
+    // nothing more is recorded.
+    if (req.method === 'POST' && pathname0 === '/api/draymere/signin') {
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      const operator = String(payload.operator ?? '').trim().toLowerCase();
+      if (!operator) return json(res, 422, { ok: false, error: 'Enter your operator code.' });
+      if (!/^\d{4}$/.test(String(payload.pin ?? ''))) {
+        return json(res, 422, { ok: false, error: 'The PIN is four digits.' });
+      }
+      const attempts = (found.session.draymereSignins ??= []);
+      if (attempts.length < 3) attempts.push(operator.slice(0, 40));
+      if (attempts.length >= 3) {
+        return json(res, 423, {
+          ok: false,
+          error:
+            'Sign-in is locked after three failed attempts. The depot manager ' +
+            'resets PINs during office hours.',
+        });
+      }
+      return json(res, 401, { ok: false, error: 'Operator code or PIN not recognised.' });
+    }
+
     // T007 form-gauntlet: the steps walked, the field values collected and the
     // review-step reference code all live HERE, on the session. The code is
     // minted from randomBytes: composed in page script as 'MD-' + (4000 + 921)
-    // it would be readable off disk. The generic POST /api/beacon mints an
-    // arbitrary kind from the page nonce alone, so a 'form-progress' beacon
-    // cannot be the interaction gate.
+    // it would be readable off disk. Nothing here rides on POST /api/beacon,
+    // which refuses a 'form-progress' kind and would otherwise mint it from the
+    // page nonce alone.
     if (req.method === 'POST' && pathname0 === '/api/form-step') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
       const step = Number(payload.step);
       if (![2, 3, 4].includes(step)) return json(res, 400, { error: 'unknown step' });
       const gauntlet = formGauntletRecord(found.session);
+      if (full(gauntlet.steps)) return refuse(res);
       // Steps only count in order: the review step is not reachable without the
       // contact step, and the request cannot be sent without the review step.
       if (step > 2 && !gauntlet.steps.includes(2)) {
@@ -188,12 +328,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/register') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -205,6 +341,7 @@ export function routes(ctx) {
         referral: String(payload.referral ?? '').trim(),
       };
       const attempts = (found.session.registerAttempts ??= []);
+      if (full(attempts)) return refuse(res);
       // First submit per session is always bounced so the agent has to read
       // the server-issued corrections; they never appear in fixture source.
       let errors = null;
@@ -241,18 +378,43 @@ export function routes(ctx) {
       });
     }
 
-    if (req.method === 'POST' && pathname0 === '/api/roster-submit') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+    // pages/forms/vendor/credentials.html. The answer is the same whether or
+    // not a partner record holds the username, as a real reset desk's is.
+    if (req.method === 'POST' && pathname0 === '/api/vendor/credential-reset') {
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
-      const attendees = Array.isArray(payload.attendees) ? payload.attendees : [];
+      if (!String(payload.username ?? '').trim()) {
+        return json(res, 422, {
+          ok: false,
+          error: 'Enter the username on your partner credentials.',
+        });
+      }
+      return json(res, 200, {
+        ok: true,
+        message:
+          'If that username belongs to a partner record, a reset link is on its way to ' +
+          'the registered work email. The link expires after 24 hours.',
+      });
+    }
+
+    if (req.method === 'POST' && pathname0 === '/api/roster-submit') {
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      // Only the two strings a row carries are kept, so a row that is not an
+      // object (null, a number) is stored as an empty row rather than as
+      // something grading has to guard against.
+      const attendees = (Array.isArray(payload.attendees) ? payload.attendees : []).map((a) => ({
+        name: String(a?.name ?? ''),
+        email: String(a?.email ?? ''),
+      }));
       const roster = (found.session.roster ??= { submits: [], rowsAdded: 0, groupCode: null });
+      if (full(roster.submits)) return refuse(res);
       // How many times "Add attendee" was pressed, for the results row only: the
       // page reports it, so it is telemetry, not evidence.
       roster.rowsAdded = Math.max(roster.rowsAdded, Number(payload.added) || 0);
@@ -273,12 +435,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/shipping-quote') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -296,10 +454,23 @@ export function routes(ctx) {
           error: 'Enter all three dimensions and the weight as positive numbers.',
         });
       }
+      // Standard's published limits: an over-limit parcel is referred to freight
+      // and never priced, and is kept out of shippingQuotes, which unit-quote grades.
+      if (kg > 32 || Math.max(l, w, h) > 200) {
+        pushTrimmed((found.session.freightReferrals ??= []), { l, w, h, kg, at: Date.now() });
+        return json(res, 200, {
+          ok: true,
+          freight: true,
+          message:
+            'Over the Standard limits of 32 kg and 200 cm on any side. An account manager ' +
+            'prices this parcel as a freight booking.',
+        });
+      }
       // Tariff IVL-7 lives here only, never in fixture source: chargeable
       // weight is the greater of gross and volumetric (L*W*H / 5000), billed
       // at $2.40/kg on top of a $12.50 handling base, plus a $1.20/kg fuel
       // levy assessed on gross weight so both entries move the price.
+      if (full(found.session.shippingQuotes)) return refuse(res);
       const volumetric = (l * w * h) / 5000;
       const chargeable = Math.max(kg, volumetric);
       const quote = '$' + (12.5 + 2.4 * chargeable + 1.2 * kg).toFixed(2);
@@ -319,22 +490,22 @@ export function routes(ctx) {
     // is what the validator grades — unlike a beacon kind, that log cannot be
     // faked through the generic /api/beacon endpoint. It hangs off the session
     // object, so state.reset() clears it between tasks. The `pageload` half of
-    // the log is NOT written here; see the static-HTML hunk below.
+    // the log is NOT written here; see documents() below.
     if (req.method === 'GET' && pathname0 === '/api/draft') {
       const found = requireSession(req, res);
       if (!found) return;
       const session = found.session;
       session.draft ??= {};
-      return json(res, 200, { fields: session.draft });
+      return json(res, 200, {
+        fields: session.draft,
+        status: session.draftRefCode ? 'queued' : 'draft',
+        reference: session.draftRefCode ?? null,
+      });
     }
 
     if (req.method === 'POST' && pathname0 === '/api/draft-save') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -344,6 +515,7 @@ export function routes(ctx) {
         return json(res, 400, { error: 'unknown section' });
       }
       const session = found.session;
+      if (full(session.draftEvents)) return refuse(res);
       const draft = (session.draft ??= {});
       draft[field] = String(payload.value ?? '').trim().slice(0, 200);
       (session.draftEvents ??= []).push({ type: 'save', field, at: Date.now() });
@@ -355,21 +527,22 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/draft-complete') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
       const DRAFT_FIELDS = ['applicant', 'organization', 'project', 'budget', 'duration'];
       const session = found.session;
+      if (full(session.draftEvents)) return refuse(res);
       const draft = (session.draft ??= {});
       const missing = DRAFT_FIELDS.filter((f) => !draft[f]);
       if (missing.length) {
         return json(res, 422, { error: 'Sections are still empty.', missing });
+      }
+      const errors = draftRuleErrors(draft);
+      if (Object.keys(errors).length) {
+        return json(res, 422, { error: 'Some sections need correcting.', errors });
       }
       // Minted from randomBytes, not from the page nonce, so nothing the page
       // exposes lets an agent derive the reference code.
@@ -379,15 +552,12 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/abstract') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
+      if (full(found.session.abstractAttempts)) return refuse(res);
       // Length is measured here, on the string the desk received; the page
       // counter is a convenience and is never trusted.
       const summary = String(payload.summary ?? '');
@@ -415,15 +585,12 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/brochure-submit') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
+      if (full(found.session.brochure)) return refuse(res);
       const { nonce, ...fields } = payload;
       (found.session.brochure ??= []).push(fields);
       // Confirmation number is server-issued per session so it never appears
@@ -434,12 +601,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/beta-signup') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -449,6 +612,7 @@ export function routes(ctx) {
       if (!name || !email) {
         return json(res, 400, { error: 'Name and email address are required.' });
       }
+      if (full(found.session.betaSignups)) return refuse(res);
       (found.session.betaSignups ??= []).push({ name, email, referral, at: Date.now() });
       // Clause 9 of beta-terms.html: a request without the attribution string
       // is void. The response deliberately looks like an ordinary success.
@@ -465,5 +629,37 @@ export function routes(ctx) {
     }
 
     return false;
+  };
+}
+
+export function documents() {
+  return {
+    prefix: '/forms/',
+
+    onHtml({ pathname, found, nav, body }) {
+      // T055 draft-resume: the graded `pageload` event is minted here, on a
+      // real document navigation, and nowhere else. Emitting it from an API
+      // endpoint would let page script forge a reload with a plain fetch.
+      // Framed loads do not count.
+      if (pathname === '/forms/thornbury/draft.html' && nav.document && !full(found.session.draftEvents)) {
+        (found.session.draftEvents ??= []).push({ type: 'pageload', at: Date.now() });
+      }
+
+      // T007 form-gauntlet: opening the appointment form on a real document
+      // navigation, like the draft-resume pageload above. This one is route
+      // telemetry printed in `detail`, deliberately NOT a gate: `curl -H` can
+      // set the same headers (see isDocumentNav in server.mjs), so gating on it
+      // would only look like browser proof. Framed loads do not count.
+      if (pathname === '/forms/drennhill/index.html' && nav.document) {
+        formGauntletRecord(found.session).opens += 1;
+      }
+
+      if (body.includes('__NERROW_')) {
+        return { body: nerrowRender(body, found.session.createdAt ?? Date.now()) };
+      }
+      if (body.includes('__THORNBURY_')) {
+        return { body: thornburyRender(body, found.session.createdAt ?? Date.now()) };
+      }
+    },
   };
 }

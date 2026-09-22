@@ -2,92 +2,60 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Lakefront Vendor Network — Partner Console</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: Tahoma, Verdana, "DejaVu Sans", sans-serif;
-    font-size: 12px; line-height: 1.45; color: #22262d; background: #eceef1;
-  }
-  .shell { display: flex; min-height: 100vh; }
-  .side {
-    width: 196px; flex: 0 0 196px; background: #1b2330; color: #93a0b4;
-    padding: 0 0 14px; border-right: 1px solid #131924;
-  }
-  .side .brand {
-    padding: 12px 14px; color: #fff; font-size: 13px; font-weight: bold;
-    border-bottom: 1px solid #2a3444; letter-spacing: 0.2px;
-  }
-  .side .brand small { display: block; font-weight: normal; color: #7d8ca3; font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase; }
-  .side .grp { padding: 12px 14px 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.9px; color: #66748c; }
-  .side a { display: block; padding: 5px 14px; color: #b9c4d3; text-decoration: none; }
-  .side a:hover { background: #232d3d; color: #fff; }
-  .side a.on { background: #2c69c9; color: #fff; }
-  .main { flex: 1; min-width: 0; }
-  .bar {
-    background: #fff; border-bottom: 1px solid #ccd2da; padding: 6px 16px;
-    display: flex; align-items: center; gap: 12px; font-size: 11px; color: #5a6474;
-  }
-  .bar .env { border: 1px solid #c8a415; background: #fdf6d8; color: #6b5504; padding: 1px 6px; }
-  .bar .who { margin-left: auto; }
-  .crumb { padding: 8px 16px; font-size: 11px; color: #5a6474; }
-  .crumb a { color: #2c69c9; text-decoration: none; }
-  .wrap { padding: 0 16px 30px; max-width: 880px; }
-  h1 { font-size: 17px; margin: 4px 0 2px; font-weight: bold; }
-  .tagline { color: #5a6474; margin: 0 0 10px; }
-  .panel { background: #fff; border: 1px solid #ccd2da; border-radius: 2px; margin-bottom: 12px; }
-  .panel > h2 {
-    margin: 0; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
-    color: #444d5c; background: #f4f6f8; border-bottom: 1px solid #dde1e7;
-    padding: 6px 12px; font-weight: bold;
-  }
-  .panel .body { padding: 12px; }
-  .note { color: #4d5665; margin: 0 0 12px; max-width: 82ch; }
-  .kv { color: #5a6474; font-size: 11px; }
-  .body a { color: #2c69c9; }
-  footer { border-top: 1px solid #ccd2da; padding: 10px 16px; font-size: 11px; color: #6b7482; }
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lakefront Vendor Network — Home</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="portal.css">
 </head>
 <body>
-<div class="shell">
-  <aside class="side">
-    <div class="brand">Lakefront VN<small>Partner Console</small></div>
-    <div class="grp">Procurement</div>
-    <a href="signin.html">Dashboard</a>
-    <a href="solicitations.html">Solicitations</a>
-    <a href="awards.html">Awards</a>
-    <div class="grp">Partner records</div>
-    <a href="register.html">Registration</a>
-    <a href="signin.html">Certifications</a>
-    <a href="signin.html">Remittance</a>
-    <div class="grp">Support</div>
-    <a href="records-office.html">Records office</a>
-    <a href="help.html">Console help</a>
-  </aside>
+<div class="gov">An official website of the <b>City of Oskerry, Illinois</b></div>
+<header class="civic">
+  <a class="home" href="index.html">
+    <img class="seal" src="favicon.svg" alt="" width="52" height="52">
+    <span><b>Lakefront Vendor Network</b><small>City of Oskerry · Department of Procurement Services</small></span>
+  </a>
+  <div class="who">Unauthenticated applicant session<br><a href="signin.html">Partner sign-in</a></div>
+</header>
+<nav class="menu" aria-label="Main">
+  <a href="index.html" aria-current="page">Home</a>
+  <a href="solicitations.html">Solicitations</a>
+  <a href="awards.html">Awards</a>
+  <a href="register.html">Registration</a>
+  <a href="partner-records.html">Partner records</a>
+  <a href="records-office.html">Records office</a>
+  <a href="help.html">Help</a>
+</nav>
+<div class="season"><span class="env">2026 SEASON</span><span>Records validation: online</span></div>
 
-  <div class="main">
-    <div class="bar">
-      <span class="env">2026 SEASON</span>
-      <span>Records validation: online</span>
-      <span class="who">Unauthenticated applicant session</span>
-    </div>
-    <div class="crumb">Home</div>
+<main>
+  <div class="crumb">Home</div>
+  <div class="wrap">
+      <h1>Lakefront Vendor Network</h1>
+      <p class="tagline">Procurement gateway of the City of Oskerry for the 2026 season</p>
 
-    <div class="wrap">
-      <h1>Partner console home</h1>
-      <p class="tagline">Procurement gateway for the 2026 season</p>
+      <div class="panel">
+        <h2>Latest solicitations</h2>
+        <div class="body">
+          <table>
+            <tr><th>Number</th><th>Title</th><th>Closing date</th></tr>
+            <tr><td class="num"><a href="sol-2026-055.html">SOL-2026-055</a></td><td>Waterfront lighting retrofit, phase two</td><td>Oct 9, 2026</td></tr>
+            <tr><td class="num"><a href="sol-2026-052.html">SOL-2026-052</a></td><td>Winter de-icing compound, bulk delivery</td><td>Sep 25, 2026</td></tr>
+            <tr><td class="num"><a href="sol-2026-047.html">SOL-2026-047</a></td><td>Fleet tire supply and mounting services</td><td>Sep 11, 2026</td></tr>
+          </table>
+          <p class="kv"><a href="solicitations.html">All solicitations</a></p>
+        </div>
+      </div>
 
       <div class="panel">
         <h2>About the vendor network</h2>
         <div class="body">
-          <p class="note">The Lakefront Vendor Network is the procurement console
-          through which registered companies respond to municipal solicitations,
-          track award notices, and maintain their partner records. Public sections
-          of the console are open to any visitor; partner sections require
-          credentials issued by the records office.</p>
-          <p class="kv">Console availability: Mon–Sun, 6:00–23:00. Scheduled
-          maintenance windows are posted on this page one week in advance.</p>
+          <p class="note">The Lakefront Vendor Network is the procurement portal
+          through which registered companies respond to City of Oskerry
+          solicitations, track award notices, and maintain their partner
+          records. Public sections are open to any visitor; partner sections
+          require credentials issued by the records office.</p>
+          <p class="kv">Portal availability: Mon–Sun, 6 a.m.–11 p.m. Central.
+          Scheduled maintenance windows are posted on this page one week in advance.</p>
         </div>
       </div>
 
@@ -97,21 +65,26 @@
           <p class="note"><a href="register.html">Partner registration</a> —
           submit Form PR-2 to register your company contact for the 2026 season.</p>
           <p class="note"><a href="solicitations.html">Solicitations</a> — browse
-          open solicitations and their closing dates. No sign-in required.</p>
+          the season's solicitations and their closing dates. No sign-in required.</p>
           <p class="note"><a href="awards.html">Awards</a> — public notices of
           awarded solicitations from the current season.</p>
           <p class="note"><a href="records-office.html">Records office</a> —
           address, hours, and what the office validates.</p>
         </div>
       </div>
-    </div>
-
-    <footer>
-      Lakefront Vendor Network — Records Office, 1200 Canal Row ·
-      vendors@lakefront-vn.example · Office hours Mon–Thu, 9:00–16:00 ·
-      Terms of participation · Records retention policy
-    </footer>
   </div>
-</div>
+</main>
+
+<footer>
+  <div>Lakefront Vendor Network · City of Oskerry Department of Procurement Services ·
+  Records Office, Room 112, Oskerry City Hall, 1200 Canal Row, Oskerry, IL 62117</div>
+  <div>(847) 555-0137 · <a href="mailto:vendors@lakefront-vn.example">vendors@lakefront-vn.example</a> ·
+  Office hours Mon–Thu, 9 a.m.–4 p.m.</div>
+  <div class="links"><a href="terms.html">Terms of participation</a> ·
+  <a href="retention.html">Records retention policy</a> ·
+  <a href="privacy.html">Privacy notice</a> ·
+  <a href="help.html">Help</a></div>
+  <div>© 2026 City of Oskerry. All rights reserved.</div>
+</footer>
 </body>
 </html>

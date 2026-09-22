@@ -4,25 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Presses — Ollister &amp; Crane</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="ollister.css">
 </head>
 <body>
-<div class="masthead">
-  <p class="wordmark">Ollister <span>&amp;</span> Crane</p>
+<header class="masthead">
+  <a class="wordmark" href="index.html">Ollister <span>&amp;</span> Crane</a>
   <p class="estd">Letterpress and bindery supply since 1979</p>
-  <nav class="shopnav">
+  <nav class="shopnav" aria-label="Shop">
     <a href="papers.html">Papers</a>
     <a href="inks.html">Inks</a>
     <a href="presses.html">Presses</a>
     <a href="bindery.html">Bindery</a>
     <a href="trade.html">Trade accounts</a>
-    <a href="checkout.html">Basket</a>
+    <a href="basket.html">Basket <span class="count" id="basketCount"></span></a>
   </nav>
-</div>
+</header>
 
 <main>
   <h1>Presses and press furniture</h1>
-  <p class="crumb">Shop / Presses</p>
+  <p class="crumb"><a href="index.html">Shop</a> / Presses</p>
 
   <div class="plate">
     <p>Rebuilt presses are stripped, trued and re-bushed in the yard workshop and carry
@@ -34,19 +35,22 @@
   <h2>Rebuilt presses</h2>
   <div class="goods">
     <div class="good">
-      <h3>Albion hand press, rebuilt</h3>
+      <h3>Crown folio iron hand press, rebuilt</h3>
       <p>Crown folio platen, re-bushed staple, new tympan. Quoted freight.</p>
-      <p class="price">$4,850.00</p>
+      <p class="price">£4,850.00</p>
+      <p class="addline"><a class="add" href="mailto:counter@ollistercrane.example?subject=Freight%20quote%3A%20Crown%20folio%20iron%20hand%20press%2C%20rebuilt">Ask for a freight quote</a></p>
     </div>
     <div class="good">
       <h3>Galley proof press</h3>
       <p>Cylinder proofing to 15 x 22 in, trued bed.</p>
-      <p class="price">$1,760.00</p>
+      <p class="price">£1,760.00</p>
+      <p class="addline"><a class="add" href="mailto:counter@ollistercrane.example?subject=Freight%20quote%3A%20Galley%20proof%20press">Ask for a freight quote</a></p>
     </div>
     <div class="good">
       <h3>Nipping press, 12 in</h3>
       <p>Cast iron, cleaned and blacked, new platen felt.</p>
-      <p class="price">$310.00</p>
+      <p class="price">£310.00</p>
+      <p class="addline"><a class="add" href="mailto:counter@ollistercrane.example?subject=Freight%20quote%3A%20Nipping%20press%2C%2012%20in">Ask for a freight quote</a></p>
     </div>
   </div>
 
@@ -55,17 +59,20 @@
     <div class="good">
       <h3>Brass type-high rule set</h3>
       <p>Twelve rules, 6 to 24 point, in a fitted case.</p>
-      <p class="price">$84.50</p>
+      <p class="price">£84.50</p>
+      <p class="addline"><button type="button" class="add" data-sku="brass-rule-set">Add to basket</button> <span class="addnote" role="status"></span></p>
     </div>
     <div class="good">
       <h3>Wooden furniture, mixed case</h3>
       <p>Seasoned beech, labelled bays, 60 pieces.</p>
-      <p class="price">$52.00</p>
+      <p class="price">£52.00</p>
+      <p class="addline"><button type="button" class="add" data-sku="wooden-furniture">Add to basket</button> <span class="addnote" role="status"></span></p>
     </div>
     <div class="good">
-      <h3>Hempel quoins, pair</h3>
+      <h3>Toothed steel quoins, pair</h3>
       <p>With key. Checked for true before sale.</p>
-      <p class="price">$26.80</p>
+      <p class="price">£26.80</p>
+      <p class="addline"><button type="button" class="add" data-sku="toothed-quoins">Add to basket</button> <span class="addnote" role="status"></span></p>
     </div>
   </div>
 
@@ -80,11 +87,15 @@
 <footer>
   <a href="policies.html#shipping">Shipping</a>
   <a href="policies.html#returns">Returns</a>
-  <a href="policies.html#privacy">Privacy</a>
-  <a href="policies.html">Trade terms</a>
-  <p class="addr">Ollister &amp; Crane Ltd, Tolbridge Yard, 14 Gullet Lane, Ravensmoor</p>
-  <p>Counter enquiries: counter@ollistercrane.example &middot; (555) 018-4420</p>
-  <p>&copy; 1979-2026 Ollister &amp; Crane Ltd. Registered in the county of Ravensmoor, no. 884120.</p>
+  <a href="privacy.html">Privacy</a>
+  <a href="policies.html">Terms of sale</a>
+  <p class="addr">Ollister &amp; Crane Ltd, Tolbridge Yard, 14 Gullet Lane, Kellowmarsh KX4 9TZ</p>
+  <p>Counter enquiries: counter@ollistercrane.example &middot; 0113 496 0120</p>
+  <p>&copy; 1979-2026 Ollister &amp; Crane Ltd. Registered in England and Wales, company number 00000000. VAT registration 000 0000 00.</p>
 </footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+</script>
+<script src="shop.js"></script>
 </body>
 </html>

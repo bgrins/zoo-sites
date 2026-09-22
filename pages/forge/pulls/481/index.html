@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#481 ops: bump the replay harness to node 20 &middot; hollowmill/brine-gateway &middot; Kettleforge</title>
+<link rel="stylesheet" href="../../forge.css">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="masthead">
+  <a class="mark" href="../../">Kettle<em>forge</em></a>
+  <nav>
+    <a href="../../">Repositories</a>
+    <a href="../../pulls/">Pull requests</a>
+    <a href="../../anvil/">Anvil</a>
+    <a href="../../registry.html">Registry</a>
+  </nav>
+  <span class="who">signed in as <b>r.vandermolen</b></span>
+</header>
+<div class="crumbbar">
+  <div class="crumb"><a href="../../">hollowmill</a><span class="sep">/</span><b>brine-gateway</b><span class="vis">internal</span></div>
+  <div class="tabs">
+    <a href="../../">Code</a>
+    <a href="../../issues/">Issues<span class="n">4</span></a>
+    <span class="here">Pull requests<span class="n">3</span></span>
+    <a href="../../anvil/">Anvil</a>
+    <a href="../../insights.html">Insights</a>
+    <a href="../../settings.html">Settings</a>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="prhead">
+    <h1>ops: bump the replay harness to node 20 <span class="num">#481</span></h1>
+    <div class="prmeta">
+      <span class="state">Open</span>
+      <span><b>m.calderwood</b> wants to merge 2 commits into <span class="branch">trunk</span> from <span class="branch">replay-node20</span></span>
+    </div>
+  </div>
+
+  <nav class="subtabs">
+    <span class="here">Conversation<span class="n">1</span></span>
+    <a href="#commits">Commits<span class="n">2</span></a>
+    <a href="#checks">Checks<span class="n">5</span></a>
+    <a href="#files">Files changed<span class="n">3</span></a>
+  </nav>
+
+  <div class="cols">
+    <div class="main">
+      <div class="card">
+        <div class="cardhead">m.calderwood opened this pull request on 12 July</div>
+        <div class="body">
+          <p>The staging replay harness still ran on node 18, which leaves support in April.
+          This moves the harness image to node 20 and drops the two polyfills node 20 no longer
+          needs. Nothing in <code>src/</code> changes.</p>
+          <p>Replay set timings are unchanged within noise: 41,900 requests in 6m 12s against
+          6m 15s on trunk.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">anvil-bot commented on 12 July</div>
+        <div class="body">
+          <p>All jobs passed on 3e9c1a0. Coverage unchanged at 91.6%.</p>
+        </div>
+      </div>
+
+      <div class="card" id="commits">
+        <div class="cardhead">2 commits on replay-node20</div>
+        <table class="filelist">
+          <tbody>
+            <tr><td class="n">52be7d1</td><td class="msg">ops: replay harness image to node 20</td><td class="when">12 July</td></tr>
+            <tr><td class="n">3e9c1a0</td><td class="msg">ops: drop the fetch and structuredClone polyfills</td><td class="when">12 July</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" id="checks">
+        <div class="cardhead">Anvil pipeline for 3e9c1a0 - 5 passed</div>
+        <table class="checklist">
+          <thead>
+            <tr><th>Job</th><th>Result</th><th>Duration</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="job">lint / eslint</td><td><span class="chip pass">passed</span></td><td class="dur">35s</td></tr>
+            <tr><td class="job">build / node-20</td><td><span class="chip pass">passed</span></td><td class="dur">1m 09s</td></tr>
+            <tr><td class="job">unit / gateway</td><td><span class="chip pass">passed</span></td><td class="dur">2m 01s</td></tr>
+            <tr><td class="job">unit / tariff</td><td><span class="chip pass">passed</span></td><td class="dur">1m 41s</td></tr>
+            <tr><td class="job">contract / pact</td><td><span class="chip pass">passed</span></td><td class="dur">3m 12s</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" id="files">
+        <div class="cardhead">3 files changed</div>
+        <table class="filelist">
+          <tbody>
+            <tr><td class="n">.anvil/replay.yml</td><td class="when"><span class="plus">+4</span> <span class="minus">-4</span></td></tr>
+            <tr><td class="n">test/replay/Dockerfile</td><td class="when"><span class="plus">+2</span> <span class="minus">-2</span></td></tr>
+            <tr><td class="n">test/replay/polyfills.js</td><td class="when"><span class="plus">+0</span> <span class="minus">-31</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">Merge status</div>
+        <div class="body">
+          <p><span class="chip pass">5 passed</span></p>
+          <p class="byline">All required jobs pass. Review from a code owner is required on this repository
+          before Forge merge is enabled.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <div class="cardhead">Details</div>
+        <div class="body">
+          <dl>
+            <dt>Reviewers</dt>
+            <dd>r.vandermolen (you)</dd>
+            <dt>Labels</dt>
+            <dd>ops</dd>
+            <dt>Milestone</dt>
+            <dd>Gateway 4.7</dd>
+            <dt>Head commit</dt>
+            <dd>3e9c1a0</dd>
+            <dt>Changed files</dt>
+            <dd>3</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="sitefoot">
+  <div class="links">
+    <a href="../../status.html">Status</a>
+    <a href="../../docs.html">Docs</a>
+    <a href="../../privacy.html">Privacy</a>
+    <a href="../../terms.html">Terms</a>
+    <a href="mailto:support@kettleforge.example">Contact support</a>
+    <a href="../../about.html">About</a>
+    <a href="../../plans.html">Plans</a>
+    <a href="../../security.html">Security</a>
+  </div>
+  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Vellinmouth VM4 3TR.
+  Registered in England and Wales, company number 00000000. &copy; 2026 Bellhollow Systems Ltd.</div>
+</footer>
+</body>
+</html>

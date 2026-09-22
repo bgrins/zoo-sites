@@ -4,23 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Binthral — Bin map — Brantmoor Depot</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --teal: #10403b; --teal-dark: #0a2b28; --rust: #a8442a; --paper: #f4f2ec;
-    --rule: #cfcabb; --rule-soft: #e3dfd4; --ink: #23241f; --dim: #6b6a60;
+    --rule: #cfcabb; --rule-soft: #e3dfd4; --ink: #23241f; --dim: #66655c;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--paper); color: var(--ink); font-family: "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", sans-serif; font-size: 13px; line-height: 1.4; }
   a { color: var(--teal); }
   .topbar { display: flex; align-items: baseline; gap: 18px; background: var(--teal); color: #e8efe9; padding: 9px 18px; border-bottom: 3px solid var(--teal-dark); }
-  .topbar .brand { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; }
+  .topbar .brand { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; color: #f4f8f5; text-decoration: none; }
   .topbar .app { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #9dbdb2; }
   .topbar .who { margin-left: auto; font-size: 11px; color: #b8cec6; }
   .subbar { display: flex; align-items: center; gap: 14px; background: #e8e4d9; border-bottom: 1px solid var(--rule); padding: 5px 18px; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.09em; }
   .subbar b { color: var(--ink); font-weight: bold; }
   .layout { display: flex; align-items: stretch; min-height: 520px; }
   .rail { width: 178px; flex: 0 0 178px; background: #ebe7dc; border-right: 1px solid var(--rule); padding: 14px 0; }
-  .rail h2 { margin: 0 0 6px; padding: 0 14px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8878; font-weight: bold; }
+  .rail h2 { margin: 0 0 6px; padding: 0 14px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #68675b; font-weight: bold; }
   .rail a, .rail span.item { display: block; padding: 5px 14px; color: #33352c; text-decoration: none; border-left: 3px solid transparent; }
   .rail span.item.on { background: #fbfaf6; border-left-color: var(--rust); font-weight: bold; }
   .rail .sep { height: 1px; background: var(--rule); margin: 12px 0; }
@@ -33,18 +34,31 @@
   .panel p:last-child { margin-bottom: 0; }
   .tablewrap { border: 1px solid var(--rule); background: #fff; max-width: 640px; margin: 0 0 16px; }
   table { border-collapse: collapse; width: 100%; }
-  th { text-align: left; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #7c7b6d; font-weight: bold; border-bottom: 1px solid var(--rule); padding: 6px 12px; white-space: nowrap; }
+  th { text-align: left; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #6e6d61; font-weight: bold; border-bottom: 1px solid var(--rule); padding: 6px 12px; white-space: nowrap; }
   td { border-bottom: 1px solid var(--rule-soft); padding: 5px 12px; vertical-align: middle; }
   tbody tr:nth-child(even) { background: #faf9f4; }
   tbody tr:last-child td { border-bottom: 0; }
   td.bay { font-weight: bold; white-space: nowrap; }
-  footer { margin-top: 26px; border-top: 1px solid var(--rule); padding: 12px 22px 30px; font-size: 11px; color: #7c7b6d; }
+  footer { margin-top: 26px; border-top: 1px solid var(--rule); padding: 12px 22px 30px; font-size: 11px; color: #6e6d61; }
   footer p { margin: 0 0 3px; }
+  @media (max-width: 720px) {
+    .topbar { flex-wrap: wrap; row-gap: 2px; }
+    .topbar .who { margin-left: 0; flex-basis: 100%; }
+    .subbar { flex-wrap: wrap; }
+    .layout { flex-direction: column; min-height: 0; }
+    .rail { width: auto; flex: none; display: flex; flex-wrap: wrap; align-items: baseline; padding: 8px 6px; border-right: 0; border-bottom: 1px solid var(--rule); }
+    .rail h2, .rail .sep { display: none; }
+    .rail a, .rail span.item { padding: 4px 9px; border-left: 0; border-bottom: 3px solid transparent; }
+    .rail span.item.on { border-bottom-color: var(--rust); }
+    .main { padding: 14px 12px 20px; }
+    .gridwrap, .tablewrap { overflow-x: auto; }
+    footer { padding: 12px 12px 24px; }
+  }
 </style>
 </head>
 <body>
 <div class="topbar">
-  <span class="brand">Brantmoor Depot</span>
+  <a class="brand" href="./">Brantmoor Depot</a>
   <span class="app">Binthral 4.2</span>
   <span class="who">Warehouse 03 &middot; Signed in: a.vetter (Count supervisor)</span>
 </div>
@@ -54,16 +68,16 @@
 <div class="layout">
   <nav class="rail">
     <h2>Operations</h2>
-    <a href="/grid-edit/receiving.html">Receiving</a>
-    <a href="/grid-edit/putaway.html">Putaway</a>
-    <a href="/grid-edit/">Cycle counts</a>
-    <a href="/grid-edit/replenishment.html">Replenishment</a>
-    <a href="/grid-edit/despatch.html">Despatch</a>
+    <a href="receiving.html">Receiving</a>
+    <a href="putaway.html">Putaway</a>
+    <a href="./">Cycle counts</a>
+    <a href="replenishment.html">Replenishment</a>
+    <a href="despatch.html">Despatch</a>
     <div class="sep"></div>
     <h2>Reference</h2>
     <span class="item on">Bin map</span>
-    <a href="/grid-edit/item-master.html">Item master</a>
-    <a href="/grid-edit/count-history.html">Count history</a>
+    <a href="item-master.html">Item master</a>
+    <a href="count-history.html">Count history</a>
   </nav>
   <main class="main">
     <h1>Bin map</h1>
@@ -91,14 +105,14 @@
       <p>A location code reads bay letter, then aisle, then level, then slot, working from
         the receiving end of the aisle. Ground level is level 1; slots are numbered odd on
         the left, even on the right.</p>
-      <p>Bay G is under a rack audit at present; moves into audited aisles are held until
-        the open sheet in <a href="/grid-edit/">cycle counts</a> is posted.</p>
+      <p>Bay G is under a rack audit at present; moves into audited aisles 1&ndash;3 are held until
+        the stock desk posts the open sheet in <a href="./">cycle counts</a>.</p>
     </div>
   </main>
 </div>
 <footer>
-  <p>Brantmoor Depot Ltd &middot; Unit 7, Kelvinbrae Industrial Estate, Ardwick &middot; Stock desk 0161 496 0142</p>
-  <p>&copy; 2026 Brantmoor Depot Ltd. <a href="/grid-edit/privacy.html">Privacy notice</a> &middot; <a href="/grid-edit/terms.html">Terms of use</a> &middot; <a href="/grid-edit/standards.html">Warehouse standards</a></p>
+  <p>Brantmoor Depot Ltd &middot; Unit 7, Kelvinbrae Industrial Estate, Brantmoor BQ7 3RD &middot; Stock desk 0161 496 0142</p>
+  <p>&copy; 2026 Brantmoor Depot Ltd, registered in England and Wales, company number 00000000. <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of use</a> &middot; <a href="standards.html">Warehouse standards</a></p>
 </footer>
 </body>
 </html>

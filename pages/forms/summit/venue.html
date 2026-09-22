@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>Venue — Solstice Leadership Summit</title>
 <style>
   :root {
-    --violet: #4c1d95; --pink: #db2777; --ink: #1b1033;
+    --violet: #4c1d95; --pink: #d72675; --ink: #1b1033;
     --soft: #6b5f86; --line: #e7e1f2;
   }
   * { box-sizing: border-box; }
@@ -59,11 +61,21 @@
   footer { background: var(--ink); color: #b9a9d6; padding: 26px 32px; font-size: 12.5px; }
   footer .cols { display: flex; flex-wrap: wrap; gap: 8px 40px; margin-bottom: 12px; }
   footer b { color: #fff; text-transform: uppercase; letter-spacing: 1.4px; font-size: 11px; }
+  footer a { color: #ffd6ec; }
+  footer .legal { display: block; margin-top: 8px; color: #8f80ad; }
+  @media (max-width: 700px) {
+    .tabs { flex-wrap: wrap; gap: 6px 18px; padding: 10px 18px; }
+    .tabs .logo { flex-basis: 100%; }
+    .hero { padding: 30px 18px 28px; }
+    .hero h1 { font-size: 32px; letter-spacing: -0.5px; }
+    main { padding: 26px 18px 56px; }
+    footer { padding: 22px 18px; }
+  }
 </style>
 </head>
 <body>
 <nav class="tabs">
-  <span class="logo">Solstice Summit</span>
+  <a class="logo" href="index.html">Solstice Summit</a>
   <a href="programme.html">Programme</a>
   <a href="speakers.html">Speakers</a>
   <a href="venue.html" class="here">Venue</a>
@@ -75,18 +87,19 @@
   <h1>Venue</h1>
   <div class="facts">
     <span><b>Dates</b> 14–16 October 2026</span>
-    <span><b>Venue</b> Harborview Exhibition Halls</span>
+    <span><b>Venue</b> Tarnmouth Exhibition Halls</span>
   </div>
 </header>
 
 <main>
-<p class="intro">The summit takes over the <strong>Harborview Exhibition Halls</strong>,
-a five-hall waterfront complex ten minutes from the central station.</p>
+<p class="intro">The summit takes over the <strong>Tarnmouth Exhibition Halls</strong>,
+a five-hall waterfront complex on the Tarnmouth quays, ten minutes from Tarnmouth
+Central station.</p>
 
 <h2>Getting there</h2>
 <div class="card">
-  <p><b class="tag">Tram</b> Lines 3 and 7 stop at Harborview Quay, directly outside the north entrance.</p>
-  <p><b class="tag">Rail</b> From the central station, a signposted ten-minute walk along the quay promenade.</p>
+  <p><b class="tag">Tram</b> Lines 3 and 7 stop at Exhibition Quay, directly outside the north entrance.</p>
+  <p><b class="tag">Rail</b> From Tarnmouth Central, a signposted ten-minute walk along the quay promenade.</p>
   <p><b class="tag">Car</b> Paid parking beneath Hall E; enter from Quay Road. Spaces are limited on keynote mornings.</p>
 </div>
 
@@ -114,7 +127,7 @@ a five-hall waterfront complex ten minutes from the central station.</p>
   <ul>
     <li>The Quayside House <span>— across from the north entrance, 2 min walk</span></li>
     <li>The Lantern Court <span>— old town, 8 min by tram</span></li>
-    <li>Harbour Gate Inn <span>— beside the central station, 10 min walk</span></li>
+    <li>Harbour Gate Inn <span>— beside Tarnmouth Central, 10 min walk</span></li>
   </ul>
 </div>
 </main>
@@ -122,13 +135,17 @@ a five-hall waterfront complex ten minutes from the central station.</p>
 <footer>
   <div class="cols">
     <span><b>Organiser</b> Solstice Conference Services</span>
-    <span><b>Delegation desk</b> groups@solstice-events.example</span>
+    <span><b>Delegation desk</b> <a href="mailto:groups@solstice-events.example">groups@solstice-events.example</a> · 01632 960391</span>
     <span><b>Badge collection</b> Hall C, from 08:00</span>
   </div>
   © 2026 Solstice Conference Services.
-  <a href="registration.html" style="color:#ffd6ec">Registration</a> ·
-  <a href="conduct.html" style="color:#ffd6ec">Code of conduct</a> ·
-  <a href="sponsors.html" style="color:#ffd6ec">Sponsors</a>
+  <a href="registration.html">Registration</a> ·
+  <a href="conduct.html">Code of conduct</a> ·
+  <a href="sponsors.html">Sponsors</a> ·
+  <a href="privacy.html">Privacy notice</a> ·
+  <a href="terms.html">Booking terms</a>
+  <span class="legal">Solstice Conference Services Ltd, 4 Quay Road, Tarnmouth TH3 8QR.
+  Registered in England and Wales, company number 00000000. VAT 000 0000 00.</span>
 </footer>
 </body>
 </html>

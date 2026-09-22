@@ -1,7 +1,6 @@
 // Render eval run transcripts (transcripts/*.jsonl) into a readable digest:
 // per task, per condition, the tool-call sequence with thinking/text snippets
-// and the final answer. Normalizes both backend event shapes (Claude Agent SDK
-// messages, Codex ThreadEvents).
+// and the final answer. Both backend event shapes are read through events.mjs.
 //
 //   node transcript.mjs [run-dir] [--task <id>] [--full] [--md]
 //
@@ -9,10 +8,9 @@
 // transcripts.md into the run dir (shareable next to report.md).
 
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const here = dirname(fileURLToPath(import.meta.url));
+import { join } from 'node:path';
+import { latestRun, parseTranscriptName } from '../run-files.mjs';
+import { normalize, readEvents } from './events.mjs';
 
 const args = process.argv.slice(2);
 const FULL = args.includes('--full');
@@ -21,18 +19,7 @@ const taskIdx = args.indexOf('--task');
 const ONLY_TASK = taskIdx !== -1 ? args[taskIdx + 1] : null;
 const dirArg = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--task');
 
-function latestRunDir() {
-  const resultsDir = join(here, '..', 'results');
-  const runs = readdirSync(resultsDir)
-    .filter((d) => d.startsWith('run-'))
-    .sort();
-  if (!runs.length) {
-    throw new Error(`no runs under ${resultsDir}`);
-  }
-  return join(resultsDir, runs[runs.length - 1]);
-}
-
-const runDir = dirArg ?? latestRunDir();
+const runDir = dirArg ?? latestRun('transcripts');
 const transcriptsDir = join(runDir, 'transcripts');
 if (!existsSync(transcriptsDir)) {
   throw new Error(`no transcripts/ in ${runDir}`);
@@ -47,137 +34,19 @@ const trunc = (s, n) => {
   return FULL || one.length <= n ? one : one.slice(0, n) + '…';
 };
 
-function contentText(content) {
-  if (typeof content === 'string') return content;
-  if (Array.isArray(content)) {
-    return content
-      .filter((c) => c.type === 'text')
-      .map((c) => c.text)
-      .join('\n');
-  }
-  return '';
-}
-
-// Normalize one jsonl transcript into steps:
-// {kind: 'tool'|'tool_result'|'thinking'|'text'|'final', ...}
-function normalize(lines) {
-  const steps = [];
-  for (const line of lines) {
-    let e;
-    try {
-      e = JSON.parse(line);
-    } catch {
-      continue;
-    }
-    // --- Claude Agent SDK messages ---
-    if (e.type === 'assistant' && Array.isArray(e.message?.content)) {
-      for (const block of e.message.content) {
-        if (block.type === 'thinking' && block.thinking?.trim()) {
-          steps.push({ kind: 'thinking', text: block.thinking });
-        } else if (block.type === 'text' && block.text?.trim()) {
-          steps.push({ kind: 'text', text: block.text });
-        } else if (block.type === 'tool_use') {
-          const name = block.name.replace(/^mcp__[^_]+__/, 'mcp:');
-          let detail;
-          if (block.name === 'Bash') {
-            detail = block.input?.command ?? '';
-          } else if (block.name === 'ToolSearch') {
-            detail = block.input?.query ?? '';
-          } else {
-            detail = JSON.stringify(block.input ?? {});
-          }
-          steps.push({ kind: 'tool', name, detail, id: block.id });
-        }
-      }
-    } else if (e.type === 'user' && Array.isArray(e.message?.content)) {
-      for (const block of e.message.content) {
-        if (block.type === 'tool_result') {
-          steps.push({
-            kind: 'tool_result',
-            text: contentText(block.content),
-            isError: block.is_error ?? false,
-          });
-        }
-      }
-    } else if (e.type === 'result') {
-      const u = e.usage ?? {};
-      steps.push({
-        kind: 'final',
-        text: e.result ?? '',
-        info:
-          `turns=${e.num_turns} in=${u.input_tokens ?? '?'} ` +
-          `cacheW=${u.cache_creation_input_tokens ?? '?'} cacheR=${u.cache_read_input_tokens ?? '?'} ` +
-          `out=${u.output_tokens ?? '?'} cost=$${e.total_cost_usd?.toFixed?.(4) ?? '?'}`,
-      });
-    }
-    // --- Codex ThreadEvents ---
-    else if (e.type === 'item.completed' && e.item) {
-      const item = e.item;
-      if (item.type === 'agent_message' && item.text?.trim()) {
-        steps.push({ kind: 'text', text: item.text });
-      } else if (item.type === 'reasoning' && item.text?.trim()) {
-        steps.push({ kind: 'thinking', text: item.text });
-      } else if (item.type === 'command_execution') {
-        steps.push({
-          kind: 'tool',
-          name: 'shell',
-          detail: item.command?.replace(/^\/bin\/\w+ -lc /, '') ?? '',
-        });
-        if (item.aggregated_output) {
-          steps.push({
-            kind: 'tool_result',
-            text: item.aggregated_output,
-            isError: item.exit_code != null && item.exit_code !== 0,
-          });
-        }
-      } else if (item.type === 'mcp_tool_call') {
-        steps.push({
-          kind: 'tool',
-          name: `mcp:${item.tool}`,
-          detail: JSON.stringify(item.arguments ?? {}),
-        });
-        const resultText = contentText(item.result?.content);
-        if (resultText || item.error) {
-          steps.push({
-            kind: 'tool_result',
-            text: item.error?.message ?? resultText,
-            isError: !!item.error,
-          });
-        }
-      }
-    } else if (e.type === 'turn.completed' && e.usage) {
-      steps.push({
-        kind: 'final',
-        text: '',
-        info:
-          `in=${e.usage.input_tokens} cacheW=${e.usage.cache_write_input_tokens ?? '?'} ` +
-          `cacheR=${e.usage.cached_input_tokens} out=${e.usage.output_tokens}`,
-      });
-    }
-  }
-  return steps;
-}
-
-// transcripts are named <label>--<task>[--rN].jsonl where label is a condition
-// ('firefox-devtools-mcp') or '<backend>--<condition>'; neither a task id nor a
-// condition name ever contains '--'.
-function parseName(file) {
-  const parts = file.replace(/\.jsonl$/, '').split('--');
-  let rep = null;
-  if (/^r\d+$/.test(parts[parts.length - 1])) {
-    rep = Number(parts.pop().slice(1));
-  }
-  return { task: parts[parts.length - 1], label: parts.slice(0, -1).join('/'), rep };
-}
-
-function metaFor(label, task, rep) {
-  const r = resultsMeta?.results?.find(
-    (x) =>
-      x.task === task &&
-      (x.condition === label || x.condition === label.split('/').pop()) &&
-      (rep == null || x.rep === rep)
-  );
-  if (!r) return '';
+// The row a transcript belongs to. A row names its graded attempt's transcript
+// (or, in older runs, is matched by label, task and rep); any other attempt of
+// the same task was discarded by a retry or a harness stop.
+function metaFor(file, label, task, rep, attempt) {
+  const rows = resultsMeta?.results ?? [];
+  const same = (x) =>
+    x.task === task &&
+    (x.condition === label || x.condition === label.split('/').pop()) &&
+    (x.rep ?? 1) === (rep ?? 1);
+  const r =
+    rows.find((x) => x.transcript === file) ??
+    rows.find((x) => !x.transcript && same(x) && (x.retries ?? 0) + 1 === attempt);
+  if (!r) return rows.some(same) ? ' — discarded attempt' : '';
   const bits = [
     r.success ? 'PASS' : 'FAIL',
     r.turns != null ? `${r.turns} turns` : null,
@@ -194,10 +63,10 @@ const files = readdirSync(transcriptsDir)
 
 const byTask = new Map();
 for (const file of files) {
-  const { task, label, rep } = parseName(file);
+  const { task, label, rep, attempt } = parseTranscriptName(file);
   if (ONLY_TASK && task !== ONLY_TASK) continue;
   if (!byTask.has(task)) byTask.set(task, []);
-  byTask.get(task).push({ label, rep, file });
+  byTask.get(task).push({ label, rep, attempt, file });
 }
 
 // Preserve suite ordering from results.json where available.
@@ -220,21 +89,22 @@ if (resultsMeta?.meta) {
     : m.model;
   out.push(
     `backend=${m.backend} model=${models} effort=${m.effort ?? '(default)'} ` +
-      `suite=${m.suite} mcp=${m.mcpTransport}` +
-      (m.mcpCommand ? ` mcpCommand="${m.mcpCommand}"` : '')
+      `suite=${m.suite} conditions=${m.conditions}` +
+      (m.mcpCommand ? ` mcpCommand="${m.mcpCommand}"` : '') +
+      (m.interrupted ? ` INTERRUPTED(${m.interrupted})` : '')
   );
 }
 
 for (const task of orderedTasks) {
   out.push('', `## ${task}`);
-  for (const { label, rep, file } of byTask.get(task)) {
-    out.push('', `### ${label}${rep ? ` (r${rep})` : ''}${metaFor(label, task, rep)}`, '');
-    const lines = readFileSync(join(transcriptsDir, file), 'utf8').trim().split('\n');
-    let n = 0;
-    for (const step of normalize(lines)) {
+  for (const { label, rep, attempt, file } of byTask.get(task)) {
+    const heading =
+      `${label}${rep ? ` (r${rep})` : ''}${attempt > 1 ? ` [attempt ${attempt}]` : ''}` +
+      metaFor(file, label, task, rep, attempt);
+    out.push('', `### ${heading}`, '');
+    for (const step of normalize(readEvents(join(transcriptsDir, file)))) {
       if (step.kind === 'tool') {
-        n += 1;
-        out.push(`${String(n).padStart(3)}. ${step.name}: ${trunc(step.detail, 140)}`);
+        out.push(`${String(step.n).padStart(3)}. ${step.label}: ${trunc(step.detail, 140)}`);
       } else if (step.kind === 'tool_result') {
         const mark = step.isError ? 'x' : '->';
         out.push(`       ${mark} ${trunc(step.text, 120)}`);

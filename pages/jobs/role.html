@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opening - Harrowgate Works</title>
+<link rel="stylesheet" href="careers.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="topbar">
+  <a class="brand" href="./">HARROWGATE WORKS<small>Careers</small></a>
+  <nav class="topnav">
+    <a href="./">Careers home</a>
+    <a href="openings.html" class="here">Current openings</a>
+    <a href="./#hiring">How we hire</a>
+  </nav>
+</div>
+
+<main>
+  <h1 id="role-title">Opening</h1>
+  <p id="role-status" class="lead">Loading the listing from the hiring office...</p>
+  <div id="role-body" hidden>
+    <div class="tags">
+      <span class="tag" id="role-team"></span>
+      <span class="tag" id="role-location"></span>
+      <span class="tag" id="role-type"></span>
+    </div>
+    <p><span class="salary" id="role-salary"></span></p>
+    <p class="lead" id="role-blurb"></p>
+    <a class="btn" id="role-apply" href="apply.html">Apply for this role</a>
+    <div class="ref" id="role-ref"></div>
+
+    <div class="band">
+      <h2>How this role is filled</h2>
+      <p class="lead">Write to the hiring office quoting the reference above. Shortlisted
+      candidates spend half a day on the floor with the crew they would join, and offers
+      go out within a week of the visit at the salary shown. Pay, holiday, pension and
+      shift premiums are set out in full on the
+      <a href="pay-and-conditions.html">pay and conditions</a> page.</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Harrowgate Works Ltd - Foundry Road, Harrowgate HW3 1FR - hiring office 01632 960184,
+  careers@harrowgateworks.example<br>
+  <a href="./">Careers home</a> -
+  <a href="openings.html">Current openings</a> -
+  <a href="apply.html">How to apply</a> -
+  <a href="pay-and-conditions.html">Pay and conditions</a> -
+  <a href="role-fabrication-welder.html">Featured role: fabrication welder</a><br>
+  <a href="privacy.html">Privacy notice</a> -
+  <a href="terms.html">Terms of use</a><br>
+  Harrowgate Works Ltd, registered in England and Wales, company number 00000000.
+  &copy; 2026 Harrowgate Works Ltd.
+</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+async function loadRole() {
+  const ref = new URLSearchParams(location.search).get('ref') ?? '';
+  const status = document.getElementById('role-status');
+  let data;
+  try {
+    const res = await fetch('/api/jobs/listings', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) throw new Error('listings unavailable');
+    data = await res.json();
+  } catch {
+    status.textContent = 'The hiring office list did not load. Refresh to try again.';
+    return;
+  }
+  const role = data.roles.find((r) => r.ref === ref);
+  if (!role) {
+    document.getElementById('role-title').textContent = 'Listing closed';
+    status.innerHTML = '';
+    status.append(
+      'No open listing carries that reference. Roles are taken down the day they are filled; see the '
+    );
+    const back = document.createElement('a');
+    back.href = 'openings.html';
+    back.textContent = 'current openings';
+    status.append(back, '.');
+    return;
+  }
+  document.title = role.title + ' - Harrowgate Works';
+  document.getElementById('role-title').textContent = role.title;
+  document.getElementById('role-team').textContent = role.team;
+  document.getElementById('role-location').textContent = role.location;
+  document.getElementById('role-type').textContent = role.type;
+  document.getElementById('role-salary').textContent =
+    '£' + role.salary.toLocaleString('en-GB') + ' a year';
+  document.getElementById('role-blurb').textContent = role.blurb;
+  document.getElementById('role-ref').textContent = 'Ref ' + role.ref;
+  document.getElementById('role-apply').href = 'apply.html?ref=' + encodeURIComponent(role.ref);
+  status.remove();
+  document.getElementById('role-body').hidden = false;
+}
+loadRole();
+</script>
+</body>
+</html>

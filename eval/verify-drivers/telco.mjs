@@ -1,6 +1,5 @@
 // pages/telco/ - Lumeva Mobile plan builder (plan-picker).
-import { straySession } from './probes.mjs';
-import { until, uidOf } from './lib.mjs';
+import { straySession, uidOf, until } from './lib.mjs';
 
 export const DRIVERS = {
   'plan-picker': {

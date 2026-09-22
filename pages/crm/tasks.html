@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tasks - Kelsmere CRM</title>
 <link rel="stylesheet" href="crm.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="topbar">
-  <span class="brand">Kelsmere CRM</span>
+  <a class="brand" href="./"><span class="mark" aria-hidden="true">K</span>Kelsmere CRM</a>
   <span class="ws">wkspc northfield-supply &middot; fiscal 2026 &middot; role: analyst</span>
   <span class="who">dana.kessler@northfield.example</span>
 </header>
@@ -28,7 +29,8 @@
 <main class="main">
   <h1>Tasks</h1>
   <p class="sub">Open workflow tasks across the workspace. Completing tasks is disabled on shared workspace links.</p>
-  <table class="grid">
+  <div class="gridwrap">
+  <table class="grid" data-sort="tasks">
     <thead>
       <tr><th>Task</th><th>Related</th><th>Owner</th><th>Due</th><th>Status</th></tr>
     </thead>
@@ -43,13 +45,18 @@
       <tr><td>Archive pre-migration report exports</td><td>Workspace</td><td>S. Vale</td><td>2026-08-21</td><td>Blocked</td></tr>
     </tbody>
   </table>
+  </div>
   <p class="muted">rows 8/8 &middot; reminders are sent to owners at 08:00 workspace time.</p>
 </main>
 <footer class="siteftr">
-  Kelsmere CRM &middot; workspace data is confidential to northfield-supply.
-  Support: help.kelsmerecrm.example &middot; Status &middot; Keyboard shortcuts &middot;
-  Terms &middot; Privacy &middot; <a href="guide.html">Operator guide</a> &middot;
-  <a href="glossary.html">Glossary</a> &middot; <a href="notices.html">Service notices</a>
+  Kelsmere CRM &middot; workspace data is confidential to northfield-supply &middot;
+  &copy; 2026 Kelsmere Software, Inc.<br>
+  Support: <a href="mailto:support@kelsmerecrm.example">support@kelsmerecrm.example</a> &middot;
+  <a href="status.html">Status</a> &middot; <a href="shortcuts.html">Keyboard shortcuts</a> &middot;
+  <a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  <a href="guide.html">Operator guide</a> &middot; <a href="glossary.html">Glossary</a> &middot;
+  <a href="notices.html">Service notices</a>
 </footer>
+<script src="crm.js"></script>
 </body>
 </html>

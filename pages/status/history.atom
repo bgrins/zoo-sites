@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Nimbrel Edge incident history</title>
+  <subtitle>Resolved incidents affecting the Nimbrel Edge platform, newest first.</subtitle>
+  <id>tag:nimbrel.example,2026:status-history</id>
+  <link rel="alternate" href="history.html"/>
+  <link rel="self" href="history.atom"/>
+  <updated>2026-07-21T11:47:00Z</updated>
+  <author><name>Nimbrel Networks operations center</name></author>
+  <entry>
+    <id>tag:nimbrel.example,2026:NE-C214A</id>
+    <title>Elevated relay latency on trans-Atlantic routes (Resolved)</title>
+    <link href="incidents/ne-c214a.html"/>
+    <updated>2026-07-21T11:47:00Z</updated>
+    <summary>NE-C214A: The carrier has restored the segment and latency on trans-Atlantic routes has been at its normal level for a full measurement window. Routes are back on their usual paths.</summary>
+  </entry>
+  <entry>
+    <id>tag:nimbrel.example,2026:NE-77D02</id>
+    <title>Control panel sign-in errors (Resolved)</title>
+    <link href="incidents/ne-77d02.html"/>
+    <updated>2026-07-14T15:26:00Z</updated>
+    <summary>NE-77D02: The configuration push has been rolled back and sign-in has been normal since 15:14. No action is needed from customers; sessions that were already signed in were not affected.</summary>
+  </entry>
+  <entry>
+    <id>tag:nimbrel.example,2026:NE-4B9E1</id>
+    <title>Relay mesh congestion in the Aparra region (Resolved)</title>
+    <link href="incidents/ne-4b9e1.html"/>
+    <updated>2026-07-03T21:05:00Z</updated>
+    <summary>NE-4B9E1: Spill capacity has absorbed the load and paths in the Aparra region have measured clean for a full window. Relay path checks now report the region as operational.</summary>
+  </entry>
+  <entry>
+    <id>tag:nimbrel.example,2026:NE-05F1B</id>
+    <title>API gateway elevated error rate (Resolved)</title>
+    <link href="incidents/ne-05f1b.html"/>
+    <updated>2026-06-19T02:58:00Z</updated>
+    <summary>NE-05F1B: The affected cache node has been reprovisioned and error rates on the API gateway have been normal for a full window.</summary>
+  </entry>
+  <entry>
+    <id>tag:nimbrel.example,2026:NE-E60D3</id>
+    <title>Scheduled maintenance: relay firmware rollout (Completed)</title>
+    <link href="incidents/ne-e60d3.html"/>
+    <updated>2026-06-07T03:30:00Z</updated>
+    <summary>NE-E60D3: The firmware rollout is complete on every relay. No customer-visible impact was recorded.</summary>
+  </entry>
+  <entry>
+    <id>tag:nimbrel.example,2026:NE-1A9C4</id>
+    <title>Control panel slow page loads (Resolved)</title>
+    <link href="incidents/ne-1a9c4.html"/>
+    <updated>2026-05-28T14:02:00Z</updated>
+    <summary>NE-1A9C4: Page loads in the control panel have been inside two seconds for a full window. The query that caused the slowdown now runs against a new index.</summary>
+  </entry>
+  <entry>
+    <id>tag:nimbrel.example,2026:NE-B7730</id>
+    <title>DNS propagation delay for new zones (Resolved)</title>
+    <link href="incidents/ne-b7730.html"/>
+    <updated>2026-05-11T10:15:00Z</updated>
+    <summary>NE-B7730: New zones are propagating to every site within their normal window. Zones created during the incident have all propagated.</summary>
+  </entry>
+</feed>

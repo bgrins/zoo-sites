@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Millrace</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="millrace.css">
 <style>
   #digestveil { position: fixed; inset: 0; background: rgba(28, 20, 52, 0.66); z-index: 90; }
@@ -13,7 +14,7 @@
                padding: 18px 20px 18px; box-shadow: 0 14px 34px rgba(30, 20, 60, 0.34); }
   #digestbox h2 { font-size: 15px; margin: 0 0 7px; color: #33265f; letter-spacing: 0.02em; }
   #digestbox p { font-size: 12.5px; line-height: 1.55; color: #4a4364; margin: 0 0 12px; }
-  #digestbox .fine { font-size: 11px; color: #8b83a3; margin: 10px 0 0; }
+  #digestbox .fine { font-size: 11px; color: #6f6882; margin: 10px 0 0; }
   #digestbox input { font-family: inherit; font-size: 12.5px; padding: 6px 9px;
                      border: 1px solid #ded8ee; border-radius: 4px; background: #faf9fe;
                      color: #241f33; width: 58%; }
@@ -23,28 +24,28 @@
   #digestclose { position: absolute; top: 8px; right: 9px; width: 22px; height: 22px;
                  line-height: 20px; font-family: inherit; font-size: 15px; padding: 0;
                  border: 1px solid #e4dff3; border-radius: 4px; background: #f6f3fe;
-                 color: #6d6688; cursor: pointer; }
+                 color: #6a6385; cursor: pointer; }
   #digestbox .note { font-size: 11.5px; color: #3f7a4a; margin: 10px 0 0; }
 </style>
 </head>
 <body>
 <header id="masthead">
   <div class="masthead-in">
-    <a class="wordmark" href="/news/">millrace</a>
+    <a class="wordmark" href="./">millrace</a>
     <span class="tagline">a working stream for people who build things</span>
-    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+    <span class="acct"><a href="signin.html">sign in</a><a class="ghost" href="signin.html#register">open an account</a></span>
   </div>
 </header>
 <nav id="tabs" aria-label="Sections">
   <div class="tabs-in">
-    <a class="tab on" href="/news/">Stream</a>
-    <a class="tab" href="/news/?sort=fresh">Fresh</a>
-    <a class="tab" href="/news/?view=threads">Threads</a>
-    <a class="tab" href="/news/?tag=asks">Asks</a>
-    <a class="tab" href="/news/?tag=build">Build logs</a>
-    <a class="tab" href="/news/?tag=jobs">Hiring</a>
-    <a class="tab" href="/news/submit.html">Submit a link</a>
-    <form class="seek" action="/news/" method="get" role="search">
+    <a class="tab on" href="./">Stream</a>
+    <a class="tab" href="./?sort=fresh">Fresh</a>
+    <a class="tab" href="./?view=threads">Threads</a>
+    <a class="tab" href="./?tag=asks">Asks</a>
+    <a class="tab" href="./?tag=build">Build logs</a>
+    <a class="tab" href="./?tag=jobs">Hiring</a>
+    <a class="tab" href="submit.html">Submit a link</a>
+    <form class="seek" action="./" method="get" role="search">
       <input type="search" name="q" aria-label="Search the stream" placeholder="Search the stream">
       <button type="submit">Go</button>
     </form>
@@ -57,7 +58,7 @@
       <span class="note">re-ranked every ten minutes on votes and reply pace</span>
     </div>
     <ol id="stream"></ol>
-    <p class="pager"><a href="/news/?p=2">older submissions</a></p>
+    <p class="pager"><a href="./?p=2">older submissions</a></p>
   </main>
   <aside id="rail">
     <div class="card">
@@ -65,7 +66,7 @@
       <p>Forty-one thousand people who build software, hardware and other stubborn
         things, reading each other's work. Anyone with an account can submit a link
         or start a thread.</p>
-      <p class="meta"><a href="/news/about.html">How the ranking works</a></p>
+      <p class="meta"><a href="about.html">How the ranking works</a></p>
     </div>
     <div class="card">
       <h2>House rules</h2>
@@ -75,8 +76,8 @@
         <li>Title your submission the way the author would.</li>
         <li>One account per person, one vote per submission.</li>
       </ul>
-      <p class="meta"><a href="/news/guidelines.html">Full guidelines</a> &middot;
-        <a href="/news/moderation.html">Moderation log</a></p>
+      <p class="meta"><a href="guidelines.html">Full guidelines</a> &middot;
+        <a href="moderation.html">Moderation log</a></p>
     </div>
     <div class="card">
       <h2>Threads moving fastest</h2>
@@ -101,26 +102,27 @@
       <h2>Friday digest</h2>
       <p>The week's ten highest-ranked submissions and one thread worth reading in
         full, in a single email.</p>
-      <p class="meta"><a href="/news/?promo=1">See this week's issue</a></p>
+      <p class="meta"><a href="./?promo=1">Get the digest by email</a></p>
     </div>
   </aside>
 </div>
 <footer id="footer">
   <div class="footer-in">
     <p class="footer-nav">
-      <a href="/news/about.html">About</a> &middot;
-      <a href="/news/guidelines.html">Guidelines</a> &middot;
-      <a href="/news/moderation.html">Moderation log</a> &middot;
-      <a href="/news/feeds.html">Feeds</a> &middot;
-      <a href="/news/status.html">Status</a> &middot;
-      <a href="/news/advertise.html">Sponsor a day</a> &middot;
-      <a href="/news/privacy.html">Privacy</a> &middot;
-      <a href="/news/terms.html">Terms</a> &middot;
-      <a href="/news/contact.html">Contact</a>
+      <a href="about.html">About</a> &middot;
+      <a href="guidelines.html">Guidelines</a> &middot;
+      <a href="moderation.html">Moderation log</a> &middot;
+      <a href="feeds.html">Feeds</a> &middot;
+      <a href="status.html">Status</a> &middot;
+      <a href="advertise.html">Sponsor a day</a> &middot;
+      <a href="privacy.html">Privacy</a> &middot;
+      <a href="terms.html">Terms</a> &middot;
+      <a href="consent.html">Cookie preferences</a> &middot;
+      <a href="contact.html">Contact</a>
     </p>
     <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
       Ashvale, VT 05412. Moderation questions go to
-      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      <a href="contact.html">stewards@millrace.example</a>; everything else to
       help@millrace.example.</p>
     <p>Submissions and replies remain the work of their authors. Copyright 2026
       Weirgate Collective LLC.</p>
@@ -144,7 +146,7 @@
       const lead =
         item.type === 'job'
           ? '<span class="chip">hiring</span>'
-          : `<a class="tally" href="/news/signin.html" title="Vote this up">${item.points}` +
+          : `<a class="tally" href="signin.html" title="Vote this up">${item.points}` +
             `<span class="unit">points</span></a>`;
       const replies =
         item.comments === 0
@@ -153,9 +155,9 @@
       const byline =
         item.type === 'job'
           ? `sponsored listing &middot; posted ${item.age} &middot; ` +
-            `<a class="topic" href="/news/?tag=jobs">jobs</a>`
+            `<a class="topic" href="./?tag=jobs">jobs</a>`
           : `<a class="who" href="member.html?u=${item.author}">${item.author}</a> &middot; ${item.age} &middot; ` +
-            `<a class="topic" href="/news/?tag=${item.tag}">${item.tag}</a> &middot; ${replies}`;
+            `<a class="topic" href="./?tag=${item.tag}">${item.tag}</a> &middot; ${replies}`;
       return (
         `<li class="entry${item.type === 'job' ? ' sponsor' : ''}" data-slot="${item.rank}">` +
         `${lead}` +
@@ -171,10 +173,24 @@
       }
     }
 
+    // ifMissing: the value to use when the file answers 404 rather than failing.
+    function streamJson(path, ifMissing) {
+      return fetch(path).then((r) => {
+        if (r.status === 404 && ifMissing) return ifMissing;
+        if (!r.ok) throw new Error(path + ' answered ' + r.status);
+        return r.json();
+      });
+    }
+
+    function failed() {
+      const holder = document.createElement('li');
+      holder.className = 'empty';
+      holder.textContent = 'The stream did not load. Reload the page to try again.';
+      stream.replaceChildren(holder);
+    }
+
     if (!away) {
-      fetch('items.json')
-        .then((r) => r.json())
-        .then(render);
+      streamJson('items.json').then(render).catch(failed);
       return;
     }
 
@@ -184,11 +200,11 @@
     if (seek && query) seek.value = query;
 
     const want = tag
-      ? `/news/?tag=${tag}`
+      ? `./?tag=${tag}`
       : sort === 'fresh'
-        ? '/news/?sort=fresh'
+        ? './?sort=fresh'
         : view === 'threads'
-          ? '/news/?view=threads'
+          ? './?view=threads'
           : '';
     for (const t of document.querySelectorAll('#tabs .tab')) {
       t.classList.toggle('on', t.getAttribute('href') === want);
@@ -205,8 +221,8 @@
     const pager = document.querySelector('.pager');
 
     Promise.all([
-      fetch('items.json').then((r) => r.json()),
-      fetch('items2.json').then((r) => (r.ok ? r.json() : [])).catch(() => []),
+      streamJson('items.json'),
+      streamJson('items2.json', []),
     ]).then(([front, older]) => {
       let list;
       let empty = 'Nothing on the stream matches.';
@@ -216,11 +232,11 @@
         note.textContent =
           'page 2 — submissions drop off the stream entirely after a couple of days';
         pager.innerHTML =
-          '<a href="/news/">back to the front page</a> <span class="meta">&middot; ' +
+          '<a href="./">back to the front page</a> <span class="meta">&middot; ' +
           'this is the end of the stream</span>';
       } else {
         list = front.concat(older);
-        pager.innerHTML = '<a href="/news/">back to the full stream</a>';
+        pager.innerHTML = '<a href="./">back to the full stream</a>';
         if (tag) {
           list = list.filter((item) => (item.type === 'job' ? 'jobs' : item.tag) === tag);
           head.textContent = TAB_NAMES[tag] ?? 'Tagged: ' + tag;
@@ -261,7 +277,7 @@
         return;
       }
       render(list);
-    });
+    }).catch(failed);
   })();
 </script>
 <script>

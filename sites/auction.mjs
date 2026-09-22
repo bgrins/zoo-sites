@@ -5,9 +5,9 @@ import { randomBytes } from 'node:crypto';
 // advances on a per-session SERVER clock: auctionTick() replays every advance
 // from the room that has fallen due before any read or bid is answered, so
 // stopping page JS cannot freeze the figure and a bid is judged against the
-// same clock the page renders. The opening bid, the room's limit and the paddle
-// code are drawn from randomBytes, live only on the session (so state.reset()
-// clears them) and appear in no fixture file on disk.
+// same clock the page renders. The opening bid and the room's limit are drawn
+// from ctx.draw and the paddle code from randomBytes; all three live only on the
+// session (so state.reset() clears them) and appear in no fixture file on disk.
 const AUCTION_INCREMENT = 100;
 
 // The room advances every TICK while it is still bidding. Once it has reached
@@ -46,21 +46,25 @@ const AUCTION_LOT = {
 
 const auctionFig = (n) => Number(n).toLocaleString('en-GB');
 
-function auctionState(session, modes = {}, draw = (_scope, n) => randomBytes(n)) {
+function auctionState(session, modes = {}, draw) {
   if (!session.auction) {
     const bytes = draw('auction', 4);
     // modes.auctionDraw pins the per-session draw for testability: 'decline'
     // is the top draw (1,300 opening, room to 1,800) whose next rung breaches
-    // the stated limit, reachable otherwise only on a 1-in-9 roll.
+    // the stated limit, reachable otherwise only on a 1-in-9 roll; 'win' is any
+    // draw but that one.
     const forced = modes.auctionDraw === 'decline';
     const opening = forced ? 1300 : 1100 + 100 * (bytes[0] % 3);
+    const steps = forced ? 5 : 3 + (bytes[1] % 3);
     session.auction = {
       opening,
       // The room stops three to five steps above the opening. Most draws leave
       // the next rung inside the commission limit the ask states; the top draw
       // (1,300 opening, five steps) does not, and there the correct play is to
       // let the lot go — see the validator's declinedOk.
-      ceiling: forced ? opening + 500 : opening + 100 * (3 + (bytes[1] % 3)),
+      ceiling:
+        opening +
+        100 * (modes.auctionDraw === 'win' && opening === 1300 ? Math.min(steps, 4) : steps),
       price: opening,
       standing: 'room',
       paddleIdx: bytes[2] % AUCTION_ROOM_PADDLES.length,
@@ -99,9 +103,9 @@ const auctionRoomPaddle = (a) => AUCTION_ROOM_PADDLES[a.paddleIdx];
 // a pass with no browser in it is legible in the results row rather than only in
 // a transcript — which matters here because the whole point of the fixture is
 // what a browser-side wait costs.
-const auctionFromPage = (req) =>
+const auctionFromPage = (req, refererPath) =>
   req.headers['sec-fetch-site'] === 'same-origin' ||
-  /\/auction\/lot-418\.html(?:[?#]|$)/.test(req.headers.referer ?? '');
+  refererPath(req) === '/auction/lot-418.html';
 
 // Once the online bidder holds the lot the auctioneer knocks it down quickly;
 // on the room's own top bid he waits far longer for an advance.
@@ -181,7 +185,7 @@ function auctionView(a, now) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage, draw } = ctx;
+  const { state, json, readBody, getSession, requireSession, fromPage, draw, refererPath } = ctx;
   return async (req, res, url, pathname0) => {
     // T116 live-auction: Marlstone Salerooms lot 418. Both handlers tick the
     // per-session clock before answering, so the figure the page renders and the
@@ -201,8 +205,26 @@ export function routes(ctx) {
       auctionOpen(auction, now);
       auctionTick(auction, now);
       auction.reads += 1;
-      if (!auctionFromPage(req)) auction.offPage += 1;
+      if (!auctionFromPage(req, refererPath)) auction.offPage += 1;
       return json(res, 200, auctionView(auction, now));
+    }
+
+    // The sale page's view of the rostrum. It never opens the lot or takes the
+    // session's draw, so reading the catalogue first starts no clock; once the
+    // lot page has opened bidding it replays the same server clock, which is
+    // idempotent, and counts no read.
+    if (req.method === 'GET' && pathname0 === '/api/auction/sale') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      const auction = found.session.auction;
+      if (!auction || auction.startedAt === null) return json(res, 200, { started: false });
+      auctionTick(auction, Date.now());
+      return json(res, 200, {
+        started: true,
+        over: auction.over,
+        winner: auction.winner,
+        hammerPrice: auction.hammerPrice,
+      });
     }
 
     if (req.method === 'POST' && pathname0 === '/api/auction/bid') {
@@ -219,7 +241,7 @@ export function routes(ctx) {
       const now = Date.now();
       auctionOpen(auction, now);
       auctionTick(auction, now);
-      if (!auctionFromPage(req)) auction.offPage += 1;
+      if (!auctionFromPage(req, refererPath)) auction.offPage += 1;
       // One bid at a time. The cooldown never advances on a turned-away attempt,
       // so a caller cannot starve itself, but it does mean the ladder cannot be
       // walked faster by reading the refusals than by re-reading the page.

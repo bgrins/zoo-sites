@@ -1,5 +1,5 @@
 // Generates the Bureau of Civic Revenue department directory under
-// pages/gov/departments/ — a five-level tree of ~120 legacy pages for
+// pages/gov/departments/ — a five-level tree of 127 legacy pages for
 // the `dept-descent` and `breadcrumb-sibling` eval tasks.
 //
 // This lives outside pages/ on purpose: everything under pages/ is served over
@@ -8,8 +8,8 @@
 //
 //   node scripts/gen/gov-departments.mjs
 //
-// Output is deterministic (fixed name pools, a fixed integer hash for branch
-// counts, no clock, no randomness), so regeneration is byte-stable and a
+// Output is deterministic (a fixed tree, a fixed integer hash for hours, rooms
+// and lines, no clock, no randomness), so regeneration is byte-stable and a
 // re-run leaves `git status` clean. The output directory is wiped first, so
 // shape changes never leave orphan pages behind.
 
@@ -25,102 +25,439 @@ const TARGET = {
   path: ['assessment-standards', 'field-operations', 'ground-works'],
   desk: 'subsurface-permits',
   hours: 'Tue &amp; Thu 9:15 AM - 12:45 PM',
-  phone: '(555) 014-3391',
+  phone: '(804) 555-0163',
 };
-const SIBLING = { desk: 'surface-permits', phone: '(555) 014-8862' };
+const SIBLING = { desk: 'surface-permits', phone: '(804) 555-0178' };
 
 // Where the near-miss desks live: the division an agent reaches for first when
 // told to find a permits desk.
-const DECOY_OFFICE = 'permits-and-clearances/occupancy-consents';
-const DECOY_SECTION = `${DECOY_OFFICE}/change-of-use`;
-const DECOY_DESKS = ['subsurface-utility-notices', 'surface-water-permits'];
+const DECOY_SECTION = 'permits-and-clearances/occupancy-consents/change-of-use';
+const DECOY_DESKS = { 'subsurface-utility-notices': 'Subsurface', 'surface-water-permits': 'Surface' };
 
-// Listing blurbs are FRONT-LOADED with the words that discriminate between
-// branches: a snapshot shows only the first 27 characters of a list item's text,
-// so a blurb that buries "ground works" at the end leaves the tree unnavigable
-// through the snapshot and forces every agent into a 127-page walk.
+// Every line in the tree is a direct line in the NANP 555-0100 to 555-0199
+// fiction block under one area code. These are published on the top-level gov
+// pages (general, TTY, status line, the three satellite offices, Purchasing) or
+// belong to the two graded desks, so no filler desk may take one.
+const AREA = '804';
+const RESERVED_LINES = new Set([100, 101, 102, 103, 110, 111, 112, 163, 178]);
+
+const desk = (slug, name) => ({ kind: 'desk', slug, name });
+const section = (slug, name, blurb, children) => ({ kind: 'section', slug, name, blurb, children });
+const office = (slug, name, blurb, children) => ({ kind: 'office', slug, name, blurb, children });
+const division = (slug, name, blurb, children) => ({ kind: 'division', slug, name, blurb, children });
+
 const DIVISIONS = [
-  {
-    slug: 'assessment-standards',
-    name: 'Assessment Standards Division',
-    blurb: 'Ground works, site permits, valuation methodology and field inspection.',
-  },
-  {
-    slug: 'permits-and-clearances',
-    name: 'Permits and Clearances Division',
-    blurb: 'Occupancy clearances, street cuts, signage and temporary use consents.',
-  },
-  {
-    slug: 'collections-and-remittance',
-    name: 'Collections and Remittance Division',
-    blurb: 'Payments and instalments, delinquency and write-off review.',
-  },
-  {
-    slug: 'records-and-disclosure',
-    name: 'Records and Disclosure Division',
-    blurb: 'Filing archive, certified copies, disclosure requests and retention.',
-  },
+  division(
+    'assessment-standards',
+    'Assessment Standards Division',
+    'Maintains the assessment manuals and valuation tables, reviews declared values, and inspects sites in the field, including excavation and ground works.',
+    [
+      office(
+        'field-operations',
+        'Office of Field Operations',
+        'Field inspection crews, site access, and permits for excavation and ground works.',
+        [
+          section(
+            'ground-works',
+            'Ground Works Section',
+            'Subsurface and surface permitting, boring notices and trench inspection.',
+            [
+              desk('subsurface-permits', 'Subsurface Permits Desk'),
+              desk('surface-permits', 'Surface Permits Desk'),
+              desk('boring-notices', 'Boring Notices Desk'),
+            ]
+          ),
+          section(
+            'site-inspection',
+            'Site Inspection Section',
+            'Scheduled and complaint-driven inspections of declared improvements.',
+            [
+              desk('inspection-scheduling', 'Inspection Scheduling Desk'),
+              desk('complaint-inspections', 'Complaint Inspections Desk'),
+              desk('reinspection-requests', 'Reinspection Requests Desk'),
+            ]
+          ),
+          section(
+            'field-audit-support',
+            'Field Audit Support Section',
+            'Scheduling, travel and survey equipment for field audit teams.',
+            [
+              desk('audit-scheduling', 'Audit Scheduling Desk'),
+              desk('survey-equipment', 'Survey Equipment Desk'),
+            ]
+          ),
+        ]
+      ),
+      office(
+        'valuation-review',
+        'Office of Valuation Review',
+        'Reviews declared values against comparable sales and the published depreciation tables, and dockets appeals.',
+        [
+          section(
+            'comparable-sales',
+            'Comparable Sales Section',
+            'Verifies reported sales and maintains the adjustment factors.',
+            [
+              desk('sales-verification', 'Sales Verification Desk'),
+              desk('adjustment-factors', 'Adjustment Factors Desk'),
+            ]
+          ),
+          section(
+            'depreciation-tables',
+            'Depreciation Tables Section',
+            'Age-life tables and condition ratings for declared property and vehicles.',
+            [
+              desk('age-life-tables', 'Age-Life Tables Desk'),
+              desk('condition-ratings', 'Condition Ratings Desk'),
+              desk('vehicle-valuation', 'Vehicle Valuation Desk'),
+            ]
+          ),
+          section(
+            'appeals-intake',
+            'Appeals Intake Section',
+            'Receives and dockets appeals of assessed values and schedules hearings.',
+            [
+              desk('appeal-docketing', 'Appeal Docketing Desk'),
+              desk('hearing-calendar', 'Hearing Calendar Desk'),
+              desk('hearing-exhibits', 'Hearing Exhibits Desk'),
+            ]
+          ),
+        ]
+      ),
+      office(
+        'methodology-standards',
+        'Office of Methodology Standards',
+        'Assessment manuals, rate studies and inspector training.',
+        [
+          section(
+            'rate-studies',
+            'Rate Studies Section',
+            'The annual rate and trend studies behind the valuation tables.',
+            [
+              desk('annual-rate-study', 'Annual Rate Study Desk'),
+              desk('trend-analysis', 'Trend Analysis Desk'),
+            ]
+          ),
+          section(
+            'training-standards',
+            'Training Standards Section',
+            'Inspector certification, refresher courses and quality sampling.',
+            [
+              desk('inspector-certification', 'Inspector Certification Desk'),
+              desk('refresher-courses', 'Refresher Courses Desk'),
+              desk('quality-sampling', 'Quality Sampling Desk'),
+            ]
+          ),
+        ]
+      ),
+    ]
+  ),
+  division(
+    'permits-and-clearances',
+    'Permits and Clearances Division',
+    'Issues certificates of occupancy and change-of-use consents, and licenses street furniture, signage and temporary uses of public space.',
+    [
+      office(
+        'occupancy-consents',
+        'Office of Occupancy Consents',
+        'Certificates of occupancy and change-of-use consents.',
+        [
+          section(
+            'change-of-use',
+            'Change of Use Section',
+            'Reclassification of occupied premises, with the utility and drainage notices a change of use requires.',
+            [
+              // The near misses: a desk whose name also starts "Subsurface", and
+              // one that also starts "Surface".
+              desk('subsurface-utility-notices', 'Subsurface Utility Notices Desk'),
+              desk('surface-water-permits', 'Surface Water Permits Desk'),
+              desk('reclassification-requests', 'Reclassification Requests Desk'),
+            ]
+          ),
+          section(
+            'certificate-issue',
+            'Certificate Issue Section',
+            'Printing and mailing of issued certificates.',
+            [
+              desk('certificate-printing', 'Certificate Printing Desk'),
+              desk('temporary-certificates', 'Temporary Certificates Desk'),
+            ]
+          ),
+          section(
+            'premises-records',
+            'Premises Records Section',
+            'Occupancy histories and certificate searches for premises changing hands.',
+            [
+              desk('occupancy-histories', 'Occupancy Histories Desk'),
+              desk('certificate-searches', 'Certificate Searches Desk'),
+            ]
+          ),
+        ]
+      ),
+      office(
+        'street-furniture',
+        'Office of Street Furniture',
+        'Benches, kiosks, planters, signs and other fixed objects on or over the sidewalk.',
+        [
+          section(
+            'sidewalk-fixtures',
+            'Sidewalk Fixtures Section',
+            'Placement review for benches, planters and bus shelters.',
+            [
+              desk('bench-placement', 'Bench Placement Desk'),
+              desk('bus-shelters', 'Bus Shelters Desk'),
+              desk('planter-licenses', 'Planter Licenses Desk'),
+            ]
+          ),
+          section(
+            'signs-and-kiosks',
+            'Signs and Kiosks Section',
+            'Projecting signs, awnings, and vending and information kiosks.',
+            [
+              desk('projecting-signs', 'Projecting Signs Desk'),
+              desk('awning-consents', 'Awning Consents Desk'),
+              desk('kiosk-siting', 'Kiosk Siting Desk'),
+            ]
+          ),
+        ]
+      ),
+      office(
+        'temporary-use',
+        'Office of Temporary Use',
+        'Short-term consents for events, filming and seasonal uses of public space.',
+        [
+          section(
+            'event-staging',
+            'Event Staging Section',
+            'Staging areas, barricades and street closures for permitted events.',
+            [
+              desk('street-closures', 'Street Closures Desk'),
+              desk('barricade-requests', 'Barricade Requests Desk'),
+              desk('filming-consents', 'Filming Consents Desk'),
+            ]
+          ),
+          section(
+            'seasonal-consents',
+            'Seasonal Consents Section',
+            'Outdoor seating, holiday markets and other seasonal uses.',
+            [
+              desk('outdoor-seating', 'Outdoor Seating Desk'),
+              desk('holiday-markets', 'Holiday Markets Desk'),
+            ]
+          ),
+        ]
+      ),
+    ]
+  ),
+  division(
+    'collections-and-remittance',
+    'Collections and Remittance Division',
+    'Receives and posts payments, administers installment agreements, and follows up delinquent balances through notices, liens and write-off review.',
+    [
+      office(
+        'payment-processing',
+        'Office of Payment Processing',
+        'Lockbox, counter and electronic remittance.',
+        [
+          section(
+            'lockbox-operations',
+            'Lockbox Operations Section',
+            'Opening and posting of mailed remittances.',
+            [
+              desk('mail-opening', 'Mail Opening Desk'),
+              desk('remittance-posting', 'Remittance Posting Desk'),
+              desk('unapplied-payments', 'Unapplied Payments Desk'),
+            ]
+          ),
+          section(
+            'counter-receipts',
+            'Counter Receipts Section',
+            'Window payments and same-day receipting.',
+            [
+              desk('window-payments', 'Window Payments Desk'),
+              desk('receipt-corrections', 'Receipt Corrections Desk'),
+            ]
+          ),
+          section(
+            'returned-items',
+            'Returned Items Section',
+            'Checks returned unpaid, and the returned-item charge.',
+            [
+              desk('returned-checks', 'Returned Checks Desk'),
+              desk('charge-reversals', 'Charge Reversals Desk'),
+            ]
+          ),
+        ]
+      ),
+      office(
+        'delinquency-review',
+        'Office of Delinquency Review',
+        'Aged balances, liens and write-off recommendations.',
+        [
+          section(
+            'aged-balances',
+            'Aged Balances Section',
+            'Balances past the second notice cycle.',
+            [
+              desk('second-notices', 'Second Notices Desk'),
+              desk('account-reconciliation', 'Account Reconciliation Desk'),
+              desk('balance-inquiries', 'Balance Inquiries Desk'),
+            ]
+          ),
+          section(
+            'lien-preparation',
+            'Lien Preparation Section',
+            'Preparation, recording and release of revenue liens.',
+            [
+              desk('lien-recording', 'Lien Recording Desk'),
+              desk('lien-releases', 'Lien Releases Desk'),
+              desk('payoff-statements', 'Payoff Statements Desk'),
+            ]
+          ),
+          section(
+            'write-off-review',
+            'Write-Off Review Section',
+            'Uncollectible balances recommended for write-off.',
+            [
+              desk('write-off-recommendations', 'Write-Off Recommendations Desk'),
+              desk('bankruptcy-claims', 'Bankruptcy Claims Desk'),
+            ]
+          ),
+        ]
+      ),
+      office(
+        'installment-agreements',
+        'Office of Installment Agreements',
+        'Payment plans and hardship deferrals.',
+        [
+          section(
+            'hardship-review',
+            'Hardship Review Section',
+            'Deferral requests on documented hardship.',
+            [
+              desk('deferral-requests', 'Deferral Requests Desk'),
+              desk('hardship-documentation', 'Hardship Documentation Desk'),
+            ]
+          ),
+          section(
+            'plan-monitoring',
+            'Plan Monitoring Section',
+            'Enrollment in payment plans, compliance checks and default notices.',
+            [
+              desk('plan-enrollment', 'Plan Enrollment Desk'),
+              desk('plan-compliance', 'Plan Compliance Desk'),
+              desk('default-notices', 'Default Notices Desk'),
+            ]
+          ),
+        ]
+      ),
+    ]
+  ),
+  division(
+    'records-and-disclosure',
+    'Records and Disclosure Division',
+    'Keeps the filing archive and the retention schedule, issues certified copies, publishes Bureau forms, and answers public records requests.',
+    [
+      office(
+        'filing-archive',
+        'Office of the Filing Archive',
+        'Retention, retrieval and certified copies.',
+        [
+          section(
+            'retention-schedules',
+            'Retention Schedules Section',
+            'Disposal authorities and litigation holds.',
+            [
+              desk('disposal-authorities', 'Disposal Authorities Desk'),
+              desk('litigation-holds', 'Litigation Holds Desk'),
+            ]
+          ),
+          section(
+            'retrieval-services',
+            'Retrieval Services Section',
+            'Pulls from the Statehouse Plaza stacks and the microfilm library.',
+            [
+              desk('stack-retrieval', 'Stack Retrieval Desk'),
+              desk('microfilm-library', 'Microfilm Library Desk'),
+              desk('certified-copies', 'Certified Copies Desk'),
+            ]
+          ),
+          section(
+            'records-transfer',
+            'Records Transfer Section',
+            'Boxes transferred from the divisions to the records center.',
+            [
+              desk('transfer-scheduling', 'Transfer Scheduling Desk'),
+              desk('box-indexing', 'Box Indexing Desk'),
+            ]
+          ),
+        ]
+      ),
+      office(
+        'disclosure-requests',
+        'Office of Disclosure Requests',
+        'Public records requests and redaction review.',
+        [
+          section(
+            'request-triage',
+            'Request Triage Section',
+            'Routing, fee estimates and appeals for records requests.',
+            [
+              desk('request-intake', 'Request Intake Desk'),
+              desk('fee-estimates', 'Fee Estimates Desk'),
+              desk('denial-appeals', 'Denial Appeals Desk'),
+            ]
+          ),
+          section(
+            'redaction-review',
+            'Redaction Review Section',
+            'Exemption analysis before records are released.',
+            [
+              desk('exemption-review', 'Exemption Review Desk'),
+              desk('release-scheduling', 'Release Scheduling Desk'),
+              desk('third-party-notices', 'Third-Party Notices Desk'),
+            ]
+          ),
+        ]
+      ),
+      office(
+        'forms-control',
+        'Office of Forms Control',
+        'Form numbering, revision control, print orders and alternate formats.',
+        [
+          section(
+            'revision-control',
+            'Revision Control Section',
+            'Form revision dates and supersession notices.',
+            [
+              desk('form-revisions', 'Form Revisions Desk'),
+              desk('supersession-notices', 'Supersession Notices Desk'),
+            ]
+          ),
+          section(
+            'print-orders',
+            'Print Orders Section',
+            'Bulk print runs and the forms-by-mail stock.',
+            [
+              desk('bulk-printing', 'Bulk Printing Desk'),
+              desk('forms-by-mail', 'Forms by Mail Desk'),
+              desk('forms-stock', 'Forms Stock Desk'),
+            ]
+          ),
+          section(
+            'alternate-formats',
+            'Alternate Formats Section',
+            'Large print and audio cassette editions of Bureau forms.',
+            [
+              desk('large-print', 'Large Print Desk'),
+              desk('audio-editions', 'Audio Editions Desk'),
+            ]
+          ),
+        ]
+      ),
+    ]
+  ),
 ];
-
-const OFFICE_POOL = [
-  ['valuation-review', 'Office of Valuation Review', 'Reviews declared values and comparable schedules.'],
-  ['appeals-intake', 'Office of Appeals Intake', 'Receives and dockets assessment appeals.'],
-  ['occupancy-consents', 'Office of Occupancy Consents', 'Certificates of occupancy and change-of-use consents.'],
-  ['street-furniture', 'Office of Street Furniture', 'Benches, kiosks, planters and sidewalk fixtures.'],
-  ['temporary-use', 'Office of Temporary Use', 'Short-term consents for events and staging areas.'],
-  ['payment-processing', 'Office of Payment Processing', 'Lockbox, counter and electronic remittance.'],
-  ['delinquency-review', 'Office of Delinquency Review', 'Aged balances, liens and write-off recommendations.'],
-  ['instalment-agreements', 'Office of Instalment Agreements', 'Payment plans and hardship deferrals.'],
-  ['filing-archive', 'Office of the Filing Archive', 'Retention, retrieval and certified copies.'],
-  ['disclosure-requests', 'Office of Disclosure Requests', 'Public records requests and redaction review.'],
-  ['forms-control', 'Office of Forms Control', 'Form numbering, revision control and print orders.'],
-  ['methodology-standards', 'Office of Methodology Standards', 'Assessment manuals, tables and rate studies.'],
-];
-
-const SECTION_POOL = [
-  ['comparable-sales', 'Comparable Sales Section', 'Sales verification and adjustment factors.'],
-  ['depreciation-tables', 'Depreciation Tables Section', 'Age-life tables and condition ratings.'],
-  ['docket-control', 'Docket Control Section', 'Appeal numbering, calendars and continuances.'],
-  ['hearing-support', 'Hearing Support Section', 'Exhibit preparation and hearing transcripts.'],
-  ['change-of-use', 'Change of Use Section', 'Reclassification of occupied premises.'],
-  ['certificate-issue', 'Certificate Issue Section', 'Printing and mailing of issued certificates.'],
-  ['sidewalk-fixtures', 'Sidewalk Fixtures Section', 'Placement review for fixed sidewalk objects.'],
-  ['kiosk-review', 'Kiosk Review Section', 'Vending and information kiosk siting.'],
-  ['event-staging', 'Event Staging Section', 'Staging areas, barricades and closures.'],
-  ['seasonal-consents', 'Seasonal Consents Section', 'Warm-weather and holiday-period consents.'],
-  ['lockbox-operations', 'Lockbox Operations Section', 'Mailed remittance opening and posting.'],
-  ['counter-receipts', 'Counter Receipts Section', 'Window payments and same-day receipting.'],
-  ['aged-balances', 'Aged Balances Section', 'Balances past the second notice cycle.'],
-  ['lien-preparation', 'Lien Preparation Section', 'Preparation and recording of revenue liens.'],
-  ['hardship-review', 'Hardship Review Section', 'Deferral requests on documented hardship.'],
-  ['plan-monitoring', 'Plan Monitoring Section', 'Instalment compliance and default notices.'],
-  ['retention-schedules', 'Retention Schedules Section', 'Disposal authorities and holds.'],
-  ['retrieval-services', 'Retrieval Services Section', 'Pulls from the Statehouse Plaza stacks.'],
-  ['redaction-review', 'Redaction Review Section', 'Exemption analysis before release.'],
-  ['request-triage', 'Request Triage Section', 'Routing and fee estimates for requests.'],
-  ['revision-control', 'Revision Control Section', 'Form revision dates and supersession.'],
-  ['print-orders', 'Print Orders Section', 'Bulk print runs and stock levels.'],
-  ['rate-studies', 'Rate Studies Section', 'Annual rate and trend studies.'],
-  ['manual-maintenance', 'Manual Maintenance Section', 'Assessment manual amendments.'],
-  ['field-audit-support', 'Field Audit Support Section', 'Scheduling and logistics for field audits.'],
-  ['boundary-verification', 'Boundary Verification Section', 'Parcel boundary and frontage checks.'],
-  ['drainage-review', 'Drainage Review Section', 'Surface water and drainage referrals.'],
-  ['structures-review', 'Structures Review Section', 'Accessory structures and outbuildings.'],
-  ['equipment-pool', 'Equipment Pool Section', 'Survey instruments and vehicle assignment.'],
-  ['training-standards', 'Training Standards Section', 'Inspector certification and refreshers.'],
-  ['quality-sampling', 'Quality Sampling Section', 'Re-inspection sampling and error rates.'],
-  ['mapping-support', 'Mapping Support Section', 'Plat sheets, overlays and index maps.'],
-  ['notice-production', 'Notice Production Section', 'Assessment and delinquency notice runs.'],
-  ['correspondence', 'Correspondence Section', 'Written enquiries and standard replies.'],
-];
-
-const DESK_AREAS = [
-  'Frontage', 'Easement', 'Culvert', 'Hydrant', 'Driveway', 'Awning', 'Signage',
-  'Vault', 'Alley', 'Boundary', 'Outbuilding', 'Fence Line', 'Roof Access',
-  'Loading Bay', 'Meter Pit', 'Tree Well', 'Bus Shelter', 'Canopy', 'Retaining Wall',
-  'Basement', 'Rooftop Plant', 'Yard Storage', 'Ramp', 'Stair Tower',
-];
-const DESK_FUNCTIONS = ['Permits', 'Appeals', 'Assessments', 'Abatements', 'Notices', 'Clearances'];
 
 const FILLER_HOURS = [
   'Mon - Fri 8:30 AM - 4:30 PM',
@@ -131,10 +468,6 @@ const FILLER_HOURS = [
   'Thu only 10:30 AM - 2:30 PM',
 ];
 
-// Phone extensions already published on gov/offices.html, kept out of the tree
-// so a desk number can never be confused with a satellite office number.
-const RESERVED_EXT = new Set([2200, 2261, 2274, 2288, 3391, 8862]);
-
 function hash(s) {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) {
@@ -144,166 +477,71 @@ function hash(s) {
   return h;
 }
 
-const usedExt = new Set(RESERVED_EXT);
-function phoneFor(slugPath) {
-  let ext = 1000 + (hash(slugPath) % 9000);
-  while (usedExt.has(ext)) ext = ext === 9999 ? 1000 : ext + 1;
-  usedExt.add(ext);
-  return `(555) 014-${String(ext).padStart(4, '0')}`;
-}
-
-const usedSlugs = new Set();
-let deskCursor = 0;
-function nextDeskName() {
-  for (let i = 0; i < DESK_AREAS.length * DESK_FUNCTIONS.length; i++) {
-    const n = deskCursor++;
-    const area = DESK_AREAS[n % DESK_AREAS.length];
-    const fn = DESK_FUNCTIONS[Math.floor(n / DESK_AREAS.length) % DESK_FUNCTIONS.length];
-    const slug = `${area} ${fn}`.toLowerCase().replace(/[^a-z]+/g, '-');
-    if (usedSlugs.has(slug)) continue;
-    usedSlugs.add(slug);
-    return { slug, name: `${area} ${fn} Desk` };
+const usedLines = new Set(RESERVED_LINES);
+function lineFor(key) {
+  let n = 100 + (hash(key) % 100);
+  for (let tries = 0; usedLines.has(n); tries++) {
+    if (tries === 100) throw new Error('the 555-0100 to 555-0199 block is exhausted');
+    n = n === 199 ? 100 : n + 1;
   }
-  throw new Error('desk name pool exhausted');
+  usedLines.add(n);
+  return `(${AREA}) 555-0${n}`;
 }
 
 // --- tree shape -------------------------------------------------------------
 
-let officeCursor = 0;
-let sectionCursor = 0;
-const takeOffice = () => OFFICE_POOL[officeCursor++ % OFFICE_POOL.length];
-const takeSection = () => SECTION_POOL[sectionCursor++ % SECTION_POOL.length];
-
-function buildDesk(parentPath, forced) {
-  const { slug, name } = forced ?? nextDeskName();
-  const path = [...parentPath, slug];
-  const key = path.join('/');
-  const isTarget = slug === TARGET.desk;
-  const isSibling = slug === SIBLING.desk;
-  return {
-    kind: 'desk',
-    slug,
-    name,
-    path,
-    hours: isTarget ? TARGET.hours : FILLER_HOURS[hash(key) % FILLER_HOURS.length],
-    phone: isTarget ? TARGET.phone : isSibling ? SIBLING.phone : phoneFor(key),
-    room: 100 + (hash('room' + key) % 380),
-    stop: `MS ${10 + (hash('stop' + key) % 80)}`,
-  };
-}
-
-function buildSection(parentPath, forced) {
-  const [slug, name, blurb] = forced ?? takeSection();
-  const path = [...parentPath, slug];
-  const key = path.join('/');
-  const onTargetPath = key === TARGET.path.join('/');
-  const children = [];
-  if (onTargetPath) {
-    children.push(
-      buildDesk(path, { slug: TARGET.desk, name: 'Subsurface Permits Desk' }),
-      buildDesk(path, { slug: SIBLING.desk, name: 'Surface Permits Desk' }),
-      buildDesk(path, { slug: 'boring-notices', name: 'Boring Notices Desk' })
-    );
-  } else {
-    // Two decoy desks sit in the division an agent reaches for first: a desk
-    // whose name also starts "Subsurface", and one that also starts "Surface".
-    if (key === DECOY_SECTION) {
-      children.push(
-        buildDesk(path, { slug: 'subsurface-utility-notices', name: 'Subsurface Utility Notices Desk' }),
-        buildDesk(path, { slug: 'surface-water-permits', name: 'Surface Water Permits Desk' })
-      );
-    }
-    const want = 2 + (hash('d' + key) % 2);
-    while (children.length < want) children.push(buildDesk(path));
+function place(node, parentPath) {
+  node.path = [...parentPath, node.slug];
+  const key = node.path.join('/');
+  if (node.kind === 'desk') {
+    const isTarget = key === [...TARGET.path, TARGET.desk].join('/');
+    const isSibling = key === [...TARGET.path, SIBLING.desk].join('/');
+    node.hours = isTarget ? TARGET.hours : FILLER_HOURS[hash(key) % FILLER_HOURS.length];
+    node.phone = isTarget ? TARGET.phone : isSibling ? SIBLING.phone : lineFor(key);
+    node.room = 100 + (hash('room' + key) % 380);
+    node.stop = `MS ${10 + (hash('stop' + key) % 80)}`;
+    return node;
   }
-  return { kind: 'section', slug, name, blurb, path, children };
-}
-
-function buildOffice(parentPath, forced) {
-  const [slug, name, blurb] = forced ?? takeOffice();
-  const path = [...parentPath, slug];
-  const key = path.join('/');
-  const onTargetPath = TARGET.path.slice(0, 2).join('/') === key;
-  const children = [];
-  if (onTargetPath) {
-    children.push(
-      buildSection(path, [
-        'ground-works',
-        'Ground Works Section',
-        'Subsurface and surface permitting, boring notices, trench inspection.',
-      ])
-    );
-  }
-  if (key === DECOY_OFFICE) {
-    children.push(
-      buildSection(path, [
-        'change-of-use',
-        'Change of Use Section',
-        'Reclassification of occupied premises, including street cuts and reinstatement.',
-      ])
-    );
-  }
-  const want = 2 + (hash('s' + key) % 2);
-  while (children.length < want) children.push(buildSection(path));
-  return { kind: 'office', slug, name, blurb, path, children };
-}
-
-function buildDivision(division) {
-  const path = [division.slug];
-  const children = [];
-  if (division.slug === TARGET.path[0]) {
-    children.push(
-      buildOffice(path, [
-        'field-operations',
-        'Office of Field Operations',
-        'Excavation and ground works, field inspection crews, site access.',
-      ])
-    );
-  }
-  if (division.slug === 'permits-and-clearances') {
-    children.push(buildOffice(path, OFFICE_POOL[2]));
-    officeCursor = Math.max(officeCursor, 3);
-  }
-  while (children.length < 3) children.push(buildOffice(path));
-  return { kind: 'division', ...division, path, children };
+  for (const child of node.children) place(child, node.path);
+  return node;
 }
 
 const ROOT = {
   kind: 'root',
   name: 'Department Directory',
   path: [],
-  children: DIVISIONS.map(buildDivision),
+  children: DIVISIONS.map((d) => place(d, [])),
 };
 
 // --- rendering --------------------------------------------------------------
 
-const LEVEL_WORD = {
-  root: 'division',
-  division: 'office',
-  office: 'section',
-  section: 'desk',
+const CHILD_WORDS = {
+  root: 'divisions',
+  division: 'offices',
+  office: 'sections',
+  section: 'public service desks',
 };
 
 function up(n) {
   return n === 0 ? './' : '../'.repeat(n);
 }
 
-// The Bureau home page, relative to a page whose directory is `dirDepth`
-// levels below pages/gov/departments/.
-function homeFrom(dirDepth) {
-  return '../'.repeat(dirDepth + 1) + 'index.html';
+// A desk page is a file inside its section directory, so it sits at the same
+// directory depth as its section; `toRoot` is the relative path from a page to
+// pages/gov/.
+function toRoot(node) {
+  const dirDepth = node.kind === 'desk' ? node.path.length - 1 : node.path.length;
+  return '../'.repeat(dirDepth + 1);
 }
 
 function crumbs(node) {
-  if (node.kind === 'root') return '<p>You are here: Directory</p>';
+  if (node.kind === 'root') return 'You are here: Directory';
   let cursor = ROOT;
   const parts = [];
   for (const slug of node.path) {
     cursor = cursor.children.find((c) => c.slug === slug);
     parts.push(cursor);
   }
-  // A desk page is a file inside its section directory, so it sits at the same
-  // directory depth as its section.
   const dirDepth = node.kind === 'desk' ? node.path.length - 1 : node.path.length;
   const trail = [`<a href="${up(dirDepth)}">Directory</a>`];
   parts.forEach((p, i) => {
@@ -313,7 +551,7 @@ function crumbs(node) {
       trail.push(`<a href="${up(dirDepth - (i + 1))}">${shortName(p.name)}</a>`);
     }
   });
-  return `<p>You are here: ${trail.join(' &gt; ')}</p>`;
+  return `You are here: ${trail.join(' &gt; ')}`;
 }
 
 function shortName(name) {
@@ -346,23 +584,27 @@ const VIEW_BEACON = `<script type="text/javascript">
 })();
 </script>`;
 
-function shell(title, breadcrumb, body, homeHref, tail = '') {
+function shell(title, node, body, tail = '') {
+  const root = toRoot(node);
   return `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>${title} - Bureau of Civic Revenue</title></head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="icon" type="image/svg+xml" href="${root}favicon.svg"><title>${title} - Bureau of Civic Revenue</title></head>
 <body bgcolor="#FFFFFF" text="#000000" link="#0000CC" vlink="#551A8B">
 <table width="760" border="0" cellpadding="4" cellspacing="0" align="center">
-<tr bgcolor="#003366"><td><font color="#FFFFFF" size="4" face="Times New Roman"><b>BUREAU OF CIVIC REVENUE</b></font><br>
+<tr bgcolor="#003366"><td><a href="${root}index.html" style="color:#FFFFFF;text-decoration:none"><font color="#FFFFFF" size="4" face="Times New Roman"><b>BUREAU OF CIVIC REVENUE</b></font></a><br>
 <font color="#CCCCCC" size="1">DEPARTMENT DIRECTORY</font></td></tr>
 </table>
 <table width="760" border="0" cellpadding="4" cellspacing="0" align="center">
 <tr><td>
-<font size="1">${breadcrumb}</font>
+<font size="1">${crumbs(node)}</font>
 ${body}
 <hr>
 <font size="1">Directory listings are maintained by the Records and Disclosure Division.
-Rev. ${REV}. Report a wrong extension to the webmaster. <a href="${homeHref}">Bureau home page</a>.<br>
+Rev. ${REV}. Report an incorrect listing to the webmaster through the Correspondence Unit.<br>
+[ <a href="${root}index.html">Main Page</a> ] [ <a href="${root}contact.html">Contact the Bureau</a> ]
+[ <a href="${root}privacy.html">Privacy Statement</a> ] [ <a href="${root}terms.html">Terms of Use</a> ]<br>
 &copy; Bureau of Civic Revenue. An agency of the Commonwealth. Revenue Building, Statehouse Plaza.</font>
 </td></tr>
 </table>
@@ -372,57 +614,54 @@ ${tail}</body>
 }
 
 function renderBranch(node) {
-  const childWord = LEVEL_WORD[node.kind];
-  const article = /^[aeiou]/.test(childWord) ? 'an' : 'a';
   const intro =
     node.kind === 'root'
-      ? `<p>The Bureau is organised into four divisions. Each division listing continues to its offices, sections and public service desks. Counter hours and direct extensions are published on the desk pages.</p>`
-      : `<p>${node.blurb} Continue to ${article} ${childWord} below.</p>`;
+      ? `<p>The Bureau is organized into four divisions. Each division listing continues to its offices, sections and public service desks. Counter hours and direct telephone lines are published on the desk pages.</p>`
+      : `<p>${node.blurb} The ${CHILD_WORDS[node.kind]} of this ${node.kind} are listed below.</p>`;
   const items = node.children
     .map((c) => {
       const href = c.kind === 'desk' ? `${c.slug}.html` : `${c.slug}/`;
-      const label = c.kind === 'desk' ? '' : ` &mdash; ${c.blurb ?? ''}`;
+      const label = c.kind === 'desk' ? '' : ` &mdash; ${c.blurb}`;
       return `<li><a href="${href}">${c.name}</a>${label}</li>`;
     })
     .join('\n');
-  // A bare <h2> carries the page name as its own text node so the snapshot can
-  // see it; wrapping it in <font> (as the older gov pages do) would hide it,
-  // because the walker reads an element's direct text nodes only.
   return shell(
     node.kind === 'root' ? 'Department Directory' : node.name,
-    crumbs(node),
+    node,
     `<h2>${node.kind === 'root' ? 'Department Directory' : node.name}</h2>
 <font size="2">
 ${intro}
 <ul>
 ${items}
 </ul>
-</font>`,
-    homeFrom(node.path.length)
+</font>`
   );
 }
 
+// The fact table follows filing-status.html: bordered, khaki header cells,
+// <font> inside every cell.
 function renderDesk(node) {
-  // Every graded line is the DIRECT text of its own <p>, with the <font>
-  // wrapper OUTSIDE the paragraph: the snapshot walker reads a node's own text
-  // nodes only, so a <font> inside the <p> would make the paragraph text
-  // invisible to snapshot and find. The lines are also kept short because the
-  // formatter truncates displayed text at 30 characters.
+  const row = (label, value, shade) =>
+    `<tr${shade ? ' bgcolor="#EEEEEE"' : ''}><td bgcolor="#CCCC99" width="32%"><font size="2"><b>${label}</b></font></td>` +
+    `<td><font size="2">${value}</font></td></tr>`;
   return shell(
     node.name,
-    crumbs(node),
+    node,
     `<h2>${node.name}</h2>
 <font size="2">
-<p>Public counter hours</p>
-<p>${node.hours}</p>
-<p>Phone: ${node.phone}</p>
-<p>Room ${node.room}, Revenue Building &middot; ${node.stop}</p>
-<p>Walk-in service is offered during the counter hours shown above. Outside those
-hours the desk accepts filings through the lobby drop box on the ground floor.
-Telephone enquiries are answered by the extension above; leave one message only,
-as duplicate messages are removed from the queue before they are returned.</p>
+<table width="90%" border="1" cellspacing="0" cellpadding="3">
+${row('Public counter hours', node.hours, false)}
+${row('Telephone', node.phone, true)}
+${row('Window', `Room ${node.room}, Revenue Building`, false)}
+${row('Interoffice mail', node.stop, true)}
+</table>
+<p>Walk-in service is offered at the desk's window during the counter hours shown above.
+General counter service for all form types is given at the Central Office, 1 Assessment
+Plaza, 4th Floor. Outside counter hours the desk accepts filings through the lobby drop box
+at the Revenue Building.</p>
+<p>Telephone inquiries are answered on the direct line above. Please leave one message
+only; duplicate messages are removed from the queue before calls are returned.</p>
 </font>`,
-    homeFrom(node.path.length - 1),
     VIEW_BEACON + '\n'
   );
 }
@@ -446,17 +685,18 @@ function assertTargetsUnique() {
   const problems = [];
   const count = (needle) =>
     files.filter(([, html]) => html.includes(needle)).map(([f]) => f);
-  for (const needle of ['9:15', '12:45', '014-3391']) {
+  const local = (phone) => phone.slice(-8);
+  for (const needle of ['9:15', '12:45', local(TARGET.phone)]) {
     const hits = count(needle);
     const want = join(...TARGET.path, `${TARGET.desk}.html`);
     if (hits.length !== 1 || hits[0] !== want) {
       problems.push(`"${needle}" appears in ${hits.length} page(s): ${hits.join(', ')}`);
     }
   }
-  const siblingHits = count('014-8862');
+  const siblingHits = count(local(SIBLING.phone));
   const siblingWant = join(...TARGET.path, `${SIBLING.desk}.html`);
   if (siblingHits.length !== 1 || siblingHits[0] !== siblingWant) {
-    problems.push(`"014-8862" appears in ${siblingHits.length} page(s): ${siblingHits.join(', ')}`);
+    problems.push(`"${local(SIBLING.phone)}" appears in ${siblingHits.length} page(s): ${siblingHits.join(', ')}`);
   }
   if (files.some(([, html]) => /<input|<form/.test(html))) {
     problems.push('a tree page carries a form or input; tree pages must have no search box');
@@ -477,10 +717,13 @@ function assertTargetsUnique() {
       );
     }
   }
-  for (const desk of DECOY_DESKS) {
-    const want = join(...DECOY_SECTION.split('/'), `${desk}.html`);
-    if (!files.some(([rel]) => rel === want)) {
+  for (const [d, prefix] of Object.entries(DECOY_DESKS)) {
+    const want = join(...DECOY_SECTION.split('/'), `${d}.html`);
+    const page = files.find(([rel]) => rel === want);
+    if (!page) {
       problems.push(`near-miss decoy desk missing: ${want}`);
+    } else if (!page[1].includes(`<title>${prefix} `)) {
+      problems.push(`near-miss decoy desk ${want} no longer has a name starting "${prefix}"`);
     }
   }
   const deskHours = files.filter(([rel]) => !rel.endsWith('index.html'));
@@ -490,6 +733,8 @@ function assertTargetsUnique() {
       problems.push(`filler desk ${rel} advertises Tue & Thu hours, muddying the target`);
     }
   }
+  const slugs = new Set(files.map(([rel]) => rel));
+  if (slugs.size !== files.length) problems.push('two tree nodes share a path');
   if (problems.length) throw new Error('generator invariant broken:\n  ' + problems.join('\n  '));
 }
 assertTargetsUnique();
@@ -513,4 +758,4 @@ console.log(`  dept-descent     hours: ${TARGET.hours.replace('&amp;', '&')}`);
 console.log(`  breadcrumb-sibling path: /gov/departments/${TARGET.path.join('/')}/${SIBLING.desk}.html`);
 console.log(`  breadcrumb-sibling phone: ${SIBLING.phone}  (start page's own decoy: ${TARGET.phone})`);
 console.log(`  decoy desks: Subsurface Utility Notices, Surface Water Permits`);
-console.log(`    under /gov/departments/permits-and-clearances/occupancy-consents/change-of-use/`);
+console.log(`    under /gov/departments/${DECOY_SECTION}/`);

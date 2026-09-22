@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Operator sign-in - Marlowe Depot Systems</title>
 <link rel="stylesheet" href="depot.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <header class="mast">
   <img class="mark" src="assets/mark.svg" alt="" width="26" height="26">
-  <span class="brand">Marlowe Depot Systems</span>
+  <a class="brand" href="./">Marlowe Depot Systems</a>
   <span class="site">Yard 4 &middot; Grenford</span>
   <span class="grow"></span>
   <span class="meta">Ops console 6.2.4</span>
@@ -23,7 +24,8 @@
   <a href="index.html" class="signout" data-tab="signin">Sign in</a>
 </nav>
 
-<div class="wrap">
+<main class="wrap">
+  <h1 class="pagehead">Operator terminal</h1>
   <div class="signin-grid">
     <section class="panel">
       <h2>Operator sign-in</h2>
@@ -58,10 +60,10 @@
       </div>
     </section>
   </div>
-</div>
+</main>
 
 <footer class="foot">
-  <span>&copy; 2026 Marlowe Depot Systems Ltd. Registered office: Unit 9, Grenford Trade Park, Grenford GR2 4LX.</span>
+  <span>&copy; 2026 Marlowe Depot Systems Ltd. Registered in England and Wales, company number 00000000. Registered office: Unit 9, Grenford Trade Park, Grenford GR2 4LX.</span>
   <a href="legal.html#privacy">Privacy</a>
   <a href="legal.html#terms">Terms</a>
   <a href="incidents.html">Report an incident</a>
@@ -93,6 +95,7 @@ document.getElementById('signin').addEventListener('submit', async (e) => {
       return;
     }
     shard = out.shard;
+    sessionStorage.setItem('depot-operator', JSON.stringify({ id: out.operator, name: 'M. Osei' }));
   } catch {
     note.textContent = 'Sign-in is unavailable. Try again.';
     return;

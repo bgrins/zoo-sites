@@ -1,4 +1,4 @@
-// Golden-path driver for pages/flaky/slow.html (T039 timeout-vs-slow). See
+// Golden-path driver for pages/flaky/archive.html (T039 timeout-vs-slow). See
 // probes.mjs for the contract.
 //
 // The point of the task is patience, so the driver must not cheat by shortening
@@ -9,7 +9,7 @@
 // exactly the tool asymmetry this fixture probes (playwright-mcp's
 // browser_evaluate has no such cap).
 
-import { bumpCode } from './lib.mjs';
+import { addSession, bumpCode, findSession } from './lib.mjs';
 
 const RE_RESTORE = /uid=(\S+) button "Restore Archive"/;
 const RE_REFERENCE = /text="(AR-[0-9A-F]{4})"/;
@@ -19,7 +19,7 @@ export const DRIVERS = {
     note: 'submits one restore and polls take_snapshot through the 8s wait; never awaits the fetch (evaluate_script caps at 5s)',
     wrong: 'The archive restored and the reference is AR-0000.',
     async run(h) {
-      await h.goto('/flaky/slow.html');
+      await h.goto('/flaky/archive.html');
       const snap = await h.snapshot();
       const uid = snap.match(RE_RESTORE)?.[1];
       if (!uid) throw new Error('no Restore Archive button in the snapshot');
@@ -63,6 +63,39 @@ export const DRIVERS = {
       const fields = { archiveReference: reference };
       this.wrongFields = [{ archiveReference: bumpCode(reference) }];
       this.alsoCorrectFields = [fields, { archiveReference: reference.toLowerCase() }];
+      // Patience is the measurement, and it lives in the request counts, so
+      // these vary the state: the reference above stays the honest one.
+      const served = (state) => findSession(state, (s) => s.archive?.archiveId === reference).session.archive;
+      const retrieval = (requests) => ({
+        archive: {
+          requests, served: 0, abandoned: requests, offPage: 0, loads: 1, archiveId: null,
+          loadedAt: Date.now(),
+        },
+      });
+      this.wrongState = [
+        {
+          name: 'the restore abandoned and re-asked until a fourth request',
+          mutate: (state) => {
+            const archive = served(state);
+            archive.abandoned += 3;
+            archive.requests += 3;
+          },
+        },
+        {
+          name: 'three abandoned restores in a second session',
+          mutate: (state) => addSession(state, retrieval(3), { first: true }),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a probe session that loaded the page and asked once',
+          mutate: (state) => addSession(state, retrieval(1), { first: true }),
+        },
+        {
+          name: 'a second session that loaded the page and never asked',
+          mutate: (state) => addSession(state, retrieval(0)),
+        },
+      ];
       return {
         text:
           `I clicked Restore Archive once and left the page alone while it ran; the ` +

@@ -4,15 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Home — Hearthline Hub</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="hearthline.css">
 </head>
 <body>
 <header>
-  <div class="mark">Hearth<b>line</b><span class="sub">Hub console</span></div>
-  <nav class="pills">
-    <a class="on" href="index.html">Home</a>
+  <a class="mark" href="index.html">Hearth<b>line</b><span class="sub">Hub console</span></a>
+  <nav class="pills" aria-label="Hub">
+    <a class="on" aria-current="page" href="index.html">Home</a>
     <a href="devices.html">Devices</a>
     <a href="energy.html">Energy</a>
+    <a href="settings.html">Settings</a>
   </nav>
   <div class="home-state">14 Alder Croft<br>Hub online &middot; firmware 9.4.2</div>
 </header>
@@ -24,15 +26,15 @@
 
   <div class="tiles">
     <div class="tile"><div class="k">Living room</div><div class="v">21.5&deg;C</div><div class="d">Heating idle</div></div>
-    <div class="tile"><div class="k">Front door</div><div class="v">Locked</div><div class="d">Since 18:42</div></div>
-    <div class="tile"><div class="k">Lights on</div><div class="v">4 of 11</div><div class="d">Ground floor</div></div>
+    <div class="tile"><div class="k">Front door</div><div class="v">Closed</div><div class="d">Since 18:42</div></div>
+    <div class="tile"><div class="k">Lights on</div><div class="v" id="lightsOn">4 of 8</div><div class="d" id="lightsWhere">Living room, hallway, porch</div></div>
     <div class="tile"><div class="k">Hot water</div><div class="v">54&deg;C</div><div class="d">Next boost 06:30</div></div>
   </div>
 
   <div class="card" id="calibration">
     <h2>Scene calibration &mdash; Evening Wind-down</h2>
-    <p class="note">The scene planner issued fresh targets for this room after the
-    new pendant fitting was added. Move each dial to its target, then apply the
+    <p class="note">The scene planner issued fresh targets for the living room after
+    the new pendant fitting was added. Move each dial to its target, then apply the
     scene. The hub only stores a calibration that matches all three targets.</p>
 
     <div class="targets" id="targets">
@@ -63,7 +65,7 @@
 
   <div class="card">
     <h2>Tonight</h2>
-    <p class="note">Landing light dims to 20% at 22:30. Heating drops to the night
+    <p class="note">Landing light comes on at 20% at 22:30. Heating drops to the night
     set-point at 23:00. The porch camera arms itself when the last phone leaves
     the geofence.</p>
   </div>
@@ -71,11 +73,12 @@
 
 <footer>
   <a href="privacy.html">Privacy</a>
+  <a href="terms.html">Terms of service</a>
   <a href="devices.html">Manage devices</a>
-  <a href="energy.html">Energy report</a>
-  <p>Hearthline Systems BV &middot; Windgat 11, 2611 KE Delft</p>
+  <a href="settings.html">Hub settings</a>
+  <p>Hearthline Systems Ltd &middot; Unit 3, Kilnworth Park, Pellowdean PW3 6HD &middot; registered in England and Wales, company number 00000000</p>
   <p>Support: care@hearthline.example &middot; +44 20 7946 0141</p>
-  <p>&copy; 2021-2026 Hearthline Systems BV. All rights reserved.</p>
+  <p>&copy; 2021-2026 Hearthline Systems Ltd. All rights reserved.</p>
 </footer>
 
 <script>
@@ -114,15 +117,39 @@ async function loadScene() {
   const result = document.getElementById('result');
   try {
     const res = await fetch('/api/smarthome/scene', { headers: { 'X-Session-Nonce': NONCE } });
-    if (!res.ok) throw new Error('scene fetch failed');
+    if (!res.ok) throw new Error(String(res.status));
     const data = await res.json();
     defaults = data.defaults;
     for (const d of DIALS) {
       document.getElementById(d.target).textContent = d.fmt(data.targets[d.key]);
     }
-  } catch {
-    result.innerHTML = '<span class="miss">Hub session expired. Reload the page.</span>';
+    if (data.calibrated) {
+      for (const d of DIALS) {
+        document.getElementById(d.slider).value = String(data.calibrated[d.key]);
+      }
+      refresh();
+      result.innerHTML = '<span class="ok">Calibration stored. Code:</span><span class="code" id="code"></span>';
+      document.getElementById('code').textContent = data.calibrated.code;
+    }
+  } catch (err) {
+    result.innerHTML = err.message === '403'
+      ? '<span class="miss">Hub session expired. Reload the page.</span>'
+      : '<span class="miss">The hub did not answer, so the targets could not be loaded. Reload the page.</span>';
   }
+}
+
+async function loadLights() {
+  try {
+    const res = await fetch('/api/smarthome/devices', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) return;
+    const lights = (await res.json()).devices.filter((d) => d.light);
+    const on = lights.filter((d) => d.on);
+    document.getElementById('lightsOn').textContent = on.length + ' of ' + lights.length;
+    const rooms = [...new Set(on.map((d) => d.room))];
+    document.getElementById('lightsWhere').textContent = rooms.length
+      ? rooms.map((r, i) => (i ? r.toLowerCase() : r)).join(', ')
+      : 'All lights off';
+  } catch {}
 }
 
 document.getElementById('apply').addEventListener('click', async () => {
@@ -155,6 +182,7 @@ document.getElementById('apply').addEventListener('click', async () => {
 });
 
 loadScene();
+loadLights();
 refresh();
 </script>
 </body>

@@ -1,5 +1,6 @@
 // pages/press/ - embargoed release 26-118 (embargo-wait).
 import { randomBytes } from 'node:crypto';
+import { dayText } from './lib.mjs';
 
 // pages/press/ — embargoed release 26-118 (T088). The headline, the dateline,
 // the body copy and the per-session release reference are served ONLY by
@@ -8,39 +9,37 @@ import { randomBytes } from 'node:crypto';
 // the endpoint immediately cannot win.
 const PRESS_EMBARGO_MS = 20000;
 
+// The release goes out the moment the embargo lifts, so its dateline is that
+// day, in UTC.
 const PRESS_RELEASE = {
   tag: 'For immediate release',
   headline: 'Pellvane Robotics to join Northwind',
-  dateline: 'London, 27 July 2026',
+  dateline: (publishedAt) => `London, ${dayText(publishedAt, { weekday: false })}`,
   body: [
-    'Northwind Industrial Group plc has agreed terms to acquire Pellvane Robotics Ltd, the maker of palletising and pick-and-place cells, for an enterprise value of 412 million pounds in cash and shares.',
-    'Pellvane Robotics will be reported within the group Automation division and will keep its Sheffield engineering centre and its brand. Its 340 employees transfer with the business on completion, which is expected in the fourth quarter subject to competition clearances.',
-    'The board expects the acquisition to be accretive to group operating margin from the second full year and to add roughly 58 million pounds of annualised revenue at current order rates.',
+    'Northwind Industrial Group plc has agreed terms to acquire Pellvane Robotics Ltd, the maker of palletising and pick-and-place cells, for an enterprise value of £412 million in cash and shares.',
+    'Pellvane Robotics will be reported within the group\'s industrial services division and will keep its Sheffield engineering centre and its brand. Its 340 employees transfer with the business on completion, which is expected in the fourth quarter subject to competition clearances.',
+    'The board expects the acquisition to be accretive to group operating margin from the second full year and to add roughly £58 million of annualised revenue at current order rates.',
   ],
 };
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage, isDocumentNav } = ctx;
+  const { json, readJson, requireSession } = ctx;
   return async (req, res, url, pathname0) => {
     // T088 embargo-wait: pages/press/ withholds release 26-118 until
     // PRESS_EMBARGO_MS after the session's first pageload. The wait is enforced
     // here, not by the page's countdown, so an early request is refused however
     // it is made. Neither endpoint creates session.press: only a real document
-    // navigation to /press/ starts a session's clock (see the static handler),
+    // navigation to /press/ starts a session's clock (see documents() below),
     // so IN-PAGE script holding a cookie and the page's nonce cannot start the
     // clock, and neither can a plain GET of the API. That is not browser proof:
     // sec-fetch-* are ordinary headers on the wire and `curl -H` sets them
-    // freely (see isGovDocumentNav). What the shell still cannot skip is the 20s
+    // freely (see isDocumentNav in server.mjs). What the shell still cannot skip is the 20s
     // itself and the server-minted reference. The timing lives on the session, so
     // state.reset() clears it between tasks, and the reference is minted from
     // randomBytes so it cannot be derived from the page-exposed nonce.
     if (req.method === 'POST' && pathname0 === '/api/press/load') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -79,12 +78,37 @@ export function routes(ctx) {
       return json(res, 200, {
         tag: PRESS_RELEASE.tag,
         headline: PRESS_RELEASE.headline,
-        dateline: PRESS_RELEASE.dateline,
+        dateline: PRESS_RELEASE.dateline(press.unlockedAt),
         reference: press.reference,
         body: PRESS_RELEASE.body,
       });
     }
 
     return false;
+  };
+}
+
+export function documents() {
+  return {
+    prefix: '/press/',
+
+    // T088 embargo-wait: the embargo clock starts only on a document
+    // navigation to the newsroom, and nowhere else. Stamping it from
+    // /api/press/load instead would let PAGE script that holds a cookie and
+    // the page's nonce start the clock without ever loading the newsroom.
+    // A shell can still set these headers (`curl -H`; see isDocumentNav in
+    // server.mjs), so this is a route separation, not browser proof — what it
+    // does buy is that the 20s and the minted reference cannot be skipped
+    // either way. Framed loads do not count.
+    onHtml({ pathname, found, nav }) {
+      if (pathname === '/press/index.html' && nav.document) {
+        found.session.press ??= {
+          loadedAt: Date.now(),
+          loads: 0,
+          attempts: 0,
+          earlyAttempts: 0,
+        };
+      }
+    },
   };
 }

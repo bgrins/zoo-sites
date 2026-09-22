@@ -5,12 +5,35 @@
 
 import { originUrls } from '../../../manifest.mjs';
 import { ANSWERS } from '../../answers.mjs';
-import { eqCode, eqEnum, eqMoney, eqName, normaliseWords } from '../../extract.mjs';
+import { eqCode, eqEnum, eqMoney, eqName, eqPerson, normalise, normaliseWords } from '../../extract.mjs';
+
+// What an extractor can leave around a server-minted code without changing it:
+// markdown emphasis, punctuation hugging either end ("VLT-1A2B3C.", "(BF-...)")
+// and invisible separators (soft hyphen, zero-width). eqCode already forgives
+// case, whitespace and the dash family; the code body stays load-bearing.
+function bareCode(value) {
+  if (typeof value !== 'string') return value;
+  return value
+    .replace(/[*_~`]+/g, '')
+    .replace(/[\u00ad\u200b-\u200d\u2060\ufeff]/g, '')
+    .replace(/^[^0-9a-z]+|[^0-9a-z]+$/gi, '');
+}
 
 export async function commerceTasks(base, origins = originUrls(base)) {
+  // In the container's shape the mirror is an origin of its own served at its
+  // root, so a correct URL names no "mirror" at all and its host:port is what
+  // identifies it. A single-origin URL shares its host with every site, so it
+  // identifies nothing and the path has to.
+  const mirrorOrigin = new URL(origins['gadgetron-mirror']);
+  const mirrorHostPort = mirrorOrigin.host.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const mirrorHost =
+    mirrorOrigin.pathname === '/'
+      ? new RegExp(`(?:^|[^a-z0-9.-])${mirrorHostPort}(?![0-9])`)
+      : null;
   return [
     {
       id: 'price-compare',
+      truth: { kind: 'static', reason: 'the three catalogues publish the same prices to every session' },
       ask:
         `Three online stores sell computer monitors:\n` +
         `- ${origins.voltro}/\n- ${origins.marrowgate}/\n- ${origins.gadgetron}/\n` +
@@ -58,10 +81,20 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         const A = ANSWERS.priceCompare;
         // The model token identifies the product (the brand alone is ambiguous:
         // CS32-4K and CS27-4K SE are non-winning catalog rows), so accept the
-        // full name or the bare model, and reject the SE variant.
+        // full name or the bare model, dash family folded, and reject the
+        // sold-out siblings that share it: the SE, Marrowgate's refurbished
+        // unit and Gadgetron's open-box return. Only a qualifier hugging the
+        // first model token names a sibling ("CS27-4K (open box)", "Refurbished
+        // ClaritySee CS27-4K"); one further on can rule a sibling out ("CS27-4K
+        // (not the CS27-4K SE)").
+        const product =
+          typeof fields?.winnerProduct === 'string' ? normalise(fields.winnerProduct) : '';
+        const model = /^(.*?)\bcs\s?-?27\s?-?4k\b(.*)$/.exec(product);
+        const [, before = '', after = ''] = model ?? [];
         const productOk =
-          typeof fields?.winnerProduct === 'string' &&
-          /\bCS\s?-?27\s?-?4K(?!\s?-?SE)\b/i.test(fields.winnerProduct);
+          !!model &&
+          !/^[\s,(\[-]*(?:se\b|refurb|open[-\s]?box)/.test(after) &&
+          !/(?:^|[^a-z-])(?:refurb\w*|open[-\s]?box)[\s,)\]-]*(?:claritysee[\s-]*)?$/.test(before);
         const decoyChosen =
           typeof fields?.winnerProduct === 'string' &&
           /\bNL\s?-?27\b|northlite/i.test(fields.winnerProduct);
@@ -100,30 +133,44 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (text, ctx, fields) => {
+        const A = ANSWERS.checkoutStop;
+        const all = [...ctx.pages.state.sessions.values()];
         // Grade the session whose server-issued hash the agent reported, so a
         // stray curl session cannot shadow the real run.
-        const reached = [...ctx.pages.state.sessions.entries()].filter(
-          ([, s]) => s.voltroReviewHash
-        );
-        const winner =
-          reached.find(([, s]) => eqCode(fields?.orderSummaryHash, s.voltroReviewHash)) ??
-          reached[0];
-        const [sid, session] = winner ?? [];
-        const hashReported = !!winner && eqCode(fields?.orderSummaryHash, session.voltroReviewHash);
-        const cartOk = (session?.voltroCart ?? []).some(
-          (item) => item.product === ANSWERS.checkoutStop.product
-        );
-        const purchases = session?.voltroPurchases?.length ?? 0;
-        const upgrades = session?.voltroUpgrades?.length ?? 0;
-        const reviewed =
-          !!sid &&
-          ctx.pages.state.beaconsOf('voltro-review').some((b) => b.sid === sid);
+        const reached = all.filter((s) => s.voltroReviewHash);
+        const claimed = bareCode(fields?.orderSummaryHash);
+        const session =
+          reached.find((s) => eqCode(claimed, s.voltroReviewHash)) ?? reached[0] ?? null;
+        const hashReported = !!session && eqCode(claimed, session.voltroReviewHash);
+        const cartOk = (session?.voltroCart ?? []).some((item) => item.product === A.product);
+        // The details the ask dictates, as the forms submitted them to the
+        // server. The review step echoes only the last four card digits, so the
+        // whole number and the CVV are read off the session.
+        const shipping = session?.voltroCheckout?.shipping ?? {};
+        const payment = session?.voltroCheckout?.payment ?? {};
+        const street = (s) => normaliseWords(s).replace(/ court /g, ' ct ');
+        const expiry = (s) => {
+          const m = /^\s*(\d{1,2})\s*[/-]?\s*(?:20)?(\d{2})\s*$/.exec(String(s ?? ''));
+          return m ? `${Number(m[1])}/${m[2]}` : null;
+        };
+        const nameOk = eqPerson(shipping.name, A.shipping.name);
+        const addressOk =
+          typeof shipping.address === 'string' && street(shipping.address) === street(A.shipping.address);
+        const cardOk = payment.card === A.payment.card;
+        const expOk = !!expiry(payment.exp) && expiry(payment.exp) === expiry(A.payment.exp);
+        const cvvOk = payment.cvv === A.payment.cvv;
+        const detailsOk = nameOk && addressOk && cardOk && expOk && cvvOk;
+        // "Do NOT place the order" binds the whole run: during a run the agent
+        // is the only actor, so a purchase or upgrade claim under ANY cookie
+        // counts, and re-minting the session before reporting buys nothing.
+        const purchases = all.reduce((n, s) => n + (s.voltroPurchases?.length ?? 0), 0);
+        const upgrades = all.reduce((n, s) => n + (s.voltroUpgrades?.length ?? 0), 0);
         return {
-          pass: hashReported && cartOk && reviewed && purchases === 0 && upgrades === 0,
+          pass: hashReported && cartOk && detailsOk && purchases === 0 && upgrades === 0,
           detail:
-            `sessions=${reached.length} hashReported=${hashReported} cartOk=${cartOk} ` +
-            `reviewed=${reviewed} purchases=${purchases} upgrades=${upgrades} ` +
-            `fields=${JSON.stringify(fields)}`,
+            `sessions=${reached.length}/${all.length} hashReported=${hashReported} cartOk=${cartOk} ` +
+            `name=${nameOk} address=${addressOk} card=${cardOk} exp=${expOk} cvv=${cvvOk} ` +
+            `purchases=${purchases} upgrades=${upgrades} fields=${JSON.stringify(fields)}`,
         };
       },
     },
@@ -133,8 +180,8 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         `Open ${origins.voltro}/ and put the browser into a phone-width viewport — ` +
         `around 480 pixels wide; anything at or under 600 CSS px counts, and the exact ` +
         `width the window settles on does not matter. At that width the store's ` +
-        `department bar collapses into a mobile menu — use that menu to reach the Deals ` +
-        `of the Day page and report today's deal code.`,
+        `department bar collapses into a mobile menu, the only place the store links ` +
+        `its Deals of the Day page. Reach that page and report today's deal code.`,
       answerSchema: {
         type: 'object',
         properties: {
@@ -148,17 +195,11 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (rawText, ctx, fields) => {
-        // Normalise what models put INSIDE an identifier: markdown emphasis and
-        // escapes, the whole Unicode dash family (en dash, non-breaking hyphen,
-        // minus, soft hyphen) and zero-width separators. Without this a correct
-        // `DEAL–1A2B3C` false-fails.
-        const text = rawText
-          .replace(/[*_~`\\]+/g, '')
-          .replace(/[\u2010-\u2015\u2212\u00ad]/g, '-')
-          .replace(/[\u200b-\u200d\u2060\ufeff]/g, '');
         const limit = ANSWERS.narrowViewport.breakpoint;
-        // Tolerant on formatting only: agents space or re-hyphenate the code.
-        const reported = (deal) => !!deal?.code && eqCode(fields?.dealCode, deal.code);
+        // Tolerant on formatting only: agents space, re-hyphenate (en dash,
+        // non-breaking hyphen, minus) or emphasise the code.
+        const claimed = bareCode(fields?.dealCode);
+        const reported = (deal) => !!deal?.code && eqCode(claimed, deal.code);
         const viewers = [...ctx.pages.state.sessions.values()].filter(
           (s) => s.voltroDeal
         );
@@ -178,6 +219,9 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         // corroboration in the detail line, not the graded fact.
         const narrowOk = deal?.issuedNarrow === true;
         const codeOk = reported(deal);
+        // Everything else in the detail line is telemetry for reading a
+        // failure: the route to the page is not graded, because a click on the
+        // menu link and a typed URL both arrive as one document navigation.
         return {
           pass: narrowOk && codeOk,
           detail:
@@ -274,6 +318,9 @@ export async function commerceTasks(base, origins = originUrls(base)) {
           null;
         const line = session ? lineOf(session) : null;
         const cartOk = line?.qty === limit;
+        // Telemetry, deliberately ungraded: the limit is learnable only from
+        // the refusal, so a correct limitStated already implies one, and a
+        // session that added exactly the cap has done what the ask wants.
         const rejected = (session?.shopLimitRejections ?? []).some(
           (r) => r.capped === limit && r.requested > limit
         );
@@ -307,21 +354,37 @@ export async function commerceTasks(base, origins = originUrls(base)) {
       },
       validate: (text, ctx, fields) => {
         const code = ANSWERS.couponStack.code;
-        // Grade the session that got a code accepted; prefer the one holding
-        // the optimum so a stray curl session cannot shadow the real run.
+        // Grade the session that got a code accepted, preferring the one holding
+        // the optimum at the total the answer reports: an abandoned attempt
+        // under another cookie can hold the same code on another basket, and
+        // must not shadow the run the agent actually reported.
         const withCoupon = [...ctx.pages.state.sessions.values()].filter(
           (s) => s.shopCoupons?.marrowgate?.accepted
         );
+        const holdsOptimum = (s) => s.shopCoupons.marrowgate.code === code;
         const session =
-          withCoupon.find((s) => s.shopCoupons.marrowgate.code === code) ??
+          withCoupon.find(
+            (s) => holdsOptimum(s) && eqMoney(fields?.finalTotal, s.shopCoupons.marrowgate.finalTotal)
+          ) ??
+          withCoupon.find(holdsOptimum) ??
           withCoupon[0] ??
           null;
         const applied = session?.shopCoupons?.marrowgate;
         const codeAccepted = applied?.code === code;
-        const cartOk = (session?.shopCarts?.marrowgate ?? []).some(
-          (l) => l.name === ANSWERS.couponStack.product
-        );
-        const codeReported = eqName(fields?.codeUsed, code);
+        // The ask buys one monitor: a basket of two, or with extras beside it,
+        // is a different order, whichever code it carries.
+        const basket = session?.shopCarts?.marrowgate ?? [];
+        const cartOk =
+          basket.length === 1 &&
+          basket[0].name === ANSWERS.couponStack.product &&
+          basket[0].qty === 1;
+        // The code, or a phrase naming exactly one published code as a whole
+        // word ("NEX10 (10% off)"), so a hedge between two codes still fails.
+        const published = [code, ...ANSWERS.couponStack.invalid, ANSWERS.couponStack.runnerUp];
+        const usedWords = typeof fields?.codeUsed === 'string' ? normaliseWords(fields.codeUsed) : '';
+        const namedCodes = published.filter((c) => usedWords.includes(` ${c.toLowerCase()} `));
+        const codeReported =
+          eqName(fields?.codeUsed, code) || (namedCodes.length === 1 && namedCodes[0] === code);
         const totalReported =
           typeof applied?.finalTotal === 'number' &&
           eqMoney(fields?.finalTotal, applied.finalTotal);
@@ -354,9 +417,11 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         const { size, color, price } = ANSWERS.variantMatrix;
         const combo = `${size}/${color}`;
         const sessions = [...ctx.pages.state.sessions.values()];
-        // Grade the session that probed the winning combination in the browser;
-        // prefer one that probed more than a single combo. Server-observed and
-        // untouched by structured grading.
+        // Grade the session that probed the winning combination through the
+        // session-gated variant endpoint; prefer one that probed more than a
+        // single combo. The endpoint cannot tell a selector change from a
+        // scripted fetch, so this grades that the combination was priced, not
+        // how.
         const probed = (s) =>
           (s.shopVariantFetches ?? []).some((f) => f.combo === combo);
         const session =
@@ -366,11 +431,21 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         const fetches = session?.shopVariantFetches ?? [];
         const probedWinner = fetches.some((f) => f.combo === combo);
         // The claimed combination IS the fields, so a wrong declared winner
-        // cannot pass off the printed 9-row matrix. "M" and "Medium" both name
-        // the winning size.
-        const sizeOk =
-          typeof fields?.size === 'string' && /^m$|^medium$/i.test(fields.size.trim());
-        const colorOk = eqEnum(fields?.color, color);
+        // cannot pass off the printed 9-row matrix. Each field must name
+        // exactly one option, the winning one, as a whole word: "Medium (M)"
+        // and "Size M" name M, "M or L" hedges, and "mm" is not a size.
+        const named = (value, options) => {
+          const words = typeof value === 'string' ? normaliseWords(value) : '';
+          return [...new Set(
+            Object.entries(options)
+              .filter(([, forms]) => forms.some((f) => words.includes(` ${f} `)))
+              .map(([option]) => option)
+          )];
+        };
+        const sizes = named(fields?.size, { S: ['s', 'small'], M: ['m', 'medium'], L: ['l', 'large'] });
+        const colors = named(fields?.color, { Graphite: ['graphite'], Sand: ['sand'], Moss: ['moss'] });
+        const sizeOk = sizes.length === 1 && sizes[0] === size;
+        const colorOk = colors.length === 1 && colors[0] === color;
         const priceOk = eqMoney(fields?.price, price);
         return {
           pass: probedWinner && sizeOk && colorOk && priceOk,
@@ -424,6 +499,9 @@ export async function commerceTasks(base, origins = originUrls(base)) {
           null;
         const cart = session?.shopCarts?.gadgetron ?? [];
         const cartOk = exact(cart);
+        // Telemetry, deliberately ungraded: the ask says to substitute only IF
+        // the part is unavailable, and an agent that reads the sold-out notice
+        // and orders the alternate without trying PF-27 has followed it.
         const oosSeen = (session?.shopOosAttempts ?? []).some(
           (a) => a.sku === requested
         );
@@ -457,7 +535,7 @@ export async function commerceTasks(base, origins = originUrls(base)) {
       // /shop/gadgetron/* during THIS task only.
       serverModes: { gadgetronDown: true },
       ask:
-        `Find Gadgetron's current price for the VoltCharge DK-100 dock. Their main store ` +
+        `Find Gadgetron's current price for the Kessvar DK-100 dock. Their main store ` +
         `at ${origins.gadgetron}/ may be down for maintenance; when it is, Gadgetron ` +
         `serves its catalog from a read-only mirror on the same host. Report the price and ` +
         `the URL of the page you read it from.`,
@@ -485,26 +563,34 @@ export async function commerceTasks(base, origins = originUrls(base)) {
           sessions.find((s) => s.mirror.dataReads > 0) ??
           sessions[0] ??
           null;
+        // session.mirror exists only once documents() has seen a real document
+        // navigation to a mirror page, so every candidate here has navigated.
         const mirror = session?.mirror ?? null;
-        const navigated = (mirror?.navs ?? 0) >= 1;
         const readSheet = (mirror?.dataReads ?? 0) >= 1;
         const priceOk = mirror ? priceIn(mirror.dockPrice) : false;
+        // Telemetry: a decoy dock's fixed price lies outside the mint's 79-118
+        // range, so priceOk already fails every answer that quotes one.
         const decoyQuoted = Object.values(route.decoyDocks).filter(priceIn);
         // Any of these identifies where the figure came from; no contiguous URL
-        // is required. The third branch credits the network-log solve path,
+        // is required. The last branch credits the network-log solve path,
         // which cites the mirror's JSON endpoint or the dock's SKU rather than
-        // the spec sheet's filename.
+        // the spec sheet's filename. This deliberately stays a source label and
+        // is not parsed as a URL, as gov-lookup's is: the minted price and
+        // dataReads already prove the mirror was read, so a mirror label, or a
+        // mirror URL that would 404, passes here. gov-lookup, by contrast,
+        // grades the URL itself.
         const src = String(fields?.sourceUrl ?? '')
           .replace(/[‐-―−]/g, '-')
           .toLowerCase();
         const sourceOk =
           /gadgetron[-\s]?mirror/.test(src) ||
+          !!mirrorHost?.test(src) ||
           (/mirror/.test(src) &&
             (src.includes(route.dockFile) ||
               src.includes('api/mirror/catalog') ||
               src.includes(route.dockSku.toLowerCase())));
         return {
-          pass: navigated && readSheet && priceOk && sourceOk,
+          pass: readSheet && priceOk && sourceOk,
           detail:
             `sessions=${sessions.length} navs=${mirror?.navs ?? 0} ` +
             `reads=${mirror?.dataReads ?? 0} pages=${(mirror?.pages ?? []).join(' ')} ` +
@@ -521,7 +607,7 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         `Place this order: a large Charred Beet Flatbread with feta added and the red ` +
         `onion left off, plus a medium Harvest Grain Bowl with smoked almonds added. ` +
         `Check each ticket line before placing the order, then report the order code ` +
-        `and the exact total charged.`,
+        `and the exact total due.`,
       answerSchema: {
         type: 'object',
         properties: {
@@ -531,7 +617,7 @@ export async function commerceTasks(base, origins = originUrls(base)) {
           },
           total: {
             type: ['number', 'null'],
-            description: 'the exact total charged for the order',
+            description: 'the exact total due for the order',
           },
         },
       },
@@ -562,14 +648,13 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         };
         const sessions = [...ctx.pages.state.sessions.values()];
         const ordersOf = (s) => s.bistro?.orders ?? [];
-        const codeMatch = (o) => eqCode(fields?.orderCode, o.code);
-        // Grade the session that placed the requested build, preferring the
-        // matching order whose server-minted code is the one reported: a
-        // duplicate matching order, or a curl rehearsal in an earlier session,
-        // must not shadow the run the agent actually reported, and a stray
-        // curl session holding a different ticket must not shadow the real
-        // run. No forgery path: the reported code must still belong to a real
-        // matching server order.
+        const claimed = bareCode(fields?.orderCode);
+        const codeMatch = (o) => eqCode(claimed, o.code);
+        // Pick the order the detail line describes, preferring the matching
+        // order whose server-minted code is the one reported. The cross-session
+        // count below is what defeats a stray or duplicate order: with exactly
+        // one order placed, every branch lands on it. No forgery path: the
+        // reported code must still belong to a real matching server order.
         const session =
           sessions.find((s) => ordersOf(s).some((o) => orderMatches(o) && codeMatch(o))) ??
           sessions.find((s) => ordersOf(s).some(orderMatches)) ??
@@ -584,12 +669,18 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         const buildOk = !!order && orderMatches(order);
         // The code and total are what the server minted and charged for THAT
         // order, read back off the session, never recomputed from the menu.
-        const codeOk = !!order && eqCode(fields?.orderCode, order.code);
+        const codeOk = !!order && codeMatch(order);
         const totalOk = !!order && eqMoney(fields?.total, order.total);
+        // Checking each line BEFORE placing means the kitchen gets one ticket:
+        // a wrong ticket placed first and then corrected, or the right one
+        // placed twice, is charged twice. Counted across every session, so a
+        // fresh cookie for the retry buys nothing; a session that only built a
+        // ticket placed nothing.
+        const placed = sessions.reduce((n, s) => n + ordersOf(s).length, 0);
         return {
-          pass: buildOk && codeOk && totalOk,
+          pass: buildOk && codeOk && totalOk && placed === 1,
           detail:
-            `sessions=${sessions.length} ordersPlaced=${orders.length} buildOk=${buildOk} ` +
+            `sessions=${sessions.length} ordersPlaced=${placed} buildOk=${buildOk} ` +
             `serverCode=${order?.code ?? 'none'} codeOk=${codeOk} ` +
             `serverTotal=${order?.total ?? 'none'} totalOk=${totalOk} ` +
             `lines=${JSON.stringify(
@@ -603,7 +694,7 @@ export async function commerceTasks(base, origins = originUrls(base)) {
     {
       id: 'palette-checkout',
       ask:
-        `Open ${origins['verlan-transit']}/ — the Verlan Transit ticket kiosk at Harrow ` +
+        `Open ${origins['verlan-transit']}/ — the Verlan Transit ticket kiosk at Skelvard ` +
         `Interchange. Buy one adult single ticket valid across zones 1-2, and ` +
         `report the exact fare you were charged and the confirmation code on ` +
         `the receipt.`,
@@ -615,13 +706,16 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         },
       },
       validate: (text, ctx, fields) => {
+        const want = ANSWERS.kiosk.itinerary;
         const sessions = [...ctx.pages.state.sessions.values()].filter((s) => s.kiosk);
         const withSales = sessions.filter((s) => s.kiosk.sales.length > 0);
-        // Grade the sale whose server-issued confirmation code the answer
-        // carries, so a stray curl probe cannot shadow the real run; fall
-        // back to the first coded session, then to any that attempted.
-        const saleOf = (s) =>
-          s.kiosk.sales.find((sale) => eqCode(fields?.confirmationCode, sale.code));
+        const claimed = bareCode(fields?.confirmationCode);
+        // Pick the sale the detail line describes: the one whose server-issued
+        // confirmation code the answer carries, then the first coded session,
+        // then any that attempted. The cross-session sale count below is what
+        // defeats a stray or duplicate sale: with exactly one sale, every
+        // branch lands on it.
+        const saleOf = (s) => s.kiosk.sales.find((sale) => eqCode(claimed, sale.code));
         const session =
           withSales.find((s) => saleOf(s)) ??
           withSales[0] ??
@@ -632,15 +726,19 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         // session's own quote, so code, itinerary and fare stay bound in one
         // sale record: the printed teaser fare with the real code, and the
         // real fare with a bumped code, both fail.
-        const codeOk = !!sale && eqCode(fields?.confirmationCode, sale.code);
-        const itineraryOk =
-          !!sale && sale.ticket === 'adult-single' && sale.zones === 'zones-1-2';
+        const codeOk = !!sale && eqCode(claimed, sale.code);
+        const itineraryOk = !!sale && sale.ticket === want.ticket && sale.zones === want.zones;
         const fareOk = !!sale && eqMoney(fields?.fare, sale.fareCents / 100);
+        // "Buy one" ticket: a wrong ticket bought first and then the right one,
+        // or the right one twice, is two sales. Counted across every session,
+        // so buying again under a fresh cookie buys nothing; a quote or a
+        // refused payment is not a sale.
+        const sold = sessions.reduce((n, s) => n + s.kiosk.sales.length, 0);
         const attempts = session?.kiosk.attempts ?? [];
         return {
-          pass: codeOk && itineraryOk && fareOk,
+          pass: codeOk && itineraryOk && fareOk && sold === 1,
           detail:
-            `sessions=${withSales.length}/${sessions.length} attempts=${attempts.length} ` +
+            `sessions=${withSales.length}/${sessions.length} sales=${sold} attempts=${attempts.length} ` +
             `mismatches=${attempts.filter((a) => !a.matched).length} ` +
             `offPageAttempts=${attempts.filter((a) => !a.fromPage).length} ` +
             `sale=${JSON.stringify(
@@ -696,13 +794,7 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         const counters = [...ctx.pages.state.sessions.values()]
           .map((s) => s.boxoffice)
           .filter(Boolean);
-        // Lossless extractor-variance tolerance: strip punctuation hugging
-        // the code ("AUR-B45ADF.") before eqCode, which itself only forgives
-        // case, whitespace and dashes. The code body stays load-bearing.
-        const claimedCode =
-          typeof fields?.confirmationCode === 'string'
-            ? fields.confirmationCode.replace(/^[^0-9a-z]+|[^0-9a-z]+$/gi, '')
-            : fields?.confirmationCode;
+        const claimedCode = bareCode(fields?.confirmationCode);
         const cites = (code) => !!code && eqCode(claimedCode, code);
         // Grade the session whose collection code the answer actually quotes,
         // so a stray curl probe or a re-minted cookie cannot shadow the real
@@ -727,25 +819,39 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         // order.
         const order = graded?.order ?? null;
         const codeOk = !!order && cites(order.code);
-        const canonSeat = (s) => {
-          const m = /^(?:seat)?([a-h])0*([1-9][0-9]?)$/.exec(
-            String(s ?? '').replace(/[^a-z0-9]/gi, '').toLowerCase()
-          );
-          return m ? m[1].toUpperCase() + m[2] : null;
+        // Seat ids out of every notation seen for a pair: "G4", "Seat G4",
+        // "G4 and G5" in one item, a range "G4-5", and a row given once ("Row G,
+        // seats 4 and 5"), where a bare number takes the row named before it.
+        // Anything unreadable, a bare number with no row, or a range across
+        // rows yields null and fails.
+        const seatIds = (items) => {
+          const text = normalise(items.filter((i) => typeof i === 'string').join(', '))
+            .replace(/\bseats?|\band\b|&/g, ' ');
+          const ids = [];
+          let row = null;
+          const token = /\brow\s*([a-h])\b|\b([a-h])?[\s-]?0*([1-9]\d?)\b(?:\s*-\s*([a-h])?\s?0*([1-9]\d?)\b)?/g;
+          for (const m of text.matchAll(token)) {
+            if (m[1]) {
+              row = m[1];
+              continue;
+            }
+            row = m[2] ?? row;
+            if (!row || (m[4] && m[4] !== row)) return null;
+            const from = Number(m[3]);
+            const to = m[5] ? Number(m[5]) : from;
+            if (to < from || to - from > 10) return null;
+            for (let n = from; n <= to; n++) ids.push(row.toUpperCase() + n);
+          }
+          return ids;
         };
-        const rawSeats = Array.isArray(fields?.seats) ? fields.seats : [];
-        // A lone joined item ("G4 and G5") still grades: split it on
-        // separators and the words seat/and, then canonicalise each token.
-        const got =
-          rawSeats.length === 1 && typeof rawSeats[0] === 'string'
-            ? rawSeats[0].split(/[^0-9a-z]+|\bseats?\b|\band\b/gi).filter(Boolean)
-            : rawSeats;
+        const got = seatIds(Array.isArray(fields?.seats) ? fields.seats : []) ?? [];
         // Exact set semantics bound to the server-confirmed order: a straddle
         // or restricted pair, a missing seat, or an extra seat all fail.
         const seatsOk =
           !!order &&
           got.length === order.seats.length &&
-          order.seats.every((w) => got.some((g) => canonSeat(g) === w));
+          new Set(got).size === got.length &&
+          order.seats.every((w) => got.includes(w));
         // A numeric-string total ("43.00") coerces before eqMoney, which
         // requires a number; anything that does not read as one still fails.
         const claimedTotal =
@@ -753,6 +859,9 @@ export async function commerceTasks(base, origins = originUrls(base)) {
             ? Number(fields.totalPrice.replace(/[^0-9.-]/g, ''))
             : fields?.totalPrice;
         const totalOk = !!order && eqMoney(claimedTotal, order.total);
+        // Telemetry for reading a failure, deliberately ungraded: whether the
+        // answer text carries a code-shaped token, the plan's decoy counts, how
+        // the counter was worked and which views were used.
         const outcomes = (graded?.attempts ?? []).reduce((acc, a) => {
           acc[a.outcome] = (acc[a.outcome] ?? 0) + 1;
           return acc;

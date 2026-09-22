@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voltro — Search</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="voltro.css">
+<style>
+.results { list-style: none; margin: 0; padding: 0 16px; max-width: 900px; }
+.hit { display: flex; gap: 14px; align-items: center; background: #fff; border: 1px solid var(--rule);
+  border-left: 4px solid var(--pine-2); padding: 10px 14px; margin-bottom: 8px; font-size: 13px; }
+.hit .thumb { width: 96px; flex: none; }
+.hit .info { flex: 1; min-width: 0; }
+.hit .name { font-weight: 700; font-size: 14px; }
+.hit .name a { color: var(--ink); text-decoration: none; }
+.hit .name a:hover { color: var(--link); text-decoration: underline; }
+.hit .where { color: var(--mute); font-size: 12px; }
+.hit .price { color: var(--berry); font-weight: 700; font-size: 16px; text-align: right; min-width: 90px; }
+#searchhead { padding: 10px 16px 6px; }
+#searchhead h1 { font-family: var(--round); font-size: 19px; color: var(--pine); margin: 0 0 4px; }
+#tally { font-size: 13px; color: var(--mute); margin: 0; }
+#tips { padding: 0 16px; font-size: 13px; max-width: 760px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="wordmark" href="index.html">Voltro</a>
+  <form class="finder" action="search.html" method="get" role="search">
+    <input name="q" placeholder="Search Voltro" aria-label="Search Voltro">
+    <button type="submit">Search</button>
+  </form>
+  <a class="acct" href="signin.html">Sign in</a>
+  <a class="acct" href="orders.html">Orders &amp; returns</a>
+  <a id="cartlink" class="cartlink" href="cart.html">View cart</a>
+</header>
+<nav class="depts" aria-label="Departments">
+  <a href="index.html">Monitors</a>
+  <a href="search.html?q=4K">4K monitors</a>
+  <a href="desk-setup.html">Desk Setup</a>
+  <a href="sell.html">Sell on Voltro</a>
+  <a href="help.html">Help</a>
+</nav>
+<div class="crumbs"><a href="index.html">Voltro</a> &rsaquo; Search</div>
+<main>
+<div id="searchhead">
+  <h1 id="heading">Search Voltro</h1>
+  <p id="tally" role="status">Type a model, brand, size or resolution in the search box.</p>
+</div>
+<ul class="results" id="results"></ul>
+<div id="tips" hidden>
+  <p>Try fewer words, a brand name such as ScreenCraft, a size such as 27, or a
+  resolution such as 4K or QHD. Or browse <a href="index.html">all monitors</a> and the
+  <a href="desk-setup.html">Desk Setup</a> range.</p>
+</div>
+</main>
+<footer>
+  <ul>
+    <li><a href="help.html">Help</a></li>
+    <li><a href="orders.html">Orders &amp; returns</a></li>
+    <li><a href="returns.html">Delivery &amp; returns</a></li>
+    <li><a href="sell.html">Sell on Voltro</a></li>
+    <li><a href="careers.html">Careers</a></li>
+    <li><a href="conditions.html">Terms of Use</a></li>
+    <li><a href="privacy.html">Privacy</a></li>
+    <li><a href="privacy.html#ads">Ad choices</a></li>
+  </ul>
+  <p>&copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000.
+  Prices and availability are subject to change.</p>
+</footer>
+<script src="voltro-data.js"></script>
+<script src="voltro-nav.js"></script>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const RES_WORDS = {
+  '1080p': 'fhd full hd 1080p 1920x1080',
+  '1440p': 'qhd quad hd 1440p 2560x1440',
+  '4K': '4k uhd ultra hd 2160p 3840x2160',
+};
+const RES_LABEL = { '1080p': 'FHD 1920x1080', '1440p': 'QHD 2560x1440', '4K': '4K UHD 3840x2160' };
+const raw = new URLSearchParams(location.search).get('q') ?? '';
+const term = raw.trim();
+document.querySelector('.finder input').value = raw;
+const tally = document.getElementById('tally');
+const results = document.getElementById('results');
+const tokens = term.toLowerCase().split(/[\s,]+/).filter(Boolean).map((t) => t.replace(/^(\d+)(?:in|inch|")$/, '$1'));
+
+function thumb(name) {
+  const hue = (name.length * 37 + name.charCodeAt(0) * 11) % 360;
+  return '<svg viewBox="0 0 160 90" class="thumb" role="img" aria-label="' + name + ' product photo">' +
+    '<rect width="160" height="90" fill="hsl(' + hue + ',18%,90%)"/>' +
+    '<rect x="22" y="8" width="116" height="62" rx="3" fill="#1b1f27"/>' +
+    '<rect x="72" y="72" width="16" height="8" fill="#444"/>' +
+    '<rect x="56" y="80" width="48" height="4" fill="#666"/></svg>';
+}
+
+function matches(haystack) {
+  const words = haystack.toLowerCase();
+  return tokens.every((t) => words.includes(t));
+}
+
+function row(hit) {
+  const li = document.createElement('li');
+  li.className = 'hit';
+  li.innerHTML = thumb(hit.name) +
+    '<div class="info"><div class="name"><a></a></div><div class="spec"></div>' +
+    '<div class="where"></div></div><div class="price"></div>';
+  const link = li.querySelector('.name a');
+  link.href = hit.href;
+  link.textContent = hit.name;
+  li.querySelector('.spec').textContent = hit.spec;
+  const where = li.querySelector('.where');
+  where.textContent = hit.where;
+  if (!hit.inStock) {
+    where.textContent += ' · Temporarily out of stock';
+    where.className = 'where stock-out';
+  }
+  li.querySelector('.price').textContent = '$' + hit.price.toFixed(2);
+  return li;
+}
+
+(async () => {
+  if (!tokens.length) return;
+  document.title = 'Voltro — Search results for ' + term;
+  document.getElementById('heading').textContent = 'Results for "' + term + '"';
+  const hits = VOLTRO.products
+    .filter(([name, size, res]) => matches(name + ' ' + size + ' ' + RES_WORDS[res] + ' monitor monitors'))
+    .map(([name, size, res, price, , , inStock]) => ({
+      name,
+      href: 'product.html?name=' + encodeURIComponent(name),
+      spec: size + '" ' + RES_LABEL[res] + ' monitor',
+      where: 'Monitors · sold by Voltro Retail',
+      price,
+      inStock,
+    }));
+  let deskFailed = false;
+  try {
+    const res = await fetch('/api/shop/catalog?store=voltro', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) throw new Error('catalog ' + res.status);
+    const body = await res.json();
+    for (const item of body.items) {
+      if (!matches(item.name + ' ' + item.sku + ' ' + item.blurb + ' desk setup')) continue;
+      hits.push({
+        name: item.name,
+        href: 'item.html?sku=' + encodeURIComponent(item.sku),
+        spec: item.blurb,
+        where: 'Desk Setup · supplied by Voltro Business Supply',
+        price: item.price,
+        inStock: item.inStock,
+      });
+    }
+  } catch {
+    deskFailed = true;
+  }
+  for (const hit of hits) results.appendChild(row(hit));
+  const missing = deskFailed ? ' Desk Setup items could not be searched just now; reload to try again.' : '';
+  if (hits.length) {
+    tally.textContent = hits.length + ' result' + (hits.length === 1 ? '' : 's') + '.' + missing;
+  } else {
+    tally.textContent = (deskFailed ? 'No monitors match.' : 'Nothing on Voltro matches that search.') + missing;
+    document.getElementById('tips').hidden = false;
+  }
+})();
+</script>
+</body>
+</html>

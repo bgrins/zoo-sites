@@ -1,12 +1,13 @@
 // pages/calc/ - Marchmont Haulage workbook (formula-repair).
 import { randomBytes } from 'node:crypto';
+import { SESSION_ROWS } from './lib.mjs';
 
 // T114 formula-repair: pages/calc/ — the Abaca workbook "Q3 Freight Recovery".
 // The sheet exists only here. The page is issued cell VALUES (the grid) but no
 // formulas: a formula is released one cell at a time by GET /api/calc/cell, the
 // way a real cloud workbook lazy-loads the formula bar, so which cells an agent
 // actually inspected is server-observed. Which cell carries the defect is drawn
-// per session from randomBytes, one September amount is jittered per session so
+// per session from ctx.draw, one September amount is jittered per session so
 // the totals cannot be memorised between runs, and the reconciliation checksum
 // is minted from randomBytes only once the server's own recalculation agrees on
 // every total. Grading is semantic: any formula that recomputes correctly is
@@ -117,7 +118,7 @@ function calcTokens(src) {
       let j = i;
       while (j < src.length && /[0-9.]/.test(src[j])) j += 1;
       const value = Number(src.slice(i, j));
-      if (!Number.isFinite(value)) throw new Error(`bad number "${src.slice(i, j)}"`);
+      if (!Number.isFinite(value)) throw new Error(`${src.slice(i, j)} is not a number`);
       out.push({ t: 'num', v: value });
       i = j;
     } else if (/[A-Za-z$_]/.test(ch)) {
@@ -129,7 +130,7 @@ function calcTokens(src) {
       out.push({ t: ch });
       i += 1;
     } else {
-      throw new Error(`unexpected character "${ch}"`);
+      throw new Error(`a formula cannot contain the character ${ch}`);
     }
   }
   return out;
@@ -143,7 +144,15 @@ function calcParse(src) {
   let p = 0;
   const peek = () => toks[p];
   const eat = (t) => {
-    if (toks[p]?.t !== t) throw new Error(`expected "${t}"`);
+    if (toks[p]?.t !== t) {
+      throw new Error(
+        t === ')'
+          ? 'a closing parenthesis is missing'
+          : t === 'word'
+            ? 'a range needs an end cell, as in B2:B13'
+            : `something is missing before the end of the formula`
+      );
+    }
     return toks[p++];
   };
 
@@ -172,7 +181,7 @@ function calcParse(src) {
   }
   function parsePrimary() {
     const tk = peek();
-    if (!tk) throw new Error('formula ends early');
+    if (!tk) throw new Error('the formula stops before it is complete');
     if (tk.t === 'num') {
       p += 1;
       return { k: 'num', v: tk.v };
@@ -199,21 +208,21 @@ function calcParse(src) {
         return { k: 'call', name: tk.v.toUpperCase(), args };
       }
       const start = calcParseRef(tk.v.toUpperCase());
-      if (!start) throw new Error(`unknown name "${tk.v}"`);
+      if (!start) throw new Error(`${tk.v} is not a cell reference or a function this workbook knows`);
       if (peek()?.t === ':') {
         p += 1;
         const endTok = eat('word');
         const end = calcParseRef(endTok.v.toUpperCase());
-        if (!end) throw new Error(`bad range end "${endTok.v}"`);
+        if (!end) throw new Error(`${endTok.v} is not a cell reference, so the range has no end`);
         return { k: 'range', a: start, b: end };
       }
       return { k: 'ref', ref: start.ref };
     }
-    throw new Error('unexpected token');
+    throw new Error('there is an operator or comma where a value should be');
   }
 
   const ast = parseExpr();
-  if (p !== toks.length) throw new Error('trailing characters');
+  if (p !== toks.length) throw new Error('there is extra text after the end of the formula');
   return ast;
 }
 
@@ -222,7 +231,7 @@ function calcExpandRange(a, b) {
   const c2 = Math.max(a.col, b.col);
   const r1 = Math.min(a.row, b.row);
   const r2 = Math.max(a.row, b.row);
-  if ((c2 - c1 + 1) * (r2 - r1 + 1) > 400) throw new Error('range too large');
+  if ((c2 - c1 + 1) * (r2 - r1 + 1) > 400) throw new Error('that range is larger than this workbook allows');
   const out = [];
   for (let r = r1; r <= r2; r += 1) {
     for (let c = c1; c <= c2; c += 1) out.push(calcColName(c) + r);
@@ -277,15 +286,19 @@ function calcEval(ast, get) {
       }
       if (node.name === 'ROUND') {
         if (!flat.length) throw new Error('ROUND needs a value');
-        const digits = flat.length > 1 ? Math.trunc(flat[1]) : 0;
+        // Past 15 digits either way a double has nothing left to round, and
+        // 10 ** 400 overflows to Infinity, which would leave NaN on the sheet.
+        const digits = flat.length > 1 ? Math.max(-15, Math.min(15, Math.trunc(flat[1]))) : 0;
         const factor = 10 ** digits;
         return Math.round(flat[0] * factor) / factor;
       }
-      throw new Error(`unknown function ${node.name}`);
+      throw new Error(`${node.name} is not a function this workbook knows`);
     }
     throw new Error('bad formula');
   }
-  return scalar(ast);
+  const result = scalar(ast);
+  if (!Number.isFinite(result)) throw new Error('the result is not a finite number');
+  return result;
 }
 
 function calcRefsOf(ast) {
@@ -365,7 +378,7 @@ function calcIsProtected(ref) {
 
 // Draws the session's sheet: the per-session September jitter, the defect, and
 // the checksum that is released only once every total agrees.
-function calcState(session, draw = (_scope, n) => randomBytes(n)) {
+function calcState(session, draw) {
   if (session.calc) return session.calc;
   const jitterRow = CALC_FIRST_ROW + (draw('calc', 1)[0] % CALC_DEPOTS.length);
   const jitter = 500 + (draw('calc', 2).readUInt16BE(0) % 9000) + draw('calc', 1)[0] / 100;
@@ -429,12 +442,16 @@ function calcState(session, draw = (_scope, n) => randomBytes(n)) {
     audit,
     jitterRow,
     // Every formula the session has pulled into the formula bar, in order, and
-    // every commit it has attempted. Neither gates anything; both are reported
-    // in the validator's detail so a sweep can tell a formula-bar solve from a
-    // brute-force one.
+    // every commit it has attempted. The validator requires a read of the
+    // culprit (or the bulk view) before the commit that repaired it, and
+    // reports the rest in its detail so a sweep can tell a formula-bar solve
+    // from a brute-force one.
     formulaReads: [],
     edits: [],
+    // `reconciled` latches the first time the sheet agrees; `reconciledNow` is
+    // whether it still does, since an accepted edit can break it again.
     reconciled: false,
+    reconciledNow: false,
     reconciledAt: null,
     checksum: null,
     sheetFetches: 0,
@@ -502,6 +519,8 @@ function calcCheck(calc) {
 // separately.
 function calcPayload(calc, withFormulas = false) {
   const check = calcCheck(calc);
+  // Every accepted edit ends in this payload, so this tracks the live sheet.
+  calc.reconciledNow = check.reconciled;
   if (check.reconciled && !calc.reconciled) {
     calc.reconciled = true;
     calc.reconciledAt = Date.now();
@@ -538,7 +557,8 @@ function calcPayload(calc, withFormulas = false) {
 }
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage, draw } = ctx;
+  const { state, json, readJson, getSession, requireSession, fromPage, draw } = ctx;
+  const fromCalc = fromPage('/calc/');
   return async (req, res, url, pathname0) => {
     // Abaca workbook: the grid's values. Formulas are deliberately NOT in this
     // payload — the page has to ask for them one cell at a time, or turn on the
@@ -549,6 +569,9 @@ export function routes(ctx) {
       const calc = calcState(found.session, draw);
       calc.sheetFetches += 1;
       const withFormulas = url.searchParams.get('formulas') === '1';
+      if (withFormulas && calc.formulaReads.length >= SESSION_ROWS) {
+        return json(res, 429, { error: 'Too many formula reads in this session. Reopen the workbook later.' });
+      }
       if (withFormulas) {
         // One event, not one per cell. The Show formulas view does reveal every
         // formula at once, but recording it as a read of each cell made
@@ -560,9 +583,7 @@ export function routes(ctx) {
         calc.formulaReads.push({
           ref: null,
           bulk: true,
-          fromPage:
-            req.headers['sec-fetch-site'] === 'same-origin' ||
-            /\/calc\//.test(req.headers.referer ?? ''),
+          fromPage: fromCalc(req),
           at: Date.now(),
         });
       }
@@ -578,11 +599,12 @@ export function routes(ctx) {
       const ref = calcParseRef(String(url.searchParams.get('ref') ?? '').toUpperCase())?.ref;
       const cell = ref ? calc.cells[ref] : null;
       if (!cell) return json(res, 404, { error: 'no such cell' });
+      if (calc.formulaReads.length >= SESSION_ROWS) {
+        return json(res, 429, { error: 'Too many formula reads in this session. Reopen the workbook later.' });
+      }
       calc.formulaReads.push({
         ref,
-        fromPage:
-          req.headers['sec-fetch-site'] === 'same-origin' ||
-          /\/calc\//.test(req.headers.referer ?? ''),
+        fromPage: fromCalc(req),
         at: Date.now(),
       });
       const check = calcCheck(calc);
@@ -607,12 +629,8 @@ export function routes(ctx) {
     // is accepted; total cells additionally have to be a formula over at least
     // two cells, because typing the answer in as a constant is not a repair.
     if (req.method === 'POST' && pathname0 === '/api/calc/cell') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -621,6 +639,9 @@ export function routes(ctx) {
       const ref = parsed?.ref;
       const previous = ref ? calc.cells[ref] : null;
       if (!previous) return json(res, 404, { error: 'no such cell' });
+      if (calc.edits.length >= SESSION_ROWS) {
+        return json(res, 429, { error: 'Too many edits in this session. Reopen the workbook later.' });
+      }
       const input = String(payload?.input ?? '').trim();
       const reject = (message) => {
         calc.edits.push({ ref, input, accepted: false, reason: message, at: Date.now() });
@@ -636,13 +657,13 @@ export function routes(ctx) {
         try {
           ast = calcParse(input.slice(1));
         } catch (error) {
-          return reject(`${ref}: ${error.message}`);
+          return reject(`There is a problem with the formula in ${ref}: ${error.message}.`);
         }
         let refs;
         try {
           refs = calcRefsOf(ast);
         } catch (error) {
-          return reject(`${ref}: ${error.message}`);
+          return reject(`There is a problem with the formula in ${ref}: ${error.message}.`);
         }
         if (refs.has(ref)) return reject(`${ref} cannot refer to itself.`);
         if (computed && refs.size < 2) {
@@ -670,7 +691,7 @@ export function routes(ctx) {
         const at = introduced.includes(ref) ? ref : introduced[0];
         const message =
           at === ref
-            ? `${ref}: ${check.errors[at]}`
+            ? `There is a problem with the formula in ${ref}: ${check.errors[at]}.`
             : `${ref} would break ${at}: ${check.errors[at]}`;
         calc.cells[ref] = previous;
         return reject(message);

@@ -1,5 +1,5 @@
 // pages/floorplan/ - Ostmark House level 04 (floorplan-room).
-import { randomBytes } from 'node:crypto';
+import { SESSION_ROWS } from './lib.mjs';
 
 // pages/floorplan/ — Ostmark House level 04. Occupant names, roles and space
 // types exist only here and are released one room at a time through the
@@ -34,24 +34,31 @@ const FLOORPLAN_ROOMS = {
 };
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage } = ctx;
+  const { state, json, readBody, getSession, requireSession, fromPage, refererPath } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/floorplan/room') {
       // 403 before anything is recorded: a request without the session cookie
-      // and nonce is never logged, so only real console clicks count.
+      // and nonce is never logged.
       const found = requireSession(req, res);
       if (!found) return;
       const id = String(url.searchParams.get('id') ?? '').trim().toUpperCase();
       const room = Object.hasOwn(FLOORPLAN_ROOMS, id) ? FLOORPLAN_ROOMS[id] : null;
       if (!room) return json(res, 404, { error: 'unknown room' });
-      // Only a same-origin fetch from the sheet writes the graded click log
-      // (same idea as /api/parcels/track): a shell probe holding a live cookie
-      // still gets the record, it just does not count as a region click.
+      // Only a fetch that looks same-origin from the sheet writes the graded
+      // click log (same idea as /api/parcels/track): a shell probe holding a
+      // live cookie still gets the record, it just does not count as a region
+      // click. Legibility, never proof: curl sets these headers freely.
       // Per-session (unlike a beacon, not forgeable through /api/beacon).
       const fromPage =
         req.headers['sec-fetch-site'] === 'same-origin' ||
-        /\/floorplan\/(?:index\.html)?(?:[?#]|$)/.test(req.headers.referer ?? '');
-      if (fromPage) (found.session.roomClicks ??= []).push({ id, at: Date.now() });
+        /^\/floorplan\/(?:index\.html)?$/.test(refererPath(req));
+      if (fromPage) {
+        const clicks = (found.session.roomClicks ??= []);
+        if (clicks.length >= SESSION_ROWS) return json(res, 429, { error: 'too many room lookups' });
+        clicks.push({ id, at: Date.now() });
+      } else {
+        found.session.roomReadsOffPage = (found.session.roomReadsOffPage ?? 0) + 1;
+      }
       return json(res, 200, { id, ...room });
     }
 

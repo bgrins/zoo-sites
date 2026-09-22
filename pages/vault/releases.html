@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Release notes — Stavelock</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="stavelock.css">
 </head>
 <body>
-<div class="rail">
-  <p class="mark">Stave<span>lock</span></p>
+<header class="rail">
+  <a class="mark" href="index.html">Stave<span>lock</span></a>
   <p class="tag">Credential vault</p>
   <nav>
     <a href="index.html">Secrets</a>
@@ -16,9 +17,13 @@
     <a href="audit.html">Audit log</a>
     <a href="policy.html">Access policy</a>
   </nav>
-  <p class="who">Signed in as d.pellworth<br>Platform Delivery<br>Vault region: eu-north</p>
-</div>
+  <div class="who">
+    <p class="id"><span>Signed in as d.pellworth</span> <span>Platform Delivery</span> <span>Vault region: eu-north</span></p>
+    <p><a href="roles.html">My grants</a> &middot; <a href="signout.html">Sign out</a></p>
+  </div>
+</header>
 
+<div class="page">
 <main>
   <p class="crumb"><a href="index.html">Secrets</a> / Release notes</p>
   <h1>Console release notes</h1>
@@ -37,7 +42,7 @@
   <h2>Console 6.3</h2>
   <p class="lede">The self-service reveal control was removed. Every reveal now runs
   through a break-glass request countersigned by Security Engineering, as
-  <a href="policy.html#privacy">policy PD-04</a> has required since February. Copy is
+  <a href="policy.html#break-glass">policy PD-04</a> has required since February. Copy is
   unaffected: a member holding the deploy role still places a value on their clipboard
   from the detail view, and the console still discards it once the write completes.</p>
 
@@ -68,18 +73,20 @@
   along with a cadence report the desk can send to owners ahead of the quarterly
   reconciliation. Neither changes what an operator may see or copy. Requests for the
   roadmap go to the <a href="vaultdesk.html">vault desk</a>.</p>
-
-  <footer>
-    <a href="policy.html">Access policy</a>
-    <a href="policy.html#handling">Key handling</a>
-    <a href="policy.html#privacy">Privacy</a>
-    <a href="roles.html">Roles</a>
-    <a href="vaultdesk.html">Vault desk</a>
-    <a href="releases.html">Release notes</a>
-    <p>Stavelock Systems Ltd, Fettergate House, 3 Marl Row, Barrowfield</p>
-    <p>Vault support: vaultdesk@stavelock.example &middot; (555) 017-2204</p>
-    <p>&copy; 2019-2026 Stavelock Systems Ltd. Registered no. 000000.</p>
-  </footer>
 </main>
+
+<footer>
+  <a href="policy.html">Access policy</a>
+  <a href="policy.html#handling">Key handling</a>
+  <a href="privacy.html">Privacy</a>
+  <a href="terms.html">Terms</a>
+  <a href="roles.html">Roles</a>
+  <a href="vaultdesk.html">Vault desk</a>
+  <a href="releases.html">Release notes</a>
+  <p>Stavelock Systems Ltd, Fettergate House, 3 Marl Row, Dravencote DV4 7QZ</p>
+  <p>Vault support: vaultdesk@stavelock.example &middot; +44 20 7946 0104</p>
+  <p>&copy; 2019-2026 Stavelock Systems Ltd. Registered in England and Wales, company number 00000000.</p>
+</footer>
+</div>
 </body>
 </html>

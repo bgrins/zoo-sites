@@ -5,11 +5,13 @@
 // total are checkable only against what this session actually built and was
 // charged.
 import { randomBytes } from 'node:crypto';
+import { SESSION_ROWS, pushTrimmed, round2 } from './lib.mjs';
 
 const BISTRO_MENU = {
   'beet-flatbread': {
     name: 'Charred Beet Flatbread',
     course: 'Flatbreads',
+    diet: ['V'],
     blurb: 'Wood-oven flatbread, charred beets over whipped ricotta.',
     base: 11.75,
     largeUpcharge: 3.25,
@@ -28,6 +30,7 @@ const BISTRO_MENU = {
   'grain-bowl': {
     name: 'Harvest Grain Bowl',
     course: 'Bowls',
+    diet: ['VG'],
     blurb: 'Farro and barley, roast squash, herbs from the yard.',
     base: 10.9,
     largeUpcharge: 2.75,
@@ -45,6 +48,7 @@ const BISTRO_MENU = {
   'tomato-bisque': {
     name: 'Smoked Tomato Bisque',
     course: 'Soups',
+    diet: ['V'],
     blurb: 'Slow-smoked tomatoes, finished at the pass.',
     base: 6.9,
     largeUpcharge: 1.9,
@@ -60,6 +64,7 @@ const BISTRO_MENU = {
   'chicken-baguette': {
     name: 'Roast Chicken Baguette',
     course: 'Sandwiches',
+    diet: [],
     blurb: 'Half baguette, Sunday-roast chicken, served warm.',
     base: 12.4,
     largeUpcharge: 3.1,
@@ -77,9 +82,7 @@ const BISTRO_MENU = {
 
 const BISTRO_SIZES = ['medium', 'large'];
 
-const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
-
-export function bistroState(session) {
+function bistroState(session) {
   return (session.bistro ??= { cart: [], orders: [], rejects: [] });
 }
 
@@ -106,7 +109,7 @@ function bistroCartPayload(record) {
 }
 
 export function routes(ctx) {
-  const { json, readBody, requireSession } = ctx;
+  const { json, readJson, requireSession } = ctx;
   return async (req, res, url, pathname0) => {
     if (req.method === 'GET' && pathname0 === '/api/bistro/menu') {
       const found = requireSession(req, res);
@@ -116,6 +119,7 @@ export function routes(ctx) {
           id,
           name: item.name,
           course: item.course,
+          diet: item.diet,
           blurb: item.blurb,
           base: item.base,
           largeUpcharge: item.largeUpcharge,
@@ -139,19 +143,15 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/bistro/cart') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
       const record = bistroState(found.session);
       const resolved = bistroResolveItem(payload.item);
       if (!resolved) {
-        record.rejects.push({ item: String(payload.item ?? ''), at: Date.now() });
+        pushTrimmed(record.rejects, { item: String(payload.item ?? '').slice(0, 200), at: Date.now() });
         return json(res, 404, {
           error: `Nothing on the menu matches "${String(payload.item ?? '')}".`,
         });
@@ -170,14 +170,14 @@ export function routes(ctx) {
       ];
       const added = norm(payload.added);
       const removed = norm(payload.removed);
-      const badAdd = added.find((mid) => !item.extras[mid]);
-      if (badAdd) {
+      const badAdd = added.find((mid) => !Object.hasOwn(item.extras, mid));
+      if (badAdd !== undefined) {
         return json(res, 400, {
           error: `"${badAdd}" is not offered as an extra on the ${item.name}.`,
         });
       }
-      const badRemove = removed.find((mid) => !item.comesWith[mid]);
-      if (badRemove) {
+      const badRemove = removed.find((mid) => !Object.hasOwn(item.comesWith, mid));
+      if (badRemove !== undefined) {
         return json(res, 400, {
           error: `"${badRemove}" does not come on the ${item.name}, so it cannot be left off.`,
         });
@@ -187,18 +187,17 @@ export function routes(ctx) {
           (size === 'large' ? item.largeUpcharge : 0) +
           added.reduce((sum, mid) => sum + item.extras[mid].price, 0)
       );
+      if (record.cart.length >= SESSION_ROWS) {
+        return json(res, 429, { error: 'Your ticket is full. Place the order or take something off.' });
+      }
       const line = { item: id, name: item.name, size, added, removed, price, at: Date.now() };
       record.cart.push(line);
       return json(res, 200, { ok: true, line, ...bistroCartPayload(record) });
     }
 
     if (req.method === 'POST' && pathname0 === '/api/bistro/cart/remove') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -212,12 +211,8 @@ export function routes(ctx) {
     }
 
     if (req.method === 'POST' && pathname0 === '/api/bistro/order') {
-      let payload;
-      try {
-        payload = JSON.parse(await readBody(req));
-      } catch {
-        return json(res, 400, { error: 'bad json' });
-      }
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
@@ -226,6 +221,9 @@ export function routes(ctx) {
         return json(res, 409, {
           error: 'Your ticket is empty. Build at least one item before placing the order.',
         });
+      }
+      if (record.orders.length >= SESSION_ROWS) {
+        return json(res, 429, { error: 'We cannot take any more orders from this device today. Call the counter.' });
       }
       const order = {
         code: 'BF-' + randomBytes(3).toString('hex').toUpperCase(),
@@ -240,7 +238,7 @@ export function routes(ctx) {
         code: order.code,
         total: order.total,
         lines: order.lines,
-        message: 'Ready at the counter in about 15 minutes.',
+        message: 'Ready at the counter in about 15 minutes. Pay at the counter when you collect.',
       });
     }
 

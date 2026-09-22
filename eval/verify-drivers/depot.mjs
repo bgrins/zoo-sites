@@ -2,10 +2,11 @@
 // devtools-surface tasks shard-forensics, body-only-ref and partial-import
 // (T120/T122/T123). All three solve honestly through
 // the MCP tool surface: the network log for the two failure-forensics tasks,
-// the console log for the silent partial import. No driver ever reads a
-// response body out of a network tool (ours never returns one).
+// the console log for the silent partial import. No driver reads its answer
+// out of a response body a network tool returns: firefox-devtools-mcp 0.9.15
+// returns none, and the drivers run on either build.
 
-import { until, uidOf, textOf } from './lib.mjs';
+import { bumpCode, findSession, until, uidOf, textOf } from './lib.mjs';
 
 const TRACE = /^DT-[0-9A-F]{8}$/i;
 const REF = /^MR-[0-9A-F]{8}$/i;
@@ -30,9 +31,9 @@ export const DRIVERS = {
 
       // The page signs in, meets the 502, falls back to the cached roster and
       // navigates; the dashboard shows yesterday's date and nothing else.
-      const snap = await until('the dashboard to render the cached (Sun 27 Jul) roster', async () => {
+      const snap = await until('the dashboard to render the cached (Mon 27 Jul) roster', async () => {
         const s = await snapshot();
-        return /Sun 27 Jul/.test(s) ? s : null;
+        return /Mon 27 Jul/.test(s) ? s : null;
       });
       if (/DT-[0-9A-F]{8}/i.test(snap)) throw new Error('the trace id leaked into the DOM');
 
@@ -57,27 +58,152 @@ export const DRIVERS = {
       }
 
       const path = new URL(hit.url).pathname + new URL(hit.url).search;
+      const shard = Number(new URL(hit.url).searchParams.get('shard'));
+      const healthyShard = [1, 2, 3, 4].find((n) => n !== shard);
       const fields = { failedRequest: path, statusCode: 502, traceId: trace };
+      const prose502 = (failedRequest) => ({ failedRequest, statusCode: 502, traceId: trace });
       this.wrongFields = [
         // Misattributed to the sign-in POST that succeeded.
         { failedRequest: '/api/depot/signin', statusCode: 502, traceId: trace },
         // Misattributed to the cached-roster fallback file (a 200), which also
-        // contains the word "roster".
+        // contains the word "roster", by path and in prose.
         { failedRequest: '/depot/data/roster-cache.json', statusCode: 502, traceId: trace },
+        { failedRequest: 'the cached roster file', statusCode: 502, traceId: trace },
+        { failedRequest: 'the cached-roster fallback', statusCode: 502, traceId: trace },
+        { failedRequest: 'the request for the cached roster', statusCode: 502, traceId: trace },
+        { failedRequest: 'the roster served from the cache', statusCode: 502, traceId: trace },
+        // The fallback named first, the live endpoint only as context.
+        {
+          failedRequest: '/depot/data/roster-cache.json (fallback after /api/depot/roster failed)',
+          statusCode: 502,
+          traceId: trace,
+        },
+        // The fallback file named in prose, and set off from the roster by a
+        // plain comma, which does not end the naming.
+        prose502('the roster-cache.json fetch'),
+        prose502('the roster, served from cache'),
+        // A later clause that restates the naming (a path, a file name, the
+        // cache) is part of it.
+        prose502('the roster file (/depot/data/roster-cache.json)'),
+        prose502('the roster request (GET /api/depot/signin)'),
+        prose502('the roster request (roster-cache.json)'),
+        prose502('the roster (cached copy)'),
+        prose502('the roster (from cache)'),
+        // The same restatements behind quotes or an introducing word.
+        prose502("the roster file ('/depot/data/roster-cache.json')"),
+        prose502('the roster file (i.e. /depot/data/roster-cache.json)'),
+        prose502('the roster request (from roster-cache.json)'),
+        prose502('the roster file: "roster-cache.json"'),
+        prose502('the roster request (the fallback roster-cache.json)'),
+        prose502('the roster request (actually POST /api/depot/signin)'),
+        prose502('the roster request ("/api/depot/signin")'),
+        prose502("the roster JSON file (yesterday's copy)"),
+        // The fallback's file name named first, a path only as context.
+        prose502('the roster-cache.json fetch (after /api/depot/roster failed)'),
+        // Another request named as the failure, the roster only as a
+        // contrast or as the part that worked.
+        prose502('the sign-in request, not the roster'),
+        prose502('the operator sign-in POST (the roster loaded fine)'),
+        prose502('the KPI panel request rather than the roster'),
+        prose502('sign-in; roster ok'),
+        prose502('the sign-in request, not the live roster fetch'),
+        prose502(`the sign-in request, not ${path}`),
+        prose502('sign-in; roster: ok'),
+        prose502('the sign-in POST (roster: 200 OK)'),
+        prose502('the sign-in POST (the roster loaded)'),
+        prose502('the sign-in POST (the roster loaded successfully from the API)'),
+        prose502(`GET ${path} was fine; POST /api/depot/signin failed`),
+        prose502(`${path} returned 200; the sign-in POST failed`),
+        prose502('the roster loaded fine; the sign-in POST failed'),
+        prose502(`GET ${path} (200 OK); POST /api/depot/signin (502)`),
+        prose502('/depot/data/roster-cache.json (200 OK); GET /api/depot/signin (502)'),
+        prose502('the roster request did not fail'),
+        prose502('Not the roster request, the sign-in POST'),
+        prose502('Unlike the roster, the sign-in POST failed'),
+        prose502('the sign-in request (as opposed to the roster)'),
+        prose502('the sign-in request, never the roster'),
+        prose502('the sign-in POST (the roster was never fetched)'),
+        prose502('The sign-in POST returned 502, so the roster was never fetched'),
+        prose502('the sign-in request; the roster was not the problem'),
+        prose502('the sign-in request (roster not affected)'),
+        prose502('the sign-in POST failed (the roster request went through)'),
+        // A shard the page never requested (it would have answered 200).
+        { failedRequest: `/api/depot/roster?shard=${healthyShard}`, statusCode: 502, traceId: trace },
         // Right request, wrong status.
         { failedRequest: path, statusCode: 404, traceId: trace },
-        // Fabricated trace.
+        // Fabricated trace, bare, behind the header's label, and hedged
+        // against the real one.
         { failedRequest: path, statusCode: 502, traceId: 'DT-00000000' },
+        { failedRequest: path, statusCode: 502, traceId: `X-Depot-Trace: ${bumpCode(trace)}` },
+        { failedRequest: path, statusCode: 502, traceId: `${trace} or DT-00000000` },
+        { failedRequest: path, statusCode: 502, traceId: `${bumpCode(trace)} (from the 502 response)` },
+        { failedRequest: path, statusCode: 502, traceId: `${trace} or DT-00000502` },
       ];
       this.alsoCorrectFields = [
         fields,
         { failedRequest: `GET /api/depot/roster (shard ${det.url.match(/shard=(\d)/)?.[1] ?? '?'})`, statusCode: 502, traceId: trace.toLowerCase() },
         { failedRequest: 'the roster request', statusCode: 502, traceId: trace },
+        prose502(`the roster request (GET ${path})`),
+        prose502('the roster JSON fetch'),
+        // Prose that names no request, then the path that failed.
+        prose502(`the cached roster was shown; the failure was GET ${path}`),
+        // The trace behind the header's name or a label.
+        { failedRequest: path, statusCode: 502, traceId: `X-Depot-Trace: ${trace}` },
+        { failedRequest: path, statusCode: 502, traceId: `Trace id ${trace}` },
+        { failedRequest: path, statusCode: 502, traceId: `${trace} (from the 502 response)` },
+        // Prose that sets the live request against the cache.
+        { failedRequest: 'the non-cached roster request', statusCode: 502, traceId: trace },
+        { failedRequest: 'the roster request, not the cached fallback', statusCode: 502, traceId: trace },
+        {
+          failedRequest: 'the roster fetch that should have replaced the cached roster',
+          statusCode: 502,
+          traceId: trace,
+        },
+        prose502('the roster, rather than the cached copy'),
+        // The live endpoint named alongside the fallback it triggered.
+        {
+          failedRequest: `GET ${path} (the page then fell back to roster-cache.json)`,
+          statusCode: 502,
+          traceId: trace,
+        },
+        // The roster named first, then a later clause about the fallback or
+        // the sign-in: context, whatever word follows "roster".
+        prose502('Roster load - page fell back to the cached copy'),
+        prose502("Roster data request - the dashboard shows cached (yesterday's) roster instead"),
+        prose502('the fetch of the live roster (the page then fell back to cached data)'),
+        prose502('The roster lookup (502), so the cached roster was shown'),
+        prose502('the roster refresh; the dashboard is showing the cached roster'),
+        prose502(`the roster request (after /api/depot/signin assigned shard ${shard})`),
+        prose502('the roster API call (sign-in itself was fine)'),
+        prose502('the roster (not the sign-in POST)'),
+        prose502('sign-in succeeded; the roster request failed'),
+        prose502('the fetch of the roster'),
+        // A leading clause that reports another request working is context.
+        prose502(`POST /api/depot/signin returned 200; GET ${path} returned 502`),
+        prose502(`sign-in (POST /api/depot/signin) was fine; the roster fetch (GET ${path}) failed`),
+        prose502(`the cached roster loaded fine; GET ${path} returned 502`),
+        prose502('the roster fetch, after sign-in succeeded; the page fell back to the cached roster'),
+        // A contrast that opens the field governs its own phrase only.
+        prose502('Not the sign-in POST, the roster request'),
+        prose502(`Not POST /api/depot/signin, GET ${path}`),
+        prose502('Unlike the sign-in POST, the roster request failed'),
+        prose502('Rather than the sign-in POST, it was the roster request'),
+        prose502('Besides sign-in, the page also requested the roster, which failed'),
+        prose502('During sign-in: the roster fetch'),
+        // "loaded" and "successfully" that go on to say something else report
+        // no success, and a negated success is the failure.
+        prose502('the roster request, loaded right after sign-in'),
+        prose502('The roster fetch itself, successfully sent after sign-in'),
+        prose502('the roster did not load'),
+        prose502('the roster request never completed'),
+        prose502('the roster request: HTTP 502, not 200'),
+        prose502('the roster request (went through the gateway, got 502)'),
+        prose502('the roster request (not a problem with sign-in)'),
       ];
       this.alsoCorrect = [
         `The sign-in POST itself returned 200; what failed was the follow-up roster fetch ` +
           `${path}, which came back 502 Bad Gateway with trace id ${trace}. The dashboard ` +
-          `silently fell back to the cached Sun 27 Jul roster.`,
+          `silently fell back to the cached Mon 27 Jul roster.`,
         `Failed request: GET ${path}\nStatus: 502\nTrace id: ${trace}`,
         `The roster fetch is the failure - 502 Bad Gateway, trace id ${trace.toLowerCase()}; ` +
           `sign-in itself succeeded and the page quietly showed the cached roster.`,
@@ -95,7 +221,7 @@ export const DRIVERS = {
           `Sign-in succeeded, but the dashboard's roster fetch failed: GET ${path} ` +
           `returned 502 Bad Gateway. The server sent the trace id ${trace} in the ` +
           `X-Depot-Trace response header, and the page silently fell back to the cached ` +
-          `roster from Sun 27 Jul.`,
+          `roster from Mon 27 Jul.`,
         fields,
       };
     },
@@ -108,9 +234,10 @@ export const DRIVERS = {
       'The 507 is deliberately stable and NOT one-shot, so the re-trigger returns the same ' +
       'session-stable ref; the server counts it in manifestHits as the measured price of not ' +
       'having response-body capture. get_network_request is still called to prove the ref is ' +
-      'absent from everything it returns.',
+      'absent from everything it returns but the body, and that a build returning the body ' +
+      '(0.10.0 and later) shows the page\'s own ref in it.',
     wrong: 'The manifests request failed with status 502 and support reference MR-00000000.',
-    async run({ mcp, goto, evaluate, snapshot }) {
+    async run({ mcp, goto, evaluate, snapshot, base }, ctx) {
       await goto('/depot/manifests.html');
       // "No manifests for this shift." is 28 chars, so the snapshot's 27-char
       // text cap clips it to "No manifests for this shi...": match the prefix.
@@ -130,11 +257,19 @@ export const DRIVERS = {
 
       const det = await readJson(mcp, 'get_network_request', { id: hit.id, format: 'json' });
       if (det.status !== 507) throw new Error(`expected 507, got ${det.status}`);
-      // The ref must not be recoverable from anything our network surface
-      // returns: that unavailability is the capability gap this task measures.
-      if (/MR-[0-9A-F]{8}/i.test(JSON.stringify(det))) {
-        throw new Error('the support ref leaked into get_network_request output');
+      // The ref must not be recoverable from anything but the response body:
+      // not the status, the headers or the timings. Whether the network tool
+      // returns the body is the capability gap this task measures, a tool
+      // property that eval/spikes/probes.mjs's network-body probe reports
+      // rather than a driver asserts: 0.9.15 returns no body, and from 0.10.0
+      // get_network_request carries it. Where it does, the body has to show
+      // the ref the page was served.
+      const { responseBody, responseBodyEncoding, requestBody, requestBodyEncoding, ...meta } = det;
+      if (/MR-[0-9A-F]{8}/i.test(JSON.stringify(meta))) {
+        throw new Error('the support ref leaked into get_network_request outside the response body');
       }
+      const bodyShown = typeof responseBody === 'string' && !/^<not (captured|available)/.test(responseBody);
+      const bodyRef = bodyShown ? (/MR-[0-9A-F]{8}/i.exec(responseBody)?.[0] ?? '(none)') : null;
 
       const out = await evaluate(
         `async () => {
@@ -146,8 +281,36 @@ export const DRIVERS = {
       if (out?.status !== 507 || !REF.test(out?.ref ?? '')) {
         throw new Error(`in-page refetch did not return the ref: ${JSON.stringify(out)}`);
       }
+      if (bodyRef && bodyRef !== out.ref) {
+        throw new Error(`get_network_request's body showed ${bodyRef}, not the ref ${out.ref} the page was served`);
+      }
+      // The same request from a shell under the browser's own cookie, the way
+      // a curl with a cookie copied out of the network log sends it, is
+      // answered with a ref of its own, and citing that one fails.
+      const { sid, session } = findSession(ctx.pages.state, (s) => s.depot?.manifestRef === out.ref) ?? {};
+      if (!sid) throw new Error(`no session holds the page's ref ${out.ref}`);
+      const shell = await (await fetch(`${base}/api/depot/manifests`, { headers: { cookie: `sid=${sid}` } })).json();
+      if (!REF.test(shell.ref ?? '') || shell.ref === out.ref) {
+        throw new Error(`a shell read of the manifests got the page's ref: ${JSON.stringify(shell)}`);
+      }
+      // The tab navigated to the failing URL is the browser too, and is shown
+      // the page's ref: opening the request is the obvious recovery on a
+      // surface whose network tools return no body.
+      const apiUrl = await evaluate(`() => new URL('/api/depot/manifests', location.href).href`);
+      await mcp('navigate_page', { url: apiUrl });
+      const shown = await until('the manifests reply to show in the tab', async () => {
+        const body = await evaluate(`() => document.body?.innerText ?? ''`);
+        return /MR-[0-9A-F]{8}/i.exec(String(body))?.[0] ?? null;
+      });
+      if (shown !== out.ref || session.depot.shellHits !== 1) {
+        throw new Error(
+          `the tab navigated to the manifests API was not served the page's ref ${out.ref}: ` +
+            `it showed ${shown}, shellHits=${session.depot.shellHits}`
+        );
+      }
 
       const fields = { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: out.ref };
+      const prose507 = (failedRequest) => ({ failedRequest, statusCode: 507, supportRef: null });
       this.wrongFields = [
         // Right request, wrong status.
         { failedRequest: '/api/depot/manifests', statusCode: 502, supportRef: out.ref },
@@ -156,22 +319,130 @@ export const DRIVERS = {
         { failedRequest: '/api/depot/manifests', statusCode: 500, supportRef: out.ref },
         // A healthy request named as the failure (correct status claimed).
         { failedRequest: '/api/depot/kpis', statusCode: 507, supportRef: out.ref },
-        // The document itself (a 200) named as the failing request, without
-        // naming the store endpoint. NOTE: supportRef is detail-only, so every
-        // wrongFields entry here is wrong in the pass conditions, not the ref.
+        // A stylesheet (a 200) named as the failing request.
         { failedRequest: '/depot/depot.css', statusCode: 507, supportRef: null },
         // The page document misattribution: normalises to contain "manifests"
-        // but the document loaded fine (a 200).
+        // but the document loaded fine (a 200), by path and in prose.
         { failedRequest: '/depot/manifests.html', statusCode: 507, supportRef: null },
+        { failedRequest: 'the manifests page itself (the document)', statusCode: 507, supportRef: null },
+        { failedRequest: 'the manifests document request', statusCode: 507, supportRef: null },
+        prose507('the manifests page (document)'),
+        prose507('the manifests, i.e. the page document'),
+        // The document named first, the endpoint only as context.
+        {
+          failedRequest: '/depot/manifests.html (its /api/depot/manifests call is fine)',
+          statusCode: 507,
+          supportRef: null,
+        },
+        prose507('manifests.html (the manifests request)'),
+        prose507('manifests.html (its /api/depot/manifests call is fine)'),
+        // The document restating the naming, bare, quoted or introduced.
+        prose507('the manifests request (manifests.html)'),
+        prose507("the manifests request ('manifests.html')"),
+        prose507('the manifests request (i.e. manifests.html)'),
+        prose507("the manifests page ('/depot/manifests.html')"),
+        prose507('the manifests page (the page document)'),
+        prose507('the manifests page load (the HTML document)'),
+        // Another request named as the failure, the manifests only as a
+        // contrast or as the part that worked.
+        prose507('the KPI request, not the manifests one'),
+        prose507('the bays panel request (manifests loaded fine)'),
+        prose507('the stylesheet request, not the manifests'),
+        prose507('the stylesheet request, not the fetch of the manifests'),
+        prose507('the KPI request (manifests: 200)'),
+        prose507('GET /api/depot/manifests was fine; /depot/manifests.html failed'),
+        prose507('GET /api/depot/manifests (200 OK); GET /api/depot/kpis (507)'),
+        prose507('the KPI request (the manifests request never fired)'),
+        prose507('the KPI request; the manifests call was not the problem'),
+        // The intake page's manifest data file, a 200 this page never fetches.
+        { failedRequest: '/depot/data/manifest-dm2116.txt', statusCode: 507, supportRef: null },
+        // Right diagnosis, but a stated ref that is not the minted one:
+        // fabricated, one character off, the body's error code, and a
+        // fabricated one behind a placeholder word.
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: 'MR-00000000' },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: bumpCode(out.ref) },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: 'manifest_store_locked' },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: 'unknown, possibly MR-00000000' },
+        // A label around a wrong ref, a label around the error code, and a
+        // hedge between two refs.
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: `Support ref ${bumpCode(out.ref)}` },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: 'ref: manifest_store_locked' },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: `${out.ref} or MR-00000000` },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: 'unknown, possibly MR-00000000 (507)' },
+        // The error code in another spelling.
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: 'ERR_MANIFEST_STORE_LOCKED' },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: 'store_locked' },
+        // The ref the shell read got, as the 2026-09-20 haiku
+        // firefox-devtools-mcp row cited it.
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: shell.ref },
       ];
       this.alsoCorrectFields = [
         fields,
-        // The ref is NOT a pass condition (it is the capability probe): a
-        // correct diagnosis with no recovered ref must pass.
+        // The ref is optional (it is the capability probe): a correct
+        // diagnosis with no recovered ref must pass.
         { failedRequest: 'GET /api/depot/manifests', statusCode: 507, supportRef: null },
+        // A placeholder for the unrecovered ref states none.
+        { failedRequest: 'GET /api/depot/manifests', statusCode: 507, supportRef: 'not available' },
+        { failedRequest: 'GET /api/depot/manifests', statusCode: 507, supportRef: 'N/A' },
+        {
+          failedRequest: 'GET /api/depot/manifests',
+          statusCode: 507,
+          supportRef: 'not recoverable (response body not exposed)',
+        },
+        // The endpoint named alongside the document that fetched it.
+        {
+          failedRequest: 'GET /api/depot/manifests (fetched by manifests.html on load)',
+          statusCode: 507,
+          supportRef: null,
+        },
+        { failedRequest: 'the manifests request the page document issues', statusCode: 507, supportRef: null },
+        { failedRequest: 'the manifests XHR, not the document', statusCode: 507, supportRef: null },
+        prose507('the manifests XHR, not manifests.html'),
         { failedRequest: 'the manifests API request', statusCode: 507, supportRef: out.ref.toLowerCase() },
+        // The manifests named first, then a later clause about the document
+        // or another request: context, whatever word follows "manifests".
+        prose507('The manifest list request, not the page document'),
+        prose507('the manifests data request (the page document itself loaded fine)'),
+        prose507('manifests list fetch (the document itself is fine)'),
+        prose507('the manifests fetch (the page itself loaded fine)'),
+        prose507('the manifests API call, not the stylesheet'),
+        prose507('Unlike the page itself, the manifests request failed'),
+        prose507('GET /depot/manifests.html returned 200; GET /api/depot/manifests returned 507'),
+        prose507('The page (GET /depot/manifests.html) loaded fine (200), but GET /api/depot/manifests returned 507'),
+        prose507('Not the page document, the manifests request'),
+        // The ref behind a label or with a note.
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: `Support ref ${out.ref}` },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: `ref: ${out.ref}` },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: `Reference ${out.ref}` },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: `${out.ref} (from the response body)` },
+        { failedRequest: '/api/depot/manifests', statusCode: 507, supportRef: `${out.ref} (from the 507 response body)` },
+        // An unrecovered ref explained by the network tool that could not show it.
+        {
+          failedRequest: 'GET /api/depot/manifests',
+          statusCode: 507,
+          supportRef: 'not visible - get_network_request shows headers only',
+        },
+        {
+          failedRequest: 'GET /api/depot/manifests',
+          statusCode: 507,
+          supportRef: 'Unavailable: list_network_requests does not return response bodies',
+        },
         // Singular prose naming is a legitimate answer shape.
         { failedRequest: 'the manifest request', statusCode: 507, supportRef: out.ref },
+      ];
+      this.wrongState = [
+        {
+          name: 'the ref served only to a shell: the browser never fetched the manifests',
+          mutate(state) {
+            const d = state.sessions.get(sid).depot;
+            Object.assign(d, {
+              shellRef: d.manifestRef,
+              shellHits: d.manifestHits,
+              manifestRef: null,
+              manifestHits: 0,
+            });
+          },
+        },
       ];
       this.alsoCorrect = [
         `The page is empty because GET /api/depot/manifests returns 507 (manifest_store_locked). ` +
@@ -262,6 +533,8 @@ export const DRIVERS = {
       this.wrongFields = [
         // Believing the page: all 40 accepted.
         { acceptedCount: 40, rejectedKeys: [], diagCode: null },
+        // Read the rejects off the console but still believed the page's 40.
+        { acceptedCount: 40, rejectedKeys: keys, diagCode: diag },
         // One reject missed.
         { acceptedCount: 37, rejectedKeys: keys.slice(0, 2), diagCode: diag },
         // Over-claiming a healthy line as rejected. The line is derived from the

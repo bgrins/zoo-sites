@@ -4,15 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Current openings - Harrowgate Works</title>
-<link rel="stylesheet" href="/jobs/careers.css">
+<link rel="stylesheet" href="careers.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <div class="topbar">
-  <a class="brand" href="/jobs/">HARROWGATE WORKS<small>Careers</small></a>
+  <a class="brand" href="./">HARROWGATE WORKS<small>Careers</small></a>
   <nav class="topnav">
-    <a href="/jobs/">Careers home</a>
-    <a href="/jobs/openings.html" class="here">Current openings</a>
-    <a href="/jobs/#hiring">How we hire</a>
+    <a href="./">Careers home</a>
+    <a href="openings.html" class="here">Current openings</a>
+    <a href="./#hiring">How we hire</a>
   </nav>
 </div>
 
@@ -25,7 +26,7 @@
     <article class="card card-template" id="role-template" aria-hidden="true">
       <div class="card-top">
         <h3 class="role-title">Senior Process Engineer</h3>
-        <span class="salary">$139,500 a year</span>
+        <span class="salary">£139,500 a year</span>
       </div>
       <div class="tags">
         <span class="tag">Engineering</span>
@@ -47,18 +48,22 @@
 </main>
 
 <footer>
-  Harrowgate Works Ltd - Foundry Road, Harrowgate - hiring office:
+  Harrowgate Works Ltd - Foundry Road, Harrowgate HW3 1FR - hiring office 01632 960184,
   careers@harrowgateworks.example<br>
-  <a href="/jobs/">Careers home</a> -
-  <a href="/jobs/openings.html">Current openings</a> -
-  <a href="/jobs/apply.html">How to apply</a> -
-  <a href="/jobs/pay-and-conditions.html">Pay and conditions</a> -
-  <a href="/jobs/role-fabrication-welder.html">Featured role: fabrication welder</a><br>
-  Registered in the county register no. 4471. &copy; Harrowgate Works Ltd.
+  <a href="./">Careers home</a> -
+  <a href="openings.html">Current openings</a> -
+  <a href="apply.html">How to apply</a> -
+  <a href="pay-and-conditions.html">Pay and conditions</a> -
+  <a href="role-fabrication-welder.html">Featured role: fabrication welder</a><br>
+  <a href="privacy.html">Privacy notice</a> -
+  <a href="terms.html">Terms of use</a><br>
+  Harrowgate Works Ltd, registered in England and Wales, company number 00000000.
+  &copy; 2026 Harrowgate Works Ltd.
 </footer>
 
 <script>
 const NONCE = '__SESSION_NONCE__';
+const ROLE_PAGES = { 'HW-2384': 'role-fabrication-welder.html' };
 async function loadOpenings() {
   const cards = document.getElementById('cards');
   const status = document.getElementById('load-status');
@@ -72,9 +77,12 @@ async function loadOpenings() {
       card.removeAttribute('id');
       card.removeAttribute('aria-hidden');
       card.classList.remove('card-template');
-      card.querySelector('.role-title').textContent = role.title;
+      const link = document.createElement('a');
+      link.textContent = role.title;
+      link.href = ROLE_PAGES[role.ref] ?? 'role.html?ref=' + encodeURIComponent(role.ref);
+      card.querySelector('.role-title').replaceChildren(link);
       card.querySelector('.salary').textContent =
-        '$' + role.salary.toLocaleString('en-US') + ' a year';
+        '£' + role.salary.toLocaleString('en-GB') + ' a year';
       const tags = card.querySelectorAll('.tag');
       tags[0].textContent = role.team;
       tags[1].textContent = role.location;
@@ -85,7 +93,8 @@ async function loadOpenings() {
     }
     status.remove();
   } catch {
-    status.textContent = 'The openings list could not be loaded. Refresh to try again.';
+    status.textContent =
+      'The hiring office list did not load, so no openings are shown. Refresh to try again.';
   }
 }
 loadOpenings();

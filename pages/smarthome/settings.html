@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings — Hearthline Hub</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="hearthline.css">
+</head>
+<body>
+<header>
+  <a class="mark" href="index.html">Hearth<b>line</b><span class="sub">Hub console</span></a>
+  <nav class="pills" aria-label="Hub">
+    <a href="index.html">Home</a>
+    <a href="devices.html">Devices</a>
+    <a href="energy.html">Energy</a>
+    <a class="on" aria-current="page" href="settings.html">Settings</a>
+  </nav>
+  <div class="home-state">14 Alder Croft<br>Hub online &middot; firmware 9.4.2</div>
+</header>
+
+<main>
+  <h1>Hub settings</h1>
+  <p class="lede">What the hub is allowed to send outside your home. Local control keeps
+  working whichever of these you switch off.</p>
+  <div class="rows" id="settings">
+    <div class="row setting" data-id="remote"><div class="name">Remote access</div><div class="where">Reach this console through the Hearthline relay when you are away from home.</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row setting" data-id="notifications"><div class="name">Notifications</div><div class="where">Door, camera and heating alerts sent to your phone through the relay.</div><button class="toggle" aria-pressed="true">On</button></div>
+    <div class="row setting" data-id="supplier"><div class="name">Supplier sharing</div><div class="where">Half-hourly meter totals sent to Ydrell Energy for tariff settlement. Switching this off may move you to a flat-rate tariff.</div><button class="toggle" aria-pressed="true">On</button></div>
+  </div>
+  <p class="lede" id="setStatus" role="status"></p>
+</main>
+
+<footer>
+  <a href="privacy.html">Privacy</a>
+  <a href="terms.html">Terms of service</a>
+  <a href="devices.html">Manage devices</a>
+  <a href="settings.html">Hub settings</a>
+  <p>Hearthline Systems Ltd &middot; Unit 3, Kilnworth Park, Pellowdean PW3 6HD &middot; registered in England and Wales, company number 00000000</p>
+  <p>Support: care@hearthline.example &middot; +44 20 7946 0141</p>
+  <p>&copy; 2021-2026 Hearthline Systems Ltd. All rights reserved.</p>
+</footer>
+
+<script>
+const NONCE = '__SESSION_NONCE__';
+const status = document.getElementById('setStatus');
+const LAPSED = 'Your hub session has expired. Reload the page to reconnect.';
+function show(settings) {
+  for (const [id, on] of Object.entries(settings)) {
+    const btn = document.querySelector('.row[data-id="' + id + '"] .toggle');
+    if (!btn) continue;
+    btn.setAttribute('aria-pressed', String(on));
+    btn.textContent = on ? 'On' : 'Off';
+  }
+}
+fetch('/api/smarthome/devices', { headers: { 'X-Session-Nonce': NONCE } })
+  .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+  .then((data) => show(data.settings))
+  .catch((err) => {
+    status.textContent = err.message === '403'
+      ? LAPSED
+      : 'The hub did not answer, so these settings may be out of date. Reload to try again.';
+  });
+for (const btn of document.querySelectorAll('.toggle')) {
+  btn.addEventListener('click', async () => {
+    const id = btn.closest('.row').dataset.id;
+    const on = btn.getAttribute('aria-pressed') !== 'true';
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/smarthome/setting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, id, on }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(String(res.status));
+      show(data.settings);
+      status.textContent = on ? '' : 'Saved. Local control is unaffected.';
+    } catch (err) {
+      status.textContent = err.message === '403'
+        ? 'Your hub session has expired, so nothing was saved. Reload the page to reconnect.'
+        : 'The hub did not confirm that change, so nothing was saved.';
+    }
+    btn.disabled = false;
+  });
+}
+</script>
+</body>
+</html>

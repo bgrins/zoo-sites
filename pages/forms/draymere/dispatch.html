@@ -4,23 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Outbound dispatch board — Draymere Depot Console</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --shell: #0e1216; --panel: #161c22; --panel-2: #1d252d;
     --edge: #2b353f; --ink: #dfe6ec; --dim: #8c9aa6;
-    --amber: #f0a02c; --amber-dim: #b0761f; --green: #56b98a;
+    --amber: #f0a02c; --frost: #6cc9e0; --frost-dim: #2e7f96; --green: #56b98a;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--shell); color: var(--ink);
     font-family: "IBM Plex Sans", "Fira Sans", "Noto Sans", "Liberation Sans", sans-serif;
     font-size: 14px; line-height: 1.5; }
-  a { color: var(--amber); text-decoration: none; }
+  a { color: var(--frost); text-decoration: none; }
   a:hover { text-decoration: underline; }
   .mono { font-family: "IBM Plex Mono", "Fira Mono", "DejaVu Sans Mono", monospace; }
-  header.strip { background: #090c0f; border-bottom: 2px solid var(--amber-dim);
+  header.strip { background: #090c0f; border-bottom: 2px solid var(--frost-dim);
     display: flex; align-items: center; gap: 18px; padding: 10px 20px; }
   .mark { font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #fff; }
-  .mark span { color: var(--amber); }
+  .mark span { color: var(--frost); }
   .unit { font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--dim);
     border-left: 1px solid var(--edge); padding-left: 18px; }
   header.strip .who { margin-left: auto; font-size: 12px; color: var(--dim);
@@ -29,8 +30,8 @@
   nav.tabs a { color: var(--dim); font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
     padding: 11px 16px; border-bottom: 2px solid transparent; }
   nav.tabs a:hover { color: var(--ink); text-decoration: none; }
-  nav.tabs a.on { color: var(--amber); border-bottom-color: var(--amber); }
-  .crumbs { padding: 10px 20px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #6f7d89; }
+  nav.tabs a.on { color: var(--frost); border-bottom-color: var(--frost); }
+  .crumbs { padding: 10px 20px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #72808b; }
   .crumbs .at { color: var(--dim); }
   main { max-width: 1080px; margin: 0 auto; padding: 6px 20px 40px; }
   .card { background: var(--panel); border: 1px solid var(--edge); }
@@ -38,7 +39,7 @@
     background: var(--panel-2); font-size: 14px; font-weight: 600; letter-spacing: 0.4px; }
   .card .inner { padding: 18px; }
   .lede { margin: 0 0 16px; color: var(--dim); max-width: 62ch; }
-  .note { font-size: 12px; color: #77848f; margin: 14px 0 0; }
+  .note { font-size: 12px; color: #7a8691; margin: 14px 0 0; }
   .log { width: 100%; border-collapse: collapse; font-size: 12px; }
   .log th { text-align: left; color: var(--dim); font-weight: 500; letter-spacing: 1.1px;
     text-transform: uppercase; font-size: 10px; border-bottom: 1px solid var(--edge); padding: 7px 8px; }
@@ -46,25 +47,40 @@
   .log td.st { color: var(--green); }
   .log td.st.hold { color: var(--amber); }
   footer.foot { border-top: 1px solid var(--edge); margin-top: 10px; padding: 18px 20px 30px;
-    color: #66727c; font-size: 11px; }
+    color: #8a97a2; font-size: 11px; }
   footer.foot .links { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
-  footer.foot .links a { color: #8c9aa6; }
+  footer.foot .links a { color: #b9c5cf; }
+  a.mark, a.mark:hover { text-decoration: none; }
+  .crumbs a { color: var(--dim); }
+  .mark, .unit, nav.tabs a, .card > h1, .card > h2, .inner h3, .log th {
+    font-family: "DIN Alternate", "DIN Condensed", Bahnschrift, "D-DIN", "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+  }
+  @media (max-width: 720px) {
+    header.strip { flex-wrap: wrap; gap: 6px 14px; padding: 10px 14px; }
+    header.strip .who { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; gap: 4px 14px; }
+    nav.tabs { overflow-x: auto; padding: 0 8px; }
+    nav.tabs a { padding: 11px 10px; white-space: nowrap; }
+    .crumbs { padding: 10px 14px; }
+    main { padding: 6px 12px 32px; }
+    .log { display: block; overflow-x: auto; white-space: nowrap; }
+    footer.foot { padding: 16px 14px 26px; }
+  }
 </style>
 </head>
 <body>
 
 <header class="strip">
-  <div class="mark">Dray<span>mere</span></div>
+  <a class="mark" href="index.html">Dray<span>mere</span></a>
   <div class="unit">Cold Chain Operations</div>
   <div class="who">
-    <span>Depot 41 &middot; Kettleworth</span>
+    <span>Depot 41 &middot; Skarnley</span>
     <span class="mono">op.hedlund</span>
     <a href="signout.html">Sign out</a>
   </div>
 </header>
 
 <nav class="tabs">
-  <a href="dispatch.html" class="on">Dispatch</a>
+  <a href="dispatch.html" class="on" aria-current="page">Dispatch</a>
   <a href="receiving.html">Receiving</a>
   <a href="inventory.html">Inventory</a>
   <a href="queue.html">Attestations</a>
@@ -72,11 +88,11 @@
   <a href="reports.html">Reports</a>
 </nav>
 
-<div class="crumbs">Dispatch &rsaquo; <span class="at">Outbound board</span></div>
+<div class="crumbs"><a href="index.html">Depot 41</a> &rsaquo; <span class="at">Dispatch</span></div>
 
 <main>
   <section class="card">
-    <h1>Outbound dispatch board &mdash; 26 July 2026</h1>
+    <h1>Outbound dispatch board &mdash; 25 July 2026</h1>
     <div class="inner">
       <p class="lede">Runs scheduled out of depot 41 for the current operating day. Trailers
         must be pre-cooled and sealed at the dock before the depart time shown.</p>
@@ -85,12 +101,12 @@
           <tr><th>Run</th><th>Destination depot</th><th>Trailer</th><th>Depart</th><th>Status</th></tr>
         </thead>
         <tbody>
-          <tr><td class="mono">RUN-0726-01</td><td>Depot 17 &middot; Aldenholt</td><td class="mono">TRL-208</td><td>04:30</td><td class="st">Departed</td></tr>
-          <tr><td class="mono">RUN-0726-02</td><td>Depot 22 &middot; Marleford</td><td class="mono">TRL-214</td><td>06:10</td><td class="st">Departed</td></tr>
-          <tr><td class="mono">RUN-0726-03</td><td>Depot 09 &middot; Northgate Cross</td><td class="mono">TRL-201</td><td>09:45</td><td class="st">Departed</td></tr>
-          <tr><td class="mono">RUN-0726-04</td><td>Depot 30 &middot; Ferris Vale</td><td class="mono">TRL-219</td><td>13:20</td><td class="st">Loading</td></tr>
-          <tr><td class="mono">RUN-0726-05</td><td>Depot 17 &middot; Aldenholt</td><td class="mono">TRL-206</td><td>17:00</td><td class="st hold">Held at dock</td></tr>
-          <tr><td class="mono">RUN-0726-06</td><td>Depot 45 &middot; Brackmoor</td><td class="mono">TRL-222</td><td>21:15</td><td class="st">Scheduled</td></tr>
+          <tr><td class="mono">RUN-0725-01</td><td>Depot 17 &middot; Aldenholt</td><td class="mono">TRL-208</td><td>04:30</td><td class="st">Departed</td></tr>
+          <tr><td class="mono">RUN-0725-02</td><td>Depot 22 &middot; Marleford</td><td class="mono">TRL-214</td><td>06:10</td><td class="st">Departed</td></tr>
+          <tr><td class="mono">RUN-0725-03</td><td>Depot 09 &middot; Tessivar Cross</td><td class="mono">TRL-201</td><td>09:45</td><td class="st">Departed</td></tr>
+          <tr><td class="mono">RUN-0725-04</td><td>Depot 30 &middot; Ferris Vale</td><td class="mono">TRL-219</td><td>13:20</td><td class="st">Departed</td></tr>
+          <tr><td class="mono">RUN-0725-05</td><td>Depot 17 &middot; Aldenholt</td><td class="mono">TRL-206</td><td>17:00</td><td class="st hold">Held at dock</td></tr>
+          <tr><td class="mono">RUN-0725-06</td><td>Depot 45 &middot; Brackmoor</td><td class="mono">TRL-222</td><td>22:15</td><td class="st hold">Loading</td></tr>
         </tbody>
       </table>
       <p class="note">Held runs require sign-off from the shift supervisor before release.
@@ -108,8 +124,8 @@
     <a href="status.html">Service status</a>
   </div>
   <div>Copyright 2026 Draymere Cold Chain Limited. Registered in England and Wales,
-    company 00000000. Registered office: Unit 12, Kettleworth Distribution Park,
-    Kettleworth KW7 3RN. Support: support@draymere.example</div>
+    company 00000000. Registered office: Unit 12, Skarnley Distribution Park,
+    Skarnley DK7 3RN. Support: support@draymere.example</div>
 </footer>
 
 </body>

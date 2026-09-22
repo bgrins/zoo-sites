@@ -2,59 +2,74 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Voltro — Customer Service</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voltro — Help</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="voltro.css">
 <style>
-  .page { max-width: 760px; margin: 0 auto; padding: 8px 16px 28px; }
-  .page h1 { font-size: 22px; margin: 14px 0 6px; }
-  .page h2 { font-size: 16px; margin: 20px 0 6px; }
-  .page p, .page li { font-size: 13px; }
-  .page a { color: #007185; }
-  .contact { border: 1px solid #d5d9d9; border-radius: 8px; padding: 12px 16px; margin-top: 14px; font-size: 13px; }
+.contact { background: #fff; border: 1px solid var(--rule); border-top: 3px solid var(--pine-2); padding: 12px 16px; margin-top: 14px; font-size: 13px; line-height: 1.6; }
 </style>
 </head>
 <body>
 <header>
-  <b>Voltro</b>
-  <input placeholder="Search Voltro" aria-label="Search">
-  <span>Hello, sign in</span>
-  <span>Orders</span>
-  <a class="cartlink" href="cart.html">View cart</a>
+  <a class="wordmark" href="index.html">Voltro</a>
+  <form class="finder" action="search.html" method="get" role="search">
+    <input name="q" placeholder="Search Voltro" aria-label="Search Voltro">
+    <button type="submit">Search</button>
+  </form>
+  <a class="acct" href="signin.html">Sign in</a>
+  <a class="acct" href="orders.html">Orders &amp; returns</a>
+  <a id="cartlink" class="cartlink" href="cart.html">View cart</a>
 </header>
-<nav>
-  <span>All</span><span>Today's Deals</span><span>Electronics</span>
-  <span>Computers</span><span>Monitors</span><span>Gift Cards</span><span>Customer Service</span>
+<nav class="depts" aria-label="Departments">
+  <a href="index.html">Monitors</a>
+  <a href="search.html?q=4K">4K monitors</a>
+  <a href="desk-setup.html">Desk Setup</a>
+  <a href="sell.html">Sell on Voltro</a>
+  <a href="help.html" aria-current="page">Help</a>
 </nav>
-<div class="page">
-  <h1>Customer Service</h1>
-  <p>Most questions are answered fastest from the pages below. For anything else,
-  the contact desk is open every day, 8:00 to 22:00.</p>
+<main class="page">
+  <h1>Help</h1>
+  <p>Most questions are answered fastest from the pages below. For anything else, the
+  help desk is open every day, 8:00 to 22:00 Mountain Time.</p>
   <h2 id="orders">Your orders</h2>
-  <p>Sign in to see order status, invoices and tracking. Orders placed as a guest can
-  be traced with the order number on your confirmation email.</p>
+  <p>Check where an order stands from
+  <a href="orders.html">Orders &amp; returns</a> with the order number from your
+  confirmation and the last name it ships to. Guest orders work the same way. To cancel
+  an order or return an item, call the help desk.</p>
   <h2>Delivery and returns</h2>
   <p>Delivery windows, return labels and refund timing are covered in
-  <a href="returns.html">Delivery &amp; Returns</a>. Monitors travel double-boxed;
+  <a href="returns.html">Delivery &amp; returns</a>. Monitors travel double-boxed;
   keep the packaging for the first 30 days.</p>
   <h2>Deals and promotions</h2>
-  <p>Daily deal codes are published on the Deals of the Day page and are redeemed in
-  the promotion box on the payment step of checkout. One code per customer per day.</p>
-  <h2>Baskets</h2>
-  <p>Monitors from the storefront listing go to your <a href="cart.html">shopping
-  cart</a>. Desk Setup accessories are kept in a separate
-  <a href="basket.html">Desk Setup basket</a> with its own checkout.</p>
+  <p>Daily deal codes are published on the Deals of the Day page of the Voltro mobile
+  site and are redeemed in the promotion box on the payment step of checkout. One code
+  per customer per day.</p>
+  <h2>Two baskets, two sellers</h2>
+  <p>Monitors from the storefront go to your <a href="cart.html">shopping cart</a> and
+  are sold by Voltro Retail. Desk Setup accessories are supplied by Voltro Business
+  Supply, so they sit in a separate <a href="basket.html">Desk basket</a>; its checkout
+  books delivery and emails an invoice to pay online.</p>
   <div class="contact">
-    <b>Contact us</b><br>
+    <b>Contact the help desk</b><br>
     Email: support@voltro.example<br>
-    Phone: 1-800-555-0176, 8:00 to 22:00 daily<br>
-    Post: Voltro Marketplace, Inc., 44 Halden Way, Brantmoor
+    Phone: 1-303-555-0176, 8:00 to 22:00 daily<br>
+    Post: Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000
   </div>
-</div>
+</main>
 <footer>
-  &copy; 2026 Voltro Marketplace, Inc. Prices and availability are subject to change.
-  · <a href="conditions.html">Conditions of Use</a> · <a href="privacy.html">Privacy Notice</a>
-  · <a href="privacy.html#ads">Interest-Based Ads</a> · <a href="sell.html">Sell on Voltro</a>
-  · <a href="careers.html">Careers</a>
+  <ul>
+    <li><a href="help.html">Help</a></li>
+    <li><a href="orders.html">Orders &amp; returns</a></li>
+    <li><a href="returns.html">Delivery &amp; returns</a></li>
+    <li><a href="sell.html">Sell on Voltro</a></li>
+    <li><a href="careers.html">Careers</a></li>
+    <li><a href="conditions.html">Terms of Use</a></li>
+    <li><a href="privacy.html">Privacy</a></li>
+    <li><a href="privacy.html#ads">Ad choices</a></li>
+  </ul>
+  <p>&copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000.
+  Prices and availability are subject to change.</p>
 </footer>
 <script src="voltro-nav.js"></script>
 </body>

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tamarack Hollow — one cabin above Fernlee</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   * { box-sizing: border-box; }
   body {
@@ -20,7 +21,7 @@
     border-bottom: 6px double #c9a04b;
   }
   .masthead { max-width: 960px; margin: 0 auto; }
-  .brand { font-size: 34px; letter-spacing: 1px; }
+  .brand { display: inline-block; font-size: 34px; letter-spacing: 1px; color: inherit; text-decoration: none; }
   .brand small {
     display: block; font-size: 12px; letter-spacing: 4px;
     text-transform: uppercase; color: #cdbf9a; margin-top: 2px;
@@ -31,6 +32,8 @@
     letter-spacing: 2px; font-size: 12px; margin-right: 22px;
     border-bottom: 2px solid transparent; padding-bottom: 3px;
   }
+  nav a[aria-current] { border-bottom: 2px solid #c9a04b; }
+  nav a { display: inline-block; white-space: nowrap; margin-bottom: 6px; }
   nav a:hover { border-bottom-color: #c9a04b; }
   main { max-width: 960px; margin: 0 auto; padding: 26px 24px 40px; }
   section { margin-bottom: 38px; }
@@ -64,10 +67,12 @@
     border: 1px solid #b7a87f; background: #fdfaf1; color: #2b241a; cursor: pointer;
   }
   button.day:hover:not(:disabled) { background: #e6dfc8; }
-  button.day:disabled {
+  button.day.blk {
     background: repeating-linear-gradient(45deg, #ddd6c4, #ddd6c4 3px, #cfc6ae 3px, #cfc6ae 6px);
-    color: #8a7d61; cursor: not-allowed;
+    color: #8a7d61;
   }
+  button.day:disabled { cursor: not-allowed; }
+  button.day.blk:not(:disabled) { color: #2b241a; border-color: #1e4632; }
   button.day.pick { background: #1e4632; color: #f6f0e1; border-color: #1e4632; }
   button.day.stay { background: #58775f; color: #f6f0e1; border-color: #4a6851; }
   .legend { font-size: 12px; color: #6e5f43; margin-bottom: 18px; }
@@ -110,13 +115,17 @@
 <body>
 <header>
   <div class="masthead">
-    <div class="brand">Tamarack Hollow<small>Cabin lettings on the Fernlee ridge</small></div>
+    <a class="brand" href="index.html">Tamarack Hollow<small>Cabin lettings on the Fernlee ridge</small></a>
   </div>
-  <nav>
+  <nav aria-label="Site">
     <a href="#cabin">The cabin</a>
-    <a href="#rates">Rates and season notes</a>
+    <a href="#rates">Rates</a>
     <a href="#book">Availability</a>
     <a href="#directions">Getting here</a>
+    <a href="arrival.html">Before you arrive</a>
+    <a href="ridge.html">Walks</a>
+    <a href="getting-about.html">Access</a>
+    <a href="policies.html">Policies</a>
   </nav>
 </header>
 <main>
@@ -134,8 +143,8 @@
         <ul>
           <li>Loft with two full beds, box bed off the porch room</li>
           <li>Wood stove, stacked cordwood included</li>
-          <li>Gas ring, cold pantry, spring water on tap</li>
-          <li>Lake sauna shared with no one</li>
+          <li>Gas ring, cold pantry, spring water at one cold tap</li>
+          <li>Wood-fired sauna hut on the tarn shore, yours alone</li>
         </ul>
       </div>
       <div>
@@ -152,7 +161,7 @@
   <section id="rates">
     <h2>Rates and season notes</h2>
     <div class="plaque">
-      <p id="rate-line">Autumn rate loading</p>
+      <p id="rate-line">Season rate loading</p>
       <p id="window-line">Season window loading</p>
     </div>
     <ul>
@@ -161,7 +170,8 @@
       check-out; the check-out morning itself is not a stay night.</li>
       <li>Blackout dates are held for maintenance and private lettings. They
       are hatched grey on the calendar and cannot be booked, and every night of
-      a stay must be clear of them.</li>
+      a stay must be clear of them. A stay may end on the morning of a blackout
+      date.</li>
       <li>The total for a stay and the reservation reference are issued when
       the booking is confirmed. Quote the reference at the gate lodge.</li>
     </ul>
@@ -215,21 +225,22 @@
 </main>
 <footer>
   <div class="inner">
-    &copy; 2026 Tamarack Hollow Lettings &middot; Gate lodge, Millbrook Road,
-    Fernlee &middot; stay@tamarackhollow.example &middot; 01632 960 177 &middot;
-    <a href="policies.html#privacy">Privacy</a> &middot;
-    <a href="policies.html#terms">Booking terms</a> &middot;
+    Tamarack Hollow Lettings Ltd &middot; Gate lodge, Millbrook Road, Fernlee FL4 7RT
+    &middot; stay@tamarackhollow.example &middot; 01632 960 177<br>
+    <a href="index.html#book">Availability</a> &middot;
     <a href="arrival.html">Before you arrive</a> &middot;
     <a href="ridge.html">Walks from the door</a> &middot;
-    <a href="getting-about.html">Access on the ridge</a>
+    <a href="getting-about.html">Access on the ridge</a> &middot;
+    <a href="policies.html#terms">Booking terms</a> &middot;
+    <a href="policies.html#privacy">Privacy</a><br>
+    &copy; 2026 Tamarack Hollow Lettings Ltd. Registered in England and Wales,
+    company number 00000000.
   </div>
 </footer>
 <script>
 const NONCE = '__SESSION_NONCE__';
-const MONTHS = [
-  { y: 2026, m: 8, name: 'September 2026' },
-  { y: 2026, m: 9, name: 'October 2026' },
-];
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+let MONTHS = [];
 const SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const iso = (y, m, d) =>
@@ -286,7 +297,12 @@ function render() {
       b.className = 'day';
       b.textContent = d;
       b.setAttribute('aria-label', dayLabel(dateIso));
-      if (blackouts.has(dateIso)) {
+      const blk = blackouts.has(dateIso);
+      if (blk) b.classList.add('blk');
+      // A blackout can still be the check-out morning of a stay that ends on
+      // it, so once a check-in is picked the later blackout days open for the
+      // second click; the server re-checks every night of the stay.
+      if (blk && !(checkin && !checkout && dateIso > checkin)) {
         b.disabled = true;
       } else {
         if (dateIso === checkin || dateIso === checkout) b.classList.add('pick');
@@ -334,7 +350,7 @@ function quote() {
   }
   const nights = Math.round((Date.parse(checkout) - Date.parse(checkin)) / 86400000);
   q.textContent = nights + (nights === 1 ? ' night' : ' nights') +
-    (rate ? ' at $' + rate + ' a night' : '');
+    (rate ? ' at £' + rate + ' a night' : '');
 }
 
 function fromInputs() {
@@ -351,7 +367,7 @@ el('checkout').addEventListener('change', fromInputs);
 el('bookform').addEventListener('submit', async (e) => {
   e.preventDefault();
   el('notice').style.display = 'none';
-  const res = await fetch('/api/cabins/book', {
+  const data = await fetch('/api/cabins/book', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -359,8 +375,13 @@ el('bookform').addEventListener('submit', async (e) => {
       checkin: el('checkin').value.trim(),
       checkout: el('checkout').value.trim(),
     }),
-  });
-  const data = await res.json();
+  })
+    .then((res) => res.json())
+    .catch(() => ({
+      ok: false,
+      message: 'The booking desk did not answer',
+      detail: 'Your dates were not confirmed. Try again in a moment.',
+    }));
   if (!data.ok) {
     el('confirmation').style.display = 'none';
     el('notice-msg').textContent = data.message ?? 'Booking refused';
@@ -375,24 +396,31 @@ function showConfirmed(c) {
   el('conf-ref').textContent = 'Reference ' + c.reference;
   el('conf-in').textContent = 'Check-in ' + c.checkIn;
   el('conf-out').textContent = 'Check-out ' + c.checkOut;
-  el('conf-total').textContent = 'Total $' + c.total + ' for ' + c.nights + ' nights';
+  el('conf-total').textContent = 'Total £' + c.total + ' for ' + c.nights + ' nights';
   el('confirmation').style.display = 'block';
 }
 
 async function load() {
   const res = await fetch('/api/cabins/availability', {
     headers: { 'X-Session-Nonce': NONCE },
-  });
-  if (!res.ok) {
+  }).catch(() => null);
+  if (!res || !res.ok) {
     el('rate-line').textContent = 'The availability sheet could not be loaded. Reload the page.';
     return;
   }
   const data = await res.json();
   rate = data.rate;
   blackouts = new Set(data.blackouts);
-  el('rate-line').textContent = 'Autumn rate: $' + data.rate + ' a night';
+  el('rate-line').textContent = 'Season rate: £' + data.rate + ' a night';
   el('window-line').textContent =
     'Booking window: ' + data.window.from + ' to ' + data.window.to;
+  MONTHS = [];
+  const [fy, fm] = data.window.from.split('-').map(Number);
+  const [ty, tm] = data.window.to.split('-').map(Number);
+  for (let k = fy * 12 + fm - 1; k <= ty * 12 + tm - 1; k++) {
+    const y = Math.floor(k / 12);
+    MONTHS.push({ y, m: k % 12, name: MONTH_NAMES[k % 12] + ' ' + y });
+  }
   if (data.confirmed) showConfirmed(data.confirmed);
   render();
 }

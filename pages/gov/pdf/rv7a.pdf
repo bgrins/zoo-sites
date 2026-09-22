@@ -3,41 +3,88 @@
 << /Type /Catalog /Pages 2 0 R >>
 endobj
 2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
 endobj
 3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
 endobj
 4 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
 endobj
 5 0 obj
-<< /Length 967 >>
+<< /Length 2417 >>
 stream
-BT /F1 12 Tf 72 740 Td (BUREAU OF CIVIC REVENUE) Tj ET
-BT /F1 10 Tf 72 722 Td (An agency of the Commonwealth) Tj ET
-BT /F1 14 Tf 72 704 Td (FORM RV-7A - RV-7 AMENDED DECLARATION) Tj ET
-BT /F1 10 Tf 72 686 Td (Rev. 02/25) Tj ET
-BT /F1 10 Tf 72 650 Td (Type or print clearly in black ink. Complete every line that applies;) Tj ET
-BT /F1 10 Tf 72 632 Td (enter NONE where a line does not apply. Read the instructions for this) Tj ET
-BT /F1 10 Tf 72 614 Td (form and consult the Schedule of Filing Fees before filing.) Tj ET
-BT /F1 10 Tf 72 596 Td (Line 1  Name of filer  ______________________________________________) Tj ET
-BT /F1 10 Tf 72 578 Td (Line 2  Account number  ___________________________________________) Tj ET
-BT /F1 10 Tf 72 560 Td (Line 3  Mailing address  __________________________________________) Tj ET
-BT /F1 10 Tf 72 542 Td (Sign and date the declaration on page 2. An unsigned filing is) Tj ET
-BT /F1 10 Tf 72 524 Td (returned unprocessed.) Tj ET
+BT /F2 11 Tf 54 748 Td (BUREAU OF CIVIC REVENUE) Tj ET
+BT /F1 8 Tf 54 735 Td (An agency of the Commonwealth) Tj ET
+BT /F2 9 Tf 400 748 Td (Form RV-7A) Tj ET
+BT /F1 8 Tf 400 735 Td (Rev. 02/25) Tj ET
+1.4 w 54 726 m 558 726 l S
+BT /F2 13 Tf 54 706 Td (RV-7 AMENDED DECLARATION) Tj ET
+0.6 w 54 44 m 558 44 l S
+BT /F1 7 Tf 54 32 Td (Form RV-7A \(Rev. 02/25\)) Tj ET
+BT /F1 7 Tf 500 32 Td (Page 1 of 1) Tj ET
+BT /F1 8 Tf 54 680 Td (File only to correct a declaration already accepted for the same declaration year.) Tj ET
+0.9 g 54 656 504 16 re f 0 g
+BT /F2 9 Tf 58 660 Td (Part A. Filer) Tj ET
+BT /F1 8 Tf 54 638 Td (Name of filer \(last, first, middle initial\)) Tj ET
+0.6 w 54 624 m 558 624 l S
+BT /F1 8 Tf 54 610 Td (Bureau account number) Tj ET
+0.6 w 54 596 m 558 596 l S
+BT /F1 8 Tf 54 582 Td (Mailing address \(number and street, city, ZIP code\)) Tj ET
+0.6 w 54 568 m 558 568 l S
+0.9 g 54 542 504 16 re f 0 g
+BT /F2 9 Tf 58 546 Td (Part B. Declaration being amended) Tj ET
+BT /F2 9 Tf 54 524 Td (Line 1) Tj ET
+BT /F1 9 Tf 98 524 Td (Confirmation number from the acceptance notice) Tj ET
+0.6 w 360 522 m 558 522 l S
+BT /F2 9 Tf 54 504 Td (Line 2) Tj ET
+BT /F1 9 Tf 98 504 Td (Vehicle identification number, as on the original) Tj ET
+0.6 w 360 502 m 558 502 l S
+BT /F2 9 Tf 54 484 Td (Line 3) Tj ET
+BT /F1 9 Tf 98 484 Td (Declaration year) Tj ET
+0.6 w 360 482 m 558 482 l S
+0.9 g 54 452 504 16 re f 0 g
+BT /F2 9 Tf 58 456 Td (Corrected figures \(leave unchanged lines blank\)) Tj ET
+BT /F2 9 Tf 54 434 Td (Line 4) Tj ET
+BT /F1 9 Tf 98 434 Td (Corrected purchase price) Tj ET
+0.6 w 360 432 m 558 432 l S
+BT /F2 9 Tf 54 414 Td (Line 5) Tj ET
+BT /F1 9 Tf 98 414 Td (Corrected declared value) Tj ET
+0.6 w 360 412 m 558 412 l S
+BT /F2 9 Tf 54 394 Td (Line 6) Tj ET
+BT /F1 9 Tf 98 394 Td (Corrected total due) Tj ET
+0.6 w 360 392 m 558 392 l S
+BT /F2 9 Tf 54 374 Td (Line 7) Tj ET
+BT /F1 9 Tf 98 374 Td (Explanation of the correction \(attach statement\)) Tj ET
+0.6 w 360 372 m 558 372 l S
+0.9 g 54 342 504 16 re f 0 g
+BT /F2 9 Tf 58 346 Td (Part C. Signature) Tj ET
+BT /F1 9 Tf 54 324 Td (I declare that the corrected information on this form is true and complete.) Tj ET
+0.6 w 54 294 m 330 294 l S
+0.6 w 360 294 m 558 294 l S
+BT /F1 7 Tf 54 284 Td (Signature) Tj ET
+BT /F1 7 Tf 360 284 Td (Date) Tj ET
+BT /F1 8 Tf 54 264 Td (Mail as directed in the Form RV-7A Instructions. Do not enclose an original declaration.) Tj ET
 endstream
 endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Title (Form RV-7A RV-7 Amended Declaration) /Author (Bureau of Civic Revenue) >>
+endobj
 xref
-0 6
+0 8
 0000000000 65535 f 
 0000000009 00000 n 
 0000000058 00000 n 
 0000000115 00000 n 
-0000000241 00000 n 
-0000000311 00000 n 
+0000000212 00000 n 
+0000000314 00000 n 
+0000002783 00000 n 
+0000002919 00000 n 
 trailer
-<< /Size 6 /Root 1 0 R >>
+<< /Size 8 /Root 1 0 R /Info 7 0 R >>
 startxref
-1328
+3019
 %%EOF

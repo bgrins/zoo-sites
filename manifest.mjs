@@ -1,7 +1,14 @@
 // Origin manifest: one entry per simulated ORIGIN. The dir is the pages/
-// subtree served at that origin's root in multi-origin mode; ports are
-// 8100 + index in key order, never hand-assigned. Single-origin mode
-// (today's default) ignores this file entirely.
+// subtree served at that origin's root in multi-origin mode. Each port is
+// 8100 + the entry's array index, and the_zoo publishes those ports, so the
+// list is append-only: never reorder it, insert mid-list or renumber a port.
+// The array is therefore not in key order. scripts/check-fixtures.mjs holds
+// each port to 8100 + index, and each domain:port pair in the committed
+// docker/zoo-snippet.yaml to its published value, so a move fails there unless
+// the snippet is regenerated with it. Single-origin mode, the default, serves
+// each dir under its own path prefix and still reads this file: server.mjs
+// builds its dev index and the __ORIGIN_<KEY>__ tokens from it, and
+// originUrls() below builds task URLs.
 // The forms/<brand> dirs arrived with the forms split; before that, those
 // origins served empty roots in origin mode.
 
@@ -96,13 +103,13 @@ export const ORIGINS = [
   { key: 'northmarsh', dir: 'gallery', domain: 'northmarsh.zoo', port: 8143 },
   // Northwind Industrial newsroom (embargo-wait)
   { key: 'northwind-ir', dir: 'press', domain: 'northwind-ir.zoo', port: 8144 },
-  // Ollister & Crane + Anverra Pay window (cross-tab-pay) - SEE OPEN QUESTION 2
+  // Ollister & Crane + Anverra Pay window (cross-tab-pay)
   { key: 'ollister-crane', dir: 'paylink', domain: 'ollister-crane.zoo', port: 8145 },
   // Orsino Consulting intake (intake-carryover)
   { key: 'orsino', dir: 'intake', domain: 'orsino.zoo', port: 8146 },
   // Ostara Surface Systems rover (maze-escape)
   { key: 'ostara', dir: 'maze', domain: 'ostara.zoo', port: 8147 },
-  // Overlane Carrier Access (portal-login, logout-hygiene, role-panels, mfa-login, session-expiry, token-rotate?)
+  // Overlane Carrier Access (portal-login, logout-hygiene, role-panels, mfa-login, session-expiry, password-reset)
   { key: 'overlane', dir: 'portal', domain: 'overlane.zoo', port: 8148 },
   // Peregrine Court day book (room-booking)
   { key: 'peregrine-court', dir: 'schedule', domain: 'peregrine-court.zoo', port: 8149 },
@@ -138,6 +145,8 @@ export const ORIGINS = [
   { key: 'waypost', dir: 'forms/waypost', domain: 'waypost.zoo', port: 8164 },
   // Zellick Analytics (flaky-retry, timeout-vs-slow)
   { key: 'zellick', dir: 'flaky', domain: 'zellick.zoo', port: 8165 },
+  // Ivrelby Borough Council events office (native-permit)
+  { key: 'ivrelby-events', dir: 'events', domain: 'ivrelby-events.zoo', port: 8166 },
 ];
 
 // Origins that exist for the harness rather than as simulated sites. They stay

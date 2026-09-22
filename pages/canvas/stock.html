@@ -3,86 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sending Stock — TintForge Studio</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: rgb(247, 246, 243); color: rgb(20, 19, 15);
-    font-family: Optima, "Gill Sans", Candara, "Segoe UI", sans-serif;
-    font-size: 15px; line-height: 1.55;
-  }
-  .masthead {
-    border-bottom: 1px solid rgb(20, 19, 15); padding: 26px 40px 18px;
-    display: flex; align-items: flex-end; justify-content: space-between;
-  }
-  .masthead h1 {
-    margin: 0; font-family: Didot, "Hoefler Text", Baskerville, Garamond, serif;
-    font-size: 34px; font-weight: normal; letter-spacing: 0.01em;
-  }
-  .masthead h1 em { font-style: italic; }
-  .masthead .who {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.3em; color: rgb(111, 108, 98);
-  }
-  nav {
-    border-bottom: 1px solid rgb(221, 217, 207); padding: 0 40px;
-    display: flex; gap: 30px;
-  }
-  nav a {
-    display: block; padding: 11px 0; color: rgb(111, 108, 98); text-decoration: none;
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.22em;
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-  }
-  nav a:hover { color: rgb(20, 19, 15); }
-  nav a.here { color: rgb(20, 19, 15); border-bottom-color: rgb(20, 19, 15); }
-  .work { padding: 40px; max-width: 1000px; }
-  h2 {
-    margin: 0 0 4px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 24px; font-weight: normal;
-  }
-  h3.rule {
-    margin: 34px 0 4px; font-family: Didot, "Hoefler Text", Baskerville, serif;
-    font-size: 20px; font-weight: normal;
-  }
-  .deck { margin: 0 0 14px; color: rgb(76, 73, 65); max-width: 52ch; }
-  .lede { margin: 0 0 20px; max-width: 54ch; font-size: 17px; color: rgb(38, 36, 30); }
-  ol.bench { margin: 0 0 6px; padding-left: 20px; max-width: 56ch; color: rgb(76, 73, 65); }
-  ol.bench li { margin-bottom: 9px; }
-  dl.contact { margin: 0; max-width: 56ch; }
-  dl.contact dt {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 0.24em; color: rgb(139, 135, 124);
-    margin-top: 14px;
-  }
-  dl.contact dd {
-    margin: 3px 0 0; padding-bottom: 8px; border-bottom: 1px solid rgb(230, 226, 216);
-    font-family: "SFMono-Regular", Menlo, "DejaVu Sans Mono", monospace; font-size: 12px;
-  }
-  dl.contact a { color: rgb(20, 19, 15); }
-  .fine {
-    padding: 0 40px 44px; max-width: 62ch; color: rgb(139, 135, 124); font-size: 11px;
-    letter-spacing: 0.02em;
-  }
-  .fine a { color: rgb(111, 108, 98); }
-</style>
+<title>Sending Stock — Velloquin Studio</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="studio.css">
 </head>
 <body>
-<div class="masthead">
-  <h1>TintForge <em>Studio</em></h1>
-  <span class="who">Print calibration desk</span>
-</div>
-<nav>
+<div class="register" aria-hidden="true"></div>
+<header class="masthead">
+  <a class="brand" href="index.html">Velloquin <em>Studio</em></a>
+  <span class="who">Ink, proofing and colour calibration</span>
+</header>
+<nav class="studio" aria-label="Studio">
+  <a href="index.html">Studio</a>
   <a href="libraries.html">Libraries</a>
   <a href="swatch.html">Calibration</a>
   <a href="ink-recipes.html">Ink recipes</a>
   <a href="press-profiles.html">Press profiles</a>
   <a href="archive.html">Archive</a>
 </nav>
-<div class="work">
-  <h2>Sending stock to the studio</h2>
+<main class="work prose">
+  <h1>Sending stock to the studio</h1>
   <p class="lede">The studio proofs on your paper, not on ours. What arrives in the yard
   therefore decides how quickly the order gets onto a press, and a badly packed parcel costs
   more days than a badly written brief.</p>
 
-  <h3 class="rule">What to send</h3>
+  <h2 class="rule">What to send</h2>
   <ol class="bench">
     <li>Enough stock for three pulls plus twenty spare sheets from the same making. Sheets
     from two different makings are two different substrates as far as the press is concerned,
@@ -96,37 +41,39 @@
     on the packing note inside.</li>
   </ol>
 
-  <h3 class="rule">Packing</h3>
+  <h2 class="rule">Packing</h2>
   <p class="deck">Ship flat and rigid, interleaved with clean paper, in a box rather than a
   bag. Do not fold a reference sheet, do not clip it, and do not write on its face. A crease
   through the area being matched makes the reference useless, and the studio will stop and
   ask rather than proof against a damaged sheet. Wrap against damp: the yard is close to the
   water and a parcel that sits in a wet loading bay overnight arrives cockled.</p>
 
-  <h3 class="rule">Digital files</h3>
+  <h2 class="rule">Digital files</h2>
   <p class="deck">Where the job needs artwork, send it as a print-ready file with fonts
   embedded, trim and bleed marked, and every element you want held to a named separation. The
   studio does not redraw artwork and does not repair a file quietly; anything that will not
   image is sent back with a note the same day. Files go to the bench address below, or on a
   memory stick in the parcel with the stock.</p>
 
-  <h3 class="rule">Delivery and collection</h3>
+  <h2 class="rule">Delivery and collection</h2>
   <p class="deck">Everything comes in and goes out through the yard gate, which is open from
   eight until four on weekdays. There is no counter and nobody at the front of the building,
   so a courier needs the gate instructions rather than the street address. Tell the bench when
   a parcel is on its way and the studio will book the make-ready before it lands, which
   usually saves a day. Unused stock is returned with the job or held for sixty days.</p>
 
-  <dl class="contact">
-    <dt>Deliveries</dt><dd>Yard gate, Unit 6, Dyehouse Yard</dd>
-    <dt>Telephone</dt><dd>01632 960118</dd>
-    <dt>Bench</dt><dd><a href="mailto:bench@tintforge.example">bench@tintforge.example</a></dd>
+  <dl class="data contact">
+    <dt>Deliveries</dt><dd>Yard gate, Unit 6, Dyehouse Yard, Lorrimead LQ3 8DW</dd>
+    <dt>Telephone</dt><dd>01632 960962</dd>
+    <dt>Bench</dt><dd><a href="mailto:bench@velloquin.example">bench@velloquin.example</a></dd>
     <dt>Terms</dt><dd><a href="terms.html">Terms of trade</a></dd>
   </dl>
-</div>
-<p class="fine">TintForge Studio &middot; Unit 6, Dyehouse Yard &middot; stock supplied for an
-order is handled at the studio's ordinary standard of care and is not separately insured
-&middot; <a href="terms.html">Terms of trade</a> &middot;
-<a href="access.html">Visiting the yard</a></p>
+</main>
+<footer class="fine">
+  <p>Stock supplied for an order is handled at the studio's ordinary standard of care and is not separately insured.</p>
+  <p>Velloquin Studio Ltd &middot; Unit 6, Dyehouse Yard, Lorrimead LQ3 8DW &middot; registered in England and Wales, company number 00000000</p>
+  <p><a href="privacy.html">Privacy</a> &middot; <a href="terms.html">Terms of trade</a> &middot;
+  <a href="stock.html">Sending stock</a> &middot; <a href="access.html">Visiting the yard</a></p>
+</footer>
 </body>
 </html>

@@ -3,18 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Seat usage &middot; Northgate Media &middot; Halbeck</title>
+<title>Seat usage &middot; Skelvane Media &middot; Halbeck</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="halbeck.css">
 </head>
 <body>
 <div class="bar">
-  <span class="logo">Hal<i>beck</i></span>
-  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <a class="logo" href="index.html">halbeck</a>
+  <button class="wsw" type="button"><span>workspace</span> Skelvane Media</button>
   <span class="spacer"></span>
   <a class="lnk" href="sources.html">Data sources</a>
   <a class="lnk" href="alerts.html">Alerts</a>
   <a class="lnk" href="docs.html">Docs</a>
-  <span class="who">NM</span>
+  <button class="who" type="button" aria-label="Account menu for r.calloway">RC</button>
 </div>
 
 <div class="shell">
@@ -37,7 +38,7 @@
   </nav>
 
   <main>
-    <p class="crumbs"><a href="overview.html">Northgate Media</a> / Analytics / Seat usage</p>
+    <p class="crumbs"><a href="overview.html">Skelvane Media</a> / Analytics / Seat usage</p>
     <h1>Seat usage</h1>
     <p class="sub">Active seats counts every member who signed in at least once during the
     calendar month, deduplicated across connected workspaces. Figures settle three days
@@ -104,12 +105,12 @@
         <header><h2>Workspace events</h2><span class="meta">last 90 days</span></header>
         <div class="pad">
           <ul class="events">
-            <li><span class="when">14 Jun</span><span class="what">Directory sync switched to Fernway SSO</span><span class="tag">identity</span></li>
+            <li><span class="when">14 Jun</span><span class="what">Directory sync switched to Ondrexa SSO</span><span class="tag">identity</span></li>
             <li><span class="when">02 Jun</span><span class="what">Seat pool ceiling raised on the Scale plan</span><span class="tag">billing</span></li>
-            <li><span class="when">21 May</span><span class="what">Editorial workspace merged into Northgate Media</span><span class="tag">workspace</span></li>
+            <li><span class="when">21 May</span><span class="what">Editorial workspace merged into Skelvane Media</span><span class="tag">workspace</span></li>
             <li><span class="when">09 May</span><span class="what">Dormant-seat reclaim policy set to 45 days</span><span class="tag">policy</span></li>
             <li><span class="when">27 Apr</span><span class="what">Regional site licence for Brackhill ended</span><span class="tag">billing</span></li>
-            <li><span class="when">05 Apr</span><span class="what">Sign-in telemetry backfilled from the archive tier</span><span class="tag">pipeline</span></li>
+            <li><span class="when">08 Apr</span><span class="what">Sign-in telemetry backfilled from the archive tier</span><span class="tag">pipeline</span></li>
           </ul>
         </div>
       </section>
@@ -125,7 +126,7 @@
             <dt>Source</dt>
             <dd>identity.sign_in_events, rolled up nightly at 04:15.</dd>
             <dt>Owner</dt>
-            <dd>Platform Analytics, Northgate Media</dd>
+            <dd>Platform Analytics, Skelvane Media</dd>
           </dl>
         </div>
       </section>
@@ -134,12 +135,12 @@
 </div>
 
 <footer class="foot">
-  <span>Halbeck Analytics Ltd</span>
+  <span>&copy; 2026 Halbeck Analytics Ltd</span>
   <a href="status.html">Status</a>
   <a href="privacy.html">Privacy notice</a>
   <a href="terms.html">Terms of service</a>
   <a href="support.html">Support</a>
-  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+  <span class="push">Registered in England and Wales, company number 00000000 &middot; 14 Tannery Yard, Thrushby TY4 7HB &middot; support@halbeck.example</span>
 </footer>
 
 <script>
@@ -155,7 +156,7 @@
   const btnChart = document.getElementById('viewChart');
   const btnTable = document.getElementById('viewTable');
 
-  const TICK_FACE = '"IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace';
+  const TICK_FACE = '"DIN Alternate", Bahnschrift, "Roboto Condensed", "Arial Narrow", sans-serif';
   const seats = (n) => n.toLocaleString('en-GB');
   let points = [];
   let hover = -1;
@@ -198,18 +199,18 @@
     const g = canvas.getContext('2d');
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, gm.w, gm.h);
-    g.font = '11px ' + TICK_FACE;
+    g.font = '12px ' + TICK_FACE;
     g.textBaseline = 'middle';
 
     for (let v = gm.yMin; v <= gm.yMax; v += gm.step) {
       const yy = Math.round(gm.y(v)) + 0.5;
-      g.strokeStyle = '#eaeef3';
+      g.strokeStyle = '#e4e4de';
       g.lineWidth = 1;
       g.beginPath();
       g.moveTo(gm.padL, yy);
       g.lineTo(gm.w - gm.padR, yy);
       g.stroke();
-      g.fillStyle = '#8d98a5';
+      g.fillStyle = '#77786f';
       g.textAlign = 'right';
       g.fillText(seats(v), gm.padL - 10, yy);
     }
@@ -217,14 +218,14 @@
     g.textAlign = 'center';
     g.textBaseline = 'top';
     for (let i = 0; i < points.length; i += 3) {
-      g.fillStyle = '#8d98a5';
+      g.fillStyle = '#77786f';
       const [mon, yr] = points[i].label.split(' ');
       g.fillText(mon + "'" + yr.slice(2), gm.x(i), gm.h - gm.padB + 9);
     }
 
     const grad = g.createLinearGradient(0, gm.padT, 0, gm.h - gm.padB);
-    grad.addColorStop(0, 'rgba(75, 63, 176, 0.18)');
-    grad.addColorStop(1, 'rgba(75, 63, 176, 0.01)');
+    grad.addColorStop(0, 'rgba(184, 230, 46, 0.42)');
+    grad.addColorStop(1, 'rgba(184, 230, 46, 0.04)');
     g.beginPath();
     g.moveTo(gm.x(0), gm.y(points[0].value));
     points.forEach((p, i) => g.lineTo(gm.x(i), gm.y(p.value)));
@@ -236,21 +237,21 @@
 
     g.beginPath();
     points.forEach((p, i) => (i ? g.lineTo(gm.x(i), gm.y(p.value)) : g.moveTo(gm.x(i), gm.y(p.value))));
-    g.strokeStyle = '#4b3fb0';
+    g.strokeStyle = '#16191d';
     g.lineWidth = 2;
     g.stroke();
 
     points.forEach((p, i) => {
       g.beginPath();
       g.arc(gm.x(i), gm.y(p.value), i === hover ? 4 : 2.4, 0, Math.PI * 2);
-      g.fillStyle = i === hover ? '#322a7d' : '#4b3fb0';
+      g.fillStyle = i === hover ? '#4f7d00' : '#16191d';
       g.fill();
     });
 
     if (hover >= 0) {
       const px = gm.x(hover);
       const py = gm.y(points[hover].value);
-      g.strokeStyle = '#c3cbd6';
+      g.strokeStyle = '#86877f';
       g.lineWidth = 1;
       g.beginPath();
       g.moveTo(Math.round(px) + 0.5, gm.padT);
@@ -258,20 +259,20 @@
       g.stroke();
       const line1 = points[hover].label;
       const line2 = seats(points[hover].value) + ' seats';
-      g.font = '11px ' + TICK_FACE;
+      g.font = '12px ' + TICK_FACE;
       const bw = Math.max(g.measureText(line1).width, g.measureText(line2).width) + 18;
       const bh = 36;
       const bx = Math.min(Math.max(px - bw / 2, gm.padL), gm.w - gm.padR - bw);
       const by = Math.max(py - bh - 12, gm.padT);
       g.fillStyle = 'rgba(255, 255, 255, 0.96)';
       g.fillRect(bx, by, bw, bh);
-      g.strokeStyle = '#dde3ea';
+      g.strokeStyle = '#16191d';
       g.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
       g.textAlign = 'left';
       g.textBaseline = 'top';
-      g.fillStyle = '#8d98a5';
+      g.fillStyle = '#77786f';
       g.fillText(line1, bx + 9, by + 6);
-      g.fillStyle = '#322a7d';
+      g.fillStyle = '#16191d';
       g.fillText(line2, bx + 9, by + 20);
     }
   }
@@ -356,19 +357,60 @@
     document.getElementById('kpiHighNote').textContent = 'reached ' + highAt;
   }
 
+  function blankTiles() {
+    for (const id of ['kpiLatest', 'kpiDelta', 'kpiMean', 'kpiHigh']) {
+      const el = document.getElementById(id);
+      el.textContent = '—';
+      el.className = 'fig';
+    }
+  }
+
+  function failed(message, retry) {
+    blankTiles();
+    loadState.hidden = false;
+    loadState.className = 'state err';
+    loadState.textContent = message;
+    if (retry) {
+      const again = document.createElement('button');
+      again.type = 'button';
+      again.textContent = 'Retry';
+      again.addEventListener('click', () => {
+        loadState.className = 'state';
+        loadState.textContent = 'Loading the seat series.';
+        load();
+      });
+      loadState.appendChild(again);
+    }
+  }
+
   async function load() {
-    let data;
+    let res;
     try {
-      const res = await fetch('/api/metrics/series?src=chart', {
+      res = await fetch('/api/metrics/series?src=chart', {
         headers: { 'X-Session-Nonce': NONCE },
       });
+    } catch {
+      failed('Halbeck could not reach the query service. Check your connection.', true);
+      return;
+    }
+    if (res.status === 401 || res.status === 403) {
+      failed('Your Halbeck session has expired. Reload the page to sign in again.', false);
+      return;
+    }
+    if (!res.ok) {
+      failed('The seat series could not be loaded (error ' + res.status + ').', true);
+      return;
+    }
+    let data;
+    try {
       data = await res.json();
     } catch {
-      loadState.textContent = 'The seat series could not be loaded. Retry in a moment.';
+      failed('The seat series came back incomplete.', true);
       return;
     }
     if (!data || !Array.isArray(data.points) || !data.points.length) {
-      loadState.textContent = 'No seat data is available for this workspace.';
+      blankTiles();
+      loadState.textContent = 'No seat data has been recorded for this workspace yet.';
       return;
     }
     points = data.points;
@@ -385,5 +427,6 @@
   });
   load();
 </script>
+<script src="halbeck.js"></script>
 </body>
 </html>

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sale 1174 &mdash; Instruments, Marine and Scientific &mdash; Marlstone Salerooms</title>
 <link rel="stylesheet" href="auction.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <div class="strap">
@@ -15,7 +16,7 @@
 </div>
 
 <header class="mast">
-  <div class="mark"><b>Marlstone</b><span>Salerooms &middot; Est. 1889</span></div>
+  <a class="mark" href="index.html"><b>Marlstone</b><span>Salerooms &middot; Est. 1889</span></a>
   <nav>
     <a href="index.html" class="on">Auctions</a>
     <a href="departments.html">Departments</a>
@@ -26,12 +27,12 @@
   </nav>
 </header>
 
-<div class="crumb"><a href="index.html">Auctions</a> / Sale 1174</div>
+<nav class="crumb" aria-label="Breadcrumb"><a href="index.html">Auctions</a> / Sale 1174</nav>
 
-<div class="wrap">
+<main class="wrap">
   <div class="sale">
     <h1>Instruments, Marine and Scientific</h1>
-    <p class="when">Sale 1174 &middot; Friday 24 April, 10:30 &middot; Marlstone Salerooms,
+    <p class="when">Sale 1174 &middot; Today from 10:30 &middot; Marlstone Salerooms,
     Cheverell Wharf</p>
     <p class="when">Auctioneer: Rosalind Pethick &middot; 214 lots &middot; Bidding on
     the room, telephone and online</p>
@@ -77,7 +78,7 @@
           <p>Halloway and Sons, Portsmouth, circa 1904. Three-tier rosewood case, gimballed
           bowl, Earnshaw-type detent escapement, with its winding key and certificate.</p>
           <div class="est">Estimate 1,400 - 2,000</div>
-          <div class="state">On the block now &mdash; <a href="lot-418.html">bid on lot 418</a></div>
+          <div class="state" id="state-418">On the block now &mdash; <a href="lot-418.html">bid on lot 418</a></div>
         </li>
         <li>
           <div class="no">Lot 419</div>
@@ -85,7 +86,7 @@
           <p>Brass and mahogany, on a stepped base, with four objectives and a bull's-eye
           condenser.</p>
           <div class="est">Estimate 900 - 1,300</div>
-          <div class="state">Not yet called</div>
+          <div class="state" id="state-419">Not yet called</div>
         </li>
         <li>
           <div class="no">Lot 420</div>
@@ -109,8 +110,9 @@
     <div>
       <div class="side">
         <h3>Bidding online</h3>
-        <p>Registered bidders may bid against the room from the lot page. The auctioneer
-        takes online bids at the same increment as the floor.</p>
+        <p>Online bidders bid against the room from the lot page, and the auctioneer
+        takes their bids at the same increment as the floor. A paddle code is issued
+        with the hammer to the successful online bidder.</p>
         <p>Bids are binding once accepted. A bid cannot be withdrawn after the hammer.</p>
         <p><a href="conditions.html">Read the conditions of sale</a></p>
       </div>
@@ -121,8 +123,8 @@
       </div>
       <div class="side">
         <h3>Viewing</h3>
-        <p>Wednesday 22 April, 10:00 to 16:00<br>
-        Thursday 23 April, 10:00 to 19:00<br>
+        <p>Two days before the sale, 10:00 to 16:00<br>
+        The day before the sale, 10:00 to 19:00<br>
         Morning of the sale from 08:30</p>
       </div>
       <div class="side">
@@ -132,7 +134,7 @@
       </div>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="foot">
   <div class="cols">
@@ -163,10 +165,42 @@
       <a href="mailto:bids@marlstonesalerooms.example">bids@marlstonesalerooms.example</a>
     </div>
   </div>
-  <p class="fine">Marlstone Salerooms Limited, registered in England number 0000000.
-  Registered office Cheverell Wharf, Marlstone MS4 2QD.
+  <p class="fine">Marlstone Salerooms Limited, registered in England and Wales, company
+  number 00000000. Registered office Cheverell Wharf, Marlstone MS4 2QD.
   &copy; 2026 Marlstone Salerooms Limited. <a href="privacy.html">Privacy notice</a> &middot;
   <a href="website-terms.html">Terms of website use</a></p>
 </footer>
+
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  const fig = (n) => Number(n).toLocaleString('en-GB');
+  let timer = null;
+
+  // The live lot's line follows the rostrum once bidding on it has opened.
+  async function followRostrum() {
+    let data;
+    try {
+      const res = await fetch('/api/auction/sale', { headers: { 'X-Session-Nonce': NONCE } });
+      if (!res.ok) return;
+      data = await res.json();
+    } catch {
+      return;
+    }
+    if (!data.started) return;
+    if (!data.over) {
+      if (!timer) timer = setInterval(followRostrum, 10000);
+      return;
+    }
+    if (timer) clearInterval(timer);
+    const lot = document.getElementById('state-418');
+    lot.textContent =
+      data.winner === 'you' ? 'Sold to you ' + fig(data.hammerPrice) : 'Sold ' + fig(data.hammerPrice);
+    lot.closest('li').classList.remove('live');
+    const nextLot = document.getElementById('state-419');
+    nextLot.textContent = 'Next to be called';
+  }
+
+  followRostrum();
+</script>
 </body>
 </html>

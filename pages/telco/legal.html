@@ -3,74 +3,86 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Terms and privacy — Lumeva Mobile</title>
+<title>Legal and disclosures — Lumeva Mobile</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="lumeva.css">
 <style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: "Century Gothic", "URW Gothic", Futura, "Trebuchet MS", Verdana, sans-serif;
-    font-size: 16px; line-height: 1.5; color: #241b28; background: #fff;
-    font-variant-numeric: tabular-nums;
-  }
-  .topbar {
-    display: flex; align-items: center; gap: 34px; padding: 14px 32px;
-    border-bottom: 2px solid #d0006f;
-  }
-  .wordmark { font-size: 24px; font-weight: bold; letter-spacing: 0.5px; color: #d0006f; text-decoration: none; }
-  .topbar nav { display: flex; gap: 22px; }
-  .topbar nav a { color: #241b28; text-decoration: none; font-size: 14px; letter-spacing: 0.6px; text-transform: uppercase; padding: 4px 0; }
-  .topbar nav a:hover { color: #d0006f; }
-  section { padding: 42px 32px; }
-  .inner { max-width: 760px; margin: 0 auto; }
-  h1 { font-size: 30px; margin: 0 0 24px; }
+  .inner.narrow { max-width: 760px; }
+  h1.doc { font-size: 30px; margin: 0 0 6px; }
+  .updated { color: var(--muted); font-size: 14px; margin: 0 0 24px; }
   h2 { font-size: 20px; margin: 30px 0 8px; }
-  p { color: #453c4a; margin: 0 0 12px; }
-  footer { background: #241b28; color: #b9aec0; font-size: 13.5px; padding: 26px 32px; line-height: 1.9; }
-  footer .inner { max-width: 980px; margin: 0 auto; }
-  footer a { color: #ecd9e6; text-decoration: none; }
+  p, li { color: var(--body); }
+  p { margin: 0 0 12px; }
+  ul { margin: 0 0 12px; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+  table.facts { border-collapse: collapse; width: 100%; font-size: 15px; margin: 6px 0 14px; }
+  table.facts th, table.facts td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  table.facts th { color: var(--muted); font-weight: normal; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
 </style>
 </head>
 <body>
-<div class="topbar">
-  <a class="wordmark" href="/telco/">lumeva</a>
-  <nav>
-    <a href="/telco/">Plans</a>
-    <a href="/telco/network.html">Network</a>
-    <a href="/telco/help.html">Help</a>
+<header class="topbar">
+  <a class="wordmark" href="./">lumeva</a>
+  <nav aria-label="Main">
+    <a href="./">Plans</a>
+    <a href="network.html">Network</a>
+    <a href="help.html">Help</a>
+    <a href="account/">My account</a>
   </nav>
-</div>
+  <span class="care">Care team 1-512-555-0142</span>
+</header>
 
+<main>
 <section>
-  <div class="inner">
-    <h1>Terms and privacy</h1>
-    <h2>Service terms</h2>
-    <p>Lumeva Mobile service is month to month with no annual contract. Quoted monthly
-    totals include applicable taxes, regulatory fees and multi-line credits at the time of
-    quotation; credits require all lines to remain on one account. Unlimited talk and text
-    apply to domestic use. High-speed data allowances reset on the first day of each billing
-    cycle, after which data continues at reduced speed.</p>
-    <p>Draft orders prepared in the plan builder are estimates held for the duration of
-    your visit and do not reserve service, numbers or equipment. Service begins when an
-    order is completed with our care team or in a Lumeva store.</p>
-    <h2>Privacy notice</h2>
-    <p>We collect the configuration choices you make on this site to prepare your draft
-    order and to size our network investment. We do not sell browsing or location data.
-    Account and usage records are retained as required by telecommunications regulation
-    and are available to you on request at care@lumeva.example.</p>
-    <h2>Acceptable use</h2>
-    <p>Tethering beyond the plan's hotspot allowance, machine-to-machine reselling and
-    continuous unattended streaming are outside residential use and may be moved to a
-    business tariff after notice.</p>
+  <div class="inner narrow">
+    <h1 class="doc">Legal and disclosures</h1>
+    <p class="updated">The documents that govern Lumeva Mobile service, and the disclosures we publish.</p>
+    <ul>
+      <li><a href="terms.html">Terms of service</a></li>
+      <li><a href="privacy.html">Privacy notice</a></li>
+      <li><a href="#network">Network management and typical speeds</a></li>
+      <li><a href="#e911">911 and E911 notice</a></li>
+      <li><a href="#access">Accessibility</a></li>
+    </ul>
+
+    <h2 id="network">Network management and typical speeds</h2>
+    <p>Typical speeds are measured across our 5G metro network at busy hours. Your speeds
+    vary with location, device and load. After a plan's high-speed allowance is used, data
+    continues at up to 1 Mbps down for the rest of the cycle.</p>
+    <table class="facts">
+      <tr><th>Plan</th><th>Typical download</th><th>Typical upload</th><th>Typical latency</th></tr>
+      <tr><td>Signal</td><td>90-310 Mbps</td><td>9-35 Mbps</td><td>28-44 ms</td></tr>
+      <tr><td>Signal Plus</td><td>90-310 Mbps</td><td>9-35 Mbps</td><td>28-44 ms</td></tr>
+      <tr><td>Signal Plus Ultra</td><td>110-360 Mbps</td><td>11-40 Mbps</td><td>26-41 ms</td></tr>
+    </table>
+    <p>Video resolution follows the plan tier: SD on Signal, HD on Signal Plus, 4K on
+    Signal Plus Ultra. We do not block lawful content, and we do not charge for faster
+    delivery of any service.</p>
+
+    <h2 id="e911">911 and E911 notice</h2>
+    <p>911 calls connect on every Lumeva line, and text-to-911 works where the local
+    emergency center accepts it. When you call over Wi-Fi, the call center receives the
+    emergency address registered on the line rather than your live location, so keep that
+    address current in your device settings. Wi-Fi calling to 911 fails if the connection
+    or power fails.</p>
+
+    <h2 id="access">Accessibility</h2>
+    <p>Real-time text works on supported phones at no charge, and bills are available in
+    large print or braille on request. Call 1-512-555-0142, or use 711 relay services to reach
+    the care team.</p>
   </div>
 </section>
+</main>
 
 <footer>
   <div class="inner">
-    Lumeva Mobile · 55 Kestrel Way, Duneport · care@lumeva.example · 1-888-555-0142<br>
-    <a href="/telco/network.html">Network coverage</a> ·
-    <a href="/telco/help.html">Help center</a> ·
-    <a href="/telco/legal.html">Terms and privacy</a><br>
-    Coverage and speeds vary by location and load. &copy; Lumeva Mobile.
+    Lumeva Wireless LLC &middot; 55 Caliche Row, Duneport, TX &middot; care@lumeva.example &middot; 1-512-555-0142<br>
+    <a href="network.html">Network coverage</a> &middot;
+    <a href="help.html">Help center</a> &middot;
+    <a href="terms.html">Terms of service</a> &middot;
+    <a href="privacy.html">Privacy notice</a> &middot;
+    <a href="legal.html">Legal and disclosures</a><br>
+    Coverage and speeds vary by location and load. &copy; 2026 Lumeva Wireless LLC. Lumeva Mobile is a service of Lumeva Wireless LLC.
   </div>
 </footer>
 </body>

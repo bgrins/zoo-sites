@@ -4,28 +4,37 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Booking bookable space &mdash; Cadre Workplace</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="cadre.css">
 </head>
 <body>
-<div class="topbar">
-  <span class="wordmark">Cadre <span>Workplace</span></span>
-  <nav class="tabs">
+<header class="topbar">
+  <a class="wordmark" href="index.html">Cadre <span>Workplace</span></a>
+  <nav class="tabs" aria-label="Console">
     <a href="index.html">Space plan</a>
     <a href="moves.html">Move requests</a>
     <a href="standards.html">Workplace standards</a>
+    <a class="here" aria-current="page" href="support.html">Help</a>
   </nav>
   <span class="operator">Halverd Estates Management</span>
-</div>
+  <details class="user">
+    <summary>M. Vesquier &middot; Record reader</summary>
+    <div class="menu">
+      <a href="access.html">Your role and access</a>
+      <a href="signout.html">Signing out</a>
+    </div>
+  </details>
+</header>
 <div class="crumbs">Portfolio / Guidance / Booking bookable space</div>
 
-<div class="page">
+<main class="page">
   <h1>Booking bookable space</h1>
-  <p class="hint">HE-GN-04, revision 2. How project rooms, quiet rooms and hoteling desks are
+  <p class="hint">HE-GN-04, revision 2. How project rooms, quiet rooms and hotelling desks are
   reserved in a Halverd managed building, and what a booking obliges you to.</p>
 
   <h2>What is bookable</h2>
   <p>Bookable space is space with no permanent occupant. The space classification standard sets
-  out which types qualify: project rooms, quiet rooms, and any desk position recorded as hoteling
+  out which types qualify: project rooms, quiet rooms, and any desk position recorded as hotelling
   rather than allocated. Everything else on a level is allocated space, and allocated space is
   never bookable, however empty it looks on the day. If you need allocated space for a meeting,
   ask the occupant, not Estates.</p>
@@ -38,13 +47,16 @@
     <li>Open the space record from the plan and check that the space type is one of the bookable
     types. The record also carries the extension for the space, which is what a visitor will be
     given.</li>
+    <li>Place the booking with the Estates service desk, quoting the building, the level, the room
+    code and the slot. The console shows whether a space is bookable; the booking diary itself is
+    held by the desk.</li>
     <li>Quiet rooms book in fifteen minute slots, to a maximum of two hours in a day per person.
-    Project rooms book in half days. Hoteling desks book for a whole day.</li>
+    Project rooms book in half days. Hotelling desks book for a whole day.</li>
     <li>Bookings open fourteen days ahead for quiet rooms and desks, and a quarter ahead for
     project rooms. A project room held for longer than a quarter is a fit-out request, not a
     booking, and goes through the move ticket queue.</li>
-    <li>Repeat bookings are set up by the Estates helpdesk. The console holds single bookings
-    only.</li>
+    <li>Repeat bookings are set up by the Estates helpdesk in the same way, and are reviewed
+    at each quarterly reissue.</li>
   </ul>
 
   <h2>Releasing and no-shows</h2>
@@ -70,16 +82,17 @@
   <p>This console does not hold bookings for parking, for the loading bay, or for the ground floor
   meeting suite, which carries catering and visitor access alongside the room. Those go to the
   building's own reception desk.</p>
-</div>
+</main>
 
 <footer>
   <p>Cadre Workplace 4.6 &middot; space records are the system of record for occupancy reporting.</p>
-  <p>Halverd Estates Management, 14 Ostmark Row, Denhollow DH2 8QP &middot;
+  <p>Halverd Estates Management, 14 Ostmark Row, Denhollow DQ3 5JX &middot;
   <a href="standards.html">Workplace standards</a> &middot;
   <a href="index.html">Space plan</a> &middot;
   <a href="access.html">Console access</a> &middot;
   <a href="support.html">Service desk</a> &middot; estates.support@halverd-estates.example</p>
-  <p>&copy; 2026 Halverd Estates Management Ltd. Registered in Denhollow, company 00000000.</p>
+  <p>&copy; 2026 Halverd Estates Management Ltd. Registered in England and Wales, company number 00000000.
+  &middot; <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of use</a></p>
 </footer>
 </body>
 </html>

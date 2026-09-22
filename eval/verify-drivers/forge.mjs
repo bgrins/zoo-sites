@@ -23,7 +23,42 @@ const SIGNATURES = [
   [/total: round2\(units \* rate\.perTonne\),/, 'perTonne', /per-unit rate/i],
 ];
 
-import { clickToPath, snapText, textOf, uidOf, until } from './lib.mjs';
+import { addSession, clickToPath, findSession, snapText, textOf, uidOf, until } from './lib.mjs';
+
+// The session the golden path reviewed, and its one on-line review.
+const reviewed = (state) => {
+  const { session } = findSession(state, (s) => (s.forge?.reviews ?? []).length > 0);
+  const hit = session.forge.reviews.find((r) =>
+    r.comments.some((c) => c.file === session.forge.defect.file && c.line === session.forge.defect.line)
+  );
+  return { forge: session.forge, hit };
+};
+
+// A second session whose drawn defect is cache-ttl, reviewed correctly, at a
+// line the golden session cannot have drawn. Its answer is graded twice: with
+// the at-fault identifier, and with SOFT_TTL_RATIO, a different identifier
+// that shares its first two words.
+const TTL_LINE = 999;
+const plantTtlReview = (state) => {
+  const { forge, hit } = reviewed(state);
+  const defect = { file: 'src/tariff/cache.js', line: TTL_LINE, identifier: 'softTtlMs', key: 'cache-ttl' };
+  addSession(state, {
+    forge: {
+      ...forge,
+      key: 'cache-ttl',
+      defect,
+      diffFetches: 1,
+      reviews: [
+        {
+          ...hit,
+          verdict: 'changes',
+          comments: [{ file: defect.file, line: defect.line, body: 'softTtlMs is wrong here: the hard TTL applies.' }],
+        },
+      ],
+    },
+  });
+};
+const ttlFields = (identifier) => ({ file: 'src/tariff/cache.js', lineNumber: TTL_LINE, identifier });
 
 export const DRIVERS = {
   'pr-review': {
@@ -31,6 +66,89 @@ export const DRIVERS = {
     wrong:
       'The failing check is caused by the new round2 helper, which rounds the ' +
       'total before the levy is applied. I approved the pull request.',
+    // Each server-state conjunct, broken on the session the answer describes
+    // while the answer stays right.
+    wrongState: [
+      {
+        name: 'the on-line review was submitted as Comment, not Request changes',
+        mutate(state) {
+          reviewed(state).hit.verdict = 'comment';
+        },
+      },
+      {
+        name: 'the on-line comment names no identifier',
+        mutate(state) {
+          reviewed(state).hit.comments[0].body = 'This line looks wrong to me.';
+        },
+      },
+      {
+        name: 'the on-line review also carries a second line comment',
+        mutate(state) {
+          const { forge, hit } = reviewed(state);
+          hit.comments.push({ file: forge.defect.file, line: forge.defect.line + 1, body: 'and here' });
+        },
+      },
+      {
+        name: 'the session sprayed two more addresses in another review',
+        mutate(state) {
+          const { forge } = reviewed(state);
+          forge.reviews.push({
+            id: 'RV-0000',
+            verdict: 'comment',
+            summary: '',
+            comments: [1, 2].map((d) => ({ file: forge.defect.file, line: forge.defect.line + d, body: 'here?' })),
+            fromPage: true,
+            at: Date.now(),
+          });
+        },
+      },
+      {
+        name: 'the session never fetched the diff',
+        mutate(state) {
+          reviewed(state).forge.diffFetches = 0;
+        },
+      },
+      {
+        name: 'a cache-ttl review answered with SOFT_TTL_RATIO',
+        mutate: plantTtlReview,
+        fields: ttlFields('SOFT_TTL_RATIO'),
+      },
+    ],
+    alsoCorrectState: [
+      {
+        name: 'a clarifying Comment review on the same line after the real one',
+        mutate(state) {
+          const { forge, hit } = reviewed(state);
+          forge.reviews.push({ ...hit, id: 'RV-0001', verdict: 'comment', at: Date.now() });
+        },
+      },
+      {
+        name: 'a stray session left a Comment review on its own defect line',
+        mutate(state) {
+          const { forge, hit } = reviewed(state);
+          const defect = { ...forge.defect, line: forge.defect.line + 7 };
+          addSession(state, {
+            forge: {
+              ...forge,
+              defect,
+              reviews: [
+                {
+                  ...hit,
+                  verdict: 'comment',
+                  comments: [{ ...hit.comments[0], line: defect.line }],
+                  at: Date.now(),
+                },
+              ],
+            },
+          });
+        },
+      },
+      {
+        name: 'the same cache-ttl review answered with this.softTtlMs',
+        mutate: plantTtlReview,
+        fields: ttlFields('this.softTtlMs'),
+      },
+    ],
     async run({ goto, evaluate, mcp }) {
       const snap = (maxLines = 500) => snapText(mcp, { maxLines });
 
@@ -109,28 +227,38 @@ export const DRIVERS = {
       // Address ONE line among 153 comment buttons. The accessible names are
       // ambiguous across files (three "Comment on new line 10" buttons on this
       // page), so each candidate has to be resolved back to a selector.
-      const diffSnap = await snap(500);
       const label = new RegExp(`uid=(\\S+) button "Comment on new line ${defect.line}"`, 'g');
-      const candidates = [...diffSnap.matchAll(label)].map((m) => m[1]);
-      if (!candidates.length) {
+      const short = defect.file.split('/').pop().replace(/\.[a-z]+$/, '');
+      const wantSelector = `#c-${short}-${defect.line}`;
+      // The defect's own file box (#f-<file>), for a walker that emits enough of
+      // the diff to push its line past the 500-line window.
+      const fileSnap = () => snapText(mcp, { selector: `#f-${short}`, maxLines: 500 });
+      const resolveAmong = async (text) => {
+        const candidates = [...text.matchAll(label)].map((m) => m[1]);
+        for (const uid of candidates) {
+          const r = await mcp('resolve_uid_to_selector', { uid });
+          if (textOf(r).includes(wantSelector)) return { uid, candidates };
+        }
+        return { uid: null, candidates };
+      };
+      let found = await resolveAmong(await snap(500));
+      if (!found.uid) found = await resolveAmong(await fileSnap());
+      if (!found.candidates.length) {
         throw new Error(`no gutter button for line ${defect.line} in the snapshot`);
       }
-      const wantSelector = '#c-' + defect.file.split('/').pop().replace(/\.[a-z]+$/, '') + '-' + defect.line;
-      let target = null;
-      for (const uid of candidates) {
-        const r = await mcp('resolve_uid_to_selector', { uid });
-        if (textOf(r).includes(wantSelector)) target = uid;
-      }
-      if (!target) {
+      if (!found.uid) {
         throw new Error(
-          `none of ${candidates.length} line-${defect.line} buttons resolved to ${wantSelector}`
+          `none of ${found.candidates.length} line-${defect.line} buttons resolved to ${wantSelector}`
         );
       }
-      await mcp('click_by_uid', { uid: target });
+      await mcp('click_by_uid', { uid: found.uid });
 
       const composer = await until('the line comment composer', async () => {
+        const want = `textarea "Comment on line ${defect.line}"`;
         const s = await snap(500);
-        return s.includes(`textarea "Comment on line ${defect.line}"`) ? s : null;
+        if (s.includes(want)) return s;
+        const scoped = await fileSnap();
+        return scoped.includes(want) ? scoped : null;
       });
       const areaUid = uidOf(composer, `textarea "Comment on line ${defect.line}"`);
       const addUid = uidOf(composer, 'button "Add review comment"');
@@ -165,6 +293,15 @@ export const DRIVERS = {
         return /RV-[0-9A-F]{4}/.test(String(text)) ? String(text) : null;
       });
 
+      // A submitted review is part of the pull request's record: after a fresh
+      // load, the Conversation tab lists it and Merge status names the verdict.
+      const reviewId = result.match(/RV-[0-9A-F]{4}/)[0];
+      await goto('/forge/pulls/482/');
+      await until('the submitted review on the Conversation tab after a reload', async () => {
+        const text = String(await evaluate(() => document.querySelector('main')?.innerText ?? ''));
+        return text.includes(reviewId) && /Changes requested by r\.vandermolen/.test(text) ? true : null;
+      }, { tries: 20 });
+
       const answer =
         `The failing job is caused by ${defect.file} line ${defect.line}, where the new ` +
         `code uses ${defect.identifier}. I left a review comment on that exact line and ` +
@@ -190,14 +327,27 @@ export const DRIVERS = {
         lineNumber: defect.line,
         identifier: defect.identifier,
       };
+      const basename = String(defect.file).split('/').pop();
+      const otherFile = ['src/tariff/cache.js', 'src/tariff/window.js'].find((f) => f !== defect.file);
       this.wrongFields = [
         { ...fields, identifier: rivalId },
         { ...fields, lineNumber: defect.line + 1 },
         { ...fields, file: 'src/tariff/other.js' },
+        { ...fields, identifier: 'round2' },
+        // The right file name in a directory the diff does not touch.
+        { ...fields, file: `lib/${basename}` },
+        { ...fields, file: `${defect.file} or ${otherFile}` },
+        { ...fields, file: `${defect.file} or lib/${basename}` },
       ];
       this.alsoCorrectFields = [
         fields,
-        { file: String(defect.file).split('/').pop(), lineNumber: defect.line, identifier: defect.identifier },
+        { file: basename, lineNumber: defect.line, identifier: defect.identifier },
+        { ...fields, file: `b/${defect.file}` },
+        { ...fields, file: `\`${defect.file}\`:${defect.line}` },
+        { ...fields, file: String(defect.file).split('/').slice(1).join('/') },
+        // Dotted tokens that are code or a host, not a file.
+        { ...fields, file: `${defect.file} (module.exports unchanged, rate.perTonne)` },
+        { ...fields, file: `http://kettleforge.localhost/pulls/482/files - ${defect.file}` },
       ];
       return { text: answer, fields };
     },

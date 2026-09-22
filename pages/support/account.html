@@ -4,31 +4,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>My account — Kelverne Fibre</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="support.css">
 </head>
 <body>
-<div class="util">
+<nav class="util" aria-label="Quick links">
   <span>Faults line 03069 990180</span>
   <span>Advisers online 07:00-23:00</span>
   <span class="push"><a href="index.html">Help centre</a></span>
   <span><a href="coverage.html">Coverage checker</a></span>
   <span><a href="signout.html">Sign out</a></span>
-</div>
+</nav>
 
 <header class="top">
-  <div class="mark"><b>Kelverne</b><span>Fibre &middot; My Account</span></div>
+  <a class="mark" href="index.html"><b>Kelverne</b><span>Fibre &middot; My Account</span></a>
 </header>
 
 <div class="shell">
   <aside class="rail">
-    <h2>My account</h2>
-    <ol>
-      <li><a href="account.html" class="here"><span class="no">01</span>Overview</a></li>
-      <li><a href="billing.html"><span class="no">02</span>Bills and payments</a></li>
-      <li><a href="plan.html"><span class="no">03</span>Plan and add-ons</a></li>
-      <li><a href="contact.html"><span class="no">04</span>Contact details</a></li>
-      <li><a href="marketing.html"><span class="no">05</span>Marketing choices</a></li>
-    </ol>
+    <nav aria-label="My account">
+      <h2>My account</h2>
+      <ol>
+        <li><a href="account.html" class="here"><span class="no">01</span>Overview</a></li>
+        <li><a href="billing.html"><span class="no">02</span>Bills and payments</a></li>
+        <li><a href="plan.html"><span class="no">03</span>Plan and add-ons</a></li>
+        <li><a href="contact.html"><span class="no">04</span>Contact details</a></li>
+        <li><a href="marketing.html"><span class="no">05</span>Marketing choices</a></li>
+      </ol>
+    </nav>
     <h2>Need help</h2>
     <p class="note"><a href="index.html">Back to the help centre</a></p>
   </aside>
@@ -59,7 +62,7 @@
     <h2>Recent activity</h2>
     <table class="spec">
       <tr><th>18 July</th><td>Bill issued, paid by direct debit</td></tr>
-      <tr><th>02 July</th><td>Speed test run from the account portal</td></tr>
+      <tr><th>02 July</th><td>Line test run by an adviser, no fault found</td></tr>
       <tr><th>26 June</th><td>Firmware updated overnight</td></tr>
     </table>
   </main>
@@ -93,7 +96,7 @@
     </div>
   </div>
   <div class="fine">
-    Kelverne Fibre Networks Ltd, Bolt House, 2 Redgate Wharf, Ashcombe AS3 7LN.
+    Kelverne Fibre Networks Ltd, Bolt House, 2 Redgate Wharf, Avelcombe AS3 7LN.
     Registered number 00000000. Written enquiries: help@kelverne-fibre.example
     &middot; &copy; 2026 Kelverne Fibre Networks Ltd.
   </div>
@@ -113,19 +116,31 @@
   };
 
   async function load() {
+    let res = null;
     let data = null;
     try {
-      const res = await fetch('/api/support/account', { headers: { 'X-Session-Nonce': NONCE } });
+      res = await fetch('/api/support/account', { headers: { 'X-Session-Nonce': NONCE } });
       if (res.ok) data = await res.json();
     } catch {
       data = null;
     }
     if (!data) {
+      const signedOut = !!res && (res.status === 401 || res.status === 403);
       for (const id of Object.values(fields)) {
-        document.getElementById(id).textContent = 'Sign in to see this';
+        const slot = document.getElementById(id);
+        slot.textContent = '';
+        if (signedOut) {
+          const link = document.createElement('a');
+          link.href = 'signin.html';
+          link.textContent = 'Sign in to see this';
+          slot.append(link);
+        } else {
+          slot.textContent = 'Not available';
+        }
       }
-      document.getElementById('kitNote').textContent =
-        'Your session has ended. Sign in again to see your equipment record.';
+      document.getElementById('kitNote').textContent = signedOut
+        ? 'Your session has ended. Sign in again to see your equipment record.'
+        : 'We could not load your account just now. Refresh the page to try again.';
       return;
     }
     for (const [key, id] of Object.entries(fields)) {

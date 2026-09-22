@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>Registration — Solstice Leadership Summit</title>
 <style>
   :root {
-    --violet: #4c1d95; --pink: #db2777; --ink: #1b1033;
+    --violet: #4c1d95; --pink: #d72675; --ink: #1b1033;
     --soft: #6b5f86; --line: #e7e1f2;
   }
   * { box-sizing: border-box; }
@@ -55,6 +57,17 @@
     color: var(--pink); margin-right: 8px;
   }
   .card a { color: var(--pink); }
+  .card a.pill { color: #fff; }
+  table.rates { width: 100%; border-collapse: collapse; font-size: 15px; }
+  table.rates th {
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--soft); padding: 0 0 8px; border-bottom: 2px solid var(--line);
+  }
+  table.rates td { padding: 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.rates td span { color: var(--soft); font-size: 13.5px; }
+  table.rates td:last-child, table.rates th:last-child { text-align: right; white-space: nowrap; padding-left: 16px; }
+  table.rates td:last-child { font-weight: 700; color: var(--violet); }
+  .card p.fine { margin-top: 12px; font-size: 13.5px; color: var(--soft); }
   .two { display: flex; flex-wrap: wrap; gap: 16px; }
   .two .card { flex: 1 1 300px; margin: 0; }
   ul { margin: 0; padding-left: 22px; }
@@ -71,11 +84,21 @@
   footer { background: var(--ink); color: #b9a9d6; padding: 26px 32px; font-size: 12.5px; }
   footer .cols { display: flex; flex-wrap: wrap; gap: 8px 40px; margin-bottom: 12px; }
   footer b { color: #fff; text-transform: uppercase; letter-spacing: 1.4px; font-size: 11px; }
+  footer a { color: #ffd6ec; }
+  footer .legal { display: block; margin-top: 8px; color: #8f80ad; }
+  @media (max-width: 700px) {
+    .tabs { flex-wrap: wrap; gap: 6px 18px; padding: 10px 18px; }
+    .tabs .logo { flex-basis: 100%; }
+    .hero { padding: 30px 18px 28px; }
+    .hero h1 { font-size: 32px; letter-spacing: -0.5px; }
+    main { padding: 26px 18px 56px; }
+    footer { padding: 22px 18px; }
+  }
 </style>
 </head>
 <body>
 <nav class="tabs">
-  <span class="logo">Solstice Summit</span>
+  <a class="logo" href="index.html">Solstice Summit</a>
   <a href="programme.html">Programme</a>
   <a href="speakers.html">Speakers</a>
   <a href="venue.html">Venue</a>
@@ -87,7 +110,7 @@
   <h1>Registration</h1>
   <div class="facts">
     <span><b>Dates</b> 14–16 October 2026</span>
-    <span><b>Venue</b> Harborview Exhibition Halls</span>
+    <span><b>Venue</b> Tarnmouth Exhibition Halls</span>
     <span><b>Intake</b> Delegations, one submission each</span>
   </div>
 </header>
@@ -107,6 +130,24 @@ twelve it has to reconcile.</p>
   field becomes a nickname on the lanyard. One person brings the group code to Hall C from
   08:00 and collects every badge in the delegation in one go.</p>
   <p><a class="pill" href="roster.html">Register your group</a></p>
+</div>
+
+<h2>Delegate rates</h2>
+<div class="card">
+  <table class="rates">
+    <thead>
+      <tr><th>Place</th><th>Per delegate</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Standard delegate <span>— delegations of one to four</span></td><td>£495</td></tr>
+      <tr><td>Group delegate <span>— every place in a delegation of five or more</span></td><td>£445</td></tr>
+      <tr><td>Public sector, healthcare and registered charities</td><td>£395</td></tr>
+      <tr><td>Bursary place <span>— through the delegation desk only</span></td><td>No charge</td></tr>
+    </tbody>
+  </table>
+  <p class="fine">Rates are per person for all three days and exclude VAT at the standard
+  rate. The group rate applies automatically when a single submission carries five or more
+  attendees. The invoice follows the group code within a week.</p>
 </div>
 
 <h2>Before you fill it in</h2>
@@ -129,7 +170,7 @@ twelve it has to reconcile.</p>
   <ul>
     <li>Every keynote, track session and workshop <span>— nothing is ticketed
     separately</span></li>
-    <li>The Wednesday welcome reception <span>— Harborview Terrace, from 16:30</span></li>
+    <li>The Wednesday welcome reception <span>— Quay Terrace, from 16:30</span></li>
     <li>Catering across all three days <span>— Hall E</span></li>
     <li>A sector roundtable seat <span>— assigned when the delegation is confirmed</span></li>
   </ul>
@@ -146,9 +187,9 @@ twelve it has to reconcile.</p>
   <p><b class="tag">Withdrawing</b> Write to the desk. A place released before the Friday
   deadline is refunded in full; after it, the delegation keeps the badge and may still
   substitute a name.</p>
-  <p><b class="tag">Invoicing</b> Public-sector and healthcare delegations are invoiced to
-  the organisation rather than paid at registration. Send a purchase order reference to the
-  desk with the group code and the invoice follows within a week.</p>
+  <p><b class="tag">Invoicing</b> Every delegation is invoiced to its organisation once
+  the group code is issued, with payment due within 30 days. If your finance team needs a
+  purchase order reference on the invoice, send it to the desk with the group code.</p>
 </div>
 
 <h2>On the day</h2>
@@ -157,8 +198,9 @@ twelve it has to reconcile.</p>
   of the confirmation screen or the code written on paper are all equally welcome. The desk
   keeps a short queue for delegations of eight or more so a large team does not hold up the
   line behind it.</p>
-  <p>Tell the desk about access needs, dietary requirements or a quiet-lounge booking at
-  the same time as you register, and it will all be arranged before you arrive. The
+  <p>Write to the delegation desk about access needs, dietary requirements or a
+  quiet-lounge booking once you have your group code, and it will all be arranged before you
+  arrive. The
   <a href="venue.html">venue page</a> has the hall layout, and the
   <a href="conduct.html">code of conduct</a> applies to everyone holding a badge.</p>
 </div>
@@ -167,13 +209,17 @@ twelve it has to reconcile.</p>
 <footer>
   <div class="cols">
     <span><b>Organiser</b> Solstice Conference Services</span>
-    <span><b>Delegation desk</b> groups@solstice-events.example</span>
+    <span><b>Delegation desk</b> <a href="mailto:groups@solstice-events.example">groups@solstice-events.example</a> · 01632 960391</span>
     <span><b>Badge collection</b> Hall C, from 08:00</span>
   </div>
   © 2026 Solstice Conference Services.
-  <a href="registration.html" style="color:#ffd6ec">Registration</a> ·
-  <a href="conduct.html" style="color:#ffd6ec">Code of conduct</a> ·
-  <a href="sponsors.html" style="color:#ffd6ec">Sponsors</a>
+  <a href="registration.html">Registration</a> ·
+  <a href="conduct.html">Code of conduct</a> ·
+  <a href="sponsors.html">Sponsors</a> ·
+  <a href="privacy.html">Privacy notice</a> ·
+  <a href="terms.html">Booking terms</a>
+  <span class="legal">Solstice Conference Services Ltd, 4 Quay Road, Tarnmouth TH3 8QR.
+  Registered in England and Wales, company number 00000000. VAT 000 0000 00.</span>
 </footer>
 </body>
 </html>

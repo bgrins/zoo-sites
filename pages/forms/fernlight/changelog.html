@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fernlight Atlas 3 — Changelog</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --ink: #16161a;
@@ -45,11 +47,19 @@
     border-top: 1px solid var(--hair); margin-top: 44px; padding: 16px 22px;
     font-size: 12px; color: var(--dim);
   }
+  header.bar a.brand { color: var(--ink); text-decoration: none; }
+  footer a { color: var(--dim); }
+  @media (max-width: 640px) {
+    header.bar { flex-wrap: wrap; row-gap: 4px; padding: 10px 16px; }
+    header.bar nav, header.bar nav.links { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; gap: 2px 16px; }
+    main { padding: 22px 16px 48px; }
+    footer { padding: 16px; }
+  }
 </style>
 </head>
 <body>
 <header class="bar">
-  <span class="brand">fernlight/atlas</span>
+  <a class="brand" href="index.html">fernlight/atlas</a>
   <span class="ver">beta 3.0.0-rc4</span>
   <nav>
     <a href="docs.html">docs</a>
@@ -60,7 +70,7 @@
 </header>
 
 <main>
-<p class="crumbs">docs / changelog</p>
+<p class="crumbs"><a href="index.html">atlas</a> / <a href="docs.html">docs</a> / changelog</p>
 <h1>Changelog</h1>
 <p class="tagline">Release notes for the Atlas 3 private beta.</p>
 
@@ -97,8 +107,12 @@
 </main>
 
 <footer>
-  Fernlight Software — 42 Alder Row, Suite 5 · Support Mon–Fri ·
-  beta@fernlight.example · Atlas is a trademark of Fernlight Software Ltd.
+  Fernlight Software Ltd · 42 Marrask Row, Suite 5, Pellowick PW4 7AL · Registered in England and Wales,
+  company number 00000000 · Support Mon–Fri ·
+  <a href="mailto:beta@fernlight.example">beta@fernlight.example</a><br>
+  <a href="beta-terms.html">Beta terms</a> · <a href="privacy.html">Privacy</a> ·
+  <a href="security.html">Security</a> · <a href="status.html">Status</a> ·
+  Atlas is a trademark of Fernlight Software Ltd.
 </footer>
 </body>
 </html>

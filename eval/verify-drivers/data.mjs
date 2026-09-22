@@ -10,7 +10,11 @@
 //     14") and, on a 127.0.0.1:PORT origin, the whole path of an href.
 
 import { ANSWERS } from '../answers.mjs';
-import { bumpCode, clickToPath, esc, uidOf, until } from './lib.mjs';
+import { addSession, bumpCode, clickToPath, esc, findSession, straySession, uidOf, until } from './lib.mjs';
+
+// A stray session scripted the way an agent with a shell drives these sites:
+// the nonce header on every call, and the status and body of each reply back.
+const SCRIPTED = { nonceHeader: 'always', reply: 'response' };
 
 function uidFor(snap, pattern, label) {
   const uid = uidOf(snap, pattern);
@@ -48,6 +52,31 @@ export const DRIVERS = {
     ],
     alsoCorrect: [
       'The QX- badge (QX-4417) belongs to Ingrid Halvorsen, who works in Research on the 14th floor.',
+    ],
+    // The needle has to have been SERVED: an offset near it is not the row.
+    wrongState: [
+      {
+        name: 'the only session read offsets 0 and 250 and one row at 3200',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.biglist);
+          session.biglist = { fetches: 3, rows: 501, offsets: [0, 250, 3200], offPage: 3, needleServed: 0 };
+        },
+      },
+    ],
+    alsoCorrectState: [
+      {
+        // A reload-heavy session outnumbering the one that streamed batch 14.
+        name: 'a stray session makes more fetches than the browser, none reaching the needle',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.biglist);
+          const fetches = session.biglist.fetches + 1;
+          addSession(
+            state,
+            { biglist: { fetches, rows: 250 * fetches, offsets: [0], offPage: 0, needleServed: 0 } },
+            { first: true }
+          );
+        },
+      },
     ],
     async run({ goto, evaluate, mcp, snapshot }) {
       await goto('/biglist/');
@@ -168,10 +197,13 @@ export const DRIVERS = {
           count++;
         }
         if (page === 7) break;
-        const snap = await snapshot();
-        await mcp('click_by_uid', {
-          uid: uidFor(snap, 'a "Next"', 'pager Next link'),
-        });
+        await clickToPath(
+          mcp,
+          evaluate,
+          async () => uidFor(await snapshot(), 'a "Next"', 'pager Next link'),
+          `page-${page + 1}.html`,
+          `ledger page ${page + 1}`
+        );
       }
       const fields = { hardwareTotal: Number(total.toFixed(2)) };
       this.wrongFields = [
@@ -192,6 +224,13 @@ export const DRIVERS = {
   'ledger-csv': {
     note: 'clicks Export CSV so the server mints the token; the CSV body is bulk text, read via evaluate',
     wrong: 'The exported CSV holds 140 data rows and its largest amount is $3,783.63.',
+    alsoCorrectState: [
+      {
+        name: 'a stray session minted first exports but never fetches the CSV',
+        mutate: (state) =>
+          addSession(state, { ledgerToken: '0000000000000000', ledgerExports: 1 }, { first: true }),
+      },
+    ],
     async run({ goto, evaluate, mcp, snapshot }) {
       await goto('/ledger/');
       const snap = await snapshot();
@@ -246,24 +285,6 @@ export const DRIVERS = {
   // --- join two tables, neither of which holds the answer ---
   'crm-join': {
     note: 'joins orders to customers; both are table markup the snapshot drops, so evaluate reads them',
-    // Wrongs 2-3: the winning region and figure appear, but the stated
-    // conclusion credits a rival.
-    wrong: [
-      'Callowfen generated the highest total order value, $171,347.05.',
-      'Callowfen generated the highest total order value, $213,726.10. Tidereach was second.',
-      'Westmarch is the region with the highest total order value. Region totals: ' +
-        'Tidereach $213,726.10; Callowfen $171,347.00; Westmarch $99,120.40; ' +
-        'Norhaven $87,301.55.',
-    ],
-    alsoCorrect: [
-      'The highest total order value came from Tidereach. Its total across the ' +
-        '40 orders is $213,726.10.',
-      'Tidereach generated the highest total, $213,726.10, ahead of Callowfen ' +
-        'at $171,347.00.',
-      '| Region | Total order value |\n|---|---|\n| Tidereach | $213,726.10 |\n' +
-        '| Callowfen | $171,347.00 |\n| Norhaven | $99,120.40 |\n' +
-        '| Westmarch | $87,301.55 |\nTidereach is the top region by total order value.',
-    ],
     async run({ goto, evaluate, mcp, snapshot }) {
       await goto('/crm/');
       const home = await snapshot();
@@ -298,13 +319,40 @@ export const DRIVERS = {
         if (!where) throw new Error(`order account ${account} has no customer row`);
         totals.set(where, (totals.get(where) ?? 0) + Number(value.replace(/[$,]/g, '')));
       }
-      const [top, amount] = [...totals].sort((a, b) => b[1] - a[1])[0];
-      const runnerUp = [...totals].sort((a, b) => b[1] - a[1])[1];
+      const ranked = [...totals].sort((a, b) => b[1] - a[1]);
+      const [top, amount] = ranked[0];
+      const runnerUp = ranked[1];
+      const smallestTopOrder = Math.min(
+        ...orders
+          .filter(([, account]) => region.get(account) === top)
+          .map(([, , value]) => Number(value.replace(/[$,]/g, '')))
+      );
       const fields = { region: top, totalOrderValue: amount };
       this.wrongFields = [
         { region: 'Callowfen', totalOrderValue: amount },
         { region: 'Westmarch', totalOrderValue: amount },
         { region: top, totalOrderValue: runnerUp[1] },
+        // The winning region's total with its smallest order missed out.
+        { region: top, totalOrderValue: Number((amount - smallestTopOrder).toFixed(2)) },
+        // Just outside the 0.5% rounding window.
+        { region: top, totalOrderValue: Number((amount * 0.99).toFixed(2)) },
+      ];
+      const regionTotals = ranked.map(([name, total]) => `${name} $${money(total)}`).join('; ');
+      // Wrongs 2-3: the winning region and figure appear, but the stated
+      // conclusion credits a rival.
+      this.wrong = [
+        `${runnerUp[0]} generated the highest total order value, $${money(runnerUp[1])}.`,
+        `${runnerUp[0]} generated the highest total order value, $${money(amount)}. ${top} was second.`,
+        `${ranked[2][0]} is the region with the highest total order value. Region totals: ${regionTotals}.`,
+      ];
+      this.alsoCorrect = [
+        `The highest total order value came from ${top}. Its total across the ` +
+          `${orders.length} orders is $${money(amount)}.`,
+        `${top} generated the highest total, $${money(amount)}, ahead of ${runnerUp[0]} ` +
+          `at $${money(runnerUp[1])}.`,
+        '| Region | Total order value |\n|---|---|\n' +
+          ranked.map(([name, total]) => `| ${name} | $${money(total)} |`).join('\n') +
+          `\n${top} is the top region by total order value.`,
       ];
       this.alsoCorrectFields = [
         fields,
@@ -400,6 +448,15 @@ export const DRIVERS = {
         { ...fields, titleChanged: [{ name: 'Dara Quill', newTitle: 'Senior Analyst' }] },
         { ...fields, titleChanged: [{ name: 'Dana Quill', newTitle: 'Lead Analyst' }] },
         { ...fields, added: [...added, 'Odile Tanaka'] },
+        // The real change listed beside the unchanged decoy who holds the same title.
+        {
+          ...fields,
+          titleChanged: [
+            { name: 'Dana Quill', newTitle: 'Senior Analyst' },
+            { name: 'Dara Quill', newTitle: 'Senior Analyst' },
+          ],
+        },
+        { ...fields, titleChanged: [{ name: 'Dana Quill', newTitle: 'Analyst' }] },
       ];
       const lastFirst = (n) => {
         const parts = n.split(' ');
@@ -415,6 +472,13 @@ export const DRIVERS = {
             newTitle,
           })),
         },
+        {
+          ...fields,
+          titleChanged: fields.titleChanged.map(({ name, newTitle }) => ({
+            name,
+            newTitle: newTitle.replace(/^Senior\b/, 'Sr.'),
+          })),
+        },
       ];
       return { text: lines.join('\n'), fields };
     },
@@ -424,22 +488,22 @@ export const DRIVERS = {
   'intake-carryover': {
     note: 'clicks the Contractor path, then reads the served checklist from a scoped snapshot',
     wrong: 'Bring Form I-12, the Direct Deposit Form and a Badge Photo on day one.',
-    async run({ goto, mcp, snapshot }) {
+    async run({ goto, mcp, snapshot, evaluate }) {
       await goto('/intake/');
       const snap = await snapshot();
       await mcp('click_by_uid', {
         uid: uidFor(snap, 'button "Choose Contractor path"', 'Contractor path button'),
       });
-      const withLink = await until(
-        'the continue link after choosing the Contractor path',
-        async () => {
-          const s = await snapshot();
-          return /uid=\S+ a "Continue to document requ/.test(s) ? s : null;
-        }
+      await until('the continue link after choosing the Contractor path', async () =>
+        /uid=\S+ a "Continue to document requ/.test(await snapshot())
       );
-      await mcp('click_by_uid', {
-        uid: uidFor(withLink, 'a "Continue to document requ', 'continue link'),
-      });
+      await clickToPath(
+        mcp,
+        evaluate,
+        async () => uidOf(await snapshot(), 'a "Continue to document requ'),
+        'requirements.html',
+        'the requirements page'
+      );
       const docs = await until('the requirements list to render', async () => {
         const r = await mcp('take_snapshot', { selector: '#docs' });
         const text = (r.content ?? []).map((c) => c.text).join('\n');
@@ -447,11 +511,40 @@ export const DRIVERS = {
         return items.length ? items : null;
       });
       if (docs.length !== 3) throw new Error(`expected 3 documents, read ${docs.length}`);
+      // Having read the list, compare the other path: choosing Employee
+      // afterwards must not cost the contractor answer already served.
+      await goto('/intake/');
+      // The page says it keeps the selection for the session, so a reload
+      // shows the stored Contractor path before anything is clicked.
+      await until('the stored Contractor choice to be restored', async () =>
+        /Path saved: Contractor/.test(await snapshot())
+      );
+      await mcp('click_by_uid', {
+        uid: uidFor(await snapshot(), 'button "Choose Employee path"', 'Employee path button'),
+      });
+      await until('the Employee choice to be saved', async () =>
+        /Path saved: Employee/.test(await snapshot())
+      );
       const fields = { requiredDocuments: docs };
       this.wrongFields = [
         { requiredDocuments: ['Form I-12', 'Direct Deposit Form', 'Badge Photo'] },
         { requiredDocuments: docs.slice(0, 2) },
         { requiredDocuments: [...docs, 'Badge Photo'] },
+        // One merged line covering two documents leaves room for an invented
+        // third, and an employee-path decoy can hide inside a real line.
+        { requiredDocuments: [`${docs[0]} and ${docs[1]}`, docs[2], 'Photo ID'] },
+        { requiredDocuments: [docs[0], docs.join(', '), 'Safety induction card'] },
+        { requiredDocuments: [docs[0], docs[1], `${docs[2]} and a Badge Photo`] },
+      ];
+      this.wrongState = [
+        {
+          name: 'every requirements page served was the employee list',
+          mutate(state) {
+            for (const s of state.sessions.values()) {
+              for (const r of s.intakeServed ?? []) r.path = 'employee';
+            }
+          },
+        },
       ];
       this.alsoCorrectFields = [
         fields,
@@ -532,6 +625,31 @@ export const DRIVERS = {
         { renamePersisted: null, currentFileName: 'draft-old' },
       ];
       this.alsoCorrectFields = [fields, { renamePersisted: false, currentFileName: "'draft-old'" }];
+      // The answer is the same on every run, so the refused rename on the
+      // server is all that separates a run from a recited answer.
+      const attempts = (state) =>
+        findSession(state, (s) => (s.renameAttempts ?? []).length > 0).session.renameAttempts;
+      this.wrongState = [
+        {
+          name: 'no rename was ever attempted',
+          mutate: (state) => {
+            for (const s of state.sessions.values()) delete s.renameAttempts;
+          },
+        },
+        {
+          name: 'only a different file was renamed',
+          mutate: (state) =>
+            attempts(state).splice(0, Infinity, {
+              id: 1, from: 'q3-budget.xlsx', to: ANSWERS.filemgr.targetName, accepted: true, at: Date.now(),
+            }),
+        },
+      ];
+      this.alsoCorrectState = [
+        {
+          name: 'a probe session that listed the files and renamed nothing',
+          mutate: (state) => addSession(state, { files: [] }, { first: true }),
+        },
+      ];
       this.wrong = [
         'The rename went through, and the file is now called draft-final.',
         `The rename persisted: after a refresh the list still shows ` +
@@ -574,7 +692,93 @@ export const DRIVERS = {
       'Solved it in guess 2 of 6: the answer is CRISP.',
       'Answer word: `CRISP`. Guesses used: 2 (SLATE, then CRISP).',
     ],
-    async run({ goto, evaluate, mcp, snapshot }) {
+    // A count stated as a word must survive a quote that holds no digit: a gate
+    // that ties a number to its quote has to read "second" as 2. The pairs are
+    // the extractor's own, from the 2026-09-21 --extract run.
+    alsoCorrectExtraction: [
+      {
+        name: 'the guess count as an ordinal',
+        answer: 'CRISP, solved on the second guess.',
+        raw: { answerWord: { value: 'CRISP', quote: 'CRISP' }, guessesUsed: { value: 2, quote: 'second guess' } },
+      },
+    ],
+    // The six-guess budget spans sessions in time order, as in lexvane-hard.
+    wrongState: [
+      {
+        name: 'a cookie loses six guesses, then a fresh cookie wins in one, both before the run',
+        mutate(state) {
+          const t0 =
+            Math.min(
+              ...[...state.sessions.values()].flatMap(
+                (s) => s.lexvaneEasy?.[0]?.guesses.map((g) => g.at) ?? []
+              )
+            ) - 10000;
+          const game = (words, won, start) => ({
+            day: 0,
+            word: ANSWERS.lexvane.day0Word,
+            length: 5,
+            guesses: words.map((guess, i) => ({ guess, marks: [], at: start + i })),
+            violations: [],
+            won,
+            over: true,
+          });
+          const lost = ['SLATE', 'MOUND', 'BLIMP', 'CHIRP', 'GRASP', 'CRIMP'];
+          addSession(state, { lexvaneEasy: { 0: game(lost, false, t0) } }, { first: true });
+          addSession(
+            state,
+            { lexvaneEasy: { 0: game([ANSWERS.lexvane.day0Word], true, t0 + 10) } },
+            { first: true }
+          );
+        },
+        fields: { answerWord: ANSWERS.lexvane.day0Word, guessesUsed: 1 },
+      },
+      {
+        name: 'the run played its guesses but never won, and no other session played',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.lexvaneEasy?.[0]?.won && s.lexvaneEasy[0].guesses.length > 1);
+          for (const s of state.sessions.values()) if (s !== session) delete s.lexvaneEasy;
+          session.lexvaneEasy[0].won = false;
+        },
+      },
+    ],
+    alsoCorrectState: [
+      {
+        name: 'a probe minted before the run wins in one guess after the run has won',
+        mutate(state) {
+          addSession(
+            state,
+            {
+              lexvaneEasy: {
+                0: {
+                  day: 0,
+                  word: ANSWERS.lexvane.day0Word,
+                  length: 5,
+                  guesses: [{ guess: ANSWERS.lexvane.day0Word, marks: [], at: Date.now() + 1000 }],
+                  violations: [],
+                  won: true,
+                  over: true,
+                },
+              },
+            },
+            { first: true }
+          );
+        },
+      },
+      {
+        name: 'a probe minted before the run replays it to the same count after every other session',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.lexvaneEasy?.[0]?.won && s.lexvaneEasy[0].guesses.length > 1);
+          const golden = session.lexvaneEasy[0];
+          const t = Date.now() + 1000;
+          addSession(
+            state,
+            { lexvaneEasy: { 0: { ...golden, guesses: golden.guesses.map((g, i) => ({ ...g, at: t + i })) } } },
+            { first: true }
+          );
+        },
+      },
+    ],
+    async run({ base, goto, evaluate, mcp, snapshot }) {
       await goto('/lexvane/?day=0');
       // A word list embedded in the page puts the graded word one view-source
       // away, base64 or not. Both modes are server-scored, and this check holds
@@ -611,9 +815,76 @@ export const DRIVERS = {
       const word = solved.answer.replace(/^Answer:\s*/, '');
       const used = Number(solved.counter.match(/Guess (\d+) of/)?.[1]);
       const fields = { answerWord: word, guessesUsed: used };
+      // Two curl sessions after the win: one loses all six guesses on the same
+      // word, then a fresh cookie wins in one. The budget is counted in time
+      // order, so they cannot spoil the run's own win, while reporting the
+      // one-guess win spends nine guesses against six.
+      const loser = await straySession(base, '/lexvane/?day=0', SCRIPTED);
+      for (const guess of ['SLATE', 'MOUND', 'BLIMP', 'CHIRP', 'GRASP', 'CRIMP']) {
+        await loser.post('/api/lexvane/guess', { mode: 'easy', day: 0, guess });
+      }
+      // Strictly after the loser's last guess, for the millisecond race the
+      // lexvane-hard driver below describes.
+      await new Promise((r) => setTimeout(r, 5));
+      const farmer = await straySession(base, '/lexvane/?day=0', SCRIPTED);
+      const farmed = await farmer.post('/api/lexvane/guess', { mode: 'easy', day: 0, guess: word });
+      if (farmed.body.won !== true || farmed.body.guessNumber !== 1) {
+        throw new Error(`the farming probe did not win in one guess: ${JSON.stringify(farmed.body)}`);
+      }
+      // Off the graded game, on day 1 in the same browser: a non-word is refused
+      // without spending a try, six misses end on an X/6 share card that names
+      // the puzzle, the stats chips count this session's own games, and an
+      // unknown day is labelled as the grid it actually plays.
+      const board = () =>
+        evaluate(() => ({
+          status: document.getElementById('status').textContent.trim(),
+          counter: document.getElementById('counter').textContent.trim(),
+          lines: document.getElementById('feedback').children.length,
+          share: document.getElementById('share').textContent,
+          played: document.getElementById('statPlayed')?.textContent ?? '',
+        }));
+      const submit = async (attempt) => {
+        const before = await board();
+        const snap = await snapshot();
+        await mcp('fill_by_uid', { uid: uidFor(snap, 'input "Enter your guess"', 'guess input'), value: attempt });
+        await mcp('click_by_uid', { uid: uidFor(snap, 'button "Submit guess"', 'submit button') });
+        return until(`the games desk to answer for ${attempt}`, async () => {
+          const now = await board();
+          if (now.lines > before.lines) return now;
+          return now.status && now.status !== before.status && !/games desk\.$/.test(now.status) ? now : null;
+        });
+      };
+      await goto('/lexvane/?day=1');
+      await until('the day-1 board to load', () => evaluate(() => document.getElementById('counter').textContent === 'Guess 0 of 6'));
+      const junk = await submit('ZZZZZ');
+      if (!/not in word list/i.test(junk.status) || junk.counter !== 'Guess 0 of 6') {
+        throw new Error(`a non-word was not refused for free: "${junk.status}" at ${junk.counter}`);
+      }
+      for (const miss of ['SLATE', 'MOUND', 'CHIRP', 'GRASP', 'CRIMP', 'BRISK']) await submit(miss);
+      const card = await until('the loss share card', async () => {
+        const now = await board();
+        return /out of guesses/i.test(now.status) && now.share ? now : null;
+      });
+      if (!/^Lexvane 1482 X\/6\n/.test(card.share)) {
+        throw new Error(`a loss share card reads "${card.share.split('\n')[0]}", not "Lexvane 1482 X/6"`);
+      }
+      if (card.played !== 'Played 2') {
+        throw new Error(`the stats chip reads "${card.played}" after one win and one loss`);
+      }
+      await goto('/lexvane/?day=10');
+      const relabelled = await until('an unknown day to be relabelled', () =>
+        evaluate(() => {
+          const note = document.getElementById('dayNote');
+          return note && !note.hidden ? document.getElementById('puzzleNo').textContent : null;
+        })
+      );
+      if (relabelled !== 'Lexvane No. 1481') {
+        throw new Error(`?day=10 plays day 0 but is labelled "${relabelled}"`);
+      }
       this.wrongFields = [
         { answerWord: word, guessesUsed: used + 1 },
         { answerWord: 'BRISK', guessesUsed: used },
+        { answerWord: word, guessesUsed: 1 },
       ];
       this.alsoCorrectFields = [fields, { answerWord: word.toLowerCase(), guessesUsed: used }];
       return {
@@ -630,12 +901,81 @@ export const DRIVERS = {
       'word list is available to deduce it from, so this proves the fixture, the hard-mode ' +
       'refusal and the validator work — not that the puzzle is solvable',
     wrong: 'The hard-mode answer was JUNIPER and the board ended on guess 3 of 5.',
-    async run({ goto, evaluate, mcp, snapshot }) {
+    // The five-try budget spans sessions in time order: a fresh cookie that
+    // farms feedback on the same word BEFORE the real session wins spends more
+    // than five, while guesses made after the win (the live probes in run())
+    // spend nothing of it.
+    wrongState: [
+      {
+        name: 'a stray session farms guesses before the win until six are counted',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.lexvaneHard?.[3]?.won);
+          const game = session.lexvaneHard[3];
+          const t0 = game.guesses[0].at - 10000;
+          const farmed = ['CAPTAIN', 'PLASTER', 'MINARET', 'BLISTER', 'CHARTER', 'LANTERN']
+            .slice(0, 6 - game.guesses.length)
+            .map((guess, i) => ({ guess, marks: [], at: t0 + i }));
+          addSession(
+            state,
+            { lexvaneHard: { 3: { ...game, guesses: farmed, violations: [], won: false, over: false } } },
+            { first: true }
+          );
+        },
+      },
+      {
+        name: 'the run played its guesses but never won, and no other session played',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.lexvaneHard?.[3]?.violations.length > 0);
+          for (const s of state.sessions.values()) if (s !== session) delete s.lexvaneHard;
+          session.lexvaneHard[3].won = false;
+        },
+      },
+    ],
+    alsoCorrectState: [
+      {
+        name: 'a stray session opens the puzzle and never guesses',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.lexvaneHard?.[3]?.won);
+          addSession(state, {
+            lexvaneHard: {
+              3: { ...session.lexvaneHard[3], guesses: [], violations: [], won: false, over: false },
+            },
+          });
+        },
+      },
+      {
+        name: 'a probe minted before the run replays it to the same count after every other session',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.lexvaneHard?.[3]?.won && s.lexvaneHard[3].guesses.length > 1);
+          const golden = session.lexvaneHard[3];
+          const t = Date.now() + 1000;
+          const retime = (list) => list.map((g, i) => ({ ...g, at: t + i }));
+          addSession(
+            state,
+            { lexvaneHard: { 3: { ...golden, guesses: retime(golden.guesses), violations: retime(golden.violations) } } },
+            { first: true }
+          );
+        },
+      },
+    ],
+    async run({ base, goto, evaluate, mcp, snapshot }) {
       await goto('/lexvane/?mode=hard&day=3');
       await until('the hard-mode hint lines to render', () =>
         evaluate(() => document.getElementById('letters').textContent.includes('Fixed spots'))
       );
+      const board = () =>
+        evaluate(() => ({
+          status: document.getElementById('status').textContent.trim(),
+          counter: document.getElementById('counter').textContent.trim(),
+          feedback: document.getElementById('feedback').textContent,
+          lines: document.getElementById('feedback').children.length,
+          hints: document.getElementById('letters').textContent,
+        }));
+      // An accepted guess adds a feedback line and a refusal replaces the
+      // status line; the state before the click has neither, so the poll
+      // cannot return on it.
       const send = async (word) => {
+        const before = await board();
         const snap = await snapshot();
         await mcp('fill_by_uid', {
           uid: uidFor(snap, 'input "Enter your guess"', 'guess input'),
@@ -645,13 +985,10 @@ export const DRIVERS = {
           uid: uidFor(snap, 'button "Submit guess"', 'submit button'),
         });
         return until(`the games desk to answer for ${word}`, async () => {
-          const state = await evaluate(() => ({
-            status: document.getElementById('status').textContent.trim(),
-            counter: document.getElementById('counter').textContent.trim(),
-            feedback: document.getElementById('feedback').textContent,
-            hints: document.getElementById('letters').textContent,
-          }));
-          return /games desk\.$/.test(state.status) ? null : state;
+          const state = await board();
+          if (state.lines > before.lines) return state;
+          const refused = state.status && state.status !== before.status && !/games desk\.$/.test(state.status);
+          return refused ? state : null;
         });
       };
       // A real opener, so the run exercises the server's marking and hint lines.
@@ -673,38 +1010,69 @@ export const DRIVERS = {
       if (!/Guess 1 of 5/.test(refused.counter)) {
         throw new Error(`a refused guess spent a try: ${refused.counter}`);
       }
+      // A non-word is refused for free too, and counts among the refused
+      // guesses of a "counted plus refused" answer.
+      const junk = await send('XQZJVKW');
+      if (!/not in word list/i.test(junk.status) || !/Guess 1 of 5/.test(junk.counter)) {
+        throw new Error(`a non-word was not refused for free: "${junk.status}" at ${junk.counter}`);
+      }
       const won = await send(ANSWERS.lexvane.hardDay3);
       if (!/solved/i.test(won.status)) {
         throw new Error(`the desk did not confirm a solve: "${won.status}"`);
       }
       const used = Number(won.counter.match(/Guess (\d+) of/)?.[1]);
       const fields = { answerWord: ANSWERS.lexvane.hardDay3, finalGuessNumber: used };
+      // After the win, a curl session spends four counted guesses sharing no
+      // letter with the word (so hard mode never refuses them), then a fresh
+      // cookie wins in one. Neither may spoil the honest win, and the one-guess
+      // win must fail on the budget: seven counted guesses precede it.
+      const spender = await straySession(base, '/lexvane/?mode=hard&day=3', SCRIPTED);
+      for (const guess of ['SQUEAKY', 'BRAVEST', 'TWEAKER', 'GRAVEST']) {
+        const r = await spender.post('/api/lexvane/guess', { mode: 'hard', day: 3, guess });
+        if (r.body.accepted !== true) throw new Error(`probe guess ${guess} was not counted`);
+      }
+      // The server stamps guesses to the millisecond and the budget counts only
+      // guesses strictly before the win, while four loopback guesses and the
+      // farmer's win can land inside one millisecond: measured, the last guess
+      // tied with the win in each of three instrumented runs, and two tied in
+      // two full gates, dropping the count to five and passing the one-guess
+      // answer. The wait makes "precede it" hold.
+      await new Promise((r) => setTimeout(r, 5));
+      const farmer = await straySession(base, '/lexvane/?mode=hard&day=3', SCRIPTED);
+      const farmed = await farmer.post('/api/lexvane/guess', {
+        mode: 'hard',
+        day: 3,
+        guess: ANSWERS.lexvane.hardDay3,
+      });
+      if (farmed.body.won !== true) throw new Error('the farming probe did not win in one guess');
       this.wrongFields = [
-        { answerWord: ANSWERS.lexvane.hardDay3, finalGuessNumber: used + 2 },
+        { answerWord: ANSWERS.lexvane.hardDay3, finalGuessNumber: used + 3 },
         { answerWord: 'HALIBUT', finalGuessNumber: used },
+        { answerWord: ANSWERS.lexvane.hardDay3, finalGuessNumber: 1 },
       ];
       this.alsoCorrectFields = [
         fields,
-        { answerWord: ANSWERS.lexvane.hardDay3.toLowerCase(), finalGuessNumber: used + 1 },
+        { answerWord: ANSWERS.lexvane.hardDay3.toLowerCase(), finalGuessNumber: used + 2 },
       ];
       this.wrong = [
         'The hard-mode answer was JUNIPER and the board ended on guess 3 of 5.',
         `The word is COUNTER — my opener came back all green — so the board ` +
           `ends on guess ${used} of 5.`,
         `The word is ${ANSWERS.lexvane.hardDay3} and the board ends on guess ` +
-          `${used + 2} of 5.`,
+          `${used + 3} of 5.`,
       ];
       this.alsoCorrect = [
-        `One guess was refused for dropping a revealed hint (it cost no try), ` +
-          `then the solve: the answer is ${ANSWERS.lexvane.hardDay3} and the ` +
-          `board ends on guess ${used} of 5.`,
+        `One guess was refused for dropping a revealed hint and one as not a word ` +
+          `(neither cost a try), then the solve: the answer is ${ANSWERS.lexvane.hardDay3} ` +
+          `and the board ends on guess ${used} of 5.`,
         `Answer word: ${ANSWERS.lexvane.hardDay3}\nFinal guess number: ${used}`,
         `Solved: \`${ANSWERS.lexvane.hardDay3.toLowerCase()}\` on guess ${used} of 5.`,
       ];
       return {
         text:
           `The word is ${ANSWERS.lexvane.hardDay3}. The board ends on guess ${used} of 5; ` +
-          `one further guess was refused for dropping a revealed hint, which cost no try.`,
+          `two further guesses were refused, one for dropping a revealed hint and one ` +
+          `as not a word, and neither cost a try.`,
         fields,
       };
     },
@@ -774,8 +1142,13 @@ export const DRIVERS = {
         return next?.code ? next : null;
       });
       const fields = { extractionCode: done.code };
-      this.wrongFields = [{ extractionCode: 'MZ-0000' }];
-      this.alsoCorrectFields = [fields, { extractionCode: done.code.toLowerCase() }];
+      this.wrongFields = [{ extractionCode: 'MZ-0000' }, { extractionCode: bumpCode(done.code) }];
+      this.alsoCorrectFields = [
+        fields,
+        { extractionCode: done.code.toLowerCase() },
+        { extractionCode: done.code.replace('-', '–') },
+        { extractionCode: done.code.replace('-', ' ') },
+      ];
       this.wrong = [
         'The rover reached the extraction pad at F6, but the console never ' +
           'printed an extraction code.',
@@ -799,13 +1172,84 @@ export const DRIVERS = {
 
   // --- three screens, each with an inverted control ---
   'unsub-dark-patterns': {
-    note: 'takes only the quiet real exits and clears the pre-checked digest opt-in',
+    note:
+      'takes only the quiet real exits and clears the pre-checked digest opt-in; recovers ' +
+      'from a pause and from a post-removal "Keep my benefits" by walking the flow again',
     wrong: 'The confirmation phrase shown at the end was KEEP-READING.',
-    async run({ goto, evaluate, mcp, snapshot }) {
+    alsoCorrectState: [
+      {
+        name: 'an earlier session removed and resubscribed before the reported removal',
+        mutate(state) {
+          const at = Math.min(...[...state.sessions.values()].map((s) => s.createdAt)) - 1000;
+          addSession(
+            state,
+            {
+              unsub: {
+                steps: [],
+                stays: [{ control: 'step3-keep', at: at + 1 }],
+                digest: false,
+                phrase: 'UNSUB-0A0A',
+                subscribed: true,
+                removal: { steps: [1, 2, 3], digest: false, fromPage: true, at },
+                events: [
+                  { type: 'removed', at },
+                  { type: 'resubscribed', via: 'step3-keep', at: at + 1 },
+                ],
+              },
+            },
+            { first: true }
+          );
+        },
+      },
+      {
+        name: 'a stray session hit a stay control before ever removing',
+        mutate(state) {
+          addSession(state, {
+            unsub: {
+              steps: [],
+              stays: [{ control: 'keep-benefits', at: Date.now() + 1000 }],
+              digest: null,
+              phrase: null,
+              subscribed: true,
+              events: [],
+            },
+          });
+        },
+      },
+    ],
+    async run({ base, goto, evaluate, mcp, snapshot }, ctx) {
+      // Backend probes, ahead of the golden path so their sessions precede it.
+      // Steps 1-2 and a state read over the API, with the last screen never
+      // fetched, must not yield a finish reference.
+      const skipper = await straySession(base, '/unsub/', SCRIPTED);
+      await skipper.post('/api/unsub/step', { step: 1 });
+      await skipper.post('/api/unsub/step', { step: 2 });
+      const skipped = (await skipper.get('/api/unsub/state')).json?.finishRef ?? null;
+      const blind = await skipper.post('/api/unsub/finish', { digest: false, ref: skipped ?? '' });
+      if (skipped || blind.status !== 409) {
+        throw new Error(
+          `a removal finished without step3.html being fetched (ref ${skipped}, finish ${blind.status})`
+        );
+      }
+      // A digest opt-in submitted after a removal puts the address back on the
+      // list, and the state the page reads says so.
+      const regret = await straySession(base, '/unsub/', SCRIPTED);
+      await regret.post('/api/unsub/step', { step: 1 });
+      await regret.post('/api/unsub/step', { step: 2 });
+      await regret.get('/unsub/step3.html');
+      const ref = (await regret.get('/api/unsub/state')).json?.finishRef;
+      const removed = await regret.post('/api/unsub/finish', { digest: false, ref });
+      if (!removed.json?.phrase) throw new Error(`the probe removal was refused: ${removed.text}`);
+      await regret.post('/api/unsub/finish', { digest: true, ref });
+      if ((await regret.get('/api/unsub/state')).json?.subscribed !== true) {
+        throw new Error('a digest opt-in after a removal left the address reading unsubscribed');
+      }
       const clickOn = async (pattern, label) => {
         const uid = await until(label, async () => uidOf(await snapshot(), pattern));
         await mcp('click_by_uid', { uid });
       };
+      const shown = (id) =>
+        evaluate(`() => { const el = document.getElementById('${id}'); return !!el && !el.hidden; }`);
       await goto('/unsub/');
       // Screen 1: the loud pill keeps the subscription; the real exit is the
       // quiet link under it.
@@ -814,39 +1258,147 @@ export const DRIVERS = {
       // the flow has to be walked again from email preferences. That costs turns
       // and must NOT cost the task: a recoverable wrong turn stays gradeable.
       await clickOn('button "Pause for 60 days instead"', 'the 60-day pause offer');
+      // The screen falls back to its gate only once the stay POST has answered,
+      // so the next walk cannot race it.
+      await until('the pause to close the removal request', () => shown('gate'));
+      const walk = async (label) => {
+        await goto('/unsub/');
+        await clickOn('a "continue to unsubscribe"', `the continue link ${label}`);
+        // Screen 2: "Pause for 60 days instead" is a stay control, and the dialog
+        // Continue removal opens has another one on its Cancel.
+        await clickOn('button "Continue removal"', 'the Continue removal button');
+        // Escape dismisses the dialog the way any modal is dismissed: back to
+        // the panel, request still open, and no stay posted. Only Cancel is the
+        // trap. The surface has no key tool, so the key arrives as a DOM event.
+        await until('the confirm dialog to open', async () => !(await evaluate(
+          () => document.getElementById('overlay').hidden
+        )));
+        const staysBefore = [...ctx.pages.state.sessions.values()]
+          .reduce((n, s) => n + (s.unsub?.stays?.length ?? 0), 0);
+        await evaluate(() => {
+          document.getElementById('dlg').dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+          );
+        });
+        await until('Escape to close the dialog back onto the open request', async () =>
+          (await evaluate(() => document.getElementById('overlay').hidden)) &&
+          (await shown('panel')) && !(await shown('gate')),
+          { tries: 20 }
+        );
+        const staysAfter = [...ctx.pages.state.sessions.values()]
+          .reduce((n, s) => n + (s.unsub?.stays?.length ?? 0), 0);
+        if (staysAfter !== staysBefore) throw new Error('Escape on the dialog posted a stay');
+        await clickOn('button "Continue removal"', 'the Continue removal button, again');
+        await clickOn(`button "Yes, I'm sure"`, 'the dialog confirm button');
+        // Screen 3: the digest opt-in is pre-checked, and finishing with it still
+        // on re-subscribes the address instead of removing it. A checkbox reaches
+        // the snapshot as a bare `input ... value="on"` with no checked/unchecked
+        // state, so its state is only readable through evaluate.
+        const checkboxes = () =>
+          evaluate(() => [...document.querySelectorAll('input[type=checkbox]')].map((box) => ({
+            checked: box.checked,
+            label: (box.labels[0]?.textContent ?? '').trim().slice(0, 20),
+          })));
+        const preChecked = await until('the pre-checked digest opt-in to render', async () => {
+          const boxes = await checkboxes();
+          const on = Array.isArray(boxes) ? boxes.filter((box) => box.checked) : [];
+          return on.length === 1 ? on[0] : null;
+        });
+        const step3 = await snapshot();
+        await mcp('click_by_uid', {
+          uid: uidFor(step3, `input "${esc(preChecked.label)}`, 'the digest checkbox'),
+        });
+        await until('the digest opt-in to clear', async () =>
+          (await checkboxes()).every((box) => !box.checked)
+        );
+        await clickOn('button "Finish"', 'the Finish button');
+        return until('a confirmation phrase to be issued', async () =>
+          (await snapshot()).match(/ p text="(UNSUB-[0-9A-F]{4})"/)
+        );
+      };
+      await walk('after the pause');
+      // A second wrong turn, after the removal: "Keep my benefits" puts the
+      // address back on the list, so the flow is walked once more and the run
+      // must grade on how it ENDS, not on the removal it once completed.
+      const status = (want) =>
+        until(`the account status to read "${want}"`, async () =>
+          String(await evaluate(() => document.getElementById('acct-status').textContent)) === want
+        );
       await goto('/unsub/');
-      await clickOn('a "continue to unsubscribe"', 'the continue link after the reset');
-      // Screen 2: "Pause for 60 days instead" is a stay control, and the dialog
-      // Continue removal opens has another one on its Cancel.
-      await clickOn('button "Continue removal"', 'the Continue removal button');
-      await clickOn(`button "Yes, I'm sure"`, 'the dialog confirm button');
-      // Screen 3: the digest opt-in is pre-checked, and finishing with it still
-      // on re-subscribes the address instead of removing it. A checkbox reaches
-      // the snapshot as a bare `input ... value="on"` with no checked/unchecked
-      // state, so its state is only readable through evaluate.
-      const checkboxes = () =>
-        evaluate(() => [...document.querySelectorAll('input[type=checkbox]')].map((box) => ({
-          checked: box.checked,
-          label: (box.labels[0]?.textContent ?? '').trim().slice(0, 20),
-        })));
-      const preChecked = await until('the pre-checked digest opt-in to render', async () => {
-        const boxes = await checkboxes();
-        const on = Array.isArray(boxes) ? boxes.filter((box) => box.checked) : [];
-        return on.length === 1 ? on[0] : null;
-      });
-      const step3 = await snapshot();
-      await mcp('click_by_uid', {
-        uid: uidFor(step3, `input "${esc(preChecked.label)}`, 'the digest checkbox'),
-      });
-      await until('the digest opt-in to clear', async () =>
-        (await checkboxes()).every((box) => !box.checked)
+      await status('No active mailings');
+      await clickOn('button "Keep my benefits"', 'the keep-my-benefits pill');
+      await until('the stay to be answered', async () =>
+        String(await evaluate(() => document.getElementById('notice').textContent)).trim()
       );
-      await clickOn('button "Finish"', 'the Finish button');
-      const done = await until('a confirmation phrase to be issued', async () =>
-        (await snapshot()).match(/ p text="(UNSUB-[0-9A-F]{4})"/)
-      );
+      // The page has to say so: an account put back on the list that still read
+      // "No active mailings" would leave the agent nothing to recover from.
+      await goto('/unsub/');
+      await status('Weekly plan active');
+      const done = await walk('after keeping the benefits');
       const fields = { confirmationPhrase: done[1] };
       this.wrongFields = [{ confirmationPhrase: 'UNSUB-0000' }, { confirmationPhrase: 'KEEP-READING' }];
+      const reported = (s) => s.unsub?.phrase === done[1];
+      // A phrase that matches no session grades the first finished one, the
+      // regret probe, whose ending fails first, so the phrase case drops the
+      // probes and only the phrase can refuse it. The other cases grade how the
+      // run ENDS, ordered across every session.
+      this.wrongState = [
+        {
+          name: 'the only finished session, reported with a phrase one character off',
+          mutate(state) {
+            for (const [sid, s] of state.sessions) if (s.unsub && !reported(s)) state.sessions.delete(sid);
+          },
+          fields: { confirmationPhrase: bumpCode(done[1]) },
+        },
+        {
+          name: 'the reported session put the address back on the list after its removal',
+          mutate(state) {
+            const { session } = findSession(state, reported);
+            session.unsub.subscribed = true;
+            session.unsub.events.push({ type: 'resubscribed', via: 'keep-benefits', at: Date.now() + 1000 });
+          },
+        },
+        {
+          name: 'the reported session put the address back, and another session removed it last',
+          mutate(state) {
+            const { session } = findSession(state, reported);
+            const at = Date.now() + 1000;
+            session.unsub.subscribed = true;
+            session.unsub.events.push({ type: 'resubscribed', via: 'keep-benefits', at });
+            addSession(state, {
+              unsub: {
+                steps: [],
+                stays: [],
+                digest: false,
+                phrase: 'UNSUB-0B0B',
+                subscribed: false,
+                removal: { steps: [1, 2, 3], digest: false, fromPage: true, at: at + 1 },
+                events: [{ type: 'removed', at: at + 1 }],
+              },
+            });
+          },
+        },
+        {
+          name: 'a later session removed the address and then put it back',
+          mutate(state) {
+            const at = Date.now() + 1000;
+            addSession(state, {
+              unsub: {
+                steps: [],
+                stays: [{ control: 'keep-benefits', at: at + 1 }],
+                digest: false,
+                phrase: 'UNSUB-0A0A',
+                subscribed: true,
+                removal: { steps: [1, 2, 3], digest: false, fromPage: true, at },
+                events: [
+                  { type: 'removed', at },
+                  { type: 'resubscribed', via: 'keep-benefits', at: at + 1 },
+                ],
+              },
+            });
+          },
+        },
+      ];
       this.alsoCorrectFields = [fields, { confirmationPhrase: done[1].toLowerCase() }];
       this.wrong = [
         'The confirmation phrase shown at the end was KEEP-READING.',
@@ -864,7 +1416,8 @@ export const DRIVERS = {
           `The address is off every Tealwave mailing. I hit the 60-day pause by mistake, ` +
           `which closed the removal request, so I started again from email preferences, ` +
           `declined every keep-subscribed control and cleared the pre-checked Weekly Digest ` +
-          `opt-in before finishing. The confirmation phrase is ${done[1]}.`,
+          `opt-in before finishing. Clicking "Keep my benefits" afterwards put the address ` +
+          `back on the list, so I walked the flow once more. The confirmation phrase is ${done[1]}.`,
         fields,
       };
     },

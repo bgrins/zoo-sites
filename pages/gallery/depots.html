@@ -5,39 +5,82 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Northmarsh Outfitters — Depot hours</title>
 <link rel="stylesheet" href="gallery.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
+<p class="strap">Free returns for 60 days &middot; Free collection from all four depots</p>
 <header>
-  <img src="img/logo-mark.png" width="40" height="40" alt="Northmarsh Outfitters mark">
-  <span class="brand">NORTHMARSH OUTFITTERS</span>
-  <span class="tag">Field-tested kit since 1974 · Free returns for 60 days</span>
+  <a class="home" href="./"><img src="favicon.svg" width="40" height="40" alt=""><span class="brand">Northmarsh <span>Outfitters</span></span></a>
+  <span class="tag">Field-tested kit since 1974</span>
   <a class="basket" href="basket.html">Basket (<span id="bcount">0</span>)</a>
 </header>
-<nav>
+<nav class="shop" aria-label="Shop">
+  <a href="index.html">Summer Trail</a>
   <a href="index.html?cat=packs">Packs</a>
   <a href="index.html?cat=shelters">Shelters</a>
-  <a href="index.html" class="here">Summer Trail</a>
-  <a href="index.html?cat=footwear">Footwear</a>
+  <a href="index.html?cat=sleep">Sleep</a>
+  <a href="index.html?cat=cook">Cook</a>
   <a href="index.html?cat=layers">Layers</a>
+  <a href="index.html?cat=footwear">Footwear</a>
+  <a href="index.html?cat=accessories">Accessories</a>
   <a href="clearance.html">Clearance</a>
 </nav>
-<p class="crumbs">Home &mdash; Depot hours</p>
-<main>
-  <section class="results" style="max-width: 62rem;">
-
+<p class="crumbs"><a href="./">Home</a> &rsaquo; Depot hours</p>
+<main class="page">
     <h1>Depot hours</h1>
-    <p class="count">Collection counters at all four depots. Bring your order number.</p>
-    <ul id="grid">
-      <li class="card"><h3>Northmarsh Quay Lane</h3><p class="blurb">Monday to Saturday 08:00 to 18:00. Sunday 10:00 to 16:00. Repairs counter closes an hour earlier.</p></li>
-      <li class="card"><h3>Askern Vale</h3><p class="blurb">Monday to Friday 09:00 to 17:30. Closed weekends. Trade collections from the rear yard.</p></li>
-      <li class="card"><h3>Duncrieff</h3><p class="blurb">Tuesday to Saturday 09:00 to 17:00. Fitting room for boots by appointment.</p></li>
-      <li class="card"><h3>Wrenfold Mill</h3><p class="blurb">Thursday to Sunday 10:00 to 16:00. Seasonal depot; open May to September.</p></li>
-    </ul>
-  </section>
+    <p class="lede">Collection counters at all four depots. Bring your order number.</p>
+    <div class="panels">
+      <section class="panel">
+        <h2>Northmarsh Quay Lane</h2>
+        <p>Monday to Saturday 08:00 to 18:00. Sunday 10:00 to 16:00. Repairs counter closes an hour earlier.</p>
+      </section>
+      <section class="panel">
+        <h2>Thrandle Vale</h2>
+        <p>Monday to Friday 09:00 to 17:30. Closed weekends. Trade collections from the rear yard.</p>
+      </section>
+      <section class="panel">
+        <h2>Duncrieff</h2>
+        <p>Tuesday to Saturday 09:00 to 17:00. Fitting room for boots by appointment.</p>
+      </section>
+      <section class="panel">
+        <h2>Wrenfold Mill</h2>
+        <p>Thursday to Sunday 10:00 to 16:00. Seasonal depot; open May to September.</p>
+      </section>
+    </div>
+
 </main>
 <footer>
-  <p>Prices include VAT. Stock is held across the Northmarsh depot network and can change between page loads. &copy; Northmarsh Outfitters Ltd, Quay Lane, Northmarsh.</p>
-  <p><a href="depots.html">Depot hours</a> · <a href="repairs.html">Repairs and re-proofing</a> · <a href="trade.html">Trade accounts</a> · <a href="clearance.html">Catalogue archive</a> · <a href="sizing.html">Sizing, fit and care</a> · <a href="delivery.html">Delivery and returns</a> · <a href="about.html">About Northmarsh</a></p>
+  <div class="cols">
+    <div>
+      <h2>Shop</h2>
+      <ul>
+        <li><a href="index.html">Summer Trail collection</a></li>
+        <li><a href="clearance.html">End-of-line clearance</a></li>
+        <li><a href="trade.html">Trade accounts</a></li>
+        <li><a href="basket.html">Your basket</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Help</h2>
+      <ul>
+        <li><a href="delivery.html">Delivery and returns</a></li>
+        <li><a href="sizing.html">Sizing, fit and care</a></li>
+        <li><a href="repairs.html">Repairs and re-proofing</a></li>
+        <li><a href="depots.html">Depot hours</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Northmarsh</h2>
+      <ul>
+        <li><a href="about.html">About Northmarsh</a></li>
+        <li>hello@northmarsh.example</li>
+        <li>01632 960477, Monday to Saturday</li>
+      </ul>
+    </div>
+  </div>
+  <p class="legal">Prices include VAT. Stock is held across the Northmarsh depot network and can change between page loads.<br>
+  &copy; 2026 Northmarsh Outfitters Ltd, Quay Lane, Northmarsh NM1 4QL. Registered in England and Wales, company number 00000000. VAT 000 0000 00.<br>
+  <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of sale</a> &middot; <a href="cookies.html">Cookies</a></p>
 </footer>
 <script>window.NONCE = '__SESSION_NONCE__';</script>
 <script src="shopfront.js"></script>

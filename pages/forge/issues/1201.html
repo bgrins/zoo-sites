@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#1201 Reconciliation disagrees with pricing on window edges &middot; hollowmill/brine-gateway &middot; Kettleforge</title>
+<link rel="stylesheet" href="../forge.css">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="masthead">
+  <a class="mark" href="../">Kettle<em>forge</em></a>
+  <nav>
+    <a href="../">Repositories</a>
+    <a href="../pulls/">Pull requests</a>
+    <a href="../anvil/">Anvil</a>
+    <a href="../registry.html">Registry</a>
+  </nav>
+  <span class="who">signed in as <b>r.vandermolen</b></span>
+</header>
+<div class="crumbbar">
+  <div class="crumb"><a href="../">hollowmill</a><span class="sep">/</span><b>brine-gateway</b><span class="vis">internal</span></div>
+  <div class="tabs">
+    <a href="../">Code</a>
+    <span class="here">Issues<span class="n">4</span></span>
+    <a href="../pulls/">Pull requests<span class="n">3</span></a>
+    <a href="../anvil/">Anvil</a>
+    <a href="../insights.html">Insights</a>
+    <a href="../settings.html">Settings</a>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="prhead">
+    <h1>Reconciliation disagrees with pricing on window edges <span class="num">#1201</span></h1>
+    <div class="prmeta">
+      <span class="state">Open</span>
+      <span><b>p.oduvane</b> opened this issue on 03 July &middot; 2 comments</span>
+    </div>
+  </div>
+
+  <nav class="subtabs">
+    <a href="./">All issues<span class="n">4</span></a>
+    <span class="here">#1201</span>
+  </nav>
+
+  <div class="cols">
+    <div class="main">
+      <div class="card">
+        <div class="cardhead">p.oduvane opened this issue on 03 July</div>
+        <div class="body">
+          <p>Nightly reconciliation flagged 214 quotes from 1 July as priced in the wrong
+          rate window. Every one of them was priced in the last second before a boundary.
+          Pricing puts them in the window that is closing; the reconciliation job puts them in
+          the next one.</p>
+          <p>The job carries its own copy of the window calculation, and that copy rounds the
+          epoch value where the gateway floors it. The two only disagree in the final half
+          second of a window, which is why the count is small and why it never shows up in
+          the unit suite.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">m.calderwood commented on 04 July</div>
+        <div class="body">
+          <p>Confirmed against the replay set: 0.7% of quotes land within half a second of a
+          boundary on a busy day. The job should import the gateway's helpers rather than
+          carry its own maths.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead">t.ashgrove commented on 14 July</div>
+        <div class="body">
+          <p>#482 moves the window helpers into their own module. The reconciliation job
+          switches to them in a follow-up once that lands.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <div class="cardhead">Details</div>
+        <div class="body">
+          <dl>
+            <dt>Labels</dt>
+            <dd>tariff, reconciliation</dd>
+            <dt>Milestone</dt>
+            <dd>Gateway 4.7</dd>
+            <dt>Assignee</dt>
+            <dd>t.ashgrove</dd>
+            <dt>Linked pull requests</dt>
+            <dd><a href="../pulls/482/">#482</a></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="sitefoot">
+  <div class="links">
+    <a href="../status.html">Status</a>
+    <a href="../docs.html">Docs</a>
+    <a href="../privacy.html">Privacy</a>
+    <a href="../terms.html">Terms</a>
+    <a href="mailto:support@kettleforge.example">Contact support</a>
+    <a href="../about.html">About</a>
+    <a href="../plans.html">Plans</a>
+    <a href="../security.html">Security</a>
+  </div>
+  <div>Kettleforge is operated by Bellhollow Systems Ltd, 14 Cranmoor Wharf, Vellinmouth VM4 3TR.
+  Registered in England and Wales, company number 00000000. &copy; 2026 Bellhollow Systems Ltd.</div>
+</footer>
+</body>
+</html>

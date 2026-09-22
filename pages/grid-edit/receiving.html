@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Binthral — Receiving — Brantmoor Depot</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --teal: #10403b;
@@ -13,7 +14,7 @@
     --rule: #cfcabb;
     --rule-soft: #e3dfd4;
     --ink: #23241f;
-    --dim: #6b6a60;
+    --dim: #66655c;
   }
   * { box-sizing: border-box; }
   body {
@@ -34,7 +35,7 @@
     padding: 9px 18px;
     border-bottom: 3px solid var(--teal-dark);
   }
-  .topbar .brand { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; }
+  .topbar .brand { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; color: #f4f8f5; text-decoration: none; }
   .topbar .app { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #9dbdb2; }
   .topbar .who { margin-left: auto; font-size: 11px; color: #b8cec6; }
   .subbar {
@@ -64,7 +65,7 @@
     font-size: 10px;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: #8a8878;
+    color: #68675b;
     font-weight: bold;
   }
   .rail a, .rail span.item {
@@ -115,14 +116,27 @@
     border-top: 1px solid var(--rule);
     padding: 12px 22px 30px;
     font-size: 11px;
-    color: #7c7b6d;
+    color: #6e6d61;
   }
   footer p { margin: 0 0 3px; }
+  @media (max-width: 720px) {
+    .topbar { flex-wrap: wrap; row-gap: 2px; }
+    .topbar .who { margin-left: 0; flex-basis: 100%; }
+    .subbar { flex-wrap: wrap; }
+    .layout { flex-direction: column; min-height: 0; }
+    .rail { width: auto; flex: none; display: flex; flex-wrap: wrap; align-items: baseline; padding: 8px 6px; border-right: 0; border-bottom: 1px solid var(--rule); }
+    .rail h2, .rail .sep { display: none; }
+    .rail a, .rail span.item { padding: 4px 9px; border-left: 0; border-bottom: 3px solid transparent; }
+    .rail span.item.on { border-bottom-color: var(--rust); }
+    .main { padding: 14px 12px 20px; }
+    .gridwrap, .tablewrap { overflow-x: auto; }
+    footer { padding: 12px 12px 24px; }
+  }
 </style>
 </head>
 <body>
 <div class="topbar">
-  <span class="brand">Brantmoor Depot</span>
+  <a class="brand" href="./">Brantmoor Depot</a>
   <span class="app">Binthral 4.2</span>
   <span class="who">Warehouse 03 &middot; Signed in: a.vetter (Count supervisor)</span>
 </div>
@@ -133,15 +147,15 @@
   <nav class="rail">
     <h2>Operations</h2>
     <span class="item on">Receiving</span>
-    <a href="/grid-edit/putaway.html">Putaway</a>
-    <a href="/grid-edit/">Cycle counts</a>
-    <a href="/grid-edit/replenishment.html">Replenishment</a>
-    <a href="/grid-edit/despatch.html">Despatch</a>
+    <a href="putaway.html">Putaway</a>
+    <a href="./">Cycle counts</a>
+    <a href="replenishment.html">Replenishment</a>
+    <a href="despatch.html">Despatch</a>
     <div class="sep"></div>
     <h2>Reference</h2>
-    <a href="/grid-edit/bin-map.html">Bin map</a>
-    <a href="/grid-edit/item-master.html">Item master</a>
-    <a href="/grid-edit/count-history.html">Count history</a>
+    <a href="bin-map.html">Bin map</a>
+    <a href="item-master.html">Item master</a>
+    <a href="count-history.html">Count history</a>
   </nav>
   <main class="main">
     <h1>Receiving</h1>
@@ -158,7 +172,7 @@
         <li>Tip to the marshalling lanes in Bay A and label every pallet with a receipt
           licence.</li>
         <li>Record damage or shortage on the receipt before signing the driver away.</li>
-        <li>Release completed receipts to <a href="/grid-edit/putaway.html">putaway</a>.</li>
+        <li>Release completed receipts to <a href="putaway.html">putaway</a>.</li>
       </ol>
       <p>Discrepancies that cannot be resolved at the dock go to the stock desk, who may
         raise a recount on the affected locations.</p>
@@ -166,8 +180,8 @@
   </main>
 </div>
 <footer>
-  <p>Brantmoor Depot Ltd &middot; Unit 7, Kelvinbrae Industrial Estate, Ardwick &middot; Stock desk 0161 496 0142</p>
-  <p>&copy; 2026 Brantmoor Depot Ltd. <a href="/grid-edit/privacy.html">Privacy notice</a> &middot; <a href="/grid-edit/terms.html">Terms of use</a> &middot; <a href="/grid-edit/standards.html">Warehouse standards</a></p>
+  <p>Brantmoor Depot Ltd &middot; Unit 7, Kelvinbrae Industrial Estate, Brantmoor BQ7 3RD &middot; Stock desk 0161 496 0142</p>
+  <p>&copy; 2026 Brantmoor Depot Ltd, registered in England and Wales, company number 00000000. <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of use</a> &middot; <a href="standards.html">Warehouse standards</a></p>
 </footer>
 </body>
 </html>

@@ -39,6 +39,8 @@ h1, h2, h3, .wordmark {
   letter-spacing: 0.34em;
 }
 
+.wordmark a { color: inherit; text-decoration: none; }
+
 .wordmark::before, .wordmark::after {
   content: "\2726";
   color: var(--gold-soft);
@@ -179,6 +181,25 @@ button:disabled { background: #4a4234; border-color: #4a4234; color: #857c68; cu
 
 .stageline { stroke: var(--gold-soft); fill: none; stroke-width: 2; }
 
+.seatnum { fill: var(--dim); font-family: Futura, "Century Gothic", sans-serif; font-size: 10px; }
+
+ul.bands {
+  list-style: none;
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  margin: 12px 0 0;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+}
+
+ul.bands li {
+  border: 1px solid var(--line);
+  padding: 3px 10px;
+  color: var(--ink);
+  letter-spacing: 0.06em;
+}
+
 ul.legend, ul.blocks {
   list-style: none;
   display: flex;
@@ -259,6 +280,8 @@ ul.legend, ul.blocks {
 
 .prose .byline { color: var(--dim); }
 
+.prose a { color: var(--gold); }
+
 .actlist { list-style: none; padding: 0; }
 
 .actlist li { border-bottom: 1px solid var(--line); padding: 8px 0; display: flex; justify-content: space-between; gap: 20px; }
@@ -280,5 +303,13 @@ footer a { color: var(--ink); margin: 0 10px; }
 
 @media (max-width: 900px) {
   .split { flex-direction: column; }
+  .plan-wrap { flex-basis: auto; width: 100%; }
   .rail { flex-basis: auto; width: 100%; }
+}
+
+@media (max-width: 520px) {
+  .wordmark { font-size: 24px; letter-spacing: 0.22em; }
+  .wordmark::before, .wordmark::after { margin: 0 8px; }
+  .marquee nav { gap: 18px; }
+  footer a { display: inline-block; margin: 2px 8px; }
 }

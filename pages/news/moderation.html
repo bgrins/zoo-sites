@@ -4,26 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Moderation log | Millrace</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="millrace.css">
 </head>
 <body>
 <header id="masthead">
   <div class="masthead-in">
-    <a class="wordmark" href="/news/">millrace</a>
+    <a class="wordmark" href="./">millrace</a>
     <span class="tagline">a working stream for people who build things</span>
-    <span class="acct"><a href="/news/signin.html">sign in</a><a class="ghost" href="/news/signin.html#register">open an account</a></span>
+    <span class="acct"><a href="signin.html">sign in</a><a class="ghost" href="signin.html#register">open an account</a></span>
   </div>
 </header>
 <nav id="tabs" aria-label="Sections">
   <div class="tabs-in">
-    <a class="tab" href="/news/">Stream</a>
-    <a class="tab" href="/news/?sort=fresh">Fresh</a>
-    <a class="tab" href="/news/?view=threads">Threads</a>
-    <a class="tab" href="/news/?tag=asks">Asks</a>
-    <a class="tab" href="/news/?tag=build">Build logs</a>
-    <a class="tab" href="/news/?tag=jobs">Hiring</a>
-    <a class="tab" href="/news/submit.html">Submit a link</a>
-    <form class="seek" action="/news/" method="get" role="search">
+    <a class="tab" href="./">Stream</a>
+    <a class="tab" href="./?sort=fresh">Fresh</a>
+    <a class="tab" href="./?view=threads">Threads</a>
+    <a class="tab" href="./?tag=asks">Asks</a>
+    <a class="tab" href="./?tag=build">Build logs</a>
+    <a class="tab" href="./?tag=jobs">Hiring</a>
+    <a class="tab" href="submit.html">Submit a link</a>
+    <form class="seek" action="./" method="get" role="search">
       <input type="search" name="q" aria-label="Search the stream" placeholder="Search the stream">
       <button type="submit">Go</button>
     </form>
@@ -31,7 +32,7 @@
 </nav>
 <div id="wrap">
   <main id="main">
-    <p class="crumbs"><a href="/news/">stream</a> &rsaquo; moderation log</p>
+    <p class="crumbs"><a href="./">stream</a> &rsaquo; moderation log</p>
     <div class="doc">
       <h1>Moderation log</h1>
       <p>Every action the stewards take against a submission, thread or account is
@@ -39,7 +40,7 @@
         about conduct rather than content. The log is append-only; corrections are
         logged as new entries.</p>
 
-      <h2>Last thirty days</h2>
+      <h2>Entries</h2>
       <ul class="loglist">
         <li><span class="when">Jul 27</span><span class="act">Demoted "AI will replace
           every compiler engineer by 2028" from position 4 &mdash; editorialized title,
@@ -47,24 +48,24 @@
         <li><span class="when">Jul 26</span><span class="act">Removed a sponsored
           listing that linked to a splash page instead of a role description.
           Sponsor refunded; slot left empty for the day.</span></li>
+        <li><span class="when">Jul 25</span><span class="act">Correction: the Jul 24
+          entry originally said 8 accounts; a ninth was added after appeal review
+          confirmed the pattern.</span></li>
         <li><span class="when">Jul 24</span><span class="act">Vote-discounted 9
           accounts registered from one address that voted identically on 41 of 44
           submissions. Standing discount, not a ban.</span></li>
         <li><span class="when">Jul 22</span><span class="act">Removed 61 replies
           from a spam wave advertising an essay-writing service; the accounts were
           hours old. Registration throttled for two days.</span></li>
-        <li><span class="when">Jul 19</span><span class="act">Restored "The
-          economics of vending machines" after review &mdash; flagged as blogspam,
+        <li><span class="when">Jul 19</span><span class="act">Restored "What a
+          vending route actually clears in a year" after review &mdash; flagged as blogspam,
           but the piece is original reporting with the author's own numbers.</span></li>
-        <li><span class="when">Jul 15</span><span class="act">Retitled "You won't
-          believe what Postgres just shipped" to the release's own title. Standing
-          policy; see <a href="/news/guidelines.html">guidelines</a>, Titles.</span></li>
+        <li><span class="when">Jul 15</span><span class="act">Retitled "The one
+          kernel flag every server should set" to the article's own title. Standing
+          policy; see <a href="guidelines.html">guidelines</a>, Titles.</span></li>
         <li><span class="when">Jul 11</span><span class="act">Banned one account for
           repeated personal attacks in threads after two logged warnings. First ban
           this quarter.</span></li>
-        <li><span class="when">Jul 08</span><span class="act">Correction: the Jul 24
-          entry originally said 8 accounts; a ninth was added after appeal review
-          confirmed the pattern.</span></li>
       </ul>
       <p class="fine">Older entries are retired with their threads. To appeal an
         action, write to stewards@millrace.example from the account concerned;
@@ -77,33 +78,34 @@
       <p>Any member can flag a submission or reply. Flags from accounts with a
         history of upheld flags weigh more. Nothing is auto-removed: flags queue
         for a steward, and upheld flags land here.</p>
-      <p class="meta"><a href="/news/guidelines.html">Full guidelines</a></p>
+      <p class="meta"><a href="guidelines.html">Full guidelines</a></p>
     </div>
     <div class="card">
       <h2>The stewards</h2>
       <p>Three working engineers, part-time, named in the quarterly letter to
         members. They moderate under the published guidelines and log everything
         they do.</p>
-      <p class="meta"><a href="/news/about.html">About millrace</a></p>
+      <p class="meta"><a href="about.html">About millrace</a></p>
     </div>
   </aside>
 </div>
 <footer id="footer">
   <div class="footer-in">
     <p class="footer-nav">
-      <a href="/news/about.html">About</a> &middot;
-      <a href="/news/guidelines.html">Guidelines</a> &middot;
-      <a href="/news/moderation.html">Moderation log</a> &middot;
-      <a href="/news/feeds.html">Feeds</a> &middot;
-      <a href="/news/status.html">Status</a> &middot;
-      <a href="/news/advertise.html">Sponsor a day</a> &middot;
-      <a href="/news/privacy.html">Privacy</a> &middot;
-      <a href="/news/terms.html">Terms</a> &middot;
-      <a href="/news/contact.html">Contact</a>
+      <a href="about.html">About</a> &middot;
+      <a href="guidelines.html">Guidelines</a> &middot;
+      <a href="moderation.html">Moderation log</a> &middot;
+      <a href="feeds.html">Feeds</a> &middot;
+      <a href="status.html">Status</a> &middot;
+      <a href="advertise.html">Sponsor a day</a> &middot;
+      <a href="privacy.html">Privacy</a> &middot;
+      <a href="terms.html">Terms</a> &middot;
+      <a href="consent.html">Cookie preferences</a> &middot;
+      <a href="contact.html">Contact</a>
     </p>
     <p>Millrace is operated by Weirgate Collective LLC, 214 Weir Street, Suite 3,
       Ashvale, VT 05412. Moderation questions go to
-      <a href="/news/contact.html">stewards@millrace.example</a>; everything else to
+      <a href="contact.html">stewards@millrace.example</a>; everything else to
       help@millrace.example.</p>
     <p>Submissions and replies remain the work of their authors. Copyright 2026
       Weirgate Collective LLC.</p>

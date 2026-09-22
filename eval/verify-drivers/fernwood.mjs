@@ -1,8 +1,6 @@
 // Golden path for the Fernwood Commons neighbourhood feed
 // (pages/fernwood/, task feed-needle). See probes.mjs for the contract.
-import { until, snapText, bumpCode } from './lib.mjs';
-
-const FEED_REF = /Ref (FW-[0-9A-F]{6})/;
+import { addSession, findSession, until, bumpCode } from './lib.mjs';
 
 const FEED_NEEDLE_TITLE = 'Creek cleanup: final tally';
 
@@ -10,88 +8,114 @@ const FEED_NEEDLE_TITLE = 'Creek cleanup: final tally';
 // only to assert the fixture precondition still holds.
 const FEED_AUTHORS = ['Marisol Vega', 'Ansel Okafor', 'Petra Lindqvist', 'Theo Marchetti'];
 
-// The author, figure and FW- reference of the card whose body line matches
-// bodyRe: walk back from the body line to its article line (the author is the
-// first text node after it; the avatar div carries no text) and forward to
-// the card's Ref line.
-function feedCard(snapText, bodyRe) {
-  const lines = snapText.split('\n');
-  const i = lines.findIndex((l) => bodyRe.test(l));
-  if (i === -1) return null;
-  let author = null;
-  for (let j = i - 1; j >= 0; j--) {
-    if (/\barticle\b/.test(lines[j])) break;
-    const m = lines[j].match(/div text="([^"]+)"/);
-    if (m) author = m[1];
-  }
-  let ref = null;
-  for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-    const m = lines[j].match(FEED_REF);
-    if (m) {
-      ref = m[1];
-      break;
-    }
-  }
-  const count = Number(lines[i].match(bodyRe)[1]);
-  return author && ref && Number.isFinite(count) ? { author, count, ref } : null;
+// Every rendered card, read from the DOM. The post bodies are written the way
+// neighbours write, so the figures sit mid-sentence past the snapshot's text
+// cap; whether a surface still delivers them is what feed-needle reports, so
+// the driver reads them with evaluate rather than demanding it.
+const readCards = (evaluate) =>
+  evaluate(() =>
+    [...document.querySelectorAll('article.card')].map((c) => ({
+      author: c.querySelector('.name')?.textContent ?? '',
+      title: c.querySelector('h2')?.textContent ?? '',
+      body: [...c.querySelectorAll('p')].map((p) => p.textContent).join(' '),
+      ref: /Ref (FW-[0-9A-F]{6})/.exec(c.querySelector('.cardfoot')?.textContent ?? '')?.[1] ?? null,
+    }))
+  );
+
+function feedCard(cards, bodyRe) {
+  const card = cards.find((c) => bodyRe.test(c.body));
+  if (!card || !card.ref) return null;
+  const count = Number(bodyRe.exec(card.body)[1]);
+  return Number.isFinite(count) ? { author: card.author, count, ref: card.ref } : null;
 }
+
+const NEEDLE_RE = /final tally for this spring's Alder Creek cleanup comes to (\d+) bags/;
+const TEASER_RE = /early count from the drop-off points was (\d+) bags/;
+const LOOKALIKE_RE = /2025 creek tally was (\d+) bags/;
 
 export const DRIVERS = {
   'feed-needle': {
     note:
       'scrolls with evaluate window.scrollTo (no scroll tool exists) so each sentinel ' +
-      'IntersectionObserver fires; reads every card off snapshots taken with maxLines 400, ' +
-      'because the full feed outruns the default 100-line snapshot and find misses the ' +
-      'tally post entirely',
+      'IntersectionObserver fires, and reads the cards with evaluate: the tally figure sits ' +
+      'mid-sentence in a neighbour-written post, past the snapshot text cap',
     wrong:
       'The final tally post is by Fernwood Commons Team: 238 bags. ' +
       'Its reference code is FW-000000.',
-    async run({ goto, evaluate, mcp }) {
+    alsoCorrectState: [
+      {
+        name: 'a stray session minted first reads batch 1 of its own feed',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.fernwood);
+          const f = session.fernwood;
+          const other = (post) => ({ ...post, ref: bumpCode(post.ref), count: post.count + 1 });
+          addSession(
+            state,
+            {
+              fernwood: {
+                ...f,
+                needle: other(f.needle),
+                teaser: other(f.teaser),
+                lookalike: other(f.lookalike),
+                requests: [{ batch: 1, via: null, y: null, at: Date.now() }],
+                maxBatch: 1,
+                badCursor: 0,
+              },
+            },
+            { first: true }
+          );
+        },
+      },
+    ],
+    async run({ goto, evaluate }) {
       await goto('/fernwood/');
-      const snap = () => snapText(mcp, { maxLines: 400 });
-      const refCount = (t) => (t.match(/Ref FW-[0-9A-F]{6}/g) ?? []).length;
+      const status = () => evaluate(() => document.getElementById('status')?.textContent ?? '');
       // Batch 1 renders from the session-gated fetch; poll for the teaser card.
-      let s = '';
+      let cards = [];
       await until('the batch-1 teaser card to render', async () => {
-        s = await snap();
-        return /Early count: \d+ bags/.test(s);
+        cards = await readCards(evaluate);
+        return cards.some((c) => TEASER_RE.test(c.body));
       });
-      const teaser = feedCard(s, /Early count: (\d+) bags/);
+      const teaser = feedCard(cards, TEASER_RE);
       if (!teaser) throw new Error('the batch-1 teaser card never rendered');
-      if (s.includes(FEED_NEEDLE_TITLE)) {
+      if (cards.some((c) => c.title === FEED_NEEDLE_TITLE)) {
         throw new Error('the tally post is visible before any scrolling');
       }
       // Older batches load when the sentinel enters the viewport: scroll to the
       // bottom, wait for the feed to grow (never a fixed sleep), repeat.
-      let caughtUp = /all caught up/.test(s);
-      let seen = refCount(s);
+      let caughtUp = /all caught up/.test(await status());
+      let seen = cards.length;
       for (let i = 0; i < 12 && !caughtUp; i++) {
         await evaluate(() => {
           window.scrollTo(0, document.documentElement.scrollHeight);
         });
         await until('scrolling to load another batch', async () => {
-          s = await snap();
-          if (/all caught up/.test(s)) {
+          cards = await readCards(evaluate);
+          if (/all caught up/.test(await status())) {
             caughtUp = true;
             return true;
           }
-          if (refCount(s) > seen) {
-            seen = refCount(s);
+          if (cards.length > seen) {
+            seen = cards.length;
             return true;
           }
           return false;
         }, { tries: 40, gap: 200 });
       }
       if (!caughtUp) throw new Error('the feed never reached its last batch');
-      const needle = feedCard(s, /Final tally: (\d+) bags/);
+      cards = await readCards(evaluate);
+      const needle = feedCard(cards, NEEDLE_RE);
       if (!needle) throw new Error('the tally card is missing from the full feed');
+      if (cards.find((c) => c.ref === needle.ref)?.title !== FEED_NEEDLE_TITLE) {
+        throw new Error('the tally figure is not on the final-tally post');
+      }
       if (!FEED_AUTHORS.includes(needle.author)) {
         throw new Error(`unexpected tally author "${needle.author}"`);
       }
       // The two on-feed decoys the wrongFields pin must still be present and
       // must still disagree with the graded figure, or the regressions below
       // assert nothing.
-      const lookalike = feedCard(s, /2025 creek tally: (\d+) bags/);
+      const lookalike = feedCard(cards, LOOKALIKE_RE);
       if (!lookalike) throw new Error('the archive lookalike card is missing');
       if (teaser.count === needle.count || lookalike.count === needle.count) {
         throw new Error('a decoy count collides with the final tally');
@@ -123,6 +147,55 @@ export const DRIVERS = {
           posterName: needle.author.toUpperCase(),
           bagCount: needle.count,
           postRef: needle.ref.replace('-', ' '),
+        },
+      ];
+      // The 2026-09-20 haiku playwright-mcp answer, re-minted with this run's
+      // values: the extractor took postRef's value from the answer and its
+      // quote from the ask.
+      const rowAnswer = (ref) =>
+        `Perfect! I found the post I was looking for. Let me extract the information:\n\n` +
+        `- **Neighbour name**: ${needle.author}\n- **Final tally**: ${needle.count} bags\n` +
+        `- **Reference code**: ${ref}\n` +
+        `- **Date**: May 24 - Alder Creek (confirming it's the May 2026 event)\n\n**Answer:**\n\n` +
+        `${needle.author} posted the final tally of the Alder Creek cleanup (May 2026 event): ` +
+        `**${needle.count} bags** with reference code **${ref}**.`;
+      const askQuote =
+        "reference code (every card shows one, like FW-000000). Report the name of the neighbour " +
+        "who posted it, the final tally in bags, and the post's reference code";
+      const rowRaw = {
+        posterName: { value: needle.author, quote: `Neighbour name: ${needle.author}` },
+        bagCount: { value: needle.count, quote: `Final tally: ${needle.count} bags` },
+        postRef: { value: needle.ref, quote: askQuote },
+      };
+      this.alsoCorrectExtraction = [
+        {
+          name: "the 2026-09-20 row: postRef's code in the answer, its quote from the ask",
+          answer: rowAnswer(needle.ref),
+          raw: rowRaw,
+        },
+      ];
+      this.wrongExtraction = [
+        {
+          name: 'postRef quoted from the ask, and its code nowhere in the answer',
+          answer: rowAnswer('not legible on the card'),
+          raw: rowRaw,
+        },
+        {
+          name: "postRef's code in the answer only as the head of a longer code",
+          answer: rowAnswer(`${needle.ref}7`),
+          raw: rowRaw,
+        },
+        {
+          // Every clause of the quote is the ask's, echoed by the answer, so the
+          // clause fallback that joins a quote split across bullets finds each
+          // one in the answer.
+          name: "postRef quoted from the ask's wording, which the answer echoes, and its code never stated",
+          answer:
+            `Restating the ask: report the name of the neighbour who posted it, the final tally ` +
+            `in bags, and the post's reference code (every card shows one, like FW-000000).\n\n` +
+            `- Neighbour name: ${needle.author}\n- Final tally: ${needle.count} bags\n` +
+            `- Reference code: cut off on the card`,
+          raw: rowRaw,
         },
       ];
       this.wrong = [

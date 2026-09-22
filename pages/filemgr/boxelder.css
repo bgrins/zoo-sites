@@ -2,7 +2,7 @@
     --chrome: #e9eaf0;
     --chrome-line: #cfd2de;
     --ink: #1b1c2a;
-    --muted: #6f7286;
+    --muted: #6c6f83;
     --indigo: #4f46c5;
     --indigo-soft: #eceafb;
     --row-line: #edeef4;
@@ -170,7 +170,7 @@
     background: #fbfbfd;
     padding: 12px 8px 10px;
   }
-  .sidebar .group { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #9296a8; padding: 8px 8px 4px; }
+  .sidebar .group { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #6f7280; padding: 8px 8px 4px; }
   .sidebar .place {
     display: block;
     padding: 5px 9px;
@@ -195,7 +195,7 @@
     overflow: hidden;
     margin-bottom: 6px;
   }
-  .meter span { display: block; height: 100%; width: 62%; background: var(--indigo); }
+  .meter span { display: block; height: 100%; width: 2%; min-width: 3px; background: var(--indigo); }
   .storage a { color: var(--indigo); text-decoration: none; }
   .pane { flex: 1; padding: 0; min-width: 0; }
   table { border-collapse: collapse; width: 100%; }
@@ -210,10 +210,14 @@
     position: sticky;
     top: 0;
   }
-  th.sorted::after { content: " \25B4"; color: var(--indigo); }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: var(--ink); }
+  th[aria-sort="ascending"]::after { content: " \25B4"; color: var(--indigo); }
+  th[aria-sort="descending"]::after { content: " \25BE"; color: var(--indigo); }
   td { border-bottom: 1px solid var(--row-line); padding: 7px 12px; }
   tbody tr:nth-child(even) { background: #fcfcfe; }
   tbody tr:hover { background: var(--indigo-soft); }
+  tbody tr.selected, tbody tr.selected:hover { background: #dcd9f7; box-shadow: inset 3px 0 0 var(--indigo); }
   td.name { font-weight: 500; }
   td.kind, td.size, td.mod { color: var(--muted); font-size: 12.5px; }
   td.actions { text-align: right; white-space: nowrap; }
@@ -240,6 +244,8 @@
     outline: 2px solid rgba(79, 70, 197, 0.18);
   }
   #loading { color: var(--muted); padding: 14px; }
+  #loading.loaderr { color: #9a2f25; }
+  #loading.loaderr .rowbtn { margin-left: 8px; }
   #empty { display: none; color: var(--muted); padding: 16px 14px; }
   .statusbar {
     display: flex;
@@ -350,6 +356,7 @@
   .doc .lede { color: var(--muted); margin: 0 0 16px; }
   .doc h2 { font-size: 13.5px; margin: 20px 0 6px; }
   .doc p { margin: 0 0 10px; }
+  .doc a { color: var(--indigo); text-underline-offset: 2px; }
   .doc ul { margin: 0 0 10px; padding-left: 20px; }
   .doc li { margin-bottom: 4px; }
   .doc table.keys { width: auto; min-width: 420px; }
@@ -366,3 +373,47 @@
   .statusdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; }
   .statusdot.ok { background: #2f9e5f; }
   td.viewnote { color: var(--muted); font-size: 12px; text-align: right; }
+  .brand { color: inherit; text-decoration: none; }
+  .sidebar a.tag::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #b9b5ee; margin-right: 7px; }
+  .details {
+    flex: 0 0 240px;
+    border-left: 1px solid var(--row-line);
+    background: #fbfbfd;
+    padding: 14px 14px 16px;
+    font-size: 12.5px;
+  }
+  .details h2 { font-size: 13.5px; margin: 0 0 10px; word-break: break-all; }
+  .details dl { margin: 0 0 12px; }
+  .details dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 8px; }
+  .details dd { margin: 1px 0 0; }
+  @media (max-width: 720px) {
+    .appbar { flex-wrap: wrap; row-gap: 8px; padding: 8px 12px; }
+    .searchwrap { order: 5; flex: 1 0 100%; max-width: none; margin-left: 0; }
+    .appbar .plan { display: none; }
+    .menubar { overflow-x: auto; }
+    .menubar .synced { display: none; }
+    td.mod, td.size { white-space: nowrap; }
+    .shell { margin: 10px 8px 0; }
+    .toolbar { flex-wrap: wrap; }
+    .frame { flex-direction: column; min-height: 0; }
+    .sidebar {
+      width: auto;
+      flex: none;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      border-right: 0;
+      border-bottom: 1px solid var(--row-line);
+      padding: 6px;
+      white-space: nowrap;
+    }
+    .sidebar .group, .storage { display: none; }
+    .sidebar .place.sub { padding-left: 9px; }
+    th:nth-child(2), td.kind { display: none; }
+    td, th { padding: 7px 8px; }
+    .details { flex: none; border-left: 0; border-top: 1px solid var(--row-line); }
+    .statusbar { flex-direction: column; gap: 2px; }
+    .doc { margin: 12px 8px 0; padding: 18px 16px 22px; }
+    .doc table.keys { min-width: 0; width: 100%; }
+    .sitefoot { padding: 0 10px 22px; }
+  }

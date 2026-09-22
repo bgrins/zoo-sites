@@ -2,12 +2,44 @@
 // <canvas>, so nothing in it reaches either snapshot surface; the golden path is
 // the toolbar search box, whose server-returned hits render as real DOM.
 
-import { snapText, until } from './lib.mjs';
+import { randomBytes } from 'node:crypto';
+import { addSession, findSession, snapText, until } from './lib.mjs';
 
 export const DRIVERS = {
   'canvas-log': {
     note: 'canvas terminal; search box is the only snapshot-readable route',
     wrong: 'The release/gate step failed with error id E-4B21C7.',
+    alsoCorrectState: [
+      {
+        name: 'a stray session minted first loads the viewer and holds its own ids',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.console);
+          const mint = () => 'E-' + randomBytes(3).toString('hex').toUpperCase();
+          addSession(
+            state,
+            {
+              console: {
+                ...session.console,
+                errorId: mint(),
+                decoyScan: mint(),
+                decoyPush: mint(),
+                decoyCleanup: mint(),
+              },
+            },
+            { first: true }
+          );
+        },
+      },
+      {
+        // Ids come from randomBytes independently, so a decoy line can repeat
+        // the graded id, and the answer naming it is still the right one.
+        name: 'the mint repeats the graded id on a decoy line',
+        mutate(state) {
+          const { session } = findSession(state, (s) => s.console);
+          session.console.decoyScan = session.console.errorId;
+        },
+      },
+    ],
     async run({ mcp, goto }) {
       const snap = () => snapText(mcp, { maxLines: 400 });
 
@@ -26,7 +58,8 @@ export const DRIVERS = {
       if (!box) throw new Error('no search box in the snapshot');
       await mcp('fill_by_uid', { uid: box, value: 'ERROR' });
 
-      // Every snapshot invalidates the previous uids, so re-read before clicking.
+      // On 0.9.15 every snapshot invalidates the previous uids, so re-read
+      // before clicking.
       page = await snap();
       const button = page.match(/uid=(\S+) button "Search"/)?.[1];
       if (!button) throw new Error('no search button in the snapshot');
@@ -94,7 +127,14 @@ export const DRIVERS = {
       ];
 
       const fields = { errorId: hit[1] };
-      this.wrongFields = [{ errorId: 'E-000000' }];
+      // The three decoys are the task's whole trap: each is a real ERROR id this
+      // session's log carries, filed under a step that did not fail.
+      this.wrongFields = [
+        { errorId: 'E-000000' },
+        { errorId: scan },
+        { errorId: push },
+        { errorId: cleanup },
+      ];
       this.alsoCorrectFields = [fields, { errorId: hit[1].toLowerCase() }];
       return {
         text:

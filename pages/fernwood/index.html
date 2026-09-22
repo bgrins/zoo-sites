@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fernwood Commons — the neighbourhood feed</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   * { box-sizing: border-box; }
   body {
@@ -29,7 +30,7 @@
     display: inline-block; width: 11px; height: 11px; border-radius: 50% 50% 50% 0;
     background: #6f9a72; margin-right: 7px; transform: rotate(-45deg);
   }
-  .tag { font-size: 12px; color: #8a836f; }
+  .tag { font-size: 12px; color: #726c5c; }
   .topbar nav { margin-left: auto; }
   .topbar nav a {
     color: #35563b; text-decoration: none; font-size: 14px; margin-left: 16px;
@@ -51,15 +52,16 @@
   }
   .avatar::before { content: attr(data-initials); }
   .name { font-weight: bold; color: #2f4a34; }
-  .meta { font-size: 12px; color: #8a836f; }
-  article.card h3 { margin: 0 0 6px; font-size: 16px; color: #33302a; }
+  .meta { font-size: 12px; color: #726c5c; }
+  .feedhead { font-size: 13px; font-weight: normal; color: #726c5c; margin: 0 0 10px; letter-spacing: .5px; }
+  article.card h2 { margin: 0 0 6px; font-size: 16px; color: #33302a; }
   article.card p { margin: 0 0 6px; font-size: 14px; }
   .cardfoot {
     margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0dbcb;
-    font-size: 12px; color: #8a836f;
+    font-size: 12px; color: #726c5c;
   }
   #status {
-    text-align: center; font-size: 13px; color: #8a836f;
+    text-align: center; font-size: 13px; color: #726c5c;
     padding: 26px 0 10px;
   }
   footer {
@@ -73,25 +75,31 @@
 <body>
 <div class="topbar">
   <div class="inner">
-    <a class="brand" href="/fernwood/"><span class="dot"></span>Fernwood Commons</a>
+    <a class="brand" href="./"><span class="dot"></span>Fernwood Commons</a>
     <span class="tag">Notes between neighbours</span>
     <nav>
-      <a href="/fernwood/" class="here">Feed</a>
-      <a href="/fernwood/about.html">About</a>
+      <a href="./" class="here">Feed</a>
+      <a href="about.html">About</a>
     </nav>
   </div>
 </div>
 
 <main>
-  <div class="feed" id="feed"></div>
-  <div id="status">Loading the feed</div>
+  <h1 class="feedhead">Neighbourhood feed</h1>
+  <div class="feed" id="feed" aria-label="Posts, newest first"></div>
+  <div id="status" role="status">Loading the feed</div>
 </main>
 
 <footer>
   <div class="inner">
     Fernwood Commons is run by volunteers from the Fernwood Neighbourhood
     Association. Posts belong to their authors.
-    <a href="/fernwood/about.html">House rules and contact</a>.
+    <br>
+    <a href="about.html#rules">House rules</a> &middot;
+    <a href="privacy.html">Privacy</a> &middot;
+    <a href="terms.html">Terms of use</a> &middot;
+    <a href="about.html#contact">Contact the stewards</a><br>
+    &copy; 2026 Fernwood Neighbourhood Association &middot; Registered charity 0000000
   </div>
 </footer>
 
@@ -124,7 +132,7 @@ function card(p) {
   meta.textContent = p.when + ' - ' + p.where;
   id.append(name, meta);
   who.append(avatar, id);
-  const title = document.createElement('h3');
+  const title = document.createElement('h2');
   title.textContent = p.title;
   el.append(who, title);
   for (const line of p.body) {
@@ -163,7 +171,10 @@ async function loadBatch(via) {
       io.unobserve(statusEl);
     }
   } catch {
-    statusEl.textContent = 'The feed did not load. Reload the page to try again.';
+    statusEl.textContent =
+      feedEl.children.length
+        ? 'Older posts did not load. Reload the page to try again.'
+        : 'The feed did not load. Reload the page to try again.';
   } finally {
     busy = false;
   }

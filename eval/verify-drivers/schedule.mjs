@@ -10,7 +10,7 @@
 // booking desk writes them rather than trimmed to fit the snapshot's text cap.
 // The quick-book line and the reference the desk issues stay on the uid surface.
 
-import { bumpCode, until } from './lib.mjs';
+import { bumpCode, snapText, until } from './lib.mjs';
 
 const DAY_KEYS = {
   monday: 'Mon',
@@ -26,7 +26,7 @@ export const DRIVERS = {
     wrong: [
       'I booked the Bramble Suite on Monday at 09:00; the desk gave me reference PCR-4C71A9.',
     ],
-    async run({ goto, evaluate, snapshot, mcp, sleep }) {
+    async run({ goto, evaluate, mcp }) {
       await goto('/schedule/');
       // The card is read from the DOM, not the snapshot. Its conditions are
       // written the way a booking desk writes them and run past the snapshot's
@@ -84,8 +84,11 @@ export const DRIVERS = {
       const answer = windows[0];
       if (!answer) throw new Error('no window in the week meets the request card');
 
-      // uids expire on every take_snapshot, so read them from a fresh one.
-      const fresh = await snapshot();
+      // On 0.9.15 uids expire on every take_snapshot, so read them from a
+      // fresh one. The whole 500-line window, because the form sits below the
+      // grid: a walker that emits the grid's cells pushes it past the default
+      // 100 lines.
+      const fresh = await snapText(mcp, { maxLines: 500 });
       const uid = (label) => {
         const m = new RegExp(`uid=(\\S+) (?:input|button) "${label}"`).exec(fresh);
         if (!m) throw new Error(`no "${label}" control in the snapshot`);
@@ -96,12 +99,13 @@ export const DRIVERS = {
       await mcp('fill_by_uid', { uid: uid('Room'), value: answer.room.name });
       await mcp('click_by_uid', { uid: uid('Request hold') });
 
-      let reference = '';
-      for (let i = 0; i < 120 && !reference; i++) {
-        const after = await snapshot();
-        reference = /PCR-[0-9A-F]{6}/.exec(after)?.[0] ?? '';
-        if (!reference) await sleep(250);
-      }
+      // No reference is on the page before the desk issues one, so the poll
+      // cannot be satisfied by the state before the click.
+      const reference = await until(
+        'the desk to issue a reference',
+        async () => /PCR-[0-9A-F]{6}/.exec(await snapText(mcp, { maxLines: 500 }))?.[0] ?? null,
+        { tries: 120 }
+      ).catch(() => '');
       if (!reference) {
         const outcome = await evaluate(() => document.getElementById('qbOutcome')?.textContent ?? '');
         throw new Error(`no reference issued; the desk said "${outcome}"`);
@@ -109,7 +113,17 @@ export const DRIVERS = {
       const endMinutes = Number(answer.start.slice(0, 2)) * 60 + Number(answer.start.slice(3)) + minutes;
       const end = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
       const fields = { confirmationReference: reference };
-      this.wrongFields = [{ confirmationReference: 'BK-0000' }];
+      this.wrongFields = [{ confirmationReference: bumpCode(reference) }];
+      // A later slot that also fits the card is held without a reference, so
+      // the confirmation on the session is the thing graded.
+      this.wrongState = [
+        {
+          name: 'the booking was only held, never confirmed',
+          mutate: (state) => {
+            for (const s of state.sessions.values()) if (s.schedule) s.schedule.confirmed = null;
+          },
+        },
+      ];
       this.alsoCorrectFields = [fields, { confirmationReference: String(reference).toLowerCase() }];
       this.wrong = [
         this.wrong[0],

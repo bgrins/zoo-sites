@@ -1,203 +1,244 @@
 body {
   margin: 0;
-  background: #ded8c9;
-  color: #2b2723;
-  font: 15.5px/1.62 "Palatino Linotype", Palatino, "Book Antiqua",
-    "URW Palladio L", "Iowan Old Style", "Times New Roman", serif;
+  background: #ffffff;
+  color: #1f1f1d;
+  font: 16.5px/1.6 Cochin, "Crimson Pro", "EB Garamond", "Palatino Linotype", serif;
 }
 a {
-  color: #6d2530;
+  color: #7a5600;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 a:visited {
-  color: #4c2340;
+  color: #5c4a2e;
+}
+a:hover {
+  color: #1f1f1d;
 }
 #banner {
-  background: #fdfbf6;
-  text-align: center;
-  padding: 26px 24px 12px;
-  border-bottom: 3px double #6d2530;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 26px 24px 18px;
+  background: #ffffff;
+  color: #1f1f1d;
+}
+body::before {
+  content: "";
+  display: block;
+  height: 6px;
+  background: #8a6100;
+}
+#banner .crest {
+  flex: none;
 }
 #banner p {
   margin: 0;
-  text-align: center;
 }
-#banner .mark {
-  font-size: 11px;
-  letter-spacing: 0.42em;
-  text-transform: uppercase;
-  color: #8a7f6d;
-  margin-bottom: 10px;
+#banner .name {
+  font: 400 30px/1.15 "Big Caslon", "Libre Caslon Text", "Book Antiqua", serif;
 }
-#banner .mark::before {
-  content: "Founded 1961 \00a0\00b7\00a0 ";
+#banner .name a {
+  color: #1f1f1d;
+  text-decoration: none;
 }
-#banner h1 {
-  margin: 0;
-  font-size: 27px;
-  font-weight: 400;
-  letter-spacing: 0.06em;
-  color: #241f1b;
+#banner .name a:hover {
+  color: #7a5600;
 }
 #banner .sub {
-  display: block;
-  margin-top: 7px;
-  font-size: 13px;
+  margin-top: 3px;
+  font-size: 16px;
   font-style: italic;
-  letter-spacing: 0.02em;
-  color: #6b6255;
+  color: #57554f;
 }
-#nav {
-  background: #fdfbf6;
-  text-align: center;
-  padding: 9px 24px 10px;
-  border-bottom: 1px solid #c9bda6;
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-#nav a {
-  color: #4a423a;
-  text-decoration: none;
-  margin: 0 4px;
-}
-#nav a + a::before {
-  content: "\2014";
-  color: #b7a98e;
-  margin-right: 9px;
-}
-#nav a:hover {
-  color: #6d2530;
-  text-decoration: underline;
-}
-#crumbs {
-  max-width: 780px;
-  margin: 0 auto;
-  padding: 10px 46px 0;
-  font-size: 12.5px;
-  font-style: italic;
-  color: #7a7164;
+#banner .mark {
+  margin-left: auto;
+  font-size: 14.5px;
+  color: #57554f;
   text-align: right;
 }
 #shell {
-  max-width: 780px;
-  margin: 0 auto 40px;
-  padding: 0;
-  background: #fdfbf6;
-  border: 1px solid #cfc4ad;
-  border-bottom-width: 2px;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+#nav {
+  display: flex;
+  flex-wrap: wrap;
+  border-top: 1px solid #1f1f1d;
+  border-bottom: 1px solid #d9d6cc;
+  font-size: 16px;
+}
+#nav a {
+  padding: 9px 18px 8px;
+  color: #1f1f1d;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+#nav a:first-child {
+  padding-left: 0;
+}
+#nav a:hover {
+  color: #7a5600;
+  border-bottom-color: #8a6100;
 }
 #main {
   display: block;
-  padding: 6px 46px 34px;
+  padding: 22px 0 36px;
+  min-width: 0;
+}
+#crumbs {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-style: italic;
+  color: #57554f;
+}
+h1 {
+  font: 400 34px/1.2 "Big Caslon", "Libre Caslon Text", "Book Antiqua", serif;
+  color: #1f1f1d;
+  margin: 6px 0 16px;
 }
 h2 {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: #6d2530;
-  margin: 34px 0 10px;
+  font: 400 23px/1.25 "Big Caslon", "Libre Caslon Text", "Book Antiqua", serif;
+  color: #1f1f1d;
+  margin: 36px 0 10px;
   padding-bottom: 5px;
-  border-bottom: 1px solid #c9bda6;
+  border-bottom: 1px solid #d9d6cc;
 }
 h3 {
-  font-size: 16px;
-  font-weight: 400;
+  font-size: 18px;
   font-style: italic;
-  margin: 20px 0 2px;
+  font-weight: 400;
+  margin: 18px 0 2px;
 }
 p {
   margin: 0 0 12px;
-  text-align: justify;
-  hyphens: auto;
 }
 p.note {
-  font-size: 13px;
-  line-height: 1.55;
-  color: #5d5548;
-  padding-left: 22px;
-  border-left: 1px solid #d8cdb6;
+  font-size: 15.5px;
+  color: #3b3a36;
+  background: #f5f5f3;
+  border-left: 3px solid #8a6100;
+  padding: 9px 16px;
 }
 ul.plain {
-  padding-left: 22px;
-  list-style: square;
+  padding-left: 20px;
 }
 ul.plain li {
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
 table.roster {
   border-collapse: collapse;
   width: 100%;
-  font-size: 14px;
-  margin: 14px 0 20px;
+  font-size: 16px;
+  margin: 16px 0 24px;
+  border-top: 2px solid #1f1f1d;
+  border-bottom: 2px solid #1f1f1d;
 }
 table.roster caption {
   caption-side: top;
   text-align: left;
-  font-size: 12.5px;
+  font-size: 15px;
   font-style: italic;
-  color: #5d5548;
+  color: #57554f;
   padding-bottom: 8px;
-  border-bottom: 3px double #6d2530;
-  margin-bottom: 0;
 }
 table.roster th,
 table.roster td {
-  border: 0;
-  border-bottom: 1px solid #e0d7c2;
-  padding: 4px 10px 4px 0;
+  border-bottom: 1px solid #ebe9e3;
+  padding: 5px 12px 5px 0;
   text-align: left;
   vertical-align: baseline;
 }
 table.roster thead th {
-  font-size: 11px;
+  color: #1f1f1d;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #4a423a;
-  border-bottom: 1px solid #a89a7d;
-  padding-top: 6px;
+  border-bottom: 1px solid #1f1f1d;
 }
 table.roster tr.dept th {
-  padding: 14px 0 3px;
-  font-size: 12px;
-  font-weight: 400;
-  font-style: italic;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #6d2530;
-  border-bottom: 1px solid #c9bda6;
+  padding: 16px 0 3px;
+  font: 400 18px/1.3 "Big Caslon", "Libre Caslon Text", "Book Antiqua", serif;
+  color: #7a5600;
+  border-bottom: 1px solid #d9d6cc;
+}
+table.roster thead th:last-child {
+  text-align: right;
+  padding-right: 0;
 }
 table.roster td.ext {
   text-align: right;
   width: 66px;
+  padding-right: 0;
   font-variant-numeric: tabular-nums;
-  color: #4a423a;
-  padding-right: 2px;
+  color: #57554f;
 }
 table.roster tbody tr:hover td {
-  background: #f5efe1;
+  background: #f8f4e8;
 }
 .aside {
-  margin: 22px 0;
-  padding: 2px 30px;
-  font-size: 13.5px;
-  line-height: 1.55;
-  font-style: italic;
-  color: #4a423a;
-  border-top: 1px solid #d8cdb6;
-  border-bottom: 1px solid #d8cdb6;
+  margin: 24px 0;
+  padding: 11px 16px;
+  font-size: 15.5px;
+  color: #3b3a36;
+  border: 1px solid #d9d6cc;
+  border-left: 3px solid #1f1f1d;
 }
 .aside b {
-  font-style: normal;
-  letter-spacing: 0.04em;
+  color: #1f1f1d;
 }
 #foot {
-  border-top: 3px double #c9bda6;
-  margin-top: 32px;
-  padding-top: 12px;
-  font-size: 11.5px;
-  line-height: 1.65;
-  color: #7a7164;
-  text-align: center;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 18px 24px 40px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: #57554f;
+  border-top: 1px solid #1f1f1d;
+  box-sizing: border-box;
+}
+#foot .addr {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #d9d6cc;
+}
+@media (max-width: 760px) {
+  #banner {
+    flex-wrap: wrap;
+    padding: 16px 16px 12px;
+    gap: 10px 14px;
+  }
+  #banner .name {
+    font-size: 24px;
+  }
+  #banner .mark {
+    margin-left: 0;
+    flex-basis: 100%;
+    text-align: left;
+  }
+  #shell {
+    padding: 0 16px;
+  }
+  #nav a {
+    padding: 7px 12px 6px 0;
+  }
+  #main {
+    padding: 16px 0 24px;
+  }
+  h1 {
+    font-size: 28px;
+  }
+  table.roster {
+    font-size: 15px;
+  }
+  table.roster th,
+  table.roster td {
+    padding: 5px 8px 5px 0;
+  }
+  #foot {
+    padding: 16px;
+  }
 }

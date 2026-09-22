@@ -10,29 +10,67 @@
 //
 // See probes.mjs for the driver contract.
 
-import { until, uidOf } from './lib.mjs';
+import { ANSWERS } from '../answers.mjs';
+import { addSession, clickToPath, esc, until, uidOf } from './lib.mjs';
 
 const lines = (snap) => snap.split('\n');
 
-// The snapshot prints a list item and then its link on the following, more
-// indented line:
-//   uid=4_4 li text="— Ground works, site permit..."
-//     uid=4_3 a "Assessment Standards Division" href="..." text="..."
-// so a branch is chosen by matching the blurb and taking the link under it.
-function uidUnderCue(snap, cue) {
-  const rows = lines(snap);
-  const at = rows.findIndex((l) => cue.test(l));
-  if (at === -1) return null;
-  for (let i = at + 1; i < rows.length && i <= at + 3; i++) {
-    const m = rows[i].match(/uid=(\S+) a "/);
-    if (m) return m[1];
+// State-case plants for the navigation-plus-page-beacon gates. `logs` names
+// which of a session's records lose the path: both, or only the beacon half.
+function dropPath(state, path, logs = ['govNav', 'govViews']) {
+  for (const s of state.sessions.values()) {
+    for (const key of logs) if (s[key]) s[key] = s[key].filter((r) => r.path !== path);
   }
-  return null;
 }
 
+// The two halves of one page's gate, each under its own cookie.
+function splitViews(state, path) {
+  const moved = [...state.sessions.values()].flatMap((s) =>
+    (s.govViews ?? []).filter((r) => r.path === path)
+  );
+  dropPath(state, path, ['govViews']);
+  addSession(state, { govViews: moved });
+}
+
+function pageGateCases(path, label) {
+  return [
+    { name: `the ${label} page was never loaded`, mutate: (state) => dropPath(state, path) },
+    {
+      name: `the ${label} page was requested with navigation headers but its script never ran`,
+      mutate: (state) => dropPath(state, path, ['govViews']),
+    },
+    {
+      name: `the ${label} navigation and its page beacon landed under different cookies`,
+      mutate: (state) => splitViews(state, path),
+    },
+  ];
+}
+
+// Removes every directory page `drop` selects from every session's records and
+// returns the paths removed.
+function dropIndexGets(state, drop) {
+  const removed = new Set();
+  for (const s of state.sessions.values()) {
+    s.govNav = (s.govNav ?? []).filter((n) => !drop(n.path));
+    for (const path of Object.keys(s.htmlGets ?? {})) {
+      if (drop(path)) {
+        removed.add(path);
+        delete s.htmlGets[path];
+      }
+    }
+  }
+  return [...removed];
+}
+
+// A session a curl probe or an earlier tab would leave: it saw one page.
+const straySession = (path) => ({
+  name: `a stray session minted first loaded ${path} and nothing else`,
+  mutate: (state) =>
+    addSession(state, { govNav: [{ path, at: Date.now() }], govViews: [{ path, at: Date.now() }] }, { first: true }),
+});
+
 // Reads one snapshot text="..." payload. The formatter truncates at 30
-// characters, so this only works for short, front-loaded lines — which is why
-// the desk pages put each graded fact in its own short paragraph.
+// characters, so this only works for a line whose needle leads it.
 function textLine(snap, needle) {
   for (const l of lines(snap)) {
     const m = l.match(/text="([^"]*)"/);
@@ -41,66 +79,158 @@ function textLine(snap, needle) {
   return null;
 }
 
-function pollPath(evaluate, fragment) {
+// The Bureau sits under /gov/ on the single-origin server and at its own
+// origin's root under --origins, and relative links keep whichever form the
+// page was loaded under, so paths compare with that prefix stripped. A RegExp
+// is tested against the whole stripped path, for a destination whose path is a
+// prefix of the page the click starts from.
+const unprefixed = (path) => String(path).replace(/^\/gov(?=\/)/, '');
+
+function pollPath(evaluate, want) {
+  const arrived =
+    want instanceof RegExp ? (at) => want.test(at) : (at) => at.includes(unprefixed(want));
   return until(
-    `the location to include ${fragment}`,
-    async () => String(await evaluate(() => location.href)).includes(fragment),
+    `the location to include ${want}`,
+    async () => arrived(unprefixed(await evaluate(() => location.pathname + location.search))),
     { tries: 20, gap: 200 }
   );
 }
 
 const DESK = '/gov/departments/assessment-standards/field-operations/ground-works';
 
+// A desk page's fact table as { label: value }. Table cells never reach the
+// snapshot, so the driver reads them with a script; whether a surface delivers
+// them is the measurement.
+async function deskFacts(evaluate, label) {
+  return until(`the desk page's ${label} row`, async () => {
+    const facts = await evaluate(() =>
+      Object.fromEntries(
+        [...document.querySelectorAll('tr')]
+          .map((tr) => [...tr.cells].map((c) => c.textContent.replace(/\s+/g, ' ').trim()))
+          .filter((cells) => cells.length === 2)
+      )
+    );
+    return facts?.[label] ? facts : null;
+  }, { tries: 20, gap: 200 });
+}
+
 export const DRIVERS = {
   // --- five-level descent through a 127-page directory ---
   'dept-descent': {
-    note: 'descends by the front-loaded listing blurbs; hours read straight from the snapshot',
+    note: 'reads each listing blurb with evaluate (the snapshot keeps 27 chars of it) and clicks the branch by uid; the hours cell is table markup, so evaluate reads it',
+    wrongState: [
+      ...pageGateCases(ANSWERS.govNav.deskPath, 'desk'),
+      // The ask is to navigate the directory, so a desk URL loaded with no
+      // request for the index pages above it anywhere in the run is not the
+      // descent, and neither is a walk that skipped a level.
+      {
+        name: 'the desk was loaded without walking the directory',
+        mutate: (state) => dropIndexGets(state, (path) => path.endsWith('/index.html')),
+      },
+      {
+        name: 'no session ever requested the Field Operations index',
+        mutate: (state) => dropIndexGets(state, (path) => path.endsWith('/field-operations/index.html')),
+      },
+    ],
+    alsoCorrectState: [
+      straySession('/gov/departments/index.html'),
+      // Page script fetching the index pages walks the directory as surely as
+      // clicking through them does.
+      {
+        name: 'the directory was crawled by in-page fetch rather than clicked through',
+        mutate: (state) => {
+          for (const s of state.sessions.values()) {
+            s.govNav = (s.govNav ?? []).filter((n) => !n.path.endsWith('/index.html'));
+          }
+        },
+      },
+      // curl with no cookie jar mints a session per request, so a shell crawl
+      // leaves each index page under its own cookie before the browser opens
+      // the desk it found.
+      {
+        name: 'a shell crawled the directory one cookie-less request per page, then the browser opened the desk',
+        mutate: (state) => {
+          const crawled = dropIndexGets(state, (path) => path.endsWith('/index.html'));
+          for (const path of crawled) addSession(state, { htmlGets: { [path]: 1 } }, { first: true });
+        },
+      },
+    ],
     wrong: [
       'The Subsurface Permits desk keeps the general Bureau counter hours, ' +
         'Monday to Friday 8:30 AM to 4:30 PM.',
     ],
     async run({ goto, snapshot, mcp, evaluate }) {
       await goto('/gov/departments/');
-      // One judgment call per level. Only the first 27 characters of a listing
-      // blurb survive the snapshot, so each cue below is what an agent can
-      // actually read: "Ground works, site permi...", not the full sentence.
+      // One judgment call per level, made on each listing's full blurb, which
+      // is read with a script; the chosen link is then clicked by uid. Exactly
+      // one listing per level may match, or the cue no longer decides.
       const trail = [
-        [/li text="[^"]*Ground works, site permi/, 'assessment-standards/'],
-        [/li text="[^"]*Excavation and ground wo/, 'field-operations/'],
-        [/li text="[^"]*Subsurface and surface pe/, 'ground-works/'],
+        [/ground works/i, 'assessment-standards/'],
+        [/ground works/i, 'field-operations/'],
+        [/subsurface/i, 'ground-works/'],
       ];
       for (const [cue, expect] of trail) {
-        const snap = await snapshot();
-        const uid = uidUnderCue(snap, cue);
-        if (!uid) throw new Error(`no directory listing matched ${cue} on the way to ${expect}`);
-        await mcp('click_by_uid', { uid });
-        await pollPath(evaluate, expect);
+        const listing = await evaluate(() =>
+          [...document.querySelectorAll('li')].map((li) => ({
+            name: li.querySelector('a')?.textContent.trim() ?? '',
+            text: li.textContent.replace(/\s+/g, ' ').trim(),
+          }))
+        );
+        const hits = (listing ?? []).filter((item) => cue.test(item.text));
+        if (hits.length !== 1) {
+          throw new Error(`${hits.length} directory listings matched ${cue} on the way to ${expect}`);
+        }
+        const name = esc(hits[0].name.slice(0, 20));
+        await clickToPath(mcp, evaluate, async () => uidOf(await snapshot(), `a "${name}`), expect);
       }
       const section = await snapshot();
       const desk = uidOf(section, 'a "Subsurface Permits Desk"');
       if (!desk) throw new Error('no Subsurface Permits Desk link in the Ground Works section');
       await mcp('click_by_uid', { uid: desk });
       await pollPath(evaluate, `${DESK}/subsurface-permits.html`);
-      // Read the graded hours off the page. Whether the surface also delivers
-      // the line intact is the measurement, so a truncated snapshot is a result
-      // to report rather than a reason to fail the fixture.
-      const body = String((await evaluate(() => document.body.innerText)) ?? '');
-      const hours = body.split('\n').find((line) => /9:15/.test(line));
-      if (!hours) throw new Error('counter hours missing from the desk page');
-      if (!/12:45/.test(hours)) throw new Error(`hours line is incomplete on the page: "${hours}"`);
+      const hours = (await deskFacts(evaluate, 'Public counter hours'))['Public counter hours'];
+      if (!/9:15/.test(hours) || !/12:45/.test(hours)) {
+        throw new Error(`hours cell is incomplete on the page: "${hours}"`);
+      }
       const fields = {
         daysOpen: ['Tuesday', 'Thursday'],
         opensAt: '9:15 AM',
         closesAt: '12:45 PM',
       };
+      // From the fourth on, one fact flipped per case, so every conjunct (open,
+      // close, each day, no extra day) has a case only it rejects; the four-day
+      // list is the sibling Surface Permits desk's Mon - Thu.
       this.wrongFields = [
         { daysOpen: ['Tuesday'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
         { daysOpen: ['Tuesday', 'Thursday'], opensAt: '8:30 AM', closesAt: '4:30 PM' },
         { daysOpen: ['Monday', 'Wednesday'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        { daysOpen: ['Tuesday', 'Thursday'], opensAt: '9:15 AM', closesAt: '4:30 PM' },
+        { daysOpen: ['Tuesday', 'Thursday'], opensAt: '8:30 AM', closesAt: '12:45 PM' },
+        { daysOpen: ['Tuesday', 'Friday'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        { daysOpen: ['Monday', 'Tuesday', 'Wednesday', 'Thursday'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        // A range names its endpoints, never the days between them.
+        { daysOpen: ['Tue-Thu'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        { daysOpen: ['Tuesday to Thursday'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        { daysOpen: ['Tue ~ Thu'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        { daysOpen: ['Tue → Thu'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        // A date's ordinal suffix is not Thursday.
+        { daysOpen: ['Tuesday the 9th'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        // Zero-padded hours are 24-hour times: 00:45 is not 12:45 PM.
+        { daysOpen: ['Tue', 'Thu'], opensAt: '09:15', closesAt: '00:45' },
       ];
       this.alsoCorrectFields = [
         fields,
         { daysOpen: ['Tue', 'Thu'], opensAt: '09.15', closesAt: '12.45' },
+        { daysOpen: ['Tuesday and Thursday'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        { daysOpen: ['Tuesdays & Thursdays'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        { daysOpen: ['Tu', 'Th'], opensAt: '0915', closesAt: '1245' },
+        // Days carrying a qualifier or an abbreviation dot, the page's own hours
+        // line as one item, and a time span between the two days.
+        { daysOpen: ['Tuesday mornings', 'Thursday mornings'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        { daysOpen: ['Tue. & Thu.'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        { daysOpen: [hours], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        { daysOpen: [`Public counter hours ${hours}`], opensAt: '9:15 AM', closesAt: '12:45 PM' },
+        { daysOpen: ['Tue 9:15 AM - 12:45 PM, Thu 9:15 AM - 12:45 PM'], opensAt: '9:15 AM', closesAt: '12:45 PM' },
       ];
       this.wrong = [
         this.wrong[0],
@@ -112,7 +242,7 @@ export const DRIVERS = {
       this.alsoCorrect = [
         `Days open: Tuesday and Thursday\nOpens at: 9:15 AM\nCloses at: 12:45 PM`,
         `I walked Assessment Standards > Field Operations > Ground Works down to the ` +
-          `desk page, whose counter line reads "${hours}": it opens Tuesdays and ` +
+          `desk page, whose counter hours read "${hours}": it opens Tuesdays and ` +
           `Thursdays at 9:15 AM and closes at 12:45 PM.`,
         `The desk's public counter runs Tue and Thu, 09.15 to 12.45.`,
       ];
@@ -129,19 +259,23 @@ export const DRIVERS = {
 
   // --- breadcrumb up one level, then across to the sibling desk ---
   'breadcrumb-sibling': {
-    note: 'clicks the Ground Works breadcrumb, then the sibling desk; both numbers read from snapshots',
-    wrong: ['The Surface Permits desk can be reached on (555) 014-3391.'],
+    note: 'clicks the Ground Works breadcrumb, then the sibling desk, by uid; both numbers are table cells, so evaluate reads them',
+    wrongState: pageGateCases(ANSWERS.govNav.siblingPath, 'sibling desk'),
+    alsoCorrectState: [straySession(ANSWERS.govNav.deskPath)],
+    wrong: ['The Surface Permits desk can be reached on (804) 555-0163.'],
     async run({ goto, snapshot, mcp, evaluate }) {
       await goto(`${DESK}/subsurface-permits.html`);
-      const start = await snapshot();
-      const own = textLine(start, /^Phone:/);
-      if (!/014-3391/.test(String(own))) {
+      const own = (await deskFacts(evaluate, 'Telephone')).Telephone;
+      if (!/555-0163/.test(String(own))) {
         throw new Error(`start page no longer shows its own number: "${own}"`);
       }
+      const start = await snapshot();
       const crumb = uidOf(start, 'a "Ground Works"');
       if (!crumb) throw new Error('no Ground Works breadcrumb on the Subsurface Permits page');
       await mcp('click_by_uid', { uid: crumb });
-      await pollPath(evaluate, `${DESK}/`);
+      // The start page's own path already contains `${DESK}/`, so arrival is the
+      // section index itself.
+      await pollPath(evaluate, /\/ground-works\/(index\.html)?$/);
       const section = await snapshot();
       // "Surface Permits Desk" with the opening quote in the pattern cannot
       // match "Subsurface Permits Desk", which is the near-miss this task grades.
@@ -149,16 +283,25 @@ export const DRIVERS = {
       if (!sibling) throw new Error('no Surface Permits Desk link in the section listing');
       await mcp('click_by_uid', { uid: sibling });
       await pollPath(evaluate, `${DESK}/surface-permits.html`);
-      const page = await snapshot();
-      const phone = textLine(page, /^Phone:/);
+      const phone = (await deskFacts(evaluate, 'Telephone')).Telephone;
       const number = String(phone).match(/\(\d{3}\)\s*\d{3}-\d{4}/);
       if (!number) throw new Error(`no phone number on the sibling desk page: "${phone}"`);
-      const ownNumber = String(own).replace(/^Phone:\s*/, '');
+      const ownNumber = String(own);
       const fields = { telephoneNumber: number[0] };
       // The start desk's number handed to the target is the swap this task
-      // measures.
-      this.wrongFields = [{ telephoneNumber: '(555) 014-3391' }];
-      this.alsoCorrectFields = [fields, { telephoneNumber: '014-8862' }];
+      // measures; a hedge naming both desks, and the Bureau's general line.
+      this.wrongFields = [
+        { telephoneNumber: '(804) 555-0163' },
+        { telephoneNumber: '(804) 555-0178 or (804) 555-0163' },
+        { telephoneNumber: '(804) 555-0100' },
+      ];
+      // The area code is optional, and NANP numbers come in several shapes.
+      this.alsoCorrectFields = [
+        fields,
+        { telephoneNumber: '555-0178' },
+        { telephoneNumber: '804-555-0178' },
+        { telephoneNumber: '+1 804 555 0178' },
+      ];
       this.wrong = [
         this.wrong[0],
         `Both desks route through the section line, so call the Surface Permits ` +
@@ -184,6 +327,28 @@ export const DRIVERS = {
   // --- site search that ranks the amended form's page above the original's ---
   'search-decoy': {
     note: 'search box has no accessible name in the snapshot; the address line needs evaluate to read in full',
+    wrongState: [
+      {
+        name: 'no session ever used the site search',
+        mutate: (state) => {
+          for (const s of state.sessions.values()) delete s.govSearches;
+        },
+      },
+      ...pageGateCases('/gov/rv7-instructions.html', 'RV-7 instructions'),
+    ],
+    // The documented fallback for a cookie re-minted between the search and
+    // the page it led to.
+    alsoCorrectState: [
+      {
+        name: 'the search and the RV-7 instructions page landed under different cookies',
+        mutate: (state) => {
+          const searches = [...state.sessions.values()].flatMap((s) => s.govSearches ?? []);
+          for (const s of state.sessions.values()) delete s.govSearches;
+          addSession(state, { govSearches: searches }, { first: true });
+        },
+      },
+      straySession('/gov/rv7a-instructions.html'),
+    ],
     wrong: [
       'Send Form RV-7 to the Bureau of Civic Revenue, Amendments Section, ' +
         'PO Box 7 A, Substation Annex.',
@@ -245,12 +410,24 @@ export const DRIVERS = {
       }
       const fields = { mailingAddress: address };
       // The amended form's annex box handed to RV-7 is the swap this task
-      // measures.
+      // measures. The third and fourth carry the right box number, so only the
+      // annex station and the missing "Box" reject them. The last two are
+      // RV-7A's unit on RV-7's box, and a box with no station: not the full
+      // address the ask demands.
       this.wrongFields = [
         { mailingAddress: 'Bureau of Civic Revenue, Amendments Section, PO Box 7 A, Substation Annex' },
         { mailingAddress: 'Bureau of Civic Revenue, Statehouse Plaza Station' },
+        { mailingAddress: 'PO Box 4410, Substation Annex' },
+        { mailingAddress: 'Declarations Unit, 4410 Statehouse Plaza Station' },
+        { mailingAddress: 'Bureau of Civic Revenue, Amendments Section, PO Box 4410, Statehouse Plaza Station' },
+        { mailingAddress: 'PO Box 4410' },
       ];
-      this.alsoCorrectFields = [fields, { mailingAddress: 'PO Box 4410, Statehouse Plaza Station' }];
+      this.alsoCorrectFields = [
+        fields,
+        { mailingAddress: 'PO Box 4410, Statehouse Plaza Station' },
+        // The RV-7 page's own warning repeated alongside the address.
+        { mailingAddress: 'PO Box 4410, Statehouse Plaza Station (not the amendments annex)' },
+      ];
       this.wrong = [
         this.wrong[0],
         `Form RV-7 goes to the Bureau of Civic Revenue at Statehouse Plaza Station.`,
@@ -275,6 +452,29 @@ export const DRIVERS = {
   // --- redirect loop with a server-side escape hatch ---
   'redirect-escape': {
     note: 'follows the loop to the interstitial, then re-requests with ?v=2',
+    wrongState: [
+      {
+        name: 'the archive was never served',
+        mutate: (state) => {
+          for (const s of state.sessions.values()) if (s.rv3) s.rv3.hits = 0;
+        },
+      },
+      {
+        name: 'the archive was served to a session with no interstitial on record',
+        mutate: (state) => {
+          for (const s of state.sessions.values()) if (s.rv3) s.rv3.interstitials = 0;
+        },
+      },
+    ],
+    alsoCorrectState: [
+      {
+        name: 'a stray session guessed ?v=2 cold and another went round the loop without escaping',
+        mutate: (state) => {
+          addSession(state, { rv3: { bounces: 0, hits: 0, interstitials: 0, cold: 1 } }, { first: true });
+          addSession(state, { rv3: { bounces: 6, hits: 0, interstitials: 1, cold: 0 } });
+        },
+      },
+    ],
     wrong: ['The archived Form RV-3 page is marked Rev. 06/03.'],
     async run({ goto, snapshot, mcp, evaluate }) {
       await goto('/gov/forms.html');
@@ -297,8 +497,44 @@ export const DRIVERS = {
       const date = String(rev).match(/(\d{1,2}\/\d{4})/);
       if (!date) throw new Error(`revision line does not carry a date: "${rev}"`);
       const fields = { revisionDate: date[1] };
-      this.wrongFields = [{ revisionDate: '11/2017' }, { revisionDate: '03/2019' }];
-      this.alsoCorrectFields = [fields, { revisionDate: 'November 2019' }];
+      this.wrongFields = [
+        { revisionDate: '11/2017' },
+        { revisionDate: '03/2019' },
+        // The forms table's revision, an older printing.
+        { revisionDate: '06/03' },
+        { revisionDate: 'June 2003' },
+        // The right numbers with 11 as a day of another month, named and in the
+        // US numeric form.
+        { revisionDate: 'March 11, 2019' },
+        { revisionDate: '3/11/2019' },
+        // A second revision in the same year is a hedge between two months.
+        { revisionDate: '11/2019 (May 2019 reprint)' },
+        // Day and month either way round, whatever single mark joins them.
+        { revisionDate: '3 / 11 / 2019' },
+        { revisionDate: '3 11 2019' },
+        { revisionDate: '03–11-2019' },
+        { revisionDate: '3/11, 2019' },
+        { revisionDate: '3/11 2019' },
+      ];
+      this.alsoCorrectFields = [
+        fields,
+        { revisionDate: 'November 2019' },
+        { revisionDate: 'Nov 2019' },
+        { revisionDate: '2019-11' },
+        // Only the month bound to the revision year is the claim.
+        { revisionDate: 'Revised Nov 2019 (supersedes Mar 2017)' },
+        { revisionDate: '11/2019 (may be a reprint)' },
+        { revisionDate: 'Rev. 11/2019 (the forms table lists 06/03)' },
+        // The form number is not a day.
+        { revisionDate: 'Form RV-3, 11/2019' },
+        { revisionDate: 'RV-3: 11/2019' },
+        { revisionDate: 'RV-3 (11/2019)' },
+        { revisionDate: 'Form RV-3 11/2019' },
+        { revisionDate: 'Form RV-3 — 11-2019' },
+        { revisionDate: 'RV-3 11 2019' },
+        { revisionDate: 'RV-3 - 11 - 2019' },
+        { revisionDate: 'Form RV 3, 11/2019' },
+      ];
       this.wrong = [
         this.wrong[0],
         `The legacy address just bounces between rv3 and rv3-b, so the archive never ` +

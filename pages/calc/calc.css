@@ -5,11 +5,11 @@
   --chrome-ink: #e8ebe1;
   --chrome-dim: #9ba392;
   --moss: #8ab62f;
-  --moss-dark: #62861d;
+  --moss-dark: #557518;
   --paper: #ffffff;
   --shell: #edefe8;
   --ink: #1a1c18;
-  --dim: #6b6f65;
+  --dim: #5f635a;
   --rule: #cfd4c6;
   --grid: #e0e3d9;
   --sel: #eef5dd;
@@ -59,6 +59,7 @@ body {
 }
 
 .wordmark {
+  text-decoration: none;
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.16em;
@@ -76,8 +77,16 @@ body {
 }
 
 .docname {
+  margin: 0;
   font-size: 12px;
+  font-weight: 400;
   color: var(--chrome-ink);
+}
+
+.savestate {
+  color: var(--chrome-dim);
+  font-size: 11px;
+  margin-right: 14px;
 }
 
 .docname em {
@@ -315,7 +324,7 @@ body.showformulas table.grid td {
 }
 
 table.grid thead th.beyond {
-  color: #c3c8b9;
+  color: #676b61;
 }
 
 table.grid td.beyond {
@@ -568,4 +577,8 @@ body.notes-open .notes {
 
 .appfoot .spacer {
   flex: 1;
+}
+
+.doc a {
+  color: var(--moss-dark);
 }

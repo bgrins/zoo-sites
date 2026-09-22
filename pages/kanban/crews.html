@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crew roster - Coppermast Dispatch</title>
 <link rel="stylesheet" href="coppermast.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <div class="topbar">
-  <span class="mark"><b>Coppermast</b> Dispatch</span>
+  <a class="mark" href="./"><b>Coppermast</b> Dispatch</a>
   <nav class="topnav">
     <a href="index.html">Board</a>
     <a href="berths.html">Berths</a>
@@ -20,48 +21,33 @@
 
 <p class="crumbs">Operations / Terminal 3 / Crew roster</p>
 
-<main class="sheet">
+<main class="sheet doc">
   <h1>Crew roster</h1>
   <p class="blurb">Assignments for the 08:00 to 16:00 shift. Mechanical and electrical crews
   are shared with Terminal 2 and may be recalled at thirty minutes' notice.</p>
 
-  <div class="board">
-    <section class="lane">
-      <div class="lane-head"><h2>Mechanical</h2><span class="chip">3</span></div>
-      <div class="lane-body">
-        <article class="card"><div class="card-head"><span class="ref">MEC-1</span><span class="tag">On quay</span></div>
-          <p class="ttl">D. Farrant, lead fitter</p><p class="meta">Radio channel 4</p></article>
-        <article class="card"><div class="card-head"><span class="ref">MEC-2</span><span class="tag">On quay</span></div>
-          <p class="ttl">S. Okonjo, fitter</p><p class="meta">Radio channel 4</p></article>
-        <article class="card"><div class="card-head"><span class="ref">MEC-3</span><span class="tag">Off site</span></div>
-          <p class="ttl">B. Kettil, fitter</p><p class="meta">Training until Thursday</p></article>
-      </div>
-    </section>
-    <section class="lane">
-      <div class="lane-head"><h2>Electrical</h2><span class="chip">2</span></div>
-      <div class="lane-body">
-        <article class="card"><div class="card-head"><span class="ref">ELE-1</span><span class="tag">On quay</span></div>
-          <p class="ttl">A. Prentice, electrician</p><p class="meta">Radio channel 6</p></article>
-        <article class="card"><div class="card-head"><span class="ref">ELE-2</span><span class="tag">Terminal 2</span></div>
-          <p class="ttl">H. Vance, electrician</p><p class="meta">Recall via duty controller</p></article>
-      </div>
-    </section>
-    <section class="lane">
-      <div class="lane-head"><h2>Marine</h2><span class="chip">2</span></div>
-      <div class="lane-body">
-        <article class="card"><div class="card-head"><span class="ref">MAR-1</span><span class="tag">On water</span></div>
-          <p class="ttl">J. Loweth, launch coxswain</p><p class="meta">Radio channel 9</p></article>
-        <article class="card"><div class="card-head"><span class="ref">MAR-2</span><span class="tag">On quay</span></div>
-          <p class="ttl">P. Ashcombe, linesman</p><p class="meta">Radio channel 9</p></article>
-      </div>
-    </section>
-  </div>
+  <table class="register">
+    <caption>Day shift &middot; 7 crew</caption>
+    <thead>
+      <tr><th>Call sign</th><th>Name</th><th>Trade</th><th>Status</th><th>Contact</th></tr>
+    </thead>
+    <tbody>
+      <tr class="group"><th colspan="5">Mechanical</th></tr>
+      <tr><td class="code">MEC-1</td><td>D. Farrant</td><td>Lead fitter</td><td><span class="state s-vacant">On quay</span></td><td>Radio channel 4</td></tr>
+      <tr><td class="code">MEC-2</td><td>S. Okonjo</td><td>Fitter</td><td><span class="state s-vacant">On quay</span></td><td>Radio channel 4</td></tr>
+      <tr><td class="code">MEC-3</td><td>B. Kettil</td><td>Fitter</td><td><span class="state s-closed">Off site</span></td><td>Training until Thursday</td></tr>
+      <tr class="group"><th colspan="5">Electrical</th></tr>
+      <tr><td class="code">ELE-1</td><td>A. Prentice</td><td>Electrician</td><td><span class="state s-vacant">On quay</span></td><td>Radio channel 6</td></tr>
+      <tr><td class="code">ELE-2</td><td>H. Vance</td><td>Electrician</td><td><span class="state s-held">Terminal 2</span></td><td>Recall via duty controller</td></tr>
+      <tr class="group"><th colspan="5">Marine</th></tr>
+      <tr><td class="code">MAR-1</td><td>J. Loweth</td><td>Launch coxswain</td><td><span class="state s-occupied">On water</span></td><td>Radio channel 9</td></tr>
+      <tr><td class="code">MAR-2</td><td>P. Crennock</td><td>Linesman</td><td><span class="state s-vacant">On quay</span></td><td>Radio channel 9</td></tr>
+    </tbody>
+  </table>
 
-  <div class="notes">
-    <h3>Callout</h3>
-    <p>Out of hours callout is arranged through the duty controller on extension 2214. A
-    callout for a single work order needs the berth supervisor's approval.</p>
-  </div>
+  <h2>Callout</h2>
+  <p>Out of hours callout is arranged through the duty controller on extension 2214. A
+  callout for a single work order needs the berth supervisor's approval.</p>
 </main>
 
 <footer>
@@ -72,9 +58,11 @@
     <a href="guide.html">Board guide</a>
     <a href="statuses.html">Status reference</a>
     <a href="escalation.html">Escalation</a>
+    <a href="legal.html#privacy">Privacy</a>
+    <a href="legal.html#terms">Terms</a>
   </div>
-  <p>&copy; 2026 Coppermast Terminals Limited. Registered in England, company 00000000.</p>
-  <address>Coppermast Terminals, Ravensgate Quay, Hollingport HP4 2LN &middot; dispatch@coppermast-terminals.example</address>
+  <p>&copy; 2026 Coppermast Terminals Limited. Registered in England and Wales, company number 00000000.</p>
+  <address>Coppermast Terminals, Ravensgate Quay, Tessenport TP4 7QD &middot; dispatch@coppermast-terminals.example</address>
 </footer>
 </body>
 </html>

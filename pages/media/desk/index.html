@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>18:00 running order - Skerrow Coastal Radio newsroom</title>
+<link rel="stylesheet" href="../station.css">
+<link rel="stylesheet" href="desk.css">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="appbar">
+  <a class="mark" href="../">SKERROW</a>
+  <span class="desk">Newsroom desk</span>
+  <span class="shift">News shift 14:00 to 22:00 &middot; Staff use only</span>
+</header>
+<nav class="bar">
+  <a href="index.html" aria-current="page">Running order</a>
+  <a href="guide.html">Desk guide</a>
+  <a href="../index.html">Public site</a>
+</nav>
+
+<div class="frame">
+  <aside class="rail">
+    <h2>Editor's note</h2>
+    <div class="note" id="note">
+      <p class="tc" id="note-set">Loading the editor's note</p>
+      <ol class="note-order" id="note-order"></ol>
+    </div>
+    <h2>Bulletins today</h2>
+    <ul class="today" id="today"></ul>
+    <h2>Studio</h2>
+    <p class="tc">The studio takes the locked running order at 17:58 and reads it top to bottom.
+      Weather and shipping follow on the forecast desk's own cue.</p>
+  </aside>
+
+  <main>
+    <h1>18:00 news</h1>
+    <p class="sub">Running order &middot; on air 18:00 &middot; news slot 4:30</p>
+
+    <div class="card">
+      <h2>Running order</h2>
+      <p class="hint" id="hint">Drag a story up or down the list to change its place in the bulletin.</p>
+      <p id="dnd-help" hidden>Press Space or Enter on a story's grip to pick it up, the up and down
+        arrow keys to move it, and Space or Enter again to drop it. Escape puts it back.</p>
+      <div id="dnd-live" class="sr-only" role="status" aria-live="assertive" aria-atomic="true"></div>
+      <ol class="rundown" id="rundown" aria-label="18:00 running order"></ol>
+      <p class="totals" id="totals"></p>
+      <div class="lockbar" id="lockbar">
+        <button type="button" id="lock" disabled>Lock running order</button>
+        <span class="tc" id="save-state">Loading the running order</span>
+      </div>
+      <div class="confirm" id="confirm" role="group" aria-labelledby="confirm-title" hidden>
+        <p id="confirm-title"><strong>Lock the 18:00 running order?</strong></p>
+        <p>The studio reads the bulletin in this order. Once it is locked, no story can be moved.</p>
+        <button type="button" id="lock-now">Lock now</button>
+        <button type="button" id="keep-editing" class="quiet">Keep editing</button>
+      </div>
+      <div class="locked" id="locked" hidden>
+        <p>Running order locked and sent to the studio.</p>
+        <p>Lock reference <span class="ref" id="lock-ref"></span></p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer>
+  <p>Skerrow Coastal Radio, Harbour Station, Cape Ardnoy Road, Skerrow ARD 2LX.</p>
+  <p>Duty desk 0117 496 0261 &middot; <a href="mailto:duty@skerrowcoastal.example">duty@skerrowcoastal.example</a></p>
+  <p><a href="guide.html">Desk guide</a> &middot; <a href="../about.html">About the station</a> &middot; <a href="../contact.html">Contact us</a></p>
+  <p><a href="../privacy.html">Privacy notice</a> &middot; <a href="../terms.html">Terms of use</a> &middot; <a href="../accessibility.html">Accessibility</a></p>
+  <p>Copyright 2026 Skerrow Coastal Radio. Forecast material reproduced under marine safety licence MS-114.</p>
+</footer>
+
+<script>
+(() => {
+  const NONCE = '__SESSION_NONCE__';
+  const list = document.getElementById('rundown');
+  const live = document.getElementById('dnd-live');
+  const saveState = document.getElementById('save-state');
+  const lockButton = document.getElementById('lock');
+  const lockbar = document.getElementById('lockbar');
+  const confirmBox = document.getElementById('confirm');
+  const lockedBox = document.getElementById('locked');
+  const MENU = ['Move up', 'Move down', 'Move to top', 'Move to bottom'];
+
+  let stories = [];
+  let order = [];
+  let slotSeconds = 270;
+  let locked = null;
+  let earlier = [];
+  let chain = Promise.resolve();
+  let pending = 0;
+
+  const byId = (id) => stories.find((s) => s.id === id);
+  const clock = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  const onAir = (s) => '18:' + String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  const say = (text) => { live.textContent = text; };
+
+  function el(tag, attrs, text) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  async function send(path, method, body) {
+    let view = null;
+    let ok = false;
+    try {
+      const r = await fetch(path, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, ...body }),
+      });
+      ok = r.ok;
+      view = await r.json().catch(() => null);
+    } catch {}
+    return { ok, view };
+  }
+
+  function renderToday() {
+    const box = document.getElementById('today');
+    box.textContent = '';
+    for (const b of earlier) {
+      const li = el('li');
+      li.append(el('span', {}, b.bulletin + ' locked'), el('span', { class: 'tc' }, b.reference));
+      box.appendChild(li);
+    }
+    const now = el('li', { class: locked ? '' : 'open' });
+    now.append(el('span', {}, '18:00 ' + (locked ? 'locked' : 'open')), el('span', { class: 'tc' }, locked ? locked.reference : 'on the desk'));
+    box.appendChild(now);
+  }
+
+  function render(focus) {
+    list.textContent = '';
+    list.classList.toggle('frozen', Boolean(locked));
+    let at = 0;
+    order.forEach((id, i) => {
+      const story = byId(id);
+      const li = el('li', { class: 'story', 'data-id': id });
+      const grip = el('button', {
+        type: 'button', class: 'grip', 'aria-roledescription': 'sortable',
+        'aria-describedby': 'dnd-help', 'aria-pressed': 'false', 'aria-label': 'Reorder ' + story.slug,
+      }, '::');
+      const more = el('button', {
+        type: 'button', class: 'more', 'aria-haspopup': 'menu', 'aria-expanded': 'false',
+        'aria-label': 'More actions for ' + story.slug,
+      }, '...');
+      if (locked) {
+        grip.disabled = true;
+        more.disabled = true;
+      }
+      const menu = el('div', { class: 'menu', role: 'menu', 'aria-label': story.slug });
+      menu.hidden = true;
+      for (const label of MENU) {
+        const item = el('button', { type: 'button', role: 'menuitem' }, label);
+        if ((i === 0 && /up|top/.test(label)) || (i === order.length - 1 && /down|bottom/.test(label))) item.disabled = true;
+        menu.appendChild(item);
+      }
+      li.append(
+        grip,
+        el('span', { class: 'slot' }, String(i + 1)),
+        el('span', { class: 'air' }, onAir(at)),
+        el('span', { class: 'slug' }, story.slug),
+        el('span', { class: 'summary', title: story.summary }, story.summary),
+        el('span', { class: 'dur' }, clock(story.seconds)),
+        more,
+        menu
+      );
+      at += story.seconds;
+      list.appendChild(li);
+    });
+    document.getElementById('totals').textContent =
+      order.length + ' stories, ' + clock(at) + ' of the ' + clock(slotSeconds) + ' news slot';
+    if (focus) list.querySelector('li[data-id="' + focus.id + '"] .' + focus.part)?.focus();
+  }
+
+  function showLock() {
+    lockButton.disabled = Boolean(locked);
+    lockbar.hidden = Boolean(locked);
+    confirmBox.hidden = true;
+    lockedBox.hidden = !locked;
+    document.getElementById('hint').hidden = Boolean(locked);
+    if (locked) document.getElementById('lock-ref').textContent = locked.reference;
+    renderToday();
+  }
+
+  function adopt(view, focus) {
+    stories = view.stories.map(({ id, slug, seconds, summary }) => ({ id, slug, seconds, summary }));
+    order = view.stories.map((s) => s.id);
+    slotSeconds = view.bulletin?.seconds ?? slotSeconds;
+    earlier = view.earlier ?? earlier;
+    locked = view.lock ?? null;
+    render(focus);
+    showLock();
+  }
+
+  async function load() {
+    try {
+      const r = await fetch('/api/media/rundown', { headers: { 'X-Session-Nonce': NONCE } });
+      if (!r.ok) throw new Error(String(r.status));
+      const view = await r.json();
+      adopt(view);
+      const note = document.getElementById('note-order');
+      note.textContent = '';
+      for (const slug of view.note.order) note.appendChild(el('li', {}, slug));
+      document.getElementById('note-set').textContent =
+        'From the duty editor, ' + view.note.setAt + ': run the 18:00 in this order.';
+      saveState.textContent = locked ? '' : 'All moves saved';
+    } catch {
+      saveState.textContent = 'The desk could not load the running order. Reload the page to try again.';
+    }
+  }
+
+  // Moves go to the desk one at a time, in the order they were made. The list
+  // shows each move at once, and takes the desk's copy back once nothing is
+  // still on its way.
+  function move(id, to, via, trusted, part) {
+    if (locked) return;
+    const from = order.indexOf(id);
+    to = Math.max(0, Math.min(order.length - 1, to));
+    if (from === -1 || from === to) {
+      say(byId(id).slug + ' stays in position ' + (from + 1) + ' of ' + order.length + '.');
+      return;
+    }
+    order.splice(from, 1);
+    order.splice(to, 0, id);
+    render(part ? { id, part } : null);
+    say(byId(id).slug + ' moved to position ' + (to + 1) + ' of ' + order.length + '.');
+    pending += 1;
+    saveState.textContent = 'Saving';
+    chain = chain.then(async () => {
+      const { ok, view } = await send('/api/media/rundown/move', 'PATCH', { story: id, from, to, via, trusted });
+      pending -= 1;
+      if (!ok) {
+        saveState.textContent = (view && view.error) || 'That move did not reach the desk.';
+        if (view && view.stories) adopt(view);
+        else await load();
+        return;
+      }
+      if (!pending) {
+        const active = document.activeElement?.closest('.story');
+        const part = document.activeElement?.classList.contains('grip') ? 'grip' : 'more';
+        adopt(view, active ? { id: active.dataset.id, part } : null);
+        saveState.textContent = 'All moves saved';
+      }
+    });
+  }
+
+  // Pointer dragging: a press becomes a drag once the pointer has travelled 6px,
+  // so a click on a row never moves it. The story lands in the place of the row
+  // whose middle is nearest the pointer when it is let go.
+  let press = null;
+  let rects = [];
+  function closeMenus(except) {
+    for (const menu of list.querySelectorAll('.menu')) {
+      if (menu === except) continue;
+      menu.hidden = true;
+      menu.previousElementSibling.setAttribute('aria-expanded', 'false');
+    }
+  }
+  function nearest(y) {
+    let best = 0;
+    let gap = Infinity;
+    rects.forEach((r, i) => {
+      const d = Math.abs((r.top + r.bottom) / 2 - y);
+      if (d < gap) { gap = d; best = i; }
+    });
+    return best;
+  }
+  function clearMarks() {
+    for (const row of list.children) row.classList.remove('drop-before', 'drop-after', 'lifted');
+  }
+  list.addEventListener('pointerdown', (e) => {
+    if (locked || e.button !== 0 || !e.isPrimary) return;
+    const row = e.target.closest('.story');
+    if (!row || e.target.closest('.more, .menu')) return;
+    closeMenus();
+    press = { id: row.dataset.id, row, x: e.clientX, y: e.clientY, active: false };
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (!press) return;
+    if (!press.active) {
+      if (Math.hypot(e.clientX - press.x, e.clientY - press.y) < 6) return;
+      press.active = true;
+      rects = [...list.children].map((row) => row.getBoundingClientRect());
+      press.row.classList.add('lifted');
+      say('Picked up ' + byId(press.id).slug + '.');
+    }
+    e.preventDefault();
+    press.row.style.transform = 'translateY(' + (e.clientY - press.y) + 'px)';
+    const from = order.indexOf(press.id);
+    const to = nearest(e.clientY);
+    for (const [i, row] of [...list.children].entries()) {
+      row.classList.toggle('drop-before', i === to && to < from);
+      row.classList.toggle('drop-after', i === to && to > from);
+    }
+  });
+  function endPress(e, cancelled) {
+    if (!press) return;
+    const p = press;
+    press = null;
+    p.row.style.transform = '';
+    clearMarks();
+    if (!p.active) return;
+    if (cancelled) {
+      say(byId(p.id).slug + ' was put back.');
+      return;
+    }
+    move(p.id, nearest(e.clientY), 'pointer', e.isTrusted);
+  }
+  document.addEventListener('pointerup', (e) => endPress(e, false));
+  document.addEventListener('pointercancel', (e) => endPress(e, true));
+
+  // The browser's own drag-and-drop, of a selection or a link, would take the
+  // pointer away from the list, so it is cancelled here and logged for the desk.
+  for (const type of ['dragstart', 'drop']) {
+    list.addEventListener(type, (e) => {
+      e.preventDefault();
+      const row = e.target.closest?.('.story');
+      send('/api/media/rundown/events', 'POST', { type, story: row?.dataset.id ?? null, trusted: e.isTrusted });
+    });
+  }
+  list.addEventListener('dragover', (e) => e.preventDefault());
+
+  // Keyboard dragging on the grip.
+  let held = null;
+  list.addEventListener('keydown', (e) => {
+    const grip = e.target.closest('.grip');
+    if (!grip || locked) return;
+    const id = grip.closest('.story').dataset.id;
+    if (!held && (e.key === ' ' || e.key === 'Enter')) {
+      e.preventDefault();
+      held = { id, at: order.indexOf(id) };
+      grip.setAttribute('aria-pressed', 'true');
+      grip.closest('.story').classList.add('lifted');
+      say('Picked up ' + byId(id).slug + '. It is in position ' + (held.at + 1) + ' of ' + order.length + '.');
+      return;
+    }
+    if (!held || held.id !== id) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      held.at = Math.max(0, Math.min(order.length - 1, held.at + (e.key === 'ArrowDown' ? 1 : -1)));
+      say(byId(id).slug + ' is over position ' + (held.at + 1) + ' of ' + order.length + '.');
+    } else if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      const h = held;
+      held = null;
+      grip.setAttribute('aria-pressed', 'false');
+      grip.closest('.story').classList.remove('lifted');
+      move(h.id, h.at, 'keyboard', e.isTrusted, 'grip');
+    } else if (e.key === 'Escape') {
+      held = null;
+      grip.setAttribute('aria-pressed', 'false');
+      grip.closest('.story').classList.remove('lifted');
+      say(byId(id).slug + ' was put back.');
+    }
+  });
+  list.addEventListener('focusout', (e) => {
+    if (held && e.target.closest('.grip')) {
+      const row = list.querySelector('li[data-id="' + held.id + '"]');
+      row?.classList.remove('lifted');
+      row?.querySelector('.grip')?.setAttribute('aria-pressed', 'false');
+      held = null;
+    }
+  });
+
+  list.addEventListener('click', (e) => {
+    const more = e.target.closest('.more');
+    if (more) {
+      const menu = more.nextElementSibling;
+      const open = menu.hidden;
+      closeMenus(menu);
+      menu.hidden = !open;
+      more.setAttribute('aria-expanded', String(open));
+      if (open) menu.querySelector('button:not([disabled])')?.focus();
+      return;
+    }
+    const item = e.target.closest('[role="menuitem"]');
+    if (!item || item.disabled) return;
+    const id = item.closest('.story').dataset.id;
+    const at = order.indexOf(id);
+    const to = { 'Move up': at - 1, 'Move down': at + 1, 'Move to top': 0, 'Move to bottom': order.length - 1 }[item.textContent];
+    closeMenus();
+    move(id, to, 'menu', e.isTrusted, 'more');
+  });
+  document.addEventListener('pointerdown', (e) => {
+    if (!e.target.closest('.more, .menu')) closeMenus();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const open = [...list.querySelectorAll('.menu')].find((m) => !m.hidden);
+    if (!open) return;
+    closeMenus();
+    open.previousElementSibling.focus();
+  });
+
+  lockButton.addEventListener('click', () => {
+    if (locked) return;
+    lockbar.hidden = true;
+    confirmBox.hidden = false;
+    document.getElementById('lock-now').focus();
+  });
+  document.getElementById('keep-editing').addEventListener('click', () => {
+    confirmBox.hidden = true;
+    lockbar.hidden = false;
+    lockButton.focus();
+  });
+  document.getElementById('lock-now').addEventListener('click', async (e) => {
+    const button = e.currentTarget;
+    button.disabled = true;
+    await chain;
+    const { view } = await send('/api/media/rundown/lock', 'POST', {});
+    button.disabled = false;
+    if (view && view.stories) {
+      adopt(view);
+      if (!view.lock) saveState.textContent = view.error || 'The desk did not lock the running order.';
+      return;
+    }
+    confirmBox.hidden = true;
+    lockbar.hidden = false;
+    saveState.textContent = 'The desk did not lock the running order. Try again.';
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

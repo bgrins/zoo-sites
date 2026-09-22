@@ -3,18 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Expansion &middot; Northgate Media &middot; Halbeck</title>
+<title>Expansion &middot; Skelvane Media &middot; Halbeck</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="halbeck.css">
 </head>
 <body>
 <div class="bar">
-  <span class="logo">Hal<i>beck</i></span>
-  <span class="wsw"><span>workspace</span> Northgate Media</span>
+  <a class="logo" href="index.html">halbeck</a>
+  <button class="wsw" type="button"><span>workspace</span> Skelvane Media</button>
   <span class="spacer"></span>
   <a class="lnk" href="sources.html">Data sources</a>
   <a class="lnk" href="alerts.html">Alerts</a>
   <a class="lnk" href="docs.html">Docs</a>
-  <span class="who">NM</span>
+  <button class="who" type="button" aria-label="Account menu for r.calloway">RC</button>
 </div>
 
 <div class="shell">
@@ -37,14 +38,14 @@
   </nav>
 
   <main>
-    <p class="crumbs"><a href="overview.html">Northgate Media</a> / Analytics / Expansion</p>
+    <p class="crumbs"><a href="overview.html">Skelvane Media</a> / Analytics / Expansion</p>
     <h1>Expansion</h1>
     <p class="sub">Movement between plan tiers across the connected accounts: teams that
     upgraded, teams that stepped down, and the net effect per quarter. Counted in team
     accounts, not seats.</p>
 
     <section class="panel">
-      <header><h2>Tier movement</h2><span class="meta">team accounts, last four quarters</span></header>
+      <header><h2>Tier movement</h2><span class="meta">team accounts, last four quarters</span><span class="push"></span><a class="tool" href="#" data-export="skelvane-tier-movement.csv">Export CSV</a></header>
       <div class="pad">
         <div class="tablewrap">
           <table class="data">
@@ -75,7 +76,7 @@
           <dt>Source</dt>
           <dd>billing.plan_changes, refreshed hourly.</dd>
           <dt>Owner</dt>
-          <dd>Commercial Operations, Northgate Media</dd>
+          <dd>Commercial Operations, Skelvane Media</dd>
         </dl>
       </div>
     </section>
@@ -83,12 +84,13 @@
 </div>
 
 <footer class="foot">
-  <span>Halbeck Analytics Ltd</span>
+  <span>&copy; 2026 Halbeck Analytics Ltd</span>
   <a href="status.html">Status</a>
   <a href="privacy.html">Privacy notice</a>
   <a href="terms.html">Terms of service</a>
   <a href="support.html">Support</a>
-  <span class="push">Registered at 6 Wharfside Row, Leeming LS4 2QP &middot; support@halbeck.example</span>
+  <span class="push">Registered in England and Wales, company number 00000000 &middot; 14 Tannery Yard, Thrushby TY4 7HB &middot; support@halbeck.example</span>
 </footer>
+<script src="halbeck.js"></script>
 </body>
 </html>

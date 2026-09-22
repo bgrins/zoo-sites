@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Binthral — Screen not found — Brantmoor Depot</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --teal: #10403b; --teal-dark: #0a2b28; --rust: #a8442a; --paper: #f4f2ec;
+    --rule: #cfcabb; --rule-soft: #e3dfd4; --ink: #23241f; --dim: #66655c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", sans-serif; font-size: 13px; line-height: 1.4; }
+  a { color: var(--teal); }
+  .topbar { display: flex; align-items: baseline; gap: 18px; background: var(--teal); color: #e8efe9; padding: 9px 18px; border-bottom: 3px solid var(--teal-dark); }
+  .topbar .brand { font-size: 15px; font-weight: bold; letter-spacing: 0.04em; color: #f4f8f5; text-decoration: none; }
+  .topbar .app { font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #9dbdb2; }
+  .topbar .who { margin-left: auto; font-size: 11px; color: #b8cec6; }
+  .subbar { display: flex; align-items: center; gap: 14px; background: #e8e4d9; border-bottom: 1px solid var(--rule); padding: 5px 18px; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.09em; }
+  .subbar b { color: var(--ink); font-weight: bold; }
+  .layout { display: flex; align-items: stretch; min-height: 520px; }
+  .rail { width: 178px; flex: 0 0 178px; background: #ebe7dc; border-right: 1px solid var(--rule); padding: 14px 0; }
+  .rail h2 { margin: 0 0 6px; padding: 0 14px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #68675b; font-weight: bold; }
+  .rail a, .rail span.item { display: block; padding: 5px 14px; color: #33352c; text-decoration: none; border-left: 3px solid transparent; }
+  .rail span.item.on { background: #fbfaf6; border-left-color: var(--rust); font-weight: bold; }
+  .rail .sep { height: 1px; background: var(--rule); margin: 12px 0; }
+  .main { flex: 1; padding: 18px 22px 26px; min-width: 0; }
+  h1 { margin: 0 0 2px; font-size: 19px; letter-spacing: 0.01em; }
+  .lede { margin: 0 0 16px; color: var(--dim); font-size: 12px; }
+  .panel { border: 1px solid var(--rule); border-top: 3px solid var(--teal); background: #fbfaf6; padding: 12px 14px 13px; margin: 0 0 16px; max-width: 640px; }
+  .panel h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--teal); }
+  .panel p { margin: 0 0 8px; }
+  .panel p:last-child { margin-bottom: 0; }
+  .tablewrap { border: 1px solid var(--rule); background: #fff; max-width: 640px; margin: 0 0 16px; }
+  table { border-collapse: collapse; width: 100%; }
+  th { text-align: left; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #6e6d61; font-weight: bold; border-bottom: 1px solid var(--rule); padding: 6px 12px; white-space: nowrap; }
+  td { border-bottom: 1px solid var(--rule-soft); padding: 5px 12px; vertical-align: middle; }
+  tbody tr:nth-child(even) { background: #faf9f4; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.bay { font-weight: bold; white-space: nowrap; }
+  footer { margin-top: 26px; border-top: 1px solid var(--rule); padding: 12px 22px 30px; font-size: 11px; color: #6e6d61; }
+  footer p { margin: 0 0 3px; }
+  @media (max-width: 720px) {
+    .topbar { flex-wrap: wrap; row-gap: 2px; }
+    .topbar .who { margin-left: 0; flex-basis: 100%; }
+    .subbar { flex-wrap: wrap; }
+    .layout { flex-direction: column; min-height: 0; }
+    .rail { width: auto; flex: none; display: flex; flex-wrap: wrap; align-items: baseline; padding: 8px 6px; border-right: 0; border-bottom: 1px solid var(--rule); }
+    .rail h2, .rail .sep { display: none; }
+    .rail a, .rail span.item { padding: 4px 9px; border-left: 0; border-bottom: 3px solid transparent; }
+    .rail span.item.on { border-bottom-color: var(--rust); }
+    .main { padding: 14px 12px 20px; }
+    .gridwrap, .tablewrap { overflow-x: auto; }
+    footer { padding: 12px 12px 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="brand" href="./">Brantmoor Depot</a>
+  <span class="app">Binthral 4.2</span>
+  <span class="who">Warehouse 03 &middot; Signed in: a.vetter (Count supervisor)</span>
+</div>
+<div class="subbar">
+  <span>Binthral</span><span>&rsaquo;</span><b>Screen not found</b>
+</div>
+<div class="layout">
+  <nav class="rail">
+    <h2>Operations</h2>
+    <a href="receiving.html">Receiving</a>
+    <a href="putaway.html">Putaway</a>
+    <a href="./">Cycle counts</a>
+    <a href="replenishment.html">Replenishment</a>
+    <a href="despatch.html">Despatch</a>
+    <div class="sep"></div>
+    <h2>Reference</h2>
+    <a href="bin-map.html">Bin map</a>
+    <a href="item-master.html">Item master</a>
+    <a href="count-history.html">Count history</a>
+  </nav>
+  <main class="main">
+    <h1>Screen not found</h1>
+    <p class="lede">Binthral has no screen at this address. It may have been bookmarked from an
+      older release, or typed from a paper sheet.</p>
+    <div class="panel">
+      <h3>Carry on from here</h3>
+      <p>Open <a href="./">cycle counts</a> for the sheet in progress, or pick a screen from the
+        menu on the left. If a terminal keeps opening this page, tell the stock desk on
+        0161 496 0142 which link you followed.</p>
+    </div>
+  </main>
+</div>
+<footer>
+  <p>Brantmoor Depot Ltd &middot; Unit 7, Kelvinbrae Industrial Estate, Brantmoor BQ7 3RD &middot; Stock desk 0161 496 0142</p>
+  <p>&copy; 2026 Brantmoor Depot Ltd, registered in England and Wales, company number 00000000. <a href="privacy.html">Privacy notice</a> &middot; <a href="terms.html">Terms of use</a> &middot; <a href="standards.html">Warehouse standards</a></p>
+</footer>
+</body>
+</html>

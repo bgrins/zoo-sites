@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Voltro — Computer Monitors</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="voltro.css">
 </head>
 <body>
@@ -15,6 +17,8 @@ const cartLink = document.getElementById('cartlink');
 cartLink.textContent = 'View cart';
 document.querySelectorAll('#grid .card').forEach((card, i) => {
   const button = card.querySelector('button');
+  if (button.disabled) return;
+  const label = button.textContent;
   button.addEventListener('click', async () => {
     const [product, , , price] = VOLTRO.products[i];
     button.disabled = true;
@@ -29,10 +33,10 @@ document.querySelectorAll('#grid .card').forEach((card, i) => {
         button.textContent = 'Added to cart';
         cartLink.textContent = 'View cart (' + body.count + ')';
       } else {
-        button.textContent = 'Error — try again';
+        button.textContent = body.error ?? label;
       }
     } catch {
-      button.textContent = 'Error — try again';
+      button.textContent = 'Could not reach Voltro. Try again';
     } finally {
       button.disabled = false;
     }

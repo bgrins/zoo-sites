@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fernlight Atlas 3 — Join the private beta waitlist</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --ink: #16161a;
@@ -79,11 +81,19 @@
     border-top: 1px solid var(--hair); margin-top: 44px; padding: 16px 22px;
     font-size: 12px; color: var(--dim);
   }
+  header.bar a.brand { color: var(--ink); text-decoration: none; }
+  footer a { color: var(--dim); }
+  @media (max-width: 640px) {
+    header.bar { flex-wrap: wrap; row-gap: 4px; padding: 10px 16px; }
+    header.bar nav, header.bar nav.links { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; gap: 2px 16px; }
+    main { padding: 22px 16px 48px; }
+    footer { padding: 16px; }
+  }
 </style>
 </head>
 <body>
 <header class="bar">
-  <span class="brand">fernlight/atlas</span>
+  <a class="brand" href="index.html">fernlight/atlas</a>
   <span class="ver">beta 3.0.0-rc4</span>
   <nav>
     <a href="docs.html">docs</a>
@@ -94,7 +104,7 @@
 </header>
 
 <main>
-<p class="crumbs">docs / programme / waitlist</p>
+<p class="crumbs"><a href="index.html">atlas</a> / programme / waitlist</p>
 <h1>Join the Atlas 3 private beta</h1>
 <p class="tagline">Field mapping and survey tooling for small crews.</p>
 
@@ -113,13 +123,13 @@ opens. Everything you build during the beta carries over to general release.</p>
   <fieldset>
     <legend>Waitlist request</legend>
     <label for="name">Full name <span class="req">*</span></label>
-    <input id="name" autocomplete="off">
+    <input id="name" name="name" autocomplete="name" aria-describedby="err-name">
     <div class="error" id="err-name" role="alert"></div>
     <label for="email">Email address <span class="req">*</span></label>
-    <input id="email" autocomplete="off">
+    <input id="email" name="email" type="email" autocomplete="email" aria-describedby="err-email">
     <div class="error" id="err-email" role="alert"></div>
     <label for="referral">Referral code <span class="hint">optional</span></label>
-    <input id="referral" autocomplete="off">
+    <input id="referral" name="referral" autocomplete="off">
   </fieldset>
   <button type="submit" id="joinbtn">Join the waitlist</button>
 </form>
@@ -133,9 +143,12 @@ opens. Everything you build during the beta carries over to general release.</p>
 </main>
 
 <footer>
-  Fernlight Software — 42 Alder Row, Suite 5 · Support Mon–Fri ·
-  beta@fernlight.example · Atlas is a trademark of Fernlight Software Ltd. ·
-  Privacy · Security · Status
+  Fernlight Software Ltd · 42 Marrask Row, Suite 5, Pellowick PW4 7AL · Registered in England and Wales,
+  company number 00000000 · Support Mon–Fri ·
+  <a href="mailto:beta@fernlight.example">beta@fernlight.example</a><br>
+  <a href="beta-terms.html">Beta terms</a> · <a href="privacy.html">Privacy</a> ·
+  <a href="security.html">Security</a> · <a href="status.html">Status</a> ·
+  Atlas is a trademark of Fernlight Software Ltd.
 </footer>
 
 <script>
@@ -153,14 +166,22 @@ opens. Everything you build during the beta carries over to general release.</p>
       emailOk ? '' : 'Enter a valid email address.';
     if (!name || !emailOk) return;
 
-    const response = await fetch('/api/beta-signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nonce: NONCE, name, email, referral: value('referral') }),
-    });
-    if (!response.ok) {
+    let response;
+    try {
+      response = await fetch('/api/beta-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: NONCE, name, email, referral: value('referral') }),
+      });
+    } catch {
       document.getElementById('err-submit').textContent =
-        'Something went wrong sending your request. Please try again.';
+        'We could not reach the waitlist. Check your connection and try again.';
+      return;
+    }
+    if (!response.ok) {
+      const failure = response.status === 400 ? await response.json().catch(() => ({})) : {};
+      document.getElementById('err-submit').textContent =
+        failure.error ?? 'Your request did not reach the waitlist. Reload the page and try again.';
       return;
     }
     const result = await response.json();

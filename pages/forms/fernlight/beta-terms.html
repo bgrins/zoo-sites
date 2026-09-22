@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Atlas 3 Private Beta — Programme Terms</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root {
     --ink: #16161a;
@@ -68,11 +70,19 @@
     .layout { grid-template-columns: 1fr; }
     nav.toc { position: static; }
   }
+  header.bar a.brand { color: var(--ink); text-decoration: none; }
+  footer a { color: var(--dim); }
+  @media (max-width: 640px) {
+    header.bar { flex-wrap: wrap; row-gap: 4px; padding: 10px 16px; }
+    header.bar nav, header.bar nav.links { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; gap: 2px 16px; }
+    main { padding: 22px 16px 48px; }
+    footer { padding: 16px; }
+  }
 </style>
 </head>
 <body id="top">
 <header class="bar">
-  <span class="brand">fernlight/atlas</span>
+  <a class="brand" href="index.html">fernlight/atlas</a>
   <span class="ver">terms v3.4</span>
   <nav class="links">
     <a href="docs.html">docs</a>
@@ -82,7 +92,7 @@
   </nav>
 </header>
 
-<div class="layout">
+<main class="layout">
 <nav class="toc">
 <p class="sect">Clauses</p>
 <ol>
@@ -104,7 +114,7 @@
 </nav>
 
 <article>
-<p class="crumbs">docs / programme / terms</p>
+<p class="crumbs"><a href="index.html">atlas</a> / <a href="beta-signup.html">programme</a> / terms</p>
 <h1>Atlas 3 Private Beta — Programme Terms</h1>
 <p class="tagline">Fernlight Software · Terms of participation for the Atlas 3 private beta</p>
 <p class="meta">Version 3.4 · Fourteen clauses · Applies to every waitlist request and to every seat issued from the waitlist. Read the whole document before you submit a request; each clause is binding on applicants as well as on participants.</p>
@@ -164,16 +174,21 @@
 
 <h2 id="clause-14">14. Changes and notices</h2>
 <p>We may amend these terms during the programme. Amendments take effect for applicants when they are published on this page and for participants on the date stated in the notice we send. Continuing to use the beta after that date is acceptance of the amended terms.</p>
-<p>Notices to us should go to the beta address; notices to you go to the email address in your most recent request. These terms are governed by the law of the jurisdiction in which Fernlight Software is incorporated, and the version number above identifies the text in force.</p>
+<p>Notices to us should go to the beta address; notices to you go to the email address in your most recent request. These terms are governed by the law of England and Wales, where Fernlight Software Ltd is incorporated, and the version number above identifies the text in force.</p>
 
 <p class="backlink"><a href="#top">Back to top</a> · <a href="beta-signup.html">Back to the waitlist form</a></p>
 </article>
-</div>
+</main>
 
 <footer>
-  Fernlight Software — 42 Alder Row, Suite 5 · beta@fernlight.example ·
   These terms supersede all earlier beta terms. Questions about a clause should go to
-  legal@fernlight.example before you accept.
+  <a href="mailto:legal@fernlight.example">legal@fernlight.example</a> before you accept.<br>
+  Fernlight Software Ltd · 42 Marrask Row, Suite 5, Pellowick PW4 7AL · Registered in England and Wales,
+  company number 00000000 · Support Mon–Fri ·
+  <a href="mailto:beta@fernlight.example">beta@fernlight.example</a><br>
+  <a href="beta-terms.html">Beta terms</a> · <a href="privacy.html">Privacy</a> ·
+  <a href="security.html">Security</a> · <a href="status.html">Status</a> ·
+  Atlas is a trademark of Fernlight Software Ltd.
 </footer>
 </body>
 </html>

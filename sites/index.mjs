@@ -51,6 +51,7 @@ import * as telco from './telco.mjs';
 import * as utility from './utility.mjs';
 import * as jobs from './jobs.mjs';
 import * as kiosk from './kiosk.mjs';
+import * as events from './events.mjs';
 
 export const SITES = [
   gallery.routes,
@@ -104,4 +105,19 @@ export const SITES = [
   utility.routes,
   jobs.routes,
   kiosk.routes,
+  events.routes,
+];
+
+export const DOCUMENTS = [
+  intl.documents,
+  gov.documents,
+  shop.documents,
+  flaky.documents,
+  press.documents,
+  support.documents,
+  paylink.documents,
+  console.documents,
+  forms.documents,
+  events.documents,
+  media.documents,
 ];

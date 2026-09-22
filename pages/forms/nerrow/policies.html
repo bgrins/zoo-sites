@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>Nerrow Strait Marine Symposium — Policies</title>
 <style>
   :root {
@@ -57,15 +59,27 @@
   footer div { max-width: 1020px; margin: 0 auto; padding: 18px 26px 26px; }
   footer a { color: var(--marine); }
   footer p { margin: 0 0 4px; }
+  a.title { display: block; text-decoration: none; }
+  a.title:hover { color: var(--marine); }
+  @media (max-width: 720px) {
+    .banner-in { flex-wrap: wrap; gap: 6px 20px; padding: 16px 18px 12px; }
+    .title { font-size: 22px; }
+    .convened { margin: 0; text-align: left; }
+    .sitenav-in { flex-wrap: wrap; padding: 0 8px; }
+    .sitenav a { padding: 8px 10px; }
+    .page { padding: 20px 18px 32px; }
+    footer div { padding: 16px 18px 22px; }
+    table { display: block; overflow-x: auto; }
+  }
 </style>
 </head>
 <body>
 <header class="banner">
   <div class="banner-in">
-    <div class="title">Nerrow Strait Marine Symposium
+    <a class="title" href="index.html">Nerrow Strait Marine Symposium
       <span>Twenty-second meeting, Weyburn Point</span>
-    </div>
-    <p class="convened">Convened 3 to 6 November 2026<br>Weyburn Point Marine Station</p>
+    </a>
+    <p class="convened">Convened __NERROW_CONVENED__<br>Weyburn Point Marine Station</p>
   </div>
 </header>
 <nav class="sitenav">
@@ -73,6 +87,7 @@
     <a href="programme.html">Programme</a>
     <a href="sessions.html">Sessions</a>
     <a href="abstract.html">Abstract desk</a>
+    <a href="registration.html">Registration</a>
     <a href="reviewers.html">Reviewers</a>
     <a href="travel.html">Travel and lodging</a>
   </div>
@@ -101,7 +116,7 @@
     <h2>Terms of participation</h2>
     <p>Registration covers admission to all plenaries and sessions, the welcome supper,
     and the printed programme. Registrations may be transferred to a named colleague at
-    any point but are refundable only until the middle of October.</p>
+    any point but are refundable only until __NERROW_ACCESS_DM__.</p>
     <p>Delegates speak and present on the understanding that others may cite what they
     hear with attribution. Photography and recording in session rooms require the
     speaker's consent and the chair's. The station's shore and laboratories are working
@@ -114,9 +129,9 @@
 
 <footer>
   <div>
-    <p>Weyburn Point Marine Station, 4 Cobble Quay, Weyburn Point.
+    <p>Weyburn Point Marine Station, 4 Cobble Quay, Weyburn Point WP4 7NR.
     Abstract desk: <a href="mailto:desk@nerrowstrait.example">desk@nerrowstrait.example</a>, weekdays 09:00 to 16:00.</p>
-    <p>Copyright 2026 Weyburn Point Marine Station.
+    <p>Copyright 2026 Weyburn Point Marine Station. Registered charity 0000000.
     <a href="policies.html#privacy">Privacy notice</a> · <a href="policies.html#terms">Terms of participation</a> ·
     <a href="travel.html#accessibility">Accessibility</a> ·
     <a href="registration.html">Registration</a> · <a href="past-meetings.html">Past meetings</a> ·

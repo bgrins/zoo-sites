@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Keeping a Small Team Sane — Grindstone Weekly</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   body { font-family: "Hoefler Text", Baskerville, "Baskerville Old Face",
          "Palatino Linotype", Garamond, "Times New Roman", serif;
@@ -13,13 +14,13 @@
   header .brand { display: block; font-size: 15px; letter-spacing: 0.5em;
                   text-transform: uppercase; }
   header .brand small { display: block; font-size: 10px; letter-spacing: 0.24em;
-                        color: #8d8878; margin-top: 8px; }
+                        color: #787466; margin-top: 8px; }
   .issue { max-width: 900px; margin: 0 auto; padding: 7px 28px 8px; display: flex;
            font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
-           color: #8d8878; border-bottom: 3px double #15130f; }
+           color: #787466; border-bottom: 3px double #15130f; }
   .issue span:last-child { margin-left: auto; }
   .via { max-width: 900px; margin: 0 auto; padding: 9px 28px 0; font-size: 10px;
-         letter-spacing: 0.22em; text-transform: uppercase; color: #8d8878; }
+         letter-spacing: 0.22em; text-transform: uppercase; color: #787466; }
   .via a { color: #96351f; text-decoration: none; }
   .via a:hover { text-decoration: underline; }
   footer a { color: #96351f; text-decoration: none; }
@@ -46,6 +47,7 @@
   .endmark { text-align: center; letter-spacing: 0.4em; color: #96351f; margin-top: 26px;
              text-indent: 0; }
   .kicker, .deck, .byline { text-indent: 0; }
+  footer p { margin: 0 0 8px; }
   footer { max-width: 900px; margin: 0 auto; border-top: 3px double #15130f;
            color: #6d6757; font-size: 11px; line-height: 1.7; padding: 14px 28px 40px;
            letter-spacing: 0.04em; }
@@ -68,15 +70,16 @@
 </style>
 </head>
 <body>
-<p class="via">Web edition &middot; shared to the <a href="/news/">millrace stream</a>,
-  our sister site &middot; <a href="/news/">back to the stream</a></p>
+<p class="via">Web edition &middot; shared to the <a href="./">millrace stream</a>,
+  our sister site &middot; <a href="./">back to the stream</a></p>
 <header>
   <span class="brand">Grindstone Weekly<small>Notes on running small companies</small></span>
 </header>
 <div class="issue">
   <span>Issue 214 &middot; The Management Column</span>
-  <span>Four pounds where sold</span>
+  <span>Four dollars where sold</span>
 </div>
+<main>
 <article>
   <p class="kicker">On small teams</p>
   <h1>Keeping a Small Team Sane</h1>
@@ -151,12 +154,15 @@
 
   <p class="endmark">* * *</p>
 </article>
+</main>
 <footer>
-  Grindstone Weekly &middot; ISSN 2417-9930 &middot; published forty-six times a year by
-  Grindstone Press, 8 Foundry Street. Letters to the column go to the managing editor;
-  unsolicited manuscripts are not returned. Grindstone Press and the
-  <a href="/news/">millrace</a> stream are both letters of the Weirgate Collective;
-  one column a week is set for the web and shared there.
+  <p>Grindstone Weekly &middot; ISSN 0000-0000 &middot; published forty-six times a year by
+  Grindstone Press, 8 Foundry Street, Ashvale, VT 05412. Letters to the column go to the
+  managing editor; unsolicited manuscripts are not returned. Grindstone Press and the
+  <a href="./">millrace</a> stream are both letters of the Weirgate Collective;
+  one column a week is set for the web and shared there.</p>
+  <p>&copy; 2026 Weirgate Collective LLC &middot; <a href="privacy.html">Privacy</a> &middot;
+  <a href="terms.html">Terms</a> &middot; <a href="consent.html">Cookie preferences</a></p>
 </footer>
 
 <script>
@@ -210,6 +216,7 @@
     dlg.append(h, p, acceptBtn, dismissBtn);
     overlay.append(dlg);
     document.body.append(overlay);
+    report(name, 'shown');
   }
 
   function showOffer() {

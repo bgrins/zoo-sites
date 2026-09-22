@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roaming — My account — Lumeva Mobile</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../lumeva.css">
+<link rel="stylesheet" href="account.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="wordmark" href="../">lumeva</a>
+  <nav aria-label="Main">
+    <a href="../">Plans</a>
+    <a href="../network.html">Network</a>
+    <a href="../help.html">Help</a>
+    <a href="./" class="here">My account</a>
+  </nav>
+  <span class="care">Care team 1-512-555-0142</span>
+</header>
+
+<main>
+<div class="acct-band">
+  <div class="inner">
+    <h1>My account</h1>
+    <p class="acct-meta">Account <strong id="acctNumber">…</strong> &middot; <span id="acctPlan">Signal Plus</span></p>
+    <nav class="acct-tabs" aria-label="Account sections">
+      <a href="./">Overview</a>
+      <a href="usage.html">Usage alerts</a>
+      <a href="roaming.html" aria-current="page">Roaming</a>
+    </nav>
+  </div>
+</div>
+
+<div class="acct-body">
+  <div class="inner">
+    <p class="acct-error" id="acctError" role="alert" hidden>We could not load your account just now. Refresh the page to try again, or call the care team.</p>
+    <h2>Roaming</h2>
+    <p class="lede">Signal Plus includes Roam Lite in 12 countries. Pay-as-you-go roaming everywhere else is
+    billed by the day, and your spend cap stops it running away from you. Changes apply from the next
+    roaming day.</p>
+
+    <form class="panel" id="roamingForm" novalidate>
+      <fieldset class="plain" id="formBody" disabled>
+        <div class="setting">
+          <div>
+            <label class="name" for="capUsd">Monthly roaming spend cap</label>
+            <p class="hint" id="capHint">Pay-as-you-go roaming charges on the whole account stop at this amount each bill.</p>
+          </div>
+          <div class="control">
+            <span class="unit">$</span>
+            <input id="capUsd" name="capUsd" type="number" min="10" max="200" step="5" inputmode="numeric" aria-describedby="capHint">
+            <span class="unit">a month</span>
+          </div>
+        </div>
+        <div class="setting">
+          <div>
+            <span class="name" id="linesName">Roaming by line</span>
+            <p class="hint">A line with roaming off still makes emergency calls abroad.</p>
+          </div>
+          <div class="choices" role="group" aria-labelledby="linesName" id="lineChoices"></div>
+        </div>
+        <div class="setting">
+          <div>
+            <span class="name" id="atCapName">When the cap is reached</span>
+            <p class="hint">Roam Lite keeps maps and messages working at 128 kbps.</p>
+          </div>
+          <div class="choices" role="radiogroup" aria-labelledby="atCapName">
+            <label><input type="radio" name="atCap" value="block" id="atCapBlock"> <span>Block roaming data until the next bill</span></label>
+            <label><input type="radio" name="atCap" value="lite" id="atCapLite"> <span>Drop to Roam Lite at no charge</span></label>
+          </div>
+        </div>
+      </fieldset>
+      <div class="savebar">
+        <span class="dirty-pill" id="dirtyPill" hidden>Unsaved changes</span>
+        <p id="saveNote" role="status"></p>
+        <button type="button" class="btn-ghost" id="discardBtn" disabled>Discard</button>
+        <button type="submit" class="btn" id="saveBtn" disabled>Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="inner">
+    Lumeva Wireless LLC &middot; 55 Caliche Row, Duneport, TX &middot; care@lumeva.example &middot; 1-512-555-0142<br>
+    <a href="../network.html">Network coverage</a> &middot;
+    <a href="../help.html">Help center</a> &middot;
+    <a href="../terms.html">Terms of service</a> &middot;
+    <a href="../privacy.html">Privacy notice</a> &middot;
+    <a href="../legal.html">Legal and disclosures</a><br>
+    Coverage and speeds vary by location and load. &copy; 2026 Lumeva Wireless LLC. Lumeva Mobile is a service of Lumeva Wireless LLC.
+  </div>
+</footer>
+
+<script>const NONCE = '__SESSION_NONCE__';</script>
+<script src="account.js"></script>
+<script>
+  (async () => {
+    const $ = (id) => document.getElementById(id);
+    let lines = [];
+    const form = LumevaAccount.settingsForm({
+      tab: 'roaming',
+      form: $('roamingForm'),
+      read: () => ({
+        capUsd: $('capUsd').value === '' ? null : Number($('capUsd').value),
+        ...Object.fromEntries(lines.map((line) => [line.id, $('roam-' + line.id).checked])),
+        atCap: $('atCapBlock').checked ? 'block' : $('atCapLite').checked ? 'lite' : null,
+      }),
+      write: (v) => {
+        $('capUsd').value = String(v.capUsd);
+        for (const line of lines) $('roam-' + line.id).checked = v[line.id];
+        $('atCapBlock').checked = v.atCap === 'block';
+        $('atCapLite').checked = v.atCap === 'lite';
+      },
+    });
+    const acct = await LumevaAccount.load();
+    lines = acct.account.lines;
+    for (const line of lines) {
+      const label = document.createElement('label');
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.id = 'roam-' + line.id;
+      const text = document.createElement('span');
+      const number = document.createElement('small');
+      number.textContent = line.number;
+      text.append(line.label, number);
+      label.append(box, ' ', text);
+      $('lineChoices').append(label);
+    }
+    form.start(acct.roaming);
+  })();
+</script>
+</body>
+</html>

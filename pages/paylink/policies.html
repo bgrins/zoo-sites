@@ -3,26 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Trade terms and policies — Ollister &amp; Crane</title>
+<title>Terms of sale and policies — Ollister &amp; Crane</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="ollister.css">
 </head>
 <body>
-<div class="masthead">
-  <p class="wordmark">Ollister <span>&amp;</span> Crane</p>
+<header class="masthead">
+  <a class="wordmark" href="index.html">Ollister <span>&amp;</span> Crane</a>
   <p class="estd">Letterpress and bindery supply since 1979</p>
-  <nav class="shopnav">
+  <nav class="shopnav" aria-label="Shop">
     <a href="papers.html">Papers</a>
     <a href="inks.html">Inks</a>
     <a href="presses.html">Presses</a>
     <a href="bindery.html">Bindery</a>
     <a href="trade.html">Trade accounts</a>
-    <a href="checkout.html">Basket</a>
+    <a href="basket.html">Basket <span class="count" id="basketCount"></span></a>
   </nav>
-</div>
+</header>
 
 <main>
-  <h1>Trade terms and policies</h1>
-  <p class="crumb">Shop / Trade terms</p>
+  <h1>Terms of sale and policies</h1>
+  <p class="crumb"><a href="index.html">Shop</a> / Terms of sale</p>
 
   <div class="plate">
     <h2 id="shipping">Shipping</h2>
@@ -39,19 +40,24 @@
     and returns only an approval to us. Trade accounts settle by transfer on the 15th of the
     month.</p>
     <h2 id="privacy">Privacy</h2>
-    <p>We keep order records for seven years for tax purposes and share nothing with third
-    parties beyond our carrier and our payment institution.</p>
+    <p>We keep order records for six years for tax purposes and share nothing with third
+    parties beyond our carrier and our payment institution. The full
+    <a href="privacy.html">privacy notice</a> explains what we hold and why.</p>
   </div>
 </main>
 
 <footer>
   <a href="policies.html#shipping">Shipping</a>
   <a href="policies.html#returns">Returns</a>
-  <a href="policies.html#privacy">Privacy</a>
-  <a href="policies.html">Trade terms</a>
-  <p class="addr">Ollister &amp; Crane Ltd, Tolbridge Yard, 14 Gullet Lane, Ravensmoor</p>
-  <p>Counter enquiries: counter@ollistercrane.example &middot; (555) 018-4420</p>
-  <p>&copy; 1979-2026 Ollister &amp; Crane Ltd. Registered in the county of Ravensmoor, no. 884120.</p>
+  <a href="privacy.html">Privacy</a>
+  <a href="policies.html">Terms of sale</a>
+  <p class="addr">Ollister &amp; Crane Ltd, Tolbridge Yard, 14 Gullet Lane, Kellowmarsh KX4 9TZ</p>
+  <p>Counter enquiries: counter@ollistercrane.example &middot; 0113 496 0120</p>
+  <p>&copy; 1979-2026 Ollister &amp; Crane Ltd. Registered in England and Wales, company number 00000000. VAT registration 000 0000 00.</p>
 </footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+</script>
+<script src="shop.js"></script>
 </body>
 </html>

@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deploy queue - gridworks-eu - Cindergrid</title>
+<link rel="stylesheet" href="console.css">
+<link rel="stylesheet" href="ops.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html">CINDERGRID</a>
+  <span class="crumb">gridworks-eu / deploy queue</span>
+  <span class="env">production</span>
+  <span class="spacer"></span>
+  <span class="who">t.ashgrove</span>
+</header>
+
+<div class="toast" id="toast" role="status" hidden>
+  <span class="t-msg" id="toast-msg"></span>
+  <span class="t-svc" id="toast-svc"></span>
+  <button type="button" id="undo">Undo</button>
+</div>
+
+<div class="shell">
+  <nav class="rail">
+    <span class="rail-label">Project</span>
+    <a href="index.html">Deployments</a>
+    <a href="runs.html">Run history</a>
+    <a href="secrets.html">Secrets</a>
+    <a href="settings.html">Settings</a>
+    <a href="support.html">Support</a>
+    <span class="rail-label">Organisation</span>
+    <a href="queue.html" class="on">Deploy queue</a>
+    <a href="services/orchid-api.html">Services</a>
+  </nav>
+
+  <main>
+    <div class="runhead">
+      <h1>Deploy queue</h1>
+      <span class="chip chip-live" id="live">Live</span>
+      <span class="spacer"></span>
+      <button type="button" class="act quiet" id="pause" aria-pressed="false">Pause live updates</button>
+    </div>
+    <p class="subhead">Production deploys waiting for a release runner. Queued deploys start in ETA
+    order, and every refresh re-estimates the ETAs from runner availability in each region.</p>
+
+    <h2>Queued</h2>
+    <div class="toolbar">
+      <input id="filter" type="search" placeholder="service, build or region" aria-label="Filter queue">
+      <span class="stat" id="stat">loading</span>
+      <span class="spacer"></span>
+      <span class="stat">Refreshes every 5 s</span>
+    </div>
+    <div class="qhead" aria-hidden="true">
+      <span>Build</span><span>Service</span><span>Region</span><span>ETA</span><span>Requested by</span><span></span>
+    </div>
+    <div class="qlist" id="queue"></div>
+    <p class="empty" id="empty" hidden></p>
+    <p class="notice" id="notice" role="alert"></p>
+
+    <h2>Cancelled in the last minute</h2>
+    <div class="qlist" id="cancelled"></div>
+    <p class="rolenote">A cancelled deploy can be re-queued for 60 seconds and keeps its ETA. After
+    that it has to be requested again from its run page.</p>
+  </main>
+</div>
+
+<footer>
+  Cindergrid Systems Ltd, 4 Brevel Yard, Drisselby DB3 7NQ, United Kingdom.
+  Registered in England and Wales, company number 00000000.<br>
+  <a href="status.html">Status</a> &middot; <a href="docs.html">Documentation</a> &middot;
+  <a href="terms.html">Terms of service</a> &middot; <a href="privacy.html">Privacy</a> &middot;
+  <a href="mailto:support@cindergrid.example.net">support@cindergrid.example.net</a><br>
+  &copy; 2026 Cindergrid Systems Ltd
+</footer>
+
+<script>
+(() => {
+  const NONCE = '__SESSION_NONCE__';
+  const REFRESH_MS = 5000;
+  const UNDO_MS = 20000;
+  const SLOTS = 12;
+  const list = document.getElementById('queue');
+  const cancelledList = document.getElementById('cancelled');
+  const filter = document.getElementById('filter');
+  const stat = document.getElementById('stat');
+  const empty = document.getElementById('empty');
+  const notice = document.getElementById('notice');
+  const pauseBtn = document.getElementById('pause');
+  const live = document.getElementById('live');
+  const toast = document.getElementById('toast');
+  let queued = [];
+  let cancelled = [];
+  let paused = false;
+  let loaded = false;
+  let toastDeploy = null;
+  let toastTimer = null;
+
+  const el = (tag, cls, text) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const label = (d) => `${d.build} to ${d.region}`;
+
+  // The list keeps a fixed set of row nodes and rewrites them on every
+  // refresh, so rows never flicker in and out while the queue re-sorts.
+  const slots = [];
+  for (let i = 0; i < SLOTS; i++) {
+    const row = el('div', 'qrow');
+    row.hidden = true;
+    const link = el('a');
+    const cancelBtn = el('button', 'act danger', 'Cancel');
+    cancelBtn.type = 'button';
+    const slot = {
+      row,
+      link,
+      cancelBtn,
+      svc: el('span', 'q-svc'),
+      region: el('span', 'q-region'),
+      eta: el('span', 'q-eta'),
+      by: el('span', 'q-by'),
+      deploy: null,
+    };
+    const build = el('span', 'q-build');
+    build.append(link);
+    const act = el('span', 'q-act');
+    act.append(cancelBtn);
+    row.append(build, slot.svc, slot.region, slot.eta, slot.by, act);
+    cancelBtn.addEventListener('click', () => {
+      if (slot.deploy) cancel(slot.deploy, i + 1);
+    });
+    list.append(row);
+    slots.push(slot);
+  }
+
+  const matches = (d) => {
+    const words = filter.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const hay = `${d.service} ${d.build} ${d.region} ${d.by}`.toLowerCase();
+    return words.every((w) => hay.includes(w));
+  };
+
+  function render() {
+    const shown = queued.filter(matches);
+    slots.forEach((slot, i) => {
+      const d = shown[i] ?? null;
+      slot.deploy = d;
+      slot.row.hidden = !d;
+      if (!d) return;
+      slot.link.textContent = String(d.build);
+      slot.link.href = `deploy.html?id=${encodeURIComponent(d.id)}`;
+      slot.svc.textContent = d.service;
+      slot.region.textContent = d.region;
+      slot.eta.textContent = `~${d.eta} min`;
+      slot.by.textContent = d.by;
+      slot.cancelBtn.setAttribute('aria-label', `Cancel ${label(d)}`);
+    });
+    empty.hidden = !loaded || shown.length > 0;
+    empty.textContent = queued.length ? 'No queued deploy matches the filter.' : 'Nothing is queued.';
+    stat.textContent = loaded ? `${queued.length} queued` : 'loading';
+    renderCancelled();
+  }
+
+  let cancelledKey = null;
+  function renderCancelled() {
+    const now = Date.now();
+    cancelled = cancelled.filter((d) => d.until > now);
+    const key = cancelled.map((d) => d.id).join(' ');
+    if (key === cancelledKey) return;
+    cancelledKey = key;
+    cancelledList.textContent = '';
+    if (!cancelled.length) {
+      cancelledList.append(el('p', 'empty', 'No deploys cancelled in the last minute.'));
+      return;
+    }
+    for (const d of cancelled) {
+      const row = el('div', 'qrow cancelled');
+      const build = el('span', 'q-build');
+      const link = el('a', '', String(d.build));
+      link.href = `deploy.html?id=${encodeURIComponent(d.id)}`;
+      build.append(link);
+      const act = el('span', 'q-act');
+      const again = el('button', 'act', 'Re-queue');
+      again.type = 'button';
+      again.setAttribute('aria-label', `Re-queue ${label(d)}`);
+      again.addEventListener('click', () => requeue(d, 'row'));
+      act.append(again);
+      row.append(build, el('span', 'q-svc', d.service), el('span', 'q-region', d.region),
+        el('span', 'q-eta', 'cancelled'), el('span', 'q-by', d.by), act);
+      cancelledList.append(row);
+    }
+  }
+
+  // Each refresh waits for the moment the reply says the next estimate is
+  // due. A paused list schedules none, and Resume polls at once.
+  let timer = null;
+  const schedule = (ms) => {
+    clearTimeout(timer);
+    timer = setTimeout(poll, ms);
+  };
+
+  async function poll() {
+    if (paused) return;
+    let data;
+    try {
+      const res = await fetch('/api/cindergrid/queue', { headers: { 'X-Session-Nonce': NONCE } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      data = await res.json();
+    } catch {
+      notice.textContent = 'The queue could not be refreshed. Retrying.';
+      schedule(REFRESH_MS);
+      return;
+    }
+    // A refresh that lands after Pause is dropped, so a paused list holds still.
+    if (paused) return;
+    notice.textContent = '';
+    loaded = true;
+    queued = data.queued;
+    const now = Date.now();
+    cancelled = data.cancelled.map((d) => ({ ...d, until: now + d.requeueSeconds * 1000 }));
+    list.dataset.tick = String(data.tick);
+    render();
+    schedule(data.nextRefreshMs > 0 ? data.nextRefreshMs : REFRESH_MS);
+  }
+
+  function showToast(d) {
+    toastDeploy = d;
+    document.getElementById('toast-msg').textContent = `Cancelled ${label(d)}`;
+    document.getElementById('toast-svc').textContent = d.service;
+    toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.hidden = true;
+      toastDeploy = null;
+    }, UNDO_MS);
+  }
+
+  async function post(path, body) {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, ...body }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'The request failed.');
+    return data;
+  }
+
+  async function cancel(d, row) {
+    let data;
+    try {
+      data = await post('/api/cindergrid/cancel', {
+        id: d.id,
+        via: 'queue',
+        paused,
+        row,
+        filtered: filter.value.trim() !== '',
+      });
+    } catch (error) {
+      notice.textContent = error.message;
+      return;
+    }
+    const at = queued.findIndex((x) => x.id === d.id);
+    if (at !== -1) queued.splice(at, 1);
+    cancelled = cancelled.filter((x) => x.id !== d.id);
+    cancelled.unshift({ ...d, at, until: Date.now() + data.requeueSeconds * 1000 });
+    render();
+    showToast(d);
+  }
+
+  async function requeue(d, via) {
+    try {
+      await post('/api/cindergrid/requeue', { id: d.id, via });
+    } catch (error) {
+      notice.textContent = error.message;
+      return;
+    }
+    const was = cancelled.find((x) => x.id === d.id);
+    cancelled = cancelled.filter((x) => x.id !== d.id);
+    if (toastDeploy?.id === d.id) {
+      toast.hidden = true;
+      toastDeploy = null;
+    }
+    if (paused) {
+      queued.splice(Math.max(0, Math.min(was?.at ?? queued.length, queued.length)), 0, d);
+      render();
+    } else {
+      poll();
+    }
+  }
+
+  document.getElementById('undo').addEventListener('click', () => {
+    if (toastDeploy) requeue(toastDeploy, 'undo');
+  });
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    pauseBtn.setAttribute('aria-pressed', String(paused));
+    pauseBtn.textContent = paused ? 'Resume live updates' : 'Pause live updates';
+    live.textContent = paused ? 'Paused' : 'Live';
+    live.className = paused ? 'chip chip-paused' : 'chip chip-live';
+    if (!paused) poll();
+  });
+  filter.addEventListener('input', render);
+  setInterval(renderCancelled, REFRESH_MS);
+  render();
+  poll();
+})();
+</script>
+</body>
+</html>

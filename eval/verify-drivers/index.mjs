@@ -44,60 +44,78 @@ import { DRIVERS as registrar } from './registrar.mjs';
 import { DRIVERS as telco } from './telco.mjs';
 import { DRIVERS as utility } from './utility.mjs';
 import { DRIVERS as kiosk } from './kiosk.mjs';
+import { DRIVERS as resendReceipt } from './resend-receipt.mjs';
+import { DRIVERS as unsavedLeave } from './unsaved-leave.mjs';
+import { DRIVERS as reusedRow } from './reused-row.mjs';
+import { DRIVERS as hovercardOncall } from './hovercard-oncall.mjs';
+import { DRIVERS as nativePermit } from './native-permit.mjs';
+import { DRIVERS as pointerDrag } from './pointer-drag.mjs';
+import { DRIVERS as rangeSelect } from './range-select.mjs';
+import { DRIVERS as pdfBill } from './pdf-bill.mjs';
 
+// Keyed by file name, which is what the duplicate-id error and DRIVER_FILES
+// report.
 const modules = {
-  probes,
-  shop,
-  forms,
-  formsUpload,
-  content,
-  auth,
-  data,
-  gadgetronMirror,
-  floorplan,
-  consent,
-  govNavigation,
-  flakySlow,
-  viewport,
-  paylink,
-  forge,
-  support,
-  schedule,
-  auction,
-  calc,
-  consoleLog,
-  intl,
-  kanban,
-  metrics,
-  roles,
-  vault,
-  media,
-  status,
-  smarthome,
-  insure,
-  bistro,
-  cabins,
-  depot,
-  quotient,
-  boxoffice,
-  fernwood,
-  registrar,
-  telco,
-  jobs,
-  utility,
-  kiosk,
+  'probes.mjs': probes,
+  'shop.mjs': shop,
+  'forms.mjs': forms,
+  'forms-upload.mjs': formsUpload,
+  'content.mjs': content,
+  'auth.mjs': auth,
+  'data.mjs': data,
+  'gadgetron-mirror.mjs': gadgetronMirror,
+  'floorplan.mjs': floorplan,
+  'consent.mjs': consent,
+  'gov-navigation.mjs': govNavigation,
+  'flaky-slow.mjs': flakySlow,
+  'viewport.mjs': viewport,
+  'paylink.mjs': paylink,
+  'forge.mjs': forge,
+  'support.mjs': support,
+  'schedule.mjs': schedule,
+  'auction.mjs': auction,
+  'calc.mjs': calc,
+  'console.mjs': consoleLog,
+  'intl.mjs': intl,
+  'kanban.mjs': kanban,
+  'metrics.mjs': metrics,
+  'roles.mjs': roles,
+  'vault.mjs': vault,
+  'media.mjs': media,
+  'status.mjs': status,
+  'smarthome.mjs': smarthome,
+  'insure.mjs': insure,
+  'bistro.mjs': bistro,
+  'cabins.mjs': cabins,
+  'depot.mjs': depot,
+  'quotient.mjs': quotient,
+  'boxoffice.mjs': boxoffice,
+  'fernwood.mjs': fernwood,
+  'registrar.mjs': registrar,
+  'telco.mjs': telco,
+  'jobs.mjs': jobs,
+  'utility.mjs': utility,
+  'kiosk.mjs': kiosk,
+  'resend-receipt.mjs': resendReceipt,
+  'unsaved-leave.mjs': unsavedLeave,
+  'reused-row.mjs': reusedRow,
+  'hovercard-oncall.mjs': hovercardOncall,
+  'native-permit.mjs': nativePermit,
+  'pointer-drag.mjs': pointerDrag,
+  'range-select.mjs': rangeSelect,
+  'pdf-bill.mjs': pdfBill,
 };
 
 export const DRIVERS = {};
-const seen = new Map();
-for (const [name, mod] of Object.entries(modules)) {
+// The file each task's driver lives in, which verify.mjs --affected maps a
+// changed driver file back through.
+export const DRIVER_FILES = {};
+for (const [file, mod] of Object.entries(modules)) {
   for (const [id, driver] of Object.entries(mod)) {
-    if (seen.has(id)) {
-      throw new Error(
-        `duplicate golden-path driver for "${id}" in ${name}.mjs and ${seen.get(id)}.mjs`
-      );
+    if (DRIVER_FILES[id]) {
+      throw new Error(`duplicate golden-path driver for "${id}" in ${file} and ${DRIVER_FILES[id]}`);
     }
-    seen.set(id, name);
+    DRIVER_FILES[id] = file;
     DRIVERS[id] = driver;
   }
 }

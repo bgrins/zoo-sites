@@ -2,38 +2,38 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Voltro — Conditions of Use</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voltro — Terms of Use</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="voltro.css">
-<style>
-  .page { max-width: 760px; margin: 0 auto; padding: 8px 16px 28px; }
-  .page h1 { font-size: 22px; margin: 14px 0 6px; }
-  .page h2 { font-size: 16px; margin: 20px 0 6px; }
-  .page p { font-size: 13px; }
-  .page a { color: #007185; }
-  .rev { color: #565959; font-size: 12px; }
-</style>
 </head>
 <body>
 <header>
-  <b>Voltro</b>
-  <input placeholder="Search Voltro" aria-label="Search">
-  <span>Hello, sign in</span>
-  <span>Orders</span>
-  <a class="cartlink" href="cart.html">View cart</a>
+  <a class="wordmark" href="index.html">Voltro</a>
+  <form class="finder" action="search.html" method="get" role="search">
+    <input name="q" placeholder="Search Voltro" aria-label="Search Voltro">
+    <button type="submit">Search</button>
+  </form>
+  <a class="acct" href="signin.html">Sign in</a>
+  <a class="acct" href="orders.html">Orders &amp; returns</a>
+  <a id="cartlink" class="cartlink" href="cart.html">View cart</a>
 </header>
-<nav>
-  <span>All</span><span>Today's Deals</span><span>Electronics</span>
-  <span>Computers</span><span>Monitors</span><span>Gift Cards</span><span>Customer Service</span>
+<nav class="depts" aria-label="Departments">
+  <a href="index.html">Monitors</a>
+  <a href="search.html?q=4K">4K monitors</a>
+  <a href="desk-setup.html">Desk Setup</a>
+  <a href="sell.html">Sell on Voltro</a>
+  <a href="help.html">Help</a>
 </nav>
-<div class="page">
-  <h1>Conditions of Use</h1>
+<main class="page">
+  <h1>Terms of Use</h1>
   <p class="rev">Last revised 2026-05-02.</p>
   <h2>1. Your account</h2>
   <p>You are responsible for your account credentials and for activity under them.
-  Voltro may suspend accounts used contrary to these conditions.</p>
+  Voltro may suspend accounts used contrary to these terms.</p>
   <h2>2. Pricing and availability</h2>
   <p>Prices and availability are as shown at the time an order is placed and may change
-  without notice. Obvious pricing errors may be cancelled before dispatch with a full
+  without notice. Obvious pricing errors may be canceled before dispatch with a full
   refund.</p>
   <h2>3. Promotions</h2>
   <p>Promotional codes carry the terms stated where they are published, apply once per
@@ -41,16 +41,28 @@
   <h2>4. Marketplace sellers</h2>
   <p>Items sold by marketplace sellers are contracts between you and the seller; see
   <a href="sell.html">Sell on Voltro</a>. Voltro Retail items are sold by Voltro
-  Marketplace, Inc.</p>
+  Marketplace, Inc. Desk Setup items are sold by Voltro Business Supply, a division of
+  Voltro Marketplace, Inc., and are invoiced separately.</p>
   <h2>5. Liability</h2>
-  <p>Nothing in these conditions limits rights you hold under consumer law. Voltro's
+  <p>Nothing in these terms limits rights you hold under consumer law. Voltro's
   liability for a Voltro Retail order is limited to the amount paid for that order.</p>
-</div>
+  <h2>6. Contact</h2>
+  <p>Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000. Questions about
+  these terms: <a href="help.html">Help</a>.</p>
+</main>
 <footer>
-  &copy; 2026 Voltro Marketplace, Inc. Prices and availability are subject to change.
-  · <a href="privacy.html">Privacy Notice</a> · <a href="privacy.html#ads">Interest-Based Ads</a>
-  · <a href="sell.html">Sell on Voltro</a> · <a href="careers.html">Careers</a>
-  · <a href="help.html">Customer Service</a>
+  <ul>
+    <li><a href="help.html">Help</a></li>
+    <li><a href="orders.html">Orders &amp; returns</a></li>
+    <li><a href="returns.html">Delivery &amp; returns</a></li>
+    <li><a href="sell.html">Sell on Voltro</a></li>
+    <li><a href="careers.html">Careers</a></li>
+    <li><a href="conditions.html">Terms of Use</a></li>
+    <li><a href="privacy.html">Privacy</a></li>
+    <li><a href="privacy.html#ads">Ad choices</a></li>
+  </ul>
+  <p>&copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000.
+  Prices and availability are subject to change.</p>
 </footer>
 <script src="voltro-nav.js"></script>
 </body>

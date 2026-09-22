@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gadgetron | Monitor spec index</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="gadgetron.css">
 <style>
   .notices { margin-bottom: 12px; border-left: 3px solid #ffb020; padding: 2px 0 2px 9px; }
@@ -12,8 +14,8 @@
 </style>
 </head>
 <body>
-<div class="railbar">
-  <span class="mark">Gadgetron</span>
+<header class="railbar">
+  <a class="mark" href="index.html">Gadgetron</a>
   <span class="tagline">Spec index and price engine</span>
   <form action="search.html" method="get">
     <input name="q" aria-label="Search part numbers or models" placeholder="Model, brand or part no.">
@@ -21,7 +23,7 @@
   </form>
   <span class="who">Guest &middot; <a href="signin.html">sign in</a> &middot;
     <a href="order-list.html">order list</a>: <span id="order-count">0 queued</span></span>
-</div>
+</header>
 <nav class="tabs" aria-label="Sections">
   <a href="index.html" aria-current="page">Catalog</a>
   <a href="compare.html">Compare</a>
@@ -30,8 +32,8 @@
   <a href="glossary.html">Spec glossary</a>
   <a href="bulk-quote.html">Bulk quote</a>
 </nav>
-<div class="ticker">Clearance corner: open-box monitors from $79. While supplies last.</div>
-<div class="layout">
+<div class="ticker">Clearance corner: open-box monitors from $61.99. While supplies last.</div>
+<main class="layout">
   <aside class="facets" aria-label="Filters">
     <h2>Narrow this index</h2>
     <details open>
@@ -89,6 +91,7 @@
         <tr>
           <th><span class="offscreen">Compare</span></th>
           <th>Model</th>
+          <th>Part no.</th>
           <th class="num">Diag in</th>
           <th>Native res</th>
           <th>Class</th>
@@ -105,18 +108,19 @@
     </table>
     <p class="rowsnote" id="rowsnote"></p>
   </section>
-</div>
+</main>
 <footer class="legalstrip">
   <a href="warehouse-policy.html#status">Warehouse status codes</a> &middot;
   <a href="warehouse-policy.html#returns">Return window</a> &middot;
   <a href="methodology.html">Price engine methodology</a> &middot;
   <a href="seller-terms.html">Marketplace seller terms</a> &middot;
   <a href="service-status.html">Service status history</a> &middot;
+  <a href="terms.html">Terms of sale</a> &middot;
   <a href="privacy.html">Privacy notice</a> &middot;
   <a href="support.html">Support desk</a><br>
   Listings are supplied by marketplace sellers; Gadgetron is not the seller of record for
   marketplace items. Specifications are provided by the manufacturer. &copy; 2026 Gadgetron
-  Trading Co.
+  Trading Co., 4180 Halverson Way, Suite 300, Druvenport, OH 43000.
 </footer>
 <script>
 window.GADGETRON_NONCE = '__SESSION_NONCE__';
