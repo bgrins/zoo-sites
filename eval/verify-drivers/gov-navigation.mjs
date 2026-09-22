@@ -10,10 +10,41 @@
 //
 // See probes.mjs for the driver contract.
 
+import { readdir, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ANSWERS } from '../answers.mjs';
 import { addSession, clickToPath, esc, until, uidOf } from './lib.mjs';
 
 const lines = (snap) => snap.split('\n');
+
+// The page-view tag is the Bureau's template, not a mark of the pages the
+// validators watch: every page served with a session carries it, so neither a
+// grep of the tree nor a network log tells a graded page from its decoy. The
+// 404 page is served without a session, so it has no nonce to post.
+const GOV_ROOT = fileURLToPath(new URL('../../pages/gov/', import.meta.url));
+async function assertTaggedEverywhere() {
+  const pages = (await readdir(GOV_ROOT, { recursive: true }))
+    .filter((f) => f.endsWith('.html') && f !== '404.html');
+  const untagged = [];
+  for (const rel of pages) {
+    const html = await readFile(join(GOV_ROOT, rel), 'utf8');
+    const tagged = ['/api/gov/page-view', '__GOV_PAGE_TOKEN__', '__SESSION_NONCE__'].every((s) =>
+      html.includes(s)
+    );
+    if (!tagged) untagged.push(rel);
+  }
+  if (untagged.length) {
+    throw new Error(`${untagged.length} of ${pages.length} gov pages lack the page-view tag: ${untagged.slice(0, 8).join(', ')}`);
+  }
+}
+
+// A page the driver loaded that no validator watches still posts its view.
+function viewLanded(ctx, path) {
+  return until(`a page view of ${path}`, () =>
+    [...ctx.pages.state.sessions.values()].some((s) => (s.govViews ?? []).some((v) => v.path === path)),
+  { tries: 20, gap: 200 });
+}
 
 // State-case plants for the navigation-plus-page-beacon gates. `logs` names
 // which of a session's records lose the path: both, or only the beacon half.
@@ -159,8 +190,10 @@ export const DRIVERS = {
       'The Subsurface Permits desk keeps the general Bureau counter hours, ' +
         'Monday to Friday 8:30 AM to 4:30 PM.',
     ],
-    async run({ goto, snapshot, mcp, evaluate }) {
+    async run({ goto, snapshot, mcp, evaluate }, ctx) {
+      await assertTaggedEverywhere();
       await goto('/gov/departments/');
+      await viewLanded(ctx, '/gov/departments/index.html');
       // One judgment call per level, made on each listing's full blurb, which
       // is read with a script; the chosen link is then clicked by uid. Exactly
       // one listing per level may match, or the cue no longer decides.
@@ -264,6 +297,7 @@ export const DRIVERS = {
     alsoCorrectState: [straySession(ANSWERS.govNav.deskPath)],
     wrong: ['The Surface Permits desk can be reached on (804) 555-0163.'],
     async run({ goto, snapshot, mcp, evaluate }) {
+      await assertTaggedEverywhere();
       await goto(`${DESK}/subsurface-permits.html`);
       const own = (await deskFacts(evaluate, 'Telephone')).Telephone;
       if (!/555-0163/.test(String(own))) {
@@ -353,8 +387,10 @@ export const DRIVERS = {
       'Send Form RV-7 to the Bureau of Civic Revenue, Amendments Section, ' +
         'PO Box 7 A, Substation Annex.',
     ],
-    async run({ goto, snapshot, mcp, evaluate }) {
+    async run({ goto, snapshot, mcp, evaluate }, ctx) {
+      await assertTaggedEverywhere();
       await goto('/gov/');
+      await viewLanded(ctx, '/gov/index.html');
       const home = await snapshot();
       // The sidebar search field carries no id, name, label or placeholder, so
       // the snapshot shows a bare `input` with nothing to identify it: the only
@@ -384,6 +420,10 @@ export const DRIVERS = {
       // The ranking is the trap: hit 1 is the RV-7A page. Take the RV-7 one.
       if (!/uid=\S+ a "Form RV-7A Instructions"/.test(results)) {
         throw new Error('the decoy RV-7A hit is missing, so the task has no trap left');
+      }
+      const top = await evaluate(() => document.querySelector('#results a')?.textContent ?? '');
+      if (top !== 'Form RV-7A Instructions') {
+        throw new Error(`the first hit is "${top}", not the RV-7A decoy the ranking puts on top`);
       }
       const wanted = uidOf(results, 'a "Form RV-7 Instructions"');
       if (!wanted) throw new Error('no Form RV-7 Instructions hit in the results');

@@ -42,45 +42,46 @@
     <p class="check-error" id="check-error" hidden>The check service did not respond. Try again.</p>
     <div class="recent">
       <h2>Recent checks</h2>
-      <p class="recent-empty" id="recent-empty">No checks yet this session.</p>
+      <p class="recent-empty" id="recent-empty" hidden>No checks yet this session.</p>
       <ul class="recent-list" id="recent-list"></ul>
     </div>
   </section>
 
   <section class="panel">
     <h2>Systems</h2>
-    <div class="sysrow">
+    <div class="sysrow" data-component="edge">
       <span class="sys-name">Edge delivery</span>
-      <div class="sys-bar"></div>
-      <span class="sys-pct">99.99%</span>
+      <div class="sys-bar" role="img" aria-label="Edge delivery, daily uptime"></div>
+      <span class="sys-pct">&mdash;</span>
       <span class="chip chip-operational">Operational</span>
     </div>
-    <div class="sysrow">
+    <div class="sysrow" data-component="relay">
       <span class="sys-name">Relay mesh</span>
-      <div class="sys-bar bar-dip"></div>
-      <span class="sys-pct">99.97%</span>
+      <div class="sys-bar" role="img" aria-label="Relay mesh, daily uptime"></div>
+      <span class="sys-pct">&mdash;</span>
       <span class="chip chip-operational">Operational</span>
     </div>
-    <div class="sysrow">
+    <div class="sysrow" data-component="api">
       <span class="sys-name">API gateway</span>
-      <div class="sys-bar"></div>
-      <span class="sys-pct">100.00%</span>
+      <div class="sys-bar" role="img" aria-label="API gateway, daily uptime"></div>
+      <span class="sys-pct">&mdash;</span>
       <span class="chip chip-operational">Operational</span>
     </div>
-    <div class="sysrow">
+    <div class="sysrow" data-component="panel">
       <span class="sys-name">Control panel</span>
-      <div class="sys-bar bar-dip"></div>
-      <span class="sys-pct">99.95%</span>
+      <div class="sys-bar" role="img" aria-label="Control panel, daily uptime"></div>
+      <span class="sys-pct">&mdash;</span>
       <span class="chip chip-operational">Operational</span>
     </div>
-    <div class="sysrow">
+    <div class="sysrow" data-component="logs">
       <span class="sys-name">Log streaming</span>
-      <div class="sys-bar bar-cut"></div>
-      <span class="sys-pct">99.62%</span>
+      <div class="sys-bar" role="img" aria-label="Log streaming, daily uptime"></div>
+      <span class="sys-pct">&mdash;</span>
       <span class="chip chip-degraded">Degraded</span>
     </div>
-    <p class="sys-legend">Daily uptime, oldest day on the left. Relay path checks run against the
-    relay mesh serving your route and do not affect the figures above.</p>
+    <p class="sys-legend"><span class="sys-window">Daily uptime over the last 90 days</span>, oldest
+    day on the left. Relay path checks run against the relay mesh serving your route and do not
+    affect the figures above.</p>
   </section>
 
   <section class="panel active-inc">
@@ -89,10 +90,10 @@
       <h3><a href="incidents/ne-2d08f.html">Log streaming delivering with delay</a></h3>
       <div class="inc-meta">
         <span class="inc-ref">NE-2D08F</span>
-        <span class="inc-ts">opened 2 hr 18 min ago</span>
+        <span class="inc-ts" data-live="opened">ongoing</span>
         <span class="chip chip-degraded">Monitoring</span>
       </div>
-      <p><b>Monitoring</b> &middot; 25 min ago &middot; Ingest is running on standby capacity and the backlog is draining. Delivery continues with a delay of up to four minutes. No records have been lost, and records already delayed will arrive in order.</p>
+      <p><b>Monitoring</b> &middot; <span data-live="update" data-state="Monitoring">latest update</span> &middot; Ingest is running on standby capacity and the backlog is draining. Delivery continues with a delay of up to four minutes. No records have been lost, and records already delayed will arrive in order.</p>
     </div>
   </section>
 
@@ -174,18 +175,38 @@ function showFlash(data) {
   }, 4200);
 }
 
-function appendRow(data) {
-  const row = el('li', 'rc-row');
-  row.append(
-    el('span', 'rc-ts', stampUTC(data.at)),
-    el('span', 'rc-code', data.probeCode),
-    el('span', 'chip chip-' + data.state, STATE_LABEL[data.state] || data.state),
-    el('span', 'rc-note', data.component)
-  );
-  list.prepend(row);
-  while (list.children.length > 8) list.lastChild.remove();
-  emptyLine.hidden = true;
+const shown = new Map();
+let listed = false;
+
+function renderRows() {
+  const rows = [...shown.values()].sort((a, b) => b.at - a.at).slice(0, 8);
+  list.replaceChildren(...rows.map((data) => {
+    const row = el('li', 'rc-row');
+    row.append(
+      el('span', 'rc-ts', stampUTC(data.at)),
+      el('span', 'rc-code', data.probeCode),
+      el('span', 'chip chip-' + data.state, STATE_LABEL[data.state] || data.state),
+      el('span', 'rc-note', data.component)
+    );
+    return row;
+  }));
+  emptyLine.hidden = rows.length > 0 || !listed;
 }
+
+function appendRow(data) {
+  shown.set(data.probeCode, data);
+  renderRows();
+}
+
+fetch('/api/status/checks', { headers: { 'X-Session-Nonce': NONCE } })
+  .then((res) => (res.ok ? res.json() : null))
+  .then((body) => {
+    if (!body) return;
+    for (const data of body.checks ?? []) if (!shown.has(data.probeCode)) shown.set(data.probeCode, data);
+    listed = true;
+    renderRows();
+  })
+  .catch(() => {});
 
 runBtn.addEventListener('click', async () => {
   runBtn.disabled = true;
@@ -207,5 +228,6 @@ runBtn.addEventListener('click', async () => {
   }
 });
 </script>
+<script src="live.js"></script>
 </body>
 </html>

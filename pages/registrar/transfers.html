@@ -30,18 +30,53 @@
     <span class="crumb">Domains / <span class="zone">fernvale-labs.example.net</span> / <b>Transfers</b></span>
     <span class="gap"></span>
     <span class="acct">Registry lock: off</span>
+    <a class="signout" href="signout.html">Sign out</a>
   </div>
 
   <main>
     <h1>Transfers</h1>
     <p class="lede">Outbound transfers need the auth code; inbound transfers start from
-    the gaining registrar.</p>
+    the gaining registrar, which for a name you bring here is Northgate.</p>
     <div class="pagebody">
-      <p>No transfers are in progress for fernvale-labs.example.net.</p>
+      <p>No outbound transfer is in progress for fernvale-labs.example.net.</p>
       <p>Registry lock is off. With the lock on, transfers, nameserver changes and
       deletions are refused at the registry until the lock is lifted by support. To apply it,
       email desk@northgatedomains.example.net from the admin contact's address; the desk
       confirms by phone before the lock goes on.</p>
+    </div>
+
+    <h2>Auth code</h2>
+    <div class="pagebody">
+      <p>The auth code (EPP code) lets another registrar take over fernvale-labs.example.net. It is
+      emailed to the admin contact, never shown in the console, and stays valid for 14 days;
+      requesting a new code replaces the old one.</p>
+      <p class="form-msg" id="code-msg" role="status"></p>
+      <button type="button" class="btn-quiet" id="code-send">Email the auth code to the admin contact</button>
+    </div>
+
+    <h2>Transfer a domain in</h2>
+    <div class="pagebody">
+      <form id="in-form">
+        <div class="field-row">
+          <label for="in-domain">Domain name</label>
+          <input id="in-domain" type="text" size="28" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field-row">
+          <label for="in-code">Auth code</label>
+          <input id="in-code" type="text" size="20" autocomplete="off" spellcheck="false">
+        </div>
+        <p class="form-msg" id="in-msg" role="status"></p>
+        <button type="submit" class="btn-primary">Request transfer</button>
+      </form>
+      <table class="plain" id="in-table" hidden>
+        <thead>
+          <tr><th>Domain</th><th>Requested</th><th>Status</th></tr>
+        </thead>
+        <tbody id="in-rows"></tbody>
+      </table>
+      <p class="note-line">The current registrar has up to five days to release the name. A transfer
+      adds one year to the registration and is invoiced at the transfer price on your
+      <a href="billing.html">Billing</a> page once the name arrives.</p>
     </div>
   </main>
 
@@ -52,5 +87,81 @@
     <a href="support.html">Support</a>
   </footer>
 </div>
+<script>
+const NONCE = '__SESSION_NONCE__';
+
+async function send(path, body) {
+  const init = body
+    ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ nonce: NONCE }, body)) }
+    : { headers: { 'X-Session-Nonce': NONCE } };
+  const r = await fetch(path, init);
+  return r.json();
+}
+
+const stamp = (ms) => new Date(ms).toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+
+function message(id, kind, text) {
+  const box = document.getElementById(id);
+  box.className = 'form-msg ' + kind;
+  box.textContent = text;
+}
+
+function showCode(code) {
+  if (code) message('code-msg', 'ok', 'Sent to the admin contact at ' + stamp(code.sentAt) + '; valid for ' + code.validDays + ' days.');
+}
+
+function showInbound(inbound) {
+  const table = document.getElementById('in-table');
+  const rows = document.getElementById('in-rows');
+  rows.textContent = '';
+  table.hidden = !inbound.length;
+  for (const t of inbound) {
+    const tr = document.createElement('tr');
+    for (const [cls, text] of [['mono', t.domain], ['mono', stamp(t.requestedAt)], ['', 'Awaiting release by the current registrar']]) {
+      const cell = document.createElement('td');
+      if (cls) cell.className = cls;
+      cell.textContent = text;
+      tr.append(cell);
+    }
+    rows.append(tr);
+  }
+}
+
+document.getElementById('code-send').addEventListener('click', async () => {
+  let done;
+  try {
+    done = await send('/api/registrar/auth-code', {});
+  } catch {
+    done = { ok: false };
+  }
+  if (!done.ok) { message('code-msg', 'warn', done.error || 'The auth code could not be sent. Try again.'); return; }
+  showCode(done);
+});
+
+document.getElementById('in-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  let done;
+  try {
+    done = await send('/api/registrar/transfer-in', {
+      domain: document.getElementById('in-domain').value,
+      authCode: document.getElementById('in-code').value,
+    });
+  } catch {
+    done = { ok: false };
+  }
+  if (!done.ok) { message('in-msg', 'warn', done.error || 'The transfer could not be requested. Try again.'); return; }
+  showInbound(done.inbound);
+  event.target.reset();
+  message('in-msg', 'ok', 'Transfer requested. We will email the admin contact when the name arrives.');
+});
+
+(async () => {
+  try {
+    const data = await send('/api/registrar/transfers');
+    showCode(data.authCode);
+    showInbound(data.inbound || []);
+  } catch {}
+})();
+</script>
 </body>
 </html>

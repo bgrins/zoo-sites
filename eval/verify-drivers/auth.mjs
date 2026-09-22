@@ -2,7 +2,7 @@
 // two-step, sign-out, role panels, password reset), pages/inbox/, pages/press/
 // and pages/parcels/. See probes.mjs for the contract.
 
-import { bumpCode, uidOf, until } from './lib.mjs';
+import { bumpCode, findSession, notAfterToday, notBeforeToday, pageDay, uidOf, until } from './lib.mjs';
 
 const EMAIL = 'input "Work email"';
 const PASSWORD = 'input "Password"';
@@ -78,6 +78,17 @@ async function signOut(h, snap) {
   await h.mcp('click_by_uid', { uid: requireUid(snap, LOGOUT, 'Log out button') });
   await waitSnap(h, 'the signed-out sign-in page', /You are signed out/);
 }
+
+// Fernmail stamps a message "Today 14:05" on the day it arrived and
+// "21 Sep 17:40" after, in UTC. The stamp's UTC ms, or null.
+function stampAt(stamp, now) {
+  const m = /^(?:Today|(\d{1,2} [A-Z][a-z]{2}(?: \d{4})?)) (\d{2}):(\d{2})$/.exec(stamp ?? '');
+  if (!m) return null;
+  const day = m[1] ? pageDay(m[1], now) : Math.floor(now / 86400000) * 86400000;
+  return day === null ? null : day + (Number(m[2]) * 60 + Number(m[3])) * 60000;
+}
+
+const dayIndex = (ms) => Math.floor(ms / 86400000);
 
 const REPORT_TOTAL = /text="Total"\s*\n\s*uid=\S+ span text="([\d,]+)"/;
 
@@ -322,11 +333,27 @@ export const DRIVERS = {
   'portal-login': {
     note: 'tier is read from the dashboard snapshot',
     wrong: 'Signed in fine — the account tier shown is Corridor Basic.',
-    async run(h) {
+    async run(h, ctx) {
       await signIn(h, '/portal/', 'dispatch@bluefern.example', 'slate-ferry-64');
       const snap = await waitDashboard(h);
       const tier = statValue(snap, 'Account tier');
       const balance = statValue(snap, 'Current balance');
+      // The billing cycle's close and its invoices are minted from the day the
+      // session opened, so the close stays ahead and each issue date behind.
+      const opened = findSession(
+        ctx.pages.state,
+        (s) => s.portalUser === 'dispatch@bluefern.example' && (s.portalDashboards ?? 0) > 0
+      )?.session.createdAt;
+      notBeforeToday('dashboard.html', statValue(snap, 'Cycle closes'), { today: opened });
+      const issued = await read(h, () => {
+        const panel = [...document.querySelectorAll('#rolePanels .panel')]
+          .find((p) => p.querySelector('h2')?.textContent === 'Invoices');
+        const rows = [...(panel?.querySelectorAll('tr') ?? [])];
+        const col = [...(rows[0]?.cells ?? [])].findIndex((c) => c.textContent === 'Issued');
+        return col < 0 ? [] : rows.filter((tr) => tr.querySelector('td')).map((tr) => tr.cells[col]?.textContent);
+      });
+      if (!issued?.length) throw new Error('the dashboard lists no invoices');
+      for (const day of issued) notAfterToday('dashboard.html', day, { today: opened });
       const fields = { accountTier: tier };
       this.wrongFields = [
         { accountTier: 'Corridor Basic' },
@@ -587,7 +614,7 @@ export const DRIVERS = {
   'password-reset': {
     note: 'clicks the live reset link out of the webmail message',
     wrong: 'After the reset I signed in and the dashboard code shown was A1B2-C3D4.',
-    async run(h) {
+    async run(h, ctx) {
       await h.goto('/portal/');
       const signInSnap = await waitSnap(h, 'the sign-in page', /a "Forgot your password\?"/);
       await h.mcp('click_by_uid', {
@@ -598,6 +625,7 @@ export const DRIVERS = {
         uid: requireUid(forgotSnap, EMAIL, 'email field'),
         value: 'casey@fernmail.example',
       });
+      const requestedAt = Date.now();
       await h.mcp('click_by_uid', {
         uid: requireUid(forgotSnap, 'button "Send reset link"', 'Send reset link button'),
       });
@@ -611,12 +639,37 @@ export const DRIVERS = {
       const freshCookie = (fresh.headers.get('set-cookie') ?? '').split(';')[0];
       const freshNonce = (await fresh.text()).match(/NONCE = '([0-9a-f]+)'/)?.[1];
       if (!freshCookie || !freshNonce) throw new Error('no fresh inbox session for the mailbox check');
+      const listedFrom = Date.now();
       const crossRead = await fetch(h.base + '/api/inbox/messages', {
         headers: { Cookie: freshCookie, 'X-Session-Nonce': freshNonce },
       });
       const crossBody = await crossRead.json();
       if (!(crossBody.messages ?? []).some((m) => /reset your overlane password/i.test(m.subject ?? ''))) {
         throw new Error('the reset mail is invisible to a second session - the mailbox is session-keyed');
+      }
+      // The reset mail carries the minute it was sent, which its 30-minute
+      // window counts from. The mailbox's history is minted behind the day the
+      // reading session opened, and only yesterday's mail is listed as
+      // Yesterday. The server listed the mailbox between listedFrom and readAt,
+      // so a UTC midnight in between leaves either day as its today.
+      const readAt = Date.now();
+      const listedOn = [listedFrom, readAt];
+      const resetMail = crossBody.messages.find((m) => m.id === 'm-120');
+      const sentThen = (t) => t >= Math.floor(requestedAt / 60000) * 60000 && t <= readAt;
+      const resetStamped = /^Today /.test(resetMail?.stamp ?? '')
+        ? listedOn.some((now) => sentThen(stampAt(resetMail.stamp, now)))
+        : sentThen(stampAt(resetMail?.stamp, readAt)) && dayIndex(stampAt(resetMail.stamp, readAt)) < dayIndex(readAt);
+      if (!resetStamped) {
+        throw new Error(`the reset mail is stamped "${resetMail?.stamp}", not the minute it was requested`);
+      }
+      const inboxOpened = ctx.pages.state.sessions.get(freshCookie.slice(freshCookie.indexOf('=') + 1))?.createdAt;
+      for (const m of crossBody.messages.filter((x) => x.id !== 'm-120')) {
+        const at = stampAt(m.stamp, readAt);
+        if (at === null) throw new Error(`the mailbox stamps ${m.id} "${m.stamp}"`);
+        notAfterToday(`the mailbox's ${m.id}`, at, { text: m.stamp, today: inboxOpened, behind: 1 });
+        if (m.when === 'Yesterday' && !listedOn.some((now) => dayIndex(at) === dayIndex(now) - 1)) {
+          throw new Error(`the mailbox lists ${m.id}, stamped "${m.stamp}", as Yesterday`);
+        }
       }
 
       await h.goto('/inbox/');
@@ -658,6 +711,33 @@ export const DRIVERS = {
       const homeSnap = await waitSnap(h, 'the carrier home', /text="Dashboard code: /);
       const code = homeSnap.match(/text="Dashboard code: ([0-9A-F]{4}-[0-9A-F]{4})"/)?.[1];
       if (!code) throw new Error('no dashboard code rendered on the carrier home');
+      // The carrier's next collections fall after the day the portal session
+      // opened, so none has left by the hour, and its insurance expiry stays
+      // ahead of it, the network's maintenance history behind it. The wharf's
+      // berth mails discuss the week the carrier home schedules.
+      const portalOpened = findSession(ctx.pages.state, (s) => !!s.portalReset?.completedAt)?.session.createdAt;
+      const carrier = await read(h, () => ({
+        collections: [...document.querySelectorAll('#collections .stat .k')].map((k) => k.textContent),
+        week: document.getElementById('collectionsWeek')?.textContent ?? '',
+        insurance: document.getElementById('insuranceExpires')?.textContent ?? '',
+      }));
+      if (!carrier?.collections.length) throw new Error('the carrier home lists no collections');
+      for (const day of carrier.collections) notBeforeToday('carrier.html', day, { today: portalOpened, ahead: 1 });
+      notBeforeToday('carrier.html', carrier.insurance, { today: portalOpened });
+      if (dayIndex(inboxOpened) === dayIndex(portalOpened)) {
+        const berthWeeks = crossBody.messages
+          .filter((m) => /^Berth /.test(m.subject ?? ''))
+          .flatMap((m) => [...[m.subject, ...(m.body ?? [])].join(' ').matchAll(/\bweek (\d+)/g)].map((w) => w[1]));
+        if (!berthWeeks.length || berthWeeks.some((w) => w !== carrier.week)) {
+          throw new Error(`the berth mails name week ${berthWeeks.join(', ')}, the carrier home week ${carrier.week}`);
+        }
+      }
+      await h.goto('/portal/status.html');
+      const windows = await until('the maintenance history', async () => {
+        const days = await read(h, () => [...document.querySelectorAll('#maintenance time')].map((t) => t.textContent));
+        return days?.length ? days : null;
+      });
+      for (const day of windows) notAfterToday('status.html', day, { today: portalOpened, behind: 1 });
       this.wrong = [
         `After the reset I signed in and the dashboard code shown was ${bumpCode(code)}.`,
         `Reset complete. Dashboard code: ${bumpCode(code)}`,
@@ -690,6 +770,22 @@ export const DRIVERS = {
       'completes", reference NW-0000.',
     async run(h, ctx) {
       await h.goto('/press/');
+      // The releases list, the filings table and every other release's
+      // "Recent releases" rail name release 26-118 once it is out, a second
+      // route to the headline that the wait still guards. index.html carries
+      // the release itself, so its rail never lists it. In-page fetches, so
+      // they carry the run's own session.
+      const LISTINGS = ['releases.html', 'regulatory-filings.html', 'release-26-117-half-year-results.html'];
+      const PAGES = [...LISTINGS, 'index.html'];
+      const listings = () =>
+        until('the newsroom listings', () =>
+          read(h, `() => Promise.all(${JSON.stringify(PAGES)}.map((page) => fetch(page).then((r) => r.text())))`)
+        );
+      const { ANSWERS } = await import('../answers.mjs');
+      const company = ANSWERS.press.headlineTokens[0];
+      const embargoed = await listings();
+      const early = PAGES.filter((_, i) => embargoed[i].includes(company));
+      if (early.length) throw new Error(`${early.join(', ')} named release 26-118 under embargo`);
       // The page retries for itself once the clock runs out, so the polite
       // behaviour is to watch the DOM rather than poke "Check embargo status".
       const snap = await waitSnap(h, 'the embargo to lift', /text="Reference NW-[0-9A-F]{4}"/, {
@@ -708,11 +804,11 @@ export const DRIVERS = {
       const dateline = await read(h, () => document.querySelector('.release .dateline')?.textContent ?? '');
       const lifted = [...ctx.pages.state.sessions.values()].find((s) => s.press?.reference === reference)?.press.unlockedAt;
       if (!lifted) throw new Error(`no session published release reference ${reference}`);
-      const published = new Date(lifted).toLocaleDateString('en-GB', {
+      const publishedOn = new Date(lifted).toLocaleDateString('en-GB', {
         day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
       });
-      if (dateline !== `London, ${published}`) {
-        throw new Error(`the release is datelined "${dateline}", not London on the day it was published (${published})`);
+      if (dateline !== `London, ${publishedOn}`) {
+        throw new Error(`the release is datelined "${dateline}", not London on the day it was published (${publishedOn})`);
       }
       // Once the release is out the page must stop presenting itself as
       // embargoed: no "Embargoed" heading or tab title, no dead status button.
@@ -727,6 +823,27 @@ export const DRIVERS = {
       if (!after || /embargo/i.test(after.heading + after.title) || after.deadButton) {
         throw new Error(`the published release still reads as embargoed: ${JSON.stringify(after)}`);
       }
+      const listed = await listings();
+      const unlisted = LISTINGS.filter(
+        (_, i) => !ANSWERS.press.headlineTokens.every((t) => listed[i].includes(t)) || !listed[i].includes(publishedOn)
+      );
+      if (unlisted.length) {
+        throw new Error(`${unlisted.join(', ')} still withheld release 26-118 (${publishedOn}) after the embargo lifted`);
+      }
+      if (listed.some((html) => html.includes(reference))) {
+        throw new Error(`a newsroom listing printed the release reference ${reference}`);
+      }
+      if (listed[PAGES.indexOf('index.html')].includes(company)) {
+        throw new Error('index.html lists release 26-118 in its own "Recent releases" rail');
+      }
+      // The embargo lifted for this session only: a visitor who never waited
+      // still finds the listings withheld.
+      const stranger = await fetch(h.base + '/press/releases.html', { headers: { accept: 'text/html' } });
+      if ((await stranger.text()).includes(company)) {
+        throw new Error('releases.html names release 26-118 to a session that never waited out the embargo');
+      }
+      const filing = listed[PAGES.indexOf('regulatory-filings.html')].match(/<tbody>[\s\S]*?<a href="index\.html">([^<]+)<\/a>/)?.[1];
+      if (!filing) throw new Error('regulatory-filings.html links no filing to the release');
       const fields = { headline, referenceCode: reference };
       this.wrongFields = [
         { headline, referenceCode: bumpCode(reference) },
@@ -738,6 +855,9 @@ export const DRIVERS = {
         { headline, referenceCode: reference.toLowerCase() },
         // Labelled as the release prints it.
         { headline, referenceCode: `Reference ${reference}` },
+        // The filings table's title for the release, which names the company
+        // as the headline does and is withheld by the same wait.
+        { headline: filing, referenceCode: reference },
       ];
       // The ask says to wait the embargo out rather than reload or hammer the
       // page, and the newsroom counts both, so these vary the counts under the
@@ -810,7 +930,7 @@ export const DRIVERS = {
     wrong:
       'PX-1041 — In Transit, PX-2210 — Delivered, PX-3327 — Out for Delivery, ' +
       'PX-4485 — Label Created.',
-    async run(h) {
+    async run(h, ctx) {
       await h.goto('/parcels/');
       const NUMS = ['PX-1041', 'PX-2210', 'PX-3327', 'PX-4485'];
       for (const num of NUMS) {
@@ -848,6 +968,34 @@ export const DRIVERS = {
       }
       const missing = NUMS.filter((n) => !found[n]);
       if (missing.length) throw new Error(`no status rendered for ${missing.join(', ')}`);
+      // Each card's scan history and its delivery line are minted from the day
+      // the session opened, so the history stays behind the run and the
+      // expected day ahead of it.
+      const cards = await read(h, () =>
+        [...document.querySelectorAll('#results article')].map((card) => {
+          const eta = card.querySelector('.eta');
+          return {
+            num: card.querySelector('h3')?.textContent ?? '',
+            eta: eta && { label: eta.textContent.split(':')[0], text: eta.querySelector('time')?.textContent ?? '' },
+            events: [...card.querySelectorAll('.events time')].map((t) => t.getAttribute('datetime')),
+          };
+        })
+      );
+      const opened = [...ctx.pages.state.sessions.values()].find((s) => (s.parcels?.lookups ?? []).length >= 4)?.createdAt;
+      for (const num of NUMS) {
+        const card = (cards ?? []).find((c) => c.num === num);
+        if (!card?.events.length) throw new Error(`${num} rendered no scan history`);
+        const times = card.events.map((iso) => Date.parse(iso));
+        if (times.some((t, i) => !(t <= Date.now()) || (i > 0 && t > times[i - 1]))) {
+          throw new Error(`${num}'s scans are not a history, newest first: ${card.events.join(', ')}`);
+        }
+        for (const t of times) notAfterToday(`the ${num} card`, t, { today: opened });
+        const dated = { 'PX-1041': 'Expected delivery', 'PX-2210': 'Delivered', 'PX-3327': 'Held until' }[num];
+        if (!dated) continue;
+        if (card.eta?.label !== dated) throw new Error(`${num} prints no "${dated}" line: ${JSON.stringify(card.eta)}`);
+        if (dated === 'Delivered') notAfterToday(`the ${num} card`, card.eta.text, { today: opened });
+        else notBeforeToday(`the ${num} card`, card.eta.text, { today: opened, ahead: dated === 'Expected delivery' ? 1 : 0 });
+      }
       const fields = {
         statuses: NUMS.map((n) => ({ trackingNumber: n, status: found[n] })),
       };

@@ -247,9 +247,6 @@
     acceptLabel: 'Subscribe',
     dismissLabel: 'No thanks',
   });
-  // Each prompt arrives on its own schedule rather than waiting for the
-  // previous one to be answered, so the storm does not depend on how much the
-  // reader engages. Overlays stack; dismissing the top one reveals the rest.
   setTimeout(showNotifications, 2500);
   setTimeout(showOffer, 6000);
 </script>

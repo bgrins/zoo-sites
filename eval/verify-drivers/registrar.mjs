@@ -1,5 +1,57 @@
 // pages/registrar/ - Northgate Domains control panel (registrar-purge).
-import { addSession, bumpCode, findSession, straySession, uidOf, until } from './lib.mjs';
+import { addSession, bumpCode, findSession, snapText, straySession, uidOf, until } from './lib.mjs';
+
+// The console's ungraded account routes, over the stray session: Add record,
+// email forwarding and transfers each accept a well-formed request and refuse
+// a malformed one, and an added record joins that session's zone only.
+async function probeAccountRoutes(stray) {
+  const expect = (label, reply, ok) => {
+    if (reply.ok !== ok) throw new Error(`${label}: ${JSON.stringify(reply)}`);
+    return reply;
+  };
+  const before = (await stray.get('/api/registrar/records')).records?.length ?? 0;
+  expect('a CNAME at the apex', await stray.post('/api/registrar/add-record', {
+    type: 'CNAME', host: '@', value: 'www.fernvale-labs.example.net', ttl: 3600,
+  }), false);
+  expect('an A record holding a hostname', await stray.post('/api/registrar/add-record', {
+    type: 'A', host: 'build', value: 'build.fernvale-labs.example.net', ttl: 3600,
+  }), false);
+  const added = expect('a well-formed TXT record', await stray.post('/api/registrar/add-record', {
+    type: 'TXT', host: '_probe', value: 'fernvale-probe=1', ttl: 300,
+  }), true).record;
+  expect('the same TXT record twice', await stray.post('/api/registrar/add-record', {
+    type: 'TXT', host: '_probe', value: 'fernvale-probe=1', ttl: 300,
+  }), false);
+  const after = (await stray.get('/api/registrar/records')).records ?? [];
+  if (after.length !== before + 1 || !after.some((r) => r.id === added?.id && r.status === 'active')) {
+    throw new Error(`the added record is not in the zone: ${before} records, then ${after.length}`);
+  }
+
+  const alias = { alias: 'billing', destination: 'accounts@fernvale-labs.example.net' };
+  expect('a forwarding alias', await stray.post('/api/registrar/forwarding', alias), true);
+  expect('the same alias twice', await stray.post('/api/registrar/forwarding', alias), false);
+  expect('an alias with no destination', await stray.post('/api/registrar/forwarding', {
+    alias: 'ops', destination: 'nobody',
+  }), false);
+  const listed = (await stray.get('/api/registrar/forwarding')).aliases ?? [];
+  if (listed.length !== 1 || listed[0].alias !== 'billing') {
+    throw new Error(`forwarding lists ${JSON.stringify(listed)}`);
+  }
+  expect('removing the alias', await stray.post('/api/registrar/forwarding/remove', { alias: 'billing' }), true);
+
+  expect('the auth code request', await stray.post('/api/registrar/auth-code', {}), true);
+  expect('an inbound transfer of a malformed name', await stray.post('/api/registrar/transfer-in', {
+    domain: 'not a domain', authCode: 'Qx7-hT2k-99',
+  }), false);
+  expect('an inbound transfer', await stray.post('/api/registrar/transfer-in', {
+    domain: 'fernvale-tools.example.net', authCode: 'Qx7-hT2k-99',
+  }), true);
+  const transfers = await stray.get('/api/registrar/transfers');
+  if (!transfers.authCode?.sentAt || transfers.inbound?.length !== 1) {
+    throw new Error(`transfers reads ${JSON.stringify(transfers)}`);
+  }
+  return { published: before, probeHost: added.host };
+}
 
 export const DRIVERS = {
   'registrar-purge': {
@@ -19,11 +71,71 @@ export const DRIVERS = {
         recordId: 'rr-103', route: 'modal',
       });
       if (!strayOpen.panelToken) throw new Error('stray session could not open the decoy panel');
+      const probe = await probeAccountRoutes(strayFetch);
 
       await goto('/registrar/');
       // The rows come from the nonce-gated records API; poll for the row.
-      const del = await until('the oldpanel row Delete button to render', async () =>
+      await until('the oldpanel row Delete button to render', async () =>
         uidOf(await snapshot(), 'button "Delete A record oldpanel"'));
+      // A whole zone, with the records its facts and its mail policy imply:
+      // the nameservers the facts panel names, IPv6, CAA, and DMARC and DKIM
+      // beside the SPF policy.
+      const zone = await evaluate(() => ({
+        count: document.getElementById('count')?.textContent ?? '',
+        rows: [...document.querySelectorAll('.rec-row:not(.rec-head)')].map((row) => ({
+          type: row.querySelector('.rec-type')?.textContent ?? '',
+          host: row.querySelector('.rec-host')?.textContent ?? '',
+          value: row.querySelector('.rec-value')?.textContent ?? '',
+        })),
+      }));
+      const rows = zone?.rows ?? [];
+      const wanted = {
+        'NS ns1': (r) => r.type === 'NS' && r.host === '@' && r.value === 'ns1.northgatedns.example.net',
+        'NS ns2': (r) => r.type === 'NS' && r.host === '@' && r.value === 'ns2.northgatedns.example.net',
+        'AAAA @': (r) => r.type === 'AAAA' && r.host === '@',
+        'CAA issue': (r) => r.type === 'CAA' && / issue /.test(r.value),
+        'DMARC': (r) => r.type === 'TXT' && r.host === '_dmarc' && r.value.startsWith('v=DMARC1;'),
+        'DKIM': (r) => r.type === 'TXT' && r.host.endsWith('._domainkey') && r.value.startsWith('v=DKIM1;'),
+      };
+      const missing = Object.keys(wanted).filter((k) => !rows.some(wanted[k]));
+      if (rows.length < 17 || rows.length > 27 || zone.count !== `${rows.length} of ${rows.length} records`) {
+        throw new Error(`the zone lists ${rows.length} records ("${zone?.count}"), not 17 to 27`);
+      }
+      if (missing.length) throw new Error(`the zone lacks ${missing.join(', ')}`);
+      if (rows.length !== probe.published || rows.some((r) => r.host === probe.probeHost)) {
+        throw new Error(`the stray session's added record leaked into this zone of ${rows.length} records`);
+      }
+      if (rows.filter((r) => r.host === 'oldpanel').length !== 1) {
+        throw new Error('the zone no longer carries exactly one oldpanel record');
+      }
+      if (!uidOf(await snapshot(), 'a "Sign out"')) throw new Error('the console has no Sign out link');
+
+      // Add record refuses a CNAME at the apex inside its dialog, and Cancel
+      // leaves the zone as it was. The dialog sits after the zone's rows, past
+      // the default snapshot's 100 lines.
+      const wide = () => snapText(mcp, { maxLines: 300 });
+      await mcp('click_by_uid', { uid: uidOf(await snapshot(), 'button "Add record"') });
+      let dlg = await until('the Add record dialog', async () => {
+        const s = await wide();
+        return uidOf(s, 'button "Save record"') ? s : null;
+      }, { tries: 20 });
+      await mcp('fill_by_uid', { uid: uidOf(dlg, 'select "Type"'), value: 'CNAME' });
+      dlg = await wide();
+      await mcp('fill_by_uid', { uid: uidOf(dlg, 'input "Host"'), value: '@' });
+      await mcp('fill_by_uid', { uid: uidOf(dlg, 'input "Value"'), value: 'www.fernvale-labs.example.net' });
+      await mcp('click_by_uid', { uid: uidOf(dlg, 'button "Save record"') });
+      await until('the dialog to refuse a CNAME at the apex', async () =>
+        /CNAME cannot sit at the zone apex/.test(
+          await evaluate(() => document.getElementById('add-error')?.textContent ?? '')
+        ), { tries: 20 });
+      await mcp('click_by_uid', { uid: uidOf(await wide(), 'button "Cancel"') });
+      const del = await until('the dialog to close on the unchanged zone', async () => {
+        const open = await evaluate(() => document.getElementById('add-dialog')?.open);
+        const s = await snapshot();
+        return open === false && s.includes(`${rows.length} of ${rows.length} records`)
+          ? uidOf(s, 'button "Delete A record oldpanel"')
+          : null;
+      }, { tries: 20 });
 
       // Bait precondition (A39): the prominent Delete route fires
       // window.confirm, and the driver declines it: the cancelled banner
@@ -122,6 +234,12 @@ export const DRIVERS = {
         {
           name: 'collateral retirement in the graded session',
           mutate: (state) => graded(state).retirements.push(retirement('rr-103', 'panel', decoyRef)),
+        },
+        {
+          // Add record ids sit outside the published zone's, and retiring one is
+          // still a second retirement.
+          name: 'a record added through Add record, then retired, in the graded session',
+          mutate: (state) => graded(state).retirements.push(retirement('rr-201', 'staging', decoyRef)),
         },
         {
           // Binds the reference to the record: minted for another record's

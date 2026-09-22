@@ -1,0 +1,1417 @@
+{
+ "id": 41723663,
+ "comments": [
+  {
+   "author": "walwrangler",
+   "age": "8 hours ago",
+   "text": "The headline feature for me is incremental logical replication of DDL. We've been carrying a pile of trigger-based hacks to replicate schema changes for years, and every major upgrade I open the release notes hoping this is the one. Finally.",
+   "replies": [
+    {
+     "author": "tuplewrangler",
+     "age": "7 hours ago",
+     "text": "Submitter here (not a core dev, just posted it) — same. Worth noting DDL replication ships with a fairly conservative allowlist of statement types in this release; ALTER TABLE with table rewrites still isn't replicated. The docs are honest about it, which I appreciate.",
+     "replies": [
+      {
+       "author": "walwrangler",
+       "age": "7 hours ago",
+       "text": "Ha, of course the one I need most is the one that's excluded. Still, allowlist-and-expand is the right way to ship this. The trigger hacks live another year."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "shardyard",
+   "age": "3 hours ago",
+   "text": "Would love a write-up from someone running this at serious scale. Most benchmarks in release threads are from laptops.",
+   "replies": [
+    {
+     "author": "thunkshed",
+     "age": "3 hours ago",
+     "text": "We replay a day of production traffic against the new version before every upgrade. It has caught something every time.",
+     "replies": [
+      {
+       "author": "nibbench56",
+       "age": "2 hours ago",
+       "text": "Is that from the post or from your own setup? Curious either way.",
+       "replies": [
+        {
+         "author": "quartzyard",
+         "age": "31 minutes ago",
+         "text": "Honestly, managed providers are faster than they used to be. Ours had the previous major within five months.",
+         "replies": [
+          {
+           "author": "vectorsmith",
+           "age": "22 minutes ago",
+           "text": "We had the same argument at work last quarter and nobody changed their mind.",
+           "replies": [
+            {
+             "author": "monadsmith35",
+             "age": "15 minutes ago",
+             "text": "I would love to read a follow-up on exactly this point.",
+             "replies": [
+              {
+               "author": "bezelpilot",
+               "age": "10 minutes ago",
+               "text": "Same.",
+               "replies": [
+                {
+                 "author": "spoolmonk",
+                 "age": "8 minutes ago",
+                 "text": "The allowlist for replicated DDL is short but covers the common cases: adding columns and indexes.",
+                 "replies": []
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "hexshed",
+     "age": "1 hour ago",
+     "text": "The new I/O statistics view replaced a homegrown sampling script for us. Nice to delete code.",
+     "replies": [
+      {
+       "author": "shardyard",
+       "age": "15 minutes ago",
+       "text": "End of life dates are on the versioning page, and they have never slipped in my memory.",
+       "replies": [
+        {
+         "author": "fiberbench",
+         "age": "14 minutes ago",
+         "text": "Partition pruning at execution time made a two times difference on our billing queries with prepared statements.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "spoolcraft",
+       "age": "1 hour ago",
+       "text": "Incremental backups cut our nightly backup window by about three quarters.",
+       "replies": [
+        {
+         "author": "thunkmill",
+         "age": "26 minutes ago",
+         "text": "Direct I/O only wins with a much larger buffer cache than the traditional advice. The notes are clear about that.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "bezelpilot",
+       "age": "16 minutes ago",
+       "text": "People underestimate how much of this is just habit.",
+       "replies": []
+      },
+      {
+       "author": "cachereader65",
+       "age": "1 hour ago",
+       "text": "The trade-off is real but it is not the one people usually name.",
+       "replies": [
+        {
+         "author": "sprocketsage",
+         "age": "59 minutes ago",
+         "text": "That is a fair correction, thanks.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "shardyard",
+       "age": "1 hour ago",
+       "text": "Exactly this.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "nibsmith",
+     "age": "1 hour ago",
+     "text": "pg_upgrade with link mode took about four minutes on our largest cluster. Most of the time was the statistics step, which is now gone.",
+     "replies": []
+    },
+    {
+     "author": "runeyard",
+     "age": "3 hours ago",
+     "text": "Right, and the second-order effect is the one that bites.",
+     "replies": [
+      {
+       "author": "nullfield",
+       "age": "2 hours ago",
+       "text": "This is the comment I came here to write.",
+       "replies": [
+        {
+         "author": "sprocketwright",
+         "age": "1 hour ago",
+         "text": "pg_upgrade with link mode took about seven minutes on our largest cluster. Most of the time was the statistics step, which is now gone.",
+         "replies": [
+          {
+           "author": "foldhound40",
+           "age": "23 minutes ago",
+           "text": "Hard agree.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "quartzyard",
+   "age": "8 hours ago",
+   "text": "The security fixes in the minor releases matter as much as the features in the major one. Patch your minors.",
+   "replies": [
+    {
+     "author": "bezelsage",
+     "age": "6 hours ago",
+     "text": "Reasonable people land on both sides of this, and the thread is proving it.",
+     "replies": [
+      {
+       "replies": [
+        {
+         "author": "latchpilot43",
+         "age": "3 hours ago",
+         "text": "Laptop benchmarks are still useful for spotting regressions. They are just not capacity planning.",
+         "replies": [
+          {
+           "author": "lambdamill",
+           "age": "3 hours ago",
+           "text": "How long did pg_upgrade take for people with multi-terabyte clusters?",
+           "replies": [
+            {
+             "author": "tracewright",
+             "age": "2 hours ago",
+             "text": "The collation warning is not theoretical. We had to rebuild a dozen indexes after an OS upgrade changed the library underneath.",
+             "replies": [
+              {
+               "author": "scalarpilot",
+               "age": "1 hour ago",
+               "text": "Seconded.",
+               "replies": [
+                {
+                 "author": "monadfield",
+                 "age": "1 hour ago",
+                 "text": "This deserves its own submission.",
+                 "replies": []
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ],
+       "deleted": true
+      }
+     ]
+    },
+    {
+     "author": "queuesmith",
+     "age": "8 hours ago",
+     "text": "Agreed.",
+     "replies": [
+      {
+       "author": "quartzling",
+       "age": "6 hours ago",
+       "text": "The extension breakage is usually a recompile. The painful ones are extensions that reach into planner internals.",
+       "replies": [
+        {
+         "author": "heapshed",
+         "age": "5 hours ago",
+         "text": "Does logical replication of DDL handle sequences now?",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "kernling",
+       "age": "7 hours ago",
+       "text": "Genuinely curious what the failure mode looks like in year three.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "thunkshed",
+     "age": "6 hours ago",
+     "text": "For what it is worth, the extension breakage is usually a recompile. The painful ones are extensions that reach into planner internals.",
+     "replies": [
+      {
+       "author": "patchreader",
+       "age": "6 hours ago",
+       "text": "Managed providers are faster than they used to be. Ours had the previous major within four months.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "nibbench56",
+     "age": "8 hours ago",
+     "text": "Incremental backups cut our nightly backup window by about two thirds. Your mileage will vary.",
+     "replies": [
+      {
+       "author": "lambdacurious",
+       "age": "6 hours ago",
+       "text": "Does the new async I/O work on all platforms, or Linux only?",
+       "replies": [
+        {
+         "author": "fiberbench",
+         "age": "6 hours ago",
+         "text": "Not in my experience.",
+         "replies": [
+          {
+           "author": "tracehound",
+           "age": "5 hours ago",
+           "text": "We had the same argument at work last spring and nobody changed their mind.",
+           "replies": [
+            {
+             "author": "fiberbench",
+             "age": "4 hours ago",
+             "text": "JSON columns are fine for truly schemaless data. The problem is when they become the schema.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "spoolmonk",
+   "age": "8 hours ago",
+   "text": "Vacuum improvements continue to be the least glamorous and most valuable work in this project.",
+   "replies": [
+    {
+     "author": "vectorsmith",
+     "age": "6 hours ago",
+     "text": "A pooler is still needed at our scale, but the per-connection memory has come down a lot.",
+     "replies": [
+      {
+       "author": "nullshed",
+       "age": "5 hours ago",
+       "text": "The collation warning is not theoretical. We had to rebuild thirty indexes after an OS upgrade changed the library underneath.",
+       "replies": [
+        {
+         "author": "mutexshed",
+         "age": "4 hours ago",
+         "text": "Merge has been around for a couple of releases now; this one mostly fixes corner cases in concurrent use. The post undersells this, I think.",
+         "replies": [
+          {
+           "author": "shardsage",
+           "age": "4 hours ago",
+           "text": "Agree with the conclusion, not with how you got there.",
+           "replies": []
+          },
+          {
+           "author": "nullshed",
+           "age": "4 hours ago",
+           "text": "You are describing a people problem with a technology label on it.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "spooldrift",
+       "age": "6 hours ago",
+       "text": "Not sure that generalises beyond a small shop.",
+       "replies": [
+        {
+         "author": "vectorsmith",
+         "age": "6 hours ago",
+         "text": "The way I see it, partition pruning at execution time made a two times difference on our billing queries with prepared statements.",
+         "replies": [
+          {
+           "replies": [
+            {
+             "author": "quartzfield",
+             "age": "4 hours ago",
+             "text": "Managed providers are faster than they used to be. Ours had the previous major within five months.",
+             "replies": [
+              {
+               "author": "decimaldrift",
+               "age": "3 hours ago",
+               "text": "The interesting bit is buried in a footnote, as usual.",
+               "replies": []
+              }
+             ]
+            },
+            {
+             "author": "bitrotting",
+             "age": "3 hours ago",
+             "text": "Saving this for the next time someone asks me why.",
+             "replies": []
+            }
+           ],
+           "deleted": true
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "bezelgarden",
+       "age": "5 hours ago",
+       "text": "End of life dates are on the versioning page, and they have never slipped in my memory. The post undersells this, I think.",
+       "replies": []
+      },
+      {
+       "author": "spoolmonk",
+       "age": "5 hours ago",
+       "text": "Replying mainly so I can find this again.",
+       "replies": [
+        {
+         "author": "inodeyard",
+         "age": "4 hours ago",
+         "text": "Merge has been around for a couple of releases now; this one mostly fixes corner cases in concurrent use.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "monadsmith35",
+       "age": "5 hours ago",
+       "text": "The extension breakage is usually a recompile. The painful ones are extensions that reach into planner internals. I say that as someone who likes the idea.",
+       "replies": [
+        {
+         "author": "offbyfun",
+         "age": "3 hours ago",
+         "text": "That tracks.",
+         "replies": [
+          {
+           "author": "hexyard",
+           "age": "3 hours ago",
+           "text": "Nobody wants to hear it, but the unglamorous answer usually wins.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "lintling",
+   "age": "7 hours ago",
+   "text": "The release cadence of this project is a model for how to run infrastructure software. Predictable, conservative, well documented.\n\nAgreed on reading the defaults section. The changed checkpoint default alone is worth a test run.",
+   "replies": [
+    {
+     "author": "bitrotting",
+     "age": "5 hours ago",
+     "text": "There is a whole conference talk on this that I cannot find right now.",
+     "replies": [
+      {
+       "author": "deltayard",
+       "age": "5 hours ago",
+       "text": "Restores are the whole game. We test one every week, automatically, and it has failed twice in a year for reasons nobody would have guessed.",
+       "replies": [
+        {
+         "author": "fiberbench",
+         "age": "3 hours ago",
+         "text": "Managed providers are faster than they used to be. Ours had the previous major within three months.",
+         "replies": [
+          {
+           "author": "bezelgarden",
+           "age": "3 hours ago",
+           "text": "The allowlist for replicated DDL is short but covers the common cases: adding columns and indexes. I say that as someone who likes the idea.",
+           "replies": [
+            {
+             "author": "fiberbench",
+             "age": "2 hours ago",
+             "text": "The article addresses this about two thirds of the way down, for what it is worth.",
+             "replies": []
+            }
+           ]
+          },
+          {
+           "author": "sprocketsage",
+           "age": "2 hours ago",
+           "text": "Oof. Yes.",
+           "replies": []
+          },
+          {
+           "author": "hexyard",
+           "age": "2 hours ago",
+           "text": "This is why I stopped arguing about it and started measuring.",
+           "replies": []
+          },
+          {
+           "author": "monadsmith35",
+           "age": "59 minutes ago",
+           "text": "Mild disagreement: managed providers are faster than they used to be. Ours had the previous major within five months.",
+           "replies": []
+          },
+          {
+           "author": "bezelsage",
+           "age": "1 hour ago",
+           "text": "You can do it, but the maintenance cost arrives on a delay and it arrives anyway.",
+           "replies": []
+          },
+          {
+           "author": "glyphbench",
+           "age": "2 hours ago",
+           "text": "The last paragraph of the post says nearly the same thing.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "bitrotting",
+         "age": "5 hours ago",
+         "text": "I have been on both sides of that decision and I still do not know which was right.",
+         "replies": [
+          {
+           "author": "tracewright",
+           "age": "3 hours ago",
+           "text": "I stand corrected.",
+           "replies": [
+            {
+             "author": "bitrotting",
+             "age": "2 hours ago",
+             "text": "The audit use case is exactly why temporal tables matter. Just check how table rewrites interact with history before you rely on it.",
+             "replies": [
+              {
+               "author": "pixelloft77",
+               "age": "10 minutes ago",
+               "text": "pg_upgrade with link mode took about twelve minutes on our largest cluster. Most of the time was the statistics step, which is now gone.",
+               "replies": [
+                {
+                 "author": "nibmonk",
+                 "age": "7 minutes ago",
+                 "text": "Somebody should write the boring version of this post, with all the caveats.",
+                 "replies": []
+                },
+                {
+                 "author": "shardsage",
+                 "age": "6 minutes ago",
+                 "text": "Mild pushback: the benchmark in the post is doing a lot of work.",
+                 "replies": []
+                }
+               ]
+              },
+              {
+               "author": "pixelloft77",
+               "age": "45 minutes ago",
+               "text": "Every one of these threads has this subthread, and every time it is worth reading.",
+               "replies": []
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "kernelpanda",
+   "age": "7 hours ago",
+   "text": "Buried in the release notes: the planner now uses extended statistics automatically for join selectivity estimation in more cases. I tested the beta against a warehouse workload where a 5-way join was catastrophically misplanned due to correlated columns, and it went from a nested loop disaster (11 minutes) to a hash join plan (9 seconds) with zero query changes.\n\nThat one line in the notes is going to quietly fix more production incidents than any headline feature.",
+   "replies": [
+    {
+     "author": "planshape",
+     "age": "6 hours ago",
+     "text": "Counterpoint from someone who's been burned: every planner improvement is also a plan-stability roulette spin. \"Zero query changes\" cuts both ways — some fraction of workloads out there have queries that only perform acceptably because of a mis-estimate that happened to pick a good plan. Those flip too, silently, on upgrade day.",
+     "replies": [
+      {
+       "author": "kernelpanda",
+       "age": "6 hours ago",
+       "text": "No argument. The mitigation is the same as always: replay your workload against the new version before flipping traffic. But yes, \"the planner got smarter\" is a spicy changelog line if you're running a large fleet."
+      },
+      {
+       "author": "staticdrift",
+       "age": "6 hours ago",
+       "text": "This exchange is the whole database upgrade experience in miniature. Excitement, then dread, then a test plan."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "kernling",
+   "age": "6 hours ago",
+   "text": "The planner improvements look great in the benchmarks. In practice our biggest wins always come from fixing one bad query someone wrote in a hurry.",
+   "replies": [
+    {
+     "author": "tupletinker",
+     "age": "5 hours ago",
+     "text": "Are there any known plan regressions in the release candidates?",
+     "replies": [
+      {
+       "author": "kernling",
+       "age": "4 hours ago",
+       "text": "This matches my experience almost exactly.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "runeyard",
+     "age": "4 hours ago",
+     "text": "Good question.",
+     "replies": [
+      {
+       "author": "depreciator",
+       "age": "2 hours ago",
+       "text": "Having done this twice now: the audit use case is exactly why temporal tables matter. Just check how table rewrites interact with history before you rely on it.",
+       "replies": [
+        {
+         "author": "shardtide",
+         "age": "41 minutes ago",
+         "text": "Touché.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "patchreader",
+       "age": "4 hours ago",
+       "text": "Is there a good tool for comparing query plans between versions?",
+       "replies": [
+        {
+         "author": "runeyard",
+         "age": "4 hours ago",
+         "text": "That is the part nobody budgets for.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "greppilot85",
+       "age": "3 hours ago",
+       "text": "Ha, fair.",
+       "replies": []
+      },
+      {
+       "author": "monadfield",
+       "age": "3 hours ago",
+       "text": "Partition pruning at execution time made a three times difference on our billing queries with prepared statements.",
+       "replies": []
+      },
+      {
+       "author": "kernling",
+       "age": "2 hours ago",
+       "text": "Could you expand on that? The short version skips the part I care about.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "latchpilot43",
+     "age": "5 hours ago",
+     "text": "I think you are both right and talking about different scales.",
+     "replies": [
+      {
+       "author": "kernling",
+       "age": "5 hours ago",
+       "text": "Agreed on reading the defaults section. The changed checkpoint default alone is worth a test run.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "mutexling",
+     "age": "5 hours ago",
+     "text": "The allowlist for replicated DDL is short but covers the common cases: adding columns and indexes. Happy to be proven wrong.",
+     "replies": []
+    },
+    {
+     "author": "tracewright",
+     "age": "4 hours ago",
+     "text": "We replay a day of production traffic against the new version before every upgrade. It has caught something every time. Happy to be proven wrong.",
+     "replies": [
+      {
+       "author": "bezelsage",
+       "age": "4 hours ago",
+       "text": "Honestly, JSON columns are fine for truly schemaless data. The problem is when they become the schema.",
+       "replies": []
+      },
+      {
+       "author": "ringtinker",
+       "age": "4 hours ago",
+       "text": "The audit use case is exactly why temporal tables matter. Just check how table rewrites interact with history before you rely on it. Nobody talks about that part.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "nullfield",
+   "age": "6 hours ago",
+   "text": "I have been running this database for twelve years and the one piece of advice I keep giving is: test your restores, not your backups.",
+   "replies": [
+    {
+     "author": "quartzshed",
+     "age": "4 hours ago",
+     "text": "Source?",
+     "replies": [
+      {
+       "author": "quartzmill",
+       "age": "3 hours ago",
+       "text": "Fair point.",
+       "replies": [
+        {
+         "author": "nullfield",
+         "age": "3 hours ago",
+         "text": "That was true five years ago. It has moved a lot since.",
+         "replies": [
+          {
+           "author": "nulltinker21",
+           "age": "1 hour ago",
+           "text": "In my experience, the allowlist for replicated DDL is short but covers the common cases: adding columns and indexes.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "nibbench56",
+       "age": "4 hours ago",
+       "text": "That is a very generous reading of the situation.",
+       "replies": [
+        {
+         "author": "nibsmith",
+         "age": "1 hour ago",
+         "text": "Small correction: that changed in the last release, so the post is slightly out of date.",
+         "replies": []
+        },
+        {
+         "author": "quartzshed",
+         "age": "2 hours ago",
+         "text": "In my experience, pg_upgrade with link mode took about four minutes on our largest cluster. Most of the time was the statistics step, which is now gone.",
+         "replies": []
+        },
+        {
+         "author": "tupletinker",
+         "age": "3 hours ago",
+         "text": "The collation warning is not theoretical. We had to rebuild twenty indexes after an OS upgrade changed the library underneath.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "scalardrift",
+       "age": "4 hours ago",
+       "text": "Incremental backups cut our nightly backup window by about two thirds. I say that as someone who likes the idea.",
+       "replies": [
+        {
+         "author": "parsemonk",
+         "age": "3 hours ago",
+         "text": "What is the recommended upgrade path from two majors back?",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "queuehound",
+       "age": "4 hours ago",
+       "text": "Thanks, that helps.",
+       "replies": [
+        {
+         "author": "thunkshed",
+         "age": "4 hours ago",
+         "text": "Worth adding that the audit use case is exactly why temporal tables matter. Just check how table rewrites interact with history before you rely on it.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "nibsmith",
+       "age": "4 hours ago",
+       "text": "This.",
+       "replies": []
+      },
+      {
+       "author": "thunkreader",
+       "age": "4 hours ago",
+       "text": "A pooler is still needed at our scale, but the per-connection memory has come down a lot. Your mileage will vary.",
+       "replies": [
+        {
+         "author": "tracehound",
+         "age": "2 hours ago",
+         "text": "Incremental backups cut our nightly backup window by about half. The post undersells this, I think.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "kernelpanda",
+       "age": "3 hours ago",
+       "text": "We replay a day of production traffic against the new version before every upgrade. It has caught something every time. Nobody talks about that part.",
+       "replies": []
+      },
+      {
+       "author": "greppilot85",
+       "age": "2 hours ago",
+       "text": "Is anyone running the beta in production yet?",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "pixelloft77",
+   "age": "4 hours ago",
+   "text": "I have been running this database for ten years and the one piece of advice I keep giving is: test your restores, not your backups.",
+   "replies": [
+    {
+     "author": "latchpilot43",
+     "age": "3 hours ago",
+     "text": "Noted, thanks.",
+     "replies": [
+      {
+       "author": "tupletinker",
+       "age": "2 hours ago",
+       "text": "Incremental backups cut our nightly backup window by about half.",
+       "replies": [
+        {
+         "author": "latchpilot43",
+         "age": "1 hour ago",
+         "text": "Well put.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "thunkshed",
+       "age": "3 hours ago",
+       "text": "Managed providers are faster than they used to be. Ours had the previous major within three months. I say that as someone who likes the idea.",
+       "replies": [
+        {
+         "author": "pixelloft77",
+         "age": "2 hours ago",
+         "text": "In my experience, the extension breakage is usually a recompile. The painful ones are extensions that reach into planner internals.",
+         "replies": [
+          {
+           "author": "quartzspark",
+           "age": "12 minutes ago",
+           "text": "The extension breakage is usually a recompile. The painful ones are extensions that reach into planner internals. Nobody talks about that part.",
+           "replies": [
+            {
+             "author": "depreciator",
+             "age": "9 minutes ago",
+             "text": "I tried this and gave up after a fortnight. Might try again after this thread.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "scalardrift",
+       "age": "1 hour ago",
+       "text": "Same here, down to the footnote.",
+       "replies": []
+      },
+      {
+       "author": "tupletinker",
+       "age": "3 hours ago",
+       "text": "I tried this and gave up after a week. Might try again after this thread.",
+       "replies": [
+        {
+         "author": "mutexshed",
+         "age": "2 hours ago",
+         "text": "I think the author would agree with you; the title oversells it.",
+         "replies": [
+          {
+           "author": "socketpilot",
+           "age": "1 hour ago",
+           "text": "The way I see it, partition pruning at execution time made a five times difference on our billing queries with prepared statements.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "pagetable",
+       "age": "2 hours ago",
+       "text": "Not sure that generalises beyond your team.",
+       "replies": [
+        {
+         "author": "latchpilot43",
+         "age": "2 hours ago",
+         "text": "Agreed on reading the defaults section. The changed checkpoint default alone is worth a test run. At least that is how it went for us.",
+         "replies": [
+          {
+           "author": "pagetable",
+           "age": "1 hour ago",
+           "text": "The extension breakage is usually a recompile. The painful ones are extensions that reach into planner internals. Happy to be proven wrong.",
+           "replies": []
+          },
+          {
+           "author": "pagetable",
+           "age": "1 hour ago",
+           "text": "Worth separating what is hard from what is merely unfamiliar.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "pixelloft77",
+   "age": "6 hours ago",
+   "text": "Managed hosting providers will take six months to offer this, as usual, so most of us are reading these notes for next year.",
+   "replies": [
+    {
+     "author": "monadsmith35",
+     "age": "6 hours ago",
+     "text": "Can confirm.",
+     "replies": [
+      {
+       "author": "pixelloft77",
+       "age": "6 hours ago",
+       "text": "I read it the other way: the tooling finally caught up with the idea.",
+       "replies": [
+        {
+         "author": "monadsmith35",
+         "age": "6 hours ago",
+         "text": "Do you have numbers for that? It sounds plausible but I have seen the opposite.",
+         "replies": [
+          {
+           "author": "pagetable",
+           "age": "5 hours ago",
+           "text": "Managed providers are faster than they used to be. Ours had the previous major within three months. Nobody talks about that part.",
+           "replies": [
+            {
+             "author": "spoolling",
+             "age": "4 hours ago",
+             "text": "Having done this twice now: the allowlist for replicated DDL is short but covers the common cases: adding columns and indexes.",
+             "replies": [
+              {
+               "author": "quartzmill",
+               "age": "4 hours ago",
+               "text": "I tried this and gave up after a month. Might try again after this thread.",
+               "replies": [
+                {
+                 "author": "nibcraft",
+                 "age": "2 hours ago",
+                 "text": "For what it is worth, direct I/O only wins with a much larger buffer cache than the traditional advice. The notes are clear about that.",
+                 "replies": []
+                }
+               ]
+              }
+             ]
+            },
+            {
+             "author": "scalarpilot",
+             "age": "2 hours ago",
+             "text": "Incremental backups cut our nightly backup window by about two thirds. Nobody talks about that part.",
+             "replies": []
+            }
+           ]
+          },
+          {
+           "replies": [
+            {
+             "author": "monadsmith35",
+             "age": "6 hours ago",
+             "text": "For what it is worth, managed providers are faster than they used to be. Ours had the previous major within three months.",
+             "replies": []
+            }
+           ],
+           "deleted": true
+          },
+          {
+           "author": "greppilot85",
+           "age": "5 hours ago",
+           "text": "Same here, down to the detail.",
+           "replies": []
+          },
+          {
+           "author": "bezelworks",
+           "age": "6 hours ago",
+           "text": "Incremental backups cut our nightly backup window by about half. Happy to be proven wrong.",
+           "replies": []
+          },
+          {
+           "author": "kernelpanda",
+           "age": "5 hours ago",
+           "text": "Strong disagree, but I appreciate that you wrote it up properly.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "bpluscurious",
+   "age": "6 hours ago",
+   "text": "Can someone who follows development explain the async I/O changes? The notes mention direct I/O support graduating from developer-only status for data files. Does this mean the double-buffering problem (page cache + shared_buffers holding the same page twice) is finally addressed in a supported configuration?",
+   "replies": [
+    {
+     "author": "tuplewrangler",
+     "age": "5 hours ago",
+     "text": "Mostly yes, with caveats. Direct I/O is supported now but the guidance is that it only wins if you size shared_buffers much larger than the traditional 25% rule, since you lose the kernel page cache as a second tier. For read-heavy workloads that fit in RAM it's a real win. Mixed workloads on smaller boxes should probably leave it off. It's a tuning knob now, not a default."
+    }
+   ]
+  },
+  {
+   "author": "nibmonk",
+   "age": "7 hours ago",
+   "text": "Replication slot handling has quietly become much safer over the last few releases. Fewer disks filling up at three in the morning.",
+   "replies": [
+    {
+     "author": "heapshed",
+     "age": "6 hours ago",
+     "text": "Direct I/O only wins with a much larger buffer cache than the traditional advice. The notes are clear about that. Happy to be proven wrong.",
+     "replies": [
+      {
+       "author": "hexloft",
+       "age": "6 hours ago",
+       "text": "Anecdotally, end of life dates are on the versioning page, and they have never slipped in my memory.",
+       "replies": [
+        {
+         "author": "heapshed",
+         "age": "6 hours ago",
+         "text": "In my experience, end of life dates are on the versioning page, and they have never slipped in my memory.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "cacheling",
+       "age": "5 hours ago",
+       "text": "For what it is worth, restores are the whole game. We test one every week, automatically, and it has failed twice in a year for reasons nobody would have guessed.",
+       "replies": []
+      },
+      {
+       "author": "nibbench56",
+       "age": "6 hours ago",
+       "text": "Worth adding that end of life dates are on the versioning page, and they have never slipped in my memory.",
+       "replies": []
+      },
+      {
+       "author": "nibmonk",
+       "age": "6 hours ago",
+       "text": "Interesting, had not considered that.",
+       "replies": []
+      },
+      {
+       "author": "nibmonk",
+       "age": "6 hours ago",
+       "text": "Laptop benchmarks are still useful for spotting regressions. They are just not capacity planning. I say that as someone who likes the idea.",
+       "replies": []
+      },
+      {
+       "author": "nibmonk",
+       "age": "5 hours ago",
+       "text": "Partition pruning at execution time made a five times difference on our billing queries with prepared statements.",
+       "replies": []
+      },
+      {
+       "author": "patchreader",
+       "age": "5 hours ago",
+       "text": "Merge has been around for a couple of releases now; this one mostly fixes corner cases in concurrent use. Your mileage will vary.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "lintling",
+   "age": "3 hours ago",
+   "text": "Honestly, I appreciate that the async I/O work is being shipped conservatively. Storage engines are not where you want surprises.\n\nDirect I/O only wins with a much larger buffer cache than the traditional advice. The notes are clear about that.",
+   "replies": [
+    {
+     "author": "warmstart",
+     "age": "3 hours ago",
+     "text": "Honestly, the allowlist for replicated DDL is short but covers the common cases: adding columns and indexes.",
+     "replies": [
+      {
+       "author": "deltayard",
+       "age": "1 hour ago",
+       "text": "For what it is worth, a pooler is still needed at our scale, but the per-connection memory has come down a lot.",
+       "replies": [
+        {
+         "author": "tokenring",
+         "age": "1 hour ago",
+         "text": "Mild disagreement: agreed on reading the defaults section. The changed checkpoint default alone is worth a test run.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "hexyard",
+       "age": "2 hours ago",
+       "text": "In my experience, managed providers are faster than they used to be. Ours had the previous major within four months.",
+       "replies": [
+        {
+         "author": "shardtide",
+         "age": "1 hour ago",
+         "text": "Counterpoint: it depends entirely on who is on call when it breaks.",
+         "replies": [
+          {
+           "author": "monadfield",
+           "age": "14 minutes ago",
+           "text": "Managed providers are faster than they used to be. Ours had the previous major within five months. Happy to be proven wrong.",
+           "replies": [
+            {
+             "author": "shardtide",
+             "age": "13 minutes ago",
+             "text": "Partition pruning at execution time made a three times difference on our billing queries with prepared statements. I say that as someone who likes the idea.",
+             "replies": []
+            },
+            {
+             "author": "thunkreader",
+             "age": "8 minutes ago",
+             "text": "Partition pruning at execution time made a five times difference on our billing queries with prepared statements. Happy to be proven wrong.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "quartzfield",
+   "age": "8 hours ago",
+   "text": "Collation changes are the upgrade trap nobody remembers until an index is corrupt. Read that section twice.",
+   "replies": [
+    {
+     "author": "tupletinker",
+     "age": "8 hours ago",
+     "text": "The allowlist for replicated DDL is short but covers the common cases: adding columns and indexes. Your mileage will vary.",
+     "replies": [
+      {
+       "author": "bezelgarden",
+       "age": "8 hours ago",
+       "text": "In my experience, incremental backups cut our nightly backup window by about three quarters.",
+       "replies": []
+      },
+      {
+       "author": "nulltinker21",
+       "age": "8 hours ago",
+       "text": "Seconding this. It took us far too long to learn it.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "thunkreader",
+     "age": "6 hours ago",
+     "text": "We replay a day of production traffic against the new version before every upgrade. It has caught something every time. I say that as someone who likes the idea.",
+     "replies": []
+    },
+    {
+     "author": "lambdamill",
+     "age": "7 hours ago",
+     "text": "Worth adding that a pooler is still needed at our scale, but the per-connection memory has come down a lot.",
+     "replies": [
+      {
+       "author": "queuetinker",
+       "age": "6 hours ago",
+       "text": "The way I see it, we replay a day of production traffic against the new version before every upgrade. It has caught something every time.",
+       "replies": [
+        {
+         "author": "hexyard",
+         "age": "6 hours ago",
+         "text": "That was true a few years ago. It has moved a lot since.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "tokenring",
+   "age": "6 hours ago",
+   "text": "For what it is worth, the monitoring views added in this release are going to make on-call much less painful. Being able to see I/O per query without an extension is huge.",
+   "replies": [
+    {
+     "author": "lambdacurious",
+     "age": "5 hours ago",
+     "text": "Worth adding that incremental backups cut our nightly backup window by about two thirds.",
+     "replies": [
+      {
+       "author": "quartzyard",
+       "age": "5 hours ago",
+       "text": "Worth adding that pg_upgrade with link mode took about four minutes on our largest cluster. Most of the time was the statistics step, which is now gone.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "lintling",
+     "age": "6 hours ago",
+     "text": "Mild disagreement: the new I/O statistics view replaced a homegrown sampling script for us. Nice to delete code.",
+     "replies": []
+    },
+    {
+     "author": "greppilot85",
+     "age": "4 hours ago",
+     "text": "In my experience, direct I/O only wins with a much larger buffer cache than the traditional advice. The notes are clear about that.",
+     "replies": [
+      {
+       "author": "tokenring",
+       "age": "3 hours ago",
+       "text": "Managed providers are faster than they used to be. Ours had the previous major within five months. I say that as someone who likes the idea.",
+       "replies": [
+        {
+         "author": "greppilot85",
+         "age": "2 hours ago",
+         "text": "In my experience, laptop benchmarks are still useful for spotting regressions. They are just not capacity planning.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "ormskeptic",
+   "age": "5 hours ago",
+   "text": "Every release thread has one of these comments so it may as well be mine: I've been running this database for fifteen years across four jobs, and the upgrade that took down production wasn't the database's fault a single time. It was always our extensions, our connection pooler config, or someone's clever query hint workaround. This project's engineering discipline is criminally underappreciated."
+  },
+  {
+   "author": "nulltinker21",
+   "age": "4 hours ago",
+   "text": "Direct I/O is interesting but I would not turn it on for an existing cluster without a lot of testing. Happy to be proven wrong.",
+   "replies": [
+    {
+     "author": "lintsmith",
+     "age": "4 hours ago",
+     "text": "Mild disagreement: a pooler is still needed at our scale, but the per-connection memory has come down a lot.",
+     "replies": [
+      {
+       "author": "folddrift",
+       "age": "3 hours ago",
+       "text": "Anecdotally, the collation warning is not theoretical. We had to rebuild twenty indexes after an OS upgrade changed the library underneath.",
+       "replies": []
+      },
+      {
+       "author": "quartzyard",
+       "age": "3 hours ago",
+       "text": "Honestly, partition pruning at execution time made a five times difference on our billing queries with prepared statements.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "loopsmith",
+   "age": "4 hours ago",
+   "text": "The way I see it, the JSON path improvements are nice, but I would rather people stopped storing relational data in JSON columns in the first place.",
+   "replies": [
+    {
+     "author": "kernling",
+     "age": "3 hours ago",
+     "text": "pg_upgrade with link mode took about four minutes on our largest cluster. Most of the time was the statistics step, which is now gone. Your mileage will vary.",
+     "replies": []
+    },
+    {
+     "author": "hexyard",
+     "age": "2 hours ago",
+     "text": "Honestly, restores are the whole game. We test one every week, automatically, and it has failed twice in a year for reasons nobody would have guessed.",
+     "replies": []
+    },
+    {
+     "author": "shardtide",
+     "age": "3 hours ago",
+     "text": "Incremental backups cut our nightly backup window by about half. Your mileage will vary.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "lambdacurious",
+   "age": "6 hours ago",
+   "text": "The JSON path improvements are nice, but I would rather people stopped storing relational data in JSON columns in the first place.",
+   "replies": [
+    {
+     "author": "scalarpilot",
+     "age": "4 hours ago",
+     "text": "End of life dates are on the versioning page, and they have never slipped in my memory. Your mileage will vary.",
+     "replies": [
+      {
+       "author": "lambdacurious",
+       "age": "3 hours ago",
+       "text": "Same here, down to the punchline.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "queuetinker",
+   "age": "8 hours ago",
+   "text": "Vacuum improvements continue to be the least glamorous and most valuable work in this project.\n\nAgreed on reading the defaults section. The changed checkpoint default alone is worth a test run.",
+   "replies": [
+    {
+     "author": "spoolcraft",
+     "age": "8 hours ago",
+     "text": "Honestly, end of life dates are on the versioning page, and they have never slipped in my memory.",
+     "replies": [
+      {
+       "author": "bezelworks",
+       "age": "6 hours ago",
+       "text": "The audit use case is exactly why temporal tables matter. Just check how table rewrites interact with history before you rely on it. At least that is how it went for us.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "lambdacurious",
+   "age": "5 hours ago",
+   "text": "The new temporal table support (PERIOD columns with system-time versioning) is the sleeper feature. Application-level audit tables are one of those things everyone builds badly — triggers that miss edge cases, history tables that drift from the source schema. Having it in the engine with FOR SYSTEM_TIME queries is a big deal for anyone in a compliance-adjacent field.",
+   "replies": [
+    {
+     "author": "audituar",
+     "age": "4 hours ago",
+     "text": "Agreed, though I read the fine print and versioning doesn't survive a table rewrite (e.g. ALTER COLUMN TYPE) without a documented migration dance. For an audit feature that's a meaningful footgun — the moments you change a schema are exactly the moments auditors ask about.",
+     "replies": [
+      {
+       "author": "lambdacurious",
+       "age": "4 hours ago",
+       "text": "Good catch, I'd missed that. Still beats hand-rolled triggers, which have the same failure mode except undocumented."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "nibcraft",
+   "age": "3 hours ago",
+   "text": "The upgrade notes are worth reading carefully this time. Two of the changed defaults would have bitten us in production.",
+   "replies": [
+    {
+     "author": "tokenring",
+     "age": "3 hours ago",
+     "text": "We replay a day of production traffic against the new version before every upgrade. It has caught something every time. At least that is how it went for us.",
+     "replies": [
+      {
+       "author": "deltayard",
+       "age": "3 hours ago",
+       "text": "pg_upgrade with link mode took about seven minutes on our largest cluster. Most of the time was the statistics step, which is now gone. The post undersells this, I think.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "latchsage28",
+   "age": "5 hours ago",
+   "text": "The release cadence of this project is a model for how to run infrastructure software. Predictable, conservative, well documented.",
+   "replies": [
+    {
+     "replies": [
+      {
+       "author": "latchsage28",
+       "age": "3 hours ago",
+       "text": "Worth adding that managed providers are faster than they used to be. Ours had the previous major within four months.",
+       "replies": []
+      }
+     ],
+     "deleted": true
+    }
+   ]
+  },
+  {
+   "author": "quartzmill",
+   "age": "7 hours ago",
+   "text": "The monitoring views added in this release are going to make on-call much less painful. Being able to see I/O per query without an extension is huge.",
+   "replies": [
+    {
+     "author": "nullfield",
+     "age": "5 hours ago",
+     "text": "For what it is worth, the collation warning is not theoretical. We had to rebuild a dozen indexes after an OS upgrade changed the library underneath.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "kernling",
+   "age": "31 minutes ago",
+   "text": "Connection handling is still the thing I would change first. A pooler in front is table stakes, and it should not have to be.",
+   "replies": [
+    {
+     "author": "shardyard",
+     "age": "30 minutes ago",
+     "text": "We found the opposite, but our constraints were unusual.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "vacuumtruck",
+   "age": "3 hours ago",
+   "text": "Small quality-of-life note: pg_upgrade now preserves optimizer statistics across major versions. If you've ever done a major upgrade and then watched your first hour of production traffic hit tables with no stats, you know. The number of people this saves from a bad Saturday is enormous."
+  },
+  {
+   "author": "ferrulebench",
+   "age": "6 hours ago",
+   "text": "Mild disagreement: collation changes are the upgrade trap nobody remembers until an index is corrupt. Read that section twice.",
+   "replies": []
+  },
+  {
+   "author": "lintsmith",
+   "age": "1 hour ago",
+   "text": "For what it is worth, end of life for the old version lands later this year. If you are still on it, this is the push to move.",
+   "replies": []
+  },
+  {
+   "author": "shardtide",
+   "age": "7 hours ago",
+   "text": "The docs for the new merge behaviour are excellent. More projects should write documentation like this.",
+   "replies": [
+    {
+     "author": "parsemonk",
+     "age": "6 hours ago",
+     "text": "Having done this twice now: the collation warning is not theoretical. We had to rebuild a dozen indexes after an OS upgrade changed the library underneath.",
+     "replies": []
+    }
+   ]
+  }
+ ]
+}

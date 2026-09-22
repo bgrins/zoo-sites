@@ -48,6 +48,7 @@ const TYPES = {
   '.webp': 'image/webp',
   '.woff2': 'font/woff2',
   '.xml': 'application/xml',
+  '.atom': 'application/atom+xml; charset=utf-8',
 };
 
 // What /robots.txt answers for a site that ships none of its own.

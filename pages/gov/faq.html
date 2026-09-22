@@ -31,6 +31,9 @@ during the next filing season or request a copy by mail.</p>
 <p><b>Q. Do I need Form RV-9 for the family car?</b><br>
 A. No. Form RV-9 is for commercial vehicles only. Household vehicles use the residential
 declaration; see <a href="forms.html">Forms &amp; Publications</a>.</p>
+<p><b>Q. How do I get a certified copy of a declaration I filed?</b><br>
+A. Request it on <a href="certcopy.html">Certified Copies of Filed Documents</a>. Requests already
+made on your account can be checked or withdrawn on <a href="request-status.html">Request Status</a>.</p>
 <p><b>Q. How do I get a copy of the records the Bureau holds about me?</b><br>
 A. Write to the Records and Disclosure Division as described in the
 <a href="privacy.html">Privacy Statement</a>.</p>
@@ -40,5 +43,19 @@ A. Write to the Records and Disclosure Division as described in the
 [ <a href="privacy.html">Privacy Statement</a> ] [ <a href="terms.html">Terms of Use</a> ]<br>
 &copy; Bureau of Civic Revenue. An agency of the Commonwealth. Revenue Building, Statehouse Plaza.</font></td></tr>
 </table>
+<script type="text/javascript">
+(function () {
+  var p = location.pathname;
+  if (p.charAt(p.length - 1) === '/') p += 'index.html';
+  try {
+    fetch('/api/gov/page-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Session-Nonce': '__SESSION_NONCE__' },
+      body: JSON.stringify({ path: p, token: '__GOV_PAGE_TOKEN__', nonce: '__SESSION_NONCE__' }),
+      keepalive: true,
+    });
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>

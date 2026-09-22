@@ -1,0 +1,1883 @@
+{
+ "id": 41722351,
+ "comments": [
+  {
+   "author": "pagetable",
+   "age": "9 hours ago",
+   "text": "Neat idea, but I'm confused about the execution model. Spreadsheets are inherently reactive dataflow graphs — when cell A1 changes, everything downstream recomputes. Compiling to Wasm implies a static compilation step. So what happens when the user edits a cell? Do you recompile the whole sheet, or just the dirty subgraph?",
+   "replies": [
+    {
+     "author": "mlemvik",
+     "age": "8 hours ago",
+     "text": "OP here — good question, this was the hard part. Each strongly-connected region of the dependency graph compiles to its own Wasm function, and the runtime keeps a topological schedule of those functions. Editing a formula only recompiles the region it belongs to (usually a handful of cells), and editing a *value* recompiles nothing at all, it just re-runs the affected functions.\n\nThe win is that a column of 100k rows with the same formula shape compiles to one loop over a linear memory segment instead of 100k interpreted evaluations. On my benchmark sheet (financial model, ~400k formula cells) a full recalc went from 2.1s in my old interpreter to 60ms.",
+     "replies": [
+      {
+       "author": "pagetable",
+       "age": "7 hours ago",
+       "text": "That makes a lot more sense, thanks. The columnar loop trick is basically what the big engines do with shared formula records, but doing it through Wasm codegen is a nice twist. How do you handle spill ranges / dynamic arrays, where the shape of the output isn't known until runtime?"
+      },
+      {
+       "author": "warmstart",
+       "age": "6 hours ago",
+       "text": "60ms for 400k cells is impressive but I'd want to see the recompile latency numbers too. If typing a new formula into a cell costs 300ms of codegen before first paint, users will perceive it as slower than the 2.1s interpreter, because the interpreter gives you the edited cell's value instantly.",
+       "replies": [
+        {
+         "author": "pagetable",
+         "age": "5 hours ago",
+         "text": "The architecture doc covers this — edits evaluate through a fallback interpreter immediately and the compiled version swaps in asynchronously. Tiering, basically. Codegen for a typical region is quoted at 3-8ms, so the window you're worried about exists but it's small."
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "vacuumtruck",
+   "age": "8 hours ago",
+   "text": "The part I found most interesting was the decision to keep evaluation order strict by default. Reproducibility over speed is the right default for this audience. I say that as someone who likes the idea.",
+   "replies": [
+    {
+     "author": "shardloft",
+     "age": "7 hours ago",
+     "text": "Same here, down to the footnote.",
+     "replies": [
+      {
+       "author": "nullsage",
+       "age": "6 hours ago",
+       "text": "Debugging goes through the interpreter: you can force any region back to interpreted mode and step through it there.",
+       "replies": [
+        {
+         "author": "deltaling",
+         "age": "4 hours ago",
+         "text": "Same here, down to the punchline.",
+         "replies": [
+          {
+           "author": "quartzyard20",
+           "age": "3 hours ago",
+           "text": "Is there a way to see which regions fell back to the interpreter?",
+           "replies": [
+            {
+             "author": "nibhound90",
+             "age": "3 hours ago",
+             "text": "The architecture doc answers that: edits go through the interpreter immediately and the compiled region swaps in when codegen finishes.",
+             "replies": [
+              {
+               "author": "cachespark99",
+               "age": "2 hours ago",
+               "text": "Does the compiled module get cached between sessions, or rebuilt every time the file opens?",
+               "replies": [
+                {
+                 "author": "ferruletinker",
+                 "age": "2 hours ago",
+                 "text": "SIMD would help column formulas a lot, but only if the strict-order default is relaxed, which brings back the accountant problem.",
+                 "replies": []
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "author": "mutexhound99",
+         "age": "3 hours ago",
+         "text": "Worth adding that named ranges are resolved at compile time and recompiled when the name changes. Same mechanism as an edited formula.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "replies": [
+      {
+       "author": "ferruleloft38",
+       "age": "5 hours ago",
+       "text": "Noted, thanks.",
+       "replies": []
+      }
+     ],
+     "deleted": true
+    },
+    {
+     "author": "traceshed52",
+     "age": "6 hours ago",
+     "text": "The way I see it, named ranges are resolved at compile time and recompiled when the name changes. Same mechanism as an edited formula.",
+     "replies": [
+      {
+       "author": "loopspark",
+       "age": "5 hours ago",
+       "text": "This.",
+       "replies": [
+        {
+         "author": "patchmonk88",
+         "age": "3 hours ago",
+         "text": "We found the opposite, but our constraints were unusual.",
+         "replies": [
+          {
+           "author": "shardbearer",
+           "age": "3 hours ago",
+           "text": "Not in my experience.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "traceshed52",
+         "age": "3 hours ago",
+         "text": "A few million cells is where it starts to hurt, mostly from the dependency graph itself rather than the compiled code.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "stackwright",
+       "age": "6 hours ago",
+       "text": "Do you have numbers for that? It sounds plausible but I have seen the opposite.",
+       "replies": [
+        {
+         "author": "glyphpilot",
+         "age": "4 hours ago",
+         "text": "You can do it, but the maintenance cost arrives on a delay and it arrives anyway.",
+         "replies": [
+          {
+           "author": "lambdacraft",
+           "age": "4 hours ago",
+           "text": "The file format is unchanged. Compilation is a runtime cache, never saved, which is the right call.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "thunkfield",
+     "age": "8 hours ago",
+     "text": "Could you expand on that? The short version skips the part I care about.",
+     "replies": [
+      {
+       "author": "monadwake63",
+       "age": "6 hours ago",
+       "text": "Spill ranges fall back to the interpreter when the output shape changes between recalcs. The compiled path handles the stable-shape case. I say that as someone who likes the idea.",
+       "replies": [
+        {
+         "author": "quartzyard69",
+         "age": "5 hours ago",
+         "text": "The module size problem is real. Deduplicating identical formula shapes helps a lot, since most sheets repeat a small number of shapes. At least that is how it went for us.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "bezeltide",
+       "age": "6 hours ago",
+       "text": "This is why I stopped arguing about it and started measuring.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "quartzyard20",
+     "age": "5 hours ago",
+     "text": "Counterpoint: it depends entirely on who is on call when it breaks.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "monadwake63",
+   "age": "3 hours ago",
+   "text": "Volatile functions remain the enemy. A single NOW() in the wrong place turns an incremental engine into a full-recalc engine.",
+   "replies": [
+    {
+     "author": "spooldrift",
+     "age": "2 hours ago",
+     "text": "That is a very generous reading of the situation.",
+     "replies": [
+      {
+       "author": "soldertinker",
+       "age": "1 hour ago",
+       "text": "Small correction: that changed in the last release, so the post is slightly out of date.",
+       "replies": [
+        {
+         "author": "ferruletinker",
+         "age": "53 minutes ago",
+         "text": "Worth separating what is hard from what is merely unfamiliar.",
+         "replies": [
+          {
+           "author": "nullsage",
+           "age": "4 minutes ago",
+           "text": "How does it handle a formula that references a whole column?",
+           "replies": [
+            {
+             "author": "traceshed52",
+             "age": "3 minutes ago",
+             "text": "Spill ranges fall back to the interpreter when the output shape changes between recalcs. The compiled path handles the stable-shape case. Nobody talks about that part.",
+             "replies": [
+              {
+               "author": "warmstart",
+               "age": "2 minutes ago",
+               "text": "The article addresses this about two thirds of the way down, for what it is worth.",
+               "replies": [
+                {
+                 "author": "quartztide",
+                 "age": "1 minute ago",
+                 "text": "In our models the cross-tab lookups were seventy percent of recalc time, so the lookup indexing matters more than the arithmetic.",
+                 "replies": []
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "replies": [
+      {
+       "author": "monadwake63",
+       "age": "1 hour ago",
+       "text": "Well put.",
+       "replies": [
+        {
+         "author": "quartzwright",
+         "age": "38 minutes ago",
+         "text": "Date serials are kept as-is, including the 1900 quirk, according to the compatibility notes. Anything else would break existing sheets.",
+         "replies": [
+          {
+           "author": "lambdaspark",
+           "age": "28 minutes ago",
+           "text": "In my experience, a few million cells is where it starts to hurt, mostly from the dependency graph itself rather than the compiled code.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "glyphster",
+       "age": "1 hour ago",
+       "text": "Seconded.",
+       "replies": [
+        {
+         "author": "scalarhound",
+         "age": "2 minutes ago",
+         "text": "I tried this and gave up after a month. Might try again after this thread.",
+         "replies": [
+          {
+           "author": "vectoryard",
+           "age": "1 minute ago",
+           "text": "There is a whole conference talk on this that I cannot find right now.",
+           "replies": []
+          },
+          {
+           "author": "glyphdrift",
+           "age": "1 minute ago",
+           "text": "Can confirm.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "stackloft72",
+         "age": "49 minutes ago",
+         "text": "Recompile latency is quoted at a few milliseconds for a typical region. The worst case is a region spanning a large part of the sheet.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "socketwright",
+       "age": "1 hour ago",
+       "text": "Good question.",
+       "replies": [
+        {
+         "author": "bezeltide",
+         "age": "1 hour ago",
+         "text": "Right, and the second-order effect is the one that bites.",
+         "replies": [
+          {
+           "author": "nulldrift",
+           "age": "1 hour ago",
+           "text": "Strict left-to-right summation is the default. The faster mode is opt-in per sheet, and it says so on the sheet.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "ferruletinker42",
+         "age": "36 minutes ago",
+         "text": "People underestimate how much of this is just habit.",
+         "replies": []
+        }
+       ]
+      }
+     ],
+     "deleted": true
+    }
+   ]
+  },
+  {
+   "author": "nullmill19",
+   "age": "3 hours ago",
+   "text": "I was sceptical from the title and the article changed my mind. The architecture section is worth reading even if you never touch spreadsheets. I say that as someone who likes the idea.",
+   "replies": [
+    {
+     "author": "lintreader",
+     "age": "2 hours ago",
+     "text": "Iteration caps match the usual defaults: a hundred iterations or a max change of 0.001. Configurable per sheet.",
+     "replies": [
+      {
+       "author": "soldertinker",
+       "age": "1 hour ago",
+       "text": "Spill ranges fall back to the interpreter when the output shape changes between recalcs. The compiled path handles the stable-shape case.",
+       "replies": [
+        {
+         "author": "grepwake",
+         "age": "14 minutes ago",
+         "text": "Is that from the post or from your own setup? Curious either way.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "mutexhound99",
+       "age": "1 hour ago",
+       "text": "The benchmark sheets are linked at the bottom of the post, including one that is deliberately horrible.",
+       "replies": [
+        {
+         "author": "kernbench",
+         "age": "1 hour ago",
+         "text": "I have been on both sides of that decision and I still do not know which was right.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "bytewake",
+       "age": "1 hour ago",
+       "text": "Recompile latency is quoted at a few milliseconds for a typical region. The worst case is a region spanning half of the sheet.",
+       "replies": [
+        {
+         "author": "quartzyard20",
+         "age": "22 minutes ago",
+         "text": "Hard agree.",
+         "replies": [
+          {
+           "author": "glyphdrift",
+           "age": "11 minutes ago",
+           "text": "Text functions are all in the interpreter for now. Only numeric formulas compile, per the FAQ. Happy to be proven wrong.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "quartzdrift",
+         "age": "1 hour ago",
+         "text": "Ha, fair.",
+         "replies": []
+        },
+        {
+         "author": "shardwake",
+         "age": "9 minutes ago",
+         "text": "Agree with the conclusion, not with how you got there.",
+         "replies": []
+        },
+        {
+         "author": "ringwake",
+         "age": "32 minutes ago",
+         "text": "What is the memory overhead of the dependency graph on a large sheet?",
+         "replies": []
+        },
+        {
+         "author": "nullmonk",
+         "age": "1 hour ago",
+         "text": "I checked the demo: the dependency view highlights the compiled region when you select a cell. Very nice for explaining slowness to users.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "nibwake",
+       "age": "2 hours ago",
+       "text": "Oof. Yes.",
+       "replies": []
+      },
+      {
+       "author": "nullmill19",
+       "age": "1 hour ago",
+       "text": "The way I see it, the file format is unchanged. Compilation is a runtime cache, never saved, which is the right call.",
+       "replies": [
+        {
+         "author": "traceshed52",
+         "age": "37 minutes ago",
+         "text": "This matches my experience almost exactly.",
+         "replies": []
+        },
+        {
+         "author": "lambdacraft",
+         "age": "1 hour ago",
+         "text": "That was true a few years ago. It has moved a lot since.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "replies": [
+        {
+         "author": "scalarster",
+         "age": "1 hour ago",
+         "text": "The last paragraph of the post says nearly the same thing.",
+         "replies": [
+          {
+           "author": "ringwake",
+           "age": "27 minutes ago",
+           "text": "That is a fair correction, thanks.",
+           "replies": []
+          }
+         ]
+        }
+       ],
+       "deleted": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "ferruletinker",
+   "age": "9 hours ago",
+   "text": "Sandboxing is an underrated benefit. A compiled formula cannot reach anything the module does not import, which is a better story than most macro systems have.",
+   "replies": [
+    {
+     "author": "monadsmith83",
+     "age": "9 hours ago",
+     "text": "We had the same argument at work last spring and nobody changed their mind.",
+     "replies": [
+      {
+       "author": "nullsage",
+       "age": "7 hours ago",
+       "text": "Any plans for a server-side mode, for batch recalculation?",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "spoolsmith",
+     "age": "9 hours ago",
+     "text": "Somebody should write the boring version of this post, with all the caveats.",
+     "replies": [
+      {
+       "author": "quartzdrift",
+       "age": "7 hours ago",
+       "text": "I think the author would agree with you; the title oversells it.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "sigmaworks",
+     "age": "9 hours ago",
+     "text": "That is the part nobody budgets for.",
+     "replies": [
+      {
+       "author": "bytewake",
+       "age": "7 hours ago",
+       "text": "Genuinely curious what the failure mode looks like in year three.",
+       "replies": []
+      },
+      {
+       "author": "kernbench",
+       "age": "8 hours ago",
+       "text": "I stand corrected.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "queuewake",
+     "age": "9 hours ago",
+     "text": "Anecdotally, debugging goes through the interpreter: you can force any region back to interpreted mode and step through it there.",
+     "replies": []
+    },
+    {
+     "author": "relayling",
+     "age": "9 hours ago",
+     "text": "Replying mainly so I can find this again.",
+     "replies": [
+      {
+       "author": "hexbench",
+       "age": "8 hours ago",
+       "text": "In my experience, the architecture doc answers that: edits go through the interpreter immediately and the compiled region swaps in when codegen finishes.",
+       "replies": [
+        {
+         "author": "relayling",
+         "age": "8 hours ago",
+         "text": "Touché.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "nulldrift",
+     "age": "9 hours ago",
+     "text": "In our models the cross-tab lookups were about ninety percent of recalc time, so the lookup indexing matters more than the arithmetic.",
+     "replies": [
+      {
+       "author": "ferruletinker",
+       "age": "8 hours ago",
+       "text": "In my experience, volatile cells are evaluated every recalc regardless, and anything downstream of them is marked dirty. It is the same cost as before, just isolated.",
+       "replies": [
+        {
+         "author": "slabwake",
+         "age": "8 hours ago",
+         "text": "The sandbox point is good. No formula can make a network call, full stop.",
+         "replies": []
+        },
+        {
+         "author": "deltaworks",
+         "age": "7 hours ago",
+         "text": "Precision matching the interpreter bit for bit is tested on every commit, according to the repo. Nobody talks about that part.",
+         "replies": []
+        },
+        {
+         "author": "kernpilot",
+         "age": "8 hours ago",
+         "text": "The interesting bit is buried in a footnote, as usual.",
+         "replies": []
+        },
+        {
+         "author": "glyphhound",
+         "age": "8 hours ago",
+         "text": "We had the same argument at work last quarter and nobody changed their mind.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "deltaworks",
+     "age": "8 hours ago",
+     "text": "How does it treat errors like division by zero propagating through a compiled region?",
+     "replies": []
+    },
+    {
+     "author": "vectoryard",
+     "age": "8 hours ago",
+     "text": "Mild pushback: the benchmark in the post is doing a lot of work.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "deltamill",
+   "age": "9 hours ago",
+   "text": "In my experience, spreadsheets are the most widely deployed reactive programming system in the world and we keep rediscovering that every decade. This is a good rediscovery.",
+   "replies": [
+    {
+     "author": "heapshed",
+     "age": "8 hours ago",
+     "text": "Volatile cells are evaluated every recalc regardless, and anything downstream of them is marked dirty. It is the same cost as before, just isolated.",
+     "replies": [
+      {
+       "author": "nullgarden",
+       "age": "8 hours ago",
+       "text": "Interesting, had not considered that.",
+       "replies": [
+        {
+         "author": "sigmacraft",
+         "age": "5 hours ago",
+         "text": "Anecdotally, I checked the demo: the dependency view highlights the compiled region when you select a cell. Very nice for explaining slowness to users.",
+         "replies": [
+          {
+           "author": "nullgarden",
+           "age": "4 hours ago",
+           "text": "We had the same argument at work last month and nobody changed their mind.",
+           "replies": []
+          },
+          {
+           "author": "fiberloft",
+           "age": "3 hours ago",
+           "text": "Worth adding that recompile latency is quoted at a few milliseconds for a typical region. The worst case is a region spanning a large part of the sheet.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "grommetreader",
+         "age": "7 hours ago",
+         "text": "Anecdotally, SIMD would help column formulas a lot, but only if the strict-order default is relaxed, which brings back the accountant problem.",
+         "replies": [
+          {
+           "author": "monadsmith83",
+           "age": "6 hours ago",
+           "text": "Same here, down to the detail.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "heapshed",
+         "age": "7 hours ago",
+         "text": "Honestly, that old approach of nightly code generation is exactly what this avoids by keeping the interpreter as the source of truth.",
+         "replies": [
+          {
+           "author": "glyphster",
+           "age": "6 hours ago",
+           "text": "The trade-off is real but it is not the one people usually name.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "heapshed",
+         "age": "8 hours ago",
+         "text": "I tried this and gave up after a week. Might try again after this thread.",
+         "replies": []
+        },
+        {
+         "author": "shardwake",
+         "age": "6 hours ago",
+         "text": "I think you are both right and talking about different scales.",
+         "replies": []
+        },
+        {
+         "author": "dipoleworks",
+         "age": "7 hours ago",
+         "text": "Anecdotally, in our models the cross-tab lookups were eighty percent of recalc time, so the lookup indexing matters more than the arithmetic.",
+         "replies": []
+        },
+        {
+         "author": "pixeldrift",
+         "age": "7 hours ago",
+         "text": "Same.",
+         "replies": []
+        },
+        {
+         "author": "glyphbench",
+         "age": "7 hours ago",
+         "text": "Precision matching the interpreter bit for bit is tested on every commit, according to the repo.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "nibsage",
+     "age": "9 hours ago",
+     "text": "The honest answer is that nobody measured it before or after.",
+     "replies": [
+      {
+       "author": "deltamill",
+       "age": "7 hours ago",
+       "text": "You are describing a people problem with a technology label on it.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "nullsage",
+     "age": "8 hours ago",
+     "text": "Having done this twice now: I checked the demo: the dependency view highlights the compiled region when you select a cell. Very nice for explaining slowness to users.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "monadworks",
+   "age": "5 hours ago",
+   "text": "The debugging story is what I would worry about. When a compiled region gives a surprising answer, how do you step through it?",
+   "replies": [
+    {
+     "author": "vectormonk25",
+     "age": "5 hours ago",
+     "text": "The architecture doc answers that: edits go through the interpreter immediately and the compiled region swaps in when codegen finishes. Happy to be proven wrong.",
+     "replies": [
+      {
+       "author": "grommetwake",
+       "age": "4 hours ago",
+       "text": "Honestly, SIMD would help column formulas a lot, but only if the strict-order default is relaxed, which brings back the accountant problem.",
+       "replies": [
+        {
+         "author": "nullmill19",
+         "age": "3 hours ago",
+         "text": "Source?",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "glyphhound",
+       "age": "5 hours ago",
+       "text": "Collaboration is handled by recompiling on each client independently. Codegen is deterministic, so both sides produce the same module.",
+       "replies": [
+        {
+         "author": "vectormonk25",
+         "age": "3 hours ago",
+         "text": "I read it the other way: the tooling finally caught up with the idea.",
+         "replies": [
+          {
+           "author": "glyphhound",
+           "age": "3 hours ago",
+           "text": "Text functions are all in the interpreter for now. Only numeric formulas compile, per the FAQ. Your mileage will vary.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "soldertide",
+       "age": "4 hours ago",
+       "text": "Nobody wants to hear it, but the unglamorous answer usually wins.",
+       "replies": [
+        {
+         "author": "sigmaworks",
+         "age": "4 hours ago",
+         "text": "Does it support user-defined functions, or only the built-in library?",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "monadworks",
+       "age": "5 hours ago",
+       "text": "This is the comment I came here to write.",
+       "replies": [
+        {
+         "author": "vectormonk25",
+         "age": "3 hours ago",
+         "text": "Debugging goes through the interpreter: you can force any region back to interpreted mode and step through it there. At least that is how it went for us.",
+         "replies": [
+          {
+           "author": "grepwake",
+           "age": "3 hours ago",
+           "text": "The way I see it, date serials are kept as-is, including the 1900 quirk, according to the compatibility notes. Anything else would break existing sheets.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "bezelgarden12",
+         "age": "3 hours ago",
+         "text": "Rounding for display is a formatting concern and never touches the stored double. That separation is at least consistent. Happy to be proven wrong.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "quartzyard20",
+       "age": "3 hours ago",
+       "text": "Debugging goes through the interpreter: you can force any region back to interpreted mode and step through it there. I say that as someone who likes the idea.",
+       "replies": []
+      },
+      {
+       "author": "scalarbench",
+       "age": "4 hours ago",
+       "text": "This deserves its own submission.",
+       "replies": []
+      },
+      {
+       "replies": [
+        {
+         "author": "dipoleworks",
+         "age": "2 hours ago",
+         "text": "Honestly, the benchmark sheets are linked at the bottom of the post, including one that is deliberately horrible.",
+         "replies": []
+        }
+       ],
+       "deleted": true
+      },
+      {
+       "author": "offbyfun",
+       "age": "3 hours ago",
+       "text": "I tried this and gave up after a fortnight. Might try again after this thread.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "cachefield",
+   "age": "8 hours ago",
+   "text": "Honestly, the Wasm module size is the number I would watch. A sheet with thirty thousand distinct formulas could easily produce a module bigger than the file it came from.",
+   "replies": [
+    {
+     "author": "shardbearer",
+     "age": "7 hours ago",
+     "text": "In our models the cross-tab lookups were eighty percent of recalc time, so the lookup indexing matters more than the arithmetic.",
+     "replies": [
+      {
+       "author": "nulldrift",
+       "age": "7 hours ago",
+       "text": "Strong disagree, but I appreciate that you wrote it up properly.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "sharddrift67",
+     "age": "8 hours ago",
+     "text": "Reasonable people land on both sides of this, and the thread is proving it.",
+     "replies": [
+      {
+       "author": "traceworks",
+       "age": "5 hours ago",
+       "text": "Agreed.",
+       "replies": [
+        {
+         "author": "tokenring",
+         "age": "5 hours ago",
+         "text": "What happens when a user pastes ten thousand rows at once?",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "deltafield41",
+     "age": "7 hours ago",
+     "text": "The way I see it, precision matching the interpreter bit for bit is tested on every commit, according to the repo.",
+     "replies": [
+      {
+       "author": "monadwake63",
+       "age": "4 hours ago",
+       "text": "I checked the demo: the dependency view highlights the compiled region when you select a cell. Very nice for explaining slowness to users. Nobody talks about that part.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "slabwake",
+     "age": "7 hours ago",
+     "text": "The way I see it, I checked the demo: the dependency view highlights the compiled region when you select a cell. Very nice for explaining slowness to users.",
+     "replies": [
+      {
+       "author": "depreciator",
+       "age": "7 hours ago",
+       "text": "That tracks.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "deltamill",
+     "age": "8 hours ago",
+     "text": "Recompile latency is quoted at a few milliseconds for a typical region. The worst case is a region spanning half of the sheet. I say that as someone who likes the idea.",
+     "replies": []
+    },
+    {
+     "author": "planshape",
+     "age": "7 hours ago",
+     "text": "I would love to read a follow-up on exactly this point.",
+     "replies": []
+    },
+    {
+     "author": "traceworks",
+     "age": "6 hours ago",
+     "text": "Honestly, collaboration is handled by recompiling on each client independently. Codegen is deterministic, so both sides produce the same module.",
+     "replies": []
+    },
+    {
+     "author": "ferruleloft",
+     "age": "7 hours ago",
+     "text": "The file format is unchanged. Compilation is a runtime cache, never saved, which is the right call. At least that is how it went for us.",
+     "replies": []
+    },
+    {
+     "author": "glyphhound",
+     "age": "8 hours ago",
+     "text": "The way I see it, the sandbox point is good. No formula can make a network call, full stop.",
+     "replies": [
+      {
+       "author": "cachefield",
+       "age": "7 hours ago",
+       "text": "Not sure that generalises beyond a small shop.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "gridlockgrady",
+   "age": "8 hours ago",
+   "text": "This is just a compiler with extra steps. Every spreadsheet engine since the 80s has been an incremental computation engine; slapping Wasm on it doesn't change the fundamentals.",
+   "replies": [
+    {
+     "author": "lambdacurious",
+     "age": "8 hours ago",
+     "text": "I mean, sure, and a JIT is just an interpreter with extra steps. The steps are the point. Getting spreadsheet recalc into the same performance class as hand-written array code is genuinely useful — I've watched analysts wait 30 seconds for recalcs on sheets that are, computationally, a few matrix multiplies.",
+     "replies": [
+      {
+       "author": "gridlockgrady",
+       "age": "7 hours ago",
+       "text": "Ok, that's fair, \"extra steps\" was glib. My real objection is that the sheets that are slow in practice are slow because of volatile functions and cross-sheet lookups, not raw arithmetic throughput. Compiling the arithmetic hot loop optimizes the part that was already fast.",
+       "replies": [
+        {
+         "author": "mlemvik",
+         "age": "6 hours ago",
+         "text": "OP here — you're half right. Lookups were the second thing I attacked: the compiler recognizes lookup-over-sorted-range patterns and emits binary searches, and unsorted lookups against a range that's referenced more than N times get a hash index built once per recalc. Volatile functions are still a recalc wall, no argument there."
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "patchdrift67",
+   "age": "7 hours ago",
+   "text": "A note for anyone evaluating it: test file round-tripping first. An engine that is fast but changes a formula on save is worse than slow.",
+   "replies": [
+    {
+     "author": "glyphpilot",
+     "age": "6 hours ago",
+     "text": "In our models the cross-tab lookups were eighty percent of recalc time, so the lookup indexing matters more than the arithmetic. Nobody talks about that part.",
+     "replies": [
+      {
+       "author": "fiberloft",
+       "age": "5 hours ago",
+       "text": "Named ranges are resolved at compile time and recompiled when the name changes. Same mechanism as an edited formula. At least that is how it went for us.",
+       "replies": [
+        {
+         "author": "glyphpilot",
+         "age": "5 hours ago",
+         "text": "Volatile cells are evaluated every recalc regardless, and anything downstream of them is marked dirty. It is the same cost as before, just isolated. Happy to be proven wrong.",
+         "replies": [
+          {
+           "author": "thunkfield",
+           "age": "5 hours ago",
+           "text": "Having done this twice now: that old approach of nightly code generation is exactly what this avoids by keeping the interpreter as the source of truth.",
+           "replies": [
+            {
+             "author": "spooldrift",
+             "age": "4 hours ago",
+             "text": "Anecdotally, a few million cells is where it starts to hurt, mostly from the dependency graph itself rather than the compiled code.",
+             "replies": [
+              {
+               "author": "grommetyard",
+               "age": "3 hours ago",
+               "text": "In our models the cross-tab lookups were seventy percent of recalc time, so the lookup indexing matters more than the arithmetic. At least that is how it went for us.",
+               "replies": []
+              }
+             ]
+            },
+            {
+             "author": "monadsmith83",
+             "age": "4 hours ago",
+             "text": "In my experience, in our models the cross-tab lookups were eighty percent of recalc time, so the lookup indexing matters more than the arithmetic.",
+             "replies": []
+            }
+           ]
+          },
+          {
+           "author": "scalarster",
+           "age": "4 hours ago",
+           "text": "Mild disagreement: rounding for display is a formatting concern and never touches the stored double. That separation is at least consistent.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "patchdrift67",
+       "age": "4 hours ago",
+       "text": "Honestly, strict left-to-right summation is the default. The faster mode is opt-in per sheet, and it says so on the sheet.",
+       "replies": [
+        {
+         "author": "kernpilot",
+         "age": "3 hours ago",
+         "text": "Rounding for display is a formatting concern and never touches the stored double. That separation is at least consistent.",
+         "replies": [
+          {
+           "author": "glyphster",
+           "age": "2 hours ago",
+           "text": "The sandbox point is good. No formula can make a network call, full stop. At least that is how it went for us.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "patchdrift67",
+       "age": "3 hours ago",
+       "text": "Iteration caps match the usual defaults: a hundred iterations or a max change of 0.001. Configurable per sheet. Happy to be proven wrong.",
+       "replies": []
+      },
+      {
+       "author": "shardwake",
+       "age": "6 hours ago",
+       "text": "That old approach of nightly code generation is exactly what this avoids by keeping the interpreter as the source of truth. I say that as someone who likes the idea.",
+       "replies": [
+        {
+         "author": "stackdrift",
+         "age": "5 hours ago",
+         "text": "Strict left-to-right summation is the default. The faster mode is opt-in per sheet, and it says so on the sheet. Happy to be proven wrong.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "mutexhound99",
+       "age": "6 hours ago",
+       "text": "Mild disagreement: named ranges are resolved at compile time and recompiled when the name changes. Same mechanism as an edited formula.",
+       "replies": []
+      },
+      {
+       "author": "nibsage",
+       "age": "6 hours ago",
+       "text": "Fair point.",
+       "replies": [
+        {
+         "author": "glyphpilot",
+         "age": "5 hours ago",
+         "text": "That old approach of nightly code generation is exactly what this avoids by keeping the interpreter as the source of truth. The post undersells this, I think.",
+         "replies": []
+        },
+        {
+         "author": "latchworks",
+         "age": "5 hours ago",
+         "text": "Recompile latency is quoted at a few milliseconds for a typical region. The worst case is a region spanning a large part of the sheet. Nobody talks about that part.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "planshape",
+   "age": "8 hours ago",
+   "text": "The recalc numbers are impressive, but the thing that sold me was the dependency view. Being able to see which region of cells a formula compiled into explains the performance better than any benchmark. At least that is how it went for us.",
+   "replies": [
+    {
+     "author": "pixeldrift",
+     "age": "8 hours ago",
+     "text": "A few million cells is where it starts to hurt, mostly from the dependency graph itself rather than the compiled code. At least that is how it went for us.",
+     "replies": [
+      {
+       "author": "nullworks",
+       "age": "7 hours ago",
+       "text": "Saving this for the next time someone asks me why.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "soldertinker",
+     "age": "6 hours ago",
+     "text": "Seconding this. It took us far too long to learn it.",
+     "replies": [
+      {
+       "author": "cachespark99",
+       "age": "5 hours ago",
+       "text": "Thanks, that helps.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "socketwright",
+     "age": "7 hours ago",
+     "text": "Exactly this.",
+     "replies": [
+      {
+       "author": "planshape",
+       "age": "6 hours ago",
+       "text": "Worth adding that I checked the demo: the dependency view highlights the compiled region when you select a cell. Very nice for explaining slowness to users.",
+       "replies": [
+        {
+         "author": "socketwright",
+         "age": "3 hours ago",
+         "text": "The way I see it, volatile cells are evaluated every recalc regardless, and anything downstream of them is marked dirty. It is the same cost as before, just isolated.",
+         "replies": [
+          {
+           "author": "monadreader",
+           "age": "2 hours ago",
+           "text": "SIMD would help column formulas a lot, but only if the strict-order default is relaxed, which brings back the accountant problem. Happy to be proven wrong.",
+           "replies": []
+          },
+          {
+           "author": "lambdaspark",
+           "age": "2 hours ago",
+           "text": "Having done this twice now: the module size problem is real. Deduplicating identical formula shapes helps a lot, since most sheets repeat a small number of shapes.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "grommetreader",
+     "age": "6 hours ago",
+     "text": "Rounding for display is a formatting concern and never touches the stored double. That separation is at least consistent. I say that as someone who likes the idea.",
+     "replies": []
+    },
+    {
+     "author": "bytewake",
+     "age": "8 hours ago",
+     "text": "Every one of these threads has this subthread, and every time it is worth reading.",
+     "replies": []
+    },
+    {
+     "author": "deltafield41",
+     "age": "6 hours ago",
+     "text": "Mild disagreement: volatile cells are evaluated every recalc regardless, and anything downstream of them is marked dirty. It is the same cost as before, just isolated.",
+     "replies": []
+    },
+    {
+     "author": "queuesmith",
+     "age": "7 hours ago",
+     "text": "The architecture doc answers that: edits go through the interpreter immediately and the compiled region swaps in when codegen finishes. The post undersells this, I think.",
+     "replies": []
+    },
+    {
+     "author": "deltacraft",
+     "age": "7 hours ago",
+     "text": "Text functions are all in the interpreter for now. Only numeric formulas compile, per the FAQ. At least that is how it went for us.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "glyphworks28",
+   "age": "4 hours ago",
+   "text": "This is the kind of project where the last ten percent of compatibility takes ninety percent of the time. Good luck to the author; it is a great start.",
+   "replies": [
+    {
+     "author": "scalarhound",
+     "age": "4 hours ago",
+     "text": "Honestly, spill ranges fall back to the interpreter when the output shape changes between recalcs. The compiled path handles the stable-shape case.",
+     "replies": [
+      {
+       "author": "latchling",
+       "age": "4 hours ago",
+       "text": "Date serials are kept as-is, including the 1900 quirk, according to the compatibility notes. Anything else would break existing sheets. Your mileage will vary.",
+       "replies": [
+        {
+         "author": "sigmaworks",
+         "age": "4 hours ago",
+         "text": "Volatile cells are evaluated every recalc regardless, and anything downstream of them is marked dirty. It is the same cost as before, just isolated. The post undersells this, I think.",
+         "replies": [
+          {
+           "author": "deltafield41",
+           "age": "3 hours ago",
+           "text": "Recompile latency is quoted at a few milliseconds for a typical region. The worst case is a region spanning a large part of the sheet. Happy to be proven wrong.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "scalarhound",
+         "age": "3 hours ago",
+         "text": "Mild disagreement: the architecture doc answers that: edits go through the interpreter immediately and the compiled region swaps in when codegen finishes.",
+         "replies": []
+        },
+        {
+         "author": "pixelshed",
+         "age": "2 hours ago",
+         "text": "Not sure that generalises beyond one workload.",
+         "replies": []
+        },
+        {
+         "author": "scalarhound",
+         "age": "4 hours ago",
+         "text": "Named ranges are resolved at compile time and recompiled when the name changes. Same mechanism as an edited formula. Happy to be proven wrong.",
+         "replies": []
+        },
+        {
+         "author": "bitrotting",
+         "age": "1 hour ago",
+         "text": "The sandbox point is good. No formula can make a network call, full stop. I say that as someone who likes the idea.",
+         "replies": []
+        },
+        {
+         "author": "glyphling",
+         "age": "4 hours ago",
+         "text": "Worth adding that in our models the cross-tab lookups were eighty percent of recalc time, so the lookup indexing matters more than the arithmetic.",
+         "replies": []
+        },
+        {
+         "author": "spooldrift",
+         "age": "3 hours ago",
+         "text": "Date serials are kept as-is, including the 1900 quirk, according to the compatibility notes. Anything else would break existing sheets. The post undersells this, I think.",
+         "replies": []
+        },
+        {
+         "author": "deltafield41",
+         "age": "2 hours ago",
+         "text": "Volatile cells are evaluated every recalc regardless, and anything downstream of them is marked dirty. It is the same cost as before, just isolated. Nobody talks about that part.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "lintdrift",
+   "age": "9 hours ago",
+   "text": "Spreadsheets are the most widely deployed reactive programming system in the world and we keep rediscovering that every few years. This is a good rediscovery.",
+   "replies": [
+    {
+     "author": "nullmill19",
+     "age": "9 hours ago",
+     "text": "Honestly, debugging goes through the interpreter: you can force any region back to interpreted mode and step through it there.",
+     "replies": [
+      {
+       "author": "monadworks",
+       "age": "8 hours ago",
+       "text": "Spill ranges fall back to the interpreter when the output shape changes between recalcs. The compiled path handles the stable-shape case. The post undersells this, I think.",
+       "replies": []
+      },
+      {
+       "author": "planshape",
+       "age": "7 hours ago",
+       "text": "Date serials are kept as-is, including the 1900 quirk, according to the compatibility notes. Anything else would break existing sheets. I say that as someone who likes the idea.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "ferruleloft38",
+     "age": "8 hours ago",
+     "text": "Named ranges are resolved at compile time and recompiled when the name changes. Same mechanism as an edited formula. I say that as someone who likes the idea.",
+     "replies": [
+      {
+       "author": "lambdacurious",
+       "age": "7 hours ago",
+       "text": "SIMD would help column formulas a lot, but only if the strict-order default is relaxed, which brings back the accountant problem. The post undersells this, I think.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "cachefield",
+     "age": "9 hours ago",
+     "text": "Having done this twice now: precision matching the interpreter bit for bit is tested on every commit, according to the repo.",
+     "replies": [
+      {
+       "author": "lintdrift",
+       "age": "8 hours ago",
+       "text": "Anecdotally, precision matching the interpreter bit for bit is tested on every commit, according to the repo.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "fiberwake",
+     "age": "6 hours ago",
+     "text": "Recompile latency is quoted at a few milliseconds for a typical region. The worst case is a region spanning most of the sheet.",
+     "replies": [
+      {
+       "author": "shardwake",
+       "age": "6 hours ago",
+       "text": "Honestly, recompile latency is quoted at a few milliseconds for a typical region. The worst case is a region spanning a large part of the sheet.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "bitrotting",
+     "age": "7 hours ago",
+     "text": "In our models the cross-tab lookups were seventy percent of recalc time, so the lookup indexing matters more than the arithmetic. The post undersells this, I think.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "heapyard",
+   "age": "9 hours ago",
+   "text": "The \"shared formula\" observation is spot on. Most big sheets are the same formula dragged down a column, and treating that as a loop is where the speedup comes from.",
+   "replies": [
+    {
+     "author": "fibermill",
+     "age": "6 hours ago",
+     "text": "In my experience, that old approach of nightly code generation is exactly what this avoids by keeping the interpreter as the source of truth.",
+     "replies": [
+      {
+       "author": "grommetwake",
+       "age": "4 hours ago",
+       "text": "For what it is worth, the benchmark sheets are linked at the bottom of the post, including one that is deliberately horrible.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "stackwright",
+     "age": "8 hours ago",
+     "text": "In my experience, recompile latency is quoted at a few milliseconds for a typical region. The worst case is a region spanning most of the sheet.",
+     "replies": []
+    },
+    {
+     "author": "dipoleworks",
+     "age": "8 hours ago",
+     "text": "Anecdotally, named ranges are resolved at compile time and recompiled when the name changes. Same mechanism as an edited formula.",
+     "replies": []
+    },
+    {
+     "author": "pagetable",
+     "age": "8 hours ago",
+     "text": "Not sure that generalises beyond your team.",
+     "replies": []
+    },
+    {
+     "author": "heapshed",
+     "age": "8 hours ago",
+     "text": "Text functions are all in the interpreter for now. Only numeric formulas compile, per the FAQ. Nobody talks about that part.",
+     "replies": []
+    },
+    {
+     "author": "shardloft",
+     "age": "8 hours ago",
+     "text": "Having done this twice now: SIMD would help column formulas a lot, but only if the strict-order default is relaxed, which brings back the accountant problem.",
+     "replies": []
+    },
+    {
+     "author": "shardbearer",
+     "age": "9 hours ago",
+     "text": "I checked the demo: the dependency view highlights the compiled region when you select a cell. Very nice for explaining slowness to users. At least that is how it went for us.",
+     "replies": []
+    },
+    {
+     "author": "cachespark99",
+     "age": "6 hours ago",
+     "text": "Anecdotally, collaboration is handled by recompiling on each client independently. Codegen is deterministic, so both sides produce the same module.",
+     "replies": []
+    },
+    {
+     "author": "nullgarden",
+     "age": "8 hours ago",
+     "text": "For what it is worth, the module size problem is real. Deduplicating identical formula shapes helps a lot, since most sheets repeat a small number of shapes.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "sharddrift67",
+   "age": "2 hours ago",
+   "text": "The post mentions SIMD as future work. For column-shaped formulas that could be another large multiple.",
+   "replies": [
+    {
+     "author": "socketwright",
+     "age": "2 hours ago",
+     "text": "Small correction: that changed in the last release, so the post is slightly out of date. Happy to be proven wrong.",
+     "replies": [
+      {
+       "author": "scalarbench",
+       "age": "1 hour ago",
+       "text": "Honestly, named ranges are resolved at compile time and recompiled when the name changes. Same mechanism as an edited formula.",
+       "replies": [
+        {
+         "author": "ferruletinker42",
+         "age": "38 minutes ago",
+         "text": "The module size problem is real. Deduplicating identical formula shapes helps a lot, since most sheets repeat a small number of shapes. Happy to be proven wrong.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "ringwake",
+     "age": "1 hour ago",
+     "text": "Date serials are kept as-is, including the 1900 quirk, according to the compatibility notes. Anything else would break existing sheets. Happy to be proven wrong.",
+     "replies": [
+      {
+       "author": "slabspark32",
+       "age": "33 minutes ago",
+       "text": "I checked the demo: the dependency view highlights the compiled region when you select a cell. Very nice for explaining slowness to users. The post undersells this, I think.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "staticdrift",
+     "age": "1 hour ago",
+     "text": "In my experience, rounding for display is a formatting concern and never touches the stored double. That separation is at least consistent.",
+     "replies": [
+      {
+       "author": "sharddrift67",
+       "age": "18 minutes ago",
+       "text": "Iteration caps match the usual defaults: a hundred iterations or a max change of 0.001. Configurable per sheet. Your mileage will vary.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "queuewake",
+   "age": "7 hours ago",
+   "text": "I was sceptical from the title and the article changed my mind. The architecture section is worth reading even if you never touch spreadsheets.",
+   "replies": [
+    {
+     "author": "monadreader",
+     "age": "5 hours ago",
+     "text": "A few million cells is where it starts to hurt, mostly from the dependency graph itself rather than the compiled code. The post undersells this, I think.",
+     "replies": [
+      {
+       "author": "nullsage",
+       "age": "4 hours ago",
+       "text": "In our models the cross-tab lookups were about ninety percent of recalc time, so the lookup indexing matters more than the arithmetic. Nobody talks about that part.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "soldertide",
+     "age": "7 hours ago",
+     "text": "For what it is worth, strict left-to-right summation is the default. The faster mode is opt-in per sheet, and it says so on the sheet.",
+     "replies": [
+      {
+       "author": "grepling",
+       "age": "5 hours ago",
+       "text": "I checked the demo: the dependency view highlights the compiled region when you select a cell. Very nice for explaining slowness to users. Your mileage will vary.",
+       "replies": [
+        {
+         "author": "cachedrift",
+         "age": "5 hours ago",
+         "text": "For what it is worth, the sandbox point is good. No formula can make a network call, full stop.",
+         "replies": []
+        },
+        {
+         "author": "latchling",
+         "age": "4 hours ago",
+         "text": "Anecdotally, strict left-to-right summation is the default. The faster mode is opt-in per sheet, and it says so on the sheet.",
+         "replies": []
+        },
+        {
+         "author": "glyphpilot",
+         "age": "5 hours ago",
+         "text": "For what it is worth, recompile latency is quoted at a few milliseconds for a typical region. The worst case is a region spanning half of the sheet.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "bitrotting",
+   "age": "7 hours ago",
+   "text": "Obligatory question for any spreadsheet post: how do you handle floating point? If SUM() over the same numbers gives different results depending on which compiled loop shape you picked, accountants will hunt you down. Reassociating float addition for SIMD changes the answer.",
+   "replies": [
+    {
+     "author": "decimaldrift",
+     "age": "7 hours ago",
+     "text": "The numerics page addresses this head-on: strict left-to-right accumulation by default, precisely so results stay bit-identical with the interpreter fallback. There's an opt-in fast-math mode per sheet that enables pairwise summation — which is actually *more* accurate on average, but not reproducible against the strict mode. Documented tradeoff, off by default. More care than I expected from a solo project."
+    }
+   ]
+  },
+  {
+   "author": "nibbench",
+   "age": "5 hours ago",
+   "text": "The fallback interpreter is the real product here. Compilation is an optimisation; bit-identical results between the two paths is what makes it safe to ship.",
+   "replies": [
+    {
+     "author": "mutexhound99",
+     "age": "4 hours ago",
+     "text": "For what it is worth, that old approach of nightly code generation is exactly what this avoids by keeping the interpreter as the source of truth.",
+     "replies": [
+      {
+       "author": "glyphling",
+       "age": "2 hours ago",
+       "text": "Anecdotally, volatile cells are evaluated every recalc regardless, and anything downstream of them is marked dirty. It is the same cost as before, just isolated.",
+       "replies": [
+        {
+         "author": "pagetable",
+         "age": "2 hours ago",
+         "text": "Spill ranges fall back to the interpreter when the output shape changes between recalcs. The compiled path handles the stable-shape case. Happy to be proven wrong.",
+         "replies": [
+          {
+           "author": "scalarbench",
+           "age": "1 hour ago",
+           "text": "Anecdotally, spill ranges fall back to the interpreter when the output shape changes between recalcs. The compiled path handles the stable-shape case.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "nibbench",
+       "age": "4 hours ago",
+       "text": "Collaboration is handled by recompiling on each client independently. Codegen is deterministic, so both sides produce the same module. At least that is how it went for us.",
+       "replies": [
+        {
+         "author": "nullsage",
+         "age": "2 hours ago",
+         "text": "In my experience, the sandbox point is good. No formula can make a network call, full stop.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "socketspark",
+   "age": "8 hours ago",
+   "text": "Spill ranges and dynamic arrays seem like the hardest part to compile statically. The shape of the output is only known once the input is.\n\nThat old approach of nightly code generation is exactly what this avoids by keeping the interpreter as the source of truth.",
+   "replies": [
+    {
+     "replies": [
+      {
+       "author": "stackwright",
+       "age": "7 hours ago",
+       "text": "Precision matching the interpreter bit for bit is tested on every commit, according to the repo. Your mileage will vary.",
+       "replies": []
+      }
+     ],
+     "deleted": true
+    },
+    {
+     "author": "pixeldrift",
+     "age": "8 hours ago",
+     "text": "The benchmark sheets are linked at the bottom of the post, including one that is deliberately horrible. The post undersells this, I think.",
+     "replies": [
+      {
+       "author": "socketspark",
+       "age": "8 hours ago",
+       "text": "Having done this twice now: the file format is unchanged. Compilation is a runtime cache, never saved, which is the right call.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "staticdrift",
+     "age": "8 hours ago",
+     "text": "Mild disagreement: collaboration is handled by recompiling on each client independently. Codegen is deterministic, so both sides produce the same module.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "lintreader",
+   "age": "5 hours ago",
+   "text": "Spill ranges and dynamic arrays seem like the hardest part to compile statically. The shape of the output is only known once the input is.\n\nThe architecture doc answers that: edits go through the interpreter immediately and the compiled region swaps in when codegen finishes.",
+   "replies": [
+    {
+     "author": "grepling",
+     "age": "5 hours ago",
+     "text": "Rounding for display is a formatting concern and never touches the stored double. That separation is at least consistent. At least that is how it went for us.",
+     "replies": [
+      {
+       "author": "quartzdrift",
+       "age": "5 hours ago",
+       "text": "Mild disagreement: iteration caps match the usual defaults: a hundred iterations or a max change of 0.001. Configurable per sheet.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "fiberwake",
+     "age": "3 hours ago",
+     "text": "For what it is worth, debugging goes through the interpreter: you can force any region back to interpreted mode and step through it there.",
+     "replies": []
+    },
+    {
+     "author": "nibwake",
+     "age": "5 hours ago",
+     "text": "Anecdotally, in our models the cross-tab lookups were about ninety percent of recalc time, so the lookup indexing matters more than the arithmetic.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "socketspark",
+   "age": "3 hours ago",
+   "text": "The part I found most interesting was the decision to keep evaluation order strict by default. Reproducibility over speed is the right default for this audience.",
+   "replies": [
+    {
+     "author": "patchfield",
+     "age": "3 hours ago",
+     "text": "The sandbox point is good. No formula can make a network call, full stop. Your mileage will vary.",
+     "replies": [
+      {
+       "author": "socketspark",
+       "age": "2 hours ago",
+       "text": "For what it is worth, a few million cells is where it starts to hurt, mostly from the dependency graph itself rather than the compiled code.",
+       "replies": [
+        {
+         "author": "nullgarden",
+         "age": "1 hour ago",
+         "text": "Mild disagreement: SIMD would help column formulas a lot, but only if the strict-order default is relaxed, which brings back the accountant problem.",
+         "replies": [
+          {
+           "author": "socketspark",
+           "age": "1 hour ago",
+           "text": "Having done this twice now: the architecture doc answers that: edits go through the interpreter immediately and the compiled region swaps in when codegen finishes.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "patchloft",
+   "age": "6 hours ago",
+   "text": "Having done this twice now: the tiering design reminds me of a JavaScript engine: interpret first, compile the hot regions, swap in when ready. It is a proven pattern for a reason.",
+   "replies": [
+    {
+     "author": "nibwake",
+     "age": "6 hours ago",
+     "text": "In our models the cross-tab lookups were about ninety percent of recalc time, so the lookup indexing matters more than the arithmetic. At least that is how it went for us.",
+     "replies": [
+      {
+       "author": "depreciator",
+       "age": "5 hours ago",
+       "text": "Honestly, date serials are kept as-is, including the 1900 quirk, according to the compatibility notes. Anything else would break existing sheets.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "pixeldrift",
+     "age": "5 hours ago",
+     "text": "Mild disagreement: recompile latency is quoted at a few milliseconds for a typical region. The worst case is a region spanning most of the sheet.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "bitrotting",
+   "age": "2 hours ago",
+   "text": "I maintain a pricing workbook with about forty tabs and the slow part has never been arithmetic. It is lookups across tabs and a handful of volatile functions that everybody forgot were there.",
+   "replies": [
+    {
+     "author": "soldertinker",
+     "age": "1 hour ago",
+     "text": "Honestly, rounding for display is a formatting concern and never touches the stored double. That separation is at least consistent.",
+     "replies": [
+      {
+       "author": "monadwake63",
+       "age": "1 hour ago",
+       "text": "For what it is worth, text functions are all in the interpreter for now. Only numeric formulas compile, per the FAQ.",
+       "replies": [
+        {
+         "author": "soldertinker",
+         "age": "1 hour ago",
+         "text": "The file format is unchanged. Compilation is a runtime cache, never saved, which is the right call. The post undersells this, I think.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "quartzyard20",
+   "age": "4 hours ago",
+   "text": "Spill ranges and dynamic arrays seem like the hardest part to compile statically. The shape of the output is only known once the input is.",
+   "replies": [
+    {
+     "author": "bezelmill88",
+     "age": "4 hours ago",
+     "text": "For what it is worth, spill ranges fall back to the interpreter when the output shape changes between recalcs. The compiled path handles the stable-shape case.",
+     "replies": []
+    },
+    {
+     "author": "socketwright",
+     "age": "2 hours ago",
+     "text": "Collaboration is handled by recompiling on each client independently. Codegen is deterministic, so both sides produce the same module. Happy to be proven wrong.",
+     "replies": []
+    },
+    {
+     "author": "stackdrift",
+     "age": "4 hours ago",
+     "text": "The architecture doc answers that: edits go through the interpreter immediately and the compiled region swaps in when codegen finishes. At least that is how it went for us.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "offbyfun",
+   "age": "6 hours ago",
+   "text": "Slightly off topic, but the deep irony of spreadsheets is that they're the most successful functional programming environment in history — pure functions, referential transparency, reactive evaluation — used daily by millions of people who would never touch a language with those words in the brochure. Compiling one is basically writing a Haskell compiler for people who don't know they're writing Haskell."
+  },
+  {
+   "author": "spoolsmith",
+   "age": "7 hours ago",
+   "text": "For what it is worth, I ran the demo against a headcount planning model from work (sanitised) and got about a nine times speedup on full recalc. Single-cell edits felt the same as before.",
+   "replies": [
+    {
+     "author": "vacuumtruck",
+     "age": "6 hours ago",
+     "text": "Honestly, precision matching the interpreter bit for bit is tested on every commit, according to the repo.",
+     "replies": [
+      {
+       "author": "pixelshed",
+       "age": "6 hours ago",
+       "text": "That was true ten years ago. It has moved a lot since.",
+       "replies": []
+      },
+      {
+       "author": "staticdrift",
+       "age": "6 hours ago",
+       "text": "In my experience, iteration caps match the usual defaults: a hundred iterations or a max change of 0.001. Configurable per sheet.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "spooldrift",
+   "age": "4 hours ago",
+   "text": "What I want to know is how it behaves with a sheet that someone has been editing badly for ten years. Clean benchmark sheets are not the real world.",
+   "replies": [
+    {
+     "author": "monadwake63",
+     "age": "1 hour ago",
+     "text": "Rounding for display is a formatting concern and never touches the stored double. That separation is at least consistent. Nobody talks about that part.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "slabspark32",
+   "age": "9 hours ago",
+   "text": "The \"shared formula\" observation is spot on. Most big sheets are the same formula dragged down a column, and treating that as a loop is where the speedup comes from.\n\nThe architecture doc answers that: edits go through the interpreter immediately and the compiled region swaps in when codegen finishes.",
+   "replies": [
+    {
+     "author": "deltafield41",
+     "age": "9 hours ago",
+     "text": "For what it is worth, the file format is unchanged. Compilation is a runtime cache, never saved, which is the right call.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "nibsage",
+   "age": "5 hours ago",
+   "text": "The tiering design reminds me of a JavaScript engine: interpret first, compile the hot regions, swap in when ready. It is a proven pattern for a reason.",
+   "replies": [
+    {
+     "author": "monadworks",
+     "age": "4 hours ago",
+     "text": "Having done this twice now: strict left-to-right summation is the default. The faster mode is opt-in per sheet, and it says so on the sheet.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "slabwake",
+   "age": "5 hours ago",
+   "text": "I would pay for this purely for the lookup indexing. Half our workbooks are a lookup against a sorted range that nobody realises is sorted.",
+   "replies": [
+    {
+     "author": "quartzdrift",
+     "age": "4 hours ago",
+     "text": "Mild disagreement: the file format is unchanged. Compilation is a runtime cache, never saved, which is the right call.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "depreciator",
+   "age": "4 hours ago",
+   "text": "The way I see it, iterative calculation is the part I expected to break, and the fixpoint-loop answer is more reasonable than I assumed.",
+   "replies": [
+    {
+     "author": "grommetreader",
+     "age": "4 hours ago",
+     "text": "SIMD would help column formulas a lot, but only if the strict-order default is relaxed, which brings back the accountant problem. Your mileage will vary.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "thunkfield",
+   "age": "6 hours ago",
+   "text": "I ran the demo against an inventory model from work (sanitised) and got about a four times speedup on full recalc. Single-cell edits felt the same as before. Your mileage will vary.\n\nRounding for display is a formatting concern and never touches the stored double. That separation is at least consistent.",
+   "replies": [
+    {
+     "author": "sigmacraft",
+     "age": "5 hours ago",
+     "text": "For what it is worth, volatile cells are evaluated every recalc regardless, and anything downstream of them is marked dirty. It is the same cost as before, just isolated.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "shredsheet",
+   "age": "4 hours ago",
+   "text": "I built something adjacent a couple years ago — a spreadsheet-to-SQL transpiler for a reporting team (writeup at shredsheet-notes.example.com). The lesson that nearly killed the project: circular references. Real-world sheets use intentional circularity with iterative calc turned on, for things like interest capitalization. How does a compile-to-Wasm model handle a cycle that's supposed to converge?",
+   "replies": [
+    {
+     "author": "lambdacurious",
+     "age": "3 hours ago",
+     "text": "Not OP, but this is answered in the FAQ: cycles compile to a fixpoint loop — the whole SCC becomes one function that iterates until max-delta < epsilon or an iteration cap, same semantics as iterative calc in mainstream engines. The FAQ has a wry note about the nasty part being that every engine has slightly different convergence defaults."
+    }
+   ]
+  },
+  {
+   "author": "loopspark",
+   "age": "2 hours ago",
+   "text": "In my experience, what I want to know is how it behaves with a sheet that someone has been editing badly for fifteen years. Clean benchmark sheets are not the real world.",
+   "replies": [
+    {
+     "author": "socketwright",
+     "age": "1 hour ago",
+     "text": "That was true five years ago. It has moved a lot since.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "nibwake",
+   "age": "6 hours ago",
+   "text": "Anecdotally, spill ranges and dynamic arrays seem like the hardest part to compile statically. The shape of the output is only known once the input is.",
+   "replies": []
+  },
+  {
+   "author": "vacuumtruck",
+   "age": "9 hours ago",
+   "text": "Anecdotally, the \"shared formula\" observation is spot on. Most big sheets are the same formula dragged down a column, and treating that as a loop is where the speedup comes from.",
+   "replies": []
+  },
+  {
+   "author": "latchworks",
+   "age": "3 hours ago",
+   "text": "Anecdotally, the post mentions SIMD as future work. For column-shaped formulas that could be another large multiple.",
+   "replies": []
+  },
+  {
+   "author": "sharddrift67",
+   "age": "3 hours ago",
+   "text": "Anyone who has tried to reproduce spreadsheet date arithmetic knows the 1900 leap-year compatibility bug is waiting for them. Curious whether the compiler keeps it or quietly fixes it.",
+   "replies": []
+  }
+ ]
+}

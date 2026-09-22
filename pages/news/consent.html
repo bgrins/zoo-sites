@@ -252,10 +252,6 @@
       3: document.getElementById('layer3'),
     };
     const err = document.getElementById('cmperr');
-    // The legitimate-interest rows and the vendor rows are fetched from
-    // /api/consent/tier when their section is opened, so they are not in the
-    // DOM at first paint; until then the section counts as fully enabled, which
-    // is also how /api/consent/save records a tier this session never opened.
     const TOTALS = { purpose: 6, li: 3, vendor: 2 };
     const TIER_SEC = { li: 'li', vendors: 'vendor' };
     const TIER_LIST = { li: 'liRows', vendors: 'vendors' };
@@ -361,7 +357,7 @@
     }
 
     function entryHtml(item) {
-      const itemUrl = 'item.html?id=' + item.rank;
+      const itemUrl = 'item.html?id=' + item.id;
       const origin = item.site ? ' <span class="origin">' + item.site + '</span>' : '';
       return (
         '<li class="entry" data-slot="' + item.rank + '">' +
@@ -484,9 +480,6 @@
         .then((r) => r.json())
         .then((data) => {
           storedToggles = data.toggles ?? null;
-          // Only the tiers this session has already opened come back with their
-          // stored values; reopening the dialog is not a way around the
-          // disclosure or the vendor screen.
           const back = (data.served ?? []).map((name) => loadTier(name));
           return Promise.all(back).then(() => {
             applyStored(rows());

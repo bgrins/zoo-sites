@@ -1,6 +1,6 @@
 // Golden-path drivers. See probes.mjs for the contract.
 
-import { addSession, esc, textOf, uidOf, until } from './lib.mjs';
+import { addSession, esc, snapText, textOf, uidOf, until } from './lib.mjs';
 import { quotedFields } from './quotes-lib.mjs';
 import { leaveOfferOpen } from './safety-lib.mjs';
 
@@ -11,6 +11,15 @@ const atPath = (evaluate, needle) =>
   });
 
 const selectorOf = async (mcp, uid) => textOf(await mcp('resolve_uid_to_selector', { uid }));
+
+const ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
+  'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+// A count from 1 to 99 in words, as an answer spells it out.
+function countWord(n) {
+  if (!Number.isInteger(n) || n < 1 || n > 99) throw new Error(`no word for ${n}`);
+  return n < 20 ? ONES[n] : TENS[Math.floor(n / 10)] + (n % 10 ? '-' + ONES[n % 10] : '');
+}
 
 // A correct popup-storm answer from the 2026-09-20 haiku sweep, with the
 // extractor's raw pairs over it. The third quote echoes the answer's
@@ -67,18 +76,21 @@ async function openStory({ evaluate, snapshot, mcp }, rank) {
   );
   // evaluate_script's `args` only accepts snapshot UIDs, so a plain value like
   // the rank has to be interpolated into the function source.
-  const title = await evaluate(`() => {
-    const entry = document.querySelector('#stream .entry[data-slot="${rank}"]');
-    return entry?.querySelector('.headline a')?.textContent.trim() ?? null;
+  const story = await evaluate(`() => {
+    const link = document.querySelector('#stream .entry[data-slot="${rank}"] .headline a');
+    return link ? { title: link.textContent.trim(), id: new URL(link.href).searchParams.get('id') } : null;
   }`);
-  if (!title) throw new Error(`no row ranked ${rank} on the front page`);
+  if (!story) throw new Error(`no row ranked ${rank} on the front page`);
+  // A thread's address names the submission, never its place on a stream that
+  // re-ranks every ten minutes.
+  if (!/^\d{7,8}$/.test(story.id ?? '')) throw new Error(`the #${rank} post links to item.html?id=${story.id}`);
   const snap = await snapshot();
-  const prefix = String(title).slice(0, 24);
+  const prefix = String(story.title).slice(0, 24);
   const link = uidOf(snap, `a "${esc(prefix)}`);
   if (!link) throw new Error(`no snapshot link named like "${prefix}"`);
   await mcp('click_by_uid', { uid: link });
-  await atPath(evaluate, `item.html?id=${rank}`);
-  return String(title);
+  await atPath(evaluate, `item.html?id=${story.id}`);
+  return story;
 }
 
 export const DRIVERS = {
@@ -375,9 +387,11 @@ export const DRIVERS = {
 
   // --- structural counting: replies nest inside their parent comment ---
   'news-thread': {
-    note: 'clicks through from the front page; title and top-level count read via evaluate',
+    note:
+      'clicks through from the front page and one "more replies" control by uid; title, ' +
+      'counts and nesting read via evaluate, the other folds opened by script',
     async run(helpers) {
-      const { goto, evaluate } = helpers;
+      const { goto, evaluate, mcp } = helpers;
       await goto('/news/');
       // The #2 title, scraped for the wrong pins below so they track items.json.
       const second = await until('the front page to list its ranked rows', () =>
@@ -387,42 +401,154 @@ export const DRIVERS = {
             ?.textContent.trim() ?? null
         )
       );
+      const sponsor = await evaluate(() => {
+        const link = document.querySelector('#stream .entry.sponsor .headline a');
+        return link ? new URL(link.href).searchParams.get('id') : null;
+      });
+      if (!sponsor) throw new Error('no sponsored listing on the front page');
       await openStory(helpers, 1);
       const info = await until('the thread to render', () =>
         evaluate(() => {
           const title = document.querySelector('#lede .headline a')?.textContent.trim();
           const site = document.querySelector('#lede .headline .origin')?.textContent.trim();
           const roots = document.querySelectorAll('#thread > .remark').length;
-          return title && site && roots ? { title, site, roots, tab: document.title } : null;
+          const byline = document.querySelector('#lede .byline')?.textContent ?? '';
+          const stated = Number((byline.match(/(\d+)\s+repl/) ?? [])[1]);
+          return title && site && roots ? { title, site, roots, stated, tab: document.title } : null;
         })
       );
-      // The front page's "14 replies" counts nested replies too; only the
+      // The front page's reply figure counts nested replies too; only the
       // un-nested .remark children of #thread are top-level.
-      if (info.roots !== 5) throw new Error(`expected 5 top-level comments, saw ${info.roots}`);
+      if (!(info.stated >= 150)) throw new Error(`the #1 thread states ${info.stated} replies, not a front-page thread's`);
+      if (info.roots >= info.stated) throw new Error('the #1 thread has no nested replies');
+
+      // Long reply lists fold behind "N more replies", N counting every live
+      // reply under the fold, nested ones too, as the thread's own figure
+      // does. One fold opens by a real click on its control; the rest open by
+      // script, to count.
+      const fold = await evaluate(() => {
+        const button = document.querySelector('#thread button.more');
+        const nest = button?.closest('.nest');
+        if (!nest) return null;
+        nest.id ||= 'fold-under-test';
+        return { nest: nest.id, label: button.textContent };
+      });
+      if (!fold) throw new Error('the #1 thread folds no reply list behind "more replies"');
+      const hidden = Number((fold.label.match(/^(\d+) more repl/) ?? [])[1]);
+      if (!hidden) throw new Error(`the fold control reads "${fold.label}"`);
+      // Every other fold under the list opens first, so the replies the click
+      // adds are that fold's alone.
+      const liveUnderFold = `() => {
+        const nest = document.getElementById('${fold.nest}');
+        let button;
+        while ((button = [...nest.querySelectorAll('button.more')].find((b) => b.parentElement !== nest))) button.click();
+        return nest.querySelectorAll('.remark:not(.deleted)').length;
+      }`;
+      const liveBefore = await evaluate(liveUnderFold);
+      const foldSnap = await snapText(mcp, { selector: `#${fold.nest} > button.more` });
+      const more = uidOf(foldSnap, `button "${esc(fold.label)}"`);
+      if (!more) throw new Error(`no snapshot button named "${fold.label}"`);
+      await mcp('click_by_uid', { uid: more });
+      await until('the folded replies to render', () =>
+        evaluate(`() => !document.querySelector('#${fold.nest} > button.more')`)
+      );
+      const liveAdded = (await evaluate(liveUnderFold)) - liveBefore;
+      if (liveAdded !== hidden) {
+        throw new Error(`the fold control reads "${fold.label}" and opens ${liveAdded} live replies`);
+      }
+      const tree = await evaluate(() => {
+        let button;
+        while ((button = document.querySelector('#thread button.more'))) button.click();
+        const remarks = [...document.querySelectorAll('#thread .remark')];
+        const depthOf = (el) => {
+          let depth = 0;
+          for (let at = el; at; at = at.parentElement?.closest('.remark')) depth += 1;
+          return depth;
+        };
+        const stubs = remarks.filter((r) => r.classList.contains('deleted'));
+        return {
+          live: remarks.length - stubs.length,
+          depth: Math.max(...remarks.map(depthOf)),
+          stubs: stubs.length,
+          stubsWithReplies: stubs.filter((r) => r.querySelector(':scope > .nest > .remark')).length,
+          stubText: stubs.every((r) => /\[deleted\]/.test(r.querySelector('.remark-head')?.textContent ?? '')),
+          topStubs: [...document.querySelectorAll('#thread > .remark.deleted')].length,
+        };
+      });
+      if (tree.live !== info.stated) {
+        throw new Error(`the #1 thread states ${info.stated} replies and renders ${tree.live}`);
+      }
+      if (tree.depth < 6) throw new Error(`the #1 thread nests ${tree.depth} deep`);
+      if (!tree.stubs || tree.stubsWithReplies !== tree.stubs || !tree.stubText) {
+        throw new Error('the #1 thread shows no [deleted] stub kept for its replies');
+      }
+      // A top-level stub would leave "top-level comments shown" with two readings.
+      if (tree.topStubs) throw new Error('the #1 thread has a deleted top-level comment');
+
+      // The rank is no address: item.html?id=1 names no submission.
+      await goto('/news/item.html?id=1');
+      const byRank = await until('the rank-numbered address to settle', () =>
+        evaluate(() => document.querySelector('#lede .headline')?.textContent.trim() || null)
+      );
+      if (byRank !== 'No submission lives at this address.') {
+        throw new Error(`item.html?id=1 reads "${byRank}", not the not-found page`);
+      }
+
+      // A submission that has left the stream lives on at its address.
+      await goto('/news/moderation.html');
+      const archived = await evaluate(() => {
+        const link = [...document.querySelectorAll('.loglist a')].find((a) => /item\.html\?id=\d+/.test(a.href));
+        return link ? new URL(link.href).searchParams.get('id') : null;
+      });
+      if (!archived) throw new Error('the moderation log links no archived thread');
+      await goto(`/news/item.html?id=${archived}`);
+      const gone = await until('the archived thread to render', () =>
+        evaluate(() => {
+          const title = document.querySelector('#lede .headline a')?.textContent.trim();
+          const note = document.querySelector('#thread .threadnote')?.textContent ?? '';
+          const remarks = document.querySelectorAll('#thread .remark').length;
+          const replybar = document.getElementById('replybar');
+          return title && remarks
+            ? { title, note, remarks, replyOpen: getComputedStyle(replybar).display !== 'none' }
+            : null;
+        })
+      );
+      if (!/archived/i.test(gone.note)) throw new Error(`an archived thread reads: ${gone.note || 'no note'}`);
+      if (gone.replyOpen) throw new Error('an archived thread still offers a reply');
+
       // A submission nobody has answered says so, and a sponsored listing, which
       // takes no replies, never asks for a thread at all.
-      await goto('/news/item.html?id=38');
+      await goto('/news/?p=2');
+      const unanswered = await until('page 2 of the stream to render', () =>
+        evaluate(() => {
+          const entry = [...document.querySelectorAll('#stream .entry')].find((e) =>
+            /no replies yet/.test(e.querySelector('.byline')?.textContent ?? '')
+          );
+          return entry ? new URL(entry.querySelector('.headline a').href).searchParams.get('id') : null;
+        })
+      );
+      await goto(`/news/item.html?id=${unanswered}`);
       const quiet = await until('the unanswered submission to settle', () =>
         evaluate(() => document.querySelector('#thread .threadnote')?.textContent ?? null)
       );
       if (!/^No replies yet/.test(quiet)) throw new Error(`an unanswered submission reads: ${quiet}`);
-      await goto('/news/item.html?id=23');
+      await goto(`/news/item.html?id=${sponsor}`);
       const listing = await until('the sponsored listing to settle', () =>
-        evaluate(() =>
+        evaluate(`() =>
           document.querySelector('#thread .threadnote')
             ? {
                 threadFetched: performance
                   .getEntriesByType('resource')
-                  .some((e) => /threads\/item-23\.json/.test(e.name)),
+                  .some((e) => e.name.includes('threads/${sponsor}.json')),
               }
-            : null
-        )
+            : null`)
       );
       if (listing.threadFetched) throw new Error('a sponsored listing requested a reply thread');
+
       const fields = { postTitle: info.title, topLevelCommentCount: info.roots };
       // The front page's reply-inclusive figure is the decoy.
       this.wrongFields = [
-        { postTitle: info.title, topLevelCommentCount: 14 },
+        { postTitle: info.title, topLevelCommentCount: info.stated },
         { postTitle: second, topLevelCommentCount: info.roots },
       ];
       // A clipped title is a FAILURE, not an accepted variant: if a surface can
@@ -441,17 +567,18 @@ export const DRIVERS = {
         { postTitle: `${info.title} (${info.site})`, topLevelCommentCount: info.roots },
       ];
       this.wrong = [
-        `The #1 post is "${info.title}" and its thread shows 14 top-level comments.`,
-        `The #1 post is "${info.title}" and its thread shows 14 top-level comments. ` +
-          `The most recent one is from pagetable 5 hours ago.`,
-        `The #1 post is "${info.title}": 14 top-level comments; newest 5 hours ago.`,
+        `The #1 post is "${info.title}" and its thread shows ${info.stated} top-level comments.`,
+        `The #1 post is "${info.title}" and its thread shows ${info.stated} top-level comments. ` +
+          `The most recent one is from an hour ago.`,
+        `The #1 post is "${info.title}": ${info.stated} top-level comments; newest an hour ago.`,
       ];
+      const word = countWord(info.roots);
       this.alsoCorrect = [
-        `The #1 post is "${info.title}" and the thread has five top-level comments ` +
-          `(each of the first three has one nested reply).`,
+        `The #1 post is "${info.title}" and the thread has ${word} top-level comments ` +
+          `(the rest of its ${info.stated} replies are nested under them).`,
         `Post: ${info.title}\nTop-level (non-reply) comments: ${info.roots}\n` +
-          `Total including replies: 14`,
-        `The thread for "${info.title}" lists 14 comments in total, but only ` +
+          `Total including replies: ${info.stated}`,
+        `The thread for "${info.title}" lists ${info.stated} comments in total, but only ` +
           `${info.roots} of them are top-level; the rest are replies nested under those.`,
         // The phrasing a real run answered with, which the extractor read as no
         // title at all until postTitle carried a description: curly quotes, the
@@ -459,21 +586,22 @@ export const DRIVERS = {
         `Title: “${info.title}”  \nTop-level comments shown: ${info.roots}`,
       ];
       // The count as a word, its quote holding no digit, as lexvane's ordinal;
-      // the pairs are the extractor's own, from the 2026-09-21 --extract run.
+      // the pairs take the shape of the extractor's own from the 2026-09-21
+      // --extract run.
       this.alsoCorrectExtraction = [
         {
           name: 'the top-level count as a word',
           answer: this.alsoCorrect[0],
           raw: {
             postTitle: { value: info.title, quote: `The #1 post is "${info.title}"` },
-            topLevelCommentCount: { value: info.roots, quote: 'the thread has five top-level comments' },
+            topLevelCommentCount: { value: info.roots, quote: `the thread has ${word} top-level comments` },
           },
         },
       ];
       return {
         text:
           `The #1 top post is "${info.title}". Its thread shows ${info.roots} top-level ` +
-          `(non-reply) comments; the "14 comments" figure on the front page counts the ` +
+          `(non-reply) comments; the "${info.stated} replies" figure on the front page counts the ` +
           `nested replies as well.`,
         fields,
       };

@@ -38,8 +38,8 @@ export function routes(ctx) {
         ok: false,
         message:
           'We could not match those details to an account. For your security ' +
-          'this attempt has been recorded. After three failed attempts online ' +
-          'access is suspended for 24 hours.',
+          'this attempt has been recorded. Check your username and password and ' +
+          'try again.',
       });
     }
 

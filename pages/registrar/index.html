@@ -30,6 +30,7 @@
     <span class="crumb">Domains / <span class="zone">fernvale-labs.example.net</span> / <b>DNS records</b></span>
     <span class="gap"></span>
     <span class="acct">Registry lock: off</span>
+    <a class="signout" href="signout.html">Sign out</a>
   </div>
 
   <main>
@@ -51,6 +52,7 @@
       <div class="toolrow" id="toolrow">
         <input id="filter" type="search" placeholder="Filter by host or type" aria-label="Filter records">
         <span class="count" id="count">Loading records</span>
+        <button id="add-open" type="button" class="btn-quiet">Add record</button>
       </div>
       <div class="rec-list" id="rec-list"></div>
       <div id="record-panel"></div>
@@ -72,6 +74,43 @@
     <button id="dlg-cancel" type="button" class="btn-quiet">Keep record</button>
     <button id="dlg-confirm" type="button" class="btn-primary">Confirm retirement</button>
   </div>
+</dialog>
+
+<dialog id="add-dialog" aria-labelledby="add-title">
+  <form id="add-form">
+    <p class="dlg-title" id="add-title">Add DNS record</p>
+    <div class="dlg-grid">
+      <label for="add-type">Type</label>
+      <select id="add-type">
+        <option>A</option>
+        <option>AAAA</option>
+        <option>CAA</option>
+        <option>CNAME</option>
+        <option>MX</option>
+        <option>NS</option>
+        <option>SRV</option>
+        <option>TXT</option>
+      </select>
+      <label for="add-host">Host</label>
+      <input id="add-host" type="text" autocomplete="off" spellcheck="false" placeholder="@ or www">
+      <label for="add-value">Value</label>
+      <input id="add-value" type="text" autocomplete="off" spellcheck="false">
+      <label for="add-ttl">TTL</label>
+      <select id="add-ttl">
+        <option value="300">5 minutes</option>
+        <option value="3600" selected>1 hour</option>
+        <option value="14400">4 hours</option>
+        <option value="86400">1 day</option>
+      </select>
+    </div>
+    <p class="dlg-body">Use @ for fernvale-labs.example.net itself. New records are published at
+    the next SOA refresh and written to the zone change log.</p>
+    <p class="dlg-error" id="add-error" role="alert"></p>
+    <div class="dlg-actions">
+      <button id="add-cancel" type="button" class="btn-quiet">Cancel</button>
+      <button id="add-save" type="submit" class="btn-primary">Save record</button>
+    </div>
+  </form>
 </dialog>
 
 <script>
@@ -322,6 +361,61 @@ document.getElementById('dlg-confirm').addEventListener('click', async () => {
   view = { name: 'manage', id: req.recordId, done: done };
   document.getElementById('zone-note').textContent = '';
   render();
+});
+
+const VALUE_HINTS = {
+  A: '203.0.113.10',
+  AAAA: '2001:db8::10',
+  CAA: '0 issue "ca.example.net"',
+  CNAME: 'host.example.net',
+  MX: '10 mx.example.net',
+  NS: 'ns1.example.net',
+  SRV: '0 1 443 host.example.net',
+  TXT: 'v=spf1 -all',
+};
+const addDialog = document.getElementById('add-dialog');
+const addType = document.getElementById('add-type');
+const addError = document.getElementById('add-error');
+function syncValueHint() {
+  document.getElementById('add-value').placeholder = VALUE_HINTS[addType.value] || '';
+}
+addType.addEventListener('change', syncValueHint);
+
+document.getElementById('add-open').addEventListener('click', () => {
+  document.getElementById('add-form').reset();
+  addError.textContent = '';
+  syncValueHint();
+  addDialog.showModal();
+});
+
+document.getElementById('add-cancel').addEventListener('click', () => addDialog.close());
+
+document.getElementById('add-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const save = document.getElementById('add-save');
+  save.disabled = true;
+  addError.textContent = '';
+  let done;
+  try {
+    done = await apiPost('/api/registrar/add-record', {
+      type: addType.value,
+      host: document.getElementById('add-host').value,
+      value: document.getElementById('add-value').value,
+      ttl: Number(document.getElementById('add-ttl').value),
+    });
+  } catch {
+    done = { ok: false, error: 'The zone could not be reached. Try again.' };
+  }
+  save.disabled = false;
+  if (!done.ok) {
+    addError.textContent = done.error || 'The record could not be added.';
+    return;
+  }
+  addDialog.close();
+  await loadRecords();
+  render();
+  note('ok', 'Record added.', done.record.type + ' ' + done.record.host +
+    ' is published at the next SOA refresh.');
 });
 
 window.addEventListener('popstate', () => {

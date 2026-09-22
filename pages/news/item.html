@@ -83,36 +83,65 @@
   </div>
 </footer>
 <script>
-  const id = Number(new URLSearchParams(location.search).get('id'));
+  const id = new URLSearchParams(location.search).get('id') ?? '';
+
+  // A reply list longer than this shows its first FOLD_SHOWN replies and folds
+  // the rest behind a control.
+  const FOLD_OVER = 4;
+  const FOLD_SHOWN = 3;
+
+  const liveCount = (list) =>
+    list.reduce((n, r) => n + (r.deleted ? 0 : 1) + liveCount(r.replies ?? []), 0);
 
   // Replies nest structurally inside their parent (not just visual indent)
   // so the thread still reads as a thread to a screen reader or with styles off.
   let remarkSeq = 0;
   function renderRemark(remark, parentAnchor) {
     const wrap = document.createElement('div');
-    wrap.className = 'remark';
     wrap.id = 'r-' + ++remarkSeq;
-    const paragraphs = remark.text
-      .split('\n\n')
-      .map((p) => `<p>${p.replace(/\*([^*\s][^*]*?)\*/g, '<i>$1</i>')}</p>`)
-      .join('');
-    wrap.innerHTML =
-      `<div class="remark-head"><a class="who" href="member.html?u=${remark.author}">${remark.author}</a> ` +
-      `&middot; ${remark.age} &middot; <a href="signin.html">reply</a> &middot; ` +
-      `<a href="#${parentAnchor}">parent</a> &middot; <a href="signin.html">flag</a></div>` +
-      `<div class="remark-body">${paragraphs}</div>`;
+    if (remark.deleted) {
+      wrap.className = 'remark deleted';
+      wrap.innerHTML =
+        `<div class="remark-head">[deleted] &middot; <a href="#${parentAnchor}">parent</a></div>`;
+    } else {
+      wrap.className = 'remark';
+      const paragraphs = remark.text
+        .split('\n\n')
+        .map((p) => `<p>${p.replace(/\*([^*\s][^*]*?)\*/g, '<i>$1</i>')}</p>`)
+        .join('');
+      wrap.innerHTML =
+        `<div class="remark-head"><a class="who" href="member.html?u=${remark.author}">${remark.author}</a> ` +
+        `&middot; ${remark.age} &middot; <a href="signin.html">reply</a> &middot; ` +
+        `<a href="#${parentAnchor}">parent</a> &middot; <a href="signin.html">flag</a></div>` +
+        `<div class="remark-body">${paragraphs}</div>`;
+    }
     const replies = remark.replies ?? [];
     if (replies.length) {
       const nest = document.createElement('div');
       nest.className = 'nest';
       nest.setAttribute('role', 'group');
       nest.setAttribute('aria-label', 'replies');
-      for (const reply of replies) {
-        nest.appendChild(renderRemark(reply, wrap.id));
-      }
+      renderReplies(nest, replies, wrap.id);
       wrap.appendChild(nest);
     }
     return wrap;
+  }
+
+  function renderReplies(nest, replies, parentAnchor) {
+    const shown = replies.length > FOLD_OVER ? FOLD_SHOWN : replies.length;
+    for (const reply of replies.slice(0, shown)) nest.appendChild(renderRemark(reply, parentAnchor));
+    const folded = replies.slice(shown);
+    if (!folded.length) return;
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'more';
+    const count = liveCount(folded);
+    more.textContent = `${count} more ${count === 1 ? 'reply' : 'replies'}`;
+    more.addEventListener('click', () => {
+      for (const reply of folded) nest.insertBefore(renderRemark(reply, parentAnchor), more);
+      more.remove();
+    });
+    nest.appendChild(more);
   }
 
   function hide(el) {
@@ -126,10 +155,17 @@
     document.getElementById('thread').appendChild(note);
   }
 
-  // A 404 means the thread file has not been written yet; anything else that
-  // goes wrong is a failed request, which the reader is told apart.
+  function renderComments(comments) {
+    const container = document.getElementById('thread');
+    for (const remark of comments) container.appendChild(renderRemark(remark, 'lede'));
+    if (!comments.length) threadNote('No replies yet. Signed-in members see a reply box here.');
+  }
+
+  // A 404 means no thread file exists at this address; anything else that goes
+  // wrong is a failed request, which the reader is told apart.
   function loadThread() {
-    return fetch(`threads/item-${id}.json`)
+    if (!/^\d+$/.test(id)) return Promise.resolve({ thread: null, failed: false });
+    return fetch(`threads/${id}.json`)
       .then((r) =>
         r.ok
           ? r.json().then((thread) => ({ thread }))
@@ -137,6 +173,63 @@
       )
       .catch(() => ({ thread: null, failed: true }));
   }
+
+  function notFound() {
+    document.title = 'Submission not found | Millrace';
+    document.getElementById('crumbtag').textContent = 'not found';
+    document.getElementById('lede').innerHTML =
+      '<div class="gone"><h1 class="headline">No submission lives at this address.</h1>' +
+      '<p class="byline">It may have been withdrawn by its author, or the address may ' +
+      'be mistyped. Threads that leave the stream keep their address.</p>' +
+      '<p class="byline"><a href="./">Back to the stream</a> &middot; ' +
+      '<a href="./?p=2">older submissions</a> &middot; ' +
+      '<a href="contact.html">report a broken link</a></p></div>';
+    hide(document.querySelector('.threadhead'));
+    hide(document.getElementById('replybar'));
+    hide(document.getElementById('facts').closest('.card'));
+  }
+
+  function renderLede(item, replies, archived) {
+    document.title = item.title + ' | Millrace';
+    const tag = item.type === 'job' ? 'jobs' : item.tag;
+    document.getElementById('crumbtag').textContent = tag;
+    const itemUrl = `item.html?id=${item.id}`;
+    const origin = item.site ? ` <span class="origin">${item.site}</span>` : '';
+    const lead =
+      item.type === 'job'
+        ? '<span class="chip">hiring</span>'
+        : `<a class="tally" href="signin.html" title="Vote this up">${item.points}` +
+          `<span class="unit">points</span></a>`;
+    const byline =
+      item.type === 'job'
+        ? `sponsored listing &middot; posted ${item.age}`
+        : `<a class="who" href="member.html?u=${item.author}">${item.author}</a> &middot; ${item.age} &middot; ` +
+          `<a class="topic" href="./?tag=${item.tag}">${item.tag}</a> &middot; ` +
+          `${replies ? replies + (replies === 1 ? "&nbsp;reply" : "&nbsp;replies") : "no replies yet"} &middot; ` +
+          `<a href="signin.html">flag</a> ` +
+          `&middot; <a href="signin.html">save</a>`;
+    document.getElementById('lede').innerHTML =
+      `${lead}` +
+      `<h1 class="headline"><a href="${itemUrl}">${item.title}</a>${origin}</h1>` +
+      `<p class="byline">${byline}</p>`;
+
+    const facts = [
+      archived
+        ? '<li>Position on the stream: <strong>archived</strong></li>'
+        : `<li>Position on the stream: <strong>${item.rank}</strong></li>`,
+      `<li>Tag: <a class="topic" href="./?tag=${tag}">${tag}</a></li>`,
+      `<li>Submitted <span class="meta">${item.age}</span></li>`,
+    ];
+    if (item.type !== 'job') {
+      facts.push(`<li>Score: <strong>${item.points}</strong> points</li>`);
+      facts.push(`<li>Replies, including nested: <strong>${replies}</strong></li>`);
+    }
+    if (item.site) {
+      facts.push(`<li>Source: <span class="meta">${item.site}</span></li>`);
+    }
+    document.getElementById('facts').innerHTML = facts.join('');
+  }
+
   Promise.all([
     fetch('items.json').then((r) => {
       if (!r.ok) throw new Error('stream request failed: ' + r.status);
@@ -150,60 +243,23 @@
       })
       .catch(() => null),
   ]).then(([front, older]) => {
-    const item = front.concat(older ?? []).find((entry) => entry.rank === id);
+    const item = front.concat(older ?? []).find((entry) => String(entry.id) === id);
     if (!item && older === null) throw new Error('submission may be on the older stream');
     if (!item) {
-      document.title = 'Submission not found | Millrace';
-      document.getElementById('crumbtag').textContent = 'not found';
-      document.getElementById('lede').innerHTML =
-        '<div class="gone"><h1 class="headline">This submission is not on the stream.</h1>' +
-        '<p class="byline">It may have dropped off after its couple of days on the front ' +
-        'pages, been withdrawn by its author, or the address may simply be wrong.</p>' +
-        '<p class="byline"><a href="./">Back to the stream</a> &middot; ' +
-        '<a href="./?p=2">older submissions</a> &middot; ' +
-        '<a href="contact.html">report a broken link</a></p></div>';
-      hide(document.querySelector('.threadhead'));
-      hide(document.getElementById('replybar'));
-      hide(document.getElementById('facts').closest('.card'));
-      return;
+      // Off the stream: an archived thread carries its own submission record.
+      return loadThread().then(({ thread, failed }) => {
+        if (failed) throw new Error('archive request failed');
+        if (!thread?.archived) return notFound();
+        renderLede(thread, liveCount(thread.comments), true);
+        threadNote(
+          'This submission has left the stream. Its thread is archived: the replies stay ' +
+            'at this address, and it takes no new ones.'
+        );
+        hide(document.getElementById('replybar'));
+        renderComments(thread.comments);
+      });
     }
-    document.title = item.title + ' | Millrace';
-    const tag = item.type === 'job' ? 'jobs' : item.tag;
-    document.getElementById('crumbtag').textContent = tag;
-    const itemUrl = `item.html?id=${item.rank}`;
-    const origin = item.site ? ` <span class="origin">${item.site}</span>` : '';
-    const lead =
-      item.type === 'job'
-        ? '<span class="chip">hiring</span>'
-        : `<a class="tally" href="signin.html" title="Vote this up">${item.points}` +
-          `<span class="unit">points</span></a>`;
-    const byline =
-      item.type === 'job'
-        ? `sponsored listing &middot; posted ${item.age}`
-        : `<a class="who" href="member.html?u=${item.author}">${item.author}</a> &middot; ${item.age} &middot; ` +
-          `<a class="topic" href="./?tag=${item.tag}">${item.tag}</a> &middot; ` +
-          `${item.comments ? item.comments + (item.comments === 1 ? "&nbsp;reply" : "&nbsp;replies") : "no replies yet"} &middot; ` +
-          `<a href="signin.html">flag</a> ` +
-          `&middot; <a href="signin.html">save</a>`;
-    document.getElementById('lede').innerHTML =
-      `${lead}` +
-      `<h1 class="headline"><a href="${itemUrl}">${item.title}</a>${origin}</h1>` +
-      `<p class="byline">${byline}</p>`;
-
-    const facts = [
-      `<li>Position on the stream: <strong>${item.rank}</strong></li>`,
-      `<li>Tag: <a class="topic" href="./?tag=${tag}">${tag}</a></li>`,
-      `<li>Submitted <span class="meta">${item.age}</span></li>`,
-    ];
-    if (item.type !== 'job') {
-      facts.push(`<li>Score: <strong>${item.points}</strong> points</li>`);
-      facts.push(`<li>Replies, including nested: <strong>${item.comments}</strong></li>`);
-    }
-    if (item.site) {
-      facts.push(`<li>Source: <span class="meta">${item.site}</span></li>`);
-    }
-    document.getElementById('facts').innerHTML = facts.join('');
-
+    renderLede(item, item.comments ?? 0, false);
     if (item.type === 'job') {
       threadNote(
         'Sponsored listings do not take replies. Apply through the company, ' +
@@ -229,13 +285,7 @@
         );
         return;
       }
-      const container = document.getElementById('thread');
-      for (const remark of thread.comments) {
-        container.appendChild(renderRemark(remark, 'lede'));
-      }
-      if (!thread.comments.length) {
-        threadNote('No replies yet. Signed-in members see a reply box here.');
-      }
+      renderComments(thread.comments);
     });
   }).catch(() => {
     document.title = 'Millrace';

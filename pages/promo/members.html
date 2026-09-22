@@ -12,10 +12,12 @@
   .signin-card input { display: block; width: 100%; max-width: 320px; padding: 10px 12px; font-size: 16px; border: 4px solid var(--ink); background: var(--cream); margin-bottom: 14px; }
   .signin-card button { font-family: Impact, "Arial Black", sans-serif; font-size: 19px; letter-spacing: 0.06em; text-transform: uppercase; padding: 11px 30px; cursor: pointer; background: var(--ink); color: #fff; border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--cyan); }
   .signin-card button:hover { background: var(--pink); }
-  #signin-note { margin: 16px 0 0; min-height: 24px; font-size: 15px; font-weight: bold; }
+  #signin-note, #join-note { margin: 16px 0 0; min-height: 24px; font-size: 15px; font-weight: bold; }
   .signin-card .hint { margin: 0 0 8px; font-size: 13px; color: #55407a; }
-  #signin-note.info { color: var(--ink); border: 4px dashed var(--grape); background: #f3ecff; padding: 10px 14px; }
-  #signin-note.err { color: #a3103d; border: 4px dashed #a3103d; background: #ffe9ef; padding: 10px 14px; }
+  #signin-note.info, #join-note.info { color: var(--ink); border: 4px dashed var(--grape); background: #f3ecff; padding: 10px 14px; }
+  #signin-note.err, #join-note.err { color: #a3103d; border: 4px dashed #a3103d; background: #ffe9ef; padding: 10px 14px; }
+  .signin-card h3 { margin: 0 0 10px; font-size: 22px; }
+  .signin-card .card-no { font-family: Impact, "Arial Black", sans-serif; font-size: 26px; letter-spacing: 0.08em; margin: 4px 0 12px; }
 </style>
 </head>
 <body>
@@ -45,11 +47,12 @@
   <span><b>Collection desk</b> until 8 pm</span>
   <span><a href="stores.html">Change store</a> &middot; <a href="stores.html">All 34 stores</a></span>
 </div>
-<div class="ribbon">Joining takes a minute at any till &middot; no fee, ever</div>
+<div class="ribbon">Joining takes a minute online or at any till &middot; no fee, ever</div>
 <main>
   <p class="lede">Join the club</p>
-  <p class="lede-sub">Ask at any till or the service desk. You leave with a card in hand and member
-  pricing on over 400 lines starts with your very next shop, at any of our 34 stores.</p>
+  <p class="lede-sub"><a href="#join">Join online</a> and your card number is ready straight away, or ask at
+  any till or the service desk and leave with a card in hand. Member pricing on over 400 lines
+  starts with your very next shop, at any of our 34 stores.</p>
   <section id="points"><h2 class="section-head">Points and vouchers</h2>
     <p>You earn points on every shop and on most services at the desk. Points post to your
     account within 48 hours and convert into money-off vouchers four times a year. Vouchers
@@ -67,17 +70,43 @@
     transaction is refunded. Larkfield Market Ltd may amend these rules with 30 days notice
     on this page and at the service desk.</p>
   </section>
-  <section id="signin"><h2 class="section-head">Sign in</h2>
-    <div class="signin-card">
-      <form id="signin-form">
+  <section id="signin"><h2 class="section-head" id="signin-head">Sign in</h2>
+    <div class="signin-card" id="signin-card">
+      <form id="signin-form" novalidate>
         <label for="card-number">Member card number</label>
         <p class="hint" id="card-hint">The 12 digits under the barcode on the back of your card.</p>
-        <input id="card-number" name="card-number" type="text" inputmode="numeric" autocomplete="off" aria-describedby="card-hint">
+        <input id="card-number" name="card-number" type="text" inputmode="numeric" autocomplete="username" aria-describedby="card-hint">
+        <label for="signin-password">Password</label>
+        <input id="signin-password" name="password" type="password" autocomplete="current-password">
         <button type="submit">Sign in</button>
       </form>
       <p id="signin-note" role="status"></p>
     </div>
-    <p class="board-note">Online sign-in is rolling out store by store. Until then, your card still works at every till as normal.</p>
+    <div class="signin-card" id="account" hidden>
+      <h3 id="account-name">Your membership</h3>
+      <p class="hint">Member card number</p>
+      <p class="card-no" id="account-card"></p>
+      <p>Points balance: <b id="account-points">0</b>. Points from each shop post within 48 hours.
+      Show this number at any till until your printed card is ready at the service desk.</p>
+      <button id="signout" type="button">Sign out</button>
+    </div>
+    <p class="board-note" id="signin-rule">Five sign-in attempts that do not match pause online sign-in. Your card
+    still works at every till as normal.</p>
+  </section>
+  <section id="join"><h2 class="section-head">Join online</h2>
+    <div class="signin-card">
+      <form id="join-form" novalidate>
+        <label for="join-first">First name</label>
+        <input id="join-first" name="first" type="text" autocomplete="given-name">
+        <label for="join-email">Email</label>
+        <input id="join-email" name="email" type="email" autocomplete="email">
+        <label for="join-password">Password</label>
+        <p class="hint" id="join-password-hint">At least 8 characters.</p>
+        <input id="join-password" name="password" type="password" autocomplete="new-password" aria-describedby="join-password-hint">
+        <button type="submit">Join the club</button>
+      </form>
+      <p id="join-note" role="status"></p>
+    </div>
   </section>
   <p class="fine">Full club rules are also available in print at any service desk.</p>
 </main>
@@ -128,22 +157,102 @@
   <a href="legal.html#modern-slavery">Modern slavery statement</a></p>
 </footer>
 <script>
-  const form = document.getElementById('signin-form');
-  const note = document.getElementById('signin-note');
-  form.addEventListener('submit', (event) => {
+  const NONCE = '__SESSION_NONCE__';
+  const signinNote = document.getElementById('signin-note');
+  const joinNote = document.getElementById('join-note');
+  const topLink = document.querySelector('.topbar a[href="members.html#signin"]');
+
+  function show(member) {
+    const signedIn = !!member;
+    for (const note of [signinNote, joinNote]) {
+      note.className = '';
+      note.textContent = '';
+    }
+    document.getElementById('signin-card').hidden = signedIn;
+    document.getElementById('signin-rule').hidden = signedIn;
+    document.getElementById('join').hidden = signedIn;
+    document.getElementById('account').hidden = !signedIn;
+    document.getElementById('signin-head').textContent = signedIn ? 'Your account' : 'Sign in';
+    topLink.textContent = signedIn ? 'Your account' : 'Sign in';
+    if (!signedIn) return;
+    document.getElementById('account-name').textContent = 'Hello, ' + member.first;
+    document.getElementById('account-card').textContent = member.card.replace(/(\d{4})(?=\d)/g, '$1 ');
+    document.getElementById('account-points').textContent = String(member.points);
+  }
+
+  async function send(path, body) {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, ...body }),
+    });
+    return { ok: res.ok, body: await res.json().catch(() => ({})) };
+  }
+
+  fetch('/api/promo/member', { headers: { 'X-Session-Nonce': NONCE } })
+    .then((res) => (res.ok ? res.json() : { member: null }))
+    .then((body) => body.member && show(body.member))
+    .catch(() => {});
+
+  document.getElementById('signin-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     const digits = document.getElementById('card-number').value.replace(/[\s-]/g, '');
-    note.className = 'err';
+    const password = document.getElementById('signin-password').value;
+    signinNote.className = 'err';
     if (!digits) {
-      note.textContent = 'Enter the 12-digit number printed under the barcode on your card.';
+      signinNote.textContent = 'Enter the 12-digit number printed under the barcode on your card.';
     } else if (/\D/.test(digits)) {
-      note.textContent = 'Card numbers are digits only. Check the number under the barcode.';
+      signinNote.textContent = 'Card numbers are digits only. Check the number under the barcode.';
     } else if (digits.length !== 12) {
-      note.textContent = 'That number has ' + digits.length + ' digits. Larkfield member card numbers have 12.';
+      signinNote.textContent = 'That number has ' + digits.length + ' digits. Larkfield member card numbers have 12.';
+    } else if (!password) {
+      signinNote.textContent = 'Enter your password.';
     } else {
-      note.className = 'info';
-      note.textContent = 'Online sign-in has not reached the Mill Street store yet. Your card works at every till as normal, and points still post within 48 hours.';
+      signinNote.className = 'info';
+      signinNote.textContent = 'Signing you in…';
+      try {
+        const { ok, body } = await send('/api/promo/signin', { card: digits, password });
+        if (ok && body.member) {
+          show(body.member);
+        } else {
+          signinNote.className = 'err';
+          signinNote.textContent = body.message || 'Sign-in failed. Try again.';
+        }
+      } catch {
+        signinNote.className = 'err';
+        signinNote.textContent = 'Network error. Try again.';
+      }
     }
+  });
+
+  document.getElementById('join-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    joinNote.className = 'info';
+    joinNote.textContent = 'Setting up your membership…';
+    try {
+      const { ok, body } = await send('/api/promo/join', {
+        first: document.getElementById('join-first').value,
+        email: document.getElementById('join-email').value,
+        password: document.getElementById('join-password').value,
+      });
+      if (ok && body.member) {
+        show(body.member);
+        document.getElementById('signin').scrollIntoView();
+      } else {
+        joinNote.className = 'err';
+        joinNote.textContent = body.message || 'We could not set up your membership. Try again.';
+      }
+    } catch {
+      joinNote.className = 'err';
+      joinNote.textContent = 'Network error. Try again.';
+    }
+  });
+
+  document.getElementById('signout').addEventListener('click', async () => {
+    try {
+      await send('/api/promo/signout', {});
+      show(null);
+    } catch {}
   });
 </script>
 </body>

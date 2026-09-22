@@ -1,0 +1,17 @@
+{
+  "id": 41673471,
+  "comments": [
+    {
+      "author": "suffixrule",
+      "age": "2 days ago",
+      "text": "The pattern-rule trick for per-post dependency tracking is genuinely clever, but I have maintained a makefile like this and the failure mode is silence: a typo in a rule does not error, it just quietly stops rebuilding one page.",
+      "replies": [
+        {
+          "author": "phonytarget",
+          "age": "2 days ago",
+          "text": "Agreed, which is why the last section adds the check target that diffs the output tree against what the manifest says should exist. It is twelve lines and it has caught every silent skip since."
+        }
+      ]
+    }
+  ]
+}

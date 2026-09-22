@@ -145,6 +145,15 @@
   .stat.final { color: var(--ok); }
   .stat.pending { color: #556866; }
   .rowmeta { font-size: 12px; color: var(--muted); }
+  .eta { font-size: 13px; margin: 8px 0 2px; }
+  .eta b { font-weight: 700; }
+  ol.events { list-style: none; margin: 10px 0 0; padding: 0; border-top: 1px dashed var(--rule); }
+  ol.events li {
+    display: grid; grid-template-columns: max-content 1fr; gap: 2px 16px;
+    font-size: 12px; padding: 6px 0; border-bottom: 1px solid #e4eceb;
+  }
+  ol.events time { font-family: var(--mono); color: var(--muted); grid-row: span 2; white-space: nowrap; }
+  ol.events .place { font-weight: 700; color: #334744; }
 
   .rail .panel { border-top-color: var(--chrome); margin-bottom: 18px; }
   .rail h2 { font-size: 16px; }
@@ -215,12 +224,12 @@
     <section class="panel">
       <div class="head">
         <h1>Track a shipment</h1>
-        <div class="tag">Network status: normal</div>
+        <div class="tag">Network status: delays at Tarnwick</div>
       </div>
       <div class="body">
-        <p class="lede">Enter a Corvane tracking number to see the current status and the
-        most recent network scan. Numbers are issued at the point of collection and stay
-        valid for 90 days after delivery.</p>
+        <p class="lede">Enter a Corvane tracking number to see the current status, the
+        delivery day and every network scan so far. Numbers are issued at the point of
+        collection and stay valid for 90 days after delivery.</p>
 
         <form class="lookup" id="lookup" autocomplete="off">
           <div class="field">
@@ -265,8 +274,8 @@
       <div class="body">
         <p class="advisory"><b>Tarnwick depot</b> is running one working day behind after a
         belt failure. Parcels held there are being released in arrival order.</p>
-        <p class="advisory">Collections in the northern zone close 90 minutes early this
-        week while the Marbeck sort hall is re-laid.</p>
+        <p class="advisory">Collections in the northern zone close 90 minutes early while
+        the Marbeck sort hall floor is re-laid.</p>
       </div>
     </section>
 
@@ -370,6 +379,40 @@
     scan.className = 'rowmeta';
     scan.textContent = 'Last scan: ' + shipment.lastScan;
     card.append(head, stat, svc, scan);
+    if (shipment.eta) {
+      const eta = document.createElement('div');
+      eta.className = 'eta';
+      const label = document.createElement('b');
+      label.textContent = shipment.eta.label + ': ';
+      eta.append(label);
+      if (shipment.eta.iso) {
+        const day = document.createElement('time');
+        day.dateTime = shipment.eta.iso;
+        day.textContent = shipment.eta.day;
+        eta.append(day);
+        if (shipment.eta.time) eta.append(' at ' + shipment.eta.time);
+      } else {
+        eta.append(shipment.eta.note);
+      }
+      card.append(eta);
+    }
+    const events = document.createElement('ol');
+    events.className = 'events';
+    events.setAttribute('aria-label', 'Scan history for ' + shipment.num);
+    for (const event of shipment.scans ?? []) {
+      const item = document.createElement('li');
+      const at = document.createElement('time');
+      at.dateTime = event.at;
+      at.textContent = event.day + ', ' + event.time;
+      const place = document.createElement('span');
+      place.className = 'place';
+      place.textContent = event.place;
+      const what = document.createElement('span');
+      what.textContent = event.what;
+      item.append(at, place, what);
+      events.append(item);
+    }
+    card.append(events);
     results.prepend(card);
   }
 
