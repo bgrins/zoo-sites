@@ -1,0 +1,57 @@
+{
+ "id": 40106262,
+ "title": "AI will replace every compiler engineer by 2028",
+ "site": "passorder.example",
+ "author": "hypecycler",
+ "points": 96,
+ "age": "Jul 27, 2026",
+ "tag": "languages",
+ "archived": true,
+ "comments": [
+  {
+   "author": "ssaform",
+   "age": "Jul 27, 2026",
+   "text": "The article is more careful than this title. Its actual claim is that learned heuristics will replace hand-tuned inlining and register allocation cost models, which is already happening in a few production compilers.",
+   "replies": [
+    {
+     "author": "hypecycler",
+     "age": "Jul 27, 2026",
+     "text": "The title is the article's conclusion, stated plainly. I would rather keep it than soften it.",
+     "replies": []
+    },
+    {
+     "author": "peepholer",
+     "age": "Jul 27, 2026",
+     "text": "Cost models are the easy part to learn, because you can measure the result. Correctness is the part nobody wants to hand to a model, and that is most of the job.",
+     "replies": [
+      {
+       "author": "ssaform",
+       "age": "Jul 27, 2026",
+       "text": "Agreed. A heuristic that picks a bad inlining decision costs you speed. A pass that miscompiles costs you a week of someone's life.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "kernelpanda",
+   "age": "Jul 27, 2026",
+   "text": "Every decade has one of these. The optimiser gets smarter, the people who understand it get more valuable, not less.",
+   "replies": []
+  },
+  {
+   "author": "regalloc",
+   "age": "Jul 28, 2026",
+   "text": "The benchmark numbers in section three are on a suite the authors also trained on. I would wait for results on something held out before drawing conclusions.",
+   "replies": [
+    {
+     "author": "hypecycler",
+     "age": "Jul 28, 2026",
+     "text": "The appendix has a held-out run. Smaller gains, same direction.",
+     "replies": []
+    }
+   ]
+  }
+ ]
+}

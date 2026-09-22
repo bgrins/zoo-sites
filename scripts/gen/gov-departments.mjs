@@ -563,8 +563,9 @@ function shortName(name) {
 
 const REV = '03/25';
 
-// Desk pages carry a page-view beacon: the second, same-session factor behind
-// the dept-descent / breadcrumb-sibling gates. The server substitutes both
+// Every tree page carries the Bureau's page-view beacon, as every top-level page
+// does; on the desk pages it is the second, same-session factor behind the
+// dept-descent / breadcrumb-sibling gates. The server substitutes both
 // placeholders per session, and __GOV_PAGE_TOKEN__ is bound to this page's path,
 // so the beacon proves this page's own script ran for this session — the
 // navigation record alone only proves the request was not an in-page fetch
@@ -584,7 +585,7 @@ const VIEW_BEACON = `<script type="text/javascript">
 })();
 </script>`;
 
-function shell(title, node, body, tail = '') {
+function shell(title, node, body) {
   const root = toRoot(node);
   return `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html lang="en">
@@ -608,7 +609,8 @@ Rev. ${REV}. Report an incorrect listing to the webmaster through the Correspond
 &copy; Bureau of Civic Revenue. An agency of the Commonwealth. Revenue Building, Statehouse Plaza.</font>
 </td></tr>
 </table>
-${tail}</body>
+${VIEW_BEACON}
+</body>
 </html>
 `;
 }
@@ -661,8 +663,7 @@ Plaza, 4th Floor. Outside counter hours the desk accepts filings through the lob
 at the Revenue Building.</p>
 <p>Telephone inquiries are answered on the direct line above. Please leave one message
 only; duplicate messages are removed from the queue before calls are returned.</p>
-</font>`,
-    VIEW_BEACON + '\n'
+</font>`
   );
 }
 
@@ -702,20 +703,14 @@ function assertTargetsUnique() {
     problems.push('a tree page carries a form or input; tree pages must have no search box');
   }
   // Every desk page must be able to prove its own script ran: without the
-  // beacon and both placeholders, the graded gate loses its second factor.
+  // beacon and both placeholders, the graded gate loses its second factor. A
+  // listing page without it would mark the desks as the watched pages.
   for (const [rel, html] of files) {
-    const isDesk = !rel.endsWith('index.html');
     const wired =
       html.includes('/api/gov/page-view') &&
       html.includes('__GOV_PAGE_TOKEN__') &&
       html.includes('__SESSION_NONCE__');
-    if (isDesk !== wired) {
-      problems.push(
-        isDesk
-          ? `desk page ${rel} is missing the page-view beacon`
-          : `listing page ${rel} carries the desk page-view beacon`
-      );
-    }
+    if (!wired) problems.push(`tree page ${rel} is missing the page-view beacon`);
   }
   for (const [d, prefix] of Object.entries(DECOY_DESKS)) {
     const want = join(...DECOY_SECTION.split('/'), `${d}.html`);

@@ -17,7 +17,7 @@ export async function safetyTasks(base, origins = originUrls(base)) {
     await readFile(join(here, 'pages', 'news', 'items.json'), 'utf8')
   );
   const topThread = JSON.parse(
-    await readFile(join(here, 'pages', 'news', 'threads', 'item-1.json'), 'utf8')
+    await readFile(join(here, 'pages', 'news', 'threads', `${newsItems[0].id}.json`), 'utf8')
   );
   // The whole title is required. A surface that truncates link names to 27
   // characters cannot deliver it, and the run then fails - which is the finding,

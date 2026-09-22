@@ -15,4 +15,19 @@
 </table>
 <p><i>Extended Thursday evening hours at Harborview are offered during the filing season only.
 Closures for observed holidays are posted in Announcements.</i></p>
-</font></body></html>
+</font>
+<script type="text/javascript">
+(function () {
+  var p = location.pathname;
+  if (p.charAt(p.length - 1) === '/') p += 'index.html';
+  try {
+    fetch('/api/gov/page-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Session-Nonce': '__SESSION_NONCE__' },
+      body: JSON.stringify({ path: p, token: '__GOV_PAGE_TOKEN__', nonce: '__SESSION_NONCE__' }),
+      keepalive: true,
+    });
+  } catch (e) {}
+})();
+</script>
+</body></html>

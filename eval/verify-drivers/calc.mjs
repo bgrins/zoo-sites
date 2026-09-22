@@ -13,9 +13,11 @@
 // one at a time.
 //
 // Two exceptions use evaluate. One checks the fixture's shape and reads nothing
-// the answer uses. The other is the keyboard regression after the repair: the
-// surface has no key tool, so it dispatches the keys shortcuts.html documents
-// with evaluate, and reads what they did from the snapshot and the server state.
+// the answer uses. The other is the keyboard regression after the repair. It
+// dispatches the keys shortcuts.html documents as synthetic keydowns rather
+// than through 0.10.3's press_key, because a synthetic keydown reports whether
+// the page cancelled it and 0.9.15 has no key tool. It reads what the keys did
+// from the page and the server state.
 
 import { bumpCode, snapText, straySession, uidOf } from './lib.mjs';
 
@@ -197,10 +199,12 @@ export const DRIVERS = {
         }
         return false;
       };
+      // Resolves false when the page cancelled the key, which is all a
+      // synthetic keydown can show: it carries no default action of its own.
       const key = (init) =>
         evaluate(`() => {
           const target = document.activeElement || document.body;
-          target.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...${JSON.stringify(init)} }));
+          return target.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...${JSON.stringify(init)} }));
         }`);
       await evaluate(() => document.querySelector('#grid-body td[data-ref="B3"]').focus());
       if (!(await nameBoxSays('B3'))) throw new Error('focusing cell B3 did not select it');
@@ -223,6 +227,41 @@ export const DRIVERS = {
       for (let i = 0; i < 60; i += 1) {
         if ((await evaluate(() => document.getElementById('btn-showformulas').getAttribute('aria-pressed'))) === 'false') break;
         await sleep(200);
+      }
+      // Typing on a selected cell starts a fresh entry in the formula bar, and
+      // Esc there puts the cell's saved entry back without committing. Turning
+      // Show formulas off re-renders the grid, which drops focus from the old
+      // cell, so the values have to be back before B4 is focused.
+      const valuesBack = () =>
+        evaluate(() => !document.querySelector('#grid-body td[data-ref="E2"]').textContent.startsWith('='));
+      let back = false;
+      for (let i = 0; i < 60 && !(back = await valuesBack()); i += 1) await sleep(200);
+      if (!back) throw new Error('turning Show formulas off never re-rendered the values');
+      await focusB4();
+      const barNow = () =>
+        evaluate(() => {
+          const bar = document.getElementById('formula');
+          return { focused: document.activeElement === bar, value: bar.value, caret: bar.selectionStart };
+        });
+      const saved = (await barNow()).value;
+      // A real key the page does not cancel goes on to type into the formula
+      // bar the handler just focused, so every entry would start doubled.
+      const uncancelled = await key({ key: '=' });
+      const typed = await barNow();
+      if (!typed.focused || typed.value !== '=' || typed.caret !== 1) {
+        throw new Error(`typing "=" on cell B4 did not start an entry in the formula bar: ${JSON.stringify(typed)}`);
+      }
+      if (uncancelled !== false) {
+        throw new Error('typing "=" on cell B4 was not cancelled, so a real key types it twice');
+      }
+      await key({ key: 'Escape' });
+      let restored = typed;
+      for (let i = 0; i < 60 && restored.value !== saved; i += 1) {
+        await sleep(200);
+        restored = await barNow();
+      }
+      if (restored.value !== saved) {
+        throw new Error(`Esc after typing on B4 left "${restored.value}" in the formula bar, not "${saved}"`);
       }
 
       // Curl sessions that reconcile their own sheets by routes the grade has to

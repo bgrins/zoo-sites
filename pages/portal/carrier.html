@@ -53,16 +53,12 @@
       </div>
       <div class="panel" id="collections">
         <h2>Next collections</h2>
-        <p>Week 31 is provisional until the wharf confirms the berth allocation.</p>
-        <div class="stats">
-          <div class="stat"><span class="k">Tue 28 Jul</span><span class="v">06:30</span></div>
-          <div class="stat"><span class="k">Thu 30 Jul</span><span class="v">19:30</span></div>
-          <div class="stat"><span class="k">Sat 01 Aug</span><span class="v">05:00</span></div>
-        </div>
+        <p>Week <span id="collectionsWeek"></span> is provisional until the wharf confirms the berth allocation.</p>
+        <div class="stats" id="collectionsList"></div>
       </div>
       <div class="panel" id="documents">
         <h2>Documents</h2>
-        <p>Insurance certificate on file expires 14 November. Operating authority
+        <p>Insurance certificate on file expires <span id="insuranceExpires"></span>. Operating authority
         and W-9 are current. Upload replacements through your account manager.</p>
       </div>
     </div>
@@ -93,6 +89,20 @@
       document.getElementById('who').textContent = body.account;
       document.getElementById('contact').textContent = body.contact;
       document.getElementById('carrier').textContent = body.carrier;
+      document.getElementById('collectionsWeek').textContent = body.collectionsWeek;
+      document.getElementById('insuranceExpires').textContent = body.insuranceExpires;
+      for (const slot of body.collections ?? []) {
+        const stat = document.createElement('div');
+        stat.className = 'stat';
+        const k = document.createElement('span');
+        k.className = 'k';
+        k.textContent = slot.day;
+        const v = document.createElement('span');
+        v.className = 'v';
+        v.textContent = slot.time;
+        stat.append(k, v);
+        document.getElementById('collectionsList').append(stat);
+      }
       document.getElementById('body').hidden = false;
       document.getElementById('logoutBtn').hidden = false;
     } catch {

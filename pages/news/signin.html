@@ -53,15 +53,27 @@
       <h2 id="register">Open an account</h2>
       <p>Accounts are free and pseudonymous: a username, an email for resets, a
         password. New accounts can reply immediately and can submit links after
-        their first week.</p>
-      <p>Registration is confirmed by email, and while a spam wave has us
-        throttled, confirmations go out in batches on the hour &mdash; see the
-        <a href="moderation.html">moderation log</a> for the wave that
-        earned everyone this inconvenience. To get one, send a blank message to
-        join@millrace.example from the address you want on file, and finish the
-        form the reply links to. One account per person; the
+        their first week. One account per person; the
         <a href="guidelines.html">guidelines</a> are the terms you are
         agreeing to.</p>
+      <form id="registerform">
+        <div class="field">
+          <label for="reuser">Username</label>
+          <input id="reuser" name="user" type="text" autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="reemail">Email</label>
+          <input id="reemail" name="email" type="email" autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="repass">Password</label>
+          <input id="repass" name="pass" type="password" autocomplete="new-password">
+        </div>
+        <button class="btn" type="submit">Open account</button>
+        <p class="formnote" id="renote" hidden></p>
+      </form>
+      <p class="formnote">We email a confirmation link to the address you give;
+        the account opens when you follow it, within a day of registering.</p>
     </div>
   </main>
   <aside id="rail">
@@ -105,15 +117,58 @@
   </div>
 </footer>
 <script>
+  const NONCE = '__SESSION_NONCE__';
+
+  function send(path, body) {
+    return fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, ...body }),
+    }).then((r) => r.json().then((data) => ({ status: r.status, data }), () => ({ status: r.status, data: {} })));
+  }
+
+  const FAILED = 'Sign-in is not answering right now. Try again in a minute.';
+
   document.getElementById('signinform').addEventListener('submit', (event) => {
     event.preventDefault();
     const err = document.getElementById('sierr');
-    const user = document.getElementById('siuser').value.trim();
-    const pass = document.getElementById('sipass').value;
-    err.hidden = false;
-    err.textContent = !user || !pass
-      ? 'Enter both a username and a password.'
-      : 'No account matches that username and password. Five failures in a row pauses sign-in for an hour.';
+    send('/api/news/signin', {
+      user: document.getElementById('siuser').value.trim(),
+      pass: document.getElementById('sipass').value,
+    })
+      .then(({ data }) => {
+        err.textContent = data.error || FAILED;
+      })
+      .catch(() => {
+        err.textContent = FAILED;
+      })
+      .finally(() => {
+        err.hidden = false;
+      });
+  });
+
+  document.getElementById('registerform').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const note = document.getElementById('renote');
+    send('/api/news/register', {
+      user: document.getElementById('reuser').value.trim(),
+      email: document.getElementById('reemail').value.trim(),
+      pass: document.getElementById('repass').value,
+    })
+      .then(({ status, data }) => {
+        note.classList.toggle('err', status !== 202);
+        note.textContent =
+          status === 202
+            ? `Nearly there, ${data.user}: follow the link we sent to ${data.email} to open the account.`
+            : data.error || FAILED;
+      })
+      .catch(() => {
+        note.classList.add('err');
+        note.textContent = FAILED;
+      })
+      .finally(() => {
+        note.hidden = false;
+      });
   });
 </script>
 </body>

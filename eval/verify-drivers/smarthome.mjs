@@ -17,7 +17,7 @@ import { until, uidOf, bumpCode } from './lib.mjs';
 const PATH = '/smarthome/';
 
 // The targets strip precedes the dials in document order, so the FIRST
-// "Brightness" / "Color temperature" / "Fade time" text node is the target
+// "Brightness" / "Colour temperature" / "Fade time" text node is the target
 // name and the node right after it is the target value. The anchored matches
 // double as the spec's snapshot-budget check: a value the snapshot truncates
 // or hides never parses, and the un-fetched placeholder is a dash.
@@ -31,7 +31,7 @@ function readTargets(snap) {
   };
   const t = {
     brightness: valueAfter('Brightness', /^(\d+)%$/),
-    colorTemp: valueAfter('Color temperature', /^(\d+) K$/),
+    colorTemp: valueAfter('Colour temperature', /^(\d+) K$/),
     fadeSeconds: valueAfter('Fade time', /^(\d+) s$/),
   };
   return Object.values(t).every((v) => v !== null) ? t : null;
@@ -57,7 +57,7 @@ export const DRIVERS = {
       const sliderUid = (name) => uidOf(snap, `input "${name}"`);
       const sliders = {
         brightness: sliderUid('Brightness'),
-        colorTemp: sliderUid('Color temperature'),
+        colorTemp: sliderUid('Colour temperature'),
         fadeSeconds: sliderUid('Fade time'),
       };
       for (const [key, uid] of Object.entries(sliders)) {

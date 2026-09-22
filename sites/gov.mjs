@@ -62,12 +62,26 @@ const GOV_SEARCH_INDEX = [
     terms: ['department', 'directory', 'division', 'desk', 'section', 'organization'],
   },
   {
+    title: 'Certified Copies of Filed Documents',
+    path: 'certcopy.html',
+    score: 49,
+    snippet: 'Certified and uncertified copies of filed declarations, applications and notices, requested online.',
+    terms: ['certified', 'copies', 'copy of', 'duplicate', 'photocop', 'seal', 'custodian'],
+  },
+  {
     title: 'Office Locations',
     path: 'offices.html',
     score: 47,
     snippet: 'Central and satellite office addresses and telephone numbers, with the weekly schedule.',
     terms: ['office', 'location', 'hours', 'satellite', 'harborview', 'millbrook', 'cedar',
       'counter', 'window', 'visit', 'notary', 'drop'],
+  },
+  {
+    title: 'Request Status',
+    path: 'request-status.html',
+    score: 46,
+    snippet: 'Requests for copies on file for an account, and how to withdraw one not yet prepared.',
+    terms: ['request status', 'copy request', 'cancel request', 'withdraw', 'copies', 'certified'],
   },
   {
     title: 'Payment Portal',
@@ -818,13 +832,15 @@ request is not sent and not charged. <a href="request-status.html">Look up anoth
     },
 
     onHtml({ pathname, found, nav, body }) {
-      // T044 dept-descent / T045 breadcrumb-sibling / T047 search-decoy: the
-      // graded pages carry a __GOV_PAGE_TOKEN__ placeholder, minted here per
-      // session and per path, so the beacon those pages post back can only
-      // name a page whose body this session was actually served.
-      const out = body.includes('__GOV_PAGE_TOKEN__')
-        ? { body: body.replaceAll('__GOV_PAGE_TOKEN__', govPageToken(found.session, pathname)) }
-        : undefined;
+      // Every page's page-view tag carries a __GOV_PAGE_TOKEN__ placeholder,
+      // minted here per session and per path, so the beacon a page posts back
+      // can only name a page whose body this session was actually served. T044
+      // dept-descent, T045 breadcrumb-sibling and T047 search-decoy grade the
+      // views of their own pages; the tag being on every page keeps it from
+      // marking which pages those are.
+      let text = body.includes('__GOV_PAGE_TOKEN__')
+        ? body.replaceAll('__GOV_PAGE_TOKEN__', govPageToken(found.session, pathname))
+        : body;
 
       // The navigation half of the same gates: a desk page deep in the
       // department tree, its sibling desk, the RV-7 instructions page. The page
@@ -843,16 +859,16 @@ request is not sent and not charged. <a href="request-status.html">Look up anoth
 
       // T135 resend-receipt: a fresh form id per load of the request form, so
       // a receipt's telemetry can tell a resent or re-submitted load from a
-      // freshly opened form. The form page carries no page token.
-      if (pathname === '/gov/certcopy.html' && body.includes('__GOV_FORM_ID__')) {
+      // freshly opened form.
+      if (pathname === '/gov/certcopy.html' && text.includes('__GOV_FORM_ID__')) {
         const formid = randomBytes(6).toString('hex');
         const forms = govCopyState(found.session).forms;
         forms[formid] = { posts: 0, filed: 0, at: Date.now() };
         const ids = Object.keys(forms);
         if (ids.length > SESSION_ROWS) delete forms[ids[0]];
-        return { body: body.replaceAll('__GOV_FORM_ID__', formid) };
+        text = text.replaceAll('__GOV_FORM_ID__', formid);
       }
-      return out;
+      return text === body ? undefined : { body: text };
     },
   };
 }

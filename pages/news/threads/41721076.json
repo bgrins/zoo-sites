@@ -1,0 +1,2333 @@
+{
+ "id": 41721076,
+ "comments": [
+  {
+   "author": "opexoptimist",
+   "age": "10 hours ago",
+   "text": "These posts always compare peak cloud spend against steady-state colo spend and declare victory. The honest comparison includes: the two engineers who now own hardware lifecycle, the capacity you over-provisioned because you can't autoscale, the failed-disk runbook at 3am, and the opportunity cost of all of it. Sometimes bare metal still wins! But I've never seen one of these writeups do the accounting properly.",
+   "replies": [
+    {
+     "author": "rackmounted",
+     "age": "9 hours ago",
+     "text": "OP here. We tried to do exactly that accounting in section 4 — the TCO table includes 0.6 FTE of ongoing ops (measured over a year, not estimated), 40% capacity headroom, and remote-hands contracts at both facilities. Our workload is the boring-favorable case: steady traffic, predictable growth, storage-heavy. We still run burst workloads and CI in the cloud.\n\nThe real headline isn't \"cloud bad,\" it's that our egress-heavy product had a cost structure where bandwidth alone paid for the entire migration in 7 months.",
+     "replies": [
+      {
+       "author": "opexoptimist",
+       "age": "8 hours ago",
+       "text": "I'll admit section 4 is better than most, and I should have finished the article before commenting — the 0.6 FTE being measured rather than projected is the detail that usually gets fudged. Egress-heavy really is the killer case. Withdrawn, mostly.",
+       "replies": [
+        {
+         "author": "warmstart",
+         "age": "8 hours ago",
+         "text": "A commenter reading the article and updating their position? On this site? Screenshot taken."
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "cloudnative_carl",
+     "age": "8 hours ago",
+     "text": "The FTE cost people cite always assumes cloud ops is free, though. My last company had four engineers whose entire job was wrangling managed-service quotas, IAM policies, and cost anomaly dashboards. You don't escape ops by going to the cloud; you exchange one ops discipline for another."
+    }
+   ]
+  },
+  {
+   "author": "stackyard",
+   "age": "9 hours ago",
+   "text": "What convinced our board was not the savings, it was the multi-year price certainty.",
+   "replies": [
+    {
+     "author": "thunkmill",
+     "age": "8 hours ago",
+     "text": "Strong disagree, but I appreciate that you wrote it up properly.",
+     "replies": [
+      {
+       "author": "tracecraft",
+       "age": "7 hours ago",
+       "text": "That is a very generous reading of the situation.",
+       "replies": [
+        {
+         "author": "lambdahound",
+         "age": "7 hours ago",
+         "text": "What was your break-even point in months?",
+         "replies": [
+          {
+           "author": "runester",
+           "age": "6 hours ago",
+           "text": "Good question.",
+           "replies": [
+            {
+             "replies": [
+              {
+               "author": "kernwake",
+               "age": "4 hours ago",
+               "text": "Right-sizing is half the story. The other half is that the same money buys much more hardware than it rents.",
+               "replies": [
+                {
+                 "author": "quartzpilot",
+                 "age": "2 hours ago",
+                 "text": "Remote hands is the right thing to budget for, but a spares shelf in the cage cut our calls by more than half.",
+                 "replies": []
+                }
+               ]
+              }
+             ],
+             "deleted": true
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "lambdasmith",
+     "age": "7 hours ago",
+     "text": "Somebody should write the boring version of this post, with all the caveats.",
+     "replies": [
+      {
+       "author": "glyphshed",
+       "age": "5 hours ago",
+       "text": "Exactly this.",
+       "replies": [
+        {
+         "author": "tracereader45",
+         "age": "3 hours ago",
+         "text": "Managed databases were our last dependency too. We moved them eighteen months after the compute.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "stackyard",
+       "age": "6 hours ago",
+       "text": "Nobody wants to hear it, but the unglamorous answer usually wins.",
+       "replies": [
+        {
+         "author": "lambdasmith",
+         "age": "4 hours ago",
+         "text": "I think you are both right and talking about different scales.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "monadsage",
+       "age": "6 hours ago",
+       "text": "The hybrid approach is underrated. Keep the elastic parts in the cloud, move the boring parts home.",
+       "replies": [
+        {
+         "author": "stackworks",
+         "age": "6 hours ago",
+         "text": "Did you keep any workloads in the cloud?",
+         "replies": []
+        },
+        {
+         "author": "lambdasmith",
+         "age": "4 hours ago",
+         "text": "What did you do for object storage?",
+         "replies": []
+        },
+        {
+         "author": "sprocketspark70",
+         "age": "6 hours ago",
+         "text": "Below a certain scale I agree completely. We were at about eighty servers when the maths flipped.",
+         "replies": []
+        },
+        {
+         "author": "bezeltide",
+         "age": "5 hours ago",
+         "text": "Thanks, that helps.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "bytedrift",
+       "age": "5 hours ago",
+       "text": "A second site doubled our DR cost, but we would have paid for multi-region in the cloud anyway.",
+       "replies": [
+        {
+         "author": "grommetpilot",
+         "age": "3 hours ago",
+         "text": "Worth adding that the hybrid approach is underrated. Keep the elastic parts in the cloud, move the boring parts home.",
+         "replies": [
+          {
+           "author": "lambdahound",
+           "age": "3 hours ago",
+           "text": "Did you negotiate with your cloud provider before leaving? What did they offer?",
+           "replies": []
+          },
+          {
+           "author": "decimaldrift",
+           "age": "3 hours ago",
+           "text": "Small correction: that changed in the last release, so the post is slightly out of date.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "tuplemonk",
+       "age": "6 hours ago",
+       "text": "How do you do capacity planning now?",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "scalarsage",
+   "age": "7 hours ago",
+   "text": "Mild disagreement: network design is where teams moving back underestimate the work. Top of rack switches, BGP, redundant uplinks: it is a discipline of its own.",
+   "replies": [
+    {
+     "author": "lambdasage",
+     "age": "5 hours ago",
+     "text": "Worth adding that spiky workloads are exactly where the cloud still wins. Nobody should move a batch job that runs one day a month.",
+     "replies": [
+      {
+       "author": "soldersmith",
+       "age": "4 hours ago",
+       "text": "In my experience, firmware patching is the part people forget. We schedule it quarterly and it takes a full day.",
+       "replies": [
+        {
+         "replies": [
+          {
+           "author": "shardster",
+           "age": "1 hour ago",
+           "text": "There is a whole conference talk on this that I cannot find right now.",
+           "replies": [
+            {
+             "author": "lambdasmith",
+             "age": "46 minutes ago",
+             "text": "Do you have numbers for that? It sounds plausible but I have seen the opposite.",
+             "replies": [
+              {
+               "author": "tuplemonk",
+               "age": "3 minutes ago",
+               "text": "Mild pushback: the benchmark in the post is doing a lot of work.",
+               "replies": [
+                {
+                 "author": "greptinker",
+                 "age": "2 minutes ago",
+                 "text": "How do you handle hardware failures overnight?",
+                 "replies": []
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ],
+         "deleted": true
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "nullspark",
+     "age": "6 hours ago",
+     "text": "The article addresses this about two thirds of the way down, for what it is worth.",
+     "replies": [
+      {
+       "author": "deltawake",
+       "age": "4 hours ago",
+       "text": "Buying for peak is real, but our peak-to-average ratio was only about 1.8, so the idle cost was modest.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "loopworks25",
+     "age": "6 hours ago",
+     "text": "In my experience, buying for peak is real, but our peak-to-average ratio was only about 1.4, so the idle cost was modest.",
+     "replies": [
+      {
+       "author": "nullwake86",
+       "age": "5 hours ago",
+       "text": "Depreciation makes the savings look smaller in year one and much bigger in years three to five.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "glyphcraft67",
+     "age": "6 hours ago",
+     "text": "That tracks.",
+     "replies": [
+      {
+       "author": "queueshed",
+       "age": "4 hours ago",
+       "text": "Fair point.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "kerncraft",
+     "age": "7 hours ago",
+     "text": "Untangling cloud-specific features is the real migration cost. Queues and object storage were the worst for us. At least that is how it went for us.",
+     "replies": []
+    },
+    {
+     "author": "lintster",
+     "age": "6 hours ago",
+     "text": "We hired one network engineer and it was the best money we spent in the whole migration.",
+     "replies": []
+    },
+    {
+     "author": "scalardrift",
+     "age": "6 hours ago",
+     "text": "I stand corrected.",
+     "replies": []
+    },
+    {
+     "author": "thunkmill",
+     "age": "6 hours ago",
+     "text": "Untangling cloud-specific features is the real migration cost. Queues and object storage were the worst for us.",
+     "replies": []
+    },
+    {
+     "author": "dipolegarden26",
+     "age": "7 hours ago",
+     "text": "Untangling cloud-specific features is the real migration cost. Queues and object storage were the worst for us. Your mileage will vary.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "deltabench",
+   "age": "10 hours ago",
+   "text": "The article mentions a four year hardware refresh. That is where the TCO spreadsheet either works or does not.",
+   "replies": [
+    {
+     "author": "bytedrift",
+     "age": "8 hours ago",
+     "text": "You can do it, but the maintenance cost arrives on a delay and it arrives anyway.",
+     "replies": [
+      {
+       "author": "monadsage",
+       "age": "8 hours ago",
+       "text": "Same.",
+       "replies": [
+        {
+         "author": "bytedrift",
+         "age": "7 hours ago",
+         "text": "How many people are on your infrastructure team now?",
+         "replies": [
+          {
+           "author": "mutexgarden",
+           "age": "5 hours ago",
+           "text": "IPMI saved us more than once. Also put the BMC network on its own switch and never on the internet.",
+           "replies": [
+            {
+             "author": "scalargarden",
+             "age": "5 hours ago",
+             "text": "Agree with the conclusion, not with how you got there.",
+             "replies": [
+              {
+               "author": "mutexgarden",
+               "age": "4 hours ago",
+               "text": "Noted, thanks.",
+               "replies": []
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "shardsage",
+     "age": "8 hours ago",
+     "text": "The way I see it, a second site doubled our DR cost, but we would have paid for multi-region in the cloud anyway.",
+     "replies": [
+      {
+       "author": "deltabench",
+       "age": "6 hours ago",
+       "text": "This matches my experience almost exactly.",
+       "replies": [
+        {
+         "author": "spoolsage85",
+         "age": "3 hours ago",
+         "text": "Oof. Yes.",
+         "replies": [
+          {
+           "author": "inodeshed",
+           "age": "2 hours ago",
+           "text": "Having done this twice now: we hired one network engineer and it was the best money we spent in the whole migration.",
+           "replies": []
+          },
+          {
+           "author": "inodewright",
+           "age": "1 hour ago",
+           "text": "Buying for peak is real, but our peak-to-average ratio was only about 1.8, so the idle cost was modest. Your mileage will vary.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "pagetable",
+     "age": "9 hours ago",
+     "text": "Untangling cloud-specific features is the real migration cost. Queues and object storage were the worst for us. The post undersells this, I think.",
+     "replies": [
+      {
+       "author": "runester",
+       "age": "9 hours ago",
+       "text": "Untangling cloud-specific features is the real migration cost. Queues and object storage were the worst for us. Nobody talks about that part.",
+       "replies": [
+        {
+         "author": "pagetable",
+         "age": "8 hours ago",
+         "text": "Replying mainly so I can find this again.",
+         "replies": [
+          {
+           "author": "scalargarden",
+           "age": "6 hours ago",
+           "text": "For what it is worth, fewer, bigger boxes made our architecture simpler too. Half the services were split only to fit instance sizes.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "monadwright92",
+         "age": "8 hours ago",
+         "text": "Every one of these threads has this subthread, and every time it is worth reading.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "scalargarden",
+     "age": "9 hours ago",
+     "text": "Not in my experience.",
+     "replies": []
+    },
+    {
+     "author": "kernster",
+     "age": "8 hours ago",
+     "text": "This.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "glyphmonk",
+   "age": "6 hours ago",
+   "text": "In my experience, the migration took us nine months, most of it spent untangling services that assumed cloud-specific features.",
+   "replies": [
+    {
+     "author": "scalardrift",
+     "age": "6 hours ago",
+     "text": "Fewer, bigger boxes made our architecture simpler too. Half the services were split only to fit instance sizes.",
+     "replies": [
+      {
+       "author": "slabsmith27",
+       "age": "5 hours ago",
+       "text": "Saving this for the next time someone asks me why.",
+       "replies": [
+        {
+         "author": "loopdrift",
+         "age": "5 hours ago",
+         "text": "Counterpoint: it depends entirely on who is on call when it breaks.",
+         "replies": [
+          {
+           "author": "hexfield",
+           "age": "2 hours ago",
+           "text": "Which colocation provider did you use, and how did you choose?",
+           "replies": [
+            {
+             "author": "lambdamill",
+             "age": "2 hours ago",
+             "text": "Predictable performance was worth more to us than the cost saving. Our tail latency dropped by half.",
+             "replies": [
+              {
+               "author": "sprocketspark70",
+               "age": "2 hours ago",
+               "text": "Touché.",
+               "replies": []
+              }
+             ]
+            },
+            {
+             "author": "nibtinker88",
+             "age": "2 hours ago",
+             "text": "The last paragraph of the post says nearly the same thing.",
+             "replies": [
+              {
+               "author": "deltayard",
+               "age": "52 minutes ago",
+               "text": "Not sure that generalises beyond one workload.",
+               "replies": []
+              }
+             ]
+            },
+            {
+             "author": "sigmaling",
+             "age": "2 hours ago",
+             "text": "Worth separating what is hard from what is merely unfamiliar.",
+             "replies": []
+            },
+            {
+             "author": "scalardrift",
+             "age": "1 hour ago",
+             "text": "The interesting bit is buried in a footnote, as usual.",
+             "replies": []
+            },
+            {
+             "author": "patchtide",
+             "age": "35 minutes ago",
+             "text": "Worth adding that managed databases were our last dependency too. We moved them eighteen months after the compute.",
+             "replies": []
+            }
+           ]
+          },
+          {
+           "author": "lambdasmith",
+           "age": "3 hours ago",
+           "text": "Nobody wants to hear it, but the unglamorous answer usually wins. Happy to be proven wrong.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "deltagarden",
+         "age": "4 hours ago",
+         "text": "People underestimate how much of this is just habit.",
+         "replies": [
+          {
+           "replies": [
+            {
+             "author": "deltagarden",
+             "age": "2 hours ago",
+             "text": "Year three is when disks start going. Budget for it and it is a non-event. At least that is how it went for us.",
+             "replies": []
+            }
+           ],
+           "deleted": true
+          },
+          {
+           "author": "glyphworks",
+           "age": "4 hours ago",
+           "text": "The way I see it, load balancing on metal is solved with a couple of well-understood tools. Storage is the one I would still outsource if I could.",
+           "replies": []
+          },
+          {
+           "author": "heaphound",
+           "age": "3 hours ago",
+           "text": "You are describing a people problem with a technology label on it.",
+           "replies": []
+          },
+          {
+           "author": "nullmonk63",
+           "age": "4 hours ago",
+           "text": "Buying for peak is real, but our peak-to-average ratio was only about 1.4, so the idle cost was modest.",
+           "replies": []
+          },
+          {
+           "author": "dipolegarden91",
+           "age": "4 hours ago",
+           "text": "This deserves its own submission.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "lambdayard",
+   "age": "8 hours ago",
+   "text": "Kubernetes on bare metal is much better than it was six years ago, but load balancing and storage are still where the rough edges are.",
+   "replies": [
+    {
+     "replies": [
+      {
+       "author": "scalarsage",
+       "age": "5 hours ago",
+       "text": "Lead times are better now, but we keep a quarter's worth of spare capacity racked and powered off.",
+       "replies": [
+        {
+         "author": "bytedrift",
+         "age": "4 hours ago",
+         "text": "Interesting, had not considered that.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "lambdamill",
+       "age": "6 hours ago",
+       "text": "Honestly, fewer, bigger boxes made our architecture simpler too. Half the services were split only to fit instance sizes.",
+       "replies": [
+        {
+         "author": "scalarreader",
+         "age": "6 hours ago",
+         "text": "Having done this twice now: load balancing on metal is solved with a couple of well-understood tools. Storage is the one I would still outsource if I could.",
+         "replies": []
+        },
+        {
+         "author": "queuecraft",
+         "age": "6 hours ago",
+         "text": "Reasonable people land on both sides of this, and the thread is proving it.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "hexster",
+       "age": "6 hours ago",
+       "text": "Spiky workloads are exactly where the cloud still wins. Nobody should move a batch job that runs one day a month.",
+       "replies": []
+      },
+      {
+       "author": "tensorworks",
+       "age": "6 hours ago",
+       "text": "Firmware patching is the part people forget. We schedule it quarterly and it takes a full day.",
+       "replies": []
+      }
+     ],
+     "deleted": true
+    },
+    {
+     "author": "vacuumtruck",
+     "age": "8 hours ago",
+     "text": "I read it the other way: the tooling finally caught up with the idea.",
+     "replies": [
+      {
+       "author": "lambdayard",
+       "age": "8 hours ago",
+       "text": "I have been on both sides of that decision and I still do not know which was right.",
+       "replies": [
+        {
+         "author": "looptinker",
+         "age": "7 hours ago",
+         "text": "The honest answer is that nobody measured it before or after.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "glyphcraft67",
+       "age": "6 hours ago",
+       "text": "That is the part nobody budgets for.",
+       "replies": [
+        {
+         "author": "vacuumtruck",
+         "age": "6 hours ago",
+         "text": "In my experience, we hired one network engineer and it was the best money we spent in the whole migration.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "tuplemonk",
+       "age": "6 hours ago",
+       "text": "That was true ten years ago. It has moved a lot since.",
+       "replies": [
+        {
+         "author": "tracecraft",
+         "age": "5 hours ago",
+         "text": "I think the author would agree with you; the title oversells it.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "foldmill",
+       "age": "6 hours ago",
+       "text": "The trade-off is real but it is not the one people usually name.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "scalarmonk",
+     "age": "6 hours ago",
+     "text": "In my experience, egress is always the line item that surprises people. Ours was half of the bill by the end.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "stackreader",
+   "age": "8 hours ago",
+   "text": "We moved to colocation two years ago. The hardware was the easy part. Hiring someone who is comfortable with a failed disk at two in the morning was hard.",
+   "replies": [
+    {
+     "author": "patchwake70",
+     "age": "7 hours ago",
+     "text": "We found the opposite, but our constraints were unusual.",
+     "replies": [
+      {
+       "author": "loopdrift",
+       "age": "6 hours ago",
+       "text": "Can confirm.",
+       "replies": [
+        {
+         "author": "patchwake70",
+         "age": "4 hours ago",
+         "text": "Hard agree.",
+         "replies": [
+          {
+           "author": "parsetinker",
+           "age": "1 hour ago",
+           "text": "Right, and the second-order effect is the one that bites.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "lambdasmith",
+         "age": "4 hours ago",
+         "text": "Load balancing on metal is solved with a couple of well-understood tools. Storage is the one I would still outsource if I could.",
+         "replies": []
+        },
+        {
+         "author": "patchwake70",
+         "age": "5 hours ago",
+         "text": "Agreed.",
+         "replies": []
+        },
+        {
+         "author": "stacktide",
+         "age": "6 hours ago",
+         "text": "Below a certain scale I agree completely. We were at about a hundred and twenty servers when the maths flipped. The post undersells this, I think.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "stackyard",
+     "age": "7 hours ago",
+     "text": "That is a fair correction, thanks.",
+     "replies": [
+      {
+       "author": "vectorspark16",
+       "age": "6 hours ago",
+       "text": "I tried this and gave up after a fortnight. Might try again after this thread.",
+       "replies": [
+        {
+         "author": "tupledrift",
+         "age": "6 hours ago",
+         "text": "Seconded.",
+         "replies": [
+          {
+           "author": "vectorspark16",
+           "age": "5 hours ago",
+           "text": "Source?",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "heaphound",
+         "age": "6 hours ago",
+         "text": "Ha, fair.",
+         "replies": [
+          {
+           "author": "vectorspark16",
+           "age": "5 hours ago",
+           "text": "Having done this twice now: right-sizing is half the story. The other half is that the same money buys much more hardware than it rents.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "dipolewake39",
+         "age": "6 hours ago",
+         "text": "We had the same argument at work last month and nobody changed their mind.",
+         "replies": []
+        },
+        {
+         "author": "stackyard",
+         "age": "5 hours ago",
+         "text": "Egress is always the line item that surprises people. Ours was half of the bill by the end.",
+         "replies": []
+        },
+        {
+         "author": "tracecraft",
+         "age": "6 hours ago",
+         "text": "I tried this and gave up after a month. Might try again after this thread.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "sprocketspark70",
+   "age": "7 hours ago",
+   "text": "The article mentions a three year hardware refresh. That is where the TCO spreadsheet either works or does not.",
+   "replies": [
+    {
+     "author": "ferrulegarden94",
+     "age": "6 hours ago",
+     "text": "Depreciation makes the savings look smaller in year one and much bigger in years three to five. Happy to be proven wrong.",
+     "replies": [
+      {
+       "author": "tracecraft",
+       "age": "4 hours ago",
+       "text": "Remote hands is the right thing to budget for, but a spares shelf in the cage cut our calls by more than half. Your mileage will vary.",
+       "replies": []
+      },
+      {
+       "author": "depreciator",
+       "age": "4 hours ago",
+       "text": "Mild disagreement: depreciation makes the savings look smaller in year one and much bigger in years three to five.",
+       "replies": []
+      },
+      {
+       "author": "sprocketspark70",
+       "age": "6 hours ago",
+       "text": "Anecdotally, we hired one network engineer and it was the best money we spent in the whole migration.",
+       "replies": []
+      },
+      {
+       "author": "dipolewake39",
+       "age": "5 hours ago",
+       "text": "In my experience, untangling cloud-specific features is the real migration cost. Queues and object storage were the worst for us.",
+       "replies": []
+      },
+      {
+       "author": "fibermonk",
+       "age": "5 hours ago",
+       "text": "Honestly, right-sizing is half the story. The other half is that the same money buys much more hardware than it rents.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "lambdasmith",
+     "age": "5 hours ago",
+     "text": "In my experience, fewer, bigger boxes made our architecture simpler too. Half the services were split only to fit instance sizes.",
+     "replies": [
+      {
+       "author": "warmstart",
+       "age": "5 hours ago",
+       "text": "Having done this twice now: lead times are better now, but we keep a quarter's worth of spare capacity racked and powered off.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "foldsage24",
+     "age": "5 hours ago",
+     "text": "Worth adding that a second site doubled our DR cost, but we would have paid for multi-region in the cloud anyway.",
+     "replies": [
+      {
+       "author": "tuplemonk",
+       "age": "5 hours ago",
+       "text": "Below a certain scale I agree completely. We were at about a hundred and twenty servers when the maths flipped.",
+       "replies": [
+        {
+         "author": "glyphhound91",
+         "age": "4 hours ago",
+         "text": "In my experience, spiky workloads are exactly where the cloud still wins. Nobody should move a batch job that runs one day a month.",
+         "replies": [
+          {
+           "author": "grommetmonk",
+           "age": "2 hours ago",
+           "text": "Right-sizing is half the story. The other half is that the same money buys much more hardware than it rents. At least that is how it went for us.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "foldsage24",
+     "age": "7 hours ago",
+     "text": "In my experience, right-sizing is half the story. The other half is that the same money buys much more hardware than it rents.",
+     "replies": []
+    },
+    {
+     "author": "relaybench",
+     "age": "6 hours ago",
+     "text": "The way I see it, egress is always the line item that surprises people. Ours was half of the bill by the end.",
+     "replies": []
+    },
+    {
+     "author": "kernster",
+     "age": "5 hours ago",
+     "text": "IPMI saved us more than once. Also put the BMC network on its own switch and never on the internet. Nobody talks about that part.",
+     "replies": [
+      {
+       "author": "heapfield",
+       "age": "3 hours ago",
+       "text": "Lead times are better now, but we keep a quarter's worth of spare capacity racked and powered off. Your mileage will vary.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "staticdrift",
+   "age": "10 hours ago",
+   "text": "Everybody frames this as cloud against metal. Most of the savings in the post came from right-sizing, which you can do anywhere.",
+   "replies": [
+    {
+     "author": "sprocketpilot",
+     "age": "9 hours ago",
+     "text": "Same here, down to the punchline.",
+     "replies": [
+      {
+       "author": "inodeling",
+       "age": "7 hours ago",
+       "text": "I would love to read a follow-up on exactly this point.",
+       "replies": [
+        {
+         "author": "parsetinker",
+         "age": "7 hours ago",
+         "text": "Year three is when disks start going. Budget for it and it is a non-event. Your mileage will vary.",
+         "replies": []
+        },
+        {
+         "author": "deltayard",
+         "age": "6 hours ago",
+         "text": "Remote hands is the right thing to budget for, but a spares shelf in the cage cut our calls by more than half. At least that is how it went for us.",
+         "replies": []
+        },
+        {
+         "author": "sprocketpilot",
+         "age": "7 hours ago",
+         "text": "Well put.",
+         "replies": []
+        },
+        {
+         "author": "shardster",
+         "age": "7 hours ago",
+         "text": "Not sure that generalises beyond a small shop.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "dipolegarden26",
+       "age": "8 hours ago",
+       "text": "Spiky workloads are exactly where the cloud still wins. Nobody should move a batch job that runs one day a month. At least that is how it went for us.",
+       "replies": [
+        {
+         "author": "nullling",
+         "age": "8 hours ago",
+         "text": "I tried this and gave up after a week. Might try again after this thread.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "queueyard",
+       "age": "8 hours ago",
+       "text": "This is why I stopped arguing about it and started measuring.",
+       "replies": []
+      },
+      {
+       "author": "staticdrift",
+       "age": "7 hours ago",
+       "text": "Worth adding that IPMI saved us more than once. Also put the BMC network on its own switch and never on the internet.",
+       "replies": []
+      },
+      {
+       "author": "staticdrift",
+       "age": "7 hours ago",
+       "text": "Firmware patching is the part people forget. We schedule it quarterly and it takes a full day. Nobody talks about that part.",
+       "replies": [
+        {
+         "author": "kernworks",
+         "age": "6 hours ago",
+         "text": "We hired one network engineer and it was the best money we spent in the whole migration. At least that is how it went for us.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "mutexsage",
+       "age": "9 hours ago",
+       "text": "Honestly, depreciation makes the savings look smaller in year one and much bigger in years three to five.",
+       "replies": [
+        {
+         "author": "sprocketpilot",
+         "age": "8 hours ago",
+         "text": "That was true five years ago. It has moved a lot since.",
+         "replies": [
+          {
+           "author": "quartzdrift",
+           "age": "7 hours ago",
+           "text": "Managed databases were our last dependency too. We moved them eighteen months after the compute. Happy to be proven wrong.",
+           "replies": [
+            {
+             "author": "glyphworks",
+             "age": "6 hours ago",
+             "text": "IPMI saved us more than once. Also put the BMC network on its own switch and never on the internet. The post undersells this, I think.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "kernelpanda",
+   "age": "8 hours ago",
+   "text": "The part everyone skips over in the article: they didn't just lift-and-shift, they re-architected around fewer, bigger boxes. A single modern 2U server with a couple hundred cores and multiple TB of RAM replaces a truly absurd number of the mid-size instances people architect around. Half the distributed-systems complexity in modern stacks exists to compensate for artificially small machines.",
+   "replies": [
+    {
+     "author": "shardbearer",
+     "age": "8 hours ago",
+     "text": "Until that one big box dies and takes everything with it. There's a reason we spread things out, and it isn't instance pricing.",
+     "replies": [
+      {
+       "author": "kernelpanda",
+       "age": "7 hours ago",
+       "text": "Two big boxes with failover, then — still an order of magnitude fewer moving parts than forty small ones with a coordination layer. Redundancy and sharding are different tools; the industry default of solving redundancy *via* sharding is the thing worth questioning."
+      },
+      {
+       "author": "rackmounted",
+       "age": "7 hours ago",
+       "text": "OP — this is exactly what we did. Primary/standby pairs per service, three chassis of headroom total. Our failure math is in the appendix: annualized, we expect ~2 hardware events a year and each one is a 4-minute automated failover. We've had one real one so far and it matched."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "heaphound",
+   "age": "2 hours ago",
+   "text": "Egress pricing is the reason we moved our video workload. The rest stayed where it was.",
+   "replies": [
+    {
+     "author": "lambdacurious",
+     "age": "2 hours ago",
+     "text": "Load balancing on metal is solved with a couple of well-understood tools. Storage is the one I would still outsource if I could. Happy to be proven wrong.",
+     "replies": [
+      {
+       "author": "heaphound",
+       "age": "1 hour ago",
+       "text": "This is the comment I came here to write.",
+       "replies": [
+        {
+         "author": "sockettinker",
+         "age": "24 minutes ago",
+         "text": "Same here, down to the footnote.",
+         "replies": [
+          {
+           "author": "nullling",
+           "age": "10 minutes ago",
+           "text": "Is that from the post or from your own setup? Curious either way.",
+           "replies": [
+            {
+             "author": "glyphshed",
+             "age": "9 minutes ago",
+             "text": "Below a certain scale I agree completely. We were at about sixty servers when the maths flipped.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "planshape",
+       "age": "1 hour ago",
+       "text": "Could you expand on that? The short version skips the part I care about.",
+       "replies": [
+        {
+         "author": "loopdrift",
+         "age": "1 hour ago",
+         "text": "Egress is always the line item that surprises people. Ours was forty percent of the bill by the end.",
+         "replies": []
+        },
+        {
+         "author": "inodeling",
+         "age": "1 hour ago",
+         "text": "We had the same argument at work last quarter and nobody changed their mind.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "replies": [
+        {
+         "author": "inodeling",
+         "age": "48 minutes ago",
+         "text": "Egress is always the line item that surprises people. Ours was a third of the bill by the end. Happy to be proven wrong.",
+         "replies": []
+        }
+       ],
+       "deleted": true
+      },
+      {
+       "author": "patchgarden",
+       "age": "2 hours ago",
+       "text": "Remote hands is the right thing to budget for, but a spares shelf in the cage cut our calls by more than half. I say that as someone who likes the idea.",
+       "replies": []
+      },
+      {
+       "author": "mutexgarden",
+       "age": "1 hour ago",
+       "text": "Egress is always the line item that surprises people. Ours was forty percent of the bill by the end. I say that as someone who likes the idea.",
+       "replies": []
+      },
+      {
+       "author": "monadwright92",
+       "age": "1 hour ago",
+       "text": "The way I see it, buying for peak is real, but our peak-to-average ratio was only about 1.4, so the idle cost was modest.",
+       "replies": []
+      },
+      {
+       "author": "slabsmith27",
+       "age": "1 hour ago",
+       "text": "Managed databases were our last dependency too. We moved them eighteen months after the compute. I say that as someone who likes the idea.",
+       "replies": []
+      },
+      {
+       "author": "heaphound",
+       "age": "12 minutes ago",
+       "text": "The hybrid approach is underrated. Keep the elastic parts in the cloud, move the boring parts home. At least that is how it went for us.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "ferrulewright",
+   "age": "10 hours ago",
+   "text": "We moved to colocation three years ago. The hardware was the easy part. Hiring someone who is comfortable with a failed disk at two in the morning was hard.",
+   "replies": [
+    {
+     "author": "stackreader",
+     "age": "10 hours ago",
+     "text": "The hybrid approach is underrated. Keep the elastic parts in the cloud, move the boring parts home. I say that as someone who likes the idea.",
+     "replies": [
+      {
+       "replies": [
+        {
+         "author": "vectorfield",
+         "age": "8 hours ago",
+         "text": "Egress is always the line item that surprises people. Ours was forty percent of the bill by the end. At least that is how it went for us.",
+         "replies": []
+        }
+       ],
+       "deleted": true
+      },
+      {
+       "author": "inodewright",
+       "age": "9 hours ago",
+       "text": "Honestly, the FTE argument cuts both ways. We had a full-time person just managing cloud costs before the move.",
+       "replies": [
+        {
+         "author": "nibmonk",
+         "age": "9 hours ago",
+         "text": "Honestly, lead times are better now, but we keep a quarter's worth of spare capacity racked and powered off.",
+         "replies": []
+        },
+        {
+         "author": "nibmonk13",
+         "age": "8 hours ago",
+         "text": "For what it is worth, the FTE argument cuts both ways. We had a full-time person just managing cloud costs before the move.",
+         "replies": []
+        },
+        {
+         "author": "latchwake",
+         "age": "7 hours ago",
+         "text": "Egress is always the line item that surprises people. Ours was a third of the bill by the end.",
+         "replies": []
+        },
+        {
+         "author": "patchcraft",
+         "age": "8 hours ago",
+         "text": "We hired one network engineer and it was the best money we spent in the whole migration. Your mileage will vary.",
+         "replies": []
+        },
+        {
+         "author": "stackreader",
+         "age": "9 hours ago",
+         "text": "Below a certain scale I agree completely. We were at about eighty servers when the maths flipped. Nobody talks about that part.",
+         "replies": []
+        },
+        {
+         "author": "glyphworks",
+         "age": "8 hours ago",
+         "text": "Load balancing on metal is solved with a couple of well-understood tools. Storage is the one I would still outsource if I could. At least that is how it went for us.",
+         "replies": []
+        },
+        {
+         "author": "deltagarden",
+         "age": "8 hours ago",
+         "text": "The way I see it, untangling cloud-specific features is the real migration cost. Queues and object storage were the worst for us.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "scalardrift",
+       "age": "7 hours ago",
+       "text": "Buying for peak is real, but our peak-to-average ratio was only about 1.6, so the idle cost was modest.",
+       "replies": [
+        {
+         "author": "nullling",
+         "age": "7 hours ago",
+         "text": "In my experience, managed databases were our last dependency too. We moved them eighteen months after the compute.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "ferrulewright",
+       "age": "8 hours ago",
+       "text": "Mild disagreement: lead times are better now, but we keep a quarter's worth of spare capacity racked and powered off.",
+       "replies": []
+      },
+      {
+       "author": "runester",
+       "age": "9 hours ago",
+       "text": "Spiky workloads are exactly where the cloud still wins. Nobody should move a batch job that runs one day a month. I say that as someone who likes the idea.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "pagetable",
+   "age": "10 hours ago",
+   "text": "Our cloud bill was twenty percent of revenue before we moved. The single biggest line was egress, which nobody had forecast.",
+   "replies": [
+    {
+     "author": "quartzbench",
+     "age": "10 hours ago",
+     "text": "That was true a few years ago. It has moved a lot since.",
+     "replies": [
+      {
+       "author": "heaploft",
+       "age": "9 hours ago",
+       "text": "Egress is always the line item that surprises people. Ours was forty percent of the bill by the end. Your mileage will vary.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "sprocketmill",
+     "age": "10 hours ago",
+     "text": "Mild disagreement: spiky workloads are exactly where the cloud still wins. Nobody should move a batch job that runs one day a month.",
+     "replies": [
+      {
+       "author": "deltawake",
+       "age": "8 hours ago",
+       "text": "The way I see it, the hybrid approach is underrated. Keep the elastic parts in the cloud, move the boring parts home.",
+       "replies": [
+        {
+         "author": "fibermonk",
+         "age": "8 hours ago",
+         "text": "Mild disagreement: managed databases were our last dependency too. We moved them eighteen months after the compute.",
+         "replies": [
+          {
+           "author": "deltawake",
+           "age": "7 hours ago",
+           "text": "Firmware patching is the part people forget. We schedule it quarterly and it takes a full day. Your mileage will vary.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "vectorspark16",
+         "age": "7 hours ago",
+         "text": "Anecdotally, depreciation makes the savings look smaller in year one and much bigger in years three to five.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "replies": [
+        {
+         "author": "kernhound",
+         "age": "9 hours ago",
+         "text": "Having done this twice now: egress is always the line item that surprises people. Ours was half of the bill by the end.",
+         "replies": [
+          {
+           "author": "tracereader45",
+           "age": "8 hours ago",
+           "text": "The FTE argument cuts both ways. We had a full-time person just managing cloud costs before the move. Happy to be proven wrong.",
+           "replies": []
+          }
+         ]
+        }
+       ],
+       "deleted": true
+      }
+     ]
+    },
+    {
+     "author": "tupledrift",
+     "age": "10 hours ago",
+     "text": "Genuinely curious what the failure mode looks like in year three.",
+     "replies": [
+      {
+       "author": "thunkmill",
+       "age": "9 hours ago",
+       "text": "Fewer, bigger boxes made our architecture simpler too. Half the services were split only to fit instance sizes. I say that as someone who likes the idea.",
+       "replies": [
+        {
+         "author": "deltayard",
+         "age": "7 hours ago",
+         "text": "Anecdotally, firmware patching is the part people forget. We schedule it quarterly and it takes a full day.",
+         "replies": []
+        },
+        {
+         "author": "tuplemonk",
+         "age": "7 hours ago",
+         "text": "Mild disagreement: predictable performance was worth more to us than the cost saving. Our tail latency dropped by half.",
+         "replies": []
+        },
+        {
+         "author": "quartzshed",
+         "age": "8 hours ago",
+         "text": "Buying for peak is real, but our peak-to-average ratio was only about 1.6, so the idle cost was modest. Your mileage will vary.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "quartzbench",
+   "age": "48 minutes ago",
+   "text": "The best argument in the post is about predictability of cost, not the absolute number. Budgeting became boring again.",
+   "replies": [
+    {
+     "author": "tokenring",
+     "age": "38 minutes ago",
+     "text": "Honestly, the hybrid approach is underrated. Keep the elastic parts in the cloud, move the boring parts home.",
+     "replies": [
+      {
+       "author": "quartzbench",
+       "age": "11 minutes ago",
+       "text": "For what it is worth, the hybrid approach is underrated. Keep the elastic parts in the cloud, move the boring parts home.",
+       "replies": []
+      },
+      {
+       "author": "inodeshed",
+       "age": "31 minutes ago",
+       "text": "The FTE argument cuts both ways. We had a full-time person just managing cloud costs before the move. At least that is how it went for us.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "loopworks25",
+     "age": "46 minutes ago",
+     "text": "Anecdotally, the hybrid approach is underrated. Keep the elastic parts in the cloud, move the boring parts home.",
+     "replies": [
+      {
+       "author": "quartzbench",
+       "age": "30 minutes ago",
+       "text": "For what it is worth, depreciation makes the savings look smaller in year one and much bigger in years three to five.",
+       "replies": [
+        {
+         "author": "lambdasmith",
+         "age": "24 minutes ago",
+         "text": "Predictable performance was worth more to us than the cost saving. Our tail latency dropped by half. At least that is how it went for us.",
+         "replies": [
+          {
+           "author": "scalarreader",
+           "age": "10 minutes ago",
+           "text": "Buying for peak is real, but our peak-to-average ratio was only about 1.6, so the idle cost was modest. Nobody talks about that part.",
+           "replies": []
+          },
+          {
+           "author": "deltagarden",
+           "age": "23 minutes ago",
+           "text": "In my experience, below a certain scale I agree completely. We were at about sixty servers when the maths flipped.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "tupledrift",
+         "age": "15 minutes ago",
+         "text": "Anecdotally, right-sizing is half the story. The other half is that the same money buys much more hardware than it rents.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "sprocketmill",
+       "age": "35 minutes ago",
+       "text": "The hybrid approach is underrated. Keep the elastic parts in the cloud, move the boring parts home. Nobody talks about that part.",
+       "replies": [
+        {
+         "author": "fibermonk",
+         "age": "25 minutes ago",
+         "text": "The way I see it, buying for peak is real, but our peak-to-average ratio was only about 1.6, so the idle cost was modest.",
+         "replies": [
+          {
+           "author": "socketdrift64",
+           "age": "10 minutes ago",
+           "text": "Buying for peak is real, but our peak-to-average ratio was only about 1.8, so the idle cost was modest. The post undersells this, I think.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "thunkling",
+       "age": "31 minutes ago",
+       "text": "For what it is worth, right-sizing is half the story. The other half is that the same money buys much more hardware than it rents.",
+       "replies": []
+      },
+      {
+       "author": "quartzbench",
+       "age": "7 minutes ago",
+       "text": "Predictable performance was worth more to us than the cost saving. Our tail latency dropped by half. I say that as someone who likes the idea.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "tensorshed60",
+   "age": "8 hours ago",
+   "text": "Honestly, one benefit nobody mentions: performance becomes predictable. No noisy neighbours, no surprise throttling, no credits to track.",
+   "replies": [
+    {
+     "author": "quartzpilot",
+     "age": "6 hours ago",
+     "text": "Below a certain scale I agree completely. We were at about sixty servers when the maths flipped. At least that is how it went for us.",
+     "replies": [
+      {
+       "author": "tensorshed60",
+       "age": "6 hours ago",
+       "text": "We had the same argument at work last spring and nobody changed their mind.",
+       "replies": []
+      },
+      {
+       "author": "thunkling",
+       "age": "5 hours ago",
+       "text": "The way I see it, we hired one network engineer and it was the best money we spent in the whole migration.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "pixelreader",
+     "age": "6 hours ago",
+     "text": "The way I see it, below a certain scale I agree completely. We were at about a hundred and twenty servers when the maths flipped.",
+     "replies": [
+      {
+       "author": "lambdacurious",
+       "age": "5 hours ago",
+       "text": "Depreciation makes the savings look smaller in year one and much bigger in years three to five. Nobody talks about that part.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "linthound",
+     "age": "7 hours ago",
+     "text": "Honestly, untangling cloud-specific features is the real migration cost. Queues and object storage were the worst for us.",
+     "replies": []
+    },
+    {
+     "author": "deltabench",
+     "age": "8 hours ago",
+     "text": "Fewer, bigger boxes made our architecture simpler too. Half the services were split only to fit instance sizes. At least that is how it went for us.",
+     "replies": [
+      {
+       "author": "mutexgarden",
+       "age": "6 hours ago",
+       "text": "Anecdotally, predictable performance was worth more to us than the cost saving. Our tail latency dropped by half.",
+       "replies": [
+        {
+         "author": "dipolegarden26",
+         "age": "6 hours ago",
+         "text": "Source? Happy to be proven wrong.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "greptinker",
+       "age": "7 hours ago",
+       "text": "A second site doubled our DR cost, but we would have paid for multi-region in the cloud anyway. Your mileage will vary.",
+       "replies": [
+        {
+         "author": "slabsmith27",
+         "age": "6 hours ago",
+         "text": "We hired one network engineer and it was the best money we spent in the whole migration. Nobody talks about that part.",
+         "replies": [
+          {
+           "author": "inodewright",
+           "age": "5 hours ago",
+           "text": "Seconded. Happy to be proven wrong.",
+           "replies": [
+            {
+             "author": "slabsmith27",
+             "age": "5 hours ago",
+             "text": "Seconding this. It took us far too long to learn it.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "nibmonk13",
+   "age": "8 hours ago",
+   "text": "The real lock-in in the cloud was never compute. It is managed databases, queues and identity.",
+   "replies": [
+    {
+     "author": "sockettinker",
+     "age": "6 hours ago",
+     "text": "A second site doubled our DR cost, but we would have paid for multi-region in the cloud anyway. Nobody talks about that part.",
+     "replies": [
+      {
+       "author": "nibmonk13",
+       "age": "4 hours ago",
+       "text": "Mild disagreement: right-sizing is half the story. The other half is that the same money buys much more hardware than it rents.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "offbyfun",
+     "age": "6 hours ago",
+     "text": "In my experience, below a certain scale I agree completely. We were at about a hundred and twenty servers when the maths flipped.",
+     "replies": [
+      {
+       "author": "grommetpilot",
+       "age": "5 hours ago",
+       "text": "Same here, down to the detail.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "lintsage",
+     "age": "6 hours ago",
+     "text": "In my experience, load balancing on metal is solved with a couple of well-understood tools. Storage is the one I would still outsource if I could.",
+     "replies": [
+      {
+       "author": "stackyard",
+       "age": "4 hours ago",
+       "text": "Anecdotally, below a certain scale I agree completely. We were at about eighty servers when the maths flipped.",
+       "replies": [
+        {
+         "author": "linthound",
+         "age": "3 hours ago",
+         "text": "Having done this twice now: untangling cloud-specific features is the real migration cost. Queues and object storage were the worst for us.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "glyphcraft67",
+       "age": "6 hours ago",
+       "text": "Small correction: that changed in the last release, so the post is slightly out of date. Happy to be proven wrong.",
+       "replies": []
+      },
+      {
+       "author": "scalarmonk",
+       "age": "6 hours ago",
+       "text": "How many people are on your infrastructure team now? Happy to be proven wrong.",
+       "replies": []
+      },
+      {
+       "author": "sprocketspark70",
+       "age": "5 hours ago",
+       "text": "Worth adding that below a certain scale I agree completely. We were at about eighty servers when the maths flipped.",
+       "replies": []
+      },
+      {
+       "author": "decimaldrift",
+       "age": "6 hours ago",
+       "text": "Lead times are better now, but we keep a quarter's worth of spare capacity racked and powered off. I say that as someone who likes the idea.",
+       "replies": []
+      },
+      {
+       "author": "slabsmith27",
+       "age": "6 hours ago",
+       "text": "Having done this twice now: year three is when disks start going. Budget for it and it is a non-event.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "quartzworks",
+   "age": "4 hours ago",
+   "text": "Backups and disaster recovery were the part that kept me up at night. Off-site copies, restore drills, a second site: none of it is free. The post undersells this, I think.\n\nThe FTE argument cuts both ways. We had a full-time person just managing cloud costs before the move.",
+   "replies": [
+    {
+     "author": "quartzwake",
+     "age": "2 hours ago",
+     "text": "The way I see it, right-sizing is half the story. The other half is that the same money buys much more hardware than it rents.",
+     "replies": [
+      {
+       "author": "monadcraft",
+       "age": "1 hour ago",
+       "text": "Worth adding that below a certain scale I agree completely. We were at about sixty servers when the maths flipped.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "slabsmith27",
+     "age": "1 hour ago",
+     "text": "Honestly, egress is always the line item that surprises people. Ours was half of the bill by the end.",
+     "replies": [
+      {
+       "author": "quartzworks",
+       "age": "1 hour ago",
+       "text": "In my experience, below a certain scale I agree completely. We were at about eighty servers when the maths flipped.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "kernelpanda",
+     "age": "2 hours ago",
+     "text": "Honestly, IPMI saved us more than once. Also put the BMC network on its own switch and never on the internet.",
+     "replies": []
+    },
+    {
+     "author": "lambdafield",
+     "age": "3 hours ago",
+     "text": "We hired one network engineer and it was the best money we spent in the whole migration. I say that as someone who likes the idea.",
+     "replies": []
+    },
+    {
+     "author": "shardbearer",
+     "age": "3 hours ago",
+     "text": "Right-sizing is half the story. The other half is that the same money buys much more hardware than it rents. I say that as someone who likes the idea.",
+     "replies": []
+    },
+    {
+     "author": "planshape",
+     "age": "2 hours ago",
+     "text": "In my experience, the FTE argument cuts both ways. We had a full-time person just managing cloud costs before the move.",
+     "replies": []
+    },
+    {
+     "author": "quartzshed",
+     "age": "3 hours ago",
+     "text": "We hired one network engineer and it was the best money we spent in the whole migration. The post undersells this, I think.",
+     "replies": []
+    },
+    {
+     "author": "fiberpilot",
+     "age": "1 hour ago",
+     "text": "Anecdotally, remote hands is the right thing to budget for, but a spares shelf in the cage cut our calls by more than half.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "warmstart",
+   "age": "4 hours ago",
+   "text": "IPMI and out-of-band management are essential. If you cannot power cycle a machine from your laptop, you will be driving to the data centre.",
+   "replies": [
+    {
+     "author": "ferrulegarden94",
+     "age": "4 hours ago",
+     "text": "In my experience, predictable performance was worth more to us than the cost saving. Our tail latency dropped by half.",
+     "replies": [
+      {
+       "author": "warmstart",
+       "age": "4 hours ago",
+       "text": "Egress is always the line item that surprises people. Ours was half of the bill by the end. I say that as someone who likes the idea.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "lambdafield",
+     "age": "2 hours ago",
+     "text": "Fewer, bigger boxes made our architecture simpler too. Half the services were split only to fit instance sizes. Your mileage will vary.",
+     "replies": []
+    },
+    {
+     "author": "patchmill",
+     "age": "3 hours ago",
+     "text": "In my experience, egress is always the line item that surprises people. Ours was a third of the bill by the end.",
+     "replies": [
+      {
+       "author": "bytedrift",
+       "age": "1 hour ago",
+       "text": "Having done this twice now: buying for peak is real, but our peak-to-average ratio was only about 1.8, so the idle cost was modest.",
+       "replies": [
+        {
+         "author": "nullling",
+         "age": "1 hour ago",
+         "text": "The way I see it, IPMI saved us more than once. Also put the BMC network on its own switch and never on the internet.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "kerndrift",
+     "age": "4 hours ago",
+     "text": "For what it is worth, we hired one network engineer and it was the best money we spent in the whole migration.",
+     "replies": []
+    },
+    {
+     "author": "lambdaworks",
+     "age": "2 hours ago",
+     "text": "Having done this twice now: buying for peak is real, but our peak-to-average ratio was only about 1.6, so the idle cost was modest.",
+     "replies": [
+      {
+       "author": "foldsage24",
+       "age": "1 hour ago",
+       "text": "Honestly, spiky workloads are exactly where the cloud still wins. Nobody should move a batch job that runs one day a month.",
+       "replies": []
+      },
+      {
+       "author": "pixelwake28",
+       "age": "1 hour ago",
+       "text": "For what it is worth, IPMI saved us more than once. Also put the BMC network on its own switch and never on the internet.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "lambdacurious",
+   "age": "7 hours ago",
+   "text": "Genuine question for people who've done this: what did you do about databases? Managed databases are the stickiest cloud service — backups, PITR, failover, upgrades all handled. Self-hosting the stateless tier is easy mode; self-hosting the stateful tier is where I'd expect the pain to live.",
+   "replies": [
+    {
+     "author": "pgbouncer_pilot",
+     "age": "6 hours ago",
+     "text": "Did it two years ago. The tooling for self-managed replication and PITR is genuinely good now — the hard part isn't the software, it's building organizational confidence in your restore path. We ran quarterly restore drills into a scratch environment until it was boring. That's the actual price of leaving managed databases: you have to *earn* boredom instead of buying it."
+    }
+   ]
+  },
+  {
+   "author": "patchtide",
+   "age": "10 hours ago",
+   "text": "The article is good, but the headline decision only works at a particular size. Below about twenty servers, the ops overhead eats the savings.",
+   "replies": [
+    {
+     "author": "kerndrift",
+     "age": "10 hours ago",
+     "text": "Managed databases were our last dependency too. We moved them eighteen months after the compute. Nobody talks about that part.",
+     "replies": [
+      {
+       "author": "patchtide",
+       "age": "8 hours ago",
+       "text": "Remote hands is the right thing to budget for, but a spares shelf in the cage cut our calls by more than half. Nobody talks about that part.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "queuecraft",
+     "age": "10 hours ago",
+     "text": "The honest answer is that nobody measured it before or after. Happy to be proven wrong.",
+     "replies": [
+      {
+       "author": "deltayard",
+       "age": "9 hours ago",
+       "text": "Honestly, below a certain scale I agree completely. We were at about eighty servers when the maths flipped.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "dipolegarden26",
+     "age": "9 hours ago",
+     "text": "Worth adding that buying for peak is real, but our peak-to-average ratio was only about 1.8, so the idle cost was modest.",
+     "replies": [
+      {
+       "author": "patchtide",
+       "age": "9 hours ago",
+       "text": "Having done this twice now: remote hands is the right thing to budget for, but a spares shelf in the cage cut our calls by more than half.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "tupledrift",
+     "age": "8 hours ago",
+     "text": "The way I see it, spiky workloads are exactly where the cloud still wins. Nobody should move a batch job that runs one day a month.",
+     "replies": []
+    },
+    {
+     "author": "vectorfield",
+     "age": "9 hours ago",
+     "text": "Right-sizing is half the story. The other half is that the same money buys much more hardware than it rents. The post undersells this, I think.",
+     "replies": []
+    },
+    {
+     "author": "ferruleshed",
+     "age": "10 hours ago",
+     "text": "In my experience, lead times are better now, but we keep a quarter's worth of spare capacity racked and powered off.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "nibtinker88",
+   "age": "3 hours ago",
+   "text": "Having done this twice now: security patching is now our problem at every layer: firmware, BMC, OS. That is a real cost and it belongs in the comparison.",
+   "replies": [
+    {
+     "author": "sigmaling",
+     "age": "2 hours ago",
+     "text": "Fewer, bigger boxes made our architecture simpler too. Half the services were split only to fit instance sizes. Happy to be proven wrong.",
+     "replies": [
+      {
+       "author": "loopdrift",
+       "age": "2 hours ago",
+       "text": "Load balancing on metal is solved with a couple of well-understood tools. Storage is the one I would still outsource if I could. I say that as someone who likes the idea.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "quartzworks",
+     "age": "57 minutes ago",
+     "text": "Buying for peak is real, but our peak-to-average ratio was only about 1.8, so the idle cost was modest. Happy to be proven wrong.",
+     "replies": []
+    },
+    {
+     "author": "greptinker",
+     "age": "2 hours ago",
+     "text": "Honestly, buying for peak is real, but our peak-to-average ratio was only about 1.4, so the idle cost was modest.",
+     "replies": [
+      {
+       "author": "kernster",
+       "age": "1 hour ago",
+       "text": "Honestly, load balancing on metal is solved with a couple of well-understood tools. Storage is the one I would still outsource if I could.",
+       "replies": [
+        {
+         "author": "queueshed",
+         "age": "15 minutes ago",
+         "text": "Anecdotally, spiky workloads are exactly where the cloud still wins. Nobody should move a batch job that runs one day a month.",
+         "replies": []
+        },
+        {
+         "author": "scalarmonk",
+         "age": "19 minutes ago",
+         "text": "This is why I stopped arguing about it and started measuring. Happy to be proven wrong.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "scalargarden",
+       "age": "1 hour ago",
+       "text": "Predictable performance was worth more to us than the cost saving. Our tail latency dropped by half. The post undersells this, I think.",
+       "replies": []
+      },
+      {
+       "author": "loopdrift",
+       "age": "1 hour ago",
+       "text": "For what it is worth, below a certain scale I agree completely. We were at about sixty servers when the maths flipped.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "patchgarden",
+   "age": "5 hours ago",
+   "text": "Network design is where teams moving back underestimate the work. Top of rack switches, BGP, redundant uplinks: it is a discipline of its own.",
+   "replies": [
+    {
+     "author": "pixelbench89",
+     "age": "4 hours ago",
+     "text": "Depreciation makes the savings look smaller in year one and much bigger in years three to five. I say that as someone who likes the idea.",
+     "replies": [
+      {
+       "author": "patchgarden",
+       "age": "4 hours ago",
+       "text": "Worth adding that load balancing on metal is solved with a couple of well-understood tools. Storage is the one I would still outsource if I could.",
+       "replies": [
+        {
+         "author": "lintpilot",
+         "age": "4 hours ago",
+         "text": "In my experience, depreciation makes the savings look smaller in year one and much bigger in years three to five.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "kernhound",
+       "age": "3 hours ago",
+       "text": "Anecdotally, a second site doubled our DR cost, but we would have paid for multi-region in the cloud anyway.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "mutexmill",
+     "age": "5 hours ago",
+     "text": "The way I see it, lead times are better now, but we keep a quarter's worth of spare capacity racked and powered off.",
+     "replies": []
+    },
+    {
+     "author": "scalarsage",
+     "age": "4 hours ago",
+     "text": "Egress is always the line item that surprises people. Ours was half of the bill by the end. Your mileage will vary.",
+     "replies": []
+    },
+    {
+     "author": "heaphound",
+     "age": "4 hours ago",
+     "text": "Depreciation makes the savings look smaller in year one and much bigger in years three to five. The post undersells this, I think.",
+     "replies": [
+      {
+       "author": "nullwake86",
+       "age": "4 hours ago",
+       "text": "Firmware patching is the part people forget. We schedule it quarterly and it takes a full day. I say that as someone who likes the idea.",
+       "replies": [
+        {
+         "author": "ferruleshed",
+         "age": "4 hours ago",
+         "text": "In my experience, a second site doubled our DR cost, but we would have paid for multi-region in the cloud anyway.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "monadsage",
+   "age": "10 hours ago",
+   "text": "The part about fewer, bigger boxes is the real lesson. Most microservice sprawl exists because instances were small. Happy to be proven wrong.",
+   "replies": [
+    {
+     "author": "monadwright92",
+     "age": "10 hours ago",
+     "text": "For what it is worth, buying for peak is real, but our peak-to-average ratio was only about 1.6, so the idle cost was modest.",
+     "replies": [
+      {
+       "author": "glyphbench",
+       "age": "10 hours ago",
+       "text": "Having done this twice now: below a certain scale I agree completely. We were at about eighty servers when the maths flipped.",
+       "replies": [
+        {
+         "author": "lambdayard",
+         "age": "10 hours ago",
+         "text": "Predictable performance was worth more to us than the cost saving. Our tail latency dropped by half. Nobody talks about that part.",
+         "replies": [
+          {
+           "author": "soldersmith",
+           "age": "8 hours ago",
+           "text": "The hybrid approach is underrated. Keep the elastic parts in the cloud, move the boring parts home. The post undersells this, I think.",
+           "replies": [
+            {
+             "author": "stacktide",
+             "age": "7 hours ago",
+             "text": "Having done this twice now: IPMI saved us more than once. Also put the BMC network on its own switch and never on the internet.",
+             "replies": []
+            },
+            {
+             "author": "deltawake",
+             "age": "7 hours ago",
+             "text": "The FTE argument cuts both ways. We had a full-time person just managing cloud costs before the move. Your mileage will vary.",
+             "replies": []
+            }
+           ]
+          },
+          {
+           "author": "glyphbench",
+           "age": "9 hours ago",
+           "text": "Load balancing on metal is solved with a couple of well-understood tools. Storage is the one I would still outsource if I could. Nobody talks about that part.",
+           "replies": []
+          },
+          {
+           "author": "stackworks",
+           "age": "7 hours ago",
+           "text": "Anecdotally, buying for peak is real, but our peak-to-average ratio was only about 1.8, so the idle cost was modest.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "lambdamill",
+   "age": "8 hours ago",
+   "text": "In my experience, kubernetes on bare metal is much better than it was seven years ago, but load balancing and storage are still where the rough edges are.",
+   "replies": [
+    {
+     "author": "stackyard",
+     "age": "7 hours ago",
+     "text": "Untangling cloud-specific features is the real migration cost. Queues and object storage were the worst for us. Happy to be proven wrong.",
+     "replies": [
+      {
+       "author": "cachebench",
+       "age": "5 hours ago",
+       "text": "Egress is always the line item that surprises people. Ours was a third of the bill by the end. I say that as someone who likes the idea.",
+       "replies": [
+        {
+         "author": "deltagarden",
+         "age": "5 hours ago",
+         "text": "Anecdotally, IPMI saved us more than once. Also put the BMC network on its own switch and never on the internet.",
+         "replies": [
+          {
+           "author": "queuecraft",
+           "age": "3 hours ago",
+           "text": "Year three is when disks start going. Budget for it and it is a non-event. Happy to be proven wrong.",
+           "replies": []
+          },
+          {
+           "author": "lambdasage",
+           "age": "4 hours ago",
+           "text": "The way I see it, managed databases were our last dependency too. We moved them eighteen months after the compute.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "heaphound",
+   "age": "9 hours ago",
+   "text": "Honestly, we tried to calculate the break-even point and it moved every time the cloud provider changed their discount programme.",
+   "replies": [
+    {
+     "author": "thunkmill",
+     "age": "8 hours ago",
+     "text": "IPMI saved us more than once. Also put the BMC network on its own switch and never on the internet. Happy to be proven wrong.",
+     "replies": [
+      {
+       "author": "heapsmith",
+       "age": "7 hours ago",
+       "text": "Worth adding that untangling cloud-specific features is the real migration cost. Queues and object storage were the worst for us.",
+       "replies": []
+      },
+      {
+       "author": "vectorfield",
+       "age": "6 hours ago",
+       "text": "For what it is worth, untangling cloud-specific features is the real migration cost. Queues and object storage were the worst for us.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "fiberdrift",
+     "age": "8 hours ago",
+     "text": "Right-sizing is half the story. The other half is that the same money buys much more hardware than it rents. Happy to be proven wrong.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "scalargarden",
+   "age": "4 hours ago",
+   "text": "The best argument in the post is about predictability of cost, not the absolute number. Budgeting became boring again. Nobody talks about that part.",
+   "replies": [
+    {
+     "author": "quartzpilot",
+     "age": "2 hours ago",
+     "text": "Lead times are better now, but we keep a quarter's worth of spare capacity racked and powered off. At least that is how it went for us.",
+     "replies": [
+      {
+       "author": "scalargarden",
+       "age": "9 minutes ago",
+       "text": "Mild disagreement: remote hands is the right thing to budget for, but a spares shelf in the cage cut our calls by more than half.",
+       "replies": [
+        {
+         "author": "quartzpilot",
+         "age": "5 minutes ago",
+         "text": "Worth adding that firmware patching is the part people forget. We schedule it quarterly and it takes a full day. Happy to be proven wrong.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "kernster",
+   "age": "8 hours ago",
+   "text": "Our finance team preferred the cloud because it is opex. Bare metal is capex with depreciation, and that changes how the savings look on paper.",
+   "replies": [
+    {
+     "author": "foldwright",
+     "age": "6 hours ago",
+     "text": "Fewer, bigger boxes made our architecture simpler too. Half the services were split only to fit instance sizes. Nobody talks about that part.",
+     "replies": [
+      {
+       "author": "pixelwake28",
+       "age": "4 hours ago",
+       "text": "Honestly, remote hands is the right thing to budget for, but a spares shelf in the cage cut our calls by more than half.",
+       "replies": []
+      },
+      {
+       "author": "scalarmonk",
+       "age": "5 hours ago",
+       "text": "For what it is worth, egress is always the line item that surprises people. Ours was forty percent of the bill by the end.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "tokenring",
+   "age": "6 hours ago",
+   "text": "Datapoint from the other direction: we went bare metal in 2021 and moved back to cloud in 2024. Not because of cost — bare metal was cheaper the whole time — but because we entered a market that required a regional presence we couldn't build fast enough with colo contracts. Signing a data center agreement takes months; the cloud region was an afternoon of terraform. The option value is real even when the unit economics aren't.",
+   "replies": [
+    {
+     "author": "staticdrift",
+     "age": "5 hours ago",
+     "text": "This is the strongest pro-cloud argument and it's telling that it's about speed of change, not cost or reliability. Cloud is a real-options premium: you pay monthly for the right to pivot instantly. Whether that premium is worth it depends entirely on how likely the pivot is — which is a business question, not an infrastructure one."
+    }
+   ]
+  },
+  {
+   "author": "glyphmonk",
+   "age": "1 hour ago",
+   "text": "Mild disagreement: people forget that owning hardware means owning its end of life too. Disposal, data destruction and resale are all work.",
+   "replies": [
+    {
+     "author": "inodewright",
+     "age": "59 minutes ago",
+     "text": "Below a certain scale I agree completely. We were at about a hundred and twenty servers when the maths flipped. At least that is how it went for us.",
+     "replies": []
+    },
+    {
+     "author": "kerncraft",
+     "age": "23 minutes ago",
+     "text": "Worth adding that buying for peak is real, but our peak-to-average ratio was only about 1.6, so the idle cost was modest.",
+     "replies": []
+    },
+    {
+     "author": "lambdasmith",
+     "age": "22 minutes ago",
+     "text": "In my experience, IPMI saved us more than once. Also put the BMC network on its own switch and never on the internet.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "patchcraft",
+   "age": "34 minutes ago",
+   "text": "One benefit nobody mentions: performance becomes predictable. No noisy neighbours, no surprise throttling, no credits to track.",
+   "replies": [
+    {
+     "author": "warmstart",
+     "age": "25 minutes ago",
+     "text": "Egress is always the line item that surprises people. Ours was a third of the bill by the end. The post undersells this, I think.",
+     "replies": [
+      {
+       "author": "tracereader45",
+       "age": "15 minutes ago",
+       "text": "A second site doubled our DR cost, but we would have paid for multi-region in the cloud anyway. I say that as someone who likes the idea.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "lambdafield",
+     "age": "28 minutes ago",
+     "text": "In my experience, remote hands is the right thing to budget for, but a spares shelf in the cage cut our calls by more than half.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "kernhound",
+   "age": "10 hours ago",
+   "text": "We did the opposite move and do not regret it. Our workload is spiky, and paying for idle metal made no sense for us.",
+   "replies": [
+    {
+     "author": "pixelwake28",
+     "age": "10 hours ago",
+     "text": "Lead times are better now, but we keep a quarter's worth of spare capacity racked and powered off. Nobody talks about that part.",
+     "replies": [
+      {
+       "author": "heapling",
+       "age": "9 hours ago",
+       "text": "The way I see it, egress is always the line item that surprises people. Ours was a third of the bill by the end.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "vectordrift",
+   "age": "4 hours ago",
+   "text": "For what it is worth, kubernetes on bare metal is much better than it was five years ago, but load balancing and storage are still where the rough edges are.",
+   "replies": [
+    {
+     "author": "lambdashed",
+     "age": "3 hours ago",
+     "text": "Year three is when disks start going. Budget for it and it is a non-event. I say that as someone who likes the idea.",
+     "replies": [
+      {
+       "author": "queueyard",
+       "age": "3 hours ago",
+       "text": "Honestly, below a certain scale I agree completely. We were at about sixty servers when the maths flipped.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "lintster",
+   "age": "6 hours ago",
+   "text": "The best argument in the post is about predictability of cost, not the absolute number. Budgeting became boring again.\n\nBelow a certain scale I agree completely. We were at about eighty servers when the maths flipped.",
+   "replies": [
+    {
+     "author": "mutexsage",
+     "age": "6 hours ago",
+     "text": "Buying for peak is real, but our peak-to-average ratio was only about 1.6, so the idle cost was modest. The post undersells this, I think.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "offbyfun",
+   "age": "9 hours ago",
+   "text": "The part about fewer, bigger boxes is the real lesson. Most microservice sprawl exists because instances were small.",
+   "replies": [
+    {
+     "author": "latchwake",
+     "age": "6 hours ago",
+     "text": "Managed databases were our last dependency too. We moved them eighteen months after the compute. The post undersells this, I think.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "kernloft",
+   "age": "8 hours ago",
+   "text": "We kept the cloud for burst capacity and moved the steady-state load to our own hardware. The hybrid setup gave us most of the savings.",
+   "replies": [
+    {
+     "author": "shardcraft40",
+     "age": "8 hours ago",
+     "text": "Mild disagreement: below a certain scale I agree completely. We were at about a hundred and twenty servers when the maths flipped.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "kernhound",
+   "age": "4 hours ago",
+   "text": "The FTE number in the TCO table is the one to argue about. Ours came out lower than expected because the cloud had been eating engineer time too.",
+   "replies": [
+    {
+     "author": "nibmonk",
+     "age": "2 hours ago",
+     "text": "In my experience, year three is when disks start going. Budget for it and it is a non-event.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "depreciator",
+   "age": "3 hours ago",
+   "text": "Nobody's mentioned the accounting angle: hardware is capex you depreciate over years, cloud is opex that hits every month. Depending on your funding situation and how your board reads burn, identical total costs can look very different on the financials. I've seen this drive the decision more than any engineering argument, in both directions."
+  },
+  {
+   "author": "patchmill",
+   "age": "9 hours ago",
+   "text": "This thread is the same argument every year, and the answer is still: it depends on your workload shape and your team.\n\nLoad balancing on metal is solved with a couple of well-understood tools. Storage is the one I would still outsource if I could.",
+   "replies": []
+  },
+  {
+   "author": "bytesmith",
+   "age": "4 hours ago",
+   "text": "This thread is the same argument every year, and the answer is still: it depends on your workload shape and your team.",
+   "replies": []
+  },
+  {
+   "author": "inodeshed",
+   "age": "9 hours ago",
+   "text": "Our cloud bill was fourteen percent of revenue before we moved. The single biggest line was egress, which nobody had forecast.",
+   "replies": []
+  },
+  {
+   "author": "scalargarden",
+   "age": "6 hours ago",
+   "text": "The article is good, but the headline decision only works at a particular size. Below about fifty servers, the ops overhead eats the savings.",
+   "replies": []
+  },
+  {
+   "author": "offbyfun",
+   "age": "9 hours ago",
+   "text": "The article undersells how much faster modern hardware is. One current server replaced six of our old instances.\n\nRemote hands is the right thing to budget for, but a spares shelf in the cage cut our calls by more than half.",
+   "replies": []
+  },
+  {
+   "author": "hexfield",
+   "age": "4 hours ago",
+   "text": "I would be curious to see the numbers again after the first hardware failure wave, around year three.",
+   "replies": []
+  },
+  {
+   "author": "hexfield",
+   "age": "9 hours ago",
+   "text": "Our finance team preferred the cloud because it is opex. Bare metal is capex with depreciation, and that changes how the savings look on paper. Happy to be proven wrong.",
+   "replies": []
+  }
+ ]
+}

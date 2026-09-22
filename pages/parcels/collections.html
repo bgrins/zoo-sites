@@ -80,7 +80,7 @@
       <div class="head"><h2>Good to know</h2></div>
       <div class="body">
         <ul>
-          <li>Collections in the northern zone close 90 minutes early this week while the Marbeck sort hall is re-laid.</li>
+          <li>Collections in the northern zone close 90 minutes early while the Marbeck sort hall floor is re-laid.</li>
           <li>Business accounts get a standing daily collection window; see <a href="business.html">business accounts</a>.</li>
           <li>No one in when the driver calls? The round moves on and the booking rolls to the next working day.</li>
         </ul>
@@ -176,7 +176,9 @@
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setNote('bad', body.error || 'The booking was not accepted. Check the details and try again.');
+        setNote('bad', res.status === 403
+          ? 'This page has been open too long. Reload it, then book again.'
+          : body.error || 'The booking was not accepted. Check the details and try again.');
         return;
       }
       setNote('good', 'Collection booked: reference ' + body.reference + '. ' + body.parcels +

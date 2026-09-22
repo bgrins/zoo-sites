@@ -1,26 +1,137 @@
 // pages/parcels/ - Corvane tracking lookups (rate-limited-lookups).
 import { randomBytes } from 'node:crypto';
-import { SESSION_ROWS } from './lib.mjs';
+import { DAY_MS, SESSION_ROWS, dayText, utcDay } from './lib.mjs';
 
 // pages/parcels/ — Corvane tracking lookups. Shipment statuses exist only here,
 // never in fixture source, and the endpoint accepts one lookup per session per
 // PARCEL_COOLDOWN_MS.
 const PARCEL_COOLDOWN_MS = 5000;
 
+// Each shipment's scans, newest first, are history minted from the session's
+// opening (hard rule 9): `on` counts working days back from the day the
+// history ends, with `at` the UTC time on that day. The history ends on the
+// session's UTC day, or on the day before it when the session opened ahead of
+// the newest scan. Every `at` is before 23:00 UTC, so the UK day a scan prints
+// is its UTC day. The delivery line is dated `eta.on` working days after the
+// session's day, or `eta.days` after the day of scan `eta.from`, printing that
+// scan's time too when `eta.time` is set.
 const PARCEL_SHIPMENTS = {
-  'PX-1041': { status: 'In Transit', tone: 'move', service: 'Ground Economy',
-    lastScan: 'Marbeck hub 06:12' },
-  'PX-2210': { status: 'Delivered', tone: 'final', service: 'Express 24',
-    lastScan: 'Denhollow 14:52' },
-  'PX-3327': { status: 'Held at Depot', tone: 'hold', service: 'Ground Economy',
-    lastScan: 'Tarnwick depot 09:20' },
-  'PX-4485': { status: 'Label Created', tone: 'pending', service: 'Express 24',
-    lastScan: 'Not yet scanned' },
-  'PX-5063': { status: 'Out for Delivery', tone: 'move', service: 'Express 24',
-    lastScan: 'Sallow Cross 07:41' },
-  'PX-6118': { status: 'Returned to Sender', tone: 'final', service: 'Ground Economy',
-    lastScan: 'Marbeck hub 18:05' },
+  'PX-1041': {
+    status: 'In Transit', tone: 'move', service: 'Ground Economy',
+    eta: { label: 'Expected delivery', on: 1 },
+    scans: [
+      { on: -1, at: '05:12', place: 'Marbeck hub', what: 'Network scan, sorted for Brackwold depot' },
+      { on: -2, at: '22:36', place: 'Marbeck hub', what: 'Network scan, arrived on the evening trunk' },
+      { on: -2, at: '15:55', place: 'Hollinmere depot', what: 'Network scan, collected parcel scanned in' },
+      { on: -2, at: '13:20', place: 'Hollinmere', what: 'Collected from sender' },
+    ],
+  },
+  'PX-2210': {
+    status: 'Delivered', tone: 'final', service: 'Express 24',
+    eta: { label: 'Delivered', from: 0, days: 0, time: true },
+    scans: [
+      { on: -1, at: '13:52', place: 'Denhollow', what: 'Final scan, delivered to the front door' },
+      { on: -1, at: '06:05', place: 'Halston depot', what: 'Out for delivery on the Denhollow round' },
+      { on: -1, at: '02:48', place: 'Marbeck hub', what: 'Network scan, sorted for Halston depot' },
+      { on: -2, at: '16:10', place: 'Seddon Vale depot', what: 'Network scan, collected parcel scanned in' },
+      { on: -2, at: '15:02', place: 'Seddon Vale', what: 'Collected from sender' },
+    ],
+  },
+  'PX-3327': {
+    status: 'Held at Depot', tone: 'hold', service: 'Ground Economy',
+    eta: { label: 'Held until', from: 1, days: 7 },
+    scans: [
+      { on: -1, at: '08:20', place: 'Tarnwick depot', what: 'Depot hold, the address needs a flat number from the receiver' },
+      { on: -1, at: '03:40', place: 'Tarnwick depot', what: 'Network scan, arrived from Marbeck' },
+      { on: -2, at: '21:15', place: 'Marbeck hub', what: 'Network scan, sorted for Tarnwick depot' },
+      { on: -3, at: '16:30', place: 'Halston depot', what: 'Network scan, collected parcel scanned in' },
+      { on: -3, at: '14:05', place: 'Halston', what: 'Collected from sender' },
+    ],
+  },
+  'PX-4485': {
+    status: 'Label Created', tone: 'pending', service: 'Express 24',
+    eta: { label: 'Expected delivery', note: 'confirmed at the first network scan' },
+    scans: [
+      { on: -1, at: '15:03', place: 'Online', what: 'Pre-advice, shipment registered by the sender' },
+    ],
+  },
+  'PX-5063': {
+    status: 'Out for Delivery', tone: 'move', service: 'Express 24',
+    eta: { label: 'Expected delivery', on: 0 },
+    scans: [
+      { on: 0, at: '06:40', place: 'Halston depot', what: 'Out for delivery on the Sallow Cross round' },
+      { on: 0, at: '03:25', place: 'Halston depot', what: 'Network scan, arrived from Marbeck' },
+      { on: -1, at: '18:40', place: 'Marbeck hub', what: 'Network scan, arrived on the evening trunk' },
+      { on: -1, at: '15:20', place: 'Brackwold depot', what: 'Network scan, collected parcel scanned in' },
+      { on: -1, at: '14:10', place: 'Brackwold', what: 'Collected from sender' },
+    ],
+  },
+  'PX-6118': {
+    status: 'Returned to Sender', tone: 'final', service: 'Ground Economy',
+    eta: { label: 'Returned', from: 0, days: 0 },
+    scans: [
+      { on: -1, at: '17:05', place: 'Marbeck hub', what: 'Final scan, returned to sender' },
+      { on: -3, at: '11:40', place: 'Denhollow', what: 'Delivery attempted, no one in (third attempt)' },
+      { on: -4, at: '10:55', place: 'Denhollow', what: 'Delivery attempted, no one in' },
+      { on: -5, at: '12:20', place: 'Denhollow', what: 'Delivery attempted, no one in' },
+      { on: -6, at: '03:30', place: 'Halston depot', what: 'Network scan, arrived from Marbeck' },
+      { on: -7, at: '15:45', place: 'Tarnwick depot', what: 'Collected from sender' },
+    ],
+  },
 };
+
+// The n-th Monday-to-Friday day after (n > 0) or before (n < 0) a UTC day.
+function workingDay(day, n) {
+  let at = day;
+  for (let left = Math.abs(n); left > 0; ) {
+    at += Math.sign(n) * DAY_MS;
+    const weekday = new Date(at).getUTCDay();
+    if (weekday !== 0 && weekday !== 6) left -= 1;
+  }
+  return at;
+}
+
+// Scan times read as UK clock time, where the network runs.
+const PARCEL_CLOCK = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short',
+  hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+});
+
+function scanClock(ms) {
+  const p = Object.fromEntries(PARCEL_CLOCK.formatToParts(ms).map(({ type, value }) => [type, value]));
+  return { day: `${p.weekday} ${p.day} ${p.month.slice(0, 3)}`, time: `${p.hour}:${p.minute}` };
+}
+
+function trackingResult(num, shipment, openedAt) {
+  const { scans: spec, eta, ...rest } = shipment;
+  const today = utcDay(openedAt);
+  const history = (end) => spec.map(({ on, at }) => workingDay(end, on) + Date.parse(`1970-01-01T${at}Z`));
+  let times = history(today);
+  if (times[0] > openedAt) times = history(today - DAY_MS);
+  const scans = spec.map(({ place, what }, i) => ({
+    at: new Date(times[i]).toISOString(), ...scanClock(times[i]), place, what,
+  }));
+  const latest = scans.find((scan) => scan.place !== 'Online');
+  let due = null;
+  if (eta.on !== undefined) due = workingDay(today, eta.on);
+  else if (eta.from !== undefined) due = utcDay(Date.parse(scans[eta.from].at)) + eta.days * DAY_MS;
+  return {
+    num,
+    ...rest,
+    lastScan: latest ? `${latest.place}, ${latest.day} ${latest.time}` : 'Not yet scanned',
+    eta: due === null
+      ? { label: eta.label, note: eta.note }
+      : {
+          label: eta.label,
+          iso: new Date(due).toISOString().slice(0, 10),
+          day: dayText(due, { year: false }),
+          time: eta.time ? scans[eta.from].time : null,
+        },
+    scans,
+  };
+}
+
+const PARCEL_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const PARCEL_COLLECTION_DAYS = ['Next working day', 'In 2 working days', 'In 3 working days'];
 
@@ -34,7 +145,7 @@ const PARCEL_COLLECTION_WINDOWS = {
 };
 
 export function routes(ctx) {
-  const { state, json, readBody, getSession, requireSession, fromPage, refererPath } = ctx;
+  const { state, json, readBody, readJson, getSession, requireSession, fromPage, refererPath } = ctx;
   return async (req, res, url, pathname0) => {
     // Rate-limited tracking lookups: the cooldown window advances on every
     // accepted request (hit or miss) and 429s never advance it, so a caller
@@ -80,7 +191,35 @@ export function routes(ctx) {
         });
       }
       if (fromPage) track.lookups.push({ num, found: true, status: shipment.status, at: now });
-      return json(res, 200, { num, ...shipment, nextInMs: PARCEL_COOLDOWN_MS });
+      return json(res, 200, { ...trackingResult(num, shipment, found.session.createdAt), nextInMs: PARCEL_COOLDOWN_MS });
+    }
+
+    // Sign-in and password reset (signin.html). Ungraded: no Corvane account
+    // exists, so every sign-in is refused, and a reset answers alike for every
+    // address so the form never says which addresses hold an account.
+    if (req.method === 'POST' && (pathname0 === '/api/parcels/signin' || pathname0 === '/api/parcels/reset')) {
+      let payload = await readJson(req, res, { error: 'Malformed request body.' });
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      const email = String(payload.email ?? '').trim().slice(0, 254);
+      if (!PARCEL_EMAIL.test(email)) {
+        return json(res, 422, { error: 'That does not look like a valid email address.' });
+      }
+      const account = (found.session.parcelsAccount ??= { signIns: 0, resets: 0 });
+      if (pathname0 === '/api/parcels/reset') {
+        account.resets = Math.min(account.resets + 1, SESSION_ROWS);
+        return json(res, 200, {
+          ok: true,
+          message: `If an account uses ${email}, a reset link is on its way. It works for one hour.`,
+        });
+      }
+      if (!String(payload.password ?? '')) return json(res, 422, { error: 'Enter your password.' });
+      account.signIns = Math.min(account.signIns + 1, SESSION_ROWS);
+      return json(res, 401, {
+        error: 'We could not match those details to an account. Check the address and password, or reset the password below.',
+      });
     }
 
     // Book a collection (collections.html). Ungraded: a guest booking is
@@ -109,7 +248,7 @@ export function routes(ctx) {
       const day = PARCEL_COLLECTION_DAYS.find((d) => d === payload.day);
       if (!day) return json(res, 422, { error: 'Choose a preferred day.' });
       const contact = String(payload.contact ?? '').trim().slice(0, 254);
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)) {
+      if (!PARCEL_EMAIL.test(contact)) {
         return json(res, 422, { error: 'Enter an email address for the confirmation.' });
       }
       const booking = {

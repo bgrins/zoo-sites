@@ -38,12 +38,9 @@
         <tr><td>Outbound mail</td><td><span class="pill">Operational</span></td><td>Reset and notice delivery</td></tr>
       </table>
     </div>
-    <div class="panel">
+    <div class="panel" id="maintenance">
       <h2>Recent maintenance</h2>
-      <p><strong>27 July, 01:00-03:00 Pacific.</strong> Database upgrade, completed on
-      schedule. Shipment feeds queued during the window and drained by 03:20.</p>
-      <p style="margin-bottom:0;"><strong>13 July, 01:00-01:40 Pacific.</strong> Certificate rotation on the
-      driver app API. No customer impact recorded.</p>
+      <p id="maintenanceNote" style="margin-bottom:0;">Loading the maintenance record.</p>
     </div>
     <div class="panel">
       <h2>Subscribing to notices</h2>
@@ -62,6 +59,27 @@
 </footer>
 <script>
   const NONCE = '__SESSION_NONCE__';
+
+  fetch('/api/portal/maintenance', { headers: { 'X-Session-Nonce': NONCE } })
+    .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
+    .then(({ windows }) => {
+      const entries = windows.map((w, i) => {
+        const p = document.createElement('p');
+        if (i === windows.length - 1) p.style.marginBottom = '0';
+        const head = document.createElement('strong');
+        const day = document.createElement('time');
+        day.dateTime = w.iso;
+        day.textContent = w.date;
+        head.append(day, ', ' + w.window + '.');
+        p.append(head, ' ' + w.text);
+        return p;
+      });
+      document.getElementById('maintenanceNote').replaceWith(...entries);
+    })
+    .catch(() => {
+      document.getElementById('maintenanceNote').textContent =
+        'The maintenance record is unavailable. Reload the page to try again.';
+    });
 </script>
 <script src="account.js"></script>
 </body>

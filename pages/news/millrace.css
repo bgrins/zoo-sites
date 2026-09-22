@@ -482,6 +482,27 @@ a:hover {
   background: #fdfcff;
 }
 
+.remark.deleted {
+  background: transparent;
+  border-style: dashed;
+}
+
+.remark.deleted > .remark-head {
+  font-style: italic;
+}
+
+.nest > .more {
+  margin: 8px 0 0;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
 #replybar {
   margin: 16px 0 0;
   padding: 10px 13px;

@@ -1,7 +1,9 @@
 // pages/portal/ + pages/inbox/ - Overlane Carrier Access accounts, MFA, reset flow and the Fernmail inbox.
 // Both sites are US businesses: US spelling, $, NANP 555-01xx numbers.
 import { randomBytes } from 'node:crypto';
-import { SESSION_ROWS, pushTrimmed } from './lib.mjs';
+import {
+  DAY_MS, MONTH_NAMES, SESSION_ROWS, WEEKDAY_NAMES, WEEK_MS, dayText, isoDay, isoWeek, pushTrimmed, shiftWeeks, utcDay,
+} from './lib.mjs';
 
 // pages/inbox/ (Fernmail) + pages/portal/forgot.html + reset.html — the
 // password-reset state machine (password-reset). Mailbox contents, the reset
@@ -25,6 +27,34 @@ const PORTAL_TIER = 'Corridor Plus';
 
 const PORTAL_BALANCE = '$412.67';
 
+// The portal's billing cycle and carrier schedule were written on Tuesday 28
+// July 2026, the day of the first collection, and move in whole weeks to the
+// first Tuesday after the day the session opened, so the cycle's close and
+// every collection, the Tuesday 06:30 one too, stay ahead of the run and every
+// invoice behind it. A `{ day }` cell prints that minted day as "31 Jul".
+const PORTAL_WRITTEN = '2026-07-28';
+
+function portalDay(at) {
+  const shift = shiftWeeks(PORTAL_WRITTEN, at + DAY_MS).weeks * WEEK_MS;
+  return (iso) => isoDay(iso) + shift;
+}
+
+const shortDay = (ms, { weekday = false } = {}) => {
+  const date = new Date(ms);
+  const day = `${String(date.getUTCDate()).padStart(weekday ? 2 : 1, '0')} ${MONTH_NAMES[date.getUTCMonth()].slice(0, 3)}`;
+  return weekday ? `${WEEKDAY_NAMES[date.getUTCDay()].slice(0, 3)} ${day}` : day;
+};
+
+function mintPanels(panels, at) {
+  const day = portalDay(at);
+  const cell = (v) => (v && typeof v === 'object' && v.day ? shortDay(day(v.day)) : v);
+  return panels.map((panel) => ({
+    ...panel,
+    ...(panel.stats && { stats: panel.stats.map((stat) => ({ ...stat, v: cell(stat.v) })) }),
+    ...(panel.table && { table: { ...panel.table, rows: panel.table.rows.map((row) => row.map(cell)) } }),
+  }));
+}
+
 // Usage and Invoices are served to every role with per-role figures. The
 // viewer and admin lists must stay title-identical apart from the admin-only
 // panel below: role-panels diffs h2 headings between those two dashboards.
@@ -36,7 +66,7 @@ const PORTAL_BASE_PANELS = {
       stats: [
         { k: 'Loads this cycle', v: '386' },
         { k: 'Contract used', v: '64%' },
-        { k: 'Cycle closes', v: '31 Jul' },
+        { k: 'Cycle closes', v: { day: '2026-07-31' } },
       ],
     },
     {
@@ -45,8 +75,8 @@ const PORTAL_BASE_PANELS = {
       table: {
         head: ['Invoice', 'Issued', 'Amount', 'Status'],
         rows: [
-          ['INV-8841', '14 Jul', '$2,180.00', 'Paid'],
-          ['INV-8874', '21 Jul', '$1,940.50', 'Open'],
+          ['INV-8841', { day: '2026-07-14' }, '$2,180.00', 'Paid'],
+          ['INV-8874', { day: '2026-07-21' }, '$1,940.50', 'Open'],
         ],
       },
     },
@@ -58,7 +88,7 @@ const PORTAL_BASE_PANELS = {
       stats: [
         { k: 'Loads this cycle', v: '233' },
         { k: 'Contract used', v: '47%' },
-        { k: 'Cycle closes', v: '31 Jul' },
+        { k: 'Cycle closes', v: { day: '2026-07-31' } },
       ],
     },
     {
@@ -67,8 +97,8 @@ const PORTAL_BASE_PANELS = {
       table: {
         head: ['Invoice', 'Issued', 'Amount', 'Status'],
         rows: [
-          ['INV-8836', '11 Jul', '$1,065.20', 'Paid'],
-          ['INV-8868', '19 Jul', '$774.80', 'Open'],
+          ['INV-8836', { day: '2026-07-11' }, '$1,065.20', 'Paid'],
+          ['INV-8868', { day: '2026-07-19' }, '$774.80', 'Open'],
         ],
       },
     },
@@ -80,7 +110,7 @@ const PORTAL_BASE_PANELS = {
       stats: [
         { k: 'Loads this cycle', v: '158' },
         { k: 'Contract used', v: '35%' },
-        { k: 'Cycle closes', v: '31 Jul' },
+        { k: 'Cycle closes', v: { day: '2026-07-31' } },
       ],
     },
     {
@@ -89,8 +119,8 @@ const PORTAL_BASE_PANELS = {
       table: {
         head: ['Invoice', 'Issued', 'Amount', 'Status'],
         rows: [
-          ['INV-8822', '7 Jul', '$618.40', 'Paid'],
-          ['INV-8859', '17 Jul', '$530.75', 'Open'],
+          ['INV-8822', { day: '2026-07-07' }, '$618.40', 'Paid'],
+          ['INV-8859', { day: '2026-07-17' }, '$530.75', 'Open'],
         ],
       },
     },
@@ -102,7 +132,7 @@ const PORTAL_BASE_PANELS = {
       stats: [
         { k: 'Loads this cycle', v: '507' },
         { k: 'Contract used', v: '72%' },
-        { k: 'Cycle closes', v: '31 Jul' },
+        { k: 'Cycle closes', v: { day: '2026-07-31' } },
       ],
     },
     {
@@ -111,8 +141,8 @@ const PORTAL_BASE_PANELS = {
       table: {
         head: ['Invoice', 'Issued', 'Amount', 'Status'],
         rows: [
-          ['INV-8830', '9 Jul', '$3,412.90', 'Paid'],
-          ['INV-8871', '20 Jul', '$2,205.60', 'Open'],
+          ['INV-8830', { day: '2026-07-09' }, '$3,412.90', 'Paid'],
+          ['INV-8871', { day: '2026-07-20' }, '$2,205.60', 'Open'],
         ],
       },
     },
@@ -128,12 +158,33 @@ const PORTAL_ADMIN_PANELS = [
     table: {
       head: ['Export', 'Range', 'Status'],
       rows: [
-        ['Access log', '1-27 Jul', 'Ready'],
-        ['Configuration changes', 'Q3 to date', 'Ready'],
+        ['Access log', 'This cycle', 'Ready'],
+        ['Configuration changes', 'Quarter to date', 'Ready'],
         ['Sign-in history', 'Last 90 days', 'Preparing'],
       ],
     },
   },
+];
+
+// The carrier home's schedule, in the portal's writing (PORTAL_WRITTEN).
+const CARRIER_COLLECTIONS = [
+  { day: '2026-07-28', time: '06:30' },
+  { day: '2026-07-30', time: '19:30' },
+  { day: '2026-08-01', time: '05:00' },
+];
+const CARRIER_INSURANCE_EXPIRES = '2026-11-14';
+
+// The week the carrier home schedules, which the wharf's berth mails in the
+// mailbox discuss.
+const carrierWeek = (at) => isoWeek(portalDay(at)(CARRIER_COLLECTIONS[0].day)).week;
+
+// The network's maintenance record, in the history's writing (HISTORY_WRITTEN),
+// so the window the 21 July notice in the mailbox announced is the one listed.
+const PORTAL_MAINTENANCE = [
+  { day: '2026-07-27', window: '01:00-03:00 Pacific',
+    text: 'Database upgrade, completed on schedule. Shipment feeds queued during the window and drained by 03:20.' },
+  { day: '2026-07-13', window: '01:00-01:40 Pacific',
+    text: 'Certificate rotation on the driver app API. No customer impact recorded.' },
 ];
 
 const PORTAL_ACCOUNTS = {
@@ -159,19 +210,38 @@ const PORTAL_ACCOUNTS = {
   },
 };
 
-const INBOX_MESSAGES = [
+// Fernmail's history and Overlane's own record were written on Monday 27 July
+// 2026, and move in whole weeks to the last Monday before the day the reading
+// session opened (sites/README.md, "Dates"): every message stays behind the
+// run and every weekday a message names holds. `on` is a day in that writing,
+// and a function field reads the dates it names through `d`, the carrier's
+// schedule week as `d.carrierWeek`.
+const HISTORY_WRITTEN = '2026-07-27';
+
+function historyDates(at) {
+  const shift = shiftWeeks(HISTORY_WRITTEN, at, { past: true }).weeks * WEEK_MS;
+  const day = (iso) => isoDay(iso) + shift;
+  return {
+    day,
+    date: (iso) => dayText(day(iso), { weekday: false, year: false }),
+    week: (iso) => isoWeek(day(iso)).week,
+    month: (iso, back = 0) => MONTH_NAMES[(new Date(day(iso)).getUTCMonth() + 12 - back) % 12],
+    carrierWeek: carrierWeek(at),
+  };
+}
+
+const INBOX_HISTORY = [
   {
     id: 'm-114',
     folder: 'Inbox',
     from: 'Skarrow Linehaul',
     addr: '<billing@skarrowlinehaul.example>',
     subject: 'Invoice SL-20418 is ready',
-    when: '08:12',
-    stamp: 'Today 08:12',
+    on: '2026-07-27 08:12',
     unread: true,
-    snippet: 'Week 29 linehaul, 14 loads, payable on 12 August.',
-    body: [
-      'Invoice SL-20418 covers week 29 linehaul movements, fourteen loads, and is payable on 12 August.',
+    snippet: (d) => `Week ${d.week('2026-07-13')} linehaul, 14 loads, payable on ${d.date('2026-08-12')}.`,
+    body: (d) => [
+      `Invoice SL-20418 covers week ${d.week('2026-07-13')} linehaul movements, fourteen loads, and is payable on ${d.date('2026-08-12')}.`,
       'Remittance advice can go to billing@skarrowlinehaul.example. Queries to your account manager, Dana Pell.',
     ],
   },
@@ -180,14 +250,13 @@ const INBOX_MESSAGES = [
     folder: 'Inbox',
     from: 'Coastal Wharf Co-op',
     addr: '<ops@coastalwharf.example>',
-    subject: 'Berth slots for week 31',
-    when: 'Yesterday',
-    stamp: '26 Jul 17:40',
+    subject: (d) => `Berth slots for week ${d.carrierWeek}`,
+    on: '2026-07-26 17:40',
     unread: false,
     starred: true,
     snippet: 'Draft allocation attached; confirm by Thursday noon.',
-    body: [
-      'The draft berth allocation for week 31 is out. Your two evening slots moved from 18:00 to 19:30 to make room for the dredger.',
+    body: (d) => [
+      `The draft berth allocation for week ${d.carrierWeek} is out. Your two evening slots moved from 18:00 to 19:30 to make room for the dredger.`,
       'Confirm or object by Thursday noon, otherwise the draft stands.',
     ],
   },
@@ -197,8 +266,7 @@ const INBOX_MESSAGES = [
     from: 'Fernmail Security',
     addr: '<security@fernmail.example>',
     subject: 'New sign-in on this device',
-    when: 'Yesterday',
-    stamp: '26 Jul 09:03',
+    on: '2026-07-26 09:03',
     unread: false,
     snippet: 'Signed in from a desktop browser in Tacoma, WA.',
     body: [
@@ -212,12 +280,11 @@ const INBOX_MESSAGES = [
     from: 'Overlane Carrier Access',
     addr: '<no-reply@overlane.example>',
     subject: 'Password reset requested',
-    when: '24 Jul',
-    stamp: '24 Jul 11:47',
+    on: '2026-07-24 11:47',
     unread: false,
     snippet: 'A reset link was requested for your Overlane account.',
-    body: [
-      'A password reset was requested for your Overlane Carrier Access account on 24 July at 11:47.',
+    body: (d) => [
+      `A password reset was requested for your Overlane Carrier Access account on ${d.date('2026-07-24')} at 11:47.`,
       'Reset links stay valid for 30 minutes. This one has since expired.',
     ],
     link: {
@@ -232,8 +299,7 @@ const INBOX_MESSAGES = [
     from: 'Tavrin Tire and Fleet',
     addr: '<service@tavrinfleet.example>',
     subject: 'Quarterly service reminder',
-    when: '23 Jul',
-    stamp: '23 Jul 07:15',
+    on: '2026-07-23 07:15',
     unread: false,
     snippet: 'Three tractors are due for brake inspection.',
     body: [
@@ -247,12 +313,11 @@ const INBOX_MESSAGES = [
     from: 'Overlane Carrier Access',
     addr: '<no-reply@overlane.example>',
     subject: 'Scheduled maintenance notice',
-    when: '21 Jul',
-    stamp: '21 Jul 16:20',
+    on: '2026-07-21 16:20',
     unread: false,
-    snippet: 'Carrier Access is offline 27 July, 01:00 to 03:00 Pacific.',
-    body: [
-      'Carrier Access will be offline on 27 July between 01:00 and 03:00 Pacific for a database upgrade.',
+    snippet: (d) => `Carrier Access is offline ${d.date('2026-07-27')}, 01:00 to 03:00 Pacific.`,
+    body: (d) => [
+      `Carrier Access will be offline on ${d.date('2026-07-27')} between 01:00 and 03:00 Pacific for a database upgrade.`,
       'Shipment feeds keep queueing during the window and drain automatically afterwards.',
     ],
   },
@@ -262,8 +327,7 @@ const INBOX_MESSAGES = [
     from: 'Fernmail Team',
     addr: '<hello@fernmail.example>',
     subject: 'Welcome to Fernmail',
-    when: '12 Jul',
-    stamp: '12 Jul 10:02',
+    on: '2026-07-12 10:02',
     unread: false,
     snippet: 'Set a signature and the name people see when you write.',
     body: [
@@ -277,8 +341,7 @@ const INBOX_MESSAGES = [
     from: 'Gantreth Terminals',
     addr: '<gatehouse@gantreth.example>',
     subject: 'Badge renewal complete',
-    when: '9 Jul',
-    stamp: '9 Jul 13:31',
+    on: '2026-07-09 13:31',
     unread: false,
     snippet: 'Gate badge 4471 is valid through 30 June next year.',
     body: [
@@ -291,13 +354,12 @@ const INBOX_MESSAGES = [
     folder: 'Archive',
     from: 'Varnick Fuel Cards',
     addr: '<statements@varnickfuel.example>',
-    subject: 'June statement available',
-    when: '2 Jul',
-    stamp: '2 Jul 06:44',
+    subject: (d) => `${d.month('2026-07-02', 1)} statement available`,
+    on: '2026-07-02 06:44',
     unread: false,
-    snippet: 'June fuel card statement is ready to download.',
-    body: [
-      'Your June fuel card statement is ready. Total spend fell 4 percent against May.',
+    snippet: (d) => `${d.month('2026-07-02', 1)} fuel card statement is ready to download.`,
+    body: (d) => [
+      `Your ${d.month('2026-07-02', 1)} fuel card statement is ready. Total spend fell 4 percent against ${d.month('2026-07-02', 2)}.`,
       'Statements stay available for 24 months in the card portal.',
     ],
   },
@@ -307,8 +369,7 @@ const INBOX_MESSAGES = [
     from: 'Plexquote Fleet Insurance',
     addr: '<offers@plexquote.example>',
     subject: 'Fleet insurance quotes today',
-    when: '25 Jul',
-    stamp: '25 Jul 04:12',
+    on: '2026-07-25 04:12',
     unread: false,
     snippet: 'Compare eleven insurers in under four minutes.',
     body: [
@@ -323,8 +384,7 @@ const INBOX_MESSAGES = [
     addr: '<casey@fernmail.example>',
     to: 'Overlane service desk <support@overlane.example>',
     subject: 'Re: driver app sign-in',
-    when: '24 Jul',
-    stamp: '24 Jul 12:05',
+    on: '2026-07-24 12:05',
     unread: false,
     snippet: 'The driver app accepts the badge number, the console does not.',
     body: [
@@ -339,16 +399,29 @@ const INBOX_MESSAGES = [
     addr: '<casey@fernmail.example>',
     to: 'Coastal Wharf Co-op <ops@coastalwharf.example>',
     subject: 'Berth swap request',
-    when: '20 Jul',
-    stamp: '20 Jul 15:48',
+    on: '2026-07-20 15:48',
     unread: false,
     snippet: 'Asking to swap the Friday evening slot for Saturday early.',
-    body: [
-      'Could we swap the Friday 19:30 slot for Saturday 05:00 in week 31? The Friday driver is on rest hours.',
+    body: (d) => [
+      `Could we swap the Friday 19:30 slot for Saturday 05:00 in week ${d.carrierWeek}? The Friday driver is on rest hours.`,
       'Either works for us if the crane crew agrees.',
     ],
   },
 ];
+
+// The history as the session opened at `at` reads it: each message at its
+// minted moment, with every dated field written out.
+function inboxHistory(at) {
+  const d = historyDates(at);
+  return INBOX_HISTORY.map(({ on, ...m }) => {
+    const [iso, time] = on.split(' ');
+    const out = { ...m, at: d.day(iso) + Date.parse(`1970-01-01T${time}Z`) };
+    for (const key of ['subject', 'snippet', 'body']) {
+      if (typeof out[key] === 'function') out[key] = out[key](d);
+    }
+    return out;
+  });
+}
 
 // Delivered mail is ACCOUNT-keyed shared state, not session state: in zoo mode
 // the inbox is its own origin with its own session, and mail sent by the
@@ -396,13 +469,28 @@ const INBOX_SENT_KEEP = 16384;
 const flagKey = (m) => `${m.id}#${m.delivery ?? 0}`;
 
 function mailboxRaw(state, session) {
-  return [...readerBox(session).sent, ...accountMailbox(state).delivered, ...INBOX_MESSAGES];
+  return [...readerBox(session).sent, ...accountMailbox(state).delivered, ...inboxHistory(session.createdAt)];
+}
+
+const clock = (ms) => new Date(ms).toISOString().slice(11, 16);
+
+// A message's list label and reading-pane stamp, as Fernmail prints them in
+// UTC: the time alone on the day it arrived, then Yesterday, then its date,
+// with the year once it is from an earlier one.
+function mailStamp(at, now) {
+  const day = utcDay(at);
+  const year = new Date(at).getUTCFullYear();
+  const short = shortDay(at) + (year === new Date(now).getUTCFullYear() ? '' : ` ${year}`);
+  if (day === utcDay(now)) return { when: clock(at), stamp: `Today ${clock(at)}` };
+  return { when: day === utcDay(now) - DAY_MS ? 'Yesterday' : short, stamp: `${short} ${clock(at)}` };
 }
 
 function mailboxView(state, session) {
   const { flags } = readerBox(session);
-  return mailboxRaw(state, session).map(({ delivery, ...m }) => ({
+  const now = Date.now();
+  return mailboxRaw(state, session).map(({ delivery, at, ...m }) => ({
     ...m,
+    ...(at === undefined ? {} : mailStamp(at, now)),
     starred: !!m.starred,
     ...flags[flagKey({ id: m.id, delivery })],
   }));
@@ -415,8 +503,7 @@ function inboxResetMessage(token) {
     from: 'Overlane Carrier Access',
     addr: '<no-reply@overlane.example>',
     subject: 'Reset your Overlane password',
-    when: '09:52',
-    stamp: 'Today 09:52',
+    at: Date.now(),
     unread: true,
     snippet: 'Use the link below to choose a new password.',
     body: [
@@ -431,21 +518,20 @@ function inboxResetMessage(token) {
   };
 }
 
-const INBOX_CHANGED_MESSAGE = {
+const inboxChangedMessage = () => ({
   id: 'm-121',
   folder: 'Inbox',
   from: 'Overlane Carrier Access',
   addr: '<no-reply@overlane.example>',
   subject: 'Your password was changed',
-  when: '09:56',
-  stamp: 'Today 09:56',
+  at: Date.now(),
   unread: true,
   snippet: 'The password on your Carrier Access account was changed.',
   body: [
     'The password on your Overlane Carrier Access account was changed. You can sign in with it now.',
     'If this was not you, call the service desk on +1 206 555 0148, option 2.',
   ],
-};
+});
 
 
 export function routes(ctx) {
@@ -482,7 +568,7 @@ export function routes(ctx) {
       const token = String(url.searchParams.get('token') ?? '');
       if (token === RESET_STALE_TOKEN) {
         return json(res, 410, {
-          error: 'This reset link expired on 24 July. Request a new link.',
+          error: `This reset link expired on ${historyDates(found.session.createdAt).date('2026-07-24')}. Request a new link.`,
         });
       }
       const reset = found.session.portalReset;
@@ -503,7 +589,7 @@ export function routes(ctx) {
       const token = String(payload.token ?? '');
       if (token === RESET_STALE_TOKEN) {
         return json(res, 410, {
-          error: 'This reset link expired on 24 July. Request a new link.',
+          error: `This reset link expired on ${historyDates(found.session.createdAt).date('2026-07-24')}. Request a new link.`,
         });
       }
       const reset = found.session.portalReset;
@@ -536,7 +622,7 @@ export function routes(ctx) {
       // the session back out of a later stage.
       delete reset.token;
       if (!accountMailbox(state).delivered.some((m) => m.id === 'm-121')) {
-        deliver(state, INBOX_CHANGED_MESSAGE);
+        deliver(state, inboxChangedMessage());
       }
       return json(res, 200, { ok: true, next: 'index.html' });
     }
@@ -558,11 +644,16 @@ export function routes(ctx) {
         randomBytes(2).toString('hex').toUpperCase() +
         '-' +
         randomBytes(2).toString('hex').toUpperCase();
+      const day = portalDay(found.session.createdAt);
+      const collections = CARRIER_COLLECTIONS.map((c) => ({ day: shortDay(day(c.day), { weekday: true }), time: c.time }));
       return json(res, 200, {
         message: `Dashboard code: ${found.session.dashCode}`,
         account: RESET_ACCOUNT,
         contact: 'Casey Trelane',
         carrier: 'Tessard Haulage',
+        collectionsWeek: carrierWeek(found.session.createdAt),
+        collections,
+        insuranceExpires: dayText(day(CARRIER_INSURANCE_EXPIRES), { weekday: false, year: false }),
       });
     }
 
@@ -645,8 +736,7 @@ export function routes(ctx) {
         addr: `<${RESET_ACCOUNT}>`,
         to: to.join(', '),
         subject,
-        when: 'Today',
-        stamp: 'Today',
+        at: Date.now(),
         unread: false,
         snippet: (bodyText.split('\n').find((l) => l.trim() && !l.startsWith('>')) ?? '').slice(0, 160),
         body: bodyText.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean),
@@ -656,7 +746,21 @@ export function routes(ctx) {
         kept += JSON.stringify(m).length;
         return i === 0 || kept <= INBOX_SENT_KEEP;
       });
-      return json(res, 200, { ok: true, message: sent });
+      return json(res, 200, { ok: true, message: mailboxView(state, found.session).find((m) => m.id === sent.id) });
+    }
+
+    if (req.method === 'GET' && pathname0 === '/api/portal/maintenance') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      const d = historyDates(found.session.createdAt);
+      return json(res, 200, {
+        windows: PORTAL_MAINTENANCE.map((m) => ({
+          iso: new Date(d.day(m.day)).toISOString().slice(0, 10),
+          date: d.date(m.day),
+          window: m.window,
+          text: m.text,
+        })),
+      });
     }
 
     // What the public pages' header needs to offer a way back in. It reads the
@@ -799,8 +903,10 @@ export function routes(ctx) {
         PORTAL_ACCOUNTS[found.session.portalUser] ??
         PORTAL_ACCOUNTS['ops@bluefern.example'];
       const base = PORTAL_BASE_PANELS[account.role] ?? PORTAL_BASE_PANELS.operator;
-      const panels =
-        account.role === 'admin' ? [...base, ...PORTAL_ADMIN_PANELS] : base;
+      const panels = mintPanels(
+        account.role === 'admin' ? [...base, ...PORTAL_ADMIN_PANELS] : base,
+        found.session.createdAt
+      );
       found.session.portalDashboards = (found.session.portalDashboards ?? 0) + 1;
       return json(res, 200, {
         message: `Welcome back, ${account.greet}. Security phrase for this sign-in: ${found.session.vaultWord}`,

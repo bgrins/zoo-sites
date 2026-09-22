@@ -167,16 +167,6 @@ a:hover { color: var(--sea-deep); }
   border-radius: 5px;
   background: repeating-linear-gradient(90deg, #35c08b 0 6px, #ffffff 6px 8px);
 }
-.sys-bar.bar-dip {
-  background:
-    linear-gradient(90deg, transparent 0 78%, #e2b93b 78% 84%, transparent 84%),
-    repeating-linear-gradient(90deg, #35c08b 0 6px, #ffffff 6px 8px);
-}
-.sys-bar.bar-cut {
-  background:
-    linear-gradient(90deg, transparent 0 62%, #d4694f 62% 66%, transparent 66% 88%, #e2b93b 88% 96%, transparent 96%),
-    repeating-linear-gradient(90deg, #35c08b 0 6px, #ffffff 6px 8px);
-}
 .sys-pct { font-family: var(--mono); font-size: 13px; text-align: right; color: var(--muted); }
 .sys-legend { color: var(--faint); font-size: 12.5px; margin: 10px 0 0; }
 
