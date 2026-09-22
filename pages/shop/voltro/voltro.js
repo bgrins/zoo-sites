@@ -145,7 +145,7 @@ VOLTRO.products.forEach(([name, size, res, price, rating, reviews, inStock], i) 
       ${i % 4 !== 3 ? `<s>$${wasPrice}</s> <span class="save">Save ${Math.round((1 - price / wasPrice) * 100)}%</span>` : ''}
     </div>
     <div class="permo">or $${(price / 12).toFixed(2)}/mo for 12 mo</div>
-    <div class="fulfill">${i % 3 ? 'FREE shipping — get it Fri, Jul 31' : 'Pickup today at the Downtown counter'}</div>
+    <div class="fulfill">${i % 3 ? `FREE shipping — get it ${document.body.dataset.arrives}` : 'Pickup today at the Downtown counter'}</div>
     <div class="${inStock ? 'stock-in' : 'stock-out'}">${
       inStock
         ? 'In stock — ships within 24 hours.'

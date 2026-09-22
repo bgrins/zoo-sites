@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fernwood Commons — the neighbourhood feed</title>
+<title>Post — Fernwood Commons</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   * { box-sizing: border-box; }
@@ -36,9 +36,10 @@
     color: #35563b; text-decoration: none; font-size: 14px; margin-left: 16px;
     padding: 5px 12px; border-radius: 999px;
   }
-  .topbar nav a.here, .topbar nav a:hover { background: #e4ecdd; }
+  .topbar nav a:hover { background: #e4ecdd; }
   main { max-width: 640px; margin: 0 auto; padding: 20px 16px 60px; }
-  .feed { display: flex; flex-direction: column; gap: 16px; }
+  .crumb { font-size: 13px; margin: 0 0 12px; }
+  .crumb a { color: #35563b; }
   article.card {
     background: #fffdf7; border: 1px solid #e0dbcb; border-radius: 16px;
     padding: 16px 18px 12px; box-shadow: 0 1px 3px rgba(70, 62, 45, 0.08);
@@ -53,9 +54,8 @@
   .name { font-weight: bold; color: #2f4a34; }
   .meta { font-size: 12px; color: #726c5c; }
   .meta a { color: inherit; text-decoration: none; }
-  .meta a:hover { text-decoration: underline; }
-  .feedhead { font-size: 13px; font-weight: normal; color: #726c5c; margin: 0 0 10px; letter-spacing: .5px; }
-  article.card h2 { margin: 0 0 6px; font-size: 16px; color: #33302a; }
+  article.card h1 { margin: 0 0 6px; font-size: 18px; color: #33302a; }
+  .gone { font-size: 18px; color: #33302a; margin: 0 0 6px; }
   article.card p { margin: 0 0 6px; font-size: 14px; }
   .cardfoot {
     margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0dbcb;
@@ -70,10 +70,18 @@
   .cheer:hover { background: #e4ecdd; }
   .cheer[aria-pressed="true"] { background: #6f9a72; border-color: #6f9a72; color: #fffdf7; }
   .replies { color: #35563b; }
-  #status {
-    text-align: center; font-size: 13px; color: #726c5c;
-    padding: 26px 0 10px;
+  #replies { margin-top: 22px; }
+  #replies h2 { font-size: 15px; color: #35563b; margin: 0 0 10px; }
+  #reply-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  #reply-list li {
+    background: #fffdf7; border: 1px solid #e0dbcb; border-radius: 12px;
+    padding: 10px 14px; margin-left: 28px; font-size: 14px;
   }
+  .rwho { font-size: 12px; color: #726c5c; margin-bottom: 2px; }
+  .rwho b { color: #2f4a34; }
+  .howto { font-size: 13px; color: #726c5c; margin: 14px 0 0; }
+  .howto a { color: #35563b; }
+  #status { text-align: center; font-size: 13px; color: #726c5c; padding: 26px 0 10px; }
   footer {
     background: #35563b; color: #e4ecdd; font-size: 12px;
     padding: 18px 20px 24px;
@@ -88,16 +96,21 @@
     <a class="brand" href="./"><span class="dot"></span>Fernwood Commons</a>
     <span class="tag">Notes between neighbours</span>
     <nav>
-      <a href="./" class="here">Feed</a>
+      <a href="./">Feed</a>
       <a href="about.html">About</a>
     </nav>
   </div>
 </div>
 
 <main>
-  <h1 class="feedhead">Neighbourhood feed</h1>
-  <div class="feed" id="feed" aria-label="Posts, newest first"></div>
-  <div id="status" role="status">Loading the feed</div>
+  <p class="crumb"><a href="./">Back to the feed</a></p>
+  <div id="post"></div>
+  <section id="replies" hidden>
+    <h2 id="replies-head">Replies</h2>
+    <ol id="reply-list"></ol>
+    <p class="howto" id="howto"></p>
+  </section>
+  <div id="status" role="status">Loading the post</div>
 </main>
 
 <footer>
@@ -116,51 +129,52 @@
 <script src="commons.js"></script>
 <script>
 const NONCE = '__SESSION_NONCE__';
-const feedEl = document.getElementById('feed');
+const STEWARDS = 'post@fernwoodcommons.example.org';
 const statusEl = document.getElementById('status');
-let next = { batch: 1, cursor: null };
-let busy = false;
 
-async function loadBatch(via) {
-  if (busy || !next) return;
-  busy = true;
-  statusEl.textContent = 'Loading older posts';
+(async () => {
+  const ref = new URLSearchParams(location.search).get('ref') ?? '';
+  let data = null;
   try {
-    const q = new URLSearchParams({ batch: String(next.batch), via });
-    if (next.cursor) q.set('cursor', next.cursor);
-    q.set('y', String(Math.round(window.scrollY)));
-    const r = await fetch('/api/fernwood/feed?' + q, {
+    const r = await fetch('/api/fernwood/thread?ref=' + encodeURIComponent(ref), {
       headers: { 'X-Session-Nonce': NONCE },
     });
-    if (!r.ok) throw new Error('feed ' + r.status);
-    const data = await r.json();
-    for (const p of data.posts) feedEl.append(postCard(p));
-    next = data.next ? { batch: data.next.batch, cursor: data.next.cursor } : null;
-    if (next) {
-      statusEl.textContent = 'Scroll for older posts';
-      io.unobserve(statusEl);
-      io.observe(statusEl);
-    } else {
-      statusEl.textContent = 'You are all caught up.';
-      io.unobserve(statusEl);
-    }
-  } catch {
+    if (r.ok) data = await r.json();
+  } catch {}
+  if (!data) {
+    document.getElementById('post').append(commonsEl('h1', 'gone', 'Post not found'));
     statusEl.textContent =
-      feedEl.children.length
-        ? 'Older posts did not load. Reload the page to try again.'
-        : 'The feed did not load. Reload the page to try again.';
-  } finally {
-    busy = false;
+      'That post is not on the Commons. It may have been a post that its author asked us to take down.';
+    return;
   }
-}
-
-const io = new IntersectionObserver((entries) => {
-  for (const e of entries) {
-    if (e.isIntersecting && next && !busy) loadBatch('sentinel-' + next.batch);
+  const p = data.post;
+  document.title = p.title + ' — Fernwood Commons';
+  document.getElementById('post').append(postCard(p, 'h1'));
+  const list = document.getElementById('reply-list');
+  for (const reply of data.replies) {
+    const li = document.createElement('li');
+    const who = document.createElement('div');
+    who.className = 'rwho';
+    const name = document.createElement('b');
+    name.textContent = reply.author;
+    who.append(name, ' \u00b7 ' + reply.when);
+    const body = document.createElement('div');
+    body.textContent = reply.body;
+    li.append(who, body);
+    list.append(li);
   }
-});
-
-loadBatch('load').then(() => io.observe(statusEl));
+  document.getElementById('replies-head').textContent =
+    data.replies.length ? 'Replies' : 'No replies yet';
+  const howto = document.getElementById('howto');
+  const mail = document.createElement('a');
+  mail.href = 'mailto:' + STEWARDS + '?subject=' + encodeURIComponent('Reply to ' + p.ref);
+  mail.textContent = STEWARDS;
+  howto.append('To reply, write to the stewards at ', mail, ' and quote Ref ' + p.ref +
+    '. Replies go up once a steward has typed them in.');
+  document.getElementById('replies').hidden = false;
+  statusEl.remove();
+  if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
+})();
 </script>
 </body>
 </html>

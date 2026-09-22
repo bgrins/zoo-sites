@@ -18,12 +18,13 @@
   </div>
   <div id="order" style="display:none">
     <table>
-      <thead><tr><th>Item</th><th>Price</th></tr></thead>
+      <thead><tr><th>Item</th><th>Quantity</th><th>Price</th></tr></thead>
       <tbody id="items"></tbody>
-      <tfoot><tr><td>Items subtotal</td><td id="subtotal"></td></tr></tfoot>
+      <tfoot><tr><td>Items subtotal</td><td></td><td id="subtotal"></td></tr></tfoot>
     </table>
     <div class="summary-box">
       <div>Ship to: <span id="shipto"></span></div>
+      <div>Confirmation to: <span id="confirmto"></span></div>
       <div>Payment: card ending in <span id="last4"></span></div>
       <p>Order summary hash: <span class="hash" id="hash"></span></p>
     </div>
@@ -41,37 +42,92 @@
 const NONCE = '__SESSION_NONCE__';
 const status = document.getElementById('status');
 
-(async () => {
+function stepper(item, maxQty) {
+  const cell = document.createElement('td');
+  const wrap = document.createElement('span');
+  wrap.className = 'qty';
+  const less = document.createElement('button');
+  less.type = 'button';
+  less.textContent = '\u2212';
+  less.setAttribute('aria-label', 'Decrease quantity of ' + item.product);
+  less.disabled = item.qty <= 1;
+  const count = document.createElement('output');
+  count.textContent = item.qty;
+  count.setAttribute('aria-label', 'Quantity of ' + item.product);
+  const more = document.createElement('button');
+  more.type = 'button';
+  more.textContent = '+';
+  more.setAttribute('aria-label', 'Increase quantity of ' + item.product);
+  more.disabled = item.qty >= maxQty;
+  const drop = document.createElement('button');
+  drop.type = 'button';
+  drop.className = 'linkish';
+  drop.textContent = 'Remove';
+  drop.setAttribute('aria-label', 'Remove ' + item.product);
+  less.addEventListener('click', () => setQty(item.product, item.qty - 1));
+  more.addEventListener('click', () => setQty(item.product, item.qty + 1));
+  drop.addEventListener('click', () => setQty(item.product, 0));
+  wrap.append(less, count, more);
+  cell.append(wrap, drop);
+  return cell;
+}
+
+async function setQty(product, qty) {
+  status.className = '';
+  status.textContent = '';
+  for (const button of document.querySelectorAll('#items button')) button.disabled = true;
+  try {
+    const res = await fetch('/api/voltro/cart/set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, product, qty }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      status.className = 'error';
+      status.textContent = body.error ?? 'Voltro could not update your order.';
+    }
+  } catch {
+    status.className = 'error';
+    status.textContent = 'Voltro could not be reached. Reload the page to try again.';
+  }
+  await load();
+}
+
+async function load() {
   try {
     const res = await fetch('/api/voltro/review', { headers: { 'X-Session-Nonce': NONCE } });
     const body = await res.json();
     if (!res.ok) {
+      document.getElementById('order').style.display = 'none';
       document.getElementById('incomplete-msg').textContent =
         body.error ?? 'Checkout is incomplete.';
       document.getElementById('incomplete').style.display = 'block';
       return;
     }
     const rows = document.getElementById('items');
+    rows.replaceChildren();
     for (const item of body.items) {
       const tr = document.createElement('tr');
       const name = document.createElement('td');
       name.textContent = item.product;
       const price = document.createElement('td');
-      price.textContent = '$' + item.price.toFixed(2);
-      tr.append(name, price);
+      price.textContent = '$' + (item.price * item.qty).toFixed(2);
+      tr.append(name, stepper(item, body.maxQty), price);
       rows.appendChild(tr);
     }
     document.getElementById('subtotal').textContent = '$' + body.subtotal.toFixed(2);
     const foot = document.querySelector('tfoot');
+    for (const extra of foot.querySelectorAll('tr.extra')) extra.remove();
     const addRow = (label, amount, id, cls) => {
       const tr = document.createElement('tr');
-      if (cls) tr.className = cls;
+      tr.className = 'extra' + (cls ? ' ' + cls : '');
       const name = document.createElement('td');
       name.textContent = label;
       const value = document.createElement('td');
       if (id) value.id = id;
       value.textContent = amount;
-      tr.append(name, value);
+      tr.append(name, document.createElement('td'), value);
       foot.appendChild(tr);
     };
     if (body.promo) {
@@ -80,8 +136,10 @@ const status = document.getElementById('status');
     addRow('Shipping', 'FREE', 'shippingcost', 'muted');
     addRow('Estimated sales tax (' + Math.round(body.taxRate * 100) + '%)', '$' + body.tax.toFixed(2), 'tax', 'muted');
     addRow('Order total', '$' + body.total.toFixed(2), 'ordertotal', 'total');
+    const ship = body.shipping;
     document.getElementById('shipto').textContent =
-      body.shipping.name + ', ' + body.shipping.address;
+      ship.name + ', ' + ship.address + ', ' + ship.city + ', ' + ship.state + ' ' + ship.zip;
+    document.getElementById('confirmto').textContent = ship.email;
     document.getElementById('last4').textContent = body.payment.last4;
     document.getElementById('hash').textContent = body.hash;
     document.getElementById('order').style.display = 'block';
@@ -89,7 +147,9 @@ const status = document.getElementById('status');
     status.className = 'error';
     status.textContent = 'Voltro could not load your order. Reload the page to try again.';
   }
-})();
+}
+
+load();
 
 const place = document.getElementById('place');
 place.addEventListener('click', async () => {

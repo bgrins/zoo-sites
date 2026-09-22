@@ -58,6 +58,15 @@ button[disabled] { background: #eceeed; border-color: #d4d8d6; color: #767d7a; c
 footer { padding: 20px; background: #eef2ef; color: #34403c; font-size: 12px; margin-top: 48px; border-top: 3px solid var(--pine); }
 footer a { color: var(--link); }
 .crossnote { font-size: 12px; color: var(--mute); margin-top: 18px; }
+.fieldnote { font-size: 12px; color: var(--mute); margin: 4px 0 0; }
+.pair { display: flex; gap: 12px; max-width: 360px; }
+.pair > div:first-child { flex: 0 0 90px; }
+.pair > div:last-child { flex: 1; }
+.qty { display: inline-flex; align-items: center; gap: 6px; }
+.qty button { margin-top: 0; padding: 2px 10px; border-bottom-width: 2px; }
+.qty output { min-width: 18px; text-align: center; font-weight: 700; }
+button.linkish { margin: 0 0 0 10px; padding: 0; background: none; border: 0; color: var(--link);
+  font-weight: 400; text-decoration: underline; }
 @media (max-width: 600px) {
   header { flex-wrap: wrap; padding: 10px 14px; }
   main { margin: 18px auto; padding: 0 14px; }

@@ -337,6 +337,9 @@
     time: 'Preferred time',
     notes: 'Notes',
   };
+  const ERROR_SLOTS = { newPatient: 'err-newpatient' };
+  // The scheduling service re-checks each step; the fields it refuses come
+  // back marked, and the step does not advance.
   const progress = async (step) => {
     try {
       const response = await fetch('/api/form-step', {
@@ -344,11 +347,24 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nonce: NONCE, step, data }),
       });
-      return response.ok ? await response.json() : null;
+      const body = await response.json().catch(() => null);
+      if (response.status === 422 && body?.errors) {
+        for (const [field, message] of Object.entries(body.errors)) {
+          setError(ERROR_SLOTS[field] ?? 'err-' + field, message);
+        }
+        return { refused: true };
+      }
+      return response.ok ? body : null;
     } catch {
       return null;
     }
   };
+  const localDay = (offset = 0) => {
+    const now = new Date();
+    now.setDate(now.getDate() + offset);
+    return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+  };
+  document.getElementById('date').min = localDay(1);
   const show = (n) => {
     for (const i of [1, 2, 3]) {
       const panel = document.getElementById(i === 3 ? 'step3' : 'step' + i);
@@ -394,7 +410,7 @@
     document.getElementById('err-step1').textContent = reached
       ? ''
       : 'We could not reach our scheduling system. Please try again, or call 312-555-0188.';
-    if (reached) show(2);
+    if (reached && !reached.refused) show(2);
   });
 
   document.getElementById('step2').addEventListener('submit', async (event) => {
@@ -420,15 +436,19 @@
         ? 'Enter the date as YYYY-MM-DD.'
         : weekday === 0 || weekday === 6
           ? 'We are open Monday to Friday. Choose a weekday.'
-          : '';
+          : data.date <= localDay()
+            ? 'Choose a date after today.'
+            : '';
     setError('err-date', dateError);
     ok = ok && !dateError;
     if (data.newPatient === 'Yes') {
       const dobError = !data.dob
         ? 'Date of birth is required for new patients.'
-        : !dateError && data.dob >= data.date
-          ? 'Date of birth must be before the preferred date.'
-          : '';
+        : data.dob >= localDay()
+          ? 'Date of birth must be in the past.'
+          : !dateError && data.dob >= data.date
+            ? 'Date of birth must be before the preferred date.'
+            : '';
       setError('err-dob', dobError);
       ok = ok && !dobError;
     } else {
@@ -451,6 +471,10 @@
     }
     // The reference code is issued by the scheduling service, not composed here.
     const receipt = await progress(3);
+    if (receipt?.refused) {
+      document.getElementById('err-step2').textContent = 'Correct the marked fields and continue again.';
+      return;
+    }
     if (!receipt?.refCode) {
       document.getElementById('err-step2').textContent =
         'Scheduling did not respond. Press Continue to review again.';

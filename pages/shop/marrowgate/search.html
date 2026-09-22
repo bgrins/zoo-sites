@@ -146,8 +146,11 @@ const WORDS = {
   '1440p': 'quad hd qhd 1440p 2560x1440 2560 x 1440',
   '4K': '4k ultra hd uhd 2160p 3840x2160 3840 x 2160',
 };
-const tokens = term.toLowerCase().split(/[\s,]+/).filter(Boolean)
-  .map((t) => t.replace(/^(\d+)(?:in|inch|")$/, '$1'));
+const FILLER = new Set(['in', 'inch', 'inches', 'the', 'a', 'an', 'for', 'with', 'and', 'of', 'best', 'cheapest', 'lowest']);
+const folded = term.toLowerCase().split(/[\s,]+/).filter(Boolean)
+  .map((t) => t.replace(/^(\d+)-?(?:in|inch|inches|")$/, '$1'));
+const kept = folded.filter((t) => !FILLER.has(t));
+const tokens = kept.length ? kept : folded;
 const found = (haystack) => tokens.every((t) => haystack.toLowerCase().includes(t));
 
 function otherRow(item) {

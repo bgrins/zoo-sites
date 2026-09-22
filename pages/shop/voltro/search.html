@@ -83,7 +83,10 @@ const term = raw.trim();
 document.querySelector('.finder input').value = raw;
 const tally = document.getElementById('tally');
 const results = document.getElementById('results');
-const tokens = term.toLowerCase().split(/[\s,]+/).filter(Boolean).map((t) => t.replace(/^(\d+)(?:in|inch|")$/, '$1'));
+const FILLER = new Set(['in', 'inch', 'inches', 'the', 'a', 'an', 'for', 'with', 'and', 'of', 'best', 'cheapest', 'lowest']);
+const folded = term.toLowerCase().split(/[\s,]+/).filter(Boolean).map((t) => t.replace(/^(\d+)-?(?:in|inch|inches|")$/, '$1'));
+const kept = folded.filter((t) => !FILLER.has(t));
+const tokens = kept.length ? kept : folded;
 
 function thumb(name) {
   const hue = (name.length * 37 + name.charCodeAt(0) * 11) % 360;
@@ -124,7 +127,8 @@ function row(hit) {
   document.title = 'Voltro — Search results for ' + term;
   document.getElementById('heading').textContent = 'Results for "' + term + '"';
   const hits = VOLTRO.products
-    .filter(([name, size, res]) => matches(name + ' ' + size + ' ' + RES_WORDS[res] + ' monitor monitors'))
+    .filter(([name, size, res]) =>
+      matches([name, size, size + ' inch', size + '-inch', RES_WORDS[res], 'monitor monitors'].join(' ')))
     .map(([name, size, res, price, , , inStock]) => ({
       name,
       href: 'product.html?name=' + encodeURIComponent(name),

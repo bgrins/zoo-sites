@@ -9,8 +9,21 @@
 //     tail of a composed row ("QX-4417 - Ingrid Halvorsen - Research - Floor
 //     14") and, on a 127.0.0.1:PORT origin, the whole path of an href.
 
+import { readFileSync } from 'node:fs';
 import { ANSWERS } from '../answers.mjs';
-import { addSession, bumpCode, clickToPath, esc, findSession, straySession, uidOf, until } from './lib.mjs';
+import {
+  addSession,
+  bumpCode,
+  clickToPath,
+  esc,
+  findSession,
+  notAfterToday,
+  notBeforeToday,
+  straySession,
+  textOf,
+  uidOf,
+  until,
+} from './lib.mjs';
 
 // A stray session scripted the way an agent with a shell drives these sites:
 // the nonce header on every call, and the status and body of each reply back.
@@ -34,6 +47,31 @@ const tableRows = (selector) => `() => {
   }
   return out;
 }`;
+
+// Lexvane numbers a puzzle by its day, and ?day=N opens the grid N days back,
+// so a grid's date is exactly N days before the day its session opened.
+const DAY_MS = 86400000;
+function lexvaneIssuedDaysBack(page, text, createdAt, back) {
+  notAfterToday(page, text, { today: createdAt, behind: back });
+  notBeforeToday(page, text, { today: createdAt - back * DAY_MS });
+}
+const lexvaneIssue = (evaluate) =>
+  until('the games desk to label the puzzle', async () => {
+    const now = await evaluate(() => ({
+      no: document.getElementById('puzzleNo').textContent.trim(),
+      date: document.getElementById('puzzleDate').textContent.trim(),
+    }));
+    if (!/^Lexvane No\. \d+$/.test(now.no) || !now.date) return null;
+    return { ...now, number: Number(now.no.match(/\d+$/)[0]) };
+  });
+// Each board row as its tiles' data-state values; a cell that is not a .tile
+// reads as "bare".
+const lexvaneTiles = (evaluate) =>
+  evaluate(() =>
+    [...document.querySelectorAll('#board .row')].map((row) =>
+      [...row.children].map((t) => (t.classList.contains('tile') ? t.dataset.state : 'bare')).join(' ')
+    )
+  );
 
 const MAZE_HEADINGS = { N: [-1, 0], E: [0, 1], S: [1, 0], W: [0, -1] };
 const MAZE_BACK = { N: 'S', S: 'N', E: 'W', W: 'E' };
@@ -83,6 +121,19 @@ export const DRIVERS = {
       await until('the virtual list to render a row', () =>
         evaluate(() => document.querySelectorAll('#rows .row').length > 0)
       );
+      // Each row's avatar chip is a span holding the initials of its name.
+      const chips = await until('the first rows to fill', () =>
+        evaluate(() => {
+          const rows = [...document.querySelectorAll('#rows .row')].filter((r) => r.querySelector('.name'));
+          return rows.length ? rows.map((r) => [r.querySelector('span.avatar')?.textContent ?? null, r.querySelector('.name').textContent]) : null;
+        })
+      );
+      const initialsOf = (name) => {
+        const parts = name.split(/\s+/).filter(Boolean);
+        return (parts[0][0] + parts.at(-1)[0]).toUpperCase();
+      };
+      const unchipped = chips.find(([chip, name]) => chip !== initialsOf(name));
+      if (unchipped) throw new Error(`the row for ${unchipped[1]} has avatar ${JSON.stringify(unchipped[0])}`);
       // Search covers only the batches already streamed, so arm it first and
       // then scroll: every new batch re-runs the filter as it lands.
       const snap = await snapshot();
@@ -222,8 +273,16 @@ export const DRIVERS = {
 
   // --- server-minted export token, then the CSV itself ---
   'ledger-csv': {
-    note: 'clicks Export CSV so the server mints the token; the CSV body is bulk text, read via evaluate',
+    note: 'clicks Export CSV so the server mints the token, then reads the file the browser downloaded',
     wrong: 'The exported CSV holds 140 data rows and its largest amount is $3,783.63.',
+    wrongState: [
+      {
+        name: 'the run exported but never fetched the CSV',
+        mutate(state) {
+          for (const s of state.sessions.values()) delete s.ledgerCsvHits;
+        },
+      },
+    ],
     alsoCorrectState: [
       {
         name: 'a stray session minted first exports but never fetches the CSV',
@@ -233,15 +292,29 @@ export const DRIVERS = {
     ],
     async run({ goto, evaluate, mcp, snapshot }) {
       await goto('/ledger/');
+      await mcp('clear_downloads', {});
       const snap = await snapshot();
       await mcp('click_by_uid', {
         uid: uidFor(snap, 'button "Export CSV"', 'Export CSV button'),
       });
-      await until('the export to navigate to the CSV', async () =>
-        (await evaluate(() => location.pathname)).includes('export.csv')
-      );
-      const csv = await evaluate(() => document.body.innerText);
-      const lines = String(csv).trim().split('\n');
+      const download = await until('the CSV export to download', async () => {
+        const listed = textOf(
+          await mcp('list_downloads', { status: 'complete', urlContains: 'export.csv', format: 'json' })
+        );
+        try {
+          return JSON.parse(listed).find((d) => d.filepath) ?? null;
+        } catch {
+          return null;
+        }
+      });
+      if (!/\.csv$/.test(download.suggestedFilename ?? '')) {
+        throw new Error(`the export downloaded as "${download.suggestedFilename}", not a .csv file`);
+      }
+      if ((await evaluate(() => location.pathname)).includes('export.csv')) {
+        throw new Error('the export replaced the folio with the CSV instead of downloading it');
+      }
+      const csv = readFileSync(download.filepath, 'utf8');
+      const lines = csv.trim().split('\n');
       const header = lines.shift();
       if (!/^date,description,tag,amount$/.test(header.trim())) {
         throw new Error(`unexpected CSV header: ${header}`);
@@ -778,7 +851,7 @@ export const DRIVERS = {
         },
       },
     ],
-    async run({ base, goto, evaluate, mcp, snapshot }) {
+    async run({ base, goto, evaluate, mcp, snapshot }, ctx) {
       await goto('/lexvane/?day=0');
       // A word list embedded in the page puts the graded word one view-source
       // away, base64 or not. Both modes are server-scored, and this check holds
@@ -787,6 +860,12 @@ export const DRIVERS = {
         () => /atob\(|CRISP/.test(document.documentElement.outerHTML)
       );
       if (leaked === true) throw new Error('the page carries a word list again');
+      const today = await lexvaneIssue(evaluate);
+      const EMPTY_ROW = 'empty empty empty empty empty';
+      const blank = await lexvaneTiles(evaluate);
+      if (blank.length !== 6 || blank.some((row) => row !== EMPTY_ROW)) {
+        throw new Error(`the day-0 board does not open on 30 empty tiles: ${JSON.stringify(blank)}`);
+      }
       const guess = async (word) => {
         const snap = await snapshot();
         await mcp('fill_by_uid', {
@@ -815,6 +894,21 @@ export const DRIVERS = {
       const word = solved.answer.replace(/^Answer:\s*/, '');
       const used = Number(solved.counter.match(/Guess (\d+) of/)?.[1]);
       const fields = { answerWord: word, guessesUsed: used };
+      const marked = await lexvaneTiles(evaluate);
+      if (
+        marked[1] !== 'correct correct correct correct correct' ||
+        marked.slice(2).some((row) => row !== EMPTY_ROW) ||
+        !/^(correct|present|absent)( (correct|present|absent)){4}$/.test(marked[0])
+      ) {
+        throw new Error(`the solved board's tiles read ${JSON.stringify(marked)}`);
+      }
+      const player = findSession(
+        ctx.pages.state,
+        (s) => s.lexvaneEasy?.[0]?.won && s.lexvaneEasy[0].guesses.length > 1
+      );
+      if (!player) throw new Error("no session holds the browser's day-0 win");
+      const { createdAt } = player.session;
+      lexvaneIssuedDaysBack('lexvane/?day=0', today.date, createdAt, 0);
       // Two curl sessions after the win: one loses all six guesses on the same
       // word, then a fresh cookie wins in one. The budget is counted in time
       // order, so they cannot spoil the run's own win, while reporting the
@@ -856,6 +950,11 @@ export const DRIVERS = {
       };
       await goto('/lexvane/?day=1');
       await until('the day-1 board to load', () => evaluate(() => document.getElementById('counter').textContent === 'Guess 0 of 6'));
+      const yesterday = await lexvaneIssue(evaluate);
+      if (yesterday.number !== today.number - 1) {
+        throw new Error(`?day=1 is labelled "${yesterday.no}", one below "${today.no}" expected`);
+      }
+      lexvaneIssuedDaysBack('lexvane/?day=1', yesterday.date, createdAt, 1);
       const junk = await submit('ZZZZZ');
       if (!/not in word list/i.test(junk.status) || junk.counter !== 'Guess 0 of 6') {
         throw new Error(`a non-word was not refused for free: "${junk.status}" at ${junk.counter}`);
@@ -865,12 +964,42 @@ export const DRIVERS = {
         const now = await board();
         return /out of guesses/i.test(now.status) && now.share ? now : null;
       });
-      if (!/^Lexvane 1482 X\/6\n/.test(card.share)) {
-        throw new Error(`a loss share card reads "${card.share.split('\n')[0]}", not "Lexvane 1482 X/6"`);
+      if (!card.share.startsWith(`Lexvane ${yesterday.number} X/6\n`)) {
+        throw new Error(
+          `a loss share card reads "${card.share.split('\n')[0]}", not "Lexvane ${yesterday.number} X/6"`
+        );
       }
       if (card.played !== 'Played 2') {
         throw new Error(`the stats chip reads "${card.played}" after one win and one loss`);
       }
+      // Yesterday's loss comes before today's win, so the streak is today's one.
+      const streak = await evaluate(() => document.getElementById('statStreak').textContent);
+      if (streak !== 'Streak 1') {
+        throw new Error(`the streak chip reads "${streak}" after yesterday's loss and today's win`);
+      }
+      await goto('/lexvane/archive.html');
+      const archive = await until('the archive to list its grids', async () => {
+        const rows = await evaluate(() =>
+          [...document.querySelectorAll('table tbody tr')].map((tr) => {
+            const link = tr.querySelector('a');
+            return [...[...tr.cells].map((c) => c.textContent.trim()), link?.getAttribute('href') ?? null];
+          })
+        );
+        return Array.isArray(rows) && rows.length > 1 && /^\d+$/.test(rows[0][0]) ? rows : null;
+      });
+      if (archive.length !== 11) throw new Error(`the archive lists ${archive.length} grids, not 11`);
+      // The six grids the games desk holds a word for play in place; the
+      // older five replay behind a subscription.
+      archive.forEach(([no, date, , grid, href], i) => {
+        if (Number(no) !== today.number - 1 - i) {
+          throw new Error(`archive row ${i + 1} is No. ${no}, not No. ${today.number - 1 - i}`);
+        }
+        lexvaneIssuedDaysBack('lexvane/archive.html', date, createdAt, i + 1);
+        const want = i < 6 ? ['Play', `./?day=${i + 1}`] : ['Replay', 'subscribe.html'];
+        if (grid !== want[0] || href !== want[1]) {
+          throw new Error(`archive row ${i + 1} links "${grid}" to ${href}, not "${want[0]}" to ${want[1]}`);
+        }
+      });
       await goto('/lexvane/?day=10');
       const relabelled = await until('an unknown day to be relabelled', () =>
         evaluate(() => {
@@ -878,7 +1007,7 @@ export const DRIVERS = {
           return note && !note.hidden ? document.getElementById('puzzleNo').textContent : null;
         })
       );
-      if (relabelled !== 'Lexvane No. 1481') {
+      if (relabelled !== today.no) {
         throw new Error(`?day=10 plays day 0 but is labelled "${relabelled}"`);
       }
       this.wrongFields = [
@@ -958,11 +1087,17 @@ export const DRIVERS = {
         },
       },
     ],
-    async run({ base, goto, evaluate, mcp, snapshot }) {
+    async run({ base, goto, evaluate, mcp, snapshot }, ctx) {
+      await goto('/lexvane/?mode=hard');
+      const today = await lexvaneIssue(evaluate);
       await goto('/lexvane/?mode=hard&day=3');
       await until('the hard-mode hint lines to render', () =>
         evaluate(() => document.getElementById('letters').textContent.includes('Fixed spots'))
       );
+      const issue = await lexvaneIssue(evaluate);
+      if (issue.number !== today.number - 3) {
+        throw new Error(`?mode=hard&day=3 is labelled "${issue.no}", three below "${today.no}" expected`);
+      }
       const board = () =>
         evaluate(() => ({
           status: document.getElementById('status').textContent.trim(),
@@ -1022,6 +1157,13 @@ export const DRIVERS = {
       }
       const used = Number(won.counter.match(/Guess (\d+) of/)?.[1]);
       const fields = { answerWord: ANSWERS.lexvane.hardDay3, finalGuessNumber: used };
+      const player = findSession(
+        ctx.pages.state,
+        (s) => s.lexvaneHard?.[3]?.won && s.lexvaneHard[3].violations.length > 0
+      );
+      if (!player) throw new Error("no session holds the browser's day-3 win");
+      const { createdAt } = player.session;
+      lexvaneIssuedDaysBack('lexvane/?mode=hard&day=3', issue.date, createdAt, 3);
       // After the win, a curl session spends four counted guesses sharing no
       // letter with the word (so hard mode never refuses them), then a fresh
       // cookie wins in one. Neither may spoil the honest win, and the one-guess
@@ -1084,8 +1226,15 @@ export const DRIVERS = {
     wrong:
       'The rover reached the extraction pad at F6, but the console never printed an ' +
       'extraction code.',
-    async run({ goto, mcp, snapshot }) {
+    async run({ goto, evaluate, mcp, snapshot }) {
       await goto('/maze/');
+      const labels = await evaluate(() => ({
+        rows: [...document.querySelectorAll('#rowlabs > div')].map((d) => d.textContent).join(' '),
+        cols: [...document.querySelectorAll('#axis > div')].map((d) => d.textContent).join(' '),
+      }));
+      if (labels.rows !== '1 2 3 4 5 6' || labels.cols !== 'A B C D E F') {
+        throw new Error(`the map's labels are not text: ${JSON.stringify(labels)}`);
+      }
       const read = async () => {
         const snap = await snapshot();
         const at = snap.match(/ p text="POS ([A-F][1-6])"/);
@@ -1141,6 +1290,20 @@ export const DRIVERS = {
         const next = await read();
         return next?.code ? next : null;
       });
+      // The map labels each surveyed cell with its ref in text, and only those.
+      const surveyed = [...known.keys()].sort().join(' ');
+      let refs = '';
+      const labelled = await until('the map to label every surveyed cell', async () => {
+        refs = await evaluate(() =>
+          [...document.querySelectorAll('#grid .cell')]
+            .filter((cell) => cell.dataset.state === 'surveyed')
+            .map((cell) => cell.querySelector('.ref')?.textContent ?? '?')
+            .sort()
+            .join(' ')
+        );
+        return refs === surveyed;
+      }, { tries: 20 }).catch(() => false);
+      if (!labelled) throw new Error(`the map labels its surveyed cells "${refs}", not "${surveyed}"`);
       const fields = { extractionCode: done.code };
       this.wrongFields = [{ extractionCode: 'MZ-0000' }, { extractionCode: bumpCode(done.code) }];
       this.alsoCorrectFields = [

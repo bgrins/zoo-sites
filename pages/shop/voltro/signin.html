@@ -30,22 +30,42 @@
 </nav>
 <main class="page">
   <h1>Sign in</h1>
-  <p>Voltro accounts are held by marketplace sellers, who sign in here to manage their
-  listings; <a href="sell.html">Sell on Voltro</a> explains how to open one. Shoppers do
-  not need an account: every order checks out as a guest and is tracked from
-  <a href="orders.html">Orders &amp; returns</a> with the order number and last name.</p>
-  <div class="signbox">
-    <form class="form" id="signin" novalidate>
-      <label for="email">Email address</label>
-      <input id="email" type="email" autocomplete="email">
-      <label for="pass">Password</label>
-      <input id="pass" type="password" autocomplete="current-password">
-      <button type="submit" class="btn">Sign in</button>
-      <p class="status" id="verdict" role="status"></p>
-    </form>
+  <p>Sign in to your Voltro account, or create one below. Checkout does not need an
+  account: every order is tracked from
+  <a href="orders.html">Orders &amp; returns</a> with the order number and last name.
+  Marketplace sellers sign in here too; <a href="sell.html">Sell on Voltro</a> explains
+  how to open a seller account.</p>
+  <div class="signbox" id="signedin" hidden>
+    <p>You are signed in as <b id="whoname"></b> (<span id="whoemail"></span>).</p>
+    <button type="button" class="btn" id="signout">Sign out</button>
   </div>
-  <p class="rev">Forgotten your password? Write to support@voltro.example from the
-  address on your account and the help desk sends a reset link.</p>
+  <div id="signedout">
+    <div class="signbox">
+      <form class="form" id="signin" novalidate>
+        <label for="email">Email address</label>
+        <input id="email" type="email" autocomplete="email">
+        <label for="pass">Password</label>
+        <input id="pass" type="password" autocomplete="current-password">
+        <button type="submit" class="btn">Sign in</button>
+        <p class="status" id="verdict" role="status"></p>
+      </form>
+    </div>
+    <p class="rev">Forgotten your password? Write to support@voltro.example from the
+    address on your account and the help desk sends a reset link.</p>
+    <h2>New to Voltro?</h2>
+    <div class="signbox">
+      <form class="form" id="create" novalidate>
+        <label for="newname">Full name</label>
+        <input id="newname" autocomplete="name">
+        <label for="newemail">Email address</label>
+        <input id="newemail" type="email" autocomplete="email">
+        <label for="newpass">Password (at least 8 characters)</label>
+        <input id="newpass" type="password" autocomplete="new-password">
+        <button type="submit" class="btn">Create account</button>
+        <p class="status" id="created" role="status"></p>
+      </form>
+    </div>
+  </div>
 </main>
 <footer>
   <ul>
@@ -63,24 +83,73 @@
 </footer>
 <script src="voltro-nav.js"></script>
 <script>
+const NONCE = '__SESSION_NONCE__';
+
+function show(account) {
+  document.getElementById('signedin').hidden = !account.signedIn;
+  document.getElementById('signedout').hidden = account.signedIn;
+  if (account.signedIn) {
+    document.getElementById('whoname').textContent = account.name;
+    document.getElementById('whoemail').textContent = account.email;
+  }
+}
+
+async function send(path, body, status) {
+  status.className = 'status';
+  status.textContent = '';
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, store: 'voltro', ...body }),
+    });
+    const reply = await res.json();
+    if (!res.ok) {
+      status.className = 'status bad';
+      status.textContent = reply.error ?? 'Voltro could not sign you in. Try again.';
+      return;
+    }
+    show(reply);
+  } catch {
+    status.className = 'status bad';
+    status.textContent = 'Voltro could not be reached. Check your connection and try again.';
+  }
+}
+
 document.getElementById('signin').addEventListener('submit', (event) => {
   event.preventDefault();
   const verdict = document.getElementById('verdict');
-  const email = document.getElementById('email').value.trim();
-  const pass = document.getElementById('pass').value;
-  verdict.className = 'status bad';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  const id = document.getElementById('email').value.trim();
+  const password = document.getElementById('pass').value;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(id)) {
+    verdict.className = 'status bad';
     verdict.textContent = 'Enter the email address on your Voltro account.';
     return;
   }
-  if (!pass) {
+  if (!password) {
+    verdict.className = 'status bad';
     verdict.textContent = 'Enter your password.';
     return;
   }
-  verdict.textContent =
-    'That email and password do not match a Voltro seller account. Check both and try ' +
-    'again. Shoppers do not need to sign in: checkout works as a guest.';
+  send('/api/shop/account/signin', { id, password }, verdict);
 });
+
+document.getElementById('create').addEventListener('submit', (event) => {
+  event.preventDefault();
+  send('/api/shop/account/create', {
+    name: document.getElementById('newname').value.trim(),
+    email: document.getElementById('newemail').value.trim(),
+    password: document.getElementById('newpass').value,
+  }, document.getElementById('created'));
+});
+
+document.getElementById('signout').addEventListener('click', () =>
+  send('/api/shop/account/signout', {}, document.getElementById('verdict')));
+
+fetch('/api/shop/account?store=voltro', { headers: { 'X-Session-Nonce': NONCE } })
+  .then((res) => (res.ok ? res.json() : null))
+  .then((account) => account && show(account))
+  .catch(() => {});
 </script>
 </body>
 </html>

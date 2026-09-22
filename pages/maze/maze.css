@@ -186,7 +186,6 @@ a { color: var(--rover); }
   font-size: 10px;
   color: var(--dim);
 }
-.rowlabs > div::before { content: attr(data-l); }
 .axis { display: grid; grid-template-columns: repeat(6, 50px); height: 18px; margin-left: 2px; }
 .axis > div {
   text-align: center;
@@ -194,7 +193,6 @@ a { color: var(--rover); }
   font-size: 10px;
   color: var(--dim);
 }
-.axis > div::before { content: attr(data-l); }
 .grid {
   display: grid;
   grid-template-columns: repeat(6, 50px);
@@ -202,40 +200,40 @@ a { color: var(--rover); }
   background: #fffdf8;
   width: 304px;
 }
-.grid > div {
+.grid .cell {
   height: 50px;
   position: relative;
   border: 2px solid transparent;
   background-image: repeating-linear-gradient(45deg, #e6dfcf 0 5px, #f4efe4 5px 10px);
 }
-.grid > div[data-ref] { background-image: none; }
-.grid > div[data-ref]::before {
-  content: attr(data-ref);
-  position: absolute;
-  left: 3px;
-  top: 1px;
-  font-family: var(--mono);
-  font-size: 9px;
-  color: #9a9384;
-}
-.grid > div[data-wn] { border-top-color: var(--graphite); }
-.grid > div[data-we] { border-right-color: var(--graphite); }
-.grid > div[data-ws] { border-bottom-color: var(--graphite); }
-.grid > div[data-ww] { border-left-color: var(--graphite); }
-.grid > div span {
+.grid .cell[data-state="surveyed"] { background-image: none; }
+.grid .cell[data-wn] { border-top-color: var(--graphite); }
+.grid .cell[data-we] { border-right-color: var(--graphite); }
+.grid .cell[data-ws] { border-bottom-color: var(--graphite); }
+.grid .cell[data-ww] { border-left-color: var(--graphite); }
+.grid .cell span {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
 }
-.grid > div .rover {
+.grid .cell .ref {
+  left: 3px;
+  top: 1px;
+  transform: none;
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 1.2;
+  color: #9a9384;
+}
+.grid .cell .rover {
   width: 18px;
   height: 18px;
   border-radius: 50%;
   background: var(--rover);
   box-shadow: 0 0 0 3px rgba(31, 95, 191, 0.22);
 }
-.grid > div .exit {
+.grid .cell .exit {
   width: 22px;
   height: 22px;
   border: 2px solid var(--pad);

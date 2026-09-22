@@ -104,6 +104,13 @@
     font-weight: 700; cursor: pointer;
   }
   #add:hover { border-color: var(--pink); color: var(--pink); }
+  .invoice { margin-top: 26px; border-top: 2px solid var(--line); padding-top: 22px; }
+  .invoice .hint { font-size: 13.5px; color: var(--soft); margin: 0 0 4px; }
+  select {
+    width: 100%; font: inherit; font-size: 16px; padding: 4px 0 5px;
+    border: 0; border-bottom: 2px solid #cfc4e6; background: transparent; color: var(--ink);
+  }
+  select:focus { outline: none; border-bottom-color: var(--pink); }
   #submit {
     background: linear-gradient(100deg, var(--violet), var(--pink));
     color: #fff; border: 0; border-radius: 999px; padding: 16px 40px;
@@ -151,7 +158,7 @@
   <p class="kicker">Solstice Conference Services presents</p>
   <h1>Solstice Leadership Summit</h1>
   <div class="facts">
-    <span><b>Dates</b> 14–16 October 2026</span>
+    <span><b>Dates</b> __SUMMIT_DATES__</span>
     <span><b>Venue</b> Tarnmouth Exhibition Halls</span>
     <span><b>Track</b> Group / delegation intake</span>
   </div>
@@ -167,6 +174,24 @@ badges are printed from exactly what you type here. Fields marked
     <legend>Attendees</legend>
     <div id="rows"></div>
     <button type="button" id="add">Add attendee</button>
+  </fieldset>
+  <fieldset class="invoice">
+    <legend>Invoice details (optional)</legend>
+    <p class="hint">The invoice follows the group code within a week. Leave these blank and
+    the desk writes to the first attendee for them.</p>
+    <label for="organisation">Organisation to invoice</label>
+    <input id="organisation" autocomplete="organization">
+    <label for="po">Purchase order reference</label>
+    <input id="po" autocomplete="off">
+    <label for="sector">Sector</label>
+    <select id="sector">
+      <option value="">Not stated</option>
+      <option value="private">Company or partnership</option>
+      <option value="public">Public sector</option>
+      <option value="healthcare">Healthcare</option>
+      <option value="charity">Registered charity</option>
+      <option value="other">Other</option>
+    </select>
   </fieldset>
   <button type="submit" id="submit">Submit registration</button>
   <div class="error" id="submit-error" role="alert"></div>
@@ -253,15 +278,28 @@ badges are printed from exactly what you type here. Fields marked
     const failed = document.getElementById('submit-error');
     failed.textContent = '';
     if (!ok) return;
+    const invoice = {};
+    for (const key of ['organisation', 'po', 'sector']) invoice[key] = document.getElementById(key).value.trim();
     let res;
     try {
       res = await fetch('/api/roster-submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nonce: NONCE, attendees, added }),
+        body: JSON.stringify({ nonce: NONCE, attendees, added, ...invoice }),
       });
     } catch {
       failed.textContent = 'The delegation desk could not be reached. Nothing was submitted; try again.';
+      return;
+    }
+    if (res.status === 422) {
+      const refused = await res.json().catch(() => ({}));
+      const rowEls = [...rows.querySelectorAll('.attendee')];
+      (refused.rows ?? []).forEach((errors, i) => {
+        if (!rowEls[i]) return;
+        rowEls[i].querySelector('.err-name').textContent = errors.name ?? '';
+        rowEls[i].querySelector('.err-email').textContent = errors.email ?? '';
+      });
+      failed.textContent = refused.error ?? 'The delegation desk did not accept this submission.';
       return;
     }
     if (!res.ok) {

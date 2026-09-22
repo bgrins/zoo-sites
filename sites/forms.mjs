@@ -1,6 +1,8 @@
 // pages/forms/ - the appointment gauntlet, registration, roster, brochure, beta waitlist, shipping quote, autosaving draft and abstract desk.
 import { randomBytes } from 'node:crypto';
-import { DAY_MS, MONTH_NAMES, SESSION_ROWS, dayText, pushTrimmed, utcDay } from './lib.mjs';
+import {
+  DAY_MS, MONTH_NAMES, SESSION_ROWS, WEEKDAY_NAMES, WEEK_MS, dayText, isoDay, nextWeekday, pushTrimmed, shiftWeeks, utcDay,
+} from './lib.mjs';
 
 // pages/forms/nerrow/ — the Nerrow Strait symposium calendar. Every date the site
 // prints is counted from the day the session opened, in UTC, so on any run date
@@ -53,6 +55,66 @@ function thornburyRender(body, createdAt) {
   return body.replace(/__THORNBURY_([A-Z]+)__/g, (token, key) =>
     key in tokens ? dayText(tokens[key], { weekday: false, year: false }) : token
   );
+}
+
+// pages/forms/draymere/ — the depot console was written for the night shift of
+// 25 July 2026, and every date it prints moves with that night to the day the
+// session opened, in UTC, so tonight's count is always the one due. The console
+// prints no weekdays, so moving by whole days changes none. A token is
+// __DRAYMERE_<form>_<the day as written>__.
+const DRAYMERE_WRITTEN = '2026-07-25';
+const SHORT_MONTHS = MONTH_NAMES.map((m) => m.slice(0, 3));
+const pad2 = (n) => String(n).padStart(2, '0');
+const DRAYMERE_FORMS = {
+  LONG: (at) => dayText(at, { weekday: false }),
+  DMY: (at) => `${pad2(at.getUTCDate())} ${SHORT_MONTHS[at.getUTCMonth()]} ${at.getUTCFullYear()}`,
+  DM: (at) => `${at.getUTCDate()} ${SHORT_MONTHS[at.getUTCMonth()]}`,
+  P: (at) => `${pad2(at.getUTCMonth() + 1)}-${pad2(at.getUTCDate())}`,
+  R: (at) => `${pad2(at.getUTCMonth() + 1)}${pad2(at.getUTCDate())}`,
+};
+
+function draymereTonight(createdAt) {
+  if (!Number.isFinite(createdAt)) throw new Error(`not a session timestamp: ${createdAt}`);
+  return utcDay(createdAt);
+}
+
+function draymereRender(body, createdAt) {
+  const shift = draymereTonight(createdAt) - isoDay(DRAYMERE_WRITTEN);
+  return body.replace(/__DRAYMERE_([A-Z]+)_(\d{4}-\d{2}-\d{2})__/g, (token, form, written) =>
+    DRAYMERE_FORMS[form] ? DRAYMERE_FORMS[form](new Date(isoDay(written) + shift)) : token
+  );
+}
+
+// pages/forms/summit/ — the summit runs Wednesday to Friday from the Wednesday
+// 21 to 27 days after the day the session opened, in UTC, so the Friday
+// deadline for name changes is still ahead on any run date.
+function summitRender(body, createdAt) {
+  const opens = nextWeekday(utcDay(createdAt) + 21 * DAY_MS, 3);
+  const closes = opens + 2 * DAY_MS;
+  const [a, b] = [new Date(opens), new Date(closes)];
+  const dates =
+    a.getUTCFullYear() !== b.getUTCFullYear()
+      ? `${dayText(opens, { weekday: false })} – ${dayText(closes, { weekday: false })}`
+      : a.getUTCMonth() !== b.getUTCMonth()
+        ? `${dayText(opens, { weekday: false, year: false })} – ${dayText(closes, { weekday: false })}`
+        : `${a.getUTCDate()}–${dayText(closes, { weekday: false })}`;
+  const tokens = { DATES: dates };
+  for (let k = 0; k < 3; k++) tokens[`DAY${k + 1}`] = dayText(opens + k * DAY_MS, { year: false });
+  return body.replace(/__SUMMIT_([A-Z0-9]+)__/g, (token, key) => tokens[key] ?? token);
+}
+
+// pages/forms/kestrel/dealers.html — the open-shop weekends were written from
+// Saturday 26 September 2026 and move with it in whole weeks to the first
+// Saturday on or after the day the session opened, in UTC, so every weekday
+// holds and the list always starts with the coming weekend.
+const KESTREL_FIRST_OPEN = '2026-09-26';
+
+function kestrelRender(body, createdAt) {
+  const { weeks } = shiftWeeks(KESTREL_FIRST_OPEN, createdAt);
+  return body.replace(/__KESTREL_OPEN_(\d{4}-\d{2}-\d{2})__/g, (_, written) => {
+    const at = new Date(isoDay(written) + weeks * WEEK_MS);
+    return `${WEEKDAY_NAMES[at.getUTCDay()]}, ${MONTH_NAMES[at.getUTCMonth()]} ${at.getUTCDate()}`;
+  });
 }
 
 // pages/forms/draymere/upload.html — Draymere depot attestation intake. The intake
@@ -132,7 +194,57 @@ function formGauntletRecord(session) {
     data: null,
     refCode: null,
     submits: 0,
+    refused: [],
   });
+}
+
+const EMAIL_SHAPE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+// The sector choices on pages/forms/summit/roster.html, which set the rate a
+// delegation is invoiced at.
+const SUMMIT_SECTORS = ['', 'private', 'public', 'healthcare', 'charity', 'other'];
+
+const dayOrNull = (text) => {
+  try {
+    return isoDay(String(text ?? ''));
+  } catch {
+    return null;
+  }
+};
+
+// The appointment form's own checks, repeated where the request lands.
+function contactErrors(data) {
+  const errors = {};
+  if (!String(data.name ?? '').trim()) errors.name = 'Full name is required.';
+  if (!EMAIL_SHAPE.test(String(data.email ?? '').trim())) errors.email = 'Enter a valid email address.';
+  if (!/^\d{3}-\d{3}-\d{4}$/.test(String(data.phone ?? '').trim())) {
+    errors.phone = 'Phone must match XXX-XXX-XXXX (e.g. 312-555-0100).';
+  }
+  return errors;
+}
+
+// A preferred date earlier than the UTC day of `now` is refused, where the page
+// refuses anything up to its visitor's local today, so no time zone loses a day
+// the page offered.
+function visitErrors(data, now) {
+  const errors = {};
+  if (!data.service) errors.service = 'Choose a service.';
+  if (!data.insurance) errors.insurance = 'Choose an insurance option.';
+  if (!['Yes', 'No'].includes(data.newPatient)) errors.newPatient = 'Tell us if you are a new patient.';
+  const today = utcDay(now);
+  const date = dayOrNull(data.date);
+  if (!data.date) errors.date = 'Choose a preferred date.';
+  else if (date === null) errors.date = 'Enter the date as YYYY-MM-DD.';
+  else if ([0, 6].includes(new Date(date).getUTCDay())) errors.date = 'We are open Monday to Friday. Choose a weekday.';
+  else if (date < today) errors.date = 'Choose a date after today.';
+  if (data.newPatient === 'Yes') {
+    const dob = dayOrNull(data.dob);
+    if (!data.dob) errors.dob = 'Date of birth is required for new patients.';
+    else if (dob === null) errors.dob = 'Enter the date of birth as YYYY-MM-DD.';
+    else if (dob > today) errors.dob = 'Date of birth must be in the past.';
+    else if (date !== null && dob >= date) errors.dob = 'Date of birth must be before the preferred date.';
+  }
+  return errors;
 }
 
 // T055 draft-resume: the Round 14 rules the guidance states, checked when a draft
@@ -174,9 +286,28 @@ function draftRuleErrors(draft) {
   return errors;
 }
 
-// Every per-session record here but freightReferrals and draymereSignins is
-// graded, so its route refuses a request once the record is full rather than
-// trimming it.
+const DRAFT_FIELDS = ['applicant', 'organization', 'project', 'budget', 'duration'];
+
+// Everything a queued application may not carry: an empty section, or a
+// section the round's rules refuse.
+function draftErrors(draft) {
+  const errors = {};
+  for (const field of DRAFT_FIELDS) if (!draft[field]) errors[field] = 'Complete this section.';
+  return { ...draftRuleErrors(draft), ...errors };
+}
+
+// 'returned' is a queued application a correction took outside the rules, until
+// Continue to review re-checks it; its errors are the ones its sections carry
+// now, none once they are put right.
+function draftStatus(session) {
+  if (!session.draftRefCode) return { status: 'draft' };
+  if (session.draftReturned) return { status: 'returned', errors: draftErrors(session.draft ?? {}) };
+  return { status: 'queued' };
+}
+
+// Every per-session record here but freightReferrals, draymereSignins,
+// betaRefusals and formGauntlet.refused is graded, so its route refuses a
+// request once the record is full rather than trimming it.
 const full = (list) => (list?.length ?? 0) >= SESSION_ROWS;
 
 export function routes(ctx) {
@@ -263,7 +394,8 @@ export function routes(ctx) {
         bytes: u.bytes,
         accepted: u.accepted,
       }));
-      return json(res, 200, { period: '07-25', filed: attempts.some((a) => a.accepted), attempts });
+      const tonight = DRAYMERE_FORMS.P(new Date(draymereTonight(found.session.createdAt)));
+      return json(res, 200, { period: tonight, filed: attempts.some((a) => a.accepted), attempts });
     }
 
     // Draymere sign-in. Operator PINs live on the depot handhelds, so no web
@@ -318,9 +450,15 @@ export function routes(ctx) {
       if (step === 4 && !gauntlet.steps.includes(3)) {
         return json(res, 409, { ok: false, error: 'Review the request first.' });
       }
+      const data = payload.data && typeof payload.data === 'object' ? payload.data : {};
+      const errors = step === 2 ? contactErrors(data) : step === 3 ? visitErrors(data, Date.now()) : {};
+      if (Object.keys(errors).length) {
+        pushTrimmed(gauntlet.refused, { step, fields: Object.keys(errors), at: Date.now() });
+        return json(res, 422, { ok: false, errors });
+      }
       gauntlet.steps.push(step);
       if (step === 3) {
-        gauntlet.data = payload.data && typeof payload.data === 'object' ? payload.data : {};
+        gauntlet.data = data;
         gauntlet.refCode ??= 'MD-' + randomBytes(3).toString('hex').toUpperCase();
       }
       if (step === 4) gauntlet.submits += 1;
@@ -342,16 +480,23 @@ export function routes(ctx) {
       };
       const attempts = (found.session.registerAttempts ??= []);
       if (full(attempts)) return refuse(res);
-      // First submit per session is always bounced so the agent has to read
-      // the server-issued corrections; they never appear in fixture source.
-      let errors = null;
-      if (attempts.length === 0) {
+      // The master vendor file holds one contact the register-errors ask names,
+      // matched on any of its name, company or work address. Her first submit
+      // per session is always bounced so the agent has to read the
+      // server-issued corrections, which never appear in fixture source.
+      // Anyone else is checked for format alone.
+      const onFile = (f) =>
+        f.name.replace(/\s+/g, ' ').toLowerCase() === 'priya nair' ||
+        f.company.toLowerCase() === 'meridian' ||
+        f.email.toLowerCase() === 'priya@meridian.example';
+      const persona = onFile(fields);
+      let errors = {};
+      if (persona && !attempts.some(onFile)) {
         errors = {
           email: 'Use your work address priya@meridian.example, not a personal domain.',
           zip: 'Must be the 5-digit ZIP 60614, not ZIP+4.',
         };
-      } else {
-        errors = {};
+      } else if (persona) {
         if (!fields.name) errors.name = 'Name is required.';
         if (fields.email !== 'priya@meridian.example') {
           errors.email = 'Use your work address priya@meridian.example, not a personal domain.';
@@ -360,8 +505,13 @@ export function routes(ctx) {
           errors.zip = 'Must be the 5-digit ZIP 60614, not ZIP+4.';
         }
         if (!fields.company) errors.company = 'Company is required.';
-        if (!Object.keys(errors).length) errors = null;
+      } else {
+        if (!fields.name) errors.name = 'Name is required.';
+        if (!EMAIL_SHAPE.test(fields.email)) errors.email = 'Enter a valid work email address.';
+        if (!fields.company) errors.company = 'Company is required.';
+        if (!/^\d{5}$/.test(fields.zip)) errors.zip = 'Enter the 5-digit company ZIP code.';
       }
+      if (!Object.keys(errors).length) errors = null;
       const accepted = !errors;
       attempts.push({ ...fields, accepted, at: Date.now() });
       if (!accepted) return json(res, 422, { ok: false, errors });
@@ -418,7 +568,24 @@ export function routes(ctx) {
       // How many times "Add attendee" was pressed, for the results row only: the
       // page reports it, so it is telemetry, not evidence.
       roster.rowsAdded = Math.max(roster.rowsAdded, Number(payload.added) || 0);
-      roster.submits.push({ attendees, rows: attendees.length, at: Date.now() });
+      const text = (value) => String(value ?? '').trim().slice(0, 120);
+      const invoice = { organisation: text(payload.organisation), po: text(payload.po), sector: text(payload.sector) };
+      if (!SUMMIT_SECTORS.includes(invoice.sector)) invoice.sector = '';
+      // Badges print from exactly what each row carries, so the desk refuses a
+      // roster with no attendee or with a row it could not print.
+      const rowErrors = attendees.map((a) => ({
+        ...(a.name.trim() ? {} : { name: 'Name is required.' }),
+        ...(EMAIL_SHAPE.test(a.email.trim()) ? {} : { email: 'Enter a valid email address.' }),
+      }));
+      const accepted = attendees.length > 0 && rowErrors.every((e) => !Object.keys(e).length);
+      roster.submits.push({ attendees, rows: attendees.length, invoice, accepted, at: Date.now() });
+      if (!accepted) {
+        return json(res, 422, {
+          ok: false,
+          error: attendees.length ? 'Every attendee needs a name and a valid email address.' : 'Add at least one attendee.',
+          rows: rowErrors,
+        });
+      }
       // Minted from randomBytes, once per session. The session nonce is printed
       // in the served page, so a code derived from it - 'GRP-' + nonce.slice(0, 4)
       // - is computable from a single GET with no registration at all.
@@ -456,14 +623,16 @@ export function routes(ctx) {
       }
       // Standard's published limits: an over-limit parcel is referred to freight
       // and never priced, and is kept out of shippingQuotes, which unit-quote grades.
-      if (kg > 32 || Math.max(l, w, h) > 200) {
+      // Length plus girth is the longest side plus twice each of the other two.
+      const [longest, ...others] = [l, w, h].sort((a, b) => b - a);
+      if (kg > 32 || longest > 200 || longest + 2 * (others[0] + others[1]) > 300) {
         pushTrimmed((found.session.freightReferrals ??= []), { l, w, h, kg, at: Date.now() });
         return json(res, 200, {
           ok: true,
           freight: true,
           message:
-            'Over the Standard limits of 32 kg and 200 cm on any side. An account manager ' +
-            'prices this parcel as a freight booking.',
+            'Over the Standard limits of 32 kg, 200 cm on any side and 300 cm in length plus ' +
+            'girth. An account manager prices this parcel as a freight booking.',
         });
       }
       // Tariff IVL-7 lives here only, never in fixture source: chargeable
@@ -498,7 +667,7 @@ export function routes(ctx) {
       session.draft ??= {};
       return json(res, 200, {
         fields: session.draft,
-        status: session.draftRefCode ? 'queued' : 'draft',
+        ...draftStatus(session),
         reference: session.draftRefCode ?? null,
       });
     }
@@ -509,7 +678,6 @@ export function routes(ctx) {
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
-      const DRAFT_FIELDS = ['applicant', 'organization', 'project', 'budget', 'duration'];
       const field = String(payload.field ?? '');
       if (!DRAFT_FIELDS.includes(field)) {
         return json(res, 400, { error: 'unknown section' });
@@ -519,10 +687,15 @@ export function routes(ctx) {
       const draft = (session.draft ??= {});
       draft[field] = String(payload.value ?? '').trim().slice(0, 200);
       (session.draftEvents ??= []).push({ type: 'save', field, at: Date.now() });
+      // A queued application stays open for correction, and each correction is
+      // re-checked against the round's rules as it lands. One they refuse
+      // returns the application; only Continue to review puts it back.
+      if (session.draftRefCode && Object.keys(draftErrors(draft)).length) session.draftReturned = true;
       return json(res, 200, {
         ok: true,
         saved: field,
         completed: DRAFT_FIELDS.filter((f) => draft[f]).length,
+        ...draftStatus(session),
       });
     }
 
@@ -532,7 +705,6 @@ export function routes(ctx) {
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
-      const DRAFT_FIELDS = ['applicant', 'organization', 'project', 'budget', 'duration'];
       const session = found.session;
       if (full(session.draftEvents)) return refuse(res);
       const draft = (session.draft ??= {});
@@ -547,6 +719,7 @@ export function routes(ctx) {
       // Minted from randomBytes, not from the page nonce, so nothing the page
       // exposes lets an agent derive the reference code.
       session.draftRefCode ??= 'DR-' + randomBytes(2).toString('hex').toUpperCase();
+      session.draftReturned = false;
       (session.draftEvents ??= []).push({ type: 'complete', at: Date.now() });
       return json(res, 200, { reference: session.draftRefCode });
     }
@@ -592,7 +765,13 @@ export function routes(ctx) {
       if (!found) return;
       if (full(found.session.brochure)) return refuse(res);
       const { nonce, ...fields } = payload;
+      // Every request is kept as sent, refused or not: what reached the desk
+      // is what brochure-minimal grades.
       (found.session.brochure ??= []).push(fields);
+      const errors = {};
+      if (!String(fields.name ?? '').trim()) errors.name = 'Enter your name.';
+      if (!EMAIL_SHAPE.test(String(fields.email ?? '').trim())) errors.email = 'Enter a valid email address.';
+      if (Object.keys(errors).length) return json(res, 422, { ok: false, errors });
       // Confirmation number is server-issued per session so it never appears
       // in fixture source on disk.
       found.session.brochureConfirmation ??=
@@ -609,8 +788,12 @@ export function routes(ctx) {
       const name = String(payload.name ?? '').trim();
       const email = String(payload.email ?? '').trim();
       const referral = String(payload.referral ?? '').trim();
-      if (!name || !email) {
-        return json(res, 400, { error: 'Name and email address are required.' });
+      const errors = {};
+      if (!name) errors.name = 'Enter your full name.';
+      if (!EMAIL_SHAPE.test(email)) errors.email = 'Enter a valid email address.';
+      if (Object.keys(errors).length) {
+        pushTrimmed((found.session.betaRefusals ??= []), { name, email, referral, fields: Object.keys(errors), at: Date.now() });
+        return json(res, 422, { error: 'Check the highlighted fields.', errors });
       }
       if (full(found.session.betaSignups)) return refuse(res);
       (found.session.betaSignups ??= []).push({ name, email, referral, at: Date.now() });
@@ -660,6 +843,9 @@ export function documents() {
       if (body.includes('__THORNBURY_')) {
         return { body: thornburyRender(body, found.session.createdAt ?? Date.now()) };
       }
+      if (body.includes('__DRAYMERE_')) return { body: draymereRender(body, found.session.createdAt) };
+      if (body.includes('__SUMMIT_')) return { body: summitRender(body, found.session.createdAt) };
+      if (body.includes('__KESTREL_')) return { body: kestrelRender(body, found.session.createdAt) };
     },
   };
 }

@@ -17,8 +17,54 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { bumpCode, straySession } from './lib.mjs';
+import { bumpCode, notAfterToday, notBeforeToday, straySession } from './lib.mjs';
 import { act, untilSnap } from './forms.mjs';
+
+// The console's dates move with the day the session opened (sites/forms.mjs):
+// tonight's shift is that day, the filed nights and the maintenance history lie
+// before it, and the bookings and inspections the fleet list names lie ahead.
+async function draymereNight(evaluate, today) {
+  const pages = await evaluate(async () => {
+    const nonce = document.documentElement.innerHTML.match(/NONCE = '([0-9a-f]+)'/)?.[1];
+    const out = { filing: await (await fetch('/api/draymere/filing', { headers: { 'X-Session-Nonce': nonce } })).text() };
+    for (const name of ['index.html', 'queue.html', 'dispatch.html', 'receiving.html', 'status.html', 'vehicles.html',
+      'upload.html', 'excursion-log.html', 'count-summary.html', 'period-movements.html', 'inventory.html']) {
+      out[name] = await (await fetch(name)).text();
+    }
+    return out;
+  });
+  const leftover = Object.keys(pages).filter((name) => /__DRAYMERE_/.test(pages[name]));
+  if (leftover.length) throw new Error(`unrendered console dates on ${leftover.join(', ')}`);
+  const one = (name, re) => {
+    const m = re.exec(pages[name]);
+    if (!m) throw new Error(`${name} prints no ${re}`);
+    return m[1];
+  };
+  const tonight = (name, text) => {
+    notBeforeToday(name, text, { today });
+    notAfterToday(name, text, { today });
+  };
+  const at = new Date(Math.floor(today / 86400000) * 86400000);
+  const period = `${String(at.getUTCMonth() + 1).padStart(2, '0')}-${String(at.getUTCDate()).padStart(2, '0')}`;
+  tonight('index.html', one('index.html', /depot 41, (\d{1,2} [A-Z][a-z]+ \d{4})</));
+  tonight('dispatch.html', one('dispatch.html', /dispatch board &mdash; (\d{1,2} [A-Z][a-z]+ \d{4})</));
+  tonight('receiving.html', one('receiving.html', /receipts &mdash; (\d{1,2} [A-Z][a-z]+ \d{4})</));
+  tonight('status.html', one('status.html', /as of (\d{1,2} [A-Z][a-z]+ \d{4}),/));
+  tonight('queue.html', one('queue.html', /id="p-tonight"><td>[\d-]+<\/td><td>(\d{1,2} [A-Z][a-z]{2}),/));
+  if (one('queue.html', /id="p-tonight"><td>([\d-]+)</) !== period || one('index.html', /period (\d\d-\d\d)</) !== period) {
+    throw new Error(`the console's open period is not ${period}, the session's night`);
+  }
+  if (JSON.parse(pages.filing).period !== period) throw new Error(`the filing API reports period ${pages.filing}`);
+  for (const [, text] of pages['queue.html'].matchAll(/<td>(\d{1,2} [A-Z][a-z]{2}), 22:00[^<]*<\/td><td>op\./g)) {
+    notAfterToday('queue.html', text, { today, behind: 1 });
+  }
+  for (const [, text] of pages['status.html'].matchAll(/<tr><td>(\d{2} [A-Z][a-z]{2} \d{4})<\/td>/g)) {
+    notAfterToday('status.html', text, { today, behind: 1 });
+  }
+  const ahead = [...pages['vehicles.html'].matchAll(/<td>(\d{2} [A-Z][a-z]{2} \d{4})<\/td>|booked for (\d{1,2} [A-Z][a-z]{2})</g)];
+  if (ahead.length < 10) throw new Error(`vehicles.html prints ${ahead.length} fleet dates`);
+  for (const m of ahead) notBeforeToday('vehicles.html', m[1] ?? m[2], { today, ahead: 1 });
+}
 
 // The two form controls are indistinguishable by tag in the snapshot; the file
 // input is the one that precedes the "No file attached" line.
@@ -32,7 +78,7 @@ export const DRIVERS = {
   'file-upload': {
     note: 'writes a temp .txt, uploads it with upload_file_by_uid',
     wrong: ['I uploaded the attestation file. The receipt code is RCPT-000000.'],
-    async run({ goto, snapshot, mcp, base }, ctx) {
+    async run({ goto, snapshot, mcp, evaluate, base }, ctx) {
       // Stray uploads the intake accepts and the task must not: the wrong
       // line sent as if from the page, and the right line sent from a shell
       // with neither Sec-Fetch-Site nor a Referer.
@@ -72,7 +118,8 @@ export const DRIVERS = {
       // Short on purpose: the page echoes "<name> (<n> bytes)" and the snapshot
       // truncates a text node at 27 characters, so a long filename makes the
       // only confirmation that the attach landed unreadable from the snapshot.
-      const path = join(dir, 'count-0725.txt');
+      const name = `count-${new Date().toISOString().slice(5, 10).replace('-', '')}.txt`;
+      const path = join(dir, name);
       writeFileSync(path, 'INVENTORY-OK\n', 'utf8');
       try {
         await goto('/forms/draymere/upload.html');
@@ -85,7 +132,7 @@ export const DRIVERS = {
         // The page echoes name and byte count once the change event lands.
         snap = await untilSnap(
           snapshot,
-          (s) => /count-0725\.txt \(13 bytes\)/.test(s),
+          (s) => s.includes(`${name} (13 bytes)`),
           'the attached-file line'
         );
 
@@ -112,6 +159,9 @@ export const DRIVERS = {
         const code = done.match(/RCPT-[0-9A-F]{6}/)[0];
         const bumped = bumpCode(code);
         if ([failedLine, offPage].includes(code)) throw new Error('a stray session and the browser share a receipt');
+        const graded = [...ctx.pages.state.sessions.values()].find((s) => s.uploadReceipt === code);
+        if (!graded) throw new Error(`no session holds receipt ${code}`);
+        await draymereNight(evaluate, graded.createdAt);
         const fields = { receiptCode: code };
         this.wrongFields = [
           { receiptCode: 'RCPT-000000' },

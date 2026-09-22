@@ -77,6 +77,7 @@
 </footer>
 <script src="gadgetron-data.js"></script>
 <script>
+const NONCE = '__SESSION_NONCE__';
 const MIN_TERM = 2;
 const NATIVE = { '1080p': '1920x1080', '1440p': '2560x1440', '4K': '3840x2160' };
 const CLASS_LABEL = { '1080p': 'FHD', '1440p': 'QHD', '4K': 'UHD-4K' };
@@ -117,22 +118,45 @@ if (term.length < MIN_TERM) {
     'box above, then submit it.'
   );
 } else {
+  search();
+}
+
+async function search() {
   const WORDS = { '1080p': 'fhd full hd 1080p', '1440p': 'qhd quad hd 1440p', '4K': 'uhd 4k uhd-4k 2160p' };
-  const tokens = term.toLowerCase().split(/[\s,]+/).filter(Boolean)
-    .map((t) => t.replace(/^(\d+)(?:in|inch|")$/, '$1'));
+  const FILLER = new Set(['in', 'inch', 'inches', 'the', 'a', 'an', 'for', 'with', 'and', 'of', 'best', 'cheapest', 'lowest']);
+  const folded = term.toLowerCase().split(/[\s,]+/).filter(Boolean)
+    .map((t) => t.replace(/^(\d+)-?(?:in|inch|inches|")$/, '$1'));
+  const kept = folded.filter((t) => !FILLER.has(t));
+  const tokens = kept.length ? kept : folded;
   const has = (text) => tokens.every((t) => text.toLowerCase().includes(t));
+  let accessories = [];
+  let priceEngine = true;
+  try {
+    const res = await fetch('/api/shop/catalog?store=gadgetron', { headers: { 'X-Session-Nonce': NONCE } });
+    if (!res.ok) throw new Error('catalog ' + res.status);
+    accessories = (await res.json()).items
+      .filter((item) => item.kind)
+      .map((item) => ({
+        part: item.sku,
+        model: item.name,
+        price: item.price,
+        stock: item.inStock ? 'y' : 'n',
+        text: [item.name, item.sku, item.kind, item.blurb, 'dock docks docking hub hubs station charger power'].join(' '),
+        desc: item.blurb,
+      }));
+  } catch {
+    priceEngine = false;
+  }
   const hits = [
     ...GADGETRON_ROWS.map((row) => ({
       ...row,
-      text: [row.model, row.part, row.diag + ' in', NATIVE[row.res], WORDS[row.res], 'monitor monitors'].join(' '),
+      text: [row.model, row.part, row.diag + ' in', row.diag + ' inch', row.diag + '-inch', NATIVE[row.res],
+        WORDS[row.res], 'monitor monitors'].join(' '),
       desc: row.diag + ' in ' + CLASS_LABEL[row.res] + ' ' + NATIVE[row.res] + ', IPS, rated ' + row.rating.toFixed(1),
     })),
-    ...GADGETRON_ACCESSORIES.map((row) => ({
-      ...row,
-      text: [row.model, row.part, row.blurb, 'dock docks docking hub hubs station'].join(' '),
-      desc: row.blurb,
-    })),
+    ...accessories,
   ].filter((row) => has(row.text));
+  const missing = priceEngine ? '' : ' Docks, hubs and power could not be searched just now; reload to try again.';
   document.title = 'Gadgetron | Search results for ' + term;
   matched.textContent =
     hits.length + ' result' + (hits.length === 1 ? '' : 's') + ' for "' + term + '"';
@@ -140,7 +164,7 @@ if (term.length < MIN_TERM) {
     showNotice(
       'No part number matches',
       'Nothing in the index matches every word of that search. Check the part number, ' +
-      'or search on a brand, a diagonal such as 27, or a class such as QHD.'
+      'or search on a brand, a diagonal such as 27, or a class such as QHD.' + missing
     );
   } else {
     document.getElementById('rows').innerHTML = hits
@@ -162,8 +186,8 @@ if (term.length < MIN_TERM) {
       .join('');
     document.getElementById('grid').hidden = false;
     rowsnote.textContent =
-      'Rows 1-' + hits.length + ' of ' + (GADGETRON_ROWS.length + GADGETRON_ACCESSORIES.length) +
-      ' indexed SKUs. Prices are per unit in USD, excluding tax and recycling levy.';
+      'Rows 1-' + hits.length + ' of ' + (GADGETRON_ROWS.length + accessories.length) +
+      ' indexed SKUs. Prices are per unit in USD, excluding tax and recycling levy.' + missing;
   }
 }
 </script>

@@ -131,6 +131,7 @@ td { padding: 12px 16px 12px 0; border-bottom: 1px solid var(--line); vertical-a
   color: #6b4a00;
 }
 .status.queued { background: var(--sea-wash); color: var(--sea); }
+.status.returned { background: #f8e6e9; color: var(--alert); }
 .next-step { display: block; margin-top: 6px; font-size: 14px; color: var(--slate); }
 .next-step:empty { display: none; }
 

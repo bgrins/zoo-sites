@@ -2,7 +2,7 @@
 // for the contract.
 
 import { ANSWERS } from '../answers.mjs';
-import { addSession, findSession, textOf, uidOf, until } from './lib.mjs';
+import { addSession, findSession, straySession, textOf, uidOf, until } from './lib.mjs';
 
 const SNAP_LINES = 300;
 
@@ -41,6 +41,30 @@ export const DRIVERS = {
       if (!ctx.pages.state.modes?.gadgetronDown) {
         throw new Error('serverModes did not arm gadgetronDown: is the T043 plumbing applied?');
       }
+      // Precondition: the outage is an outage to a client that reads statuses.
+      // The primary answers 503 with a Retry-After, pages and assets alike, and
+      // its catalog, order-list and quote APIs answer 503 to a session holding
+      // a mirror page's nonce, while another store's catalog still answers.
+      for (const path of ['/shop/gadgetron/', '/shop/gadgetron/gadgetron.css']) {
+        const res = await fetch(h.base + path);
+        if (res.status !== 503 || !res.headers.get('retry-after')) {
+          throw new Error(`${path} answered ${res.status} (Retry-After ${res.headers.get('retry-after')}) during the outage`);
+        }
+      }
+      const stray = await straySession(h.base, '/shop/gadgetron-mirror/docks.html', { reply: 'response' });
+      const calls = [
+        ['catalog', stray.get('/api/shop/catalog?store=gadgetron')],
+        ['cart add', stray.post('/api/shop/cart/add', { store: 'gadgetron', sku: 'BP-27U', qty: 1 })],
+        ['order list', stray.get('/api/shop/cart?store=gadgetron')],
+        ['bulk quote', stray.post('/api/gadgetron/bulk-quote', { email: 'buyer@example.com', lines: ['BP-27U x 20'] })],
+      ];
+      for (const [label, call] of calls) {
+        const { status } = await call;
+        if (status !== 503) throw new Error(`the gadgetron ${label} API answered ${status} during the outage`);
+      }
+      if ((await stray.get('/api/shop/catalog?store=marrowgate')).status !== 200) {
+        throw new Error("the outage took Marrowgate's catalog down with Gadgetron's");
+      }
 
       await h.goto('/shop/gadgetron/');
       const splash = await waitForSnapshot(
@@ -70,6 +94,18 @@ export const DRIVERS = {
       // whole; only the links inside it bubble up, so the spec sheet is the one
       // reachable route to the price through this surface.
       const rows = await waitForSnapshot(h, /Kessvar DK-100/, 'the docks department listing');
+      // Precondition: the sheet is the snapshot of the primary store's docks
+      // department it claims to be, both GadgetDock hubs included, and the sync
+      // log counts the rows it lists.
+      const skus = await h.evaluate(() => [...document.querySelectorAll('#rows tr')].map((tr) => tr.dataset.sku));
+      if (!['GDX-HUB', 'GDX-HUB2', ANSWERS.mirrorReroute.dockSku].every((sku) => skus.includes(sku))) {
+        throw new Error(`the mirror docks sheet lists ${skus.join(', ')}`);
+      }
+      const log = await (await fetch(h.base + '/shop/gadgetron-mirror/sync-log.html')).text();
+      const synced = /Docks, hubs and power<\/td><td>Synced, (\d+) rows/.exec(log)?.[1];
+      if (Number(synced) !== skus.length) {
+        throw new Error(`the sync log counts ${synced} dock rows, the sheet lists ${skus.length}`);
+      }
       await h.mcp('click_by_uid', {
         uid: uid(rows, 'a "Kessvar DK-100(?: dock)?"', 'Kessvar spec sheet link'),
       });
@@ -91,6 +127,9 @@ export const DRIVERS = {
         { price: dock, sourceUrl: 'http://example.invalid/shop/gadgetron/' },
         { price: dock, sourceUrl: new URL('docks.html', storeUrl).href },
         { price: Number(ANSWERS.mirrorReroute.decoyDocks['KB-DK9']), sourceUrl: url },
+        // The GadgetDock DX2 Hub, the sheet's other 12-port 100 W dock, whose
+        // fixed price sits inside the mint's dollar range.
+        { price: 88.5, sourceUrl: url },
         // Under --origins the mirror sits at the root of its own port, so the
         // port alone identifies it: one more digit is another origin. Under
         // --vhosts the host identifies it, so the same path on the primary

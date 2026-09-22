@@ -18,8 +18,9 @@
   .signin input { width: 100%; font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--mg-rule); }
   .signin button { display: block; width: 100%; margin-top: 14px; font: inherit; font-weight: bold; font-size: 14px;
     background: var(--mg-blue); color: #fff; border: 0; padding: 10px 0; cursor: pointer; }
-  #verdict { font-size: 13px; margin-top: 10px; min-height: 17px; }
-  #verdict.bad { color: #8f1220; font-weight: bold; }
+  .verdict { font-size: 13px; margin-top: 10px; min-height: 17px; }
+  .verdict.bad { color: #8f1220; font-weight: bold; }
+  .signin h3 { font-size: 13px; margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--mg-rule); }
 </style>
 </head>
 <body>
@@ -57,28 +58,43 @@
 <div class="pagehead"><h1>My Marrowgate</h1></div>
 <div class="cols2">
   <div class="panel signin">
-    <h2>Sign in</h2>
-    <form id="signin" novalidate>
-      <label for="email">Email</label>
-      <input id="email" type="email" autocomplete="off">
-      <label for="pass">Password</label>
-      <input id="pass" type="password" autocomplete="off">
-      <button type="submit">Sign in</button>
-      <p id="verdict" role="status"></p>
-    </form>
+    <div id="member" hidden>
+      <h2>Signed in</h2>
+      <p>You are signed in to My Marrowgate as <b id="whoname"></b>, <span id="whoemail"></span>.</p>
+      <button type="button" id="signout">Sign out</button>
+    </div>
+    <div id="guest">
+      <h2>Sign in</h2>
+      <form id="signin" novalidate>
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="off">
+        <label for="pass">Password</label>
+        <input id="pass" type="password" autocomplete="off">
+        <button type="submit">Sign in</button>
+        <p class="verdict" id="verdict" role="status"></p>
+      </form>
+      <h3>Join My Marrowgate</h3>
+      <form id="join" novalidate>
+        <label for="joinname">Name</label>
+        <input id="joinname" autocomplete="off">
+        <label for="joinemail">Email</label>
+        <input id="joinemail" type="email" autocomplete="off">
+        <label for="joinpass">Choose a password (8 or more characters)</label>
+        <input id="joinpass" type="password" autocomplete="off">
+        <button type="submit">Join free</button>
+        <p class="verdict" id="joined" role="status"></p>
+      </form>
+    </div>
   </div>
   <div class="panel perks">
     <h2>Membership</h2>
-    <p>My Marrowgate is free and set up at any till or pickup desk in about a minute -
-    bring an email address. Members get:</p>
+    <p>My Marrowgate is free. Join here or at any till or pickup desk in about a
+    minute - all it takes is an email address. Members get:</p>
     <ul>
       <li>Double rewards on every order on Member Mondays</li>
-      <li>Order history and e-receipts under one account</li>
-      <li>Stock alerts for sold-out items, by email</li>
       <li>Extended 45-day returns on most products (displays stay at 15 days)</li>
     </ul>
-    <p>Alerts and order history need a signed-in session; browsing, baskets and
-    promotion codes work without one.</p>
+    <p>Browsing, baskets, stock alerts and promotion codes work without an account.</p>
   </div>
 </div>
 </main>
@@ -99,22 +115,68 @@
 </footer>
 <script src="marrowgate-chrome.js"></script>
 <script>
+const NONCE = '__SESSION_NONCE__';
+
+function show(account) {
+  document.getElementById('member').hidden = !account.signedIn;
+  document.getElementById('guest').hidden = account.signedIn;
+  if (account.signedIn) {
+    document.getElementById('whoname').textContent = account.name;
+    document.getElementById('whoemail').textContent = account.email;
+  }
+}
+
+async function send(path, body, verdict) {
+  verdict.className = 'verdict';
+  verdict.textContent = '';
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, store: 'marrowgate', ...body }),
+    });
+    const reply = await res.json();
+    if (!res.ok) {
+      verdict.className = 'verdict bad';
+      verdict.textContent = reply.error ?? 'Something went wrong. Please try again.';
+      return;
+    }
+    show(reply);
+  } catch {
+    verdict.className = 'verdict bad';
+    verdict.textContent = 'We could not reach Marrowgate. Check your connection and try again.';
+  }
+}
+
 document.getElementById('signin').addEventListener('submit', (event) => {
   event.preventDefault();
   const verdict = document.getElementById('verdict');
-  const email = document.getElementById('email').value.trim();
-  const pass = document.getElementById('pass').value;
-  verdict.className = '';
-  if (!email || !pass) {
-    verdict.className = 'bad';
+  const id = document.getElementById('email').value.trim();
+  const password = document.getElementById('pass').value;
+  if (!id || !password) {
+    verdict.className = 'verdict bad';
     verdict.textContent = 'Enter your email and password.';
     return;
   }
-  verdict.className = 'bad';
-  verdict.textContent =
-    'That email and password do not match a membership. Memberships are created at ' +
-    'any till or pickup desk.';
+  send('/api/shop/account/signin', { id, password }, verdict);
 });
+
+document.getElementById('join').addEventListener('submit', (event) => {
+  event.preventDefault();
+  send('/api/shop/account/create', {
+    name: document.getElementById('joinname').value.trim(),
+    email: document.getElementById('joinemail').value.trim(),
+    password: document.getElementById('joinpass').value,
+  }, document.getElementById('joined'));
+});
+
+document.getElementById('signout').addEventListener('click', () =>
+  send('/api/shop/account/signout', {}, document.getElementById('verdict')));
+
+fetch('/api/shop/account?store=marrowgate', { headers: { 'X-Session-Nonce': NONCE } })
+  .then((res) => (res.ok ? res.json() : null))
+  .then((account) => account && show(account))
+  .catch(() => {});
 </script>
 </body>
 </html>

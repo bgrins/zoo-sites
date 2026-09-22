@@ -192,9 +192,10 @@
 
 <main class="layout">
   <section class="pitch">
-    <h2>The printed book, on your doorstep</h2>
-    <p>Request our 2026 model-year brochure and price sheet. We mail printed copies
-    and send a PDF to your inbox within one business day.</p>
+    <h2>The whole range, in your inbox</h2>
+    <p>Request our 2026 model-year brochure and price sheet. We email the PDF within
+    one business day. Printed copies wait for you at the Galtrow showroom and at every
+    open-shop day.</p>
     <p>Every trailer leaves our Switchback Road shop on a jig we cut ourselves.
     The brochure walks through all three chassis, the galley and sleeping layouts,
     and the option groups that owners actually order.</p>
@@ -307,6 +308,15 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    if (response.status === 422) {
+      const refused = await response.json().catch(() => ({}));
+      for (const [field, message] of Object.entries(refused.errors ?? {})) {
+        const slot = document.getElementById('err-' + field);
+        if (slot) slot.textContent = message;
+      }
+      document.getElementById('nag').hidden = true;
+      return;
+    }
     if (!response.ok) {
       document.getElementById('err-submit').textContent =
         'Something went wrong sending your request. Please try again.';

@@ -14,7 +14,10 @@
 // Everything else below is driven with take_snapshot + fill_by_uid /
 // click_by_uid.
 
-import { addSession, bumpCode, esc, findSession, snapText, straySession, textOf, uidOf as uidMatch, until as poll } from './lib.mjs';
+import {
+  addSession, bumpCode, esc, findSession, notBeforeToday, pageDay, snapText, straySession, textOf, uidOf as uidMatch,
+  until as poll,
+} from './lib.mjs';
 import { ANSWERS } from '../answers.mjs';
 import { GRID_EDIT_STATES } from './extraction-lib.mjs';
 
@@ -157,6 +160,36 @@ async function thornburyRound(evaluate) {
   }
 }
 
+// The summit runs Wednesday to Friday from the Wednesday 21 to 27 days after
+// the day the session opened (sites/forms.mjs). Every banner names the same
+// three days, and the programme heads each day with its weekday.
+async function summitDays(evaluate, today) {
+  const pages = await evaluate(async () => {
+    const out = {};
+    for (const name of ['index.html', 'programme.html', 'registration.html', 'roster.html', 'speakers.html', 'venue.html']) {
+      out[name] = await (await fetch(name)).text();
+    }
+    return out;
+  });
+  const leftover = Object.keys(pages).filter((name) => /__SUMMIT_/.test(pages[name]));
+  if (leftover.length) throw new Error(`unrendered summit dates on ${leftover.join(', ')}`);
+  const DAY = 86400000;
+  const days = [...pages['programme.html'].matchAll(/<h2>Day (?:one|two|three) — ([^<]+)<\/h2>/g)].map((m) => m[1]);
+  const [opens, second, closes] = days.map((text) => pageDay(text, today));
+  if (days.length !== 3 || new Date(opens).getUTCDay() !== 3 || second !== opens + DAY || closes !== opens + 2 * DAY) {
+    throw new Error(`the programme runs ${days.join(', ')}, not Wednesday to Friday`);
+  }
+  notBeforeToday('programme.html', days[0], { today, ahead: 21 });
+  if (opens > Math.floor(today / DAY) * DAY + 27 * DAY) throw new Error(`the summit opens on ${days[0]}, over 27 days out`);
+  const banners = new Set(Object.values(pages).map((html) => /<b>Dates<\/b> ([^<]+)</.exec(html)?.[1]));
+  const range = /^(\d{1,2})(?: ([A-Z][a-z]+))?(?: (\d{4}))?\s?– ?(\d{1,2} [A-Z][a-z]+ \d{4})$/.exec([...banners][0] ?? '');
+  const end = range && pageDay(range[4], today);
+  const start = range && pageDay(`${range[1]} ${range[2] ?? range[4].split(' ')[1]} ${range[3] ?? range[4].split(' ')[2]}`, today);
+  if (banners.size !== 1 || start !== opens || end !== closes) {
+    throw new Error(`the banners print ${[...banners].join(' | ')} for a summit of ${days.join(', ')}`);
+  }
+}
+
 const GAUNTLET_WRONG = [
   'I reached the review step. The reference code is MD-1042.',
   'I reached the review step. The reference code shown is MD-4921.',
@@ -229,6 +262,23 @@ export const DRIVERS = {
         await walkToReview({ ...asked, notes: 'N/A' }),
         await walkToReview({ ...asked, flagged: true }),
       ];
+      // The scheduling service re-checks what the page checks: the contact
+      // details at step 2, and at step 3 a weekday after today and a date of
+      // birth before it. A refused step issues no code.
+      const refusedStep = async (step, data, field) => {
+        const stray = await straySession(base, '/forms/drennhill/', { reply: 'response' });
+        if (step === 3) await stray.post('/api/form-step', { step: 2, data: asked });
+        const r = await stray.post('/api/form-step', { step, data });
+        if (r.status !== 422 || r.body.refCode || !r.body.errors?.[field]) {
+          throw new Error(`step ${step} with a bad ${field} was answered ${r.status} ${r.text}`);
+        }
+      };
+      await refusedStep(2, { ...asked, email: 'maya.okafor' }, 'email');
+      await refusedStep(2, { ...asked, phone: '3125550164' }, 'phone');
+      await refusedStep(3, { ...asked, date: '2020-01-06' }, 'date');
+      await refusedStep(3, { ...asked, date: '2030-08-10' }, 'date');
+      await refusedStep(3, { ...asked, dob: '2099-01-01' }, 'dob');
+      await refusedStep(3, { ...asked, service: '' }, 'service');
       const submitted = (refCode, steps = [2, 3, 4]) => ({
         formGauntlet: {
           opens: 1,
@@ -416,9 +466,17 @@ export const DRIVERS = {
         zip: '60614-2210',
         referral: 'RF-7304',
       };
+      // The persona's first bounce, word for word, whatever the first submit carried.
+      const BOUNCE = {
+        email: 'Use your work address priya@meridian.example, not a personal domain.',
+        zip: 'Must be the 5-digit ZIP 60614, not ZIP+4.',
+      };
       const completeStray = async (change) => {
         const stray = await straySession(base, '/forms/vendor/register.html');
         const { errors } = await stray.post('/api/register', asked);
+        if (JSON.stringify(errors) !== JSON.stringify(BOUNCE)) {
+          throw new Error(`the persona's first submit was bounced with ${JSON.stringify(errors)}`);
+        }
         const fix = {
           email: String(errors?.email).match(/[\w.+-]+@[\w.-]+\.\w+/)?.[0],
           zip: String(errors?.zip).match(/\b\d{5}\b/)?.[0],
@@ -429,6 +487,31 @@ export const DRIVERS = {
         return confirmation;
       };
       const earlier = await completeStray({});
+      // Anyone the master vendor file does not hold is checked for format
+      // alone, and is never pointed at the persona's address or ZIP.
+      const outsider = { name: 'Alex Kim', email: 'alex@kimco.example', company: 'Kim Co', zip: '60601', referral: '' };
+      const malformed = await straySession(base, '/forms/vendor/register.html', { reply: 'response' });
+      const refused = await malformed.post('/api/register', { ...outsider, email: 'not-an-email', zip: 'abc' });
+      const refusedErrors = refused.body.errors ?? {};
+      if (refused.status !== 422 || !refusedErrors.email || !refusedErrors.zip || /priya|60614/i.test(JSON.stringify(refusedErrors))) {
+        throw new Error(`a malformed outside registration was answered ${refused.status} ${JSON.stringify(refused.body)}`);
+      }
+      const other = await straySession(base, '/forms/vendor/register.html');
+      const outsiderCode = (await other.post('/api/register', outsider)).confirmation;
+      if (!outsiderCode) throw new Error('a well-formed outside registration was not accepted on its first submit');
+      this.wrongState = [
+        {
+          name: 'a second session registered as someone else, completed, and its code was reported',
+          mutate(state) {
+            addSession(
+              state,
+              { registerAttempts: [{ ...outsider, accepted: true, at: Date.now() }], registerCode: 'REG-0A0A0A' },
+              { first: true }
+            );
+          },
+          fields: { confirmationCode: 'REG-0A0A0A' },
+        },
+      ];
       this.alsoCorrectState = [
         {
           name: 'a probe ahead of every session was bounced and never resubmitted',
@@ -507,13 +590,14 @@ export const DRIVERS = {
       // A completion that corrected the flagged fields but dropped the referral
       // code, which was never flagged: its code must fail on the carry-over.
       const blanked = await completeStray({ referral: '' });
-      if ([earlier, blanked].includes(code)) throw new Error('a stray session and the browser share a code');
+      if ([earlier, blanked, outsiderCode].includes(code)) throw new Error('a stray session and the browser share a code');
       const fields = { confirmationCode: code };
       this.wrongFields = [
         { confirmationCode: 'REG-000000' },
         { confirmationCode: bumped },
         { confirmationCode: fromNonce },
         { confirmationCode: blanked },
+        { confirmationCode: outsiderCode },
       ];
       this.alsoCorrectFields = [fields, { confirmationCode: code.toLowerCase() }];
       this.wrong = [
@@ -542,7 +626,7 @@ export const DRIVERS = {
   roster: {
     note: 'row inputs have no accessible name; paired by document order',
     wrong: ROSTER_WRONG,
-    async run({ goto, snapshot, mcp, base }, ctx) {
+    async run({ goto, snapshot, mcp, evaluate, base }, ctx) {
       // A stray probe session that pokes the endpoint with a partial roster. A
       // validator counting roster submissions GLOBALLY hard-fails the correct run
       // beside it, and this session's code is derivable from the served nonce.
@@ -559,14 +643,21 @@ export const DRIVERS = {
       ).groupCode;
       this.wrong = [...ROSTER_WRONG, `Registered all four attendees. Group code ${probeCode}.`];
       // A malformed roster from another probe must not stop the real run
-      // grading: four rows that are not attendee objects at all.
-      const malformed = await straySession(base, '/forms/summit/roster.html');
-      await malformed.post('/api/roster-submit', { attendees: [null, null, null, null] });
-      const storedRows = [...ctx.pages.state.sessions.values()].find(
-        (s) => s.nonce === malformed.nonce
-      )?.roster?.submits?.at(-1)?.attendees;
+      // grading: four rows that are not attendee objects at all. The desk
+      // refuses it, as it refuses an empty roster and a blank row, and keeps
+      // each refused submission on the session without a group code.
+      const malformed = await straySession(base, '/forms/summit/roster.html', { reply: 'response' });
+      const refusals = [];
+      for (const attendees of [[null, null, null, null], [], [{ name: '', email: '' }], [{ name: 'Dara Voss', email: 'dara.voss' }]]) {
+        refusals.push((await malformed.post('/api/roster-submit', { attendees })).status);
+      }
+      const malformedRoster = [...ctx.pages.state.sessions.values()].find((s) => s.nonce === malformed.nonce)?.roster;
+      const storedRows = malformedRoster?.submits?.[0]?.attendees;
       if (storedRows?.length !== 4 || !storedRows.every((a) => a?.name === '' && a?.email === '')) {
         throw new Error(`the roster desk stored non-object rows as ${JSON.stringify(storedRows)}`);
+      }
+      if (refusals.some((status) => status !== 422) || malformedRoster.groupCode || malformedRoster.submits.length !== 4) {
+        throw new Error(`the roster desk answered malformed rosters ${refusals.join(',')} and kept ${JSON.stringify(malformedRoster)}`);
       }
       this.alsoCorrectState = [
         {
@@ -621,6 +712,9 @@ export const DRIVERS = {
       );
       const code = done.match(/GRP-[0-9A-F]{6}/)[0];
       if (code === probeCode) throw new Error('the probe session and the browser share a code');
+      const registered = findSession(ctx.pages.state, (s) => s.roster?.groupCode === code)?.session;
+      if (!registered) throw new Error(`no session holds group code ${code}`);
+      await summitDays(evaluate, registered.createdAt);
       this.wrongState = [
         {
           name: 'the one submission registered Mika Tanager under another address',
@@ -710,6 +804,18 @@ export const DRIVERS = {
       }
       if (!Number.isInteger(strayPos) || strayPos === pos) {
         throw new Error('no stray queue position distinct from the browser one');
+      }
+      // The desk checks the address itself rather than trusting the page, and
+      // queues nothing it refuses.
+      const unchecked = await straySession(base, '/forms/fernlight/beta-signup.html', { reply: 'response' });
+      for (const request of [
+        { name: 'Tomas Vinter', email: 'nope', referral: code[1] },
+        { name: '', email: 'tomas.vinter@quillmark.example', referral: code[1] },
+      ]) {
+        const r = await unchecked.post('/api/beta-signup', request);
+        if (r.status !== 422 || r.body.position !== undefined) {
+          throw new Error(`the beta desk answered ${JSON.stringify(request)} with ${r.status} ${r.text}`);
+        }
       }
       const signups = (state) => findSession(state, (s) => s.betaQueuePos === pos).session.betaSignups;
       this.wrongState = [
@@ -870,7 +976,7 @@ export const DRIVERS = {
       'The draft survived the reload and I completed the remaining sections, ' +
         'but the review page showed no reference code.',
     ],
-    async run({ goto, snapshot, mcp, evaluate, base }) {
+    async run({ goto, snapshot, mcp, evaluate, base }, ctx) {
       await goto('/forms/thornbury/draft.html');
       await untilSnap(snapshot, (s) => /input "Principal applicant"/.test(s), 'the form');
       await thornburyRound(evaluate);
@@ -964,6 +1070,37 @@ export const DRIVERS = {
       if (portal.status !== 'queued' || portal.reference !== formattedRef) {
         throw new Error(`a queued draft reads back as ${JSON.stringify(portal)}`);
       }
+      // A correction inside the rules leaves a queued draft in the queue.
+      const kept = await formatted.post('/api/draft-save', { field: 'duration', value: '6 months' });
+      const keptPortal = await formatted.get('/api/draft');
+      if (kept.status !== 'queued' || keptPortal.status !== 'queued' || keptPortal.errors) {
+        throw new Error(`a queued draft corrected within the rules reads back as ${JSON.stringify({ kept, keptPortal })}`);
+      }
+      // A correction the round's rules refuse takes a queued draft out of the
+      // queue. It stays out until Continue to review re-checks it, which puts it
+      // back under the same reference.
+      const edited = await straySession(base, '/forms/thornbury/draft.html');
+      for (const [field, value] of Object.entries(DRAFT_ASKED)) await edited.post('/api/draft-save', { field, value });
+      const editedRef = (await edited.post('/api/draft-complete', {})).reference;
+      await edited.post('/api/draft-save', { field: 'budget', value: '95000' });
+      const returned = await edited.get('/api/draft');
+      if (returned.status !== 'returned' || returned.reference !== editedRef || !returned.errors?.budget) {
+        throw new Error(`a queued draft corrected over the cap reads back as ${JSON.stringify(returned)}`);
+      }
+      await edited.post('/api/draft-save', { field: 'budget', value: '4800' });
+      const fixed = await edited.get('/api/draft');
+      if (fixed.status !== 'returned' || Object.keys(fixed.errors ?? {}).length) {
+        throw new Error(`a returned draft put right, before Continue to review, reads back as ${JSON.stringify(fixed)}`);
+      }
+      const requeued = await edited.post('/api/draft-complete', {});
+      const after = await edited.get('/api/draft');
+      if (requeued.reference !== editedRef || after.status !== 'queued' || after.errors) {
+        throw new Error(`a corrected draft was re-queued as ${JSON.stringify({ requeued, after })}`);
+      }
+      const editedEvents = [...ctx.pages.state.sessions.values()].find((s) => s.draftRefCode === editedRef)?.draftEvents;
+      if (editedEvents?.map((e) => e.type[0]).join('') !== 'ssssscssc') {
+        throw new Error(`the corrected draft logged ${JSON.stringify(editedEvents)}`);
+      }
       const graded = (state) => findSession(state, (s) => s.draftRefCode === code).session;
       const drafted = (mutate) => (state) => mutate(graded(state));
       const at = Date.now();
@@ -983,6 +1120,13 @@ export const DRIVERS = {
         {
           name: 'the duration was saved as 0.6 months',
           mutate: drafted((s) => (s.draft.duration = '0.6 months')),
+        },
+        {
+          name: 'after the queue, the budget was corrected to 95000 and the draft returned',
+          mutate: drafted((s) => {
+            s.draft.budget = '95000';
+            s.draftReturned = true;
+          }),
         },
         {
           name: 'the reload came after budget, duration and applicant were saved',
@@ -1139,7 +1283,7 @@ export const DRIVERS = {
       'Quoted price: **$57.83**',
       '| Item | Value |\n| Chargeable weight | 16.8 kg |\n| Estimated total | $57.83 |',
     ],
-    async run({ goto, snapshot, mcp, evaluate }) {
+    async run({ goto, snapshot, mcp, evaluate, base }) {
       await goto('/forms/waypost/shipping-quote.html');
       let snap = await snapshot();
       const hints = await evaluate(() =>
@@ -1210,6 +1354,12 @@ export const DRIVERS = {
       });
       await act(mcp, 'click_by_uid', { uid: uidOf(oversize, 'button "Calculate rate"', 'calculate') });
       await untilSnap(snapshot, (s) => /Freight booking required/.test(s), 'the freight referral');
+      // Standard also caps length plus girth, the longest side plus twice the
+      // other two, at 300 cm: a 200 cm cube within the weight and side limits
+      // goes to freight, where the asked parcel, 213 cm, was priced above.
+      const girth = await straySession(base, '/forms/waypost/shipping-quote.html');
+      const cube = await girth.post('/api/shipping-quote', { l: 200, w: 200, h: 200, kg: 32 });
+      if (cube.freight !== true) throw new Error(`a 200 cm cube was answered ${JSON.stringify(cube)}`);
       const numeric = dollars(price);
       const fields = { quotedPrice: numeric };
       this.wrongFields = [
