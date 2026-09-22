@@ -130,22 +130,21 @@ const grid = document.getElementById('grid');
 const logbook = document.getElementById('logbook');
 const cells = {};
 
-// Grid refs and axis labels are drawn from data attributes by the stylesheet:
-// keeping them out of the DOM as text keeps the 36-cell map from swamping
-// assistive views of the console.
 for (let r = 0; r < COLS.length; r++) {
   const lab = document.createElement('div');
-  lab.setAttribute('data-l', String(r + 1));
+  lab.textContent = String(r + 1);
   rowlabs.append(lab);
 }
 for (let c = 0; c < COLS.length; c++) {
   const lab = document.createElement('div');
-  lab.setAttribute('data-l', COLS[c]);
+  lab.textContent = COLS[c];
   axis.append(lab);
 }
 for (let r = 0; r < COLS.length; r++) {
   for (let c = 0; c < COLS.length; c++) {
     const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.state = 'unsurveyed';
     cells[COLS[c] + (r + 1)] = cell;
     grid.append(cell);
   }
@@ -182,13 +181,17 @@ function paint(view) {
   for (const ref of Object.keys(cells)) {
     const cell = cells[ref];
     cell.replaceChildren();
-    cell.removeAttribute('data-ref');
+    cell.dataset.state = 'unsurveyed';
     for (const d of ORDER) cell.removeAttribute('data-w' + d.toLowerCase());
   }
   for (const seen of view.surveyed) {
     const cell = cells[seen.ref];
     if (!cell) continue;
-    cell.setAttribute('data-ref', seen.ref);
+    cell.dataset.state = 'surveyed';
+    const label = document.createElement('span');
+    label.className = 'ref';
+    label.textContent = seen.ref;
+    cell.append(label);
     for (const d of ORDER) {
       if (!seen.clear.includes(d)) cell.setAttribute('data-w' + d.toLowerCase(), '1');
     }

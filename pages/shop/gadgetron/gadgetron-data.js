@@ -28,8 +28,3 @@ window.GADGETRON_ROWS = [
   { part: 'BP-27U', model: 'BrightPanel BP-27U', diag: 27, res: '4K', price: 311.5, rating: 4.4, reviews: 1180, stock: 'y' },
 ];
 
-// House-brand docks, ordered by part number from the order list.
-window.GADGETRON_ACCESSORIES = [
-  { part: 'GDX-HUB', model: 'GadgetDock DX Hub', blurb: '11-port USB-C dock, 85 W passthrough', price: 79.0, stock: 'n' },
-  { part: 'GDX-HUB2', model: 'GadgetDock DX2 Hub', blurb: '12-port USB-C dock, 100 W passthrough', price: 88.5, stock: 'y' },
-];

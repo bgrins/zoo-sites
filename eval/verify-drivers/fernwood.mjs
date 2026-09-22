@@ -1,6 +1,6 @@
 // Golden path for the Fernwood Commons neighbourhood feed
 // (pages/fernwood/, task feed-needle). See probes.mjs for the contract.
-import { addSession, findSession, until, bumpCode } from './lib.mjs';
+import { addSession, bumpCode, clickToPath, esc, findSession, straySession, uidOf, until } from './lib.mjs';
 
 const FEED_NEEDLE_TITLE = 'Creek cleanup: final tally';
 
@@ -16,7 +16,8 @@ const readCards = (evaluate) =>
   evaluate(() =>
     [...document.querySelectorAll('article.card')].map((c) => ({
       author: c.querySelector('.name')?.textContent ?? '',
-      title: c.querySelector('h2')?.textContent ?? '',
+      avatar: c.querySelector('span.avatar')?.textContent ?? null,
+      title: c.querySelector('h1, h2')?.textContent ?? '',
       body: [...c.querySelectorAll('p')].map((p) => p.textContent).join(' '),
       ref: /Ref (FW-[0-9A-F]{6})/.exec(c.querySelector('.cardfoot')?.textContent ?? '')?.[1] ?? null,
     }))
@@ -38,7 +39,8 @@ export const DRIVERS = {
     note:
       'scrolls with evaluate window.scrollTo (no scroll tool exists) so each sentinel ' +
       'IntersectionObserver fires, and reads the cards with evaluate: the tally figure sits ' +
-      'mid-sentence in a neighbour-written post, past the snapshot text cap',
+      'mid-sentence in a neighbour-written post, past the snapshot text cap; first cheers ' +
+      'the top card on its permalink page, an ungraded control',
     wrong:
       'The final tally post is by Fernwood Commons Team: 238 bags. ' +
       'Its reference code is FW-000000.',
@@ -67,15 +69,67 @@ export const DRIVERS = {
         },
       },
     ],
-    async run({ goto, evaluate }) {
+    async run({ base, goto, evaluate, mcp, snapshot }, ctx) {
       await goto('/fernwood/');
       const status = () => evaluate(() => document.getElementById('status')?.textContent ?? '');
       // Batch 1 renders from the session-gated fetch; poll for the teaser card.
       let cards = [];
-      await until('the batch-1 teaser card to render', async () => {
-        cards = await readCards(evaluate);
-        return cards.some((c) => TEASER_RE.test(c.body));
+      const firstBatch = () =>
+        until('the batch-1 teaser card to render', async () => {
+          cards = await readCards(evaluate);
+          return cards.some((c) => TEASER_RE.test(c.body));
+        });
+      await firstBatch();
+      const initialsOf = (name) =>
+        name
+          .split(' ')
+          .map((w) => w[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase();
+      const unchipped = cards.find((c) => c.avatar !== initialsOf(c.author));
+      if (unchipped) throw new Error(`${unchipped.author}'s card has avatar ${JSON.stringify(unchipped.avatar)}`);
+      // Off the graded path: the first card's date opens its own page, where a
+      // cheer registers with the server and survives the trip back to the feed.
+      const [top] = cards;
+      const topDate = await evaluate(() => document.querySelector('article.card .meta a')?.textContent ?? '');
+      await clickToPath(
+        mcp,
+        evaluate,
+        async () => uidOf(await snapshot(), `a "${esc(topDate)}"`),
+        `post.html?ref=${top.ref}`,
+        "the top card's permalink"
+      );
+      const post = await until('the permalink page to render its post', async () => {
+        const [card] = await readCards(evaluate);
+        return card?.ref === top.ref ? card : null;
       });
+      if (post.title !== top.title || post.author !== top.author) {
+        throw new Error(`the permalink page renders another post: ${JSON.stringify(post)}`);
+      }
+      const cheers = () =>
+        evaluate(() => ({
+          pressed: document.querySelector('article.card .cheer')?.getAttribute('aria-pressed') ?? null,
+          count: parseInt(document.querySelector('article.card .cheers')?.textContent ?? '', 10),
+        }));
+      const before = await cheers();
+      if (before.pressed !== 'false') throw new Error(`the post starts cheered: ${JSON.stringify(before)}`);
+      const cheerUid = uidOf(await snapshot(), 'button "Cheer"');
+      if (!cheerUid) throw new Error('no Cheer button on the permalink page');
+      await mcp('click_by_uid', { uid: cheerUid });
+      const after = await until('the cheer to register', async () => {
+        const now = await cheers();
+        return now.pressed === 'true' ? now : null;
+      });
+      if (after.count !== before.count + 1) {
+        throw new Error(`a cheer moved the count from ${before.count} to ${after.count}`);
+      }
+      await goto('/fernwood/');
+      await firstBatch();
+      const kept = await cheers();
+      if (kept.pressed !== 'true' || kept.count !== after.count) {
+        throw new Error(`the feed lost the cheer: ${JSON.stringify(kept)}`);
+      }
       const teaser = feedCard(cards, TEASER_RE);
       if (!teaser) throw new Error('the batch-1 teaser card never rendered');
       if (cards.some((c) => c.title === FEED_NEEDLE_TITLE)) {
@@ -104,6 +158,7 @@ export const DRIVERS = {
       }
       if (!caughtUp) throw new Error('the feed never reached its last batch');
       cards = await readCards(evaluate);
+      if (cards.length !== 30) throw new Error(`the full feed holds ${cards.length} posts, not 30`);
       const needle = feedCard(cards, NEEDLE_RE);
       if (!needle) throw new Error('the tally card is missing from the full feed');
       if (cards.find((c) => c.ref === needle.ref)?.title !== FEED_NEEDLE_TITLE) {
@@ -119,6 +174,36 @@ export const DRIVERS = {
       if (!lookalike) throw new Error('the archive lookalike card is missing');
       if (teaser.count === needle.count || lookalike.count === needle.count) {
         throw new Error('a decoy count collides with the final tally');
+      }
+      // The permalink page reads through the same session: the tally post
+      // answers once the feed has served it.
+      const permalink = await evaluate(`() => {
+        const card = [...document.querySelectorAll('article.card')]
+          .find((c) => (c.querySelector('.cardfoot')?.textContent ?? '').includes(${JSON.stringify(needle.ref)}));
+        return card?.querySelector('.meta a')?.getAttribute('href') ?? null;
+      }`);
+      if (permalink !== `post.html?ref=${needle.ref}`) {
+        throw new Error(`the tally card's permalink is ${permalink}`);
+      }
+      const read = await evaluate(`async () => {
+        const r = await fetch('/api/fernwood/thread?ref=${needle.ref}', { headers: { 'X-Session-Nonce': NONCE } });
+        return { status: r.status, post: r.ok ? (await r.json()).post : null };
+      }`);
+      if (read.status !== 200 || read.post?.author !== needle.author || !NEEDLE_RE.test(read.post.body.join(' '))) {
+        throw new Error(`the tally post's permalink answered ${JSON.stringify(read)}`);
+      }
+      // A post read serves no batch, so the permalink is no way around the
+      // cursor chain the validator's gate counts.
+      const stray = await straySession(base, '/fernwood/', { reply: 'response' });
+      await stray.get('/api/fernwood/feed?batch=1');
+      const served = await stray.get('/api/fernwood/thread?ref=FW-4A02D7');
+      const unserved = await stray.get('/api/fernwood/thread?ref=FW-A45D09');
+      const strayFeed = ctx.pages.state.sessions.get(stray.sid)?.fernwood;
+      if (served.status !== 200 || unserved.status !== 404 || strayFeed?.maxBatch !== 1) {
+        throw new Error(
+          `the post API answered ${served.status} for a served post and ${unserved.status} for a ` +
+            `batch-4 post never served, leaving the session at batch ${strayFeed?.maxBatch}`
+        );
       }
       const bumped = bumpCode(needle.ref);
       const fields = {

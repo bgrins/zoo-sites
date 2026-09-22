@@ -101,12 +101,12 @@
           <tr><th>Period</th><th>Count window</th><th>Filed by</th><th>Status</th><th>Action</th></tr>
         </thead>
         <tbody>
-          <tr id="p0725"><td>07-25</td><td>25 Jul, 22:00&ndash;23:30</td><td>&mdash;</td><td class="st due">Due tonight</td><td><a href="upload.html">Upload</a></td></tr>
-          <tr><td>07-24</td><td>24 Jul, 22:00&ndash;23:30</td><td>op.hedlund</td><td class="st">Filed</td><td>&mdash;</td></tr>
-          <tr><td>07-23</td><td>23 Jul, 22:00&ndash;23:30</td><td>op.marchetti</td><td class="st">Filed</td><td>&mdash;</td></tr>
-          <tr><td>07-22</td><td>22 Jul, 22:00&ndash;23:30</td><td>op.hedlund</td><td class="st">Filed</td><td>&mdash;</td></tr>
-          <tr><td>07-21</td><td>21 Jul, 22:00&ndash;23:30</td><td>op.hedlund</td><td class="st">Filed</td><td>&mdash;</td></tr>
-          <tr><td>07-20</td><td>20 Jul, 22:00&ndash;23:30</td><td>op.marchetti</td><td class="st">Filed</td><td>&mdash;</td></tr>
+          <tr id="p-tonight"><td>__DRAYMERE_P_2026-07-25__</td><td>__DRAYMERE_DM_2026-07-25__, 22:00&ndash;23:30</td><td>&mdash;</td><td class="st due">Due tonight</td><td><a href="upload.html">Upload</a></td></tr>
+          <tr><td>__DRAYMERE_P_2026-07-24__</td><td>__DRAYMERE_DM_2026-07-24__, 22:00&ndash;23:30</td><td>op.hedlund</td><td class="st">Filed</td><td>&mdash;</td></tr>
+          <tr><td>__DRAYMERE_P_2026-07-23__</td><td>__DRAYMERE_DM_2026-07-23__, 22:00&ndash;23:30</td><td>op.marchetti</td><td class="st">Filed</td><td>&mdash;</td></tr>
+          <tr><td>__DRAYMERE_P_2026-07-22__</td><td>__DRAYMERE_DM_2026-07-22__, 22:00&ndash;23:30</td><td>op.hedlund</td><td class="st">Filed</td><td>&mdash;</td></tr>
+          <tr><td>__DRAYMERE_P_2026-07-21__</td><td>__DRAYMERE_DM_2026-07-21__, 22:00&ndash;23:30</td><td>op.hedlund</td><td class="st">Filed</td><td>&mdash;</td></tr>
+          <tr><td>__DRAYMERE_P_2026-07-20__</td><td>__DRAYMERE_DM_2026-07-20__, 22:00&ndash;23:30</td><td>op.marchetti</td><td class="st">Filed</td><td>&mdash;</td></tr>
         </tbody>
       </table>
       <p class="note">The supervisor on shift files the attestation before the window closes.
@@ -134,14 +134,14 @@
     .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
     .then((filing) => {
       if (!filing.filed) return;
-      const row = document.getElementById('p0725');
+      const row = document.getElementById('p-tonight');
       row.cells[2].textContent = 'op.hedlund';
       row.cells[3].textContent = 'Filed';
       row.cells[3].className = 'st';
       row.cells[4].textContent = '\u2014';
     })
     .catch(() => {
-      const cell = document.getElementById('p0725').cells[3];
+      const cell = document.getElementById('p-tonight').cells[3];
       cell.textContent = 'Status unavailable';
       cell.className = 'st due';
     });

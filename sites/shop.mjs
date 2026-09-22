@@ -1,41 +1,72 @@
 // pages/shop/ - the three monitor stores, the voltro checkout and the gadgetron mirror.
-import { randomBytes } from 'node:crypto';
-import { SESSION_ROWS, pushTrimmed, round2 } from './lib.mjs';
+import { createHash, randomBytes } from 'node:crypto';
+import { DAY_MS, MONTH_NAMES, SESSION_ROWS, WEEKDAY_NAMES, pushTrimmed, round2, utcDay } from './lib.mjs';
 
-// pages/shop/gadgetron-mirror/ — the read-only mirror node's accessory sheet.
-// The Kessvar dock price is minted per session from randomBytes, so it
-// appears in no fixture file and cannot be derived from the page-exposed nonce.
-// The decoy docks keep fixed prices, so quoting the wrong row is a wrong answer.
+// pages/shop/gadgetron-mirror/ — the read-only mirror node's accessory sheet,
+// which the primary store's catalog also sells. The Kessvar dock price is
+// minted per session from randomBytes, so it appears in no fixture file and
+// cannot be derived from the page-exposed nonce. The decoy docks keep fixed
+// prices, so quoting the wrong row is a wrong answer.
 // The snapshot is taken just before the 04:00 window that
 // gadgetron-maintenance.html announces.
 const MIRROR_SNAPSHOT = '03:50';
 
 const MIRROR_DOCK_SKU = 'KV-DK100';
 
-const MIRROR_ACCESSORIES = [
-  { sku: 'AN-HUB7', model: 'AmpNest Hub 7', kind: 'USB hub',
-    ports: 7, power: '15 W', stock: 'y', price: '42.00' },
-  { sku: 'KB-DK9', model: 'Kelbrook DK-9 dock', kind: 'Docking station',
-    ports: 9, power: '65 W', stock: 'y', price: '129.00' },
-  { sku: 'MP-CHG3', model: 'Marlpoint C3 charger', kind: 'Charger',
-    ports: 3, power: '45 W', stock: 'y', price: '38.50' },
-  { sku: 'TR-HUB4', model: 'Trellis Hub 4', kind: 'USB hub',
-    ports: 4, power: '10 W', stock: 'n', price: '24.99' },
-  { sku: MIRROR_DOCK_SKU, model: 'Kessvar DK-100 dock', kind: 'Docking station',
-    ports: 12, power: '100 W', stock: 'y', price: null },
-  { sku: 'ZP-DK5', model: 'Zephmark DK-5 dock', kind: 'Docking station',
-    ports: 8, power: '85 W', stock: 'y', price: '148.00' },
+// The docks department: the mirror's sheet is its 03:50 snapshot, and the
+// primary store's catalog sells the same rows.
+const GADGETRON_DOCKS = [
+  { sku: 'GDX-HUB', model: 'GadgetDock DX Hub', kind: 'Docking station', ports: 11, power: '85 W',
+    stock: 'n', price: '79.00', blurb: '11-port USB-C dock, 85 W passthrough', substitute: 'GDX-HUB2' },
+  { sku: 'GDX-HUB2', model: 'GadgetDock DX2 Hub', kind: 'Docking station', ports: 12, power: '100 W',
+    stock: 'y', price: '88.50', blurb: '12-port USB-C dock, 100 W passthrough' },
+  { sku: 'AN-HUB7', model: 'AmpNest Hub 7', kind: 'USB hub', ports: 7, power: '15 W',
+    stock: 'y', price: '42.00', blurb: '7-port powered USB hub, 15 W' },
+  { sku: 'KB-DK9', model: 'Kelbrook DK-9 dock', kind: 'Docking station', ports: 9, power: '65 W',
+    stock: 'y', price: '129.00', blurb: '9-port USB-C dock, 65 W passthrough' },
+  { sku: 'MP-CHG3', model: 'Marlpoint C3 charger', kind: 'Charger', ports: 3, power: '45 W',
+    stock: 'y', price: '38.50', blurb: '3-port USB-C desk charger, 45 W' },
+  { sku: 'TR-HUB4', model: 'Trellis Hub 4', kind: 'USB hub', ports: 4, power: '10 W',
+    stock: 'n', price: '24.99', blurb: '4-port powered USB hub, 10 W' },
+  { sku: MIRROR_DOCK_SKU, model: 'Kessvar DK-100 dock', kind: 'Docking station', ports: 12, power: '100 W',
+    stock: 'y', price: null, blurb: '12-port USB-C dock, two 4K outputs, 100 W passthrough' },
+  { sku: 'ZP-DK5', model: 'Zephmark DK-5 dock', kind: 'Docking station', ports: 8, power: '85 W',
+    stock: 'y', price: '148.00', blurb: '8-port USB-C dock, 85 W passthrough' },
 ];
+
+const MIRROR_ACCESSORIES = GADGETRON_DOCKS.map(({ sku, model, kind, ports, power, stock, price }) => ({
+  sku, model, kind, ports, power, stock, price,
+}));
 
 // No cents value is ambiguous when retyped (nothing ends in 0), so an agent
 // that copies the displayed price cannot lose a digit and fail on formatting.
 const MIRROR_DOCK_CENTS = [25, 49, 75, 95, 99];
+const MIRROR_DOCK_DOLLARS = [79, 118];
 
 function mintMirrorDockPrice() {
   const bytes = randomBytes(2);
-  const dollars = 79 + (bytes[0] % 40);
+  const dollars = MIRROR_DOCK_DOLLARS[0] + (bytes[0] % (MIRROR_DOCK_DOLLARS[1] - MIRROR_DOCK_DOLLARS[0] + 1));
   return `${dollars}.${MIRROR_DOCK_CENTS[bytes[1] % MIRROR_DOCK_CENTS.length]}`;
 }
+
+// mirror-reroute's validator grades the Kessvar price by value alone, so no
+// fixed price in the department may be one the mint can issue.
+for (const { sku, price } of GADGETRON_DOCKS) {
+  if (price === null) continue;
+  const [dollars, cents] = price.split('.').map(Number);
+  if (dollars >= MIRROR_DOCK_DOLLARS[0] && dollars <= MIRROR_DOCK_DOLLARS[1] && MIRROR_DOCK_CENTS.includes(cents)) {
+    throw new Error(`${sku} is fixed at ${price}, a price the Kessvar mint can issue`);
+  }
+}
+
+// One mint per session, drawn on first need by the mirror or the primary
+// store, so within one session the two quote the same price.
+const gadgetronDockPrice = (session) => (session.gadgetronDockPrice ??= mintMirrorDockPrice());
+
+// While mirror-reroute's gadgetronDown mode is on, the primary store's pages
+// and APIs answer as a maintenance window does.
+const GADGETRON_INCIDENT = 'MB-3-1174';
+const GADGETRON_RETRY_AFTER = '1800';
 
 // T067 narrow-viewport: per-session record behind the Deals of the Day code.
 // Three places write it — documents() stamps a real document navigation to the
@@ -71,9 +102,11 @@ const SHOP_TAX_RATE = 0.08;
 // The /api/voltro/cart line names a storefront listing, and the price and stock
 // come from this copy of pages/shop/voltro/voltro-data.js rather than from the
 // page: the price the page sends must agree with it, so a stale or edited page
-// is refused instead of setting its own price. The cart is still bounded,
-// because serve.mjs keeps sessions for the life of the process.
-const VOLTRO_CART_MAX = 50;
+// is refused instead of setting its own price. A repeat add raises the line's
+// quantity, so the cart holds at most one line per listing, each of at most
+// VOLTRO_QTY_MAX units: bounded, because serve.mjs keeps sessions for the life
+// of the process.
+const VOLTRO_QTY_MAX = 10;
 const VOLTRO_NAME_MAX = 120;
 const VOLTRO_LISTING = new Map(
   [
@@ -104,7 +137,58 @@ const VOLTRO_LISTING = new Map(
   ].map(([name, price, inStock = true]) => [name, { price, inStock }])
 );
 
+// The storefront's "get it" date: the third business day after the UTC day
+// the session opened, so the promise never lapses, printed the way a US store
+// prints it, "Fri, Sep 25".
+const VOLTRO_TRANSIT_DAYS = 3;
+function voltroArrives(session) {
+  if (!Number.isFinite(session.createdAt)) throw new Error('voltro delivery date: the session has no createdAt');
+  let day = utcDay(session.createdAt);
+  for (let left = VOLTRO_TRANSIT_DAYS; left > 0; ) {
+    day += DAY_MS;
+    if (new Date(day).getUTCDay() % 6 !== 0) left -= 1;
+  }
+  const at = new Date(day);
+  return `${WEEKDAY_NAMES[at.getUTCDay()].slice(0, 3)}, ${MONTH_NAMES[at.getUTCMonth()].slice(0, 3)} ${at.getUTCDate()}`;
+}
+
 const SHOP_LEVY_PER_MONITOR = 4.5;
+
+// The three stores' account pages: an account opened in this session, a
+// sign-in that answers 401 in the store's own words and pauses the browser
+// after SHOP_SIGNIN_TRIES misses, and the signed-in state the page shows.
+// Voltro and Marrowgate sign in by email; Gadgetron issues a trade account
+// code. Nothing graded reads any of it.
+const SHOP_SIGNIN_TRIES = 5;
+const SHOP_SIGNIN_PAUSE_MS = 15 * 60 * 1000;
+const SHOP_ACCOUNTS_MAX = 5;
+const SHOP_ACCOUNT_VOICE = {
+  voltro: {
+    byCode: false,
+    miss: 'That email and password do not match a Voltro account. Check both and try again, or check out as a guest.',
+    taken: 'A Voltro account already uses that email. Sign in instead.',
+  },
+  marrowgate: {
+    byCode: false,
+    miss: 'That email and password do not match a My Marrowgate membership.',
+    taken: 'That email already has a My Marrowgate membership. Sign in instead.',
+  },
+  gadgetron: {
+    byCode: true,
+    miss: 'That account code and passphrase are not recognised.',
+    taken: 'A trade account is already open for that work email. Sign in with its account code.',
+  },
+};
+const passHash = (password) => createHash('sha256').update(password).digest('hex');
+
+function shopAccountRecord(session, store) {
+  return ((session.shopAccounts ??= {})[store] ??= { accounts: [], signedIn: null, misses: 0, pausedUntil: 0 });
+}
+
+function shopAccountState(record) {
+  const account = record.accounts.find((a) => a.id === record.signedIn) ?? null;
+  return { signedIn: !!account, id: account?.id ?? null, name: account?.name ?? null, email: account?.email ?? null };
+}
 
 // pages/shop/marrowgate/checkout.html: the optional two-year protection plan, per
 // monitor, and the stores a pickup order can wait at (marrowgate-chrome.js lists
@@ -218,10 +302,17 @@ const SHOP_CATALOG = {
       blurb: 'UHD-4K 3840x2160, 27 in, IPS, 60 Hz' },
     { sku: 'SC27U-H', name: 'ScreenCraft SC-27U HDR', price: 349.99, inStock: true,
       blurb: 'UHD-4K 3840x2160, 27 in, IPS, 60 Hz, HDR600' },
-    { sku: 'GDX-HUB', name: 'GadgetDock DX Hub', price: 79.0, inStock: false,
-      substitute: 'GDX-HUB2', blurb: '11-port USB-C dock, 85 W passthrough' },
-    { sku: 'GDX-HUB2', name: 'GadgetDock DX2 Hub', price: 88.5, inStock: true,
-      blurb: '12-port USB-C dock, 100 W passthrough' },
+    // Kessvar's price is the session's mint, which catalogPrice reads.
+    ...GADGETRON_DOCKS.map((dock) => ({
+      sku: dock.sku,
+      name: dock.model,
+      price: dock.price === null ? null : Number(dock.price),
+      minted: dock.price === null,
+      inStock: dock.stock === 'y',
+      kind: dock.kind,
+      blurb: dock.blurb,
+      ...(dock.substitute ? { substitute: dock.substitute } : {}),
+    })),
     // The rest of pages/shop/gadgetron/gadgetron-data.js, so every catalog row's
     // Buy it now reaches a part the order list accepts. Part numbers must stay
     // unique as substrings of one another's names, or shopResolveItem answers a
@@ -306,6 +397,18 @@ function shopResolveItem(store, key) {
     return { ambiguous: true, candidates: loose.map((item) => item.sku) };
   }
   return loose[0] ?? null;
+}
+
+const catalogPrice = (session, item) => (item.minted ? Number(gadgetronDockPrice(session)) : item.price);
+
+function voltroCartBody(session) {
+  const items = session.voltroCart ?? [];
+  return {
+    items,
+    count: items.reduce((n, item) => n + item.qty, 0),
+    subtotal: round2(items.reduce((sum, item) => sum + item.price * item.qty, 0)),
+    maxQty: VOLTRO_QTY_MAX,
+  };
 }
 
 function shopCart(session, store) {
@@ -418,22 +521,37 @@ const NORVINDLE_VARIANTS = {
 
 export function routes(ctx) {
   const { state, json, readJson, requireSession } = ctx;
+  // True once it has answered: the store is down and `store` is Gadgetron's.
+  const outage = (res, store) => {
+    if (!state.modes.gadgetronDown || store !== 'gadgetron') return false;
+    res.setHeader('Retry-After', GADGETRON_RETRY_AFTER);
+    json(res, 503, {
+      error: `Gadgetron is offline for scheduled maintenance (incident ${GADGETRON_INCIDENT}). ` +
+        'Order queueing and quotes return when the window closes.',
+      incident: GADGETRON_INCIDENT,
+    });
+    return true;
+  };
   return async (req, res, url, pathname0) => {
+    if (pathname0.startsWith('/api/gadgetron/') && outage(res, 'gadgetron')) return;
+
     if (req.method === 'GET' && pathname0 === '/api/shop/catalog') {
       const found = requireSession(req, res);
       if (!found) return;
       const store = String(url.searchParams.get('store') ?? '');
       const list = Object.hasOwn(SHOP_CATALOG, String(store ?? '')) ? SHOP_CATALOG[store] : null;
       if (!list) return json(res, 404, { error: 'unknown store' });
+      if (outage(res, store)) return;
       return json(res, 200, {
         store,
         items: list.map((item) => ({
           sku: item.sku,
           name: item.name,
           blurb: item.blurb ?? '',
-          price: item.price,
+          price: catalogPrice(found.session, item),
           inStock: item.inStock !== false,
           note: item.note ?? '',
+          ...(item.kind ? { kind: item.kind } : {}),
         })),
       });
     }
@@ -446,6 +564,7 @@ export function routes(ctx) {
       if (!found) return;
       const store = String(payload.store ?? '');
       if (!Object.hasOwn(SHOP_CATALOG, String(store ?? ''))) return json(res, 404, { error: 'unknown store' });
+      if (outage(res, store)) return;
       // A page that sends Number("abc") posts null; that is a bad quantity, not 1.
       const qty = Math.trunc(Number(payload.qty === undefined ? 1 : payload.qty));
       if (!Number.isFinite(qty) || qty < 1 || qty > 99) {
@@ -482,7 +601,7 @@ export function routes(ctx) {
         line = {
           sku: match.sku,
           name: match.name,
-          price: match.price,
+          price: catalogPrice(found.session, match),
           qty: 0,
           brand: match.brand ?? null,
           monitor: match.monitor === true,
@@ -523,6 +642,7 @@ export function routes(ctx) {
       if (!found) return;
       const store = String(payload.store ?? '');
       if (!Object.hasOwn(SHOP_CATALOG, String(store ?? ''))) return json(res, 404, { error: 'unknown store' });
+      if (outage(res, store)) return;
       const sku = String(payload.sku ?? '').trim().toLowerCase();
       const cart = shopCart(found.session, store);
       const idx = cart.findIndex((l) => l.sku.toLowerCase() === sku);
@@ -542,6 +662,7 @@ export function routes(ctx) {
       if (!found) return;
       const store = String(payload.store ?? '');
       if (!Object.hasOwn(SHOP_CATALOG, store)) return json(res, 404, { error: 'unknown store' });
+      if (outage(res, store)) return;
       const qty = Math.trunc(Number(payload.qty ?? NaN));
       if (!Number.isFinite(qty) || qty < 0 || qty > 99) {
         return json(res, 400, { error: 'Enter a quantity between 0 and 99.' });
@@ -581,6 +702,7 @@ export function routes(ctx) {
       if (!found) return;
       const store = String(url.searchParams.get('store') ?? '');
       if (!Object.hasOwn(SHOP_CATALOG, String(store ?? ''))) return json(res, 404, { error: 'unknown store' });
+      if (outage(res, store)) return;
       // shopTotals() records what it served on the session, so the basket read
       // and every mutating response are logged the same way.
       return json(res, 200, { store, ...shopTotals(found.session, store) });
@@ -594,6 +716,7 @@ export function routes(ctx) {
       if (!found) return;
       const store = String(payload.store ?? '');
       if (!Object.hasOwn(SHOP_CATALOG, String(store ?? ''))) return json(res, 404, { error: 'unknown store' });
+      if (outage(res, store)) return;
       const code = String(payload.code ?? '').trim().toUpperCase();
       const result = shopEvaluateCoupon(found.session, store, code);
       const attempts = ((found.session.shopCouponAttempts ??= {})[store] ??= []);
@@ -730,22 +853,46 @@ export function routes(ctx) {
       if (!listing.inStock) {
         return json(res, 409, { error: `${product} is temporarily out of stock.` });
       }
-      const cart = (found.session.voltroCart ??= []);
-      if (cart.length >= VOLTRO_CART_MAX) {
-        return json(res, 409, { error: `A cart holds at most ${VOLTRO_CART_MAX} items.` });
+      const qty = Math.trunc(Number(payload.qty ?? 1));
+      if (!(qty >= 1 && qty <= VOLTRO_QTY_MAX)) {
+        return json(res, 400, { error: `Choose a quantity from 1 to ${VOLTRO_QTY_MAX}.` });
       }
-      cart.push({ product, price: listing.price });
-      return json(res, 200, { ok: true, count: cart.length });
+      const cart = (found.session.voltroCart ??= []);
+      const line = cart.find((item) => item.product === product);
+      if ((line?.qty ?? 0) + qty > VOLTRO_QTY_MAX) {
+        return json(res, 409, {
+          error: `Voltro sells at most ${VOLTRO_QTY_MAX} of one item per order.`,
+          ...voltroCartBody(found.session),
+        });
+      }
+      if (line) line.qty += qty;
+      else cart.push({ product, price: listing.price, qty });
+      return json(res, 200, { ok: true, ...voltroCartBody(found.session) });
+    }
+
+    // The cart and review steppers: a quantity of 0 removes the line.
+    if (req.method === 'POST' && pathname0 === '/api/voltro/cart/set') {
+      let payload = await readJson(req, res);
+      if (payload === undefined) return;
+      if (!payload || typeof payload !== 'object') payload = {};
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      const cart = (found.session.voltroCart ??= []);
+      const at = cart.findIndex((item) => item.product === String(payload.product ?? ''));
+      if (at === -1) return json(res, 404, { error: 'That item is no longer in your cart.' });
+      const qty = Math.trunc(Number(payload.qty ?? NaN));
+      if (!(qty >= 0 && qty <= VOLTRO_QTY_MAX)) {
+        return json(res, 400, { error: `Choose a quantity from 0 to ${VOLTRO_QTY_MAX}.` });
+      }
+      if (qty === 0) cart.splice(at, 1);
+      else cart[at].qty = qty;
+      return json(res, 200, { ok: true, ...voltroCartBody(found.session) });
     }
 
     if (req.method === 'GET' && pathname0 === '/api/voltro/cart') {
       const found = requireSession(req, res);
       if (!found) return;
-      const items = found.session.voltroCart ?? [];
-      return json(res, 200, {
-        items,
-        subtotal: items.reduce((sum, item) => sum + item.price, 0),
-      });
+      return json(res, 200, voltroCartBody(found.session));
     }
 
     if (req.method === 'POST' && pathname0 === '/api/voltro/checkout') {
@@ -762,12 +909,26 @@ export function routes(ctx) {
       const step = String(payload.step ?? '');
       const checkout = (found.session.voltroCheckout ??= {});
       if (step === 'shipping') {
-        const name = String(payload.name ?? '').trim();
-        const address = String(payload.address ?? '').trim();
-        if (!name || !address) {
-          return json(res, 400, { error: 'Name and street address are required.' });
-        }
-        checkout.shipping = { name, address };
+        const field = (key) => String(payload[key] ?? '').trim().slice(0, 120);
+        const shipping = {
+          name: field('name'),
+          email: field('email'),
+          address: field('address'),
+          city: field('city'),
+          state: field('state').toUpperCase(),
+          zip: field('zip'),
+          phone: field('phone'),
+        };
+        const problems = [];
+        if (!shipping.name) problems.push('your full name');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shipping.email)) problems.push('an email address for the confirmation');
+        if (!shipping.address) problems.push('a street address');
+        if (!shipping.city) problems.push('a city');
+        if (!/^[A-Z]{2}$/.test(shipping.state)) problems.push('a two-letter state');
+        if (!/^\d{5}(?:-\d{4})?$/.test(shipping.zip)) problems.push('a 5-digit ZIP code');
+        if (shipping.phone && (shipping.phone.match(/\d/g) ?? []).length < 10) problems.push('a 10-digit phone number, or none');
+        if (problems.length) return json(res, 400, { error: 'Enter ' + problems.join(', ') + '.' });
+        checkout.shipping = shipping;
         return json(res, 200, { ok: true, next: 'payment' });
       }
       if (step === 'payment') {
@@ -852,7 +1013,7 @@ export function routes(ctx) {
         data: { hash: found.session.voltroReviewHash },
         at: Date.now(),
       });
-      const subtotal = round2(items.reduce((sum, item) => sum + item.price, 0));
+      const { subtotal } = voltroCartBody(found.session);
       const promo = found.session.voltroPromo ?? null;
       const discount = promo ? round2((subtotal * promo.percent) / 100) : 0;
       const tax = round2((subtotal - discount) * SHOP_TAX_RATE);
@@ -860,6 +1021,7 @@ export function routes(ctx) {
         hash: found.session.voltroReviewHash,
         items,
         subtotal,
+        maxQty: VOLTRO_QTY_MAX,
         promo:
           promo && discount > 0
             ? { code: promo.code, discount, total: round2(subtotal - discount) }
@@ -891,7 +1053,7 @@ export function routes(ctx) {
         at: Date.now(),
         number,
         lastName: shipTo.split(/\s+/).pop() ?? '',
-        items: (found.session.voltroCart ?? []).map((item) => item.product),
+        items: (found.session.voltroCart ?? []).map((item) => `${item.qty} x ${item.product}`),
       });
       state.beacons.push({
         sid: found.sid,
@@ -924,6 +1086,81 @@ export function routes(ctx) {
         at: Date.now(),
       });
       return json(res, 200, { ok: true, message: 'Free 3-year warranty upgrade applied to your order.' });
+    }
+
+    if (pathname0.startsWith('/api/shop/account')) {
+      const get = req.method === 'GET' && pathname0 === '/api/shop/account';
+      let payload = {};
+      if (!get) {
+        payload = await readJson(req, res);
+        if (payload === undefined) return;
+        if (!payload || typeof payload !== 'object') payload = {};
+      }
+      const found = requireSession(req, res, get ? undefined : payload?.nonce);
+      if (!found) return;
+      const store = String((get ? url.searchParams.get('store') : payload.store) ?? '');
+      if (!Object.hasOwn(SHOP_ACCOUNT_VOICE, store)) return json(res, 404, { error: 'unknown store' });
+      if (outage(res, store)) return;
+      const voice = SHOP_ACCOUNT_VOICE[store];
+      const record = shopAccountRecord(found.session, store);
+      const field = (key) => String(payload[key] ?? '').trim().slice(0, 120);
+      const password = String(payload.password ?? '').slice(0, 200);
+      if (get) return json(res, 200, shopAccountState(record));
+      if (req.method !== 'POST') return json(res, 405, { error: 'method not allowed' });
+
+      if (pathname0 === '/api/shop/account/create') {
+        const name = field('name');
+        const email = field('email').toLowerCase();
+        const problems = [];
+        if (!name) problems.push(voice.byCode ? 'your company name' : 'your name');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) problems.push('an email address');
+        if (password.length < 8) problems.push(`a ${voice.byCode ? 'passphrase' : 'password'} of at least 8 characters`);
+        if (problems.length) return json(res, 400, { error: 'Enter ' + problems.join(', ') + '.' });
+        if (record.accounts.some((a) => a.email === email)) return json(res, 409, { error: voice.taken });
+        if (record.accounts.length >= SHOP_ACCOUNTS_MAX) {
+          return json(res, 429, { error: 'This browser has opened as many accounts as it can today.' });
+        }
+        const id = voice.byCode ? 'GT-' + String(randomBytes(3).readUIntBE(0, 3) % 100000).padStart(5, '0') : email;
+        record.accounts.push({ id, name, email, hash: passHash(password), at: Date.now() });
+        record.signedIn = id;
+        return json(res, 200, { ok: true, ...shopAccountState(record) });
+      }
+
+      if (pathname0 === '/api/shop/account/signin') {
+        const now = Date.now();
+        if (record.pausedUntil > now) {
+          return json(res, 429, {
+            error: `Sign-in is paused for this browser after ${SHOP_SIGNIN_TRIES} unsuccessful attempts. ` +
+              `Try again in ${Math.ceil((record.pausedUntil - now) / 60000)} minutes.`,
+          });
+        }
+        const id = voice.byCode ? field('id').toUpperCase() : field('id').toLowerCase();
+        if (!id || !password) {
+          return json(res, 400, { error: voice.byCode ? 'Enter your account code and passphrase.' : 'Enter your email and password.' });
+        }
+        const account = record.accounts.find((a) => a.id === id && a.hash === passHash(password));
+        if (account) {
+          record.misses = 0;
+          record.signedIn = account.id;
+          return json(res, 200, { ok: true, ...shopAccountState(record) });
+        }
+        record.misses += 1;
+        if (record.misses >= SHOP_SIGNIN_TRIES) {
+          record.misses = 0;
+          record.pausedUntil = now + SHOP_SIGNIN_PAUSE_MS;
+          return json(res, 429, {
+            error: `Sign-in is paused for this browser for ${SHOP_SIGNIN_PAUSE_MS / 60000} minutes after ` +
+              `${SHOP_SIGNIN_TRIES} unsuccessful attempts.`,
+          });
+        }
+        return json(res, 401, { error: voice.miss, attemptsLeft: SHOP_SIGNIN_TRIES - record.misses });
+      }
+
+      if (pathname0 === '/api/shop/account/signout') {
+        record.signedIn = null;
+        return json(res, 200, { ok: true, ...shopAccountState(record) });
+      }
+      return json(res, 404, { error: 'not found' });
     }
 
     // pages/shop/marrowgate/notify.html: a stock alert for a sold-out SKU.
@@ -1195,8 +1432,8 @@ export function routes(ctx) {
     // documents() stamps session.mirror on navigations only, so page script
     // cannot forge it with a fetch and a session that scraped a nonce off some
     // other page gets a 409 instead of the price. The Kessvar dock price is
-    // minted there from randomBytes, so it exists in no fixture file; the
-    // validator reads it back off the session it graded.
+    // minted from randomBytes on first need, so it exists in no fixture file;
+    // the validator reads it back off the session it graded.
     if (req.method === 'GET' && pathname0 === '/api/mirror/catalog') {
       const found = requireSession(req, res);
       if (!found) return;
@@ -1230,7 +1467,7 @@ export function documents(ctx) {
   return {
     prefix: '/shop/',
 
-    beforeStatic({ req, pathname0, pathname, nav }) {
+    beforeStatic({ req, res, pathname0, pathname, nav }) {
       // The phone banner is the narrow candidate of the deals page's <picture>, so
       // the layout engine requests it only while `media="(max-width: 600px)"`
       // matches — the one piece of viewport evidence the page does not merely
@@ -1266,7 +1503,9 @@ export function documents(ctx) {
 
       // T043 mirror-reroute: while the gadgetronDown mode is on, every path under
       // the primary store answers with the maintenance splash, assets included,
-      // exactly as a store-wide outage page does. The splash itself sits OUTSIDE
+      // with a 503 and a Retry-After, exactly as a store-wide outage page does.
+      // The static handler writes every file it serves with a 200, so the status
+      // is swapped in as the splash goes out. The splash itself sits OUTSIDE
       // that prefix so it stays reachable, and the mirror node is a sibling
       // directory (/shop/gadgetron-mirror/) so it is unaffected by the prefix test.
       // The prefix test is case-insensitive because the fixture tree lives on a
@@ -1277,6 +1516,11 @@ export function documents(ctx) {
         state.modes.gadgetronDown &&
         (storePath === '/shop/gadgetron' || storePath.startsWith('/shop/gadgetron/'))
       ) {
+        res.setHeader('Retry-After', GADGETRON_RETRY_AFTER);
+        const writeHead = res.writeHead;
+        res.writeHead = function (status, ...rest) {
+          return writeHead.call(this, status === 200 ? 503 : status, ...rest);
+        };
         return { pathname: '/shop/gadgetron-maintenance.html' };
       }
     },
@@ -1296,17 +1540,22 @@ export function documents(ctx) {
         deal.navBanner = { phone: 0, wide: 0 };
       }
 
+      if (pathname.toLowerCase().startsWith('/shop/voltro/') && body.includes('__VOLTRO_ARRIVES__')) {
+        return { body: body.replaceAll('__VOLTRO_ARRIVES__', voltroArrives(found.session)) };
+      }
+
       // T043 mirror-reroute: the mirror's price sheet unlocks only on a real
-      // document navigation to a mirror page, and the dock price is minted
-      // here, once per session. Stamping this from the API instead would let
-      // page script (or a fetch holding any page's nonce) unlock the price
-      // without ever loading the mirror.
+      // document navigation to a mirror page. The dock price is minted on
+      // first need, by whichever store asks first; only the unlock depends on
+      // the navigation. Stamping this from the API instead would let page
+      // script (or a fetch holding any page's nonce) unlock the price without
+      // ever loading the mirror.
       // The contact sheet loads fixtures in iframes, whose Sec-Fetch-Dest is
       // `iframe` rather than `document`; both are real navigations, and a
       // fetch() is neither, so both count.
       if (pathname.startsWith('/shop/gadgetron-mirror/') && (nav.document || nav.framed)) {
         const mirror = (found.session.mirror ??= {
-          dockPrice: mintMirrorDockPrice(),
+          dockPrice: gadgetronDockPrice(found.session),
           navs: 0,
           dataReads: 0,
           pages: [],

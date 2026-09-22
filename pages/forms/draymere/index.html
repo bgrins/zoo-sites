@@ -100,7 +100,7 @@
 
 <main>
   <section class="card">
-    <h1>Shift home &mdash; depot 41, 25 July 2026</h1>
+    <h1>Shift home &mdash; depot 41, __DRAYMERE_LONG_2026-07-25__</h1>
     <div class="inner">
       <p class="lede">Signed in as <span class="mono">op.hedlund</span> on the night shift.
         This console covers depot 41 only; regional and multi-depot work is done from the
@@ -110,8 +110,8 @@
           <tr><th>Open item</th><th>Where</th><th>Owner</th><th>State</th></tr>
         </thead>
         <tbody>
-          <tr id="open-0725"><td>Nightly count attestation, period 07-25</td><td><a href="queue.html">Attestations</a></td><td>Supervisor on shift</td><td class="st due">Due tonight</td></tr>
-          <tr><td>Run <span class="mono">RUN-0725-05</span> held at dock</td><td><a href="dispatch.html">Dispatch</a></td><td>Shift supervisor</td><td class="st due">Awaiting release</td></tr>
+          <tr id="open-tonight"><td>Nightly count attestation, period __DRAYMERE_P_2026-07-25__</td><td><a href="queue.html">Attestations</a></td><td>Supervisor on shift</td><td class="st due">Due tonight</td></tr>
+          <tr><td>Run <span class="mono">RUN-__DRAYMERE_R_2026-07-25__-05</span> held at dock</td><td><a href="dispatch.html">Dispatch</a></td><td>Shift supervisor</td><td class="st due">Awaiting release</td></tr>
           <tr><td>Quarantined inbound from Depot 30 &middot; Ferris Vale</td><td><a href="receiving.html">Receiving</a></td><td>Regional ops desk</td><td class="st due">Awaiting disposition</td></tr>
           <tr><td>Trailer <span class="mono">TRL-206</span> fridge unit fault</td><td><a href="vehicles.html">Vehicles</a></td><td>Transport office</td><td class="st due">Under observation</td></tr>
         </tbody>
@@ -217,12 +217,12 @@
     .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
     .then((filing) => {
       if (!filing.filed) return;
-      const cell = document.getElementById('open-0725').cells[3];
+      const cell = document.getElementById('open-tonight').cells[3];
       cell.textContent = 'Filed';
       cell.className = 'st';
     })
     .catch(() => {
-      const cell = document.getElementById('open-0725').cells[3];
+      const cell = document.getElementById('open-tonight').cells[3];
       cell.textContent = 'Status unavailable';
     });
 </script>

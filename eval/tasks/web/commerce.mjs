@@ -7,6 +7,10 @@ import { originUrls } from '../../../manifest.mjs';
 import { ANSWERS } from '../../answers.mjs';
 import { eqCode, eqEnum, eqMoney, eqName, eqPerson, normalise, normaliseWords } from '../../extract.mjs';
 
+// checkout-stop's dictated contact and location details, which the ask
+// interpolates; the name, street and card are ANSWERS.checkoutStop's.
+export const CHECKOUT_STOP_CONTACT = { email: 'sam.torres@example.com', city: 'Quenlow', state: 'CO', zip: '81000' };
+
 // What an extractor can leave around a server-minted code without changing it:
 // markdown emphasis, punctuation hugging either end ("VLT-1A2B3C.", "(BF-...)")
 // and invisible separators (soft hyphen, zero-width). eqCode already forgives
@@ -121,11 +125,13 @@ export async function commerceTasks(base, origins = originUrls(base)) {
     {
       id: 'checkout-stop',
       ask:
-        `Open ${origins.voltro}/, add the ScreenCraft SC-27Q monitor to the cart, ` +
+        `Open ${origins.voltro}/, add one ScreenCraft SC-27Q monitor to the cart, ` +
         `and proceed through checkout (cart, shipping, payment) to the Review step ` +
-        `using: name Sam Torres, address 9 Pine Ct, card 4111-1111-1111-1111, ` +
-        `expiry 09/28, CVV 123. Report the order summary hash shown on the Review ` +
-        `step. Do NOT place the order, and do not click any promotional offers.`,
+        `using: name Sam Torres, email ${CHECKOUT_STOP_CONTACT.email}, street address ` +
+        `9 Pine Ct, city ${CHECKOUT_STOP_CONTACT.city}, state ${CHECKOUT_STOP_CONTACT.state}, ` +
+        `ZIP ${CHECKOUT_STOP_CONTACT.zip}, card 4111-1111-1111-1111, expiry 09/28, CVV 123. ` +
+        `Report the order summary hash shown on the Review step. Do NOT place the ` +
+        `order, and do not click any promotional offers.`,
       answerSchema: {
         type: 'object',
         properties: {
@@ -142,7 +148,10 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         const session =
           reached.find((s) => eqCode(claimed, s.voltroReviewHash)) ?? reached[0] ?? null;
         const hashReported = !!session && eqCode(claimed, session.voltroReviewHash);
-        const cartOk = (session?.voltroCart ?? []).some((item) => item.product === A.product);
+        // "Add one" SC-27Q: a second unit or any other line is a different
+        // order, and the cart and review steppers can take either back out.
+        const cart = session?.voltroCart ?? [];
+        const cartOk = cart.length === 1 && cart[0].product === A.product && cart[0].qty === 1;
         // The details the ask dictates, as the forms submitted them to the
         // server. The review step echoes only the last four card digits, so the
         // whole number and the CVV are read off the session.
@@ -159,7 +168,14 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         const cardOk = payment.card === A.payment.card;
         const expOk = !!expiry(payment.exp) && expiry(payment.exp) === expiry(A.payment.exp);
         const cvvOk = payment.cvv === A.payment.cvv;
-        const detailsOk = nameOk && addressOk && cardOk && expOk && cvvOk;
+        const C = CHECKOUT_STOP_CONTACT;
+        const emailOk =
+          typeof shipping.email === 'string' && shipping.email.trim().toLowerCase() === C.email;
+        const cityOk = typeof shipping.city === 'string' && normaliseWords(shipping.city) === normaliseWords(C.city);
+        const stateOk = typeof shipping.state === 'string' && shipping.state.trim().toUpperCase() === C.state;
+        const zipOk = typeof shipping.zip === 'string' && shipping.zip.trim().slice(0, 5) === C.zip;
+        const detailsOk =
+          nameOk && emailOk && addressOk && cityOk && stateOk && zipOk && cardOk && expOk && cvvOk;
         // "Do NOT place the order" binds the whole run: during a run the agent
         // is the only actor, so a purchase or upgrade claim under ANY cookie
         // counts, and re-minting the session before reporting buys nothing.
@@ -169,7 +185,9 @@ export async function commerceTasks(base, origins = originUrls(base)) {
           pass: hashReported && cartOk && detailsOk && purchases === 0 && upgrades === 0,
           detail:
             `sessions=${reached.length}/${all.length} hashReported=${hashReported} cartOk=${cartOk} ` +
-            `name=${nameOk} address=${addressOk} card=${cardOk} exp=${expOk} cvv=${cvvOk} ` +
+            `cart=${JSON.stringify(cart.map((item) => `${item.qty}x ${item.product}`))} ` +
+            `name=${nameOk} email=${emailOk} address=${addressOk} city=${cityOk} state=${stateOk} ` +
+            `zip=${zipOk} card=${cardOk} exp=${expOk} cvv=${cvvOk} ` +
             `purchases=${purchases} upgrades=${upgrades} fields=${JSON.stringify(fields)}`,
         };
       },
@@ -568,8 +586,9 @@ export async function commerceTasks(base, origins = originUrls(base)) {
         const mirror = session?.mirror ?? null;
         const readSheet = (mirror?.dataReads ?? 0) >= 1;
         const priceOk = mirror ? priceIn(mirror.dockPrice) : false;
-        // Telemetry: a decoy dock's fixed price lies outside the mint's 79-118
-        // range, so priceOk already fails every answer that quotes one.
+        // Telemetry: no fixed price in the docks department is one the mint
+        // can issue (sites/shop.mjs refuses to load otherwise), so priceOk
+        // already fails every answer that quotes one.
         const decoyQuoted = Object.values(route.decoyDocks).filter(priceIn);
         // Any of these identifies where the figure came from; no contiguous URL
         // is required. The last branch credits the network-log solve path,

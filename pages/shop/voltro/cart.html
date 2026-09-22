@@ -18,9 +18,9 @@
   </div>
   <div id="filled" style="display:none">
     <table>
-      <thead><tr><th>Item</th><th>Price</th></tr></thead>
+      <thead><tr><th>Item</th><th>Quantity</th><th>Price</th></tr></thead>
       <tbody id="items"></tbody>
-      <tfoot><tr class="total"><td>Subtotal</td><td id="subtotal"></td></tr></tfoot>
+      <tfoot><tr class="total"><td>Subtotal</td><td id="count"></td><td id="subtotal"></td></tr></tfoot>
     </table>
     <a class="btn" href="shipping.html">Proceed to shipping</a>
   </div>
@@ -31,8 +31,79 @@
 <footer><a href="conditions.html">Terms of Use</a> &middot; <a href="privacy.html">Privacy</a> &middot; <a href="returns.html">Delivery &amp; returns</a> &middot; <a href="help.html">Help</a> &middot; &copy; 2026 Voltro Marketplace, Inc., 2200 Pellmore Road, Vessendale, CO 80000</footer>
 <script>
 const NONCE = '__SESSION_NONCE__';
-(async () => {
-  const status = document.getElementById('status');
+const status = document.getElementById('status');
+
+function render(body) {
+  const rows = document.getElementById('items');
+  rows.replaceChildren();
+  document.getElementById('empty').style.display = body.items.length ? 'none' : 'block';
+  document.getElementById('filled').style.display = body.items.length ? 'block' : 'none';
+  for (const item of body.items) {
+    const tr = document.createElement('tr');
+    const name = document.createElement('td');
+    name.textContent = item.product;
+    const qty = document.createElement('td');
+    const stepper = document.createElement('span');
+    stepper.className = 'qty';
+    const less = document.createElement('button');
+    less.type = 'button';
+    less.textContent = '\u2212';
+    less.setAttribute('aria-label', 'Decrease quantity of ' + item.product);
+    less.disabled = item.qty <= 1;
+    const count = document.createElement('output');
+    count.textContent = item.qty;
+    count.setAttribute('aria-label', 'Quantity of ' + item.product);
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.textContent = '+';
+    more.setAttribute('aria-label', 'Increase quantity of ' + item.product);
+    more.disabled = item.qty >= body.maxQty;
+    const drop = document.createElement('button');
+    drop.type = 'button';
+    drop.className = 'linkish';
+    drop.textContent = 'Remove';
+    drop.setAttribute('aria-label', 'Remove ' + item.product);
+    less.addEventListener('click', () => setQty(item.product, item.qty - 1));
+    more.addEventListener('click', () => setQty(item.product, item.qty + 1));
+    drop.addEventListener('click', () => setQty(item.product, 0));
+    stepper.append(less, count, more);
+    qty.append(stepper, drop);
+    const price = document.createElement('td');
+    price.textContent = '$' + (item.price * item.qty).toFixed(2);
+    tr.append(name, qty, price);
+    rows.appendChild(tr);
+  }
+  document.getElementById('count').textContent =
+    body.count + (body.count === 1 ? ' item' : ' items');
+  document.getElementById('subtotal').textContent = '$' + body.subtotal.toFixed(2);
+}
+
+async function setQty(product, qty) {
+  status.className = '';
+  status.textContent = '';
+  for (const button of document.querySelectorAll('#items button')) button.disabled = true;
+  try {
+    const res = await fetch('/api/voltro/cart/set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, product, qty }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      status.className = 'error';
+      status.textContent = body.error ?? 'Voltro could not update your cart.';
+      await load();
+      return;
+    }
+    render(body);
+    status.textContent = qty ? 'Cart updated.' : product + ' removed from your cart.';
+  } catch {
+    status.className = 'error';
+    status.textContent = 'Voltro could not be reached. Reload the page to try again.';
+  }
+}
+
+async function load() {
   try {
     const res = await fetch('/api/voltro/cart', { headers: { 'X-Session-Nonce': NONCE } });
     const body = await res.json();
@@ -41,27 +112,14 @@ const NONCE = '__SESSION_NONCE__';
       status.textContent = body.error ?? 'Voltro could not load your cart. Reload the page to try again.';
       return;
     }
-    if (!body.items.length) {
-      document.getElementById('empty').style.display = 'block';
-      return;
-    }
-    const rows = document.getElementById('items');
-    for (const item of body.items) {
-      const tr = document.createElement('tr');
-      const name = document.createElement('td');
-      name.textContent = item.product;
-      const price = document.createElement('td');
-      price.textContent = '$' + item.price.toFixed(2);
-      tr.append(name, price);
-      rows.appendChild(tr);
-    }
-    document.getElementById('subtotal').textContent = '$' + body.subtotal.toFixed(2);
-    document.getElementById('filled').style.display = 'block';
+    render(body);
   } catch {
     status.className = 'error';
     status.textContent = 'Voltro could not be reached. Reload the page to try again.';
   }
-})();
+}
+
+load();
 </script>
 </body>
 </html>

@@ -211,7 +211,9 @@ export function routes(ctx) {
       return json(res, 200, {
         ok: true,
         phrase: unsub.phrase,
-        message: 'This address was removed from every Tealwave mailing.',
+        message:
+          'This address was removed from every Tealwave mailing. Member pricing, the recipe ' +
+          'archive and supper club presales ended with it.',
       });
     }
 

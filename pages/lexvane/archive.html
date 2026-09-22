@@ -106,22 +106,13 @@
       <thead>
         <tr><th>No.</th><th>Published</th><th>Solve rate</th><th>Grid</th></tr>
       </thead>
-      <tbody>
-        <tr><td class="no">1480</td><td>Saturday, 2 May 2026</td><td class="rate">89%</td><td><a href="subscribe.html">Replay</a></td></tr>
-        <tr><td class="no">1479</td><td>Friday, 1 May 2026</td><td class="rate">74%</td><td><a href="subscribe.html">Replay</a></td></tr>
-        <tr><td class="no">1478</td><td>Thursday, 30 April 2026</td><td class="rate">91%</td><td><a href="subscribe.html">Replay</a></td></tr>
-        <tr><td class="no">1477</td><td>Wednesday, 29 April 2026</td><td class="rate">83%</td><td><a href="subscribe.html">Replay</a></td></tr>
-        <tr><td class="no">1476</td><td>Tuesday, 28 April 2026</td><td class="rate">68%</td><td><a href="subscribe.html">Replay</a></td></tr>
-        <tr><td class="no">1475</td><td>Monday, 27 April 2026</td><td class="rate">88%</td><td><a href="subscribe.html">Replay</a></td></tr>
-        <tr><td class="no">1474</td><td>Sunday, 26 April 2026</td><td class="rate">92%</td><td><a href="subscribe.html">Replay</a></td></tr>
-        <tr><td class="no">1473</td><td>Saturday, 25 April 2026</td><td class="rate">79%</td><td><a href="subscribe.html">Replay</a></td></tr>
-        <tr><td class="no">1472</td><td>Friday, 24 April 2026</td><td class="rate">85%</td><td><a href="subscribe.html">Replay</a></td></tr>
-        <tr><td class="no">1471</td><td>Thursday, 23 April 2026</td><td class="rate">71%</td><td><a href="subscribe.html">Replay</a></td></tr>
-        <tr><td class="no">1470</td><td>Wednesday, 22 April 2026</td><td class="rate">90%</td><td><a href="subscribe.html">Replay</a></td></tr>
+      <tbody id="grids">
+        <tr><td colspan="4">Fetching the archive from the games desk.</td></tr>
       </tbody>
     </table>
-    <div class="note">Replaying an archived grid comes with either subscription. The solution to
-    each day's puzzle appears in the following day's print edition.</div>
+    <div class="note">The past week's grids stay open to everyone: play them from this list.
+    Replaying anything older comes with either subscription. The solution to each day's puzzle appears
+    in the following day's print edition.</div>
   </section>
 </main>
 <footer>
@@ -136,5 +127,37 @@
     <p>&copy; 2026 Marrowfield Press Ltd. All rights reserved.</p>
   </div>
 </footer>
+<script>
+  const NONCE = '__SESSION_NONCE__';
+  (async () => {
+    const body = document.getElementById('grids');
+    let grids;
+    try {
+      const response = await fetch('/api/lexvane/archive', { headers: { 'X-Session-Nonce': NONCE } });
+      grids = (await response.json()).grids;
+    } catch {
+      grids = null;
+    }
+    if (!Array.isArray(grids)) {
+      body.rows[0].cells[0].textContent = 'The archive could not be fetched. Reload the page to try again.';
+      return;
+    }
+    body.textContent = '';
+    for (const grid of grids) {
+      const row = body.insertRow();
+      const no = row.insertCell();
+      no.className = 'no';
+      no.textContent = grid.number;
+      row.insertCell().textContent = grid.date;
+      const rate = row.insertCell();
+      rate.className = 'rate';
+      rate.textContent = grid.rate + '%';
+      const link = document.createElement('a');
+      link.href = grid.play ? './?day=' + grid.play : 'subscribe.html';
+      link.textContent = grid.play ? 'Play' : 'Replay';
+      row.insertCell().append(link);
+    }
+  })();
+</script>
 </body>
 </html>

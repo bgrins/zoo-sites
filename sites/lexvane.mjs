@@ -1,6 +1,6 @@
 // pages/lexvane/ - both modes scored server-side; the words live only here.
 import { randomBytes } from 'node:crypto';
-import { SESSION_ROWS } from './lib.mjs';
+import { DAY_MS, SESSION_ROWS, dayText, isoDay, utcDay } from './lib.mjs';
 
 // pages/lexvane/index.html — BOTH modes are scored server-side. The word
 // lists, the two-pass marking and the hard-mode reuse rule live here only: the
@@ -30,6 +30,24 @@ const LEXVANE_HARD_WORDS = [
 const LEXVANE_EASY_TRIES = 6;
 
 const LEXVANE_HARD_TRIES = 5;
+
+// One grid a day, numbered by the day: No. 1481 ran on 3 May 2026. Today's grid
+// is the one for the UTC day its session opened, and ?day=N opens the grid N
+// days before it.
+const LEXVANE_NUMBERED = { number: 1481, day: isoDay('2026-05-03') };
+
+function lexvaneIssue(session, back) {
+  const day = utcDay(session.createdAt) - back * DAY_MS;
+  return {
+    number: LEXVANE_NUMBERED.number + (day - LEXVANE_NUMBERED.day) / DAY_MS,
+    date: dayText(day),
+  };
+}
+
+// Solve rates for the eleven grids before today's, newest first, as the archive
+// lists them. The six the games desk still holds a word for play from the Today
+// page; the rest replay with a subscription.
+const LEXVANE_ARCHIVE_RATES = [89, 74, 91, 83, 68, 88, 92, 79, 85, 71, 90];
 
 const LEXVANE_TIERS = {
   puzzles: { name: 'Puzzles only', price: '£3.49 a month' },
@@ -165,17 +183,18 @@ function lexvaneGame(session, day, mode) {
   });
 }
 
-// The session's own record for one mode, finished games only, in day order.
-// A streak is consecutive won days ending at the latest finished day.
+// The session's own record for one mode, finished games only, oldest grid
+// first: a game's day counts back from today. A streak is consecutive won days
+// ending at the most recent finished day.
 function lexvaneStats(session, mode) {
   const games = Object.values(session[mode.slot] ?? {})
     .filter((g) => g.over)
-    .sort((a, b) => a.day - b.day);
+    .sort((a, b) => b.day - a.day);
   let best = 0;
   let run = 0;
   let prev = null;
   for (const g of games) {
-    run = g.won ? (prev !== null && prev.won && prev.day === g.day - 1 ? run + 1 : 1) : 0;
+    run = g.won ? (prev !== null && prev.won && prev.day === g.day + 1 ? run + 1 : 1) : 0;
     best = Math.max(best, run);
     prev = g;
   }
@@ -183,9 +202,11 @@ function lexvaneStats(session, mode) {
   return { played: games.length, won, streak: run, best };
 }
 
-function lexvaneView(game, mode) {
+function lexvaneView(session, game, mode) {
   const view = {
     day: game.day,
+    issue: lexvaneIssue(session, game.day),
+    today: lexvaneIssue(session, 0).number,
     length: game.length,
     tries: mode.tries,
     guessNumber: game.guesses.length,
@@ -209,7 +230,7 @@ export function routes(ctx) {
       const asked = url.searchParams.get('day') ?? '0';
       const day = lexvaneDay(asked, mode);
       return json(res, 200, {
-        ...lexvaneView(lexvaneGame(found.session, day, mode), mode),
+        ...lexvaneView(found.session, lexvaneGame(found.session, day, mode), mode),
         available: Number(asked) === day,
         stats: lexvaneStats(found.session, mode),
       });
@@ -227,7 +248,7 @@ export function routes(ctx) {
         .trim()
         .toUpperCase();
       const reject = (reason) =>
-        json(res, 200, { accepted: false, reason, ...lexvaneView(game, mode) });
+        json(res, 200, { accepted: false, reason, ...lexvaneView(found.session, game, mode) });
       if (game.over) {
         return reject('This puzzle is finished.');
       }
@@ -272,8 +293,21 @@ export function routes(ctx) {
         guess,
         marks,
         message,
-        ...lexvaneView(game, mode),
+        ...lexvaneView(found.session, game, mode),
         stats: lexvaneStats(found.session, mode),
+      });
+    }
+
+    if (req.method === 'GET' && pathname0 === '/api/lexvane/archive') {
+      const found = requireSession(req, res);
+      if (!found) return;
+      const open = LEXVANE_EASY_WORDS.length;
+      return json(res, 200, {
+        grids: LEXVANE_ARCHIVE_RATES.map((rate, i) => ({
+          ...lexvaneIssue(found.session, i + 1),
+          rate,
+          play: i + 1 < open ? i + 1 : null,
+        })),
       });
     }
 
