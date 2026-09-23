@@ -136,10 +136,12 @@ const statusEl = document.getElementById('status');
   const ref = new URLSearchParams(location.search).get('ref') ?? '';
   let data = null;
   try {
-    const r = await fetch('/api/fernwood/thread?ref=' + encodeURIComponent(ref), {
-      headers: { 'X-Session-Nonce': NONCE },
-    });
-    if (r.ok) data = await r.json();
+    if (ref) {
+      const r = await fetch('/api/fernwood/thread?ref=' + encodeURIComponent(ref), {
+        headers: { 'X-Session-Nonce': NONCE },
+      });
+      if (r.ok) data = await r.json();
+    }
   } catch {}
   if (!data) {
     document.getElementById('post').append(commonsEl('h1', 'gone', 'Post not found'));
