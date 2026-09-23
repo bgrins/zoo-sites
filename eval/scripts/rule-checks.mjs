@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { priceTokens } from '../backends/pricing.mjs';
-import { devtoolsFirefox, devtoolsFirefoxLaunch, devtoolsFirefoxPolicy, firefoxBuild } from '../mcp-stdio.mjs';
+import { devtoolsFirefox, devtoolsFirefoxLaunch, devtoolsFirefoxPolicy, devtoolsWindowSize, firefoxBuild } from '../mcp-stdio.mjs';
 import { createCallRecorder, malformedUid, serverExit, toolsListInfo } from '../mcp-tap.mjs';
 import { envMismatches, headline, launcherNote, totalsByCondition, totalsTableLines } from '../report.mjs';
 import { createReachRecorder, reachOf } from '../surface-reach.mjs';
@@ -1120,6 +1120,10 @@ const CHECKS = {
       !envMismatches(unread).some((m) => m.startsWith('Firefox build'))
     );
   },
+  'headless Firefox window accounts for Linux chrome': () =>
+    devtoolsWindowSize({ width: 1366, height: 683 }, 'darwin') === '1366x768' &&
+    devtoolsWindowSize({ width: 1366, height: 683 }, 'linux') === '1366x769' &&
+    devtoolsWindowSize({ width: 1280, height: 720 }, 'linux') === '1280x806',
   // playwright.cfg's pref() calls hold over the --pref flags geckodriver writes
   // to user.js, so a pinned pref the cfg sets otherwise needs a policy, which
   // only a cfg that reads PLAYWRIGHT_FIREFOX_POLICIES_JSON takes and only a

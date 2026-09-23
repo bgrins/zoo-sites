@@ -384,7 +384,7 @@ conditions or from its pin:
 | Firefox build | one build for both only under `--devtools-firefox playwright` | the installed Firefox, or the binary `--devtools-firefox` names, as `--firefox-path` | Playwright's patched build |
 | time zone | `UTC` | `TZ` in the agent's environment, which both backends pass to the MCP server | the same |
 | locale | `en-US`, Accept-Language `en-US,en;q=0.9` | prefs `intl.accept_languages` and `javascript.use_us_english_locale` via `--pref` | the same prefs via `firefoxUserPrefs` in a `--config` file |
-| viewport | `1366x683` | `--viewport 1366x768`, which sizes the window; the toolbars take the rest | `--viewport-size 1366x683` |
+| viewport | `1366x683` | `--viewport 1366x768` on macOS, `1366x769` on Linux; the flag sizes the outer window and its chrome takes the rest | `--viewport-size 1366x683` |
 | colour scheme | `light` | pref `layout.css.prefers-color-scheme.content-override=1` | `contextOptions.colorScheme` in the config file |
 | PDF viewer | pdf.js on | pref `pdfjs.disabled=false` via `--pref`, already the release default; on Playwright's build, a policy (below) | the same pref via `firefoxUserPrefs`, which overrides the `playwright.cfg` that turns pdf.js off |
 
