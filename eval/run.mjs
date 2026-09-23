@@ -73,7 +73,7 @@ import {
 import { extractFields, extractorInfo, isSentinel } from './extract.mjs';
 import {
   BROWSER_PINS, DEVTOOLS_FIREFOX_VAR, DEVTOOLS_SERVER_ENV, PINNED_PREFS, devtoolsFirefox, devtoolsFirefoxLaunch,
-  devtoolsFirefoxPolicy, devtoolsMcpEntry, devtoolsMcpInfo, downloadPrefs, firefoxBuild, playwrightFirefox, prefArgs, sha256File,
+  devtoolsFirefoxPolicy, devtoolsMcpEntry, devtoolsMcpInfo, devtoolsWindowSize, downloadPrefs, firefoxBuild, playwrightFirefox, prefArgs, sha256File,
   startMcpServer,
 } from './mcp-stdio.mjs';
 import {
@@ -1037,10 +1037,8 @@ const agentEnvFor = (backend) => ({ ...agentEnv(backend === 'scripted' ? null : 
 const shellPathFor = (backend) => (backend === 'scripted' ? undefined : shimmedPath(agentEnvFor(backend).PATH));
 
 const VIEWPORT = `${BROWSER_PINS.viewport.width}x${BROWSER_PINS.viewport.height}`;
-// firefox-devtools-mcp's --viewport sizes the WINDOW, and a headless Firefox's
-// toolbars take 85px of it; the preflight measures the page size that leaves.
 // A headed window takes its cell of the grid instead.
-const DEVTOOLS_WINDOW = `${BROWSER_PINS.viewport.width}x${BROWSER_PINS.viewport.height + 85}`;
+const DEVTOOLS_WINDOW = devtoolsWindowSize(BROWSER_PINS.viewport);
 // playwright-mcp takes Firefox prefs and Playwright's own emulation only from a
 // config file. Playwright emulates a colour scheme whatever the pref says.
 const PLAYWRIGHT_CONFIG = {

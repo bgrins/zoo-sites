@@ -119,6 +119,12 @@ export const BROWSER_PINS = {
   colorScheme: 'light',
 };
 
+// Selenium sizes Firefox's outer window; headless Linux takes one more pixel
+// of vertical chrome than macOS before the page gets its inner viewport.
+export function devtoolsWindowSize(viewport, platform = process.platform) {
+  return `${viewport.width}x${viewport.height + (platform === 'linux' ? 86 : 85)}`;
+}
+
 // Firefox prefs both conditions set. The JS locale follows the build's own
 // locale (intl.locale.requested=de-DE left an en-US build at en-US), so
 // javascript.use_us_english_locale is what holds a localised system Firefox to
