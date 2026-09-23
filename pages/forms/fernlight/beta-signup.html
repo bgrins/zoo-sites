@@ -179,7 +179,11 @@ opens. Everything you build during the beta carries over to general release.</p>
       return;
     }
     if (!response.ok) {
-      const failure = response.status === 400 ? await response.json().catch(() => ({})) : {};
+      const failure = response.status === 422 ? await response.json().catch(() => ({})) : {};
+      for (const [field, message] of Object.entries(failure.errors ?? {})) {
+        const slot = document.getElementById('err-' + field);
+        if (slot) slot.textContent = message;
+      }
       document.getElementById('err-submit').textContent =
         failure.error ?? 'Your request did not reach the waitlist. Reload the page and try again.';
       return;

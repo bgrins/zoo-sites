@@ -39,7 +39,7 @@
 
     <div class="targets" id="targets">
       <div class="target"><span class="t-name">Brightness</span><span class="t-val" id="t-brightness">&ndash;</span></div>
-      <div class="target"><span class="t-name">Color temperature</span><span class="t-val" id="t-colortemp">&ndash;</span></div>
+      <div class="target"><span class="t-name">Colour temperature</span><span class="t-val" id="t-colortemp">&ndash;</span></div>
       <div class="target"><span class="t-name">Fade time</span><span class="t-val" id="t-fade">&ndash;</span></div>
     </div>
 
@@ -48,8 +48,8 @@
       <input type="range" id="sl-brightness" min="0" max="100" step="1" value="80" aria-label="Brightness">
     </div>
     <div class="dial">
-      <div class="dial-head"><span class="dial-name">Color temperature</span><span class="readout" id="ro-colortemp">4000 K</span></div>
-      <input type="range" id="sl-colortemp" min="2700" max="6500" step="50" value="4000" aria-label="Color temperature">
+      <div class="dial-head"><span class="dial-name">Colour temperature</span><span class="readout" id="ro-colortemp">4000 K</span></div>
+      <input type="range" id="sl-colortemp" min="2700" max="6500" step="50" value="4000" aria-label="Colour temperature">
     </div>
     <div class="dial">
       <div class="dial-head"><span class="dial-name">Fade time</span><span class="readout" id="ro-fade">3 s</span></div>
@@ -90,7 +90,7 @@ const DIALS = [
   { key: 'fadeSeconds', slider: 'sl-fade', readout: 'ro-fade', target: 't-fade', fmt: (v) => v + ' s' },
 ];
 
-const OFF_NAMES = { brightness: 'brightness', colorTemp: 'color', fadeSeconds: 'fade' };
+const OFF_NAMES = { brightness: 'brightness', colorTemp: 'colour', fadeSeconds: 'fade' };
 
 let defaults = { brightness: 80, colorTemp: 4000, fadeSeconds: 3 };
 

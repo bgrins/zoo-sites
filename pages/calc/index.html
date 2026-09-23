@@ -398,6 +398,10 @@ document.addEventListener('keydown', (event) => {
   } else if (cell && event.key === 'Escape') {
     event.preventDefault();
     select(selected, true);
+  } else if (cell && event.key.length === 1 && !mod && !event.altKey) {
+    event.preventDefault();
+    el('formula').value = event.key;
+    editBar();
   } else if (cell && event.key.startsWith('Arrow') && !mod) {
     event.preventDefault();
     const col = COLS.indexOf(selected[0]);

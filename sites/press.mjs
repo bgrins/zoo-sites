@@ -6,7 +6,8 @@ import { dayText } from './lib.mjs';
 // the body copy and the per-session release reference are served ONLY by
 // /api/press/unlock, which refuses every request until PRESS_EMBARGO_MS has
 // passed since that session's first document navigation to the page, so hitting
-// the endpoint immediately cannot win.
+// the endpoint immediately cannot win. The headline also reaches the newsroom's
+// listings, but only once that endpoint has answered (listRelease below).
 const PRESS_EMBARGO_MS = 20000;
 
 // The release goes out the moment the embargo lifts, so its dateline is that
@@ -20,7 +21,29 @@ const PRESS_RELEASE = {
     'Pellvane Robotics will be reported within the group\'s industrial services division and will keep its Sheffield engineering centre and its brand. Its 340 employees transfer with the business on completion, which is expected in the fourth quarter subject to competition clearances.',
     'The board expects the acquisition to be accretive to group operating margin from the second full year and to add roughly £58 million of annualised revenue at current order rates.',
   ],
+  filing: 'Acquisition of Pellvane Robotics',
+  classification: 'Transactions',
 };
+
+// Once a session's embargo has lifted, the releases list, the filings table
+// and every other release's "Recent releases" rail carry release 26-118, as a
+// newsroom lists a release the moment it goes out. index.html is the release
+// itself, so its own rail leaves it out.
+function listRelease(pathname, body, publishedAt) {
+  const on = dayText(publishedAt, { weekday: false });
+  const item = `<li><a href="index.html">${PRESS_RELEASE.headline}</a><span class="date">${on}</span></li>`;
+  let out = body.replace(/<li>\s*<a href="index\.html">Release 26-118<\/a>[\s\S]*?<\/li>/, item);
+  if (pathname !== '/press/index.html') {
+    out = out.replace(/(<h2>Recent releases<\/h2>\s*<ul>)/, `$1\n          ${item}`);
+  }
+  if (pathname === '/press/regulatory-filings.html') {
+    out = out.replace(
+      /(<tbody>)/,
+      `$1\n        <tr><td>${on}</td><td><a href="index.html">${PRESS_RELEASE.filing}</a></td><td>${PRESS_RELEASE.classification}</td></tr>`
+    );
+  }
+  return out;
+}
 
 export function routes(ctx) {
   const { json, readJson, requireSession } = ctx;
@@ -100,7 +123,7 @@ export function documents() {
     // server.mjs), so this is a route separation, not browser proof — what it
     // does buy is that the 20s and the minted reference cannot be skipped
     // either way. Framed loads do not count.
-    onHtml({ pathname, found, nav }) {
+    onHtml({ pathname, found, nav, body }) {
       if (pathname === '/press/index.html' && nav.document) {
         found.session.press ??= {
           loadedAt: Date.now(),
@@ -109,6 +132,8 @@ export function documents() {
           earlyAttempts: 0,
         };
       }
+      const publishedAt = found.session.press?.unlockedAt;
+      if (publishedAt) return { body: listRelease(pathname, body, publishedAt) };
     },
   };
 }

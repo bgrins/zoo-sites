@@ -30,16 +30,39 @@
     <span class="crumb">Account / <b>Domains</b></span>
     <span class="gap"></span>
     <span class="acct">Registry lock: off</span>
+    <a class="signout" href="signout.html">Sign out</a>
   </div>
 
   <main>
     <h1>Domains</h1>
     <p class="lede">Domains registered to Fernvale Labs LLC.</p>
+    <div class="pagebody wide">
+      <table class="plain domains">
+        <thead>
+          <tr><th>Domain</th><th>Status</th><th>Registered</th><th>Expires</th><th>Auto-renew</th><th>DNSSEC</th><th>Registry lock</th><th>Nameservers</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a class="mono" href="index.html">fernvale-labs.example.net</a></td>
+            <td><span class="tag tag-active">Active</span></td>
+            <td class="mono">2019-03-08</td>
+            <td class="mono">2027-03-08</td>
+            <td>On</td>
+            <td>Signed</td>
+            <td>Off</td>
+            <td class="mono">Northgate anycast</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note-line">1 domain. Renewal invoices are raised 45 days before expiry. Open a domain to
+      manage its <a href="index.html">DNS records</a>.</p>
+    </div>
+
+    <h2>Add a domain</h2>
     <div class="pagebody">
-      <p><b>fernvale-labs.example.net</b> &mdash; active, renews 2027-03-08, DNSSEC signed.
-      Manage its zone from <a href="index.html">DNS records</a>.</p>
-      <p>To register or bring in another name, start from Transfers. Pricing for
-      renewals and transfers is listed on your Billing page.</p>
+      <p>To bring a name registered elsewhere into this account, start an inbound transfer on
+      <a href="transfers.html">Transfers</a> with the auth code from its current registrar.
+      Pricing for renewals and transfers is listed on your <a href="billing.html">Billing</a> page.</p>
     </div>
   </main>
 

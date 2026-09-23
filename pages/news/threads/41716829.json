@@ -1,0 +1,1124 @@
+{
+ "id": 41716829,
+ "comments": [
+  {
+   "author": "warmstart",
+   "age": "13 hours ago",
+   "text": "The article blames chat tools but I think the real killer was search that never worked. Our intranet had eleven years of policy documents and the search box couldn't find the holiday calendar. People didn't leave for chat because chat was better at knowledge management — it's objectively worse — they left because asking a human in a channel beat fighting the search index.",
+   "replies": [
+    {
+     "author": "sharepointsurvivor",
+     "age": "12 hours ago",
+     "text": "OP here — search is the second act of the piece, keep reading! But yes, agreed. The tragedy is that broken search creates a doom loop: people stop trusting the intranet, so they stop updating it, so search results get staler, so trust drops further.",
+     "replies": [
+      {
+       "author": "warmstart",
+       "age": "11 hours ago",
+       "text": "Fair, I commented at the halfway mark. Guilty as charged.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "taxonomite",
+     "age": "10 hours ago",
+     "text": "Former intranet information architect here. Search never worked because nobody would pay for content maintenance. Every org wanted a launch project, nobody wanted a gardening budget. The intranet didn't die of bad technology; it died of deferred weeding.",
+     "replies": [
+      {
+       "author": "kernelpanda",
+       "age": "9 hours ago",
+       "text": "This generalizes way beyond intranets. Wikis, runbooks, design docs — all of it is a garden, and orgs consistently fund the greenhouse and not the gardener.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "depreciator",
+   "age": "3 hours ago",
+   "text": "Ours had a lunch menu for a cafeteria that had been closed for five years. It was the most visited page.",
+   "replies": [
+    {
+     "author": "pixelwake",
+     "age": "3 hours ago",
+     "text": "This.",
+     "replies": [
+      {
+       "author": "tupletide",
+       "age": "2 hours ago",
+       "text": "The internal comms team at my company was cut in 2020 and the intranet froze the same month.",
+       "replies": [
+        {
+         "author": "stackmonk36",
+         "age": "20 minutes ago",
+         "text": "Somebody should write the boring version of this post, with all the caveats.",
+         "replies": [
+          {
+           "author": "inodefield",
+           "age": "6 minutes ago",
+           "text": "Expiry dates worked for us for about two years, then people started clicking confirm without reading.",
+           "replies": [
+            {
+             "author": "stackmonk36",
+             "age": "3 minutes ago",
+             "text": "Having done this twice now: compliance theatre is a real category. Half our policy pages had not been opened by anyone but the author.",
+             "replies": [
+              {
+               "author": "grommetfield",
+               "age": "2 minutes ago",
+               "text": "The retired office manager story is universal. Every working knowledge base has one person holding it up.",
+               "replies": [
+                {
+                 "author": "kernelpanda",
+                 "age": "1 minute ago",
+                 "text": "The classifieds page was ours as well. Sold a bike to someone in legal in 2011.",
+                 "replies": []
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "pixelwake",
+     "age": "3 hours ago",
+     "text": "The platform migration point is painful and true. We lost ten years of page history in one weekend.",
+     "replies": [
+      {
+       "author": "queueshed",
+       "age": "1 hour ago",
+       "text": "Is that from the post or from your own setup? Curious either way.",
+       "replies": [
+        {
+         "author": "planshape",
+         "age": "5 minutes ago",
+         "text": "What did you replace it with, if anything?",
+         "replies": [
+          {
+           "author": "lintworks",
+           "age": "4 minutes ago",
+           "text": "Well put.",
+           "replies": [
+            {
+             "author": "kernling",
+             "age": "3 minutes ago",
+             "text": "Ha, fair.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "author": "foldcraft",
+         "age": "1 hour ago",
+         "text": "The interesting bit is buried in a footnote, as usual.",
+         "replies": [
+          {
+           "author": "pagetable",
+           "age": "9 minutes ago",
+           "text": "Who owned the intranet at your company, IT or communications?",
+           "replies": [
+            {
+             "author": "grommetpilot",
+             "age": "4 minutes ago",
+             "text": "Compliance theatre is a real category. Half our policy pages had not been opened by anyone but the author.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "warmstart",
+     "age": "2 hours ago",
+     "text": "You are describing a people problem with a technology label on it.",
+     "replies": [
+      {
+       "author": "kernwake82",
+       "age": "1 hour ago",
+       "text": "Worth separating what is hard from what is merely unfamiliar.",
+       "replies": [
+        {
+         "author": "tracesmith",
+         "age": "1 hour ago",
+         "text": "The internal comms team at my company was cut in 2022 and the intranet froze the same month.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "byteshed",
+       "age": "2 hours ago",
+       "text": "Nobody wants to hear it, but the unglamorous answer usually wins.",
+       "replies": []
+      },
+      {
+       "author": "mutexloft",
+       "age": "37 minutes ago",
+       "text": "Onboarding docs are the canary. If they are wrong, everything else is too.",
+       "replies": [
+        {
+         "author": "kernelpanda",
+         "age": "24 minutes ago",
+         "text": "Expiry dates worked for us for about three years, then people started clicking confirm without reading.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "scalarster",
+       "age": "1 hour ago",
+       "text": "Interesting, had not considered that.",
+       "replies": []
+      },
+      {
+       "author": "tupletide",
+       "age": "51 minutes ago",
+       "text": "Did anyone try making page owners visible on every page? Did it help?",
+       "replies": [
+        {
+         "author": "warmstart",
+         "age": "46 minutes ago",
+         "text": "Source?",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "queuesmith",
+     "age": "3 hours ago",
+     "text": "The internal comms team at my company was cut in 2021 and the intranet froze the same month.",
+     "replies": []
+    },
+    {
+     "author": "lambdacurious",
+     "age": "2 hours ago",
+     "text": "Expiry dates worked for us for about two years, then people started clicking confirm without reading. I say that as someone who likes the idea.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "depreciator",
+   "age": "5 hours ago",
+   "text": "The intranet at my current job had a page called \"Useful links\" with sixty entries, and about half of them went nowhere.",
+   "replies": [
+    {
+     "author": "offbyfun",
+     "age": "4 hours ago",
+     "text": "Genuinely curious what the failure mode looks like in year three.",
+     "replies": [
+      {
+       "author": "deltamonk",
+       "age": "1 hour ago",
+       "text": "Search spanning everything is the product everyone wants and nobody can sell, because permissions make it hard.",
+       "replies": [
+        {
+         "author": "shardbearer",
+         "age": "13 minutes ago",
+         "text": "Named owners are the only thing I have seen work, and only with a review reminder that actually reaches them. Nobody talks about that part.",
+         "replies": [
+          {
+           "author": "grommethound",
+           "age": "11 minutes ago",
+           "text": "I think you are both right and talking about different scales.",
+           "replies": [
+            {
+             "author": "staticdrift",
+             "age": "8 minutes ago",
+             "text": "Docs next to the code survive because the review process touches them. Nothing else in the company has that.",
+             "replies": [
+              {
+               "author": "glyphdrift",
+               "age": "7 minutes ago",
+               "text": "A small team keeping a few pages true is exactly right. We did this with two people and it was the best knowledge base I have used.",
+               "replies": [
+                {
+                 "author": "traceworks",
+                 "age": "4 minutes ago",
+                 "text": "Mild disagreement: named owners are the only thing I have seen work, and only with a review reminder that actually reaches them.",
+                 "replies": []
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "mutexspark",
+     "age": "5 hours ago",
+     "text": "That was true five years ago. It has moved a lot since.",
+     "replies": [
+      {
+       "author": "kernwake82",
+       "age": "4 hours ago",
+       "text": "I tried this and gave up after a month. Might try again after this thread.",
+       "replies": [
+        {
+         "author": "grommetpilot",
+         "age": "4 hours ago",
+         "text": "Remote work made it worse, but the intranet was already a museum by then.",
+         "replies": []
+        },
+        {
+         "author": "hexsmith",
+         "age": "4 hours ago",
+         "text": "Agreed.",
+         "replies": [
+          {
+           "author": "depreciator",
+           "age": "3 hours ago",
+           "text": "Anecdotally, the retired office manager story is universal. Every working knowledge base has one person holding it up.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "sprocketwright",
+     "age": "5 hours ago",
+     "text": "That was true ten years ago. It has moved a lot since.",
+     "replies": [
+      {
+       "author": "foldtide73",
+       "age": "5 hours ago",
+       "text": "Small correction: that changed in the last release, so the post is slightly out of date.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "offbyfun",
+     "age": "5 hours ago",
+     "text": "That is a fair correction, thanks.",
+     "replies": []
+    },
+    {
+     "author": "heapbench",
+     "age": "4 hours ago",
+     "text": "Saving this for the next time someone asks me why.",
+     "replies": []
+    },
+    {
+     "author": "grommetpilot",
+     "age": "4 hours ago",
+     "text": "How do you handle onboarding documentation now?",
+     "replies": []
+    },
+    {
+     "author": "kernelpanda",
+     "age": "5 hours ago",
+     "text": "I have been on both sides of that decision and I still do not know which was right.",
+     "replies": [
+      {
+       "author": "bitrotting",
+       "age": "5 hours ago",
+       "text": "That is a very generous reading of the situation.",
+       "replies": [
+        {
+         "author": "sigmaster57",
+         "age": "4 hours ago",
+         "text": "Same here, down to the footnote.",
+         "replies": [
+          {
+           "author": "tokenring",
+           "age": "3 hours ago",
+           "text": "Not sure that generalises beyond one workload.",
+           "replies": []
+          },
+          {
+           "author": "latchsmith",
+           "age": "4 hours ago",
+           "text": "Hard agree.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "slabcraft",
+         "age": "4 hours ago",
+         "text": "That was true a few years ago. It has moved a lot since.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "deltamonk",
+     "age": "4 hours ago",
+     "text": "Thanks, that helps.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "sigmamonk34",
+   "age": "5 hours ago",
+   "text": "The migration from one intranet platform to the next is where most of the knowledge was lost. Nobody migrates the comments or the history.",
+   "replies": [
+    {
+     "author": "ferrulewake",
+     "age": "4 hours ago",
+     "text": "I think the author would agree with you; the title oversells it.",
+     "replies": [
+      {
+       "author": "sigmamonk34",
+       "age": "2 hours ago",
+       "text": "This matches my experience almost exactly.",
+       "replies": []
+      },
+      {
+       "author": "solderling",
+       "age": "3 hours ago",
+       "text": "Not in my experience.",
+       "replies": []
+      },
+      {
+       "author": "loopcraft",
+       "age": "2 hours ago",
+       "text": "You can do it, but the maintenance cost arrives on a delay and it arrives anyway.",
+       "replies": []
+      },
+      {
+       "author": "sprocketdrift",
+       "age": "4 hours ago",
+       "text": "Every one of these threads has this subthread, and every time it is worth reading.",
+       "replies": [
+        {
+         "author": "ferrulefield",
+         "age": "3 hours ago",
+         "text": "Compliance theatre is a real category. Half our policy pages had not been opened by anyone but the author. Happy to be proven wrong.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "sigmamonk34",
+       "age": "4 hours ago",
+       "text": "That tracks.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "quartzdrift",
+     "age": "5 hours ago",
+     "text": "Touché.",
+     "replies": [
+      {
+       "author": "dipolemonk",
+       "age": "4 hours ago",
+       "text": "This deserves its own submission.",
+       "replies": [
+        {
+         "author": "sprocketwright",
+         "age": "3 hours ago",
+         "text": "The classifieds page was ours as well. Sold a bike to someone in legal in 2009.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "pixelwake",
+     "age": "3 hours ago",
+     "text": "People underestimate how much of this is just habit.",
+     "replies": [
+      {
+       "author": "socketmonk61",
+       "age": "1 hour ago",
+       "text": "Replying mainly so I can find this again.",
+       "replies": [
+        {
+         "author": "queuester",
+         "age": "49 minutes ago",
+         "text": "Do you have numbers for that? It sounds plausible but I have seen the opposite.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "replies": [
+        {
+         "author": "monadcraft",
+         "age": "29 minutes ago",
+         "text": "Can confirm.",
+         "replies": [
+          {
+           "author": "slabcraft",
+           "age": "2 minutes ago",
+           "text": "Permissions are the silent killer. We found a whole department's process docs visible to nobody but one person.",
+           "replies": [
+            {
+             "author": "offbyfun",
+             "age": "1 minute ago",
+             "text": "The platform migration point is painful and true. We lost ten years of page history in one weekend. At least that is how it went for us.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        }
+       ],
+       "deleted": true
+      },
+      {
+       "author": "socketmonk61",
+       "age": "1 hour ago",
+       "text": "I would love to read a follow-up on exactly this point.",
+       "replies": [
+        {
+         "author": "tokenring",
+         "age": "18 minutes ago",
+         "text": "Has anyone seen an intranet that stayed useful for more than five years?",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "runeworks12",
+     "age": "3 hours ago",
+     "text": "Search spanning everything is the product everyone wants and nobody can sell, because permissions make it hard. Nobody talks about that part.",
+     "replies": []
+    },
+    {
+     "author": "grommetfield",
+     "age": "4 hours ago",
+     "text": "We found the opposite, but our constraints were unusual.",
+     "replies": [
+      {
+       "author": "tokenring",
+       "age": "3 hours ago",
+       "text": "Onboarding docs are the canary. If they are wrong, everything else is too. Nobody talks about that part.",
+       "replies": [
+        {
+         "replies": [
+          {
+           "author": "lambdacurious",
+           "age": "2 hours ago",
+           "text": "I read it the other way: the tooling finally caught up with the idea.",
+           "replies": []
+          }
+         ],
+         "deleted": true
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "shardhound",
+   "age": "12 hours ago",
+   "text": "Anecdotally, onboarding is where the loss shows. New starters used to have one place to start. Now they have a list of links to other lists of links.",
+   "replies": [
+    {
+     "author": "warmstart",
+     "age": "10 hours ago",
+     "text": "The trade-off is real but it is not the one people usually name.",
+     "replies": [
+      {
+       "author": "sprocketsmith36",
+       "age": "9 hours ago",
+       "text": "The classifieds page was ours as well. Sold a bike to someone in legal in 2009. At least that is how it went for us.",
+       "replies": [
+        {
+         "replies": [
+          {
+           "author": "sprocketsmith36",
+           "age": "8 hours ago",
+           "text": "Exactly this.",
+           "replies": [
+            {
+             "author": "slabcraft",
+             "age": "7 hours ago",
+             "text": "In my experience, remote work made it worse, but the intranet was already a museum by then.",
+             "replies": []
+            }
+           ]
+          }
+         ],
+         "deleted": true
+        }
+       ]
+      },
+      {
+       "replies": [
+        {
+         "author": "deltamonk",
+         "age": "5 hours ago",
+         "text": "Anecdotally, a small team keeping a few pages true is exactly right. We did this with two people and it was the best knowledge base I have used.",
+         "replies": []
+        }
+       ],
+       "deleted": true
+      },
+      {
+       "author": "shardhound",
+       "age": "9 hours ago",
+       "text": "Right, and the second-order effect is the one that bites.",
+       "replies": [
+        {
+         "author": "warmstart",
+         "age": "9 hours ago",
+         "text": "Strong disagree, but I appreciate that you wrote it up properly.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "queuesmith",
+       "age": "7 hours ago",
+       "text": "Seconded.",
+       "replies": [
+        {
+         "author": "bitrotting",
+         "age": "6 hours ago",
+         "text": "In my experience, compliance theatre is a real category. Half our policy pages had not been opened by anyone but the author.",
+         "replies": [
+          {
+           "author": "shardbearer",
+           "age": "6 hours ago",
+           "text": "Seconding this. It took us far too long to learn it.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "shardhound",
+       "age": "8 hours ago",
+       "text": "Fair point.",
+       "replies": []
+      },
+      {
+       "author": "hexspark",
+       "age": "9 hours ago",
+       "text": "Honestly, search spanning everything is the product everyone wants and nobody can sell, because permissions make it hard.",
+       "replies": []
+      },
+      {
+       "author": "loopcraft",
+       "age": "9 hours ago",
+       "text": "For what it is worth, the retired office manager story is universal. Every working knowledge base has one person holding it up.",
+       "replies": []
+      },
+      {
+       "author": "loopreader",
+       "age": "9 hours ago",
+       "text": "Search spanning everything is the product everyone wants and nobody can sell, because permissions make it hard. I say that as someone who likes the idea.",
+       "replies": [
+        {
+         "author": "loopreader80",
+         "age": "9 hours ago",
+         "text": "Good question.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "warmstart",
+     "age": "11 hours ago",
+     "text": "Named owners are the only thing I have seen work, and only with a review reminder that actually reaches them.",
+     "replies": [
+      {
+       "author": "depreciator",
+       "age": "11 hours ago",
+       "text": "For what it is worth, the platform migration point is painful and true. We lost ten years of page history in one weekend.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "deltagarden",
+   "age": "3 hours ago",
+   "text": "Engineering docs survived at our company because they live next to the code. Everything else rotted. Your mileage will vary.",
+   "replies": [
+    {
+     "author": "lambdacurious",
+     "age": "2 hours ago",
+     "text": "Expiry dates worked for us for about two years, then people started clicking confirm without reading. At least that is how it went for us.",
+     "replies": [
+      {
+       "author": "loopworks",
+       "age": "1 hour ago",
+       "text": "I stand corrected.",
+       "replies": [
+        {
+         "author": "mutexloft",
+         "age": "12 minutes ago",
+         "text": "Worth adding that remote work made it worse, but the intranet was already a museum by then.",
+         "replies": [
+          {
+           "author": "foldcraft",
+           "age": "9 minutes ago",
+           "text": "Search spanning everything is the product everyone wants and nobody can sell, because permissions make it hard. Your mileage will vary.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "lambdacurious",
+         "age": "1 hour ago",
+         "text": "This is the comment I came here to write.",
+         "replies": [
+          {
+           "author": "nulldrift",
+           "age": "1 hour ago",
+           "text": "Reasonable people land on both sides of this, and the thread is proving it.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "nulldrift",
+         "age": "46 minutes ago",
+         "text": "Remote work made it worse, but the intranet was already a museum by then. Happy to be proven wrong.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "kernling",
+       "age": "1 hour ago",
+       "text": "We had the same argument at work last month and nobody changed their mind.",
+       "replies": [
+        {
+         "author": "deltamonk",
+         "age": "41 minutes ago",
+         "text": "Noted, thanks.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "sprocketsmith36",
+       "age": "1 hour ago",
+       "text": "There is a whole conference talk on this that I cannot find right now.",
+       "replies": [
+        {
+         "author": "kernelpanda",
+         "age": "1 hour ago",
+         "text": "The classifieds page was ours as well. Sold a bike to someone in legal in 2013. The post undersells this, I think.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "deltagarden",
+       "age": "1 hour ago",
+       "text": "Mild disagreement: the internal comms team at my company was cut in 2020 and the intranet froze the same month.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "stackmonk36",
+   "age": "12 hours ago",
+   "text": "The article nails the incentive problem. Launching an intranet gets someone promoted; maintaining one gets nobody anything.",
+   "replies": [
+    {
+     "author": "shardbearer",
+     "age": "12 hours ago",
+     "text": "Compliance theatre is a real category. Half our policy pages had not been opened by anyone but the author. Nobody talks about that part.",
+     "replies": [
+      {
+       "author": "hexfield",
+       "age": "10 hours ago",
+       "text": "The way I see it, the classifieds page was ours as well. Sold a bike to someone in legal in 2011.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "loopreader",
+     "age": "10 hours ago",
+     "text": "In my experience, the retired office manager story is universal. Every working knowledge base has one person holding it up.",
+     "replies": [
+      {
+       "author": "ferrulefield",
+       "age": "10 hours ago",
+       "text": "Having done this twice now: the classifieds page was ours as well. Sold a bike to someone in legal in 2013.",
+       "replies": [
+        {
+         "author": "relaydrift",
+         "age": "9 hours ago",
+         "text": "The way I see it, search spanning everything is the product everyone wants and nobody can sell, because permissions make it hard.",
+         "replies": [
+          {
+           "author": "tracesmith",
+           "age": "7 hours ago",
+           "text": "Having done this twice now: named owners are the only thing I have seen work, and only with a review reminder that actually reaches them.",
+           "replies": []
+          },
+          {
+           "author": "ferrulefield",
+           "age": "6 hours ago",
+           "text": "The article addresses this about two thirds of the way down, for what it is worth.",
+           "replies": []
+          },
+          {
+           "author": "lintworks",
+           "age": "7 hours ago",
+           "text": "Same.",
+           "replies": []
+          },
+          {
+           "author": "ferrulefield",
+           "age": "7 hours ago",
+           "text": "Anecdotally, remote work made it worse, but the intranet was already a museum by then.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "cubiclecartographer",
+   "age": "10 hours ago",
+   "text": "Anecdote: at my last job the intranet homepage still had a banner congratulating employees on the 2019 company picnic. Someone made a browser extension that replaced the whole page with a search box pointed at the wiki, and it spread through the org by word of mouth. IT eventually just adopted it.\n\nThat extension had more product-market fit than the seven-figure intranet replatforming project running at the same time.",
+   "replies": [
+    {
+     "author": "offbyfun",
+     "age": "8 hours ago",
+     "text": "The 2019 picnic banner is such a perfect detail. Every corporate intranet has one immortal artifact like this. Ours was a lunch menu for a cafeteria that closed during a renovation and never reopened.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "dipolester",
+   "age": "3 hours ago",
+   "text": "Content ownership is the whole problem. A page without a named owner is a page that will be wrong within nine months.\n\nNamed owners are the only thing I have seen work, and only with a review reminder that actually reaches them.",
+   "replies": [
+    {
+     "author": "byteshed",
+     "age": "3 hours ago",
+     "text": "Having done this twice now: remote work made it worse, but the intranet was already a museum by then.",
+     "replies": [
+      {
+       "author": "queuester",
+       "age": "2 hours ago",
+       "text": "Oof. Yes.",
+       "replies": [
+        {
+         "author": "scalarster",
+         "age": "1 hour ago",
+         "text": "I tried this and gave up after a fortnight. Might try again after this thread.",
+         "replies": [
+          {
+           "author": "dipolemonk",
+           "age": "1 hour ago",
+           "text": "The internal comms team at my company was cut in 2021 and the intranet froze the same month. At least that is how it went for us.",
+           "replies": [
+            {
+             "author": "decimaldrift",
+             "age": "20 minutes ago",
+             "text": "Counterpoint: it depends entirely on who is on call when it breaks.",
+             "replies": [
+              {
+               "author": "planshape",
+               "age": "19 minutes ago",
+               "text": "The last paragraph of the post says nearly the same thing.",
+               "replies": [
+                {
+                 "author": "shardhound",
+                 "age": "16 minutes ago",
+                 "text": "The internal comms team at my company was cut in 2021 and the intranet froze the same month. Happy to be proven wrong.",
+                 "replies": []
+                }
+               ]
+              },
+              {
+               "author": "offbyfun",
+               "age": "2 minutes ago",
+               "text": "That is the part nobody budgets for.",
+               "replies": []
+              },
+              {
+               "author": "tupletide",
+               "age": "4 minutes ago",
+               "text": "A small team keeping a few pages true is exactly right. We did this with two people and it was the best knowledge base I have used. Nobody talks about that part.",
+               "replies": []
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "sprocketdrift",
+   "age": "4 hours ago",
+   "text": "Engineering docs survived at our company because they live next to the code. Everything else rotted.",
+   "replies": [
+    {
+     "author": "planshape",
+     "age": "2 hours ago",
+     "text": "Docs next to the code survive because the review process touches them. Nothing else in the company has that. Your mileage will vary.",
+     "replies": [
+      {
+       "author": "sprocketdrift",
+       "age": "2 hours ago",
+       "text": "Not sure that generalises beyond a small shop.",
+       "replies": [
+        {
+         "author": "planshape",
+         "age": "1 hour ago",
+         "text": "We had the same argument at work last spring and nobody changed their mind.",
+         "replies": []
+        },
+        {
+         "author": "tokenring",
+         "age": "1 hour ago",
+         "text": "We had the same argument at work last quarter and nobody changed their mind.",
+         "replies": []
+        },
+        {
+         "author": "hexfield",
+         "age": "2 hours ago",
+         "text": "The retired office manager story is universal. Every working knowledge base has one person holding it up. I say that as someone who likes the idea.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "loopcraft",
+   "age": "11 hours ago",
+   "text": "Remote work finished off what was left. The intranet assumed an office, and the office went away.",
+   "replies": [
+    {
+     "author": "planshape",
+     "age": "10 hours ago",
+     "text": "Not sure that generalises beyond your team.",
+     "replies": [
+      {
+       "author": "pixelyard",
+       "age": "9 hours ago",
+       "text": "The platform migration point is painful and true. We lost ten years of page history in one weekend. Happy to be proven wrong.",
+       "replies": [
+        {
+         "author": "queuester",
+         "age": "9 hours ago",
+         "text": "Anecdotally, the classifieds page was ours as well. Sold a bike to someone in legal in 2013.",
+         "replies": [
+          {
+           "author": "foldcraft",
+           "age": "9 hours ago",
+           "text": "Worth adding that named owners are the only thing I have seen work, and only with a review reminder that actually reaches them.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "grommetfield",
+   "age": "8 hours ago",
+   "text": "In a thousand person company, an intranet with no gardener has a half-life of about a year. At least that is how it went for us.",
+   "replies": [
+    {
+     "author": "parsefield51",
+     "age": "7 hours ago",
+     "text": "The honest answer is that nobody measured it before or after.",
+     "replies": [
+      {
+       "author": "lambdacurious",
+       "age": "7 hours ago",
+       "text": "Could you expand on that? The short version skips the part I care about.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "socketmonk61",
+   "age": "9 hours ago",
+   "text": "Permissions made our intranet useless. Half of what you needed was on pages you could not see, and nobody knew who could grant access.",
+   "replies": [
+    {
+     "author": "monadcraft",
+     "age": "9 hours ago",
+     "text": "For what it is worth, a small team keeping a few pages true is exactly right. We did this with two people and it was the best knowledge base I have used.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "ferrulewake",
+   "age": "9 hours ago",
+   "text": "Our intranet search returned the 2014 version of every policy first. People learned to ask a colleague instead, and then the colleague left. The post undersells this, I think.",
+   "replies": [
+    {
+     "author": "inodefield",
+     "age": "7 hours ago",
+     "text": "Compliance theatre is a real category. Half our policy pages had not been opened by anyone but the author. At least that is how it went for us.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "b2bcontrarian",
+   "age": "8 hours ago",
+   "text": "Skeptical of the 'death' framing. Intranets didn't die, they fragmented into chat, wikis, and HR portals — and every one of those vendors is now converging back toward being... an intranet. Give it five years and we'll get breathless posts about the 'company home page' as if it's a new idea.",
+   "replies": [
+    {
+     "author": "sharepointsurvivor",
+     "age": "7 hours ago",
+     "text": "OP — honestly, yes, and I say as much in the conclusion. The pendulum swing is the story. The interesting question is whether round two fixes the incentive problem or just re-runs it with better fonts.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "loopworks",
+   "age": "7 hours ago",
+   "text": "We tried expiry dates on every page: after a year, the owner had to confirm it was still right. It worked until the owners left.",
+   "replies": [
+    {
+     "author": "queuesmith",
+     "age": "6 hours ago",
+     "text": "Same here, down to the punchline.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "dipolester",
+   "age": "10 hours ago",
+   "text": "In a two hundred person company, an intranet with no gardener has a half-life of about a year.",
+   "replies": [
+    {
+     "author": "scalarster",
+     "age": "8 hours ago",
+     "text": "In my experience, search spanning everything is the product everyone wants and nobody can sell, because permissions make it hard.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "planshape",
+   "age": "12 hours ago",
+   "text": "Onboarding is where the loss shows. New starters used to have one place to start. Now they have a list of links to other lists of links.",
+   "replies": [
+    {
+     "author": "sigmaster57",
+     "age": "12 hours ago",
+     "text": "Remote work made it worse, but the intranet was already a museum by then. At least that is how it went for us.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "cachesmith",
+   "age": "12 hours ago",
+   "text": "Ours had a lunch menu for a cafeteria that had been closed for two years. It was the most visited page.",
+   "replies": [
+    {
+     "author": "grommetfield",
+     "age": "11 hours ago",
+     "text": "The classifieds page was ours as well. Sold a bike to someone in legal in 2013.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "sigmaling82",
+   "age": "3 hours ago",
+   "text": "The decline of the intranet tracks the decline of the internal communications team. Nobody writes the newsletter any more.",
+   "replies": []
+  },
+  {
+   "author": "parsefield51",
+   "age": "8 hours ago",
+   "text": "Every few years a new tool promises to be the single place for company knowledge. Each one becomes one more place.",
+   "replies": []
+  },
+  {
+   "author": "tokenring",
+   "age": "5 hours ago",
+   "text": "Pour one out for the intranet 'classifieds' page. Bought a canoe from a guy in accounting in 2007. No modern tool has replaced that.",
+   "replies": []
+  },
+  {
+   "author": "sprocketsmith36",
+   "age": "9 hours ago",
+   "text": "Our intranet search returned the 2014 version of every policy first. People learned to ask a colleague instead, and then the colleague left.",
+   "replies": []
+  },
+  {
+   "author": "bitrotting",
+   "age": "13 hours ago",
+   "text": "The intranet at my first job had a page called \"Useful links\" with sixty entries, and about half of them went nowhere.\n\nThe retired office manager story is universal. Every working knowledge base has one person holding it up.",
+   "replies": []
+  },
+  {
+   "author": "monadcraft",
+   "age": "10 hours ago",
+   "text": "The article is nostalgic about something that was never very good. Intranets were where documents went to be ignored.",
+   "replies": []
+  },
+  {
+   "author": "grommetpilot",
+   "age": "12 hours ago",
+   "text": "The best intranet I ever used was a plain wiki maintained by one very stubborn office manager. When she retired, it died within a year.",
+   "replies": []
+  }
+ ]
+}

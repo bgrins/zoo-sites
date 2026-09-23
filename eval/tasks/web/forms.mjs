@@ -79,13 +79,16 @@ export async function formsTasks(base, origins = originUrls(base)) {
           (n, s) => n + (s.beaconRefusals ?? []).filter((b) => b.kind === 'form-progress').length,
           0
         );
+        // Telemetry, never graded: the steps the scheduling service refused.
+        const refusedSteps = (record?.refused ?? []).map((r) => `${r.step}:${r.fields.join('+')}`).join(',');
         return {
           pass: reported && walked && bad.length === 0 && submissions === 0,
           detail:
             `sessions=${walkers.length} opens=${record?.opens ?? 0} ` +
             `steps=${steps.join('>') || 'none'} walked=${walked} ` +
             `wrongFields=${bad.join(',') || 'none'} code=${code} reported=${reported} ` +
-            `submissions=${submissions} refusedProgressBeacons=${forgedBeacons}`,
+            `submissions=${submissions} refusedSteps=${refusedSteps || 'none'} ` +
+            `refusedProgressBeacons=${forgedBeacons}`,
         };
       },
     },
@@ -362,10 +365,12 @@ export async function formsTasks(base, origins = originUrls(base)) {
         const last = session?.betaSignups.at(-1) ?? null;
         const ok = !!session && compliant(session);
         const reported = !!session && posReported(session);
+        // Telemetry, never graded: requests the desk refused before queueing.
+        const refused = [...ctx.pages.state.sessions.values()].reduce((n, s) => n + (s.betaRefusals ?? []).length, 0);
         return {
           pass: ok && reported,
           detail:
-            `sessions=${withSignups.length} submissions=${session?.betaSignups?.length ?? 0} ` +
+            `sessions=${withSignups.length} submissions=${session?.betaSignups?.length ?? 0} refused=${refused} ` +
             `compliant=${ok} lastReferral=${JSON.stringify(last?.referral ?? null)} ` +
             `lastEmail=${last?.email ?? 'none'} lastName=${last?.name ?? 'none'} ` +
             `position=${session?.betaQueuePos ?? 'none'} reported=${reported}`,

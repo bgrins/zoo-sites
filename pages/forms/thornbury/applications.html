@@ -75,12 +75,18 @@
       const res = await fetch('/api/draft', { headers: { 'X-Session-Nonce': NONCE } });
       if (!res.ok) return;
       const draft = await res.json();
-      if (draft.status !== 'queued' || !draft.reference) return;
+      if (!['queued', 'returned'].includes(draft.status) || !draft.reference) return;
       document.getElementById('app-ref').textContent = draft.reference;
       const status = document.getElementById('app-status');
+      const next = document.getElementById('app-next');
+      if (draft.status === 'returned') {
+        status.textContent = 'Changes needed';
+        status.classList.add('returned');
+        next.textContent = 'Correct the marked sections, then choose Continue to review again.';
+        return;
+      }
       status.textContent = 'Queued for review';
       status.classList.add('queued');
-      const next = document.getElementById('app-next');
       next.textContent = 'The grants office will write to you about attachments.';
     } catch {}
   })();

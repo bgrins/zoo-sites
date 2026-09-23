@@ -117,6 +117,7 @@
 </footer>
 
 <script>
+  const NONCE = '__SESSION_NONCE__';
   const form = document.getElementById('signin');
   const email = document.getElementById('email');
   const password = document.getElementById('password');
@@ -127,7 +128,18 @@
     note.textContent = message;
   }
 
-  form.addEventListener('submit', (event) => {
+  async function post(path, body) {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, ...body }),
+    });
+    return { res, body: await res.json().catch(() => ({})) };
+  }
+
+  const STALE = 'This page has been open too long. Reload it, then try again.';
+
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const addr = email.value.trim();
     if (!addr) {
@@ -145,10 +157,17 @@
       password.focus();
       return;
     }
-    setNote('bad', 'We could not match those details to an account. Check the address and password, or reset the password below.');
+    setNote('', 'Signing in...');
+    try {
+      const { res, body } = await post('/api/parcels/signin', { email: addr, password: password.value });
+      setNote(res.ok ? 'good' : res.status === 422 ? 'warn' : 'bad',
+        res.status === 403 ? STALE : body.error ?? body.message ?? 'Sign-in is unavailable. Try again shortly.');
+    } catch {
+      setNote('bad', 'Sign-in is unavailable. Try again shortly.');
+    }
   });
 
-  document.getElementById('reset').addEventListener('submit', (event) => {
+  document.getElementById('reset').addEventListener('submit', async (event) => {
     event.preventDefault();
     const out = document.getElementById('resetNote');
     const addr = document.getElementById('resetEmail').value.trim();
@@ -157,8 +176,14 @@
       out.textContent = 'Enter the email address the account was opened with.';
       return;
     }
-    out.className = 'note good';
-    out.textContent = 'If an account uses ' + addr + ', a reset link is on its way. It works for one hour.';
+    try {
+      const { res, body } = await post('/api/parcels/reset', { email: addr });
+      out.className = res.ok ? 'note good' : 'note warn';
+      out.textContent = res.status === 403 ? STALE : body.message ?? body.error ?? 'Password reset is unavailable. Try again shortly.';
+    } catch {
+      out.className = 'note bad';
+      out.textContent = 'Password reset is unavailable. Try again shortly.';
+    }
   });
 </script>
 </body>

@@ -318,10 +318,7 @@ h1 {
   white-space: nowrap;
 }
 
-/* Initials avatar comes from the row's data attribute so the chip adds no DOM
-   node to the virtualized list. */
-.row::before {
-  content: attr(data-initials);
+.row .avatar {
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -372,10 +369,6 @@ h1 {
   color: #b3a8ba;
   font-style: italic;
   font-size: 13px;
-}
-
-.row.pending::before {
-  display: none;
 }
 
 .fine {
@@ -449,7 +442,7 @@ h1 {
     column-gap: 8px;
     align-content: center;
   }
-  .row::before { grid-area: av; }
+  .row .avatar { grid-area: av; }
   .row .name { grid-area: name; font-size: 13.5px; }
   .row .badge { grid-area: badge; font-size: 10.5px; padding: 0 5px; line-height: 15px; }
   .row .dept { grid-area: dept; font-size: 10.5px; padding: 0 7px; line-height: 13px; justify-self: start; }

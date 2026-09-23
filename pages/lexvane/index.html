@@ -103,26 +103,25 @@
   #howto div { margin-bottom: 5px; }
 
   #board { margin: 18px auto 6px; width: max-content; }
-  #board.wide .row > div { width: 44px; height: 50px; font-size: 23px; border-radius: 7px; }
+  #board.wide .tile { width: 44px; height: 50px; font-size: 23px; border-radius: 7px; }
   .row { display: flex; gap: 7px; margin-bottom: 7px; }
-  /* cells stay class-free until played so the empty board adds no accessibility nodes */
-  .row > div {
+  .tile {
     width: 56px; height: 56px; border: 3px solid var(--rule); border-radius: 9px;
     background: var(--paper);
     font-size: 27px; font-weight: bold; text-transform: uppercase;
     display: flex; align-items: center; justify-content: center;
     position: relative;
   }
-  .row > div.correct { background: var(--green); border-color: var(--green); color: var(--paper); }
-  .row > div.present { background: var(--ochre); border-color: var(--ochre); color: #ffffff; }
-  .row > div.absent  { background: var(--stone); border-color: var(--stone); color: #ffffff; }
+  .tile[data-state="correct"] { background: var(--green); border-color: var(--green); color: var(--paper); }
+  .tile[data-state="present"] { background: var(--ochre); border-color: var(--ochre); color: #ffffff; }
+  .tile[data-state="absent"]  { background: var(--stone); border-color: var(--stone); color: #ffffff; }
   /* second, non-colour channel for the three states */
-  .row > div.correct::after, .row > div.present::after {
+  .tile[data-state="correct"]::after, .tile[data-state="present"]::after {
     content: ""; position: absolute; left: 11px; right: 11px; bottom: 6px; height: 4px;
     border-radius: 2px;
   }
-  .row > div.correct::after { background: var(--coral); }
-  .row > div.present::after { border-top: 4px dotted #ffffff; height: 0; }
+  .tile[data-state="correct"]::after { background: var(--coral); }
+  .tile[data-state="present"]::after { border-top: 4px dotted #ffffff; height: 0; }
 
   #counter {
     text-align: center; font-size: 13px;
@@ -212,8 +211,8 @@
     main { padding: 16px 10px 8px; }
     .card { padding: 14px 12px; box-shadow: 4px 4px 0 rgba(31, 58, 95, .14); }
     .row { gap: 5px; margin-bottom: 5px; }
-    .row > div { width: 52px; height: 52px; font-size: 25px; }
-    #board.wide .row > div { width: 38px; height: 44px; font-size: 20px; border-radius: 6px; }
+    .tile { width: 52px; height: 52px; font-size: 25px; }
+    #board.wide .tile { width: 38px; height: 44px; font-size: 20px; border-radius: 6px; }
     #guessForm { flex-wrap: wrap; }
     #guessInput, #guessInput.wide { width: 100%; }
     .submit { width: 100%; padding: 12px; }
@@ -251,8 +250,8 @@
 
 <main>
   <section class="card">
-    <h1 id="puzzleNo">Lexvane No. 1481</h1>
-    <div class="pdate" id="puzzleDate">Sunday, 3 May 2026</div>
+    <h1 id="puzzleNo">Lexvane</h1>
+    <div class="pdate" id="puzzleDate"></div>
     <div class="stats">
       <span class="chip hot" id="statStreak">Streak 0</span>
       <span class="chip" id="statPlayed">Played 0</span>
@@ -353,18 +352,13 @@
   const guessForm = document.getElementById('guessForm');
   const guessInput = document.getElementById('guessInput');
 
-  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'];
-  let puzzleNumber = 1481 + (Number.isFinite(DAY) ? DAY : 0);
-  function label(day) {
-    const issue = new Date(Date.UTC(2026, 4, 3) + day * 86400000);
-    puzzleNumber = 1481 + day;
-    document.getElementById('puzzleNo').textContent = 'Lexvane No. ' + puzzleNumber;
-    document.getElementById('puzzleDate').textContent = DAY_NAMES[issue.getUTCDay()] + ', ' +
-      issue.getUTCDate() + ' ' + MONTH_NAMES[issue.getUTCMonth()] + ' ' + issue.getUTCFullYear();
+  let puzzleNumber = null;
+  function label(issue) {
+    if (!issue || !Number.isInteger(issue.number)) return;
+    puzzleNumber = issue.number;
+    document.getElementById('puzzleNo').textContent = 'Lexvane No. ' + issue.number;
+    document.getElementById('puzzleDate').textContent = issue.date;
   }
-  label(Number.isFinite(DAY) ? DAY : 0);
 
   function showStats(stats) {
     if (!stats) return;
@@ -429,7 +423,10 @@
     const row = document.createElement('div');
     row.className = 'row';
     for (let i = 0; i < WORD_LEN; i++) {
-      row.appendChild(document.createElement('div'));
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.dataset.state = 'empty';
+      row.appendChild(tile);
     }
     board.appendChild(row);
   }
@@ -541,7 +538,7 @@
     marksHistory.push(marks);
     const tiles = board.children[guesses].children;
     for (let i = 0; i < WORD_LEN; i++) {
-      tiles[i].classList.add(marks[i]);
+      tiles[i].dataset.state = marks[i];
       tiles[i].textContent = guess[i];
       tiles[i].setAttribute('aria-label', guess[i] + ' ' + marks[i]);
     }
@@ -590,6 +587,7 @@
       return;
     }
     seen.add(guess);
+    label(view.issue);
     status.textContent = '';
     guessInput.value = '';
     play(guess, view.marks);
@@ -652,9 +650,11 @@
     }
     if (!view || !Array.isArray(view.played)) return;
     showStats(view.stats);
+    label(view.issue);
     if (Number.isInteger(view.day) && (!view.available || view.day !== DAY)) {
-      const asked = Number.isFinite(DAY) ? 'No. ' + (1481 + DAY) : 'That puzzle';
-      label(view.day);
+      const asked = Number.isInteger(DAY) && Number.isInteger(view.today)
+        ? 'No. ' + (view.today - DAY)
+        : 'That puzzle';
       const note = document.getElementById('dayNote');
       note.textContent = asked + ' is not open on the games desk, so this is No. ' + puzzleNumber + '.';
       note.hidden = false;

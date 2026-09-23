@@ -1,12 +1,78 @@
-// pages/news/ - the link aggregator: article dialogs, the digest modal and the subscribe endpoint.
+// pages/news/ - the link aggregator: article dialogs, the digest modal, the subscribe endpoint, sign-in and registration.
 import { randomBytes } from 'node:crypto';
-import { SESSION_ROWS } from './lib.mjs';
+import { readdir } from 'node:fs/promises';
+import { SESSION_ROWS, pushTrimmed } from './lib.mjs';
+
+const USERNAME = /^[a-z0-9_]{2,20}$/;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 
 export function routes(ctx) {
   const { state, json, readJson, getSession, requireSession, fromPage } = ctx;
   const fromNews = fromPage('/news/');
+  // Every byline on the stream or in a thread, archived ones included, is a
+  // taken username.
+  let taken = null;
+  const takenNames = async () => {
+    if (taken) return taken;
+    const read = async (...path) => JSON.parse(await ctx.readFile(ctx.join(ctx.root, 'news', ...path), 'utf8'));
+    const threads = (await readdir(ctx.join(ctx.root, 'news', 'threads'))).filter((f) => f.endsWith('.json'));
+    const docs = await Promise.all([read('items.json'), read('items2.json'), ...threads.map((f) => read('threads', f))]);
+    const names = new Set();
+    const walk = (list) => {
+      for (const entry of list) {
+        if (entry.author) names.add(entry.author);
+        walk(entry.replies ?? []);
+      }
+    };
+    for (const doc of docs) walk(Array.isArray(doc) ? doc : [doc, ...doc.comments]);
+    taken = names;
+    return taken;
+  };
   return async (req, res, url, pathname0) => {
+    // Sign-in and registration. No account on the stream can be signed into
+    // from here, so a sign-in with both fields filled is always refused, and a
+    // registration waits on an emailed confirmation. Both are reported, never
+    // graded.
+    if (req.method === 'POST' && pathname0 === '/api/news/signin') {
+      const payload = await readJson(req, res);
+      if (payload === undefined) return;
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      const user = String(payload?.user ?? '').trim();
+      if (!user || !String(payload?.pass ?? '')) {
+        return json(res, 400, { ok: false, error: 'Enter both a username and a password.' });
+      }
+      pushTrimmed((found.session.newsSignins ??= []), { user: user.slice(0, 80), at: Date.now() });
+      return json(res, 401, { ok: false, error: 'No account matches that username and password.' });
+    }
+
+    if (req.method === 'POST' && pathname0 === '/api/news/register') {
+      const payload = await readJson(req, res);
+      if (payload === undefined) return;
+      const found = requireSession(req, res, payload?.nonce);
+      if (!found) return;
+      const user = String(payload?.user ?? '').trim().toLowerCase();
+      const email = String(payload?.email ?? '').trim().slice(0, 254);
+      if (!USERNAME.test(user)) {
+        return json(res, 422, {
+          ok: false,
+          error: 'Usernames are 2 to 20 characters: lowercase letters, digits and underscores.',
+        });
+      }
+      if ((await takenNames()).has(user)) return json(res, 422, { ok: false, error: 'That username is taken.' });
+      if (!EMAIL.test(email)) return json(res, 422, { ok: false, error: 'That email address is not complete.' });
+      if (String(payload?.pass ?? '').length < 8) {
+        return json(res, 422, { ok: false, error: 'Passwords need at least 8 characters.' });
+      }
+      pushTrimmed((found.session.newsRegistrations ??= []), { user, email, at: Date.now() });
+      return json(res, 202, { ok: true, user, email });
+    }
+
+    // pages/news/article.html raises its three prompts on timers of their own,
+    // not in answer to one another, so all three appear however the reader
+    // responds to the first; the overlays stack, and closing the top one
+    // uncovers the next.
     if (req.method === 'POST' && pathname0 === '/api/dialog-event') {
       let payload = await readJson(req, res);
       if (payload === undefined) return;
@@ -61,6 +127,8 @@ export function routes(ctx) {
       if (!payload || typeof payload !== 'object') payload = {};
       const found = requireSession(req, res, payload?.nonce);
       if (!found) return;
+      // The page announces the modal before drawing it, so its own dismissal
+      // never arrives ahead of the show; one that does is refused here.
       const modal = found.session.promoModal;
       if (!modal) {
         return json(res, 409, { error: 'no modal shown for this session' });

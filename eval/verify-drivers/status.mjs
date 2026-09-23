@@ -1,5 +1,5 @@
 // pages/status/ - Nimbrel Edge status page (status-flash).
-import { addSession, bumpCode, straySession, uidOf, until } from './lib.mjs';
+import { addSession, bumpCode, findSession, notAfterToday, notBeforeToday, straySession, uidOf, until } from './lib.mjs';
 
 export const DRIVERS = {
   'status-flash': {
@@ -14,14 +14,25 @@ export const DRIVERS = {
       const loop = await straySession(base, '/status/');
       let looped = null;
       for (let i = 0; i < 60; i++) looped = (await loop.post('/api/status/check', {})).probeCode;
-      const kept = [...ctx.pages.state.sessions.values()].find((s) =>
-        s.statusProbe?.checks.some((c) => c.probeCode === looped)
-      )?.statusProbe.checks;
+      const ranCheck = (probeCode) =>
+        findSession(ctx.pages.state, (s) => s.statusProbe?.checks.some((c) => c.probeCode === probeCode))?.session;
+      const kept = ranCheck(looped)?.statusProbe.checks;
       if (!kept || kept.length > 50 || kept.at(-1).probeCode !== looped) {
         throw new Error(`a looping session kept ${kept?.length} checks, not its latest 50`);
       }
 
       await goto('/status/');
+      // The list arrives after the page, so the page as served cannot say no
+      // check has run: its empty line ships hidden and shows once this
+      // session's list comes back empty.
+      const servedEmptyHidden = await evaluate(async () => {
+        const html = await (await fetch(location.href)).text();
+        return new DOMParser().parseFromString(html, 'text/html').getElementById('recent-empty')?.hidden ?? null;
+      });
+      if (servedEmptyHidden !== true) throw new Error('the served page says no checks have run before it has asked');
+      await until('the empty Recent checks line for a session with no checks', () =>
+        evaluate(() => !document.getElementById('recent-empty').hidden && !document.querySelector('#recent-list li'))
+      );
       const snap = await snapshot();
       const runUid = uidOf(snap, 'button "Run relay check"');
       if (!runUid) throw new Error('no Run relay check button in the snapshot');
@@ -107,6 +118,92 @@ export const DRIVERS = {
       const recent = latest.code.match(/^NE-[0-9A-F]{5}$/)?.[0];
       if (!recent || recent === code) throw new Error(`second check row malformed: "${latest.code}"`);
       if (latest.state !== state) throw new Error('the relay state changed between two checks');
+
+      // The page promises the list is kept "for this session": a reload renders
+      // the checks the server holds, newest on top, and none of another
+      // session's.
+      await goto('/status/');
+      const reloaded = await until('the Recent checks list to render after a reload', () =>
+        evaluate(() => {
+          const rows = [...document.querySelectorAll('#recent-list li')];
+          if (!rows.length) return null;
+          return {
+            rows: rows.map((li) => ({
+              code: li.querySelector('.rc-code')?.textContent ?? '',
+              state: (li.querySelector('.chip')?.textContent ?? '').toLowerCase(),
+            })),
+            emptyShown: !document.getElementById('recent-empty').hidden,
+          };
+        }));
+      const order = reloaded.rows.map((r) => r.code).join(',');
+      if (order !== `${recent},${code}`) {
+        throw new Error(`after a reload Recent checks lists [${order}], not [${recent},${code}]`);
+      }
+      if (reloaded.rows.some((r) => r.state !== state)) throw new Error('a reloaded row lost its relay state');
+      if (reloaded.emptyShown) throw new Error('the reloaded list still says no checks have run');
+      const looped8 = await loop.get('/api/status/checks');
+      if (looped8.checks?.length !== 8 || looped8.checks[0].probeCode !== looped) {
+        throw new Error('the looping session\'s list is not its newest eight checks, newest first');
+      }
+
+      // The open incident is dated from the session: it opened 2 hr 18 min
+      // before the session's first page, and the page prints that UTC stamp
+      // with its age beside it.
+      const browser = ranCheck(recent);
+      const opened = browser.createdAt - (2 * 60 + 18) * 60000;
+      const openText = await until('the open incident to carry its stamp', () =>
+        evaluate(() => {
+          const text = document.querySelector('.active-inc .inc-ts')?.textContent ?? '';
+          return /^opened \d{4}-/.test(text) ? text : null;
+        }));
+      const stamp = openText.match(/^opened (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}), (?:(\d+) hr )?(\d+) min ago$/);
+      if (!stamp) throw new Error(`the open incident reads "${openText}"`);
+      const openedShown = Date.parse(`${stamp[1]}T${stamp[2]}:00Z`);
+      if (Math.abs(openedShown - opened) > 60000) {
+        throw new Error(`the open incident says it opened ${stamp[1]} ${stamp[2]}, not 2 hr 18 min before the session`);
+      }
+      notAfterToday('status/index.html', stamp[1], { text: openText, today: browser.createdAt });
+      const ageShown = Number(stamp[3] ?? 0) * 60 + Number(stamp[4]);
+      const age = Math.floor((Date.now() - openedShown) / 60000);
+      if (Math.abs(ageShown - age) > 2) throw new Error(`the open incident's age reads ${ageShown} min, not ${age}`);
+
+      // The daily uptime bars end on the session's day and draw the incidents
+      // the history lists, the open one included.
+      const bars = await until('the uptime bars to be drawn', () =>
+        evaluate(() => {
+          const legend = document.querySelector('.sys-legend .sys-window')?.textContent ?? '';
+          const logs = [...document.querySelectorAll('.sysrow')].find((r) =>
+            /Log streaming/.test(r.querySelector('.sys-name')?.textContent ?? '')
+          );
+          const label = logs?.querySelector('.sys-bar')?.getAttribute('aria-label') ?? '';
+          return / to \d/.test(legend) && label ? { legend, label, pct: logs.querySelector('.sys-pct').textContent } : null;
+        }));
+      const windowEnd = bars.legend.match(/to (\d{1,2} [A-Z][a-z]+ \d{4})$/)?.[1];
+      if (!windowEnd) throw new Error(`the uptime window reads "${bars.legend}"`);
+      notBeforeToday('status/index.html', windowEnd, { today: browser.createdAt });
+      notAfterToday('status/index.html', windowEnd, { today: browser.createdAt });
+      if (!/NE-2D08F/.test(bars.label)) throw new Error(`the Log streaming bar omits the open incident: "${bars.label}"`);
+      if (!/^\d{2}\.\d{2}%$/.test(bars.pct) || bars.pct === '100.00%') {
+        throw new Error(`Log streaming's uptime reads "${bars.pct}" with an incident open`);
+      }
+
+      await goto('/status/incidents/ne-2d08f.html');
+      const updates = await until('the incident updates to carry their stamps', () =>
+        evaluate(() => {
+          const rows = [...document.querySelectorAll('.updates li')].map((li) => ({
+            state: li.querySelector('.up-state')?.textContent ?? '',
+            ts: li.querySelector('.up-ts')?.textContent ?? '',
+          }));
+          return rows.length && rows.every((r) => /^\d{4}-/.test(r.ts)) ? rows : null;
+        }));
+      const times = updates.map((u) => {
+        const m = u.ts.match(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}), (?:\d+ hr )?\d+ min ago$/);
+        if (!m) throw new Error(`the ${u.state} update reads "${u.ts}"`);
+        return Date.parse(`${m[1]}T${m[2]}:00Z`);
+      });
+      if (times.some((t, i) => i && t > times[i - 1]) || times.at(-1) !== openedShown || times[0] > Date.now()) {
+        throw new Error(`the incident updates are stamped [${updates.map((u) => u.ts).join('; ')}]`);
+      }
 
       const otherState = ['operational', 'degraded', 'congested'].find((s) => s !== state);
       const fields = { probeCode: recent, componentState: state };

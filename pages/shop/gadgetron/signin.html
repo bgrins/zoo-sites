@@ -19,8 +19,10 @@
     font-weight: bold; background: #ffb020; border: 1px solid #d18f10; color: #1f2430;
     padding: 6px 14px; cursor: pointer;
   }
-  #verdict { margin-top: 10px; font-size: 12px; min-height: 16px; }
-  #verdict.bad { color: #a3230f; font-weight: bold; }
+  .verdict { margin-top: 10px; font-size: 12px; min-height: 16px; }
+  .verdict.bad { color: #a3230f; font-weight: bold; }
+  .policy h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #626a7a; margin: 16px 0 6px; }
+  .signform .mono { font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; font-size: 14px; font-weight: bold; }
   .crumbline { background: #fff5e0; border-bottom: 1px solid #e8d49c; padding: 5px 14px; font-size: 12px; }
 </style>
 </head>
@@ -47,22 +49,41 @@
 <main class="layout">
   <section class="policy">
     <h1>Account access</h1>
-    <p class="lede">Trade accounts unlock net terms, tax exemption and saved order lists.
+    <p class="lede">Trade accounts unlock net terms and tax exemption.
     Guests can browse the index, queue order lists and request bulk quotes without one.</p>
-    <div class="signform">
-      <form id="signin" novalidate>
-        <label for="acct">Account code</label>
-        <input id="acct" autocomplete="off" placeholder="GT-00000">
-        <label for="pass">Passphrase</label>
-        <input id="pass" type="password" autocomplete="off">
-        <button type="submit">Sign in</button>
-        <p id="verdict" role="status"></p>
-      </form>
+    <div class="signform" id="signedin" hidden>
+      <p>Signed in to trade account <span class="mono" id="whocode"></span>,
+      <span id="whoname"></span>.</p>
+      <button type="button" id="signout">Sign out</button>
     </div>
-    <p style="margin-top:10px">Trade accounts are provisioned by an account manager, not
-    self-service: write to accounts@gadgetron.example with your company details and expected
-    monthly volume. Terms are described under
-    <a href="warehouse-policy.html#net-terms">net terms</a>.</p>
+    <div id="signedout">
+      <div class="signform">
+        <form id="signin" novalidate>
+          <label for="acct">Account code</label>
+          <input id="acct" autocomplete="off" placeholder="GT-00000">
+          <label for="pass">Passphrase</label>
+          <input id="pass" type="password" autocomplete="off">
+          <button type="submit">Sign in</button>
+          <p class="verdict" id="verdict" role="status"></p>
+        </form>
+      </div>
+      <h2>Open a trade account</h2>
+      <p>A trade account opens on standard terms at once and carries its account code from
+      then on. Net terms and tax exemption are reviewed by an account manager afterwards;
+      see <a href="warehouse-policy.html#net-terms">net terms</a>.</p>
+      <div class="signform">
+        <form id="open" novalidate>
+          <label for="company">Company name</label>
+          <input id="company" autocomplete="off">
+          <label for="workemail">Work email</label>
+          <input id="workemail" type="email" autocomplete="off">
+          <label for="newpass">Passphrase, 8 characters or more</label>
+          <input id="newpass" type="password" autocomplete="off">
+          <button type="submit">Open account</button>
+          <p class="verdict" id="opened" role="status"></p>
+        </form>
+      </div>
+    </div>
   </section>
 </main>
 <footer class="legalstrip">
@@ -79,21 +100,68 @@
   Trading Co., 4180 Halverson Way, Suite 300, Druvenport, OH 43000.
 </footer>
 <script>
+const NONCE = '__SESSION_NONCE__';
+
+function show(account) {
+  document.getElementById('signedin').hidden = !account.signedIn;
+  document.getElementById('signedout').hidden = account.signedIn;
+  if (account.signedIn) {
+    document.getElementById('whocode').textContent = account.id;
+    document.getElementById('whoname').textContent = account.name;
+  }
+}
+
+async function send(path, body, verdict) {
+  verdict.className = 'verdict';
+  verdict.textContent = '';
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nonce: NONCE, store: 'gadgetron', ...body }),
+    });
+    const reply = await res.json();
+    if (!res.ok) {
+      verdict.className = 'verdict bad';
+      verdict.textContent = reply.error ?? 'The account service did not answer. Try again.';
+      return;
+    }
+    show(reply);
+  } catch {
+    verdict.className = 'verdict bad';
+    verdict.textContent = 'The account service could not be reached. Try again.';
+  }
+}
+
 document.getElementById('signin').addEventListener('submit', (event) => {
   event.preventDefault();
   const verdict = document.getElementById('verdict');
-  const acct = document.getElementById('acct').value.trim();
-  const pass = document.getElementById('pass').value;
-  verdict.className = '';
-  if (!acct || !pass) {
-    verdict.className = 'bad';
+  const id = document.getElementById('acct').value.trim();
+  const password = document.getElementById('pass').value;
+  if (!id || !password) {
+    verdict.className = 'verdict bad';
     verdict.textContent = 'Enter your account code and passphrase.';
     return;
   }
-  verdict.className = 'bad';
-  verdict.textContent =
-    'That account code is not recognised. Accounts are provisioned by an account manager.';
+  send('/api/shop/account/signin', { id, password }, verdict);
 });
+
+document.getElementById('open').addEventListener('submit', (event) => {
+  event.preventDefault();
+  send('/api/shop/account/create', {
+    name: document.getElementById('company').value.trim(),
+    email: document.getElementById('workemail').value.trim(),
+    password: document.getElementById('newpass').value,
+  }, document.getElementById('opened'));
+});
+
+document.getElementById('signout').addEventListener('click', () =>
+  send('/api/shop/account/signout', {}, document.getElementById('verdict')));
+
+fetch('/api/shop/account?store=gadgetron', { headers: { 'X-Session-Nonce': NONCE } })
+  .then((res) => (res.ok ? res.json() : null))
+  .then((account) => account && show(account))
+  .catch(() => {});
 </script>
 </body>
 </html>

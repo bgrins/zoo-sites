@@ -27,7 +27,7 @@
     <h1>Log streaming delivering with delay</h1>
     <div class="inc-meta">
       <span class="inc-ref">NE-2D08F</span>
-      <span class="inc-ts">opened 2 hr 18 min ago</span>
+      <span class="inc-ts" data-live="opened">ongoing</span>
       <span class="chip chip-degraded">Monitoring</span>
     </div>
     <p class="panel-sub">Affected component: Log streaming.</p>
@@ -36,9 +36,9 @@
   <section class="panel">
     <h2>Updates</h2>
     <ol class="updates">
-      <li><span class="up-state">Monitoring</span><span class="up-ts">25 min ago</span><p>Ingest is running on standby capacity and the backlog is draining. Delivery continues with a delay of up to four minutes. No records have been lost, and records already delayed will arrive in order.</p></li>
-      <li><span class="up-state">Identified</span><span class="up-ts">1 hr 49 min ago</span><p>An ingest node in EU-West lost a storage volume and the remaining nodes are over their share. We are moving ingest for the point of presence onto standby capacity.</p></li>
-      <li><span class="up-state">Investigating</span><span class="up-ts">2 hr 18 min ago</span><p>Log streaming deliveries from the EU-West point of presence are arriving late. We are investigating.</p></li>
+      <li><span class="up-state">Monitoring</span><span class="up-ts" data-live="update" data-state="Monitoring">&nbsp;</span><p>Ingest is running on standby capacity and the backlog is draining. Delivery continues with a delay of up to four minutes. No records have been lost, and records already delayed will arrive in order.</p></li>
+      <li><span class="up-state">Identified</span><span class="up-ts" data-live="update" data-state="Identified">&nbsp;</span><p>An ingest node in EU-West lost a storage volume and the remaining nodes are over their share. We are moving ingest for the point of presence onto standby capacity.</p></li>
+      <li><span class="up-state">Investigating</span><span class="up-ts" data-live="update" data-state="Investigating">&nbsp;</span><p>Log streaming deliveries from the EU-West point of presence are arriving late. We are investigating.</p></li>
     </ol>
   </section>
 </main>
@@ -58,5 +58,7 @@
     <p>Network operations center: noc@nimbrel.example &middot; Support: support@nimbrel.example</p>
   </div>
 </footer>
+<script>const NONCE = '__SESSION_NONCE__';</script>
+<script src="../live.js"></script>
 </body>
 </html>

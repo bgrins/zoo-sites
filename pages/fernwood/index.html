@@ -50,16 +50,26 @@
     display: flex; align-items: center; justify-content: center;
     font-weight: bold; font-size: 15px; letter-spacing: 1px;
   }
-  .avatar::before { content: attr(data-initials); }
   .name { font-weight: bold; color: #2f4a34; }
   .meta { font-size: 12px; color: #726c5c; }
+  .meta a { color: inherit; text-decoration: none; }
+  .meta a:hover { text-decoration: underline; }
   .feedhead { font-size: 13px; font-weight: normal; color: #726c5c; margin: 0 0 10px; letter-spacing: .5px; }
   article.card h2 { margin: 0 0 6px; font-size: 16px; color: #33302a; }
   article.card p { margin: 0 0 6px; font-size: 14px; }
   .cardfoot {
     margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0dbcb;
     font-size: 12px; color: #726c5c;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
   }
+  .acts { display: flex; align-items: center; gap: 10px; }
+  .cheer {
+    font: inherit; font-size: 12px; color: #35563b; cursor: pointer;
+    background: #fffdf7; border: 1px solid #c9d8c0; border-radius: 999px; padding: 3px 12px;
+  }
+  .cheer:hover { background: #e4ecdd; }
+  .cheer[aria-pressed="true"] { background: #6f9a72; border-color: #6f9a72; color: #fffdf7; }
+  .replies { color: #35563b; }
   #status {
     text-align: center; font-size: 13px; color: #726c5c;
     padding: 26px 0 10px;
@@ -103,49 +113,13 @@
   </div>
 </footer>
 
+<script src="commons.js"></script>
 <script>
 const NONCE = '__SESSION_NONCE__';
 const feedEl = document.getElementById('feed');
 const statusEl = document.getElementById('status');
 let next = { batch: 1, cursor: null };
 let busy = false;
-
-function card(p) {
-  const el = document.createElement('article');
-  el.className = 'card';
-  const who = document.createElement('div');
-  who.className = 'who';
-  const avatar = document.createElement('div');
-  avatar.className = 'avatar';
-  avatar.dataset.initials = p.author
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-  const id = document.createElement('div');
-  const name = document.createElement('div');
-  name.className = 'name';
-  name.textContent = p.author;
-  const meta = document.createElement('div');
-  meta.className = 'meta';
-  meta.textContent = p.when + ' - ' + p.where;
-  id.append(name, meta);
-  who.append(avatar, id);
-  const title = document.createElement('h2');
-  title.textContent = p.title;
-  el.append(who, title);
-  for (const line of p.body) {
-    const para = document.createElement('p');
-    para.textContent = line;
-    el.append(para);
-  }
-  const foot = document.createElement('div');
-  foot.className = 'cardfoot';
-  foot.textContent = 'Ref ' + p.ref + ' - ' + p.cheers + ' cheers';
-  el.append(foot);
-  return el;
-}
 
 async function loadBatch(via) {
   if (busy || !next) return;
@@ -160,7 +134,7 @@ async function loadBatch(via) {
     });
     if (!r.ok) throw new Error('feed ' + r.status);
     const data = await r.json();
-    for (const p of data.posts) feedEl.append(card(p));
+    for (const p of data.posts) feedEl.append(postCard(p));
     next = data.next ? { batch: data.next.batch, cursor: data.next.cursor } : null;
     if (next) {
       statusEl.textContent = 'Scroll for older posts';

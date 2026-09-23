@@ -12,7 +12,8 @@ const REQUEST = {
 
 // A session outside the browser that loads the request form and posts it the
 // way the form does: urlencoded, carrying the page's nonce and form id.
-// lib.mjs's straySession reads a script nonce, and this page has no script.
+// lib.mjs's straySession reads a `const NONCE` declaration, which this page
+// does not make: its nonce is the form's hidden field.
 async function formSession(base) {
   const page = await fetch(`${base}/gov/certcopy.html`, { headers: { accept: 'text/html' } });
   const cookie = (page.headers.get('set-cookie') ?? '').split(';')[0];
@@ -88,6 +89,11 @@ export const DRIVERS = {
       }
 
       await goto('/gov/certcopy.html');
+      // The form page posts its page view like every Bureau page, alongside the
+      // form id the server mints into the same body.
+      await until('a page view of the request form', () =>
+        [...ctx.pages.state.sessions.values()].some((s) =>
+          (s.govViews ?? []).some((v) => v.path === '/gov/certcopy.html')), { tries: 20, gap: 200 });
       let snap = await until('the request form in the snapshot', async () => {
         const s = await snapshot();
         return uidOf(s, 'input "Account number"') ? s : null;
@@ -184,6 +190,35 @@ export const DRIVERS = {
       }
       const ours = newer.number;
       const duplicate = older.number;
+
+      // The copy service is on the home page's ONLINE SERVICES menu and in the
+      // site search, not only on the site map.
+      await goto('/gov/');
+      const home = await snapshot();
+      for (const name of ['Certified Copies', 'Request Status']) {
+        if (!uidOf(home, `a "${name}"`)) throw new Error(`the home page lists no ${name} link`);
+      }
+      for (const [q, title] of [
+        ['certified copy', 'Certified Copies of Filed Documents'],
+        ['copies of a declaration', 'Certified Copies of Filed Documents'],
+        ['withdraw request', 'Request Status'],
+      ]) {
+        await goto(`/gov/search.html?q=${encodeURIComponent(q)}`);
+        await until(`a search for "${q}" to list ${title}`, async () => {
+          const hits = await evaluate(() => [...document.querySelectorAll('#results a')].map((a) => a.textContent));
+          return Array.isArray(hits) && hits.includes(title);
+        }, { tries: 20 });
+      }
+      // The copy pages do not outrank the page that answers a filing-status query.
+      await goto(`/gov/search.html?q=${encodeURIComponent('filing status')}`);
+      const statusHits = await until('a search for "filing status" to list Check Filing Status', async () => {
+        const hits = await evaluate(() => [...document.querySelectorAll('#results a')].map((a) => a.textContent));
+        return Array.isArray(hits) && hits.includes('Check Filing Status') ? hits : null;
+      }, { tries: 20 });
+      const copyHit = statusHits.findIndex((t) => t === 'Request Status' || t === 'Certified Copies of Filed Documents');
+      if (copyHit !== -1 && copyHit < statusHits.indexOf('Check Filing Status')) {
+        throw new Error(`"filing status" lists ${statusHits[copyHit]} above Check Filing Status`);
+      }
 
       // The provenance the detail reports: the stray POST sends no
       // Sec-Fetch-Dest, and Firefox's form submit and Withdraw click send

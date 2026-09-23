@@ -116,7 +116,7 @@
         .map(
           (item) =>
             '<li><span class="when">' + (item.points ?? 0) + ' pts</span>' +
-            '<span class="act"><a href="item.html?id=' + item.rank + '">' + item.title +
+            '<span class="act"><a href="item.html?id=' + item.id + '">' + item.title +
             '</a> &mdash; ' + item.age + ', tagged ' + (item.tag || 'jobs') + '</span></li>'
         )
         .join('');

@@ -15,8 +15,26 @@
   <form id="ship" novalidate>
     <label for="name">Full name</label>
     <input id="name" autocomplete="off">
+    <label for="email">Email address</label>
+    <input id="email" type="email" autocomplete="off">
+    <p class="fieldnote">Your order confirmation and any return label go to this address.</p>
     <label for="address">Street address</label>
     <input id="address" autocomplete="off">
+    <label for="city">City</label>
+    <input id="city" autocomplete="off">
+    <div class="pair">
+      <div>
+        <label for="state">State</label>
+        <input id="state" autocomplete="off" maxlength="2">
+      </div>
+      <div>
+        <label for="zip">ZIP code</label>
+        <input id="zip" autocomplete="off" inputmode="numeric">
+      </div>
+    </div>
+    <label for="phone">Phone (optional)</label>
+    <input id="phone" type="tel" autocomplete="off">
+    <p class="fieldnote">Only used if the carrier needs to reach you about a delivery.</p>
     <button type="submit" id="continue">Continue to payment</button>
     <div id="status" role="status"></div>
   </form>
@@ -27,12 +45,36 @@ const NONCE = '__SESSION_NONCE__';
 const status = document.getElementById('status');
 document.getElementById('ship').addEventListener('submit', async (event) => {
   event.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  const address = document.getElementById('address').value.trim();
+  const value = (id) => document.getElementById(id).value.trim();
+  const fields = {
+    name: value('name'),
+    email: value('email'),
+    address: value('address'),
+    city: value('city'),
+    state: value('state').toUpperCase(),
+    zip: value('zip'),
+    phone: value('phone'),
+  };
   status.className = '';
-  if (!name || !address) {
+  const problem = !fields.name
+    ? ['name', 'Enter your full name.']
+    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)
+      ? ['email', 'Enter an email address for your order confirmation.']
+      : !fields.address
+        ? ['address', 'Enter your street address.']
+        : !fields.city
+          ? ['city', 'Enter your city.']
+          : !/^[A-Z]{2}$/.test(fields.state)
+            ? ['state', 'Enter the two-letter state code, for example NY.']
+            : !/^\d{5}(?:-\d{4})?$/.test(fields.zip)
+              ? ['zip', 'Enter a 5-digit ZIP code.']
+              : null;
+  for (const id of ['name', 'email', 'address', 'city', 'state', 'zip']) {
+    document.getElementById(id).setAttribute('aria-invalid', String(problem?.[0] === id));
+  }
+  if (problem) {
     status.className = 'error';
-    status.textContent = 'Enter your full name and street address.';
+    status.textContent = problem[1];
     return;
   }
   const button = document.getElementById('continue');
@@ -41,7 +83,7 @@ document.getElementById('ship').addEventListener('submit', async (event) => {
     const res = await fetch('/api/voltro/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nonce: NONCE, step: 'shipping', name, address }),
+      body: JSON.stringify({ nonce: NONCE, step: 'shipping', ...fields }),
     });
     const body = await res.json();
     if (!res.ok) {

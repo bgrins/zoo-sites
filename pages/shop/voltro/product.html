@@ -38,7 +38,7 @@
   }
 </style>
 </head>
-<body>
+<body data-arrives="__VOLTRO_ARRIVES__">
 <header>
   <a class="wordmark" href="index.html">Voltro</a>
   <form class="finder" action="search.html" method="get" role="search">
@@ -144,7 +144,7 @@ if (!product) {
   document.getElementById('pabout').textContent =
     MAKER[name.split(' ')[0]] ?? '';
   document.getElementById('pfulfill').textContent = index % 3
-    ? 'FREE shipping — get it Fri, Jul 31.'
+    ? 'FREE shipping — get it ' + document.body.dataset.arrives + '.'
     : 'FREE shipping, or pick it up today at the Downtown counter.';
   document.getElementById('bprice').textContent = '$' + price.toFixed(2);
   document.getElementById('ppermo').textContent =

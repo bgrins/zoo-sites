@@ -8,12 +8,13 @@
 <link rel="stylesheet" href="thornbury.css">
 <style>
   .autosave { background: var(--samphire); border-radius: 10px; padding: 12px 16px; margin: 0; color: var(--slate); }
-  #restored, #queued { border-radius: 10px; padding: 12px 18px; margin: 0 0 18px; }
+  #restored, #queued, #returned { border-radius: 10px; padding: 12px 18px; margin: 0 0 18px; }
   #restored { display: none; background: var(--sea-wash); border: 1px solid #c3d9e2; color: var(--sea); font-weight: 600; }
   #queued { background: #fff; border: 1px solid var(--moss); }
-  #queued p { margin: 0 0 6px; }
-  #queued p:last-child { margin: 0; color: var(--slate); }
-  #queuedref { font-family: var(--serif); font-size: 19px; letter-spacing: 1px; color: var(--moss-deep); }
+  #returned { background: #fff; border: 1px solid var(--alert); }
+  #queued p, #returned p { margin: 0 0 6px; }
+  #queued p:last-child, #returned p:last-child { margin: 0; color: var(--slate); }
+  #queuedref, #returnedref { font-family: var(--serif); font-size: 19px; letter-spacing: 1px; color: var(--moss-deep); }
   fieldset { border: 0; margin: 0; padding: 0; }
   legend { display: none; }
   .field {
@@ -94,7 +95,15 @@
       <p>In the review queue as <strong id="queuedref"></strong>.</p>
       <p>You can still correct any section until applications close on __THORNBURY_CLOSES__.
       Corrections save as you type; choose Continue to review again and the grants office
-      re-checks them under the same reference.</p>
+      re-checks them under the same reference. A correction outside the Round 14 rules
+      takes the application out of the queue until then.</p>
+    </div>
+
+    <div id="returned" role="alert" hidden>
+      <p>Changes needed on <strong id="returnedref"></strong>.</p>
+      <p>This application has left the review queue because a saved correction does not
+      meet the Round 14 rules. Correct the sections marked below, then choose Continue to
+      review again. The reference stays the same.</p>
     </div>
 
     <div id="restored" role="status"></div>
@@ -205,6 +214,7 @@
   // Saves are serialized on one promise chain so "Continue to review" can wait
   // for every in-flight autosave before asking the server to queue the draft.
   let chain = Promise.resolve();
+  let reference = null;
 
   function setState(text, cls) {
     state.textContent = text;
@@ -225,6 +235,7 @@
       const body = await res.json();
       if (!res.ok) throw new Error('rejected');
       setState(progressText(body.completed), 'ok');
+      if (body.status === 'returned') showReturned(body.errors);
     } catch {
       saved[field] = undefined;
       setState('Could not save ' + LABELS[field] + ' — try again', 'bad');
@@ -238,11 +249,24 @@
     slot.closest('.field').classList.toggle('invalid', !!message);
   }
 
-  function showQueued(reference) {
-    document.getElementById('refcode').textContent = reference;
+  function showQueued(ref) {
+    reference = ref;
+    document.getElementById('refcode').textContent = ref;
     document.getElementById('done').style.display = 'block';
     document.getElementById('appform').style.display = 'none';
     document.getElementById('queued').hidden = true;
+    document.getElementById('returned').hidden = true;
+  }
+
+  function showReturned(errors) {
+    document.getElementById('returnedref').textContent = reference;
+    document.getElementById('queued').hidden = true;
+    document.getElementById('returned').hidden = false;
+    for (const field of FIELDS) showRuleError(field, errors?.[field]);
+    const flagged = Object.keys(errors ?? {}).map((f) => LABELS[f] ?? f);
+    setState(flagged.length
+      ? 'Correct ' + flagged.join(' and ') + ', then continue to review'
+      : 'Choose Continue to review to put the application back in the queue', 'bad');
   }
 
   function queueSave(field) {
@@ -339,10 +363,12 @@
       banner.style.display = 'block';
     }
     setState(completed ? progressText(completed) : 'No changes yet');
-    if (draft.status === 'queued' && draft.reference) {
-      document.getElementById('queuedref').textContent = draft.reference;
+    reference = draft.reference;
+    if (draft.status === 'queued' && reference) {
+      document.getElementById('queuedref').textContent = reference;
       document.getElementById('queued').hidden = false;
     }
+    if (draft.status === 'returned' && reference) showReturned(draft.errors);
   })();
 </script>
 </body>

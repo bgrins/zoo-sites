@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GadgetDock DX2 Hub | Gadgetron mirror node MB-3</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="mirror.css">
+</head>
+<body>
+<header class="railbar">
+  <a class="mark" href="index.html">Gadgetron</a>
+  <span class="node">Mirror node MB-3</span>
+  <span class="who">Read-only &middot; support desk 1-614-555-0142</span>
+</header>
+<nav class="tabs" aria-label="Sections">
+  <a href="index.html">Departments</a>
+  <a href="sync-log.html">Sync log</a>
+  <a href="snapshot-policy.html">Snapshot policy</a>
+  <a href="support.html">Support desk</a>
+</nav>
+<!--if-down--><div class="syncstrip">snapshot 03:50 &middot; source primary-a &middot; mode read-only &middot; incident MB-3-1174</div><!--/if-down-->
+<!--if-up--><div class="syncstrip standby">snapshot 03:50 &middot; source primary-a &middot; mode standby &middot; primary store online: <a href="__ORIGIN_GADGETRON__/">open the live catalog</a></div><!--/if-up-->
+<p class="crumbs"><a href="index.html">Departments</a> &middot;
+  <a href="docks.html">Docks, hubs and power</a> &middot; GDX-HUB2</p>
+<main class="sheet">
+<div class="statline">
+    <h1>GadgetDock DX2 Hub</h1>
+    <span class="count">Part no. GDX-HUB2</span>
+  </div>
+  <div class="detail">
+    <div class="specs">
+      <p>The second revision of Gadgetron's house dock: twelve ports, a 4K output at 60 hertz and 100 watts back to the laptop. The sheet below is the manufacturer sheet as captured in the 03:50 snapshot.</p>
+      <table class="grid">
+        <caption>GadgetDock DX2 Hub specification sheet.</caption>
+        <tbody>
+          <tr><th>Part number</th><td class="mono">GDX-HUB2</td></tr>
+          <tr><th>Brand</th><td>GadgetDock (Gadgetron house brand)</td></tr>
+          <tr><th>Type</th><td>Docking station, desk</td></tr>
+          <tr><th>Host connection</th><td>USB-C, 10 Gbps</td></tr>
+          <tr><th>Total ports</th><td>12</td></tr>
+          <tr><th>Power to host</th><td>100 W</td></tr>
+          <tr><th>Display outputs</th><td>1 x HDMI, UHD-4K at 60 Hz</td></tr>
+          <tr><th>Ethernet</th><td>1 GbE</td></tr>
+          <tr><th>Card reader</th><td>SD and microSD, UHS-I</td></tr>
+          <tr><th>Dimensions</th><td>196 x 76 x 22 mm</td></tr>
+          <tr><th>Weight</th><td>355 g</td></tr>
+          <tr><th>Warranty</th><td>2 years, return to base</td></tr>
+          <tr><th>Price USD</th><td class="price" id="specprice">loading</td></tr>
+        </tbody>
+      </table>
+      <p class="rowsnote" id="sheetnote">Specification supplied by the manufacturer.</p>
+    </div>
+    <div class="buybox">
+      <h2>Mirror price</h2>
+      <p class="nowprice" id="nowprice">--</p>
+      <p class="unit">per unit, USD, excluding tax</p>
+      <p class="avail" id="stock">checking warehouse</p>
+      <button type="button" disabled>Ordering disabled</button>
+      <!--if-down--><p class="why">This node is read-only. Order queueing returns with the primary store.</p><!--/if-down-->
+      <!--if-up--><p class="why">This node is read-only. Order this part from the live <a href="__ORIGIN_GADGETRON__/order-list.html?part=GDX-HUB2&amp;qty=1">order list</a>.</p><!--/if-up-->
+    </div>
+  </div>
+</main>
+<footer class="legalstrip">
+  <a href="sync-log.html#incidents">Service status history</a> &middot; <a href="legal.html#privacy">Privacy notice</a> &middot;
+  <a href="legal.html#terms">Terms of sale</a> &middot; <a href="support.html">Contact the support desk</a><br>
+  Gadgetron Trading Co., 4180 Halverson Way, Suite 300, Druvenport, OH 43000. &copy; 2026 Gadgetron
+  Trading Co. All rights reserved.
+</footer>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const SKU = 'GDX-HUB2';
+
+async function load() {
+  const res = await fetch('/api/mirror/catalog?sku=' + SKU, {
+    headers: { 'X-Session-Nonce': NONCE },
+  });
+  const body = await res.json().catch(() => null);
+  const row = body && Array.isArray(body.rows)
+    ? body.rows.find((r) => r.sku === SKU)
+    : null;
+  if (!res.ok || !row) {
+    document.getElementById('nowprice').textContent = 'n/a';
+    document.getElementById('stock').textContent = 'price unavailable';
+    document.getElementById('specprice').textContent = 'n/a';
+    document.getElementById('sheetnote').textContent =
+      'The mirror could not read this row from the snapshot. Open the department page again.';
+    return;
+  }
+  document.getElementById('nowprice').textContent = '$' + row.price;
+  document.getElementById('specprice').textContent = row.price;
+  document.getElementById('stock').textContent =
+    row.stock === 'y' ? 'In stock' : 'Sold out';
+  document.getElementById('sheetnote').textContent =
+    'Specification supplied by the manufacturer. Snapshot ' + body.snapshot + '.';
+}
+
+load();
+</script>
+</body>
+</html>

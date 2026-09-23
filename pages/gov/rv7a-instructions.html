@@ -40,5 +40,19 @@ amendment outside the amendment window.</p>
 [ <a href="privacy.html">Privacy Statement</a> ] [ <a href="terms.html">Terms of Use</a> ]<br>
 &copy; Bureau of Civic Revenue. An agency of the Commonwealth. Revenue Building, Statehouse Plaza.</font></td></tr>
 </table>
+<script type="text/javascript">
+(function () {
+  var p = location.pathname;
+  if (p.charAt(p.length - 1) === '/') p += 'index.html';
+  try {
+    fetch('/api/gov/page-view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Session-Nonce': '__SESSION_NONCE__' },
+      body: JSON.stringify({ path: p, token: '__GOV_PAGE_TOKEN__', nonce: '__SESSION_NONCE__' }),
+      keepalive: true,
+    });
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>

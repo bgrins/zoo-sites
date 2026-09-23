@@ -30,6 +30,7 @@
     <span class="crumb">Domains / <span class="zone">fernvale-labs.example.net</span> / <b>Email forwarding</b></span>
     <span class="gap"></span>
     <span class="acct">Registry lock: off</span>
+    <a class="signout" href="signout.html">Sign out</a>
   </div>
 
   <main>
@@ -37,9 +38,33 @@
     <p class="lede">Forwarding rules apply after the zone's MX records; they do not
     change the zone itself.</p>
     <div class="pagebody">
-      <p>No forwarding rules are configured for fernvale-labs.example.net. Mail is delivered
-      to the MX host listed in <a href="index.html">DNS records</a>.</p>
-      <p>Forwarding is included with the registration and supports up to 50 aliases.</p>
+      <table class="plain">
+        <thead>
+          <tr><th>Alias</th><th>Forwards to</th><th></th></tr>
+        </thead>
+        <tbody id="alias-rows"></tbody>
+      </table>
+      <p class="note-line" id="alias-count">Loading forwarding rules</p>
+    </div>
+
+    <h2>Add an alias</h2>
+    <div class="pagebody">
+      <form id="alias-form">
+        <div class="field-row">
+          <label for="alias">Alias</label>
+          <input id="alias" type="text" size="16" autocomplete="off" spellcheck="false">
+          <span class="suffix">@fernvale-labs.example.net</span>
+        </div>
+        <div class="field-row">
+          <label for="destination">Forward to</label>
+          <input id="destination" type="email" size="32" autocomplete="off" spellcheck="false">
+        </div>
+        <p class="form-msg" id="alias-msg" role="status"></p>
+        <button type="submit" class="btn-primary">Add alias</button>
+      </form>
+      <p class="note-line">Forwarding is included with the registration and supports up to 50 aliases.
+      Mail to an address with no alias is delivered to the MX host listed in
+      <a href="index.html">DNS records</a>.</p>
     </div>
   </main>
 
@@ -50,5 +75,92 @@
     <a href="support.html">Support</a>
   </footer>
 </div>
+<script>
+const NONCE = '__SESSION_NONCE__';
+const DOMAIN = 'fernvale-labs.example.net';
+let current = { aliases: [], limit: 50 };
+
+async function send(path, body) {
+  const init = body
+    ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ nonce: NONCE }, body)) }
+    : { headers: { 'X-Session-Nonce': NONCE } };
+  const r = await fetch(path, init);
+  return r.json();
+}
+
+function message(kind, text) {
+  const box = document.getElementById('alias-msg');
+  box.className = 'form-msg ' + kind;
+  box.textContent = text;
+}
+
+function td(text) {
+  const cell = document.createElement('td');
+  cell.textContent = text;
+  return cell;
+}
+
+function render(data) {
+  const rows = document.getElementById('alias-rows');
+  rows.textContent = '';
+  const aliases = data.aliases || [];
+  if (!aliases.length) {
+    const tr = document.createElement('tr');
+    const cell = td('No forwarding rules are configured for ' + DOMAIN + '.');
+    cell.colSpan = 3;
+    tr.append(cell);
+    rows.append(tr);
+  }
+  for (const a of aliases) {
+    const tr = document.createElement('tr');
+    const name = td(a.alias + '@' + DOMAIN);
+    name.className = 'mono';
+    tr.append(name, td(a.destination));
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'btn-quiet';
+    remove.textContent = 'Remove';
+    remove.setAttribute('aria-label', 'Remove alias ' + a.alias);
+    remove.addEventListener('click', async () => {
+      const done = await send('/api/registrar/forwarding/remove', { alias: a.alias });
+      if (!done.ok) { message('warn', done.error || 'The alias could not be removed.'); return; }
+      message('ok', a.alias + '@' + DOMAIN + ' no longer forwards.');
+      current = Object.assign({}, current, { aliases: done.aliases });
+      render(current);
+    });
+    const actions = document.createElement('td');
+    actions.append(remove);
+    tr.append(actions);
+    rows.append(tr);
+  }
+  document.getElementById('alias-count').textContent = aliases.length + ' of ' + (data.limit || 50) + ' aliases in use.';
+}
+
+document.getElementById('alias-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const alias = document.getElementById('alias').value;
+  const destination = document.getElementById('destination').value;
+  let done;
+  try {
+    done = await send('/api/registrar/forwarding', { alias: alias, destination: destination });
+  } catch {
+    done = { ok: false, error: 'Forwarding could not be reached. Try again.' };
+  }
+  if (!done.ok) { message('warn', done.error || 'The alias could not be added.'); return; }
+  current = Object.assign({}, current, { aliases: done.aliases });
+  render(current);
+  event.target.reset();
+  message('ok', 'Mail to ' + alias.trim().toLowerCase() + '@' + DOMAIN + ' now forwards to ' + destination.trim().toLowerCase() + '.');
+});
+
+(async () => {
+  try {
+    current = await send('/api/registrar/forwarding');
+    render(current);
+  } catch {
+    document.getElementById('alias-count').textContent = 'Forwarding rules could not be loaded. Reload the page to try again.';
+  }
+})();
+</script>
 </body>
 </html>

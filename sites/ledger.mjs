@@ -28,8 +28,8 @@ export function routes(ctx) {
       return json(res, 200, { url: csvUrl });
     }
 
-    // Navigable text/plain CSV: the browser renders it, so no download
-    // handling is needed. Rows come from ledger-rows.mjs, which sits outside the
+    // The CSV goes out as an attachment, so the browser saves it and the folio
+    // stays on screen. Rows come from ledger-rows.mjs, which sits outside the
     // served static root, so they are not fetchable as a file — the same source
     // scripts/gen/ledger.mjs renders the folio pages from.
     if (req.method === 'GET' && pathname0 === '/api/ledger/export.csv') {
@@ -57,7 +57,10 @@ export function routes(ctx) {
           )
         )
         .join('\n');
-      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.writeHead(200, {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="trelowen-operating-fund-fy2026.csv"',
+      });
       // Trailing newline so `wc -l` prints 142, not 141 — otherwise an agent
       // that wrongly counts every line lands on the right answer in the shell
       // condition only, which is a confound in a tool-surface comparison.

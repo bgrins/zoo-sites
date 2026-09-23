@@ -1,0 +1,22 @@
+{
+  "id": 41703732,
+  "comments": [
+    {
+      "author": "fixedpointfan",
+      "age": "1 day ago",
+      "text": "The fixed-point math section is the part worth reading twice. Getting reflections stable in 8.8 without visible banding on that screen is genuinely hard, and the error-diffusion trick at the end is a nice touch.",
+      "replies": [
+        {
+          "author": "screenbuffer",
+          "age": "1 day ago",
+          "text": "OP here. The banding fight took longer than the raytracer itself. The calculator's LCD has such slow response that dithering flickers unless you keep the pattern stable across frames, which is why the diffusion kernel is seeded from the pixel coordinates."
+        }
+      ]
+    },
+    {
+      "author": "portablemath",
+      "age": "1 day ago",
+      "text": "Render time of forty minutes per frame sounds bad until you remember the machine runs on four AAA batteries and was designed to plot parabolas for homework."
+    }
+  ]
+}

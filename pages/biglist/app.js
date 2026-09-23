@@ -97,17 +97,16 @@ function initials(name) {
   return ((parts[0] ?? '').charAt(0) + (parts.at(-1) ?? '').charAt(0)).toUpperCase();
 }
 
-// The avatar chip is drawn by CSS from these attributes, so a row still holds
-// exactly four child cells in the virtualized list.
-function dressAvatar(div, name) {
+function avatar(name) {
   let sum = 0;
   for (let i = 0; i < name.length; i++) {
     sum = (sum + name.charCodeAt(i) * (i + 1)) % 4093;
   }
   const [bg, fg] = AVATAR_TINTS[sum % AVATAR_TINTS.length];
-  div.dataset.initials = initials(name);
-  div.style.setProperty('--av-bg', bg);
-  div.style.setProperty('--av-fg', fg);
+  const chip = makeCell('avatar', initials(name));
+  chip.style.setProperty('--av-bg', bg);
+  chip.style.setProperty('--av-fg', fg);
+  return chip;
 }
 
 function render() {
@@ -124,8 +123,8 @@ function render() {
     div.style.top = i * ROW_H + 'px';
     const r = rowAt(i);
     if (r) {
-      dressAvatar(div, r.name);
       div.append(
+        avatar(r.name),
         makeCell('name', r.name),
         makeCell('badge', r.badge),
         makeCell('dept', r.dept),

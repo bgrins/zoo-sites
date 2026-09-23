@@ -1,0 +1,1280 @@
+{
+ "id": 41718514,
+ "comments": [
+  {
+   "author": "chorded",
+   "age": "12 hours ago",
+   "text": "Lovely piece. One correction though: the article implies the ball-in-socket pointing concept originated in consumer computing and worked backwards into military systems. It was the other way around — early fire-control and radar plotting consoles needed a way to designate targets on a screen, and an inverted ball was the obvious mechanically robust answer for an operator wearing gloves on a moving platform. Consumer devices inherited the idea decades later.",
+   "replies": [
+    {
+     "author": "quietcursor",
+     "age": "11 hours ago",
+     "text": "OP here — you're right and I've updated the ordering in section 2, with a note crediting the correction. I conflated \"first widely documented\" with \"first built,\" which is exactly the trap the piece warns about in its intro. Embarrassing but fixable.",
+     "replies": [
+      {
+       "author": "chorded",
+       "age": "11 hours ago",
+       "text": "Respect for the fast correction. The radar-console lineage is genuinely underdocumented — most of what survives is in equipment maintenance manuals rather than anything historians would call a source."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "tensorpilot",
+   "age": "10 hours ago",
+   "text": "I teach an intro hardware class and we take apart a mechanical trackball every year. It is the best single lesson on rotary encoders I know.",
+   "replies": [
+    {
+     "author": "tuplecraft",
+     "age": "10 hours ago",
+     "text": "Is the article's claim about the first optical design documented anywhere?",
+     "replies": [
+      {
+       "author": "monadbench",
+       "age": "8 hours ago",
+       "text": "Somebody should write the boring version of this post, with all the caveats.",
+       "replies": [
+        {
+         "author": "nullyard",
+         "age": "7 hours ago",
+         "text": "Worth separating what is hard from what is merely unfamiliar.",
+         "replies": [
+          {
+           "author": "patchshed85",
+           "age": "5 hours ago",
+           "text": "We found the opposite, but our constraints were unusual.",
+           "replies": [
+            {
+             "author": "tupleworks",
+             "age": "4 hours ago",
+             "text": "Price is volume and nothing else. The parts are cheap; the tooling is spread across very few units.",
+             "replies": [
+              {
+               "author": "spoolwright",
+               "age": "1 hour ago",
+               "text": "Left-handed models exist but you have to look for them, and they are nearly always the finger operated kind.",
+               "replies": [
+                {
+                 "author": "socketreader55",
+                 "age": "1 hour ago",
+                 "text": "The gap closing quickly matches what I saw when our whole team tried them for a month.",
+                 "replies": []
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "nullyard",
+     "age": "10 hours ago",
+     "text": "I stand corrected.",
+     "replies": [
+      {
+       "author": "lambdatide",
+       "age": "9 hours ago",
+       "text": "Interesting, had not considered that.",
+       "replies": [
+        {
+         "author": "nullyard",
+         "age": "8 hours ago",
+         "text": "Saving this for the next time someone asks me why.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "replies": [
+        {
+         "author": "queueloft",
+         "age": "7 hours ago",
+         "text": "Hard agree.",
+         "replies": [
+          {
+           "author": "offbyfun",
+           "age": "6 hours ago",
+           "text": "The interesting bit is buried in a footnote, as usual.",
+           "replies": []
+          }
+         ]
+        }
+       ],
+       "deleted": true
+      },
+      {
+       "author": "nibdrift",
+       "age": "8 hours ago",
+       "text": "Taking one apart is a great lesson. The slotted wheels and paired sensors explain quadrature better than any diagram.",
+       "replies": [
+        {
+         "author": "nullyard",
+         "age": "8 hours ago",
+         "text": "There is a whole conference talk on this that I cannot find right now.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "tensorpilot",
+       "age": "10 hours ago",
+       "text": "Ball size really does matter. Going from a small ball to a large one made my cursor feel calm instead of jittery.",
+       "replies": []
+      },
+      {
+       "author": "sigmapilot",
+       "age": "8 hours ago",
+       "text": "The patents point is real. One broad claim on optical ball sensing only expired in the late nineties.",
+       "replies": []
+      },
+      {
+       "author": "kernelpanda",
+       "age": "9 hours ago",
+       "text": "That is a fair correction, thanks.",
+       "replies": []
+      },
+      {
+       "author": "deltamonk",
+       "age": "10 hours ago",
+       "text": "This is why I stopped arguing about it and started measuring.",
+       "replies": [
+        {
+         "author": "patchworks",
+         "age": "10 hours ago",
+         "text": "People underestimate how much of this is just habit.",
+         "replies": []
+        },
+        {
+         "author": "monadbench",
+         "age": "9 hours ago",
+         "text": "Exactly this.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "lambdatide",
+       "age": "9 hours ago",
+       "text": "Touché.",
+       "replies": []
+      },
+      {
+       "author": "queueloft",
+       "age": "9 hours ago",
+       "text": "The patents point is real. One broad claim on optical ball sensing only expired in the early two thousands. At least that is how it went for us.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "shardyard",
+     "age": "9 hours ago",
+     "text": "Has anyone tried one for photo editing? Curious how it compares with a pen.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "mutexmonk",
+   "age": "6 hours ago",
+   "text": "I switched to a trackball for games as a joke and kept it for strategy titles. Anything that rewards precision over speed works well.",
+   "replies": [
+    {
+     "author": "glyphfield",
+     "age": "3 hours ago",
+     "text": "This matches my experience almost exactly.",
+     "replies": [
+      {
+       "author": "warmstart",
+       "age": "3 hours ago",
+       "text": "I think the author would agree with you; the title oversells it.",
+       "replies": [
+        {
+         "author": "staticdrift",
+         "age": "2 hours ago",
+         "text": "The console history lives mostly in maintenance manuals, as someone said upthread. A few are scanned and online if you search for the equipment designations.",
+         "replies": [
+          {
+           "author": "mutexmonk",
+           "age": "2 hours ago",
+           "text": "Do the large ball models work for people with small hands?",
+           "replies": [
+            {
+             "author": "inodemonk",
+             "age": "55 minutes ago",
+             "text": "Could you expand on that? The short version skips the part I care about.",
+             "replies": [
+              {
+               "author": "latchspark",
+               "age": "17 minutes ago",
+               "text": "Laptop trackballs lost because touchpads were thinner, not because they were nicer to use.",
+               "replies": [
+                {
+                 "author": "lambdasmith",
+                 "age": "16 minutes ago",
+                 "text": "Not sure that generalises beyond your team.",
+                 "replies": []
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "inodehound",
+     "age": "4 hours ago",
+     "text": "Can confirm.",
+     "replies": [
+      {
+       "author": "thunkmill23",
+       "age": "2 hours ago",
+       "text": "I read it the other way: the tooling finally caught up with the idea.",
+       "replies": []
+      },
+      {
+       "author": "mutexmonk",
+       "age": "2 hours ago",
+       "text": "The optical idea was early, but the cheap image sensor is what made it practical. Same story as a lot of hardware.",
+       "replies": []
+      },
+      {
+       "author": "mutexmonk",
+       "age": "4 hours ago",
+       "text": "For what it is worth, changing devices before the pain starts is the best advice in this thread.",
+       "replies": []
+      },
+      {
+       "author": "sigmagarden",
+       "age": "4 hours ago",
+       "text": "That tracks.",
+       "replies": []
+      },
+      {
+       "author": "shardbearer",
+       "age": "3 hours ago",
+       "text": "You can do it, but the maintenance cost arrives on a delay and it arrives anyway.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "patchworks",
+     "age": "5 hours ago",
+     "text": "What do control rooms actually use now, trackballs or something else?",
+     "replies": [
+      {
+       "author": "pagetable",
+       "age": "3 hours ago",
+       "text": "Good question.",
+       "replies": [
+        {
+         "author": "loopwake",
+         "age": "2 hours ago",
+         "text": "Finger operated is the key detail. Thumb models mostly move the strain somewhere else. At least that is how it went for us.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "queuesage",
+     "age": "5 hours ago",
+     "text": "Every one of these threads has this subthread, and every time it is worth reading.",
+     "replies": [
+      {
+       "author": "deltahound",
+       "age": "5 hours ago",
+       "text": "Ha, fair.",
+       "replies": [
+        {
+         "author": "queueloft",
+         "age": "4 hours ago",
+         "text": "Is that from the post or from your own setup? Curious either way.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "mutexmonk",
+       "age": "5 hours ago",
+       "text": "I think you are both right and talking about different scales.",
+       "replies": [
+        {
+         "author": "kernelpanda",
+         "age": "5 hours ago",
+         "text": "The last paragraph of the post says nearly the same thing.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "vectorgarden",
+     "age": "5 hours ago",
+     "text": "Changing devices before the pain starts is the best advice in this thread.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "tracemonk",
+   "age": "8 hours ago",
+   "text": "The durability point is underrated. Mine is twenty years old and on its third cable, and the mechanism has never failed.",
+   "replies": [
+    {
+     "author": "thunkgarden",
+     "age": "6 hours ago",
+     "text": "You are describing a people problem with a technology label on it.",
+     "replies": [
+      {
+       "author": "warmstart",
+       "age": "6 hours ago",
+       "text": "The gap closing quickly matches what I saw when our whole team tried them for a month. At least that is how it went for us.",
+       "replies": [
+        {
+         "author": "ringcraft",
+         "age": "4 hours ago",
+         "text": "Small correction: that changed in the last release, so the post is slightly out of date.",
+         "replies": [
+          {
+           "author": "warmstart",
+           "age": "4 hours ago",
+           "text": "Source?",
+           "replies": [
+            {
+             "author": "monadbench",
+             "age": "3 hours ago",
+             "text": "CAD is where it shines. Slow, precise, repeated moves with no lifting and putting down.",
+             "replies": []
+            }
+           ]
+          },
+          {
+           "author": "warmstart",
+           "age": "3 hours ago",
+           "text": "Thanks, that helps.",
+           "replies": []
+          },
+          {
+           "author": "quartzworks43",
+           "age": "3 hours ago",
+           "text": "Is there a trackball with a proper scroll ring still in production?",
+           "replies": [
+            {
+             "author": "ringcraft",
+             "age": "3 hours ago",
+             "text": "For what it is worth, scroll rings went away because they add parts and cost, and most buyers never got to try one in a shop.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "planshape",
+     "age": "7 hours ago",
+     "text": "Same here, down to the footnote.",
+     "replies": [
+      {
+       "author": "shardbench",
+       "age": "6 hours ago",
+       "text": "Having done this twice now: ball size really does matter. Going from a small ball to a large one made my cursor feel calm instead of jittery.",
+       "replies": [
+        {
+         "author": "parsester",
+         "age": "6 hours ago",
+         "text": "Control rooms order them by the crate, as far as I know. Nobody wants a mouse sliding off a console during an incident.",
+         "replies": []
+        }
+       ]
+      },
+      {
+       "author": "bitrotting",
+       "age": "7 hours ago",
+       "text": "The article addresses this about two thirds of the way down, for what it is worth.",
+       "replies": [
+        {
+         "author": "lambdacurious",
+         "age": "6 hours ago",
+         "text": "For people with a tremor, a device that stays still while the hand rests on it is the difference between using a computer and not.",
+         "replies": [
+          {
+           "author": "sigmapilot",
+           "age": "5 hours ago",
+           "text": "Support bearings are the wear item now. Swapping in ceramic ones made mine smoother than new.",
+           "replies": [
+            {
+             "author": "nullwake",
+             "age": "5 hours ago",
+             "text": "Scroll rings went away because they add parts and cost, and most buyers never got to try one in a shop.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "bezelgarden",
+       "age": "6 hours ago",
+       "text": "Mild disagreement: the puck era deserves its own article. Precision digitising was a whole craft that disappeared almost without comment.",
+       "replies": []
+      },
+      {
+       "author": "inodebench",
+       "age": "7 hours ago",
+       "text": "Not sure that generalises beyond a small shop.",
+       "replies": [
+        {
+         "author": "tuplecraft",
+         "age": "7 hours ago",
+         "text": "How do you set acceleration on a large ball? Mine feels sluggish across a wide screen.",
+         "replies": [
+          {
+           "author": "inodebench",
+           "age": "5 hours ago",
+           "text": "The puck era deserves its own article. Precision digitising was a whole craft that disappeared almost without comment.",
+           "replies": [
+            {
+             "author": "tuplecraft",
+             "age": "5 hours ago",
+             "text": "Finger operated is the key detail. Thumb models mostly move the strain somewhere else. Nobody talks about that part.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "author": "tracemonk",
+       "age": "7 hours ago",
+       "text": "Desk space is exactly why I switched. My bench has a soldering station, a scope and a keyboard, and nowhere to move a mouse.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "slabcraft",
+   "age": "10 hours ago",
+   "text": "I teach an intro hardware class and we take apart a mechanical trackball every year. It is the best single lesson on rotary encoders I know.\n\nPrice is volume and nothing else. The parts are cheap; the tooling is spread across very few units.",
+   "replies": [
+    {
+     "author": "spoolloft",
+     "age": "10 hours ago",
+     "text": "Genuinely curious what the failure mode looks like in year three.",
+     "replies": [
+      {
+       "author": "warmstart",
+       "age": "10 hours ago",
+       "text": "This is the comment I came here to write.",
+       "replies": [
+        {
+         "author": "spoolloft",
+         "age": "9 hours ago",
+         "text": "I have been on both sides of that decision and I still do not know which was right.",
+         "replies": [
+          {
+           "author": "depreciator",
+           "age": "9 hours ago",
+           "text": "Not in my experience.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "sigmagarden",
+         "age": "8 hours ago",
+         "text": "Mine is sixteen years old as well. The switches wore out long before the ball mechanism did.",
+         "replies": []
+        },
+        {
+         "author": "spoolloft",
+         "age": "8 hours ago",
+         "text": "In my experience, control rooms order them by the crate, as far as I know. Nobody wants a mouse sliding off a console during an incident.",
+         "replies": []
+        },
+        {
+         "author": "spoolloft",
+         "age": "9 hours ago",
+         "text": "Agreed.",
+         "replies": []
+        },
+        {
+         "author": "ringsmith",
+         "age": "10 hours ago",
+         "text": "Noted, thanks.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "lambdatide",
+     "age": "10 hours ago",
+     "text": "Counterpoint: it depends entirely on who is on call when it breaks.",
+     "replies": []
+    },
+    {
+     "author": "fiberwright",
+     "age": "8 hours ago",
+     "text": "This deserves its own submission.",
+     "replies": [
+      {
+       "author": "hexdrift39",
+       "age": "8 hours ago",
+       "text": "That is a very generous reading of the situation.",
+       "replies": [
+        {
+         "replies": [
+          {
+           "author": "parseworks",
+           "age": "5 hours ago",
+           "text": "Nobody wants to hear it, but the unglamorous answer usually wins.",
+           "replies": []
+          }
+         ],
+         "deleted": true
+        }
+       ]
+      },
+      {
+       "author": "planshape",
+       "age": "8 hours ago",
+       "text": "The console history lives mostly in maintenance manuals, as someone said upthread. A few are scanned and online if you search for the equipment designations. At least that is how it went for us.",
+       "replies": [
+        {
+         "author": "scalarbench",
+         "age": "7 hours ago",
+         "text": "The honest answer is that nobody measured it before or after.",
+         "replies": [
+          {
+           "replies": [
+            {
+             "author": "monadbench",
+             "age": "5 hours ago",
+             "text": "Replying mainly so I can find this again.",
+             "replies": [
+              {
+               "author": "cachespark",
+               "age": "3 hours ago",
+               "text": "For people with a tremor, a device that stays still while the hand rests on it is the difference between using a computer and not. Happy to be proven wrong.",
+               "replies": [
+                {
+                 "author": "queueloft",
+                 "age": "3 hours ago",
+                 "text": "The patents point is real. One broad claim on optical ball sensing only expired in the early two thousands.",
+                 "replies": []
+                }
+               ]
+              }
+             ]
+            }
+           ],
+           "deleted": true
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "lambdatide",
+   "age": "28 minutes ago",
+   "text": "The market is small enough that one manufacturer discontinuing a model is a crisis for the people who use it. I keep three spares in a drawer for that reason.",
+   "replies": [
+    {
+     "author": "inodehound",
+     "age": "25 minutes ago",
+     "text": "Fair point.",
+     "replies": [
+      {
+       "author": "slabdrift21",
+       "age": "10 minutes ago",
+       "text": "Arcade balls were solid phenolic, often the same material as billiard balls. That is where the weight came from.",
+       "replies": [
+        {
+         "author": "cachemonk",
+         "age": "3 minutes ago",
+         "text": "I keep spares too. The model I use has been discontinued twice and revived once.",
+         "replies": [
+          {
+           "author": "hexwake",
+           "age": "2 minutes ago",
+           "text": "This.",
+           "replies": [
+            {
+             "author": "thunkreader63",
+             "age": "1 minute ago",
+             "text": "The way I see it, mine is eleven years old as well. The switches wore out long before the ball mechanism did.",
+             "replies": []
+            }
+           ]
+          },
+          {
+           "author": "shardbearer",
+           "age": "2 minutes ago",
+           "text": "Strong disagree, but I appreciate that you wrote it up properly.",
+           "replies": [
+            {
+             "author": "relaymill80",
+             "age": "1 minute ago",
+             "text": "The optical idea was early, but the cheap image sensor is what made it practical. Same story as a lot of hardware. The post undersells this, I think.",
+             "replies": []
+            }
+           ]
+          },
+          {
+           "author": "tensorpilot",
+           "age": "2 minutes ago",
+           "text": "Same here, down to the punchline.",
+           "replies": []
+          },
+          {
+           "author": "slabdrift21",
+           "age": "2 minutes ago",
+           "text": "Agree with the conclusion, not with how you got there.",
+           "replies": []
+          },
+          {
+           "author": "slabdrift21",
+           "age": "2 minutes ago",
+           "text": "Anecdotally, ultrasound carts are a great example. The device has to survive gel, wiping and being bumped into door frames.",
+           "replies": []
+          },
+          {
+           "author": "mutexmonk",
+           "age": "2 minutes ago",
+           "text": "Do you have numbers for that? It sounds plausible but I have seen the opposite.",
+           "replies": []
+          },
+          {
+           "author": "fiberwright",
+           "age": "2 minutes ago",
+           "text": "I would love to read a follow-up on exactly this point.",
+           "replies": []
+          },
+          {
+           "author": "tokenring",
+           "age": "2 minutes ago",
+           "text": "Ultrasound carts are a great example. The device has to survive gel, wiping and being bumped into door frames. I say that as someone who likes the idea.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "tensorworks",
+         "age": "6 minutes ago",
+         "text": "Oof. Yes.",
+         "replies": [
+          {
+           "author": "mutexmonk",
+           "age": "5 minutes ago",
+           "text": "For what it is worth, the patents point is real. One broad claim on optical ball sensing only expired in the late nineties.",
+           "replies": []
+          }
+         ]
+        },
+        {
+         "author": "tensorloft",
+         "age": "5 minutes ago",
+         "text": "The way I see it, ultrasound carts are a great example. The device has to survive gel, wiping and being bumped into door frames.",
+         "replies": []
+        },
+        {
+         "author": "shardbearer",
+         "age": "9 minutes ago",
+         "text": "Right, and the second-order effect is the one that bites.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "bitrotting",
+   "age": "11 hours ago",
+   "text": "Trackball evangelist checking in. I switched after a wrist injury in 2019 and never went back. The thing nobody tells you: thumb-operated and finger-operated trackballs are completely different devices that happen to share a name. Thumb balls are basically mice with the motion relocated; finger balls change your whole hand posture. The article lumps them together in the ergonomics section and it weakens an otherwise great piece.",
+   "replies": [
+    {
+     "author": "ulnarnerve",
+     "age": "10 hours ago",
+     "text": "Seconding this hard. Thumb trackballs gave me a different RSI than the mouse did — traded wrist extension for thumb overuse. Finger-operated with a wrist rest is what actually worked. N=1 obviously, but the distinction matters enough that conflating them is almost misinformation in an ergonomics context.",
+     "replies": [
+      {
+       "author": "flexortendon",
+       "age": "10 hours ago",
+       "text": "It really is N=1 all the way down with input ergonomics. I know people who fixed everything with a vertical mouse, people who needed a pen tablet, and one person who swears by a foot pedal for clicks. The honest general advice is \"vary your posture and rotate devices,\" which is unsatisfying, so nobody writes articles about it.",
+       "replies": [
+        {
+         "author": "ulnarnerve",
+         "age": "10 hours ago",
+         "text": "\"The best input device is the next one\" — like exercise programs. Adaptation is the feature."
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "spoolloft",
+   "age": "8 hours ago",
+   "text": "Honestly, I would love to know how many control rooms still order these new. My guess is more than any consumer maker sells.",
+   "replies": [
+    {
+     "author": "queueloft",
+     "age": "7 hours ago",
+     "text": "I tried this and gave up after a month. Might try again after this thread.",
+     "replies": [
+      {
+       "author": "planshape",
+       "age": "6 hours ago",
+       "text": "The gap closing quickly matches what I saw when our whole team tried them for a month. The post undersells this, I think.",
+       "replies": []
+      },
+      {
+       "author": "vacuumtruck",
+       "age": "7 hours ago",
+       "text": "The console history lives mostly in maintenance manuals, as someone said upthread. A few are scanned and online if you search for the equipment designations. I say that as someone who likes the idea.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "lintgarden",
+     "age": "8 hours ago",
+     "text": "The trade-off is real but it is not the one people usually name.",
+     "replies": [
+      {
+       "author": "hexster",
+       "age": "6 hours ago",
+       "text": "Well put.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "replies": [
+      {
+       "author": "hexster",
+       "age": "7 hours ago",
+       "text": "Mild pushback: the benchmark in the post is doing a lot of work.",
+       "replies": [
+        {
+         "author": "depreciator",
+         "age": "6 hours ago",
+         "text": "Reasonable people land on both sides of this, and the thread is proving it.",
+         "replies": []
+        }
+       ]
+      }
+     ],
+     "deleted": true
+    },
+    {
+     "author": "quartzworks43",
+     "age": "7 hours ago",
+     "text": "Same.",
+     "replies": [
+      {
+       "author": "fibercraft74",
+       "age": "5 hours ago",
+       "text": "Same here, down to the detail.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "offbyfun",
+     "age": "6 hours ago",
+     "text": "Mild disagreement: the gap closing quickly matches what I saw when our whole team tried them for a month.",
+     "replies": [
+      {
+       "author": "ringsmith",
+       "age": "6 hours ago",
+       "text": "Are the optical models any easier to clean than the old roller ones?",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "bezelgarden",
+     "age": "7 hours ago",
+     "text": "Worth adding that price is volume and nothing else. The parts are cheap; the tooling is spread across very few units.",
+     "replies": []
+    },
+    {
+     "author": "ringwright",
+     "age": "8 hours ago",
+     "text": "Seconding this. It took us far too long to learn it.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "slabdrift21",
+   "age": "8 hours ago",
+   "text": "Honestly, the section on radar plotting consoles is the best part of the piece. It is rare to see input history traced back past the first home computers.",
+   "replies": [
+    {
+     "author": "mutexmonk",
+     "age": "8 hours ago",
+     "text": "Desk space is exactly why I switched. My bench has a soldering station, a scope and a keyboard, and nowhere to move a mouse. Your mileage will vary.",
+     "replies": [
+      {
+       "author": "glyphfield",
+       "age": "7 hours ago",
+       "text": "The way I see it, taking one apart is a great lesson. The slotted wheels and paired sensors explain quadrature better than any diagram.",
+       "replies": [
+        {
+         "author": "sprocketbench",
+         "age": "5 hours ago",
+         "text": "Ultrasound carts are a great example. The device has to survive gel, wiping and being bumped into door frames.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "author": "slabcraft",
+     "age": "6 hours ago",
+     "text": "Mild disagreement: support bearings are the wear item now. Swapping in ceramic ones made mine smoother than new.",
+     "replies": [
+      {
+       "author": "patchworks",
+       "age": "5 hours ago",
+       "text": "I keep spares too. The model I use has been discontinued twice and revived once. Your mileage will vary.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "bitrotting",
+     "age": "8 hours ago",
+     "text": "Worth adding that for people with a tremor, a device that stays still while the hand rests on it is the difference between using a computer and not.",
+     "replies": [
+      {
+       "author": "warmstart",
+       "age": "7 hours ago",
+       "text": "In my experience, I keep spares too. The model I use has been discontinued twice and revived once.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "pagetable",
+   "age": "6 hours ago",
+   "text": "For what it is worth, what surprised me in the article is how early the optical sensing idea appeared. The parts to make it cheap took another thirty years.",
+   "replies": [
+    {
+     "author": "tupleworks",
+     "age": "5 hours ago",
+     "text": "The gap closing quickly matches what I saw when our whole team tried them for a month. Nobody talks about that part.",
+     "replies": [
+      {
+       "author": "sigmapilot",
+       "age": "5 hours ago",
+       "text": "The gap closing quickly matches what I saw when our whole team tried them for a month. Happy to be proven wrong.",
+       "replies": [
+        {
+         "author": "glyphfield",
+         "age": "3 hours ago",
+         "text": "The patents point is real. One broad claim on optical ball sensing only expired in the early two thousands. Happy to be proven wrong.",
+         "replies": [
+          {
+           "author": "ringsmith",
+           "age": "2 hours ago",
+           "text": "That was true five years ago. It has moved a lot since.",
+           "replies": [
+            {
+             "author": "shardbench",
+             "age": "1 hour ago",
+             "text": "Ball size really does matter. Going from a small ball to a large one made my cursor feel calm instead of jittery. I say that as someone who likes the idea.",
+             "replies": []
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "loopwake",
+   "age": "12 hours ago",
+   "text": "In my experience, the history is great, but the photos of the early military units are the real treasure. I had never seen the inside of one.",
+   "replies": [
+    {
+     "author": "ringcraft",
+     "age": "12 hours ago",
+     "text": "Desk space is exactly why I switched. My bench has a soldering station, a scope and a keyboard, and nowhere to move a mouse. Nobody talks about that part.",
+     "replies": [
+      {
+       "author": "socketreader55",
+       "age": "11 hours ago",
+       "text": "Mine is eleven years old as well. The switches wore out long before the ball mechanism did. Happy to be proven wrong.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "warmstart",
+     "age": "12 hours ago",
+     "text": "Mine is eleven years old as well. The switches wore out long before the ball mechanism did.",
+     "replies": [
+      {
+       "author": "slabcraft",
+       "age": "11 hours ago",
+       "text": "Anecdotally, I keep spares too. The model I use has been discontinued twice and revived once.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "hexdrift39",
+   "age": "6 hours ago",
+   "text": "I used a trackball for twelve years of CAD work. What it does better than anything else is small, slow, precise moves, which is most of drafting.",
+   "replies": [
+    {
+     "author": "socketreader55",
+     "age": "5 hours ago",
+     "text": "Mine is nine years old as well. The switches wore out long before the ball mechanism did.",
+     "replies": [
+      {
+       "author": "ringsmith",
+       "age": "5 hours ago",
+       "text": "We had the same argument at work last quarter and nobody changed their mind.",
+       "replies": [
+        {
+         "author": "cacheshed94",
+         "age": "3 hours ago",
+         "text": "Honestly, price is volume and nothing else. The parts are cheap; the tooling is spread across very few units.",
+         "replies": [
+          {
+           "author": "ringsmith",
+           "age": "2 hours ago",
+           "text": "That was true a few years ago. It has moved a lot since.",
+           "replies": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "opticalpickup",
+   "age": "10 hours ago",
+   "text": "The section on the transition from mechanical rollers to optical tracking undersells how big a deal it was. Mechanical trackballs needed constant cleaning — everyone of a certain age remembers scraping the gunk ring off the rollers. Optical tracking of the ball's surface pattern removed the single biggest maintenance annoyance and arguably saved the trackball from extinction in the arcade era, where machines took thousands of plays a week.",
+   "replies": [
+    {
+     "author": "coinop",
+     "age": "10 hours ago",
+     "text": "Arcade operator perspective (well, former): trackball games were simultaneously the most beloved and most hated cabinets on the floor. Beloved by players, hated by techs. A bowling or golf game trackball took genuinely violent abuse — full-palm slams, drinks, once a shoe. The mechanical assemblies were built like tank bearings and still needed monthly service. Optical helped but the bearings were still the wear item."
+    },
+    {
+     "author": "quietcursor",
+     "age": "9 hours ago",
+     "text": "OP here — the arcade durability angle is great, and honestly deserved more than the one paragraph I gave it. If either of you have sources on arcade trackball service intervals I'd love to expand that section. My email's in the footer."
+    }
+   ]
+  },
+  {
+   "author": "depreciator",
+   "age": "12 hours ago",
+   "text": "Ball size matters more than anything else about the device. Anything under about thirty millimetres feels twitchy to me. The post undersells this, I think.",
+   "replies": [
+    {
+     "author": "nullwright",
+     "age": "10 hours ago",
+     "text": "CAD is where it shines. Slow, precise, repeated moves with no lifting and putting down. Nobody talks about that part.",
+     "replies": [
+      {
+       "author": "parseworks",
+       "age": "10 hours ago",
+       "text": "Price is volume and nothing else. The parts are cheap; the tooling is spread across very few units. At least that is how it went for us.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "ringcraft",
+     "age": "10 hours ago",
+     "text": "Having done this twice now: finger operated is the key detail. Thumb models mostly move the strain somewhere else.",
+     "replies": []
+    },
+    {
+     "author": "tuplecraft",
+     "age": "12 hours ago",
+     "text": "Having done this twice now: left-handed models exist but you have to look for them, and they are nearly always the finger operated kind.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "staticdrift",
+   "age": "10 hours ago",
+   "text": "Left-handed users are the forgotten market here. Nearly every thumb-operated model is right-handed only.",
+   "replies": [
+    {
+     "author": "ringpilot",
+     "age": "10 hours ago",
+     "text": "In my experience, finger operated is the key detail. Thumb models mostly move the strain somewhere else.",
+     "replies": []
+    },
+    {
+     "author": "nullyard",
+     "age": "10 hours ago",
+     "text": "Arcade balls were solid phenolic, often the same material as billiard balls. That is where the weight came from. Happy to be proven wrong.",
+     "replies": []
+    },
+    {
+     "author": "spoolloft",
+     "age": "10 hours ago",
+     "text": "Laptop trackballs lost because touchpads were thinner, not because they were nicer to use. I say that as someone who likes the idea.",
+     "replies": [
+      {
+       "author": "tuplecraft",
+       "age": "9 hours ago",
+       "text": "CAD is where it shines. Slow, precise, repeated moves with no lifting and putting down. The post undersells this, I think.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "tensorworks",
+     "age": "9 hours ago",
+     "text": "Anecdotally, changing devices before the pain starts is the best advice in this thread.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "decimaldrift",
+   "age": "10 hours ago",
+   "text": "The history is great, but the photos of the early military units are the real treasure. I had never seen the inside of one. At least that is how it went for us.",
+   "replies": [
+    {
+     "author": "sigmapilot",
+     "age": "9 hours ago",
+     "text": "The way I see it, the puck era deserves its own article. Precision digitising was a whole craft that disappeared almost without comment.",
+     "replies": []
+    },
+    {
+     "author": "vectorgarden",
+     "age": "9 hours ago",
+     "text": "Anecdotally, mine is eleven years old as well. The switches wore out long before the ball mechanism did.",
+     "replies": [
+      {
+       "author": "sprocketdrift",
+       "age": "8 hours ago",
+       "text": "That was true ten years ago. It has moved a lot since.",
+       "replies": []
+      }
+     ]
+    },
+    {
+     "author": "socketreader55",
+     "age": "10 hours ago",
+     "text": "CAD is where it shines. Slow, precise, repeated moves with no lifting and putting down. I say that as someone who likes the idea.",
+     "replies": []
+    },
+    {
+     "author": "sprocketdrift",
+     "age": "8 hours ago",
+     "text": "I tried this and gave up after a week. Might try again after this thread.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "nibmonk",
+   "age": "3 hours ago",
+   "text": "The arcade section made me nostalgic. A good bowling cabinet ball had a weight to it that no desk device has ever matched.",
+   "replies": [
+    {
+     "author": "ringwright",
+     "age": "3 hours ago",
+     "text": "Having done this twice now: desk space is exactly why I switched. My bench has a soldering station, a scope and a keyboard, and nowhere to move a mouse.",
+     "replies": [
+      {
+       "author": "sigmapilot",
+       "age": "2 hours ago",
+       "text": "Price is volume and nothing else. The parts are cheap; the tooling is spread across very few units. The post undersells this, I think.",
+       "replies": [
+        {
+         "author": "ringwright",
+         "age": "2 hours ago",
+         "text": "Anecdotally, CAD is where it shines. Slow, precise, repeated moves with no lifting and putting down.",
+         "replies": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "latchspark",
+   "age": "11 hours ago",
+   "text": "The claim that trackballs lost to the mouse assumes there is one winner. In control rooms, on ships and in medical imaging they never lost at all.\n\nThe optical idea was early, but the cheap image sensor is what made it practical. Same story as a lot of hardware.",
+   "replies": [
+    {
+     "author": "hexwake",
+     "age": "11 hours ago",
+     "text": "The way I see it, control rooms order them by the crate, as far as I know. Nobody wants a mouse sliding off a console during an incident.",
+     "replies": [
+      {
+       "author": "latchspark",
+       "age": "10 hours ago",
+       "text": "Ball size really does matter. Going from a small ball to a large one made my cursor feel calm instead of jittery. Happy to be proven wrong.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "staticdrift",
+   "age": "9 hours ago",
+   "text": "Is there a good reason trackballs never got the high-DPI gaming treatment? Serious question. Modern mouse sensors are absurdly good, and a ball gives you effectively infinite travel with no desk space. You'd think at least one niche vendor would chase the flick-heavy gaming crowd.",
+   "replies": [
+    {
+     "author": "yawpitch",
+     "age": "8 hours ago",
+     "text": "The ball has mass, and that's the whole answer. Precision aiming is about stopping, not moving — a mouse stops when your hand stops, a ball has angular momentum you have to actively arrest. Low-mass balls help but then you lose the smooth coasting that makes trackballs pleasant. It's a genuine physics tradeoff, not a market oversight.",
+     "replies": [
+      {
+       "author": "staticdrift",
+       "age": "8 hours ago",
+       "text": "Momentum as a feature for scrolling and a bug for aiming — that's a satisfying answer, thanks."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "mutexmonk",
+   "age": "5 hours ago",
+   "text": "I would like a follow-up on the patents. The article hints that a couple of broad ones held the whole category back for a decade.\n\nThe gap closing quickly matches what I saw when our whole team tried them for a month.",
+   "replies": [
+    {
+     "author": "ringcraft",
+     "age": "3 hours ago",
+     "text": "For what it is worth, ultrasound carts are a great example. The device has to survive gel, wiping and being bumped into door frames.",
+     "replies": [
+      {
+       "author": "mutexmonk",
+       "age": "3 hours ago",
+       "text": "Having done this twice now: mine is nine years old as well. The switches wore out long before the ball mechanism did.",
+       "replies": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "author": "lambdacurious",
+   "age": "5 hours ago",
+   "text": "Ball size matters more than anything else about the device. Anything under about thirty millimetres feels twitchy to me.",
+   "replies": [
+    {
+     "author": "lambdatide",
+     "age": "4 hours ago",
+     "text": "The console history lives mostly in maintenance manuals, as someone said upthread. A few are scanned and online if you search for the equipment designations. Your mileage will vary.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "queueloft",
+   "age": "10 hours ago",
+   "text": "The history is great, but the photos of the early military units are the real treasure. I had never seen the inside of one.",
+   "replies": [
+    {
+     "author": "tupleworks",
+     "age": "10 hours ago",
+     "text": "Mild disagreement: the optical idea was early, but the cheap image sensor is what made it practical. Same story as a lot of hardware.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "deltatinker",
+   "age": "8 hours ago",
+   "text": "Laptop trackballs were a real thing for a few years before touchpads won. I still think the small ones set into the palm rest were the better design.",
+   "replies": [
+    {
+     "author": "socketspark",
+     "age": "8 hours ago",
+     "text": "Ball size really does matter. Going from a small ball to a large one made my cursor feel calm instead of jittery. Nobody talks about that part.",
+     "replies": []
+    }
+   ]
+  },
+  {
+   "author": "ringsmith",
+   "age": "47 minutes ago",
+   "text": "The market is small enough that one manufacturer discontinuing a model is a crisis for the people who use it. I keep four spares in a drawer for that reason.",
+   "replies": []
+  },
+  {
+   "author": "tokenring",
+   "age": "6 hours ago",
+   "text": "Fun thread. Related shameless plug: I maintain a little museum site cataloging pointing device patents by mechanism (pointertaxonomy.example.com) — ball, puck, stick, pad, pen, and the truly weird stuff like knee-operated levers. The trackball family tree alone has 40+ entries. Corrections welcome, the older patents are hard to interpret."
+  },
+  {
+   "author": "relaymill80",
+   "age": "12 hours ago",
+   "text": "Ball size matters more than anything else about the device. Anything under about forty millimetres feels twitchy to me.",
+   "replies": []
+  },
+  {
+   "author": "shardbearer",
+   "age": "6 hours ago",
+   "text": "The arcade section made me nostalgic. A good bowling cabinet ball had a weight to it that no desk device has ever matched.\n\nChanging devices before the pain starts is the best advice in this thread.",
+   "replies": []
+  }
+ ]
+}

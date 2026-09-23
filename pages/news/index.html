@@ -82,11 +82,11 @@
     <div class="card">
       <h2>Threads moving fastest</h2>
       <ul>
-        <li><a href="item.html?id=25">Notes on running a tiny ISP for my street</a>
+        <li><a href="item.html?id=41705268">Notes on running a tiny ISP for my street</a>
           <span class="meta">4 new replies</span></li>
-        <li><a href="item.html?id=26">The typography of transit maps</a>
+        <li><a href="item.html?id=41705119">The typography of transit maps</a>
           <span class="meta">3 new replies</span></li>
-        <li><a href="item.html?id=31">Estimating pi with a pendulum and a webcam</a>
+        <li><a href="item.html?id=41703757">Estimating pi with a pendulum and a webcam</a>
           <span class="meta">2 new replies</span></li>
       </ul>
     </div>
@@ -141,7 +141,7 @@
     const stream = document.getElementById('stream');
 
     function entryHtml(item) {
-      const itemUrl = `item.html?id=${item.rank}`;
+      const itemUrl = `item.html?id=${item.id}`;
       const origin = item.site ? ` <span class="origin">${item.site}</span>` : '';
       const lead =
         item.type === 'job'
@@ -303,8 +303,6 @@
       });
     }
 
-    // Announced before the modal exists, so a dismissal can never reach the
-    // server before the server knows the modal was shown.
     let announceSettled = false;
     const announced = announce()
       .catch(() => {})
