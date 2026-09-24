@@ -100,7 +100,7 @@ export const DRIVERS = {
     wrong:
       'Form RV-7 is due April 15, the general filing-season close, and the ' +
       'instructions are at /gov/deadlines.html.',
-    async run({ goto, evaluate, snapshot, mcp }) {
+    async run({ goto, evaluate, snapshot, mcp, base }) {
       await goto('/gov/');
       const home = await snapshot();
       // The whole site is 1998 table soup: table/tr/td/font are not "relevant"
@@ -142,6 +142,8 @@ export const DRIVERS = {
         withUrl(url.replace(/\.html$/, '')),
         withUrl(`${url}/`),
         ...(singleOrigin ? [withUrl(`${at.origin}${otherLayout}`)] : []),
+        ...(at.origin !== base ? [withUrl(`${base}${at.pathname}`)] : []),
+        withUrl(`http://example.invalid${at.pathname}`),
         withUrl(`${at.origin}/forms${at.pathname}`),
         // The ask wants the URL; a path or a page name alone does not locate it.
         withUrl(at.pathname),

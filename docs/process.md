@@ -37,17 +37,13 @@ a bug that only exists there, such as a Referer check that expects the prefix, p
 the default gate. `--origins` runs the gate in the container's shape: each worker
 binds every origin on an ephemeral port, and the asks carry the origin URLs.
 `--vhosts` serves every site on one port under its own host name, the way the_zoo's
-proxy separates them. In both, only navigation is mapped: `goto` sends a driver's
-single-origin path to the site that owns it, so a driver runs in every mode without
-an edit. The answer a driver
-returns is not mapped. A driver that builds an answer value from `helpers.base` or
-a prefixed path such as `/bank/caldmoor-bank-login/` still reports the
-single-origin answer. The validator accepts that answer, and the task goes green,
-while an agent that reports the origin URL it actually read fails. A green
-`--origins` run therefore proves the sites and their server state work in the
-container's shape, not that every task grades an origin-mode answer correctly. A
-driver whose answer names a URL proves the second only when it reads the URL off
-the page (`location.href`) or out of the ask.
+proxy separates them. In both, `goto` maps a driver's single-origin path to the
+site that owns it, but does not rewrite the driver's answer. URL-reporting drivers
+must read the URL the browser saw (`location.href`) or use the ask's origin, then
+test that the validator rejects the same path on a different origin. `gov-lookup`
+does both: its wrong-field cases include the single-origin listener in origin mode
+and an unrelated host in every mode. Without the wrong-origin case, its gate once
+passed even though the validator accepted a URL that would not serve the page.
 
 Read the failures block, never the exit status of a piped gate: `node eval/verify.mjs
 | tail` reports tail's status, which hides a red gate.

@@ -74,13 +74,13 @@ function weekdaysOf(items) {
 const URL_TOKEN =
   /(?:\bhttps?:\/\/|(?<![\w.:\/@-])(?=(?:localhost|[a-z0-9-]+(?:\.[a-z0-9-]+)+)(?::\d+)?\/))[\w\-.~:/?#@!$&+,;=%]+/gi;
 
-// The pathname of every absolute URL a field names. A path or a page name on
-// its own names no URL, so it contributes nothing.
-function urlPathsIn(field) {
+// The absolute URLs a field names. A path or a page name on its own names no
+// URL, so it contributes nothing.
+function urlsIn(field) {
   return [...String(field ?? '').matchAll(URL_TOKEN)].flatMap(([token]) => {
     const bare = token.replace(/[.,;:!?]+$/, '');
     try {
-      return [new URL(/^https?:\/\//i.test(bare) ? bare : `http://${bare}`).pathname];
+      return [new URL(/^https?:\/\//i.test(bare) ? bare : `http://${bare}`)];
     } catch {
       return [];
     }
@@ -120,22 +120,30 @@ export async function navigationTasks(base, origins = originUrls(base)) {
         const [month, day] = normaliseDateWords(ANSWERS.gov.deadline).trim().split(' ');
         const d = normaliseDateWords(fields?.filingDeadline ?? '');
         const dateOk = d.includes(` ${month} ${day} `) || d.includes(` ${day} ${month} `);
-        // The URL must be the page's own: its path under whichever layout this
-        // run served (/gov/ prefixed in single-origin mode, the root under
-        // --origins and --vhosts), any origin. Under --origins and --vhosts the
-        // server also passes the /gov/-prefixed path through to the same page,
-        // so that path is the page's own in every mode. The server resolves no
+        // The URL must name the Bureau's own origin and the path this run
+        // served. Under --origins and --vhosts, the server also passes the
+        // /gov/-prefixed path through to the same page. The server resolves no
         // extensionless or near-miss path, so "rv7-instructions" guessed from a
         // link cut to "rv7-..." is a URL that 404s. The ask wants the URL, so a
         // path or page name alone fails, and so does a field naming two pages.
         const page = ANSWERS.gov.instructionsPage;
         const govDir = ORIGINS.find((o) => o.key === 'civic-revenue').dir;
+        const bureau = new URL(origins['civic-revenue']);
         const instructions = new Set([
           new URL(`${origins['civic-revenue']}/${page}`).pathname,
           `/${govDir}/${page}`,
         ]);
-        const paths = urlPathsIn(fields?.instructionsUrl);
-        const urlOk = paths.length > 0 && paths.every((p) => instructions.has(p));
+        const acceptedOrigins = new Set([bureau.origin]);
+        const alias =
+          bureau.hostname === '127.0.0.1' ? 'localhost' : bureau.hostname === 'localhost' ? '127.0.0.1' : null;
+        if (alias) {
+          const alternate = new URL(bureau);
+          alternate.hostname = alias;
+          acceptedOrigins.add(alternate.origin);
+        }
+        const urls = urlsIn(fields?.instructionsUrl);
+        const urlOk =
+          urls.length > 0 && urls.every((url) => acceptedOrigins.has(url.origin) && instructions.has(url.pathname));
         return {
           pass: dateOk && urlOk,
           detail: `dateOk=${dateOk} urlOk=${urlOk} fields=${JSON.stringify(fields)}`,

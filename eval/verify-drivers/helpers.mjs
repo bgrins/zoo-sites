@@ -39,8 +39,8 @@ export function pagesRouting(pages) {
 // aborts, sleep rejects, so a driver polling between calls stops at its next
 // wait instead of outliving its attempt.
 export function makeHelpers({ mcp, pages, mark = async () => {}, signal }) {
-  // Only goto maps: helpers.base stays the single-origin listener, so an answer
-  // a driver builds from base or a prefixed path grades the single-origin answer.
+  // Only goto maps: helpers.base stays the single-origin listener, so a driver
+  // must read the browser's URL before reporting it in origin or vhost mode.
   const { urlFor } = pagesRouting(pages);
   // Most drivers only need to navigate and read/poke the page; uid-based tools
   // are available too, and using them is what makes this a real dogfood of the
