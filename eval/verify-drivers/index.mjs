@@ -5,6 +5,7 @@
 // See probes.mjs for the driver contract and worked examples.
 
 import { DRIVERS as probes } from './probes.mjs';
+import { DRIVERS as basic } from './basic.mjs';
 import { DRIVERS as shop } from './shop.mjs';
 import { DRIVERS as forms } from './forms.mjs';
 import { DRIVERS as formsUpload } from './forms-upload.mjs';
@@ -57,6 +58,7 @@ import { DRIVERS as pdfBill } from './pdf-bill.mjs';
 // report.
 const modules = {
   'probes.mjs': probes,
+  'basic.mjs': basic,
   'shop.mjs': shop,
   'forms.mjs': forms,
   'forms-upload.mjs': formsUpload,

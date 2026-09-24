@@ -164,6 +164,9 @@ export async function run({ task, pages, model, condition, env, cwd, onMessage, 
       });
     try {
       const result = await server.call(name, toolArgs);
+      if (videoPath && (name === 'navigate_page' || name === 'new_page')) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+      }
       // Text blocks only: a screenshot's base64 would bloat the transcript, and
       // no reader of one looks at images.
       replied((result.content ?? []).filter((c) => c.type === 'text'), Boolean(result.isError));
@@ -202,6 +205,7 @@ export async function run({ task, pages, model, condition, env, cwd, onMessage, 
   let videoError = null;
   try {
     if (videoPath) {
+      await new Promise((resolve) => setTimeout(resolve, 600));
       const stopped = await server.call('screencast_stop', {});
       const message = (stopped.content ?? []).filter((part) => part.type === 'text').map((part) => part.text).join('\n');
       const saved = !stopped.isError && message.match(/Screencast saved to: (.+\.webm)/)?.[1];
