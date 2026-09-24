@@ -78,8 +78,7 @@ Rules:
   neither the page's nor a tab's navigation (`ctx.isDocumentNav`) with a ref of
   its own (body-only-ref). A tab opened on an API URL sends no Referer and
   `Sec-Fetch-Site: none`, so `fromPage` alone would count it as a shell.
-- Graded secrets stay server-side, per `docs/authoring-fixtures.md`. Nothing
-  here changes the contract that ground truth is never derivable from `pages/`.
+- Graded values for interaction tasks stay server-side, per `docs/authoring-fixtures.md`. Pure extraction tasks may grade published page content.
 - `node eval/verify.mjs` must be green before any change here is committed.
 
 Registry: `index.mjs` exports `SITES`, an array of `routes` factories in dispatch

@@ -23,15 +23,15 @@ yet judged.
 
 Every new idea must satisfy these constraints:
 
-- **Local simulated pages only.** All fixtures live under `pages/` and are served by
-  `server.mjs` on loopback. No live web, all original content (invented brands, names, data).
-- **Automatically scorable.** Every task validates via `eval/answers.mjs` ground truth, regex/text match
-  on the agent's final answer, or (preferred) **server-side beacons** recorded in the pages server
-  state.
-- **Agents may have shell access.** They can `curl` any page, so client-only secrets in HTML/JS are
-  weak. Prefer signals that require real browser interaction: POST beacons fired by page JS on
-  interaction, session-cookie-gated content, answers computed server-side per session, or
-  validation of *what the server saw* rather than what the agent says.
+- **Local simulated pages only.** Fixtures live under `pages/` and are served by
+  `server.mjs` on loopback. No live web; invent brands, names and data, and use
+  third-party assets only when their licences allow it.
+- **Automatically scorable.** Interaction tasks grade session state or actions
+  recorded by the server; pure extraction tasks may grade published content.
+  A page-fired beacon is useful telemetry, not a pass condition by itself.
+- **Agents may have shell access.** They can `curl` any page and forge requests,
+  including beacons and browser-looking headers. Keep interaction-task values
+  server-side, and grade the relevant session's work rather than its claims.
 - Reuse existing fixtures where natural; new fixtures should be small static HTML/JS plus
   optional endpoints in a `sites/` module.
 - Each idea lists its honest weakest point under **Risk** — cheatability, flake, or build cost.
@@ -324,7 +324,7 @@ first four have landed, ctx.pick without its `sweep` field; the mail bus has not
   directory. T136 and T140 needed it.
 - **env pins** (landed). The preflight records each condition's browser environment in
   `meta.env` and pins time zone, locale, viewport and colour scheme for both
-  conditions (`eval/README.md`, "What a paid run pins"). Unpinned,
+  conditions (`eval/running.md`, "What a paid run pins"). Unpinned,
   `eval/spikes/env.mjs` measured Firefox 156 against 152, a 1366x683 viewport against
   1280x720, and dark against light. T137 needed it, because devtools' datetime-local
   typing order follows the locale.
@@ -653,7 +653,7 @@ plans do.
 - Server (new `sites/crm.mjs`): the default view per session from `ctx.pick('crm.view', ['classic', 'grid', 'cards'])`; deal refs `KD-xxxxxx` and amounts from `randomBytes`, arranged so the target (the largest open Negotiation-stage deal for a coined account) is unique, with decoys (the largest deal overall, a larger Closed-lost deal for the same account). Record `{ servedView, switches, target, decoys, apiFetches }`.
 - Ask: "In Kelsmere CRM's pipeline (${origins.kelsmere}/pipeline.html), find the largest open deal for (account) that is in the Negotiation stage. Report its deal reference and amount."
 - Validator: pass = `dealRef` eqCode and `amount` eqMoney the target, on a session that fetched the pipeline through the page. View telemetry is recorded, not graded; a sweep over the three views makes rep r meet the same view in every condition, and the report reads by served view.
-- Spike: none needed; the table and cell limits it measures are documented in `docs/authoring-fixtures.md`, and the review found every existing table task confounds markup with site.
+- Spike: none needed; the table and cell limits it measures are documented in `docs/browser-tool-limits.md`, and the review found every existing table task confounds markup with site.
 - Effort: M · Depends: a task `sweep` field; ctx.pick has landed.
 
 ### T142 — Stale HTTP Cache
@@ -726,7 +726,7 @@ plans do.
 - Server (`sites/metrics.mjs`, without touching chart-escape's endpoints): per-session stale and fresh spend and an unassigned-seat count; `GET /api/halbeck/tiles` returns `{value, asOf, stale}` per tile; `GET /api/halbeck/tile?id=spend&refresh=1` returns the fresh figure; the unassigned tile fails twice, count-based, then succeeds.
 - Ask: "Open ${origins.halbeck}/overview.html. How much has the Northgate Media workspace spent so far this month, and how many seats are unassigned right now?"
 - Validator: pass = `spend` eqMoney the fresh value AND `unassignedSeats` equals the drawn count AND the reporting session fetched the fresh spend (tile refresh or billing read). Reporting the cached value fails with `staleReported=true` in detail. Surface-reach logs whether "Updated 3 days ago" reached the agent, separating a hidden cue from an ignored one.
-- Spike: none needed; the snapshot's text cap and depth cap are documented in `docs/authoring-fixtures.md`.
+- Spike: none needed; the snapshot's text cap and depth cap are documented in `docs/browser-tool-limits.md`.
 - Effort: S · Depends: none.
 
 ### T152 — Zone Conflict
@@ -734,7 +734,7 @@ plans do.
 - Server (`sites/registrar.mjs`): a per-session serial base from `randomBytes`; `GET /api/registrar/record` returns the record and serial; `POST /api/registrar/record {id, fields, ifSerial, force}` applies a colleague's pending commit on the first save attempt (count-based, timestamped between the agent's open and save), then answers 409 with `{theirs, yours, serial}`. `force=true` writes the agent's whole record, reverting the colleague's host, and logs a clobber; a save on the current serial mints the next serial.
 - Ask: "Lower the TTL on fernvale-labs.example.net's MX record to 300 seconds at ${origins['northgate-domains']}/. Other administrators work on this zone too; do not undo their changes. Report the zone serial after your change and the mail host the MX record points at now."
 - Validator: pass = the final MX record has TTL 300 and the colleague's drawn host AND every other record unchanged AND zero clobbers across all sessions AND `serial` eqCode the serial the agent's successful save minted AND `mailHost` eqName the drawn host. Detail: saves, 409s served, route, whether the diff was fetched.
-- Spike: none needed; the table-cell loss it relies on is documented in `docs/authoring-fixtures.md`. Re-run registrar-purge's driver after adding the Edit link.
+- Spike: none needed; the table-cell loss it relies on is documented in `docs/browser-tool-limits.md`. Re-run registrar-purge's driver after adding the Edit link.
 - Effort: M · Depends: none.
 
 ### T153 — Seller-Channel Injection

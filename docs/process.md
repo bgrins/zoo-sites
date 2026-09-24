@@ -3,11 +3,11 @@
 This repository holds two things: 67 locally-served simulated origins, across 54
 fixture trees under `pages/` with their backends in `sites/`, and a browser-agent
 eval over them in `eval/`. The eval runs 102 tasks — 94 web, 5 devtools, 3 basic
-smoke — and grades each on what the site's server observed, not on what the agent
-claimed. The tool surface is a configurable condition, so the same 102 tasks measure
-whichever stdio MCP browser server you point them at. The eval measures how that
-surface shapes a run rather than scoring models, and the signal lives in efficiency
-and in the rare failure, not in the pass rate.
+smoke. Interaction tasks grade what the server observed; pure extraction tasks
+grade published content. The tool surface is a configurable condition, so they
+measure whichever stdio MCP browser server you point them at. The eval measures
+how that surface shapes a run rather than scoring models, and the signal lives
+in efficiency and in the rare failure, not in the pass rate.
 
 This document covers both halves, because a fixture edit and a validator edit break
 each other. `eval/README.md` is the shorter orientation if you only want to run the
@@ -64,11 +64,11 @@ Read the failures block, never the exit status of a piped gate: `node eval/verif
 - **Results** (`eval/results/run-<timestamp>/`): "Reading results honestly" before
   quoting a number or reading a difference between two runs as a result.
 
-`docs/authoring-fixtures.md` states the hard rules in one copy, so no second list
-can drift against it. In outline: ground truth stays off `pages/`, no page implies
-it is a test fixture, brands and identifiers stay verifiably fictional, media stays
-silent, and each site carries its own design language. Each binds every fixture and
-every validator.
+`docs/authoring-fixtures.md` states the authoring rules in one place. In outline:
+interaction tasks keep graded values off `pages/`, while pure extraction tasks may
+grade published content; no page implies it is a test fixture; brands and
+identifiers stay verifiably fictional; media stays silent; and each site has its
+own design language. The validator rules apply to grading, not to page markup.
 
 ## Local setup
 
@@ -94,7 +94,7 @@ Export the env var to measure your own build of
 `firefox-devtools-mcp` in both the gate and paid runs; pass `--mcp-command` to
 measure another MCP browser server in place of the built-in one.
 `EVAL_DEVTOOLS_FIREFOX=playwright` runs the built-in server on Playwright's Firefox,
-the build playwright-mcp drives, in place of the installed one (`eval/README.md`,
+the build playwright-mcp drives, in place of the installed one (`eval/running.md`,
 "What a paid run pins").
 
 Browsing the sites needs none of that. Both servers bind `127.0.0.1`; keep them
@@ -146,8 +146,8 @@ and a golden-path driver.
    deliberately absent: runaway protection lives in `--max-wall` and `--max-output`.
 4. **Golden-path driver** in `eval/verify-drivers/<family>.mjs`, merged by
    `eval/verify-drivers/index.mjs`: it navigates, clicks by uid, and returns the answer
-   a correct agent would produce, having genuinely satisfied the server-observed
-   gates. `eval/verify-drivers/probes.mjs` is the contract; `eval/verify-drivers/registrar.mjs`
+   a correct agent would produce, having satisfied any server-observed gates.
+   `eval/verify-drivers/probes.mjs` is the contract; `eval/verify-drivers/registrar.mjs`
    is the quality bar.
 
 **A task without a driver cannot be gated** and will not be accepted. A task whose
@@ -155,10 +155,12 @@ success is prose or judgment marks its driver `canned: true`: the interaction is
 real and the prose supplied, proving that the validator accepts a correct answer
 rather than that a driver can compose one.
 
-Self-test both halves first. Over curl with a cookie jar and a nonce scraped from
-the served HTML, drive the happy path end to end, confirm a forged nonce and a
-sessionless request each get a 403, and confirm the graded ground truth is absent
-from disk (`grep -rniE '<the strings>' pages/` returns nothing). Then run
+For interaction tasks, self-test both halves first. Over curl with a cookie jar
+and a nonce scraped from the served HTML, drive the happy path end to end;
+confirm a forged nonce and a sessionless request each get a 403, and check
+that minted values are absent from `pages/` (`grep -rniE '<the strings>' pages/`
+returns nothing). For pure extraction tasks, check the validator against the
+published source instead. Then run
 `node eval/verify.mjs --task <your-id>`. `docs/task-ideas.md` holds the queue of
 planned tasks with their implementation plans.
 
@@ -416,7 +418,7 @@ A firefox-devtools-mcp build is judged by what it changes in agent runs, and the
 measures that in a fixed order of cost: the free gate twice, the free spikes and
 snapshot census, then a targeted paid A/B of the candidate against the baseline and an
 A/A copy of the baseline, in one seeded run. The steps, the commands, the sample sizes
-and the ship rule are in `eval/README.md`, "Measuring a tool change", in one copy.
+and the ship rule are in `eval/analysis.md`, "Measuring a tool change", in one copy.
 Those steps rest on the rules above: nothing quoted from a contaminated run, nothing
 compared across runs, and no difference inside the A/A band.
 

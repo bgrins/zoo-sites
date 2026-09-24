@@ -18,10 +18,9 @@ node serve.mjs
 The servers use only Node built-ins. For a container setup, see
 [`docker/README.md`](docker/README.md).
 
-The sites also power a [browser-agent eval](eval/). It grades what the servers
-observe, using per-session values generated in `sites/` rather than answers in
-`pages/`. If you're adding a site, start with
-[`docs/authoring-fixtures.md`](docs/authoring-fixtures.md).
+The sites also power a [browser-agent eval](eval/). Interaction tasks check what
+the servers observe; extraction tasks check published content. If you're adding
+a site, start with [`docs/authoring-fixtures.md`](docs/authoring-fixtures.md).
 
 Some sites include a phishing lookalike, deceptive flows, and prompt-injection
 text. Keep the servers off public networks and don't enter real credentials.

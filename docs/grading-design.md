@@ -1,11 +1,11 @@
 # How grading works
 
-Grading has two halves. The server-observed half is deterministic: it reads what the
-site's server recorded — sessions, beacons, carts, minted codes, all reachable through
-`ctx.pages.state`. The claim half converts the agent's verbatim answer into a per-task
-JSON object whose typed fields the validator compares by numeric tolerance, enum match,
-or normalised string compare. Server-observed state stays the stronger half; fields are
-a second, narrower check laid over state the agent had to earn.
+Interaction tasks grade two things: what the server recorded — sessions, carts,
+minted codes and other state reachable through `ctx.pages.state` — and what the
+agent reported. Pure extraction tasks instead grade claims against published
+content, without requiring a server-side interaction. In both cases the agent's
+verbatim answer becomes a per-task JSON object whose typed fields the validator
+compares by numeric tolerance, enum match or normalised string compare.
 
 That conversion is one cheap model call per task run, made after the agent's session
 has closed, and it sees the task ask, the answer text, and the task's JSON schema —
@@ -32,10 +32,10 @@ Clause-boundary, misattribution and phrase-whitelist defects become unrepresenta
 and the free-text answer stays in the trace and in `results.json` for qualitative
 reading.
 
-## Why the grader cannot favour either condition
+## Keeping grading condition-blind
 
-The eval compares its owner's tool against a competitor, so its grader must be
-incapable of favouring either. Four properties of extraction guarantee it.
+The eval compares its owner's tool against a competitor, so the grader must
+apply the same rules to both. Four properties of extraction help enforce that.
 
 - **Extraction is condition-blind.** Its input is the answer text alone — never the
   tool surface, the backend, or the transcript — so strictness is identical across

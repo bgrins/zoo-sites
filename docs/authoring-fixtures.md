@@ -1,7 +1,7 @@
 # Authoring fixtures and validators
 
 A fixture is a simulated site under `pages/`. A validator is the function in
-`eval/tasks/` that grades a task on what that site's server observed.
+`eval/tasks/` that grades server-observed work or an extraction from published content.
 `docs/process.md` covers the gate, the fix-pass method, and who owns which file.
 Every path below is relative to the repo root.
 
@@ -16,8 +16,9 @@ devtools, 3 basic smoke) run against 67 origins served from 54 fixture trees und
 
 ## Where to look first
 
-1. `docs/task-ideas.md` — the `### <ID> — …` plan for your task, which is the
-   contract (Fixture / Server / Ask / Validator); deviate only for a stated reason.
+1. For unbuilt tasks, start with the `### <ID> — …` plan in `docs/task-ideas.md`
+   (Fixture / Server / Ask / Validator). For shipped tasks the plan is gone;
+   their fixture, site module, validator and driver are the specification.
 2. `sites/README.md` for the per-site module contract, and `sites/canvas.mjs`,
    `sites/forms.mjs`, `sites/filemgr.mjs`, `sites/biglist.mjs` for handler shape.
 3. `eval/tasks/web/`, one module per family concatenated by `eval/tasks/web.mjs`; model
@@ -31,21 +32,22 @@ devtools, 3 basic smoke) run against 67 origins served from 54 fixture trees und
 
 ## Hard rules
 
-Each of these binds every fixture and every validator, without exception.
+Apply the fixture rules to pages and site modules, and the validator rules to
+grading. The stated exceptions matter.
 
-1. **Ground truth is never derivable from anything under `pages/`.** A validator's
-   codes, messages and figures are minted per session in `sites/`, or the fact
-   itself is server-observed ("the server saw a compliant submission"). Assume the
-   agent can `cat` and `grep` everything under `pages/`. A pure-extraction datum
-   that needs no interaction to be trustworthy — a long document, a messy table —
-   may live in the page, but in EXACTLY ONE place, with plausible decoys elsewhere,
-   and its answer key lives in `eval/answers.mjs`, never in the page.
+1. **Keep interaction-task ground truth off `pages/`.** Mint codes, messages and
+   figures per session in `sites/`, or grade what the server observed ("the server
+   saw a compliant submission"). Assume the agent can `cat` and `grep` everything
+   under `pages/`. A pure-extraction task is different: its published document or
+   table is meant to contain the answer. Make the source of truth clear; keep
+   unpublished answer-only artifacts outside `pages/`. The validator may compare
+   against `eval/answers.mjs` or derive its expectation from published data.
 2. **Nothing under `pages/` may say or imply a site is a test fixture.** No
    disclaimer that the site is fictional, simulated, a test fixture, or built for
    browser automation. Titles, headings, body copy and footers read as a real
-   company's — copyright line, privacy/terms links, registered address, support
-   contact. The privacy and terms links lead to pages that exist, written in the
-   site's own voice (see "Site conventions" below).
+   company's — appropriate legal links, address and support contact. Any Privacy
+   and Terms links lead to pages that exist, written in the site's own voice
+   (see "Site conventions" below).
 3. **Every page starts with `<!doctype html>` and carries `<meta charset="utf-8">`.**
    Fixtures under `pages/gov/` are the exception: that site is deliberately legacy
    HTML 4.01 (`<font>`, tables, spacer gifs), so match the neighbours.
@@ -82,8 +84,9 @@ Each of these binds every fixture and every validator, without exception.
      sentinels — `company number 00000000`, `VAT 000 0000 00`, `Registered
      charity 0000000`, `firm reference 000000`. A well-formed registration number
      belongs to a real registrant, so never invent a plausible one.
-5. **No emoji anywhere** — code, comments, log messages, strings, documentation —
-   **and no copyrighted content**; invent everything.
+5. **No emoji anywhere** — code, comments, log messages, strings, documentation.
+   Write original content; use third-party assets only when their licences allow
+   redistribution and keep their required attribution and licence text.
 6. **Near-zero code comments.** Comment non-obvious mechanics only, and every
    non-obvious grading rule. A later change re-breaks whichever rule no comment
    explains.
@@ -99,156 +102,9 @@ Each of these binds every fixture and every validator, without exception.
    actions. A municipal site, a 2004 intranet, a SaaS console and a discount retailer
    should look nothing alike.
 
-   ALREADY CLAIMED, by style family, with the member sites (dirs under `pages/`).
-   The list was measured on 2026-09-19, after the re-skins of that date, from
-   every origin's landing page in Playwright Firefox at 1366px. It records the
-   face that renders most of the text on macOS, the computed colours, the nav
-   pattern, and the corner and shadow treatment, not the first name in a CSS
-   stack: `forms/draymere` asks for IBM Plex Sans and renders the generic
-   sans-serif, which is Helvetica. Re-measure and edit this list whenever a site
-   is re-skinned. `events`, which arrived later that day, was entered from its
-   stylesheet and landing page rather than re-measured.
-
-   CLOSED — every family here already has two or more members and takes no new
-   one. A re-skin moves a site OUT of its family and into unclaimed territory,
-   never into another family on this list.
-
-   By main face:
-   - Trebuchet MS, the largest face family: `biglist`, `fernwood`, `forge`,
-     `intl`, `paylink`, `promo`, `shop/marrowgate`.
-   - Futura: `boxoffice` (with Copperplate, on brown-black), `forms/summit`,
-     `smarthome`, `telco`, `unsub`.
-   - Lucida Grande: `forms/farholt` (with Rockwell headings), `grid-edit`,
-     `news`, `registrar`.
-   - Avenir or Avenir Next: `crm`, `maze`, `portal`, `support`.
-   - Helvetica Neue: `parcels`, `press`, `shop/voltro`, and `bank/*`, the
-     phishing pair, identical by design.
-   - Arial Narrow: `depot`, `kiosk`, and `shop/gadgetron` with its mirror, a
-     pair by design.
-   - SF through system-ui: `filemgr`, `forms/drennhill`, `forms/waypost`,
-     `status`, and half of `calc`.
-   - Monospace throughout: `console`, `forms/fernlight`, `media`, `shadow`, and
-     the other half of `calc`.
-   - Palatino: `bistro`, `insure`, `ledger`.
-   - Seravek: `gallery`, `quotient`.
-   - DIN Alternate: `jobs`, `kanban`.
-
-   By ground, palette and chrome:
-   - A near-black ground: `boxoffice` (brown-black and gold), `console`,
-     `forms/draymere` (ice cyan), `kiosk` (amber), `shadow` (hazard yellow),
-     `smarthome` (teal).
-   - A warm cream or parchment ground: `bistro`, `cabins`, `fernwood`,
-     `forms/farholt`, `forms/kestrel` (the original, Optima and rust), `intl`,
-     `ledger`, `paylink`, `promo`, `unsub`. Three of them set oxblood or wine
-     on that paper: `bistro`, `forms/farholt`, `ledger`.
-   - A grey-green or sage ground: `calc`, `forms/thornbury` (with moss),
-     `inbox`, `kanban`.
-   - Rust, brick, terracotta or burnt orange as the lead accent:
-     `forms/kestrel`, `paylink`, `press`, `roles`. `crm`, `grid-edit`, `intl`,
-     `lexvane` and `registrar` set it on secondary text or rules.
-   - Lime or chartreuse: `metrics` and `telco`, both under a near-black bar,
-     and `jobs`, in yellow-lime bands.
-   - Purple, plum or indigo chrome: `biglist`, `crm`, `forge`, `forms/summit`,
-     `news`, `promo`, `registrar`.
-   - A dark green or teal band across the top: `cabins`, `grid-edit`, `intl`,
-     `parcels`, `shop/voltro`, `status`.
-   - A navy or slate header or nav band: `bank/*`, `floorplan`, `forms/nerrow`,
-     `forms/vendor`, `insure`, `media`, `utility`.
-   - A pale grey SaaS ground with white rounded cards and a blue or indigo
-     primary: `filemgr`, `forms/drennhill`, `forms/waypost`, `portal`.
-   - Marketplace yellow or amber buy buttons on a product grid:
-     `shop/gadgetron`, `shop/marrowgate`, `shop/voltro`.
-
-   By nav pattern:
-   - A full-height left rail: `biglist`, `console`, `floorplan`, `grid-edit`,
-     `inbox`, `metrics`, `quotient`, `registrar`, `support`, `vault`. Five of
-     them hang the rail under a dark full-width top bar, the console look:
-     `console`, `floorplan`, `grid-edit`, `metrics`, `support`.
-   - A centred masthead, with the wordmark and the nav on the centre line:
-     `bistro`, `boxoffice`, `insure`, `promo`.
-   - The defaults, which claim nothing on their own: a horizontal top nav whose
-     current item is underlined or filled, on 37 landing pages, and a dark
-     full-width top bar, on 23. A dark top bar over a left rail is the console
-     look above.
-
-   By corners and depth:
-   - Hard offset shadows with no blur: `lexvane`, `promo`, `vault`.
-   - The rest are counts, not families, and most sites are square and flat:
-     38 landing pages have no corner of 8px or more and no shadow at all. Cards
-     rounded to 8px or more: `fernwood`, `forms/drennhill`, `forms/summit`,
-     `forms/thornbury`, `forms/waypost`, `gallery`, `inbox`, `intake`,
-     `kanban`, `lexvane`, `portal`, `roles`, `smarthome`, `status`, `telco`.
-     Pill chips or buttons: `biglist`, `forms/thornbury`, `intake`,
-     `lexvane`, `roles`, `smarthome`. Soft card shadows: `crm`, `fernwood`,
-     `flaky`, `forms/thornbury`, `forms/waypost`, `intake`, `kanban`, `roles`.
-
-   Claimed by one site each, as a face or as the face with its palette — do not
-   copy:
-   - `gov`: legacy HTML 4.01 tables and `<font>`, in Times.
-   - `auction`: Gill Sans with Baskerville headings on stone.
-   - `cabins`: a Rockwell body under a forest-green header on cream;
-     `forms/farholt` sets only its headings in Rockwell.
-   - `canvas`: a Hoefler Text body under Didot headings on cool grey, with a
-     CMYK rule.
-   - `forms/kestrel`: Optima with Avenir Next Condensed caps, on cream and rust.
-   - `forms/nerrow`: an Iowan Old Style body on blue-grey; `quotient` uses the
-     face for headings only.
-   - `utility`: Georgia with Verdana labels under a navy municipal bar.
-   - `schedule`: Verdana, grey toolbar tabs and a client-coloured day grid.
-   - `inbox`: Arial, because its Franklin Gothic stack falls back, in a light
-     fern-green webmail.
-   - `floorplan`: PT Sans, a navy bar with an orange rule, and a left rail.
-   - `metrics`: Hiragino Sans with DIN figures and square panels. Only the face
-     is its own: the black bar, the grey rail and the lime put it in the lime
-     and the console-look families above.
-   - `forms/thornbury`: Charter throughout, which `roles` gave up on
-     2026-09-19, with pill tabs and rounded white cards. Its moss on a pale
-     green-white wash sits in the grey-green family above.
-   - `forms/vendor`: Geneva, close in texture to `schedule`'s Verdana, under a
-     slate civic header with a teal rule, which sits in the navy-or-slate
-     family above.
-   - `rosters`: a learned-society site. A Cochin body under Big Caslon
-     headings, white and ochre, a centred column under a ruled text nav, and
-     booktabs tables.
-   - `flaky`: a SharePoint-style intranet. Tahoma behind a Segoe UI stack, a
-     white suite bar with a sky-blue waffle, a hub nav strip and a command bar
-     over a right-hand bulletin column, sky tiles, and square Fluent-shadowed
-     web parts.
-   - `roles`: a WordPress job-board theme. Sukhumvit Set behind a Poppins stack,
-     white and burnt orange, pill chips, rounded result cards, and a dark brief
-     card.
-   - `vault`: neo-brutalism. Galvji behind a Space Grotesk stack, a yellow rail,
-     2px black borders with hard offset shadows, and electric-blue links.
-   - `lexvane`: a newspaper puzzle page. Superclarendon with Athelas italics on
-     dotted newsprint, a white masthead under a coral rule, ink-blue chrome, and
-     green, ochre and slate tiles.
-   - `intake`: a Material 3 app. Kohinoor Telugu behind a Roboto stack, dusty
-     rose tonal surfaces on a rose-white ground, a surface-coloured app bar
-     over primary tabs, elevated cards and pill buttons.
-   - `events`: a council service in the GOV.UK manner. A PT Serif body on
-     white under an 8px tangerine rule, a periwinkle tab strip whose current
-     tab is filled white, a breadcrumb over a ruled side column, square and
-     flat throughout, and tangerine buttons with an ink bottom border.
-
-   House tics, each already far past two sites: letterspaced caps labels (34 of
-   66 landing pages carry three or more), a two-tone split wordmark (about 11),
-   and a founding year in the tagline (about 11). A new site uses none of them,
-   and a re-skin drops them.
-
-   UNCLAIMED — start here instead:
-   - Genres: a broadsheet newspaper front page, a 2014 Bootstrap corporate
-     site, a dense Japanese portal, a Shopify-style direct-to-consumer store, a
-     WordPress magazine or blog theme, a Swiss International-style grid, a 2003
-     portal with bevels and gradients.
-   - Faces no site renders its text mainly in: American Typewriter, Bodoni 72,
-     Marion, STIX Two Text, Baskerville, Courier New, PT Mono, Hiragino Mincho,
-     Microsoft Sans Serif, Marker Felt.
-   - Palettes no site leads with: seafoam and peach, which appear only as small
-     tints (`status`, `roles`). Dusty rose (`intake`), sky blue on a light ground
-     (`flaky`), and periwinkle with tangerine (`events`) were taken on
-     2026-09-19.
-   - Webfonts: no site ships one, so a self-hosted OFL face under the site's own
-     directory is open territory too (check its licence against rule 5).
+   See `docs/site-design-audit.md` for the dated style census and ideas for
+   designs not yet in use. Re-measure as sites change; the audit is a starting
+   point, not a permanent list of forbidden choices.
 9. **Deterministic.** Ship no wall-clock or random-dependent content unless the
    plan asks for it. Per-session server-issued codes are fine: the validator reads
    them back out of `ctx.pages.state` rather than hardcoding them.
@@ -282,10 +138,10 @@ Each of these binds every fixture and every validator, without exception.
     `eval/verify.mjs` fails the gate on an unmuted media tag under `pages/`, because
     headless Firefox on macOS routes audio to the machine's speakers: an unmuted
     fixture beeps at whoever runs the eval, every run, and a synthesised tone counts.
-    Muting costs the measurement NOTHING. A muted element still decodes,
-    `currentTime` still advances, `timeupdate`/`ended` still fire, and WebVTT cues
-    still activate. If a check needs audible output, drop the check rather than ship
-    sound.
+    For the shipped tasks, muting preserves the measurement: a muted element
+    still decodes, `currentTime` advances, `timeupdate`/`ended` fire, and WebVTT
+    cues activate. If a check needs audible output, drop the check rather than
+    ship sound.
 
 ## Session and nonce infrastructure in server.mjs
 
@@ -318,21 +174,22 @@ Each of these binds every fixture and every validator, without exception.
 
 ## Site conventions
 
-Every site gets the same furniture a real one has, each piece in the site's own
-design language. `sites/README.md` states what the server does with each file,
-and `scripts/check-fixtures.mjs` fails the gate when a site breaks one.
+Give each site the furniture its genre calls for, in its own design language.
+`sites/README.md` states what the server does with each file. The static checker
+fails broken links and warns about missing legal-page links.
 
 - **Relative self-links.** A page links within its own site relatively
   (`href="help.html"`, `href="../index.html"`), never by a root path naming its
   own directory (`href="/flaky/"` inside `pages/flaky/`). A root path works in
   both serving modes, but it puts the directory name back in the address bar of a
-  site served at its own origin. The one deliberate cross-origin link uses an
+  site served at its own origin. Deliberate cross-origin links use an
   `__ORIGIN_<KEY>__` token.
-- **Privacy and Terms in the footer.** Every site's footer links a Privacy page and
-  a Terms page that exist, written in the site's own voice. The check fails a
-  footer that names Privacy or Terms without a link to an existing page: plain
-  text, `#`, an external URL, or a link back to the front door. A footer is a
-  `<footer>` that no `<article>`, `<aside>`, `<blockquote>`, `<figure>` or
+- **Privacy and Terms in the footer.** A real site's footer usually links to
+  Privacy and Terms pages in its own voice. The checker warns if a site has no
+  such links; it fails a footer that names Privacy or Terms without a link to
+  an existing page. Plain text, `#`, an external URL or a link back to the front
+  door does not count. A footer is a `<footer>` that no `<article>`, `<aside>`,
+  `<blockquote>`, `<figure>` or
   `<section>` owns, an element whose class or id ends in `foot` or `footer` or is
   `footbar`, or a `role="contentinfo"` element; a page with none of them, like gov's table
   layouts, has its last block of text checked instead. The phishing lookalike is
@@ -362,41 +219,12 @@ Build the page a competent web developer would build for the business it belongs
 to. If a browser tool cannot cope with it, that is a result the eval exists to
 report, not a fixture defect to engineer around.
 
-This section used to say the opposite: it required every task to stay winnable
-through every shipped surface. That rule quietly destroyed the measurement. Ship
-only tasks that survive both surfaces and you have selected away exactly the cases
-where the surfaces differ, which is the thing being compared. Worse, a corpus
-tuned to fit inside a truncation limit can never report that the limit loses data
-— and every one of the numbers below is a constant in one vendor's bundle
-(`le=10`, `j=1e3`, `ie=100`, `MAX_ATTR_LENGTH=30` in
-`@mozilla/firefox-devtools-mcp`), not a property of browsers or of HTML. Tuning
-969 pages to those constants couples the corpus to a dependency's internals, and
-bumping one of them silently retires whatever it was testing.
+Do not tune pages to one vendor's snapshot caps; that would hide the differences
+this eval exists to measure. The observed limits of firefox-devtools-mcp 0.10.3
+are in `docs/browser-tool-limits.md`. They help interpret a failure, not decide
+how a site should look, and can change with a tool upgrade.
 
-So the limits below are documented to help you READ RESULTS, never to shape a
-fixture. When a run fails, they are the first thing to suspect:
-
-- **Roughly 27 characters of a text node survive.** Text is capped at 100 in the
-  page, then at 30 on the way out, and the truncator spends three on the ellipsis.
-  "Your price for this item is $274.50" arrives as "Your price for this item
-  is...". `href`, `src`, `value` and `name` take the same cap, and an `href` is
-  absolutized before it is cut.
-- **The walker stops at depth 10**, and bails entirely past **1000 nodes**. Both
-  set a `truncated` flag that says the tree was cut but not where.
-- **The walker never descends into shadow roots.**
-- **A same-origin frame's content reaches the snapshot only under `includeAll`**
-  on firefox-devtools-mcp 0.10.3; 0.9.15 walked it by default. A cross-origin
-  frame is a childless leaf on both.
-- **`find` only searches text the snapshot returned**, so it cannot find what was
-  truncated away.
-- **Table cell content does not reach the snapshot** without an explicit
-  `includeAll`, and even then the geometry needed to read a grid does not.
-- **An empty element contributes no snapshot node at all**, so a positional grid
-  closes up around a blank cell.
-- **A flattened snapshot loses button-to-card grouping.**
-- **Native `window.confirm()` is auto-dismissed instantly.**
-
-The best tasks are the ones where a limit changes the STRATEGY a surface needs
+The best tasks are the ones where a limit changes the strategy a surface needs
 rather than deciding the outcome outright: the agent has to scroll, search, open
 the thing, or read the DOM another way. `shadow-unlock` is the model — it puts the
 control inside a shadow root the walker cannot enter and leaves a real route in.
@@ -405,11 +233,10 @@ distinguish a bad tool from a bad agent; but do not fix that by softening the
 page. Fix it by giving the page an honest second route, the way a real site has
 one.
 
-When a task does fail, record WHY: whether the graded datum reached the snapshot
-the agent was given. The minted value is server-side and the snapshot text is
-captured, so the two can be compared. That is what separates "the surface hid it"
-from "the agent got it wrong", and it turns a truncation limit from something to
-avoid into something measured.
+When a task fails, record whether the graded datum reached the snapshot the
+agent received and whether another available tool could read it. Compare the
+minted value with the captured snapshot text; do not mistake a clipped snapshot
+for proof that the agent could never reach the value.
 
 ## Anti-cheat rules
 
@@ -425,22 +252,18 @@ avoid into something measured.
 - **A per-session value derived from the page-exposed nonce is reproducible** by
   anyone who knows the formula. Derive server-issued codes from `randomBytes`, never
   from the nonce.
-- **A datum past the snapshot's caps never reaches the agent**, so a run that
-  needed it fails. Do NOT reshape the page to fit the caps; that is the measurement
-  (see "Tool-surface limits are the measurement"). Make the failure legible instead:
-  log in `detail` whether the value the ask demanded was present in the snapshot the
-  agent received, so a surface that hid it is not scored as an agent that missed it.
 - **A client-reported fact is an assertion, not evidence.** Page script can claim any
-  viewport width, any computed style, any layout measurement, so a mint that gates on
-  the claim gates on nothing. Find the signal the browser produces as a side effect
-  instead — which `<picture>` candidate the layout engine requested, whether a
-  document navigation carried `sec-fetch-dest: document` — and treat the claim as
-  corroboration in `detail`.
+  viewport width, computed style or layout measurement. A requested `<picture>`
+  candidate or `sec-fetch-dest: document` is stronger evidence against ordinary
+  page script, but a shell client can forge headers and requests. Treat these as
+  signals within the task's threat model, not proof of a real browser action;
+  record the uncertainty in `detail`.
 
 ## Validator rules (brittleness is a bug)
 
-- **Grading is server-observed, not agent-claimed.** Gate on state the server
-  recorded; extracted answer fields are a second, narrower check, never the only one.
+- **For interaction tasks, grade server-observed work, not just agent claims.**
+  Extracted answer fields provide a second check. Pure extraction tasks may grade
+  published content directly; identify them as static truth.
 - A CORRECT agent must never fail on formatting: strip markdown emphasis
   (`text.replace(/[*_~`]+/g, '')`) before any prose regex.
 - Never require a contiguous multi-token phrase or a rendered range like
@@ -450,37 +273,22 @@ avoid into something measured.
 - Dates: fold the ordinal forms before comparing, through `normaliseDateWords` in
   `eval/extract.mjs`. A bare token test for the day number rejects every correct
   "June 12th".
-- A free-text field matched against page wording reads its quote too. The
-  extractor may paraphrase a value ("Misspelled bank name in footer") while its
-  quote keeps the answer's own words ("CaldmoorBenk Holdings, N.A."), so
-  `quoteOf(container, key)` in `eval/extract.mjs` returns the verified quote
-  behind `container[key]`, and the validator scores the value and the quote each
-  on its own (`phish-pick`, `popup-storm`, `injection-bait`). Validators that
-  never call it see the fields they always saw. A string value whose quote
-  missed survives the gate with itself as its quote when the answer holds it as
-  a whole token, it carries at least four letters or digits, and the ask never
-  names it, so there the quote adds nothing. A quote can be any span of the
-  answer, so it can keep the page wording and drop the denial around it: where
-  the value-level rules reject negations or stock advice, a value they would
-  reject keeps its quote out, as in `phish-pick`. In the gate, build such a case
-  with `quotedFields` in `eval/verify-drivers/quotes-lib.mjs` from
-  `{ value, quote }` pairs.
+- A free-text field matched against page wording reads its verified quote too:
+  `quoteOf(container, key)` in `eval/extract.mjs` exposes it. Check the extracted
+  value and quote separately, as `phish-pick` does. Use `quotedFields` in
+  `eval/verify-drivers/quotes-lib.mjs` to test quote cases; the quote-gate
+  exceptions and rationale are in `docs/grading-design.md`.
 - Multi-session shadowing: a curl probe or a re-minted cookie makes extra sessions,
   so pick the one that actually COMPLETED the flow (see `register-errors`,
   `checkout-stop`), never blindly `[0]`.
 - Assert only state that actually exists, and log everything you checked in `detail`
   so a failure is diagnosable.
-- **BIND FACTS TOGETHER; never AND independent substring tests.** This is the
-  defect to watch for above all others. A validator that ANDs independent tests
-  accepts a table whose points column is rotated one row, an answer naming the wrong
-  winning region, added and removed lists swapped, and an answer declaring the MOST
-  EXPENSIVE combination the cheapest, because every required token appears somewhere
-  in an otherwise-correct answer. Bind each fact to the row or entity it belongs to.
-  Bind structurally: declare an `answerSchema` whose rows are objects carrying the
-  facts that must co-occur, then grade row by row. Copy `rate-limited-lookups`'
-  `rowFor` or `oos-substitute`'s `orderedProducts` rather than inventing a scheme,
-  and see `docs/grading-design.md` for how extracted fields reach your validator.
-  Where a fact stays in prose, require the bound facts inside ONE clause.
+- **Bind related facts together.** Independent substring tests accept a table
+  with a rotated column or an answer that swaps added and removed items. Use an
+  `answerSchema` with objects whose row or entity carries the facts that must
+  co-occur, then grade each one. See `rate-limited-lookups`' `rowFor`,
+  `oos-substitute`'s `orderedProducts` and `docs/grading-design.md`. If a fact
+  stays in prose, require its related facts inside one clause.
 - **Grade every signal you compute.** A validator that reduces server state into a
   variable and then leaves it out of the pass expression reads as though it graded
   that dimension, and did not — the value reaches `detail` and nothing else. Either
@@ -489,25 +297,14 @@ avoid into something measured.
 - **Grade what the ask asks for.** Where the ask names a field, the schema declares it
   and the validator reads it. Where no check reads it, cut it from the ask instead of
   leaving the agent to produce output nothing scores.
-- **Every validator change ships with regression strings.** On the task's driver in
-  `eval/verify-drivers/`, `wrongFields` lists answers that must FAIL and
-  `alsoCorrectFields` answers that must PASS, each graded against the golden run's
-  server state. A server-state conjunct or a cross-session hole needs the state
-  varied instead: `wrongState` (all must FAIL) and `alsoCorrectState` (all must
-  PASS) take `{ name, mutate(state), fields? }` cases, and each case grades its own
-  copy of that state, planted through the helpers in `eval/verify-drivers/lib.mjs`.
-  A quote-gate defect needs the extraction varied: `wrongExtraction` (all must
-  FAIL) and `alsoCorrectExtraction` (all must PASS) take `{ name, answer, raw }`
-  cases, an answer and the extractor's raw `{ value, quote }` pairs over it, which
-  the gate passes through `enforceQuotes` with that answer and the task's ask
-  before grading the fields on the golden state. Build one from a stored row's
-  `answer_full` and `extraction_raw`, as the `feed-needle` and `popup-storm`
-  drivers do; `reused-row` and `variant-matrix` hold the cases for the ask and
-  length conditions above.
-  The prose `wrong` / `alsoCorrect` strings run only under the paid `--extract`.
-  Add the assertion FIRST, watch `node eval/verify.mjs --task <id>` go red, then
-  change the validator. A tightening never seen to fail has not been shown to do
-  anything. `docs/process.md` states the full fix-pass method.
+- **Every validator change gets regression cases.** In its driver, `wrongFields`
+  must fail and `alsoCorrectFields` must pass against the golden server state.
+  For server-state or cross-session bugs use `wrongState` and
+  `alsoCorrectState`; for extractor or quote-gate bugs use `wrongExtraction`
+  and `alsoCorrectExtraction`. Prose `wrong` / `alsoCorrect` strings only run
+  under paid `--extract`. Add the failing case first and watch
+  `node eval/verify.mjs --task <id>` go red before fixing the validator.
+  `docs/process.md` gives the case formats and full fix-pass method.
 
 ## Prove the fixture works, not that the surface can win it
 
@@ -524,7 +321,7 @@ on its own port, the shape the container serves. That flag maps where the driver
 navigates, not what it answers, so a driver whose answer names a URL reads it off the
 page (`location.href`) rather than building it from `base`.
 
-What green means: **the site behaves correctly and its server-side state lands**.
+What green means: **the site behaves and its server state or published data grades correctly**.
 It does NOT mean the task is winnable through the snapshot. That is the result the
 eval reports, so it must not also be the gate's precondition — a fixture that a
 surface cannot read is a finding to publish, and the gate has to stay green while
@@ -539,9 +336,10 @@ it) rather than reshaping the page. Two rules on that:
   hidden values with `evaluate`; keep real clicks for acting, except where the
   surface genuinely cannot reach the control.
 - **This licence is the driver's, never the validator's.** A driver is our own
-  harness, so what it reads through script is trustworthy. An agent is not, so
-  grading stays on server-observed state — see "A client-reported fact is an
-  assertion, not evidence" above.
+  harness, so it can use script to inspect a page. For interaction tasks, the
+  validator still grades server-observed work; for pure extraction, it grades
+  published content. See "A client-reported fact is an assertion, not evidence"
+  above.
 
 Drivers run headless by default (`--headed` for debugging). Poll with `until`
 rather than sleeping, and read the answer out of `ctx.pages.state` only when the
