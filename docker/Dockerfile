@@ -13,7 +13,7 @@ WORKDIR /app
 # COPY keeps the build context's mode bits, and the server runs as node below,
 # so it would answer 500 for any file checked out 0600. One explicit mode has to
 # cover the directories too, hence 0755 rather than 0644.
-COPY --chmod=0755 server.mjs manifest.mjs serve.mjs LICENSE NOTICE ./
+COPY --chmod=0755 server.mjs manifest.mjs serve.mjs LICENSE ./
 COPY --chmod=0755 sites/ sites/
 COPY --chmod=0755 pages/ pages/
 
