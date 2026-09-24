@@ -4,6 +4,15 @@
 
 `run.mjs` spends real money — roughly $40 for the full sweep across both surfaces.
 
+For a free video pilot, `node eval/scripts/demo-video.mjs --limit 3` selects
+one task per site with similar golden-path timings, records each scripted
+browser run, and stitches a short MP4 grid with `ffmpeg`. Preview the task
+choices with `--dry-run`; choose sites with `--sites abaca,alderpost`, and set
+the grid length with `--seconds 25`. The MP4 and its ordered site-to-cell
+mapping (`demo.json`) land beside the eval report in `eval/results/run-*/`.
+The current pilot records golden-path drivers, not paid agent runs; the basic
+smoke site has no golden-path driver, so the full 67-site run is not yet supported.
+
 ```sh
 npm run smoke                                      # 3 basic tasks x 2 backends x 2 surfaces
 node eval/run.mjs --list-tasks --suite web         # free
