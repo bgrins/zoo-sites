@@ -131,15 +131,7 @@ export async function run({ task, pages, model, condition, env, cwd, onMessage, 
     baseEnv: env ?? process.env,
     cwd,
   });
-  if (videoPath) {
-    try {
-      const started = await server.call('screencast_start', { frameRate: 12 });
-      if (started.isError) throw new Error(`screencast_start: ${JSON.stringify(started.content)}`);
-    } catch (error) {
-      await server.close();
-      throw error;
-    }
-  }
+  let recordingStarted = false;
   let calls = 0;
   const mcp = async (name, toolArgs = {}) => {
     if (signal?.aborted) throw stopError();
@@ -166,6 +158,11 @@ export async function run({ task, pages, model, condition, env, cwd, onMessage, 
       const result = await server.call(name, toolArgs);
       if (videoPath && (name === 'navigate_page' || name === 'new_page')) {
         await new Promise((resolve) => setTimeout(resolve, 350));
+        if (name === 'navigate_page' && !recordingStarted && !result.isError) {
+          const started = await server.call('screencast_start', { frameRate: 12 });
+          if (started.isError) throw new Error(`screencast_start: ${JSON.stringify(started.content)}`);
+          recordingStarted = true;
+        }
       }
       // Text blocks only: a screenshot's base64 would bloat the transcript, and
       // no reader of one looks at images.
@@ -204,13 +201,15 @@ export async function run({ task, pages, model, condition, env, cwd, onMessage, 
   signal?.removeEventListener('abort', onAbort);
   let videoError = null;
   try {
-    if (videoPath) {
+    if (videoPath && recordingStarted) {
       await new Promise((resolve) => setTimeout(resolve, 600));
       const stopped = await server.call('screencast_stop', {});
       const message = (stopped.content ?? []).filter((part) => part.type === 'text').map((part) => part.text).join('\n');
       const saved = !stopped.isError && message.match(/Screencast saved to: (.+\.webm)/)?.[1];
       if (!saved) throw new Error(`screencast_stop: ${message}`);
       copyFileSync(saved, videoPath);
+    } else if (videoPath && !failure) {
+      throw new Error('no navigated page to record');
     }
   } catch (error) {
     videoError = error;

@@ -4,12 +4,13 @@ import { createRequire } from 'node:module';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ORIGINS, originUrls } from '../../manifest.mjs';
-import { basicTasks } from '../tasks/basic.mjs';
 import { devtoolsTasks } from '../tasks/devtools.mjs';
 import { webTasks } from '../tasks/web.mjs';
 import { DRIVERS } from '../verify-drivers/index.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const excludedSites = new Set(['basic', 'caldmoor-bank-login', 'northmarsh']);
+const demoSites = ORIGINS.map((origin) => origin.key).filter((site) => !excludedSites.has(site));
 const args = process.argv.slice(2);
 const option = (name, fallback) => {
   const index = args.indexOf(`--${name}`);
@@ -21,14 +22,14 @@ const option = (name, fallback) => {
 const seconds = Number(option('seconds', '12'));
 const fromRun = option('from-run', null);
 const requestedSites = option('sites', null);
-const sites = requestedSites?.split(',') ?? ORIGINS.map((origin) => origin.key);
+const sites = requestedSites?.split(',') ?? demoSites;
 const limit = Number(option('limit', String(requestedSites ? sites.length : 3)));
 if (!Number.isInteger(limit) || limit < 1 || !Number.isInteger(seconds) || seconds < 1 || seconds > 120) {
   throw new Error('--limit must be positive and --seconds must be between 1 and 120');
 }
 const selectedSites = sites.slice(0, limit);
-if (new Set(selectedSites).size !== selectedSites.length || selectedSites.some((site) => !ORIGINS.some((origin) => origin.key === site))) {
-  throw new Error('--sites must contain distinct origin keys from manifest.mjs');
+if (new Set(selectedSites).size !== selectedSites.length || selectedSites.some((site) => !demoSites.includes(site))) {
+  throw new Error('--sites must contain distinct demo site keys (excluding basic, caldmoor-bank-login and northmarsh)');
 }
 const dryRun = args.includes('--dry-run');
 const known = new Set(['--from-run', '--limit', '--seconds', '--sites']);
@@ -39,7 +40,7 @@ for (let index = 0; index < args.length; index++) {
 
 const base = 'http://127.0.0.1:8907';
 const urls = originUrls(base);
-const tasks = [...await webTasks(base), ...await devtoolsTasks(base), ...basicTasks(base)];
+const tasks = [...await webTasks(base), ...await devtoolsTasks(base)];
 const timings = JSON.parse(readFileSync(join(root, 'eval/verify-drivers/timings.json'), 'utf8')).ms;
 const chosen = [];
 const used = new Set();
@@ -92,16 +93,17 @@ const videos = chosen.map((entry) => {
 if (['ffmpeg', 'ffprobe'].some((command) => spawnSync(command, ['-version'], { stdio: 'ignore' }).status !== 0)) {
   throw new Error('ffmpeg and ffprobe must be installed to stitch the videos');
 }
+const playSeconds = Math.max(1, seconds - 2);
 for (const video of videos) {
   const probe = spawnSync('ffprobe', [
     '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'packet=pts_time',
     '-of', 'csv=p=0', video.path,
   ], { encoding: 'utf8' });
   const lastFrame = Number(probe.stdout?.trim().split('\n').at(-1));
-  if (probe.status !== 0 || !Number.isFinite(lastFrame) || lastFrame <= 0) {
+  if (probe.status !== 0 || !probe.stdout?.trim() || !Number.isFinite(lastFrame) || lastFrame < 0) {
     throw new Error(`cannot measure video duration: ${video.path}`);
   }
-  video.speed = Number((lastFrame / (seconds - 1 / 12)).toFixed(5));
+  video.speed = lastFrame ? Number((lastFrame / (playSeconds - 1 / 12)).toFixed(5)) : 1;
 }
 const cellWidth = videos.length <= 9 ? 600 : videos.length <= 25 ? 360 : 240;
 const cellHeight = cellWidth / 2;
@@ -147,10 +149,11 @@ try {
 }
 const labels = Array.from(videos.keys(), (index) => `[v${index}]`).join('');
 const filters = videos.map((video, index) =>
-  `[${index}:v]setpts=(PTS-STARTPTS)/${video.speed},fps=12,` +
+  `[${index}:v]setpts=(PTS-STARTPTS)/${video.speed},` +
+  `tpad=stop_mode=clone:stop_duration=${seconds},fps=12,` +
   `scale=${cellWidth}:${cellHeight}:force_original_aspect_ratio=decrease,` +
   `pad=${cellWidth}:${cellHeight}:(ow-iw)/2:(oh-ih)/2:black,` +
-  `tpad=stop_mode=clone:stop_duration=${seconds},trim=duration=${seconds},setpts=PTS-STARTPTS[v${index}]`
+  `trim=duration=${seconds},setpts=PTS-STARTPTS[v${index}]`
 );
 const layout = Array.from(videos.keys(), (index) => `${index % columns * cellWidth}_${Math.floor(index / columns) * cellHeight}`).join('|');
 filters.push(videos.length === 1 ? '[v0]format=yuv420p[grid]' : `${labels}xstack=inputs=${videos.length}:layout=${layout}:fill=black[grid]`);
@@ -170,7 +173,7 @@ const ffmpegExit = await new Promise((resolve, reject) => {
 });
 if (ffmpegExit !== 0) throw new Error(`ffmpeg exited ${ffmpegExit}`);
 writeFileSync(join(runDir, 'demo.json'), JSON.stringify({
-  seconds, columns, cellWidth, cellHeight,
+  seconds, playSeconds, columns, rows, cellWidth, cellHeight,
   videos: videos.map(({ site, task, measuredMs, shared, path, speed }) =>
     ({ site, task, measuredMs, shared, speed, file: `videos/${basename(path)}` })),
 }, null, 2));
