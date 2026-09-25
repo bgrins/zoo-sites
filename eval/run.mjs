@@ -108,7 +108,7 @@ const VALUE_FLAGS = new Set([
   'mcp-command', 'mode', 'model', 'parallel-tasks', 'repeat', 'report-from', 'rerun-failed', 'retries', 'screen',
   'seed', 'suite', 'task',
 ]);
-const SWITCHES = new Set(['headed', 'help', 'interleave', 'list-tasks', 'no-tap', 'parallel', 'single-origin', 'vhosts']);
+const SWITCHES = new Set(['headed', 'help', 'interleave', 'list-tasks', 'no-tap', 'parallel', 'record-video', 'single-origin', 'vhosts']);
 for (let i = 0; i < args.length; i++) {
   const name = args[i].startsWith('--') ? args[i].slice(2) : null;
   if (VALUE_FLAGS.has(name)) i++;
@@ -698,6 +698,8 @@ Execution:
                           on every condition whose browser tag verified; only
                           an untagged condition's timing rules read the tap,
                           so under --no-tap its rows go unchecked
+  --record-video          record each scripted attempt under the run's videos/;
+                          requires --backend scripted --no-tap (free pilot)
   --help                  show this help
 
 Before any paid work, each condition's MCP server is started once, must list
@@ -741,6 +743,10 @@ const TAP =
     args.includes('--no-tap') ? 'off' : null,
     PRIOR_META && 'tap' in PRIOR_META ? (PRIOR_META.tap === false ? 'off' : 'on') : undefined
   ) ?? 'on') === 'on';
+const RECORD_VIDEO = args.includes('--record-video');
+if (RECORD_VIDEO && (BACKEND_NAMES.length !== 1 || BACKEND_NAMES[0] !== 'scripted' || TAP)) {
+  usage('--record-video currently requires --backend scripted --no-tap');
+}
 // Tasks-within-a-condition concurrency; each worker gets an isolated env (own
 // pages server and state dir), and every agent launches its own browser through
 // its own MCP server.
@@ -1579,6 +1585,7 @@ async function runTask(backendName, condition, label, task, ctx, rep = 1, attemp
     // server; an agent backend reads only the prompt.
     task,
     pages: ctx.pages,
+    videoPath: ctx.videosDir ? join(ctx.videosDir, transcript.replace(/\.jsonl$/, '.webm')) : null,
   };
   // Stream the raw agent transcript (thinking, tool calls, results) to disk
   // as it happens rather than buffering.
@@ -2771,6 +2778,8 @@ async function main() {
   mkdirSync(transcriptsDir, { recursive: true });
   const toolCallsDir = TAP ? join(runDir, 'tool-calls') : null;
   if (toolCallsDir) mkdirSync(toolCallsDir);
+  const videosDir = RECORD_VIDEO ? join(runDir, 'videos') : null;
+  if (videosDir) mkdirSync(videosDir);
   const meta = buildMeta(startedAt, selected, env, tools, taskHashes);
   if (PRIOR_META) {
     meta.rerunEnvDrift = envDrift(PRIOR_META, meta);
@@ -2789,6 +2798,7 @@ async function main() {
     transcriptsDir,
     statesDir: join(runDir, 'states'),
     toolCallsDir,
+    videosDir,
     rolloutsDir: BACKENDS.codex ? join(runDir, 'rollouts') : null,
   };
   const onRow = (row) => {

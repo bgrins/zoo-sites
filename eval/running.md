@@ -4,6 +4,25 @@
 
 `run.mjs` spends real money — roughly $40 for the full sweep across both surfaces.
 
+For a free video pilot, `node eval/scripts/demo-video.mjs --limit 3` selects
+one task per site, favoring measured golden paths near one second. It records
+the scripted browser runs and stitches a labeled MP4 grid with `ffmpeg` and
+`ffprobe`. Clips begin on the first rendered page and are retimed to reach
+their final state at the end of the 12-second default grid. Add `--no-labels`
+for a clean grid without site/task cards. `--trim-end 1` cuts the last second
+without changing clip speeds, so it can also cut off a late task result. Preview the task choices with
+`--dry-run`; choose sites with `--sites abaca,alderpost`, and set the grid length
+with `--seconds 15`. Use `--from-run eval/results/run-<stamp>` with the same
+`--sites` or `--limit` to restitch clips without rerunning the eval.
+The MP4 and its ordered site-to-cell mapping (`demo.json`) land beside the eval
+report in `eval/results/run-*/`. The unlabeled version writes
+`demo-unlabeled.mp4` and `demo-unlabeled.json` in the same directory. Trimmed
+versions use a suffix such as `demo-unlabeled-trim-1s.mp4`.
+The current pilot records golden-path drivers, not paid agent runs. The 64-site
+pool excludes the basic smoke pages, the duplicate CaldmoorBank cell and
+Northmarsh's broken-image probe. Preview the 8x8 selection with
+`--limit 64 --dry-run` before recording it.
+
 ```sh
 npm run smoke                                      # 3 basic tasks x 2 backends x 2 surfaces
 node eval/run.mjs --list-tasks --suite web         # free

@@ -39,6 +39,7 @@
 // its values with randomBytes can differ by a token. `turns` counts the tool
 // calls plus the answer.
 
+import { copyFileSync } from 'node:fs';
 import { startMcpServer } from '../mcp-stdio.mjs';
 import { makeHelpers } from '../verify-drivers/helpers.mjs';
 import { DRIVERS } from '../verify-drivers/index.mjs';
@@ -110,7 +111,7 @@ export async function extract({ answer }) {
 // started is left, and that answers from a local server in milliseconds.
 const SETTLE_MS = 10_000;
 
-export async function run({ task, pages, model, condition, env, cwd, onMessage, mcpStdio, abortController }) {
+export async function run({ task, pages, model, condition, env, cwd, onMessage, mcpStdio, abortController, videoPath }) {
   if (!supportsCondition(condition)) {
     throw new Error(`the scripted backend runs firefox-devtools-mcp conditions only, not ${condition}`);
   }
@@ -130,6 +131,7 @@ export async function run({ task, pages, model, condition, env, cwd, onMessage, 
     baseEnv: env ?? process.env,
     cwd,
   });
+  let recordingStarted = false;
   let calls = 0;
   const mcp = async (name, toolArgs = {}) => {
     if (signal?.aborted) throw stopError();
@@ -154,6 +156,14 @@ export async function run({ task, pages, model, condition, env, cwd, onMessage, 
       });
     try {
       const result = await server.call(name, toolArgs);
+      if (videoPath && (name === 'navigate_page' || name === 'new_page')) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        if (name === 'navigate_page' && !recordingStarted && !result.isError) {
+          const started = await server.call('screencast_start', { frameRate: 12 });
+          if (started.isError) throw new Error(`screencast_start: ${JSON.stringify(started.content)}`);
+          recordingStarted = true;
+        }
+      }
       // Text blocks only: a screenshot's base64 would bloat the transcript, and
       // no reader of one looks at images.
       replied((result.content ?? []).filter((c) => c.type === 'text'), Boolean(result.isError));
@@ -189,7 +199,24 @@ export async function run({ task, pages, model, condition, env, cwd, onMessage, 
     ended = true;
   }
   signal?.removeEventListener('abort', onAbort);
-  await server.close();
+  let videoError = null;
+  try {
+    if (videoPath && recordingStarted) {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      const stopped = await server.call('screencast_stop', {});
+      const message = (stopped.content ?? []).filter((part) => part.type === 'text').map((part) => part.text).join('\n');
+      const saved = !stopped.isError && message.match(/Screencast saved to: (.+\.webm)/)?.[1];
+      if (!saved) throw new Error(`screencast_stop: ${message}`);
+      copyFileSync(saved, videoPath);
+    } else if (videoPath && !failure) {
+      throw new Error('no navigated page to record');
+    }
+  } catch (error) {
+    videoError = error;
+  } finally {
+    await server.close();
+  }
+  failure ??= videoError;
   if (failure) {
     // run.mjs resets the pages server for a retry as soon as this returns, so
     // the stopped driver has to finish first or its Node-side requests would
