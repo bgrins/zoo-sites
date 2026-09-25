@@ -22,16 +22,21 @@ test('renders a paired standalone report without exporting raw evidence', () => 
   const html = renderHtmlReport(run, 'run-name');
   assert.match(html, /<!doctype html>/);
   assert.match(html, /2\.00×/);
-  assert.match(html, /Geometric-mean input ratio/);
+  assert.match(html, /Input ratio/);
   assert.match(html, /Cache-read share/);
-  assert.match(html, /cache reads \/ total input/);
+  assert.match(html, /cache is reads \/ input/);
   assert.match(html, /92\.5%/);
   assert.match(html, /85\.0%/);
   assert.match(html, /<th scope="col">Pass<\/th><th scope="col" class="number">Input<\/th><th scope="col" class="number">Cache<\/th><th scope="col" class="number">Output<\/th>/);
   assert.match(html, /<td class="number">200<\/td><td class="number">92\.5%<\/td><td class="number">200<\/td>/);
   assert.match(html, /Different outcomes/);
-  assert.match(html, /Cost is unavailable/);
+  assert.ok(!html.includes('Cost is unavailable'));
+  assert.ok(!html.includes('Estimated cost'));
   assert.match(html, /data-different="true"/);
+  assert.match(html, /id="task-normal"/);
+  assert.match(html, /href="#task-normal"/);
+  assert.match(html, /aria-controls="task-normal-detail"/);
+  assert.match(html, /hashchange/);
   assert.match(html, /&lt;script&gt;alert\(&quot;x&quot;\)&lt;\/script&gt;/);
   assert.match(html, /unsafe&quot; onmouseover=&quot;evil/);
   for (const privateText of ['PRIVATE PROMPT', 'SECRET ANSWER', 'PRIVATE GRADING DETAIL', 'alert("x")']) {
@@ -39,6 +44,17 @@ test('renders a paired standalone report without exporting raw evidence', () => 
   }
   assert.ok(!html.includes('<script>alert'));
   assert.ok(!html.includes('file://'));
+});
+
+test('includes an opt-in judge summary without raw judge evidence', () => {
+  const diagnoses = { run: 'run-name', items: [
+    { kind: 'pair', task: 'normal', diagnosis: { summary: 'Compared the <tools> directly.', difference_driver: 'surface', evidence: [{ quote: 'PRIVATE EVIDENCE' }] } },
+  ] };
+  const html = renderHtmlReport(run, 'run-name', { diagnoses, homeHref: '../../index.html' });
+  assert.match(html, /Compared the &lt;tools&gt; directly/);
+  assert.match(html, /href="\.\.\/\.\.\/index.html"/);
+  assert.ok(!html.includes('PRIVATE EVIDENCE'));
+  assert.throws(() => renderHtmlReport(run, 'other-run', { diagnoses }), /diagnoses belong/);
 });
 
 test('supports one surface and repeats without inventing a comparison', () => {
@@ -55,6 +71,17 @@ test('supports one surface and repeats without inventing a comparison', () => {
   assert.throws(() => renderHtmlReport({ results: [] }), /no result rows/);
 });
 
+test('separates backends that used the same browser surface', () => {
+  const html = renderHtmlReport({ meta: {}, results: [
+    { task: 'shared', condition: 'firefox', backend: 'codex', success: true, input_tokens: 100, output_tokens: 20 },
+    { task: 'shared', condition: 'firefox', backend: 'anthropic', success: false, input_tokens: 50, output_tokens: 10 },
+  ] });
+  assert.match(html, /codex\/firefox/);
+  assert.match(html, /anthropic\/firefox/);
+  assert.match(html, /2\.00×/);
+  assert.match(html, /Different pass outcomes/);
+});
+
 test('CLI writes HTML beside an existing run, or to --out', () => {
   const dir = mkdtempSync(join(tmpdir(), 'eval-html-report-'));
   try {
@@ -66,6 +93,11 @@ test('CLI writes HTML beside an existing run, or to --out', () => {
     const second = spawnSync(process.execPath, [script, '--out', out, dir], { encoding: 'utf8' });
     assert.equal(second.status, 0, second.stderr);
     assert.match(readFileSync(out, 'utf8'), /Browser-agent evaluation/);
+    const diagnosesPath = join(dir, 'diagnoses.json');
+    writeFileSync(diagnosesPath, JSON.stringify({ run: dir.split('/').at(-1), items: [{ task: 'normal', kind: 'pair', diagnosis: { summary: 'Reviewed the steps.' } }] }));
+    const third = spawnSync(process.execPath, [script, dir, '--diagnoses', diagnosesPath], { encoding: 'utf8' });
+    assert.equal(third.status, 0, third.stderr);
+    assert.match(readFileSync(join(dir, 'report.html'), 'utf8'), /Reviewed the steps/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

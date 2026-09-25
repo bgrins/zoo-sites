@@ -58,7 +58,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startPagesServer } from '../server.mjs';
 import { ORIGINS, originUrls } from '../manifest.mjs';
@@ -81,6 +81,7 @@ import {
   tapSurfaceCalls, tapToolStats, toolsListInfo,
 } from './mcp-tap.mjs';
 import { envDrift, markdownReport, totalsByCondition } from './report.mjs';
+import { renderHtmlReport } from './scripts/html-report.mjs';
 import { readRun, transcriptName } from './run-files.mjs';
 import {
   foreignBrowser, OVERLAP_MS, SHELL_AFTER_MS, SURFACE_AFTER_MS, SURFACE_BEFORE_MS, SURFACE_SLACK_MS, tapWindows,
@@ -565,7 +566,7 @@ Serving:
                           name, http://<key>.localhost:<port>
 
 Reporting:
-  --report-from <dir>     rewrite report.md from a run's results.json, or from
+  --report-from <dir>     rewrite report.md and report.html from a run's results.json, or from
                           the meta.json and rows.jsonl of a killed run, print
                           the transcript judge's standing questions for it,
                           and exit; runs no agents, so reporting changes can be
@@ -714,7 +715,7 @@ The backend's sandbox lets the agent read that directory but not write it,
 and the row records what the browser saved as downloads [{name, bytes, sha256}].
 
 Results land in results/run-<timestamp>/ (gitignored): results.json,
-report.md (shareable), transcripts/*.jsonl (full agent message streams,
+report.md and report.html (shareable), transcripts/*.jsonl (full agent message streams,
 one per attempt), tool-calls/*.jsonl (the tap's per-call log, one per
 attempt), and states/*.json.gz (the server state each row was graded on, for
 regrading; it holds the minted answers, so never share it). A row that never
@@ -2056,12 +2057,15 @@ let REPORT_TASKS = null;
 // written. report.md's header sums it up, so its own check is left out.
 function writeRun(runDir, meta, results) {
   const totals = totalsByCondition(results);
+  const run = { meta, results, totals };
   const jsonPath = join(runDir, 'results.json');
   const mdPath = join(runDir, 'report.md');
-  writeFileSync(jsonPath, JSON.stringify({ meta, results, totals }, null, 2));
-  const health = runHealth(runDir, { run: { meta, results, totals }, skip: ['report'] });
+  writeFileSync(jsonPath, JSON.stringify(run, null, 2));
+  const health = runHealth(runDir, { run, skip: ['report'] });
   writeFileSync(mdPath, markdownReport({ meta, results, totals, runDir, tasks: REPORT_TASKS, health: healthLine(health, { dir: runDir }) }));
-  return { totals, jsonPath, mdPath, health };
+  const htmlPath = join(runDir, 'report.html');
+  if (results.length) writeFileSync(htmlPath, renderHtmlReport(run, basename(runDir)));
+  return { totals, jsonPath, mdPath, htmlPath, health };
 }
 
 // Stops the agents, waits for their rows, writes what finished, then closes
@@ -2693,6 +2697,11 @@ async function main() {
     const health = runHealth(dir, { run: prior, skip: ['report'] });
     writeFileSync(path, markdownReport({ ...prior, totals, runDir: dir, tasks: REPORT_TASKS, health: healthLine(health, { dir }) }));
     console.log(`rewrote ${path} (${prior.results.length} rows)\n${healthLine(health, { dir })}`);
+    if (prior.results.length) {
+      const htmlPath = join(dir, 'report.html');
+      writeFileSync(htmlPath, renderHtmlReport({ ...prior, totals }, basename(dir)));
+      console.log(`rewrote ${htmlPath}`);
+    }
     if (AB) await writeAbReport(dir, prior);
     const { judgeCommands } = await import('./scripts/judge.mjs');
     const conditions = [...new Set(prior.results.map((r) => r.condition))];
@@ -2856,7 +2865,7 @@ async function main() {
   // An interrupt writes its own partial results and exits.
   if (interrupting) return;
 
-  const { totals, mdPath, health } = writeRun(runDir, meta, results);
+  const { totals, mdPath, htmlPath, health } = writeRun(runDir, meta, results);
   LIVE.runDir = null;
   console.log('\n=== totals per condition ===');
   console.table(totals);
@@ -2872,7 +2881,7 @@ async function main() {
   }
   console.log(`\n${healthLine(health, { dir: runDir })}`);
   for (const c of health.checks.filter((x) => x.status === 'FAIL')) console.log(`  FAIL ${c.id}: ${c.summary}`);
-  console.log(`\nrun dir: ${runDir}\nreport:  ${mdPath}`);
+  console.log(`\nrun dir: ${runDir}\nreport:  ${mdPath}\nHTML:    ${htmlPath}`);
 
   const failed = results.filter((r) => !r.success || r.invalid).length;
   process.exitCode = failed ? 1 : 0;

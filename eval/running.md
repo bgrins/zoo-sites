@@ -30,7 +30,7 @@ node eval/run.mjs --suite web --parallel --parallel-tasks 2
 node eval/run.mjs --suite web --task pr-review --repeat 3  # per-task median, flags >2x variance
 node eval/scripts/transcript.mjs <run-dir>         # what the agents actually did
 node eval/scripts/bundle.mjs <run-dir>             # portable results zip, answer key excluded
-node eval/scripts/html-report.mjs <run-dir>        # standalone HTML summary for an intranet
+node eval/scripts/report-site.mjs                 # curated static site under results/intranet/
 ```
 
 Every script below reads a finished run and spends nothing, except the judge and its
@@ -49,14 +49,32 @@ node eval/scripts/judge.mjs <run-dir> --dry-run    # the transcript judge's prom
 node eval/scripts/judge-validate.mjs --score <dir> # the judge's agreement with the reference labels
 ```
 
-`html-report.mjs` writes `report.html` in the run directory by default; use
-`--out <file>` to write elsewhere. The HTML includes per-surface totals, paired
+Every finished eval now writes `report.html` next to `report.md`, including when
+`--report-from` refreshes an earlier run. For manual regeneration, run
+`node eval/scripts/html-report.mjs <run-dir>` (or pass `--out <file>`). The HTML
+includes per-surface totals, paired
 input-token ratios (including cache reads and writes) when there are two surfaces,
 and pass, input, cache-read share and output together in the family and task tables.
 Input tokens are not cost: cached and uncached tokens may have different prices.
-The export omits prompts, answers, transcripts, grader details and server state.
-A missing model price appears as unavailable rather than zero. The file is
-self-contained and can be hosted as a static page; keep the run directory private.
+Click a task to see its per-surface usage and most-used tools. Its `#task-<id>` link
+opens and scrolls to that detail view, even from a fresh page load. By default the
+export omits prompts, answers, transcripts, grader details, and server state. Cost
+is simply omitted when the model has no recorded price. To include model-review
+summaries from a finished judge run, regenerate with `--diagnoses <file>`; inspect
+those summaries before publishing, since the judge writes freeform text.
+
+`eval/report-site.json` chooses which reports appear on the intranet home page.
+Each entry in `reports` names a run directory relative to the config, a title, and
+a URL slug. Add entries to include more child pages, or remove them to exclude
+them. An optional `diagnoses` filename inside the run includes judge summaries
+for that child. Add `{ "title": "Project docs", "href": "https://intranet.example/docs" }`
+to `links` for an ordinary link; it can also point to a task in a selected child,
+such as `reports/luna-6-browser-tools/index.html#task-mfa-login`. Run
+`node eval/scripts/report-site.mjs` to rebuild `eval/results/intranet/`, or use
+`--config <file>` and `--out <dir>`. Rebuilding removes deselected children; the
+generated directory is replaced, so make changes in the config rather than the
+output. The script refuses to overwrite a directory it did not create. Only publish the
+generated site directory, not the private run directories beside it.
 
 `eval/analysis.md`, "From a run to an A/B report", lists the files each reader needs
 and gives three recipes, one of them free.
