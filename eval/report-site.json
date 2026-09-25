@@ -6,6 +6,7 @@
     {
       "title": "GPT-6 Luna: DevTools vs Playwright",
       "run": "results/run-2026-09-25T03-31-34-420Z",
+      "diagnoses": "diagnoses.json",
       "slug": "luna-6-browser-tools"
     }
   ]

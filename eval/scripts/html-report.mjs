@@ -227,7 +227,7 @@ export function renderHtmlReport(run, runName = 'eval run', { homeHref = null, d
       return `<article><h3>${escapeHtml(conditions[index])}</h3><p>${arm.passes}/${arm.attempts.length} passed · ${count(median(arm.attempts.map((row) => row.turns)))} turns · ${seconds(arm.wall)} task time</p><p>Median per attempt: input ${count(arm.input)} · cache reads ${count(median(arm.attempts.map((row) => row.cache_read)))} · cache writes ${count(median(arm.attempts.map((row) => row.cache_creation)))} · output ${count(arm.output)}</p><p>Top tools: ${topTools.length ? topTools.map(([name, calls]) => `${escapeHtml(name)} (${count(calls)})`).join(', ') : 'not recorded'}</p></article>`;
     }).join('');
     const reviews = (diagnoses?.items ?? []).filter((item) => item.task === task.id && ['row', 'pair'].includes(item.kind) && typeof item.diagnosis?.summary === 'string');
-    const reviewHtml = reviews.map((item) => `<article class="review"><h3>Model review${item.rep && item.rep !== 1 ? ` · repeat ${count(item.rep)}` : ''}</h3><p>${escapeHtml(item.diagnosis.summary)}</p><p class="muted">${escapeHtml(item.diagnosis.difference_driver ?? item.diagnosis.primary_cause ?? 'Interpretation, not a grade')}</p></article>`).join('');
+    const reviewHtml = reviews.map((item) => `<article class="review"><h3>Model review${item.rep && item.rep !== 1 ? ` · repeat ${count(item.rep)}` : ''}</h3><p>${escapeHtml(item.diagnosis.summary)}</p><p class="muted">${escapeHtml(item.diagnosis.difference_driver ?? item.diagnosis.primary_cause ?? 'Interpretation, not a grade')}${item.diagnosis.driver_unsupported || item.diagnosis.unsupported ? ' · evidence limited' : ''}</p></article>`).join('');
     const columns = 3 + conditions.length * 4 + Number(paired);
     return `<tr class="task-row" id="${anchor}" data-task="${escapeHtml(task.id)}" data-family="${escapeHtml(task.family)}" data-failure="${task.failure}" data-different="${task.different}" data-difference="${inputGap == null ? 0 : Math.abs(Math.log(inputGap))}"><td class="task-name"><button class="task-toggle" type="button" aria-expanded="false" aria-controls="${anchor}-detail">${escapeHtml(task.id)}</button><a class="permalink" href="#${anchor}" aria-label="Link to ${escapeHtml(task.id)}">#</a></td><td class="muted">${escapeHtml(task.family)}</td>${cells}${paired ? `<td class="number">${ratio(inputGap)}</td>` : ''}<td class="number">${task.arms.map((arm) => seconds(arm.wall)).join(' / ')}</td></tr><tr class="task-detail" id="${anchor}-detail" hidden><td colspan="${columns}"><div class="detail-grid">${details}${reviewHtml}</div></td></tr>`;
   }).join('\n');
@@ -250,7 +250,7 @@ ${paired ? `<section class="panel" aria-label="Comparison"><h2>Comparison</h2><p
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   if (args.includes('--help')) {
-    console.log('Usage: node eval/scripts/html-report.mjs [run-dir] [--out report.html] [--diagnoses diagnoses.json]\nDefaults to the latest finished run. Generates one standalone HTML file without raw prompts, answers or state.');
+    console.log('Usage: node eval/scripts/html-report.mjs [run-dir] [--out report.html] [--diagnoses diagnoses.json]\nDefaults to the latest finished run. Judge summaries may mention task answers; review before publishing.');
   } else {
     const outIndex = args.indexOf('--out');
     if (outIndex !== -1 && (!args[outIndex + 1] || args[outIndex + 1].startsWith('--'))) throw new Error('--out needs a file path');

@@ -2931,7 +2931,7 @@ async function main(args) {
   };
 
   const queue = [...items];
-  const jobs = Math.max(1, Math.min(4, Number(flag('jobs') ?? 1)));
+  const jobs = Math.max(1, Math.min(12, Number(flag('jobs') ?? 1)));
   const worker = async () => {
     while (queue.length) {
       if (doc.totals.cost_usd >= budget) {

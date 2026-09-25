@@ -406,6 +406,9 @@ gates an earlier output again with today's gate and staging, with no call, under
 letters that output drew. A quote that prints a uid as an earlier staging numbered it,
 or cites a source today's rules shut, is nulled.
 
+HTML reports can include judge summaries when given `--diagnoses`; those summaries may
+mention task answers, so review the generated page before publishing it.
+
 **Validation.** `eval/scripts/judge-validate.mjs` scores the judge against labels taken
 from the Claude-agent reviews of four stored runs: the codex and Haiku sweeps
 (`run-2026-09-20T17-48-17-298Z`, `run-2026-09-20T18-32-34-183Z`) and the two acceptance

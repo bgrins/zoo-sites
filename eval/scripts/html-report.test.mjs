@@ -48,10 +48,11 @@ test('renders a paired standalone report without exporting raw evidence', () => 
 
 test('includes an opt-in judge summary without raw judge evidence', () => {
   const diagnoses = { run: 'run-name', items: [
-    { kind: 'pair', task: 'normal', diagnosis: { summary: 'Compared the <tools> directly.', difference_driver: 'surface', evidence: [{ quote: 'PRIVATE EVIDENCE' }] } },
+    { kind: 'pair', task: 'normal', diagnosis: { summary: 'Compared the <tools> directly.', difference_driver: 'surface', driver_unsupported: true, evidence: [{ quote: 'PRIVATE EVIDENCE' }] } },
   ] };
   const html = renderHtmlReport(run, 'run-name', { diagnoses, homeHref: '../../index.html' });
   assert.match(html, /Compared the &lt;tools&gt; directly/);
+  assert.match(html, /surface · evidence limited/);
   assert.match(html, /href="\.\.\/\.\.\/index.html"/);
   assert.ok(!html.includes('PRIVATE EVIDENCE'));
   assert.throws(() => renderHtmlReport(run, 'other-run', { diagnoses }), /diagnoses belong/);
