@@ -134,8 +134,8 @@ Use `eval/analysis.md` to investigate failed rows and distinguish tool failures 
 `eval/scripts/judge.mjs` answers the questions a tool developer asks of a run's traces:
 why a row failed or cost what it did, whether its grade was right, which tool behaviour
 (a reply, a missing piece of page state, a silent no-op, an error text) drove the extra
-turns, and how the two arms of a pair differed. It runs `gpt-5.6-luna` through the codex
-SDK at medium effort, one fresh thread per item, and calls the model only with `--paid`
+turns, and how the two arms of a pair differed. It runs `gpt-6-luna` through the Codex
+SDK at high effort, one fresh thread per item, and calls the model only with `--paid`
 (`EVAL_JUDGE_MODEL` and `--effort` or `EVAL_JUDGE_EFFORT` override the model and effort).
 The earlier judge, a Claude model shown a clipped transcript and no tools, is gone: it
 could not check a claim against the state, the validator or the tool's source.
@@ -147,6 +147,14 @@ node eval/scripts/judge.mjs <run-dir> --paid --ask "<question>"     # one questi
 node eval/scripts/judge.mjs <run-dir> --paid --ask gap --ab A,B     # a standing question: gap, tokens, failures or blinding
 node eval/scripts/judge.mjs <run-dir> --dry-run                     # the prompts, and the sandbox check; free
 ```
+
+For a run-wide tooling assessment, first judge every pair with `--mode pairs --all`.
+Then run `node eval/scripts/judge-run.mjs <run-dir> --judgments <pair-diagnoses.json> --dry-run`
+to check coverage and the sandbox without calling the model, or use `--paid` to write
+`diagnoses-run.json`. This second pass reads all pair diagnoses and run totals, and
+checks cited quotes before publishing findings or recommendations. The report can
+include it with `--diagnoses <pair-diagnoses.json> --review <diagnoses-run.json>`;
+the gallery config accepts those filenames as `diagnoses` and `review`.
 
 `--task` and `--only <item id>` narrow the items and `--limit` caps them (`--task` also
 narrows the rows a question reads), `--jobs` runs up to four at once, `--budget <usd>`
@@ -406,8 +414,13 @@ gates an earlier output again with today's gate and staging, with no call, under
 letters that output drew. A quote that prints a uid as an earlier staging numbered it,
 or cites a source today's rules shut, is nulled.
 
-HTML reports can include judge summaries when given `--diagnoses`; those summaries may
-mention task answers, so review the generated page before publishing it.
+HTML reports can include the judge's per-arm verdicts, tool findings, and cited evidence
+when given `--diagnoses`. Reports beside a run link to its graded transcripts and rollouts;
+the curated site copies them only for entries with `"traces": true`. The site's optional
+`"video"` path copies an MP4 beside the home page and plays it muted on load unless
+the viewer prefers reduced motion. These
+files and judge evidence may contain task answers and local paths, so review the
+generated site before publishing it. Server state files are never copied.
 
 **Validation.** `eval/scripts/judge-validate.mjs` scores the judge against labels taken
 from the Claude-agent reviews of four stored runs: the codex and Haiku sweeps

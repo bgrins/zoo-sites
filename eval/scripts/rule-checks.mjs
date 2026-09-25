@@ -1544,7 +1544,7 @@ const CHECKS = {
     const differ = ['firefox-devtools-mcp@a', 'firefox-devtools-mcp@old'];
     const runDir = mkdtempSync(join(tmpdir(), 'rule-run-'));
     try {
-      for (const f of ['results.json', 'diagnoses.json', 'diagnoses-gap--a--b.md']) writeFileSync(join(runDir, f), '{}');
+      for (const f of ['results.json', 'report.html', 'diagnoses.json', 'diagnoses-gap--a--b.md']) writeFileSync(join(runDir, f), '{}');
       mkdirSync(join(runDir, 'diagnoses-aa-rollouts'));
       const outPath = join(runDir, 'diagnoses-x.json');
       const open = judgeDenies({ runDir, outPath, blinded: false, resultsRoot: dirname(runDir), deny: [dirname(runDir)] }).paths;
@@ -1553,7 +1553,7 @@ const CHECKS = {
         shut(pair, pair) === null && shut(['firefox-devtools-mcp', 'playwright-mcp']) === null && shut(differ, differ) === 'builds differ' &&
         shut(['firefox-devtools-mcp@old', 'playwright-mcp']) === 'not installed' && shut(['mcp', 'playwright']) === 'unrecorded' &&
         shut(['firefox-devtools-mcp', 'playwright-mcp'], [], { surfaces: { 'firefox-devtools-mcp': {} } }) === 'unrecorded' &&
-        ['diagnoses.json', 'diagnoses-gap--a--b.md', 'diagnoses-aa-rollouts', 'diagnoses-x.md', 'diagnoses-x-rollouts'].every((f) => open.includes(join(runDir, f))) &&
+        ['report.html', 'diagnoses.json', 'diagnoses-gap--a--b.md', 'diagnoses-aa-rollouts', 'diagnoses-x.md', 'diagnoses-x-rollouts'].every((f) => open.includes(join(runDir, f))) &&
         !open.includes(runDir) && !open.includes(dirname(runDir)) && !open.includes(join(runDir, 'results.json')) &&
         ['/results', '/nm/fdm', '/r/old', runDir].every((p) => blind.includes(p))
       );

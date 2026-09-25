@@ -81,7 +81,7 @@ import {
   tapSurfaceCalls, tapToolStats, toolsListInfo,
 } from './mcp-tap.mjs';
 import { envDrift, markdownReport, totalsByCondition } from './report.mjs';
-import { renderHtmlReport } from './scripts/html-report.mjs';
+import { localTraceHref, renderHtmlReport } from './scripts/html-report.mjs';
 import { readRun, transcriptName } from './run-files.mjs';
 import {
   foreignBrowser, OVERLAP_MS, SHELL_AFTER_MS, SURFACE_AFTER_MS, SURFACE_BEFORE_MS, SURFACE_SLACK_MS, tapWindows,
@@ -2064,7 +2064,7 @@ function writeRun(runDir, meta, results) {
   const health = runHealth(runDir, { run, skip: ['report'] });
   writeFileSync(mdPath, markdownReport({ meta, results, totals, runDir, tasks: REPORT_TASKS, health: healthLine(health, { dir: runDir }) }));
   const htmlPath = join(runDir, 'report.html');
-  if (results.length) writeFileSync(htmlPath, renderHtmlReport(run, basename(runDir)));
+  if (results.length) writeFileSync(htmlPath, renderHtmlReport(run, basename(runDir), { traceHref: localTraceHref(runDir, htmlPath) }));
   return { totals, jsonPath, mdPath, htmlPath, health };
 }
 
@@ -2699,7 +2699,7 @@ async function main() {
     console.log(`rewrote ${path} (${prior.results.length} rows)\n${healthLine(health, { dir })}`);
     if (prior.results.length) {
       const htmlPath = join(dir, 'report.html');
-      writeFileSync(htmlPath, renderHtmlReport({ ...prior, totals }, basename(dir)));
+      writeFileSync(htmlPath, renderHtmlReport({ ...prior, totals }, basename(dir), { traceHref: localTraceHref(dir, htmlPath) }));
       console.log(`rewrote ${htmlPath}`);
     }
     if (AB) await writeAbReport(dir, prior);

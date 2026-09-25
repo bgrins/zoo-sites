@@ -1,12 +1,15 @@
 {
-  "title": "Zoo Sites Evals",
-  "intro": "Selected browser-agent evaluations.",
+  "title": "Evaluation gallery",
+  "repository": "https://github.com/bgrins/zoo-sites",
+  "video": "results/run-2026-09-24T21-11-35-567Z/demo-unlabeled-trim-1s.mp4",
   "links": [],
   "reports": [
     {
       "title": "GPT-6 Luna: DevTools vs Playwright",
       "run": "results/run-2026-09-25T03-31-34-420Z",
-      "diagnoses": "diagnoses.json",
+      "diagnoses": "diagnoses-gpt-6-luna-high-independent.json",
+      "review": "diagnoses-run-v2.json",
+      "traces": true,
       "slug": "luna-6-browser-tools"
     }
   ]

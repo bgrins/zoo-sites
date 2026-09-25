@@ -134,8 +134,8 @@ export function sourceShutFor(meta, arms, { blind = [], installedSha = null } = 
   return null;
 }
 
-export const JUDGE_MODEL = 'gpt-5.6-luna';
-export const JUDGE_EFFORT = 'medium';
+export const JUDGE_MODEL = 'gpt-6-luna';
+export const JUDGE_EFFORT = 'high';
 export const CAUSES = [
   'agent-capability',
   'agent-shortcut',
@@ -2162,7 +2162,7 @@ export async function judgePreflight({ policy, cwd, env: shellEnv, mustDeny, mus
 // run), the rollout's isolation problems, and the rollout itself.
 export async function callJudge({ prompt, schema, cwd, policy, env: shellEnv = {}, model, effort, timeoutMs }) {
   const { Codex } = await import('@openai/codex-sdk');
-  const { agentEnv, SHELL_ENV, shimmedPath } = await import('../agent-env.mjs');
+  const { agentEnv, SHELL_ENV, shimmedPath, pathSpellings } = await import('../agent-env.mjs');
   const { isolatedCodexHome, isolationProblems, readRollouts, rolloutFacts, uncachedInput } = await import('../backends/codex.mjs');
   const { priceTokens } = await import('../backends/pricing.mjs');
   const home = await isolatedCodexHome(agentEnv('codex'), { parent: JUDGE_TEMP });
@@ -2218,7 +2218,7 @@ export async function callJudge({ prompt, schema, cwd, policy, env: shellEnv = {
     const cost_usd = usage
       ? priceTokens(model, { input_tokens: usage.input, cache_read: usage.cached, cache_creation: usage.cache_write, output_tokens: usage.output }, 'judge', requests)
       : null;
-    const writable = [join(cwd, 'scratch'), home.tmp].map(real);
+    const writable = [join(cwd, 'scratch'), home.tmp].map(real).flatMap(pathSpellings);
     const isolation = facts ? isolationProblems(facts, { writable, deny: policy.deny }) : ['no rollout was written'];
     let raw = null;
     if (turn && !error) {
@@ -2468,7 +2468,7 @@ export function judgeCommands(dir, { ab = null, conditions = [], meta = {} } = {
 
 // What the judge's shell may not read beyond judgeReadPolicy's defaults: the
 // output at `outPath` and its markdown, rollouts and temporary file, every
-// earlier judge output in the run directory, `deny`, and, blinded, the run
+// earlier judge output and report.html in the run directory, `deny`, and, blinded, the run
 // directory and `resultsRoot`; when sourceShutFor shut the source, the
 // installed firefox-devtools-mcp and the build `roots`. Unblinded, a path that
 // holds the run directory is dropped, since that judge reads the run.
@@ -2476,7 +2476,7 @@ export function judgeDenies({ runDir, outPath, blinded, sourceShut = null, roots
   const base = outPath.replace(/\.json$/, '');
   const earlier = existsSync(runDir)
     ? readdirSync(runDir)
-        .filter((f) => /^diagnoses.*(\.json|\.md|\.tmp|-rollouts)$/.test(f))
+        .filter((f) => f === 'report.html' || /^diagnoses.*(\.json|\.md|\.tmp|-rollouts)$/.test(f))
         .map((f) => join(runDir, f))
     : [];
   const paths = [
@@ -2788,6 +2788,7 @@ async function main(args) {
             ...['.codex/auth.json', '.claude/settings.json', '.zshrc', '.bashrc', '.profile'].map((f) => join(homedir(), f)).filter(existsSync).slice(0, 2),
             join(REPO_ROOT, 'package.json'),
             ...(existsSync(outPath) ? [outPath] : []),
+            ...(existsSync(join(runDir, 'report.html')) ? [join(runDir, 'report.html')] : []),
             ...earlier.filter((f) => f.endsWith('.json')).slice(0, 2),
             ...(blinded ? [runFile] : []),
             ...(sourceShut
