@@ -23,7 +23,8 @@
 <p class="intro">Every fixture entry point, live in an iframe on this server's origin.
 Interactions run for real, so loading this page fires the fixtures' own beacons and seeds
 their sessions. <code>node server.mjs</code> serves it unless started with
-<code>--no-preview</code>; the eval harness and <code>serve.mjs</code> never enable preview, so
+<code>--no-preview</code>, and <code>node serve.mjs --gallery</code> serves it on a port of its own
+with each page loaded from its origin; the eval harness never enables either, so
 it is never reachable during an eval run.</p>
 
 <div class="controls">
@@ -169,20 +170,31 @@ const vw = document.getElementById('vw');
 const zoom = document.getElementById('zoom');
 const zoomOut = document.getElementById('zoomOut');
 
+// Set by serve.mjs --gallery: [dir, url] pairs, longest dir first. A page
+// under no origin's dir is left out.
+const ORIGIN_BASES = window.ZOO_ORIGINS ?? null;
+function resolve(path) {
+  if (!ORIGIN_BASES) return path;
+  const hit = ORIGIN_BASES.find(([dir]) => path === `/${dir}` || path.startsWith(`/${dir}/`));
+  return hit ? hit[1] + path.slice(hit[0].length + 1) : null;
+}
+
 for (const [label, path] of PAGES) {
+  const src = resolve(path);
+  if (!src) continue;
   const fig = document.createElement('figure');
   const cap = document.createElement('figcaption');
   const name = document.createElement('b');
   name.textContent = label;
   const link = document.createElement('a');
-  link.href = path;
+  link.href = src;
   link.target = '_blank';
-  link.textContent = path;
+  link.textContent = src;
   cap.append(name, link);
   const shot = document.createElement('div');
   shot.className = 'shot';
   const frame = document.createElement('iframe');
-  frame.src = path;
+  frame.src = src;
   frame.title = label;
   shot.append(frame);
   fig.append(cap, shot);
@@ -210,7 +222,7 @@ document.getElementById('reload').addEventListener('click', () => {
   }
 });
 apply();
-document.getElementById('note').textContent = PAGES.length + ' fixture pages.';
+document.getElementById('note').textContent = grid.children.length + ' fixture pages.';
 </script>
 </body>
 </html>
