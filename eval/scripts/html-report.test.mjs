@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { localTraceHref, readRunReview, renderHtmlReport, tracePath } from './html-report.mjs';
+import { localTraceHref, readRunReview, renderHtmlReport, tracePath, writeRunReport } from './html-report.mjs';
 
 const script = fileURLToPath(new URL('./html-report.mjs', import.meta.url));
 const run = {
@@ -176,6 +176,24 @@ test('links only existing graded traces with safe local paths', () => {
     assert.equal(tracePath(dir, { rollout: 'rollouts/../private.jsonl' }, 'rollout'), null);
     assert.equal(tracePath(dir, { task: 'normal' }, 'transcript'), null);
     assert.match(localTraceHref(dir, join(dir, 'elsewhere', 'report.html'))({ transcript: 'one--normal--a1.jsonl' }, 'transcript'), /^\.\.\/transcripts\/one--normal--a1\.jsonl$/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('writeRunReport reads the run directory for the tool-use panels', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'eval-write-report-'));
+  try {
+    mkdirSync(join(dir, 'transcripts'));
+    const call = { type: 'item.completed', item: { id: 'item_1', type: 'mcp_tool_call', server: 'firefox', tool: 'new_page', arguments: {}, result: { content: [{ type: 'text', text: 'ok' }] }, error: null, status: 'completed' } };
+    writeFileSync(join(dir, 'transcripts', 'one--normal--a1.jsonl'), `${JSON.stringify(call)}\n`);
+    const single = { ...run, results: [{ ...run.results[0], transcript: 'one--normal--a1.jsonl' }] };
+    const out = join(dir, 'report.html');
+    writeRunReport(dir, single, out);
+    const html = readFileSync(out, 'utf8');
+    assert.match(html, / · 1\/1 traces/);
+    assert.ok(!html.includes('No transcripts available'));
+    assert.match(html, /href="transcripts\/one--normal--a1.jsonl"/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

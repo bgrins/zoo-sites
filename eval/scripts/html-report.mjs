@@ -533,6 +533,14 @@ ${toolUseHtml(analyzeToolUse(rows, { runDir, diagnoses, conditionOf: groupFor })
 </main><script>${script}</script></body></html>\n`;
 }
 
+// Writes the report for a run directory. The CLI and run.mjs both come through
+// here so their trace links and tool-use panels read the run's own transcripts;
+// report-site.mjs makes its own call because it sets per-entry options.
+export function writeRunReport(runDir, run, out = join(runDir, 'report.html'), options = {}) {
+  writeFileSync(out, renderHtmlReport(run, basename(runDir), { ...options, traceHref: localTraceHref(runDir, out), runDir }));
+  return out;
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   if (args.includes('--help')) {
@@ -556,7 +564,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const diagnosesText = diagnosesIndex < 0 ? null : readFileSync(resolve(args[diagnosesIndex + 1]), 'utf8');
     const diagnoses = diagnosesText ? JSON.parse(diagnosesText) : null;
     const runReview = reviewIndex < 0 ? null : readRunReview(resolve(args[reviewIndex + 1]), basename(dir), diagnosesText, readFileSync(join(dir, 'results.json'), 'utf8'));
-    writeFileSync(out, renderHtmlReport(readRun(dir), basename(dir), { diagnoses, runReview, traceHref: localTraceHref(dir, out), runDir: dir }));
+    writeRunReport(dir, readRun(dir), out, { diagnoses, runReview });
     console.log(`wrote ${out}`);
   }
 }
