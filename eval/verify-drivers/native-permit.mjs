@@ -53,7 +53,7 @@ const sameTokens = (a, b) => a.size === b.size && [...a].every((w) => b.has(w));
 
 export const DRIVERS = {
   'native-permit': {
-    note: 'fills the select and the datetimes naively first, reads the corruption off the check page (an includeAll snapshot, because the page is a <dl>), fixes them through Change (a click on the first street and Ctrl+ArrowDown, Ctrl+Space for the rest, typed-order datetimes), then submits once',
+    note: 'fills the select and the datetimes naively first, reads the corruption off the check page (an includeAll snapshot, because the page is a <dl>), fixes them through Change (Home and ArrowDown to the first street, Ctrl+ArrowDown and Ctrl+Space for the rest, typed-order datetimes), then submits once',
     wrong: ['I applied for the street closure and the permit number is PT-000000.'],
     async run({ mcp, goto, evaluate, snapshot }, ctx) {
       const state = ctx.pages.state;
@@ -214,11 +214,13 @@ export const DRIVERS = {
       }
 
       // Change: the form comes back holding the draft; fix the streets from
-      // the keyboard and type the datetimes in the control's own order. A
-      // click on an option is a real click from firefox-devtools-mcp 0.10.5,
-      // so it selects that option alone, as it would for a person: the first
-      // street is clicked, and each other one is reached with Ctrl+ArrowDown,
-      // which moves without selecting, and added with Ctrl+Space.
+      // the keyboard and type the datetimes in the control's own order. From
+      // firefox-devtools-mcp 0.10.5 a click on an option selects it alone, and
+      // misses one below the listbox's eight visible rows, since the tool
+      // scrolls only what lies outside the window. So the keyboard does it
+      // all: Home and ArrowDown select the first street alone, scrolling as
+      // they go, and each other one is reached with Ctrl+ArrowDown, which
+      // moves without selecting, and added with Ctrl+Space.
       await clickToPath(mcp, evaluate, async () => uidOf(await snapshot(), 'a "Change"'), 'change=1', 'the Change link');
       await until('the form to prefill from the draft', async () => (await values()).streets.length === 1);
       const all = textOf(await mcp('take_snapshot', { includeAll: true, maxLines: 400 }));
@@ -228,10 +230,17 @@ export const DRIVERS = {
         if (!order.includes(name)) throw new Error(`no option for ${name} in the includeAll snapshot`);
         return order.indexOf(name);
       }).sort((a, b) => a - b);
-      await mcp('click_by_uid', { uid: uidOf(all, `option [^\n]*text="${order[at[0]]}"`) });
+      // Each step waits for its selection to show before the next key moves on.
+      await mcp('press_key', { uid: field(await snapshot(), 'Streets to close'), key: 'Home' });
+      for (let k = 0; k < at[0]; k++) await mcp('press_key', { key: 'ArrowDown' });
+      await until('the first street to be selected alone', async () => {
+        const { streets: picked } = await values();
+        return picked.length === 1 && picked[0] === order[at[0]];
+      });
       for (let i = 1, cur = at[0]; i < at.length; cur = at[i++]) {
         for (let k = cur; k < at[i]; k++) await mcp('press_key', { key: 'ctrl+ArrowDown' });
         await mcp('press_key', { key: 'ctrl+Space' });
+        await until(`${order[at[i]]} to join the selection`, async () => (await values()).streets.includes(order[at[i]]));
       }
       const fixSnap = await snapshot();
       await fill(field(fixSnap, 'Closure starts'), typedOrder(`${date}T${from}`));
