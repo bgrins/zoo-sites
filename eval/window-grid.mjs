@@ -58,7 +58,8 @@ export function windowGrid(slots, screen = DEFAULT_SCREEN) {
       // firefox-devtools-mcp resolves --profile-path as a PARENT directory and
       // launches Firefox from <dir>/firefox_devtools_mcp_profile, so the
       // geometry has to land there; seed the parent too, in case a version
-      // takes the path it was given.
+      // takes the path it was given. From 0.11.0 the folder is
+      // firefox_mcp_profile, and the server renames the old one to it first.
       const nested = join(profileDir, 'firefox_devtools_mcp_profile');
       mkdirSync(nested, { recursive: true });
       const cell = slot % capacity;

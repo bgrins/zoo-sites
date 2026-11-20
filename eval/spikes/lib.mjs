@@ -54,7 +54,8 @@ export function packageVersions() {
 //
 // `prefs(scratch)` (devtools only) returns prefs for a seeded profile's
 // user.js. The tool launches Firefox from
-// <--profile-path>/firefox_devtools_mcp_profile, so the file lands there and
+// <--profile-path>/firefox_devtools_mcp_profile (renamed firefox_mcp_profile
+// by 0.11.0, which moves the old folder first), so the file lands there and
 // in the parent, as eval/window-grid.mjs does. `args(scratch)` (devtools
 // only) returns more server flags, such as the --viewport and --pref flags a
 // paid run launches with. The devtools server launches the Firefox

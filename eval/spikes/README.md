@@ -38,7 +38,7 @@ input-event logger, and the finding log.
 
 ## After a version bump
 
-When `@mozilla/firefox-devtools-mcp`, `@playwright/mcp` or either Firefox changes:
+When `@mozilla/firefox-mcp` (formerly `@mozilla/firefox-devtools-mcp`), `@playwright/mcp` or either Firefox changes:
 
 1. Run every spike:
    `for f in eval/spikes/*.mjs; do case $f in *lib.mjs|*gate-time.mjs) ;; *) node $f || echo "CHANGED: $f";; esac; done`

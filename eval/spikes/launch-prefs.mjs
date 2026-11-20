@@ -14,7 +14,7 @@
 //
 //   node eval/spikes/launch-prefs.mjs
 
-import { mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -53,7 +53,9 @@ async function devtools(name, policy) {
   const pdf = /true/.test(textOf(await server.call('evaluate_script', { function: '() => navigator.pdfViewerEnabled' })));
   await server.close();
   await sleep(2500);
-  return { pdf, prefs: userPrefs(join(dir, 'firefox_devtools_mcp_profile', 'prefs.js')) };
+  // The profile folder is firefox_mcp_profile from 0.11.0, firefox_devtools_mcp_profile before.
+  const profile = ['firefox_mcp_profile', 'firefox_devtools_mcp_profile'].map((d) => join(dir, d)).find(existsSync);
+  return { pdf, prefs: userPrefs(join(profile, 'prefs.js')) };
 }
 
 // Playwright's launch of the same build with the pinned prefs, as

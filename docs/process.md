@@ -81,7 +81,8 @@ site server itself uses node builtins. The `firefox-devtools-mcp` condition and 
 1. `--mcp-command "<cmd>"` (`eval/run.mjs` only)
 2. `FIREFOX_DEVTOOLS_MCP=/path/to/checkout`, a checkout's repo root, whose
    `dist/index.js` is used; the checkout must have been built (`npm run build`)
-3. the `@mozilla/firefox-devtools-mcp` dependency installed by `npm install`
+3. the `@mozilla/firefox-mcp` dependency installed by `npm install` (the package
+   was `@mozilla/firefox-devtools-mcp` before 0.11.0; the condition keeps that name)
 
 A `firefox-devtools-mcp@<label>` condition skips that order and runs the root, or the
 dependency, that its `--devtools-build <label>=<root|dep>` names. Without one of the

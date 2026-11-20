@@ -747,9 +747,9 @@ export const DRIVERS = {
       const snap = await snapshot(h);
       const sizeUid = uid(snap, /uid=(\S+) select "Size"/, 'size selector');
       const colorUid = uid(snap, /uid=(\S+) select "Colou?r"/, 'color selector');
-      // fill_by_uid sends keys, which is enough to drive a <select>: there is no
-      // select_option tool, but the option label typed into the closed select
-      // picks it and fires change, which is what the page listens for.
+      // There is no select_option tool, but fill_by_uid picks the option whose
+      // value or label matches and fires change, which is what the page
+      // listens for.
       const choose = async (target, value, id) => {
         await fillSelect(h.mcp, target, value);
         const got = await h.evaluate(`() => document.getElementById('${id}').value`);

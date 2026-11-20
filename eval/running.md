@@ -347,7 +347,8 @@ Both the gate and paid runs resolve `firefox-devtools-mcp` in this order, so
 
 1. `--mcp-command "<cmd>"` (`run.mjs` only)
 2. `FIREFOX_DEVTOOLS_MCP=/path/to/checkout` — a built checkout's repo root
-3. the `@mozilla/firefox-devtools-mcp` dependency from `package.json`
+3. the `@mozilla/firefox-mcp` dependency from `package.json` (named
+   `@mozilla/firefox-devtools-mcp` before 0.11.0)
 
 A `firefox-devtools-mcp@<label>` condition skips that order: it runs the root, or the
 dependency, that its `--devtools-build <label>=<root|dep>` names.
