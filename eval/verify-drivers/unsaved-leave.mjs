@@ -28,7 +28,7 @@ export const DRIVERS = {
       };
       const tabLink = (label) => async () => uidOf(await snapshot(), `a "${label}"`);
       const fieldOf = (label) => async () => {
-        const m = (await snapshot()).match(new RegExp(`uid=(\\S+) input "${label}" value="(\\d+)"`));
+        const m = (await snapshot()).match(new RegExp(`uid=(\\S+) input "${label}"[^\\n]* value="(\\d+)"`));
         return m ? { uid: m[1], value: Number(m[2]) } : null;
       };
       const pillShown = async () => /text="Unsaved changes"/.test(await snapshot());

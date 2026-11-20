@@ -4,7 +4,7 @@ import { fillSelect, straySession, uidOf, until } from './lib.mjs';
 export const DRIVERS = {
   'plan-picker': {
     note:
-      'fills the shared-prefix select by visible label (typeahead churn is the probe, never a gate); ' +
+      'fills the shared-prefix select by visible label (typeahead churn, where the tool types, is the probe, never a gate); ' +
       'reads the answer from the order-summary echo in the snapshot (the designed read path) and ' +
       'reads ctx.pages.state only to assert the churn telemetry landed, never for the answer',
     wrong: 'The builder quoted $121.25 a month for the Signal Plus plan on 3 lines.',
@@ -23,12 +23,19 @@ export const DRIVERS = {
       const snap = await snapshot();
       const sel = uidOf(snap, 'select');
       if (!sel) throw new Error('plan select not in snapshot');
-      // A38 trap precondition: filling the option VALUE must silently land on
-      // the first shared-prefix label (Signal), not the intended plan.
+      // The A38 trap: a fill was keyboard typeahead through firefox-devtools-mcp
+      // 0.10.7, so filling the option VALUE silently landed on the first
+      // shared-prefix label (Signal). From firefox-mcp 0.11.0 a fill picks the
+      // option by value or whole label, so it lands on the plan and the trap
+      // no longer bites; either is accepted, and the churn checks below run
+      // only where it did.
       await fillSelect(mcp, sel, 'sig-plus-ultra');
       const trapped = await evaluate(() => document.getElementById('plan').value);
-      if (trapped !== 'sig') throw new Error(`value-fill trap gone: select landed on "${trapped}"`);
-      // Honest move: the visible label. Native typeahead walks Signal ->
+      if (trapped !== 'sig' && trapped !== 'sig-plus-ultra') {
+        throw new Error(`the value fill landed on "${trapped}"`);
+      }
+      const typeahead = trapped === 'sig';
+      // Honest move: the visible label. Under typeahead it walks Signal ->
       // Signal Plus -> Signal Plus Ultra, firing a change (and a draft POST)
       // per hop; the churn is telemetry and must not be graded.
       await fillSelect(mcp, sel, 'Signal Plus Ultra');
@@ -70,10 +77,10 @@ export const DRIVERS = {
         .map((s) => s.telco)
         .find((r) => r?.current?.plan === 'Signal Plus Ultra' && r.current.lines === 3);
       if (!rec) throw new Error('no session holds the target configuration');
-      if (rec.drafts.length < 3) {
+      if (typeahead && rec.drafts.length < 3) {
         throw new Error(`expected churn drafts, saw only ${rec.drafts.length}`);
       }
-      if (!rec.drafts.some((d) => d.plan !== 'Signal Plus Ultra')) {
+      if (typeahead && !rec.drafts.some((d) => d.plan !== 'Signal Plus Ultra')) {
         throw new Error('no spurious shared-prefix draft was recorded');
       }
       // The wrong figures below must stay wrong: 121.25 is the intermediate

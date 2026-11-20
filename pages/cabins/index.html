@@ -269,7 +269,30 @@ function dayLabel(dateIso) {
   return base + ' - open';
 }
 
+// Day buttons are built once and restyled in place: a date box's change event
+// fires as a click on the calendar takes focus, and rebuilding the buttons
+// then would swallow that click.
+const dayButtons = new Map();
+
+function styleDay(b, dateIso) {
+  const blk = blackouts.has(dateIso);
+  b.setAttribute('aria-label', dayLabel(dateIso));
+  b.classList.toggle('blk', blk);
+  // A blackout can still be the check-out morning of a stay that ends on
+  // it, so once a check-in is picked the later blackout days open for the
+  // second click; the server re-checks every night of the stay.
+  b.disabled = blk && !(checkin && !checkout && dateIso > checkin);
+  const pick = !b.disabled && (dateIso === checkin || dateIso === checkout);
+  b.classList.toggle('pick', pick);
+  b.classList.toggle('stay', !b.disabled && !pick && Boolean(checkin && checkout && dateIso > checkin && dateIso < checkout));
+}
+
 function render() {
+  if (dayButtons.size) {
+    for (const [dateIso, b] of dayButtons) styleDay(b, dateIso);
+    quote();
+    return;
+  }
   const wrap = el('calendars');
   wrap.textContent = '';
   for (const spec of MONTHS) {
@@ -296,19 +319,9 @@ function render() {
       b.type = 'button';
       b.className = 'day';
       b.textContent = d;
-      b.setAttribute('aria-label', dayLabel(dateIso));
-      const blk = blackouts.has(dateIso);
-      if (blk) b.classList.add('blk');
-      // A blackout can still be the check-out morning of a stay that ends on
-      // it, so once a check-in is picked the later blackout days open for the
-      // second click; the server re-checks every night of the stay.
-      if (blk && !(checkin && !checkout && dateIso > checkin)) {
-        b.disabled = true;
-      } else {
-        if (dateIso === checkin || dateIso === checkout) b.classList.add('pick');
-        else if (checkin && checkout && dateIso > checkin && dateIso < checkout) b.classList.add('stay');
-        b.addEventListener('click', () => onDay(dateIso));
-      }
+      b.addEventListener('click', () => onDay(dateIso));
+      styleDay(b, dateIso);
+      dayButtons.set(dateIso, b);
       grid.appendChild(b);
     }
     box.appendChild(grid);
@@ -415,6 +428,7 @@ async function load() {
   el('window-line').textContent =
     'Booking window: ' + data.window.from + ' to ' + data.window.to;
   MONTHS = [];
+  dayButtons.clear();
   const [fy, fm] = data.window.from.split('-').map(Number);
   const [ty, tm] = data.window.to.split('-').map(Number);
   for (let k = fy * 12 + fm - 1; k <= ty * 12 + tm - 1; k++) {

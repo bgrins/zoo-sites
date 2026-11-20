@@ -399,11 +399,11 @@ export const DRIVERS = {
       if (form === -1) throw new Error('no search form in the gov home snapshot');
       const field = lines(home)
         .slice(form + 1, form + 4)
-        .map((l) => l.match(/uid=(\S+) input(?! value)/))
+        .map((l) => (/value="GO"/.test(l) ? null : l.match(/uid=(\S+) input\b/)))
         .find(Boolean);
       const go = lines(home)
         .slice(form + 1, form + 4)
-        .map((l) => l.match(/uid=(\S+) input value="GO"/))
+        .map((l) => l.match(/uid=(\S+) input[^\n]* value="GO"/))
         .find(Boolean);
       if (!field || !go) throw new Error('could not resolve the search field and GO button');
       await mcp('fill_by_uid', { uid: field[1], value: 'Form RV-7 mailing address' });

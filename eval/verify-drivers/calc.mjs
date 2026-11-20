@@ -29,12 +29,12 @@ function flagButtons(snap) {
 }
 
 function formulaBar(snap) {
-  const m = /uid=(\S+) input "Formula bar" value="([^"]*)"/.exec(snap);
+  const m = /uid=(\S+) input "Formula bar"[^\n]* value="([^"]*)"/.exec(snap);
   return m ? { uid: m[1], value: m[2] } : { uid: uidOf(snap, 'input "Formula bar"'), value: '' };
 }
 
 function nameBox(snap) {
-  const m = /uid=(\S+) input "Cell reference" value="([^"]*)"/.exec(snap);
+  const m = /uid=(\S+) input "Cell reference"[^\n]* value="([^"]*)"/.exec(snap);
   return m ? { uid: m[1], value: m[2] } : { uid: null, value: '' };
 }
 

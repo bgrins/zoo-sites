@@ -85,6 +85,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { normalise } from '../extract.mjs';
+import { DEVTOOLS_PACKAGE } from '../mcp-stdio.mjs';
 import { uidShapeOf } from '../mcp-tap.mjs';
 import { isRunDir, readRun, transcriptName } from '../run-files.mjs';
 import { normalize, rowTranscript } from './events.mjs';
@@ -101,8 +102,8 @@ const packageVersion = (name) => {
   }
 };
 // The packages whose source is a tool's, for the evidence gate.
-const TOOL_PACKAGES = ['@mozilla/firefox-devtools-mcp', '@playwright/mcp', 'playwright-core', 'playwright'];
-const INSTALLED_DEVTOOLS = join(REPO_ROOT, 'node_modules', '@mozilla', 'firefox-devtools-mcp');
+const TOOL_PACKAGES = [DEVTOOLS_PACKAGE, '@playwright/mcp', 'playwright-core', 'playwright'];
+const INSTALLED_DEVTOOLS = join(REPO_ROOT, 'node_modules', ...DEVTOOLS_PACKAGE.split('/'));
 const fileSha = (path) => {
   try {
     return createHash('sha256').update(readFileSync(path)).digest('hex');
@@ -1775,7 +1776,7 @@ function filesSection({ unblinded, stepsFiles, ask = false, sourceShut = false, 
     '  eval/README.md, docs/*.md, sites/** (fixture servers: what they mint and record), pages/** (fixture HTML),',
     sourceShut
       ? `  and playwright's source ($REPO/node_modules/@playwright/mcp, $REPO/node_modules/playwright-core/lib);\n  ${SOURCE_SHUT[sourceShut]}.`
-      : '  and the tools\' source: $REPO/node_modules/@mozilla/firefox-devtools-mcp/dist,\n' +
+      : `  and the tools' source: $REPO/node_modules/${DEVTOOLS_PACKAGE}/dist,\n` +
         '  $REPO/node_modules/@playwright/mcp and $REPO/node_modules/playwright-core/lib.',
     '- Write only under ./scratch. There is no network.',
     '',
@@ -2709,7 +2710,7 @@ async function main(args) {
     // The firefox-devtools-mcp the judge's copy installs, and whether its
     // source was the judged builds' and so readable.
     devtools_source: {
-      version: packageVersion('@mozilla/firefox-devtools-mcp'),
+      version: packageVersion(DEVTOOLS_PACKAGE),
       sha256: installedSha,
       readable: !sourceShut,
       why: sourceShut ? SOURCE_SHUT[sourceShut] : null,
@@ -2792,14 +2793,14 @@ async function main(args) {
             ...earlier.filter((f) => f.endsWith('.json')).slice(0, 2),
             ...(blinded ? [runFile] : []),
             ...(sourceShut
-              ? [join(repoDir, 'node_modules', '@mozilla', 'firefox-devtools-mcp', 'package.json'), ...roots.map((r) => join(r, 'package.json'))].filter(existsSync)
+              ? [join(repoDir, 'node_modules', ...DEVTOOLS_PACKAGE.split('/'), 'package.json'), ...roots.map((r) => join(r, 'package.json'))].filter(existsSync)
               : []),
           ],
           mustRead: [
             join(repoDir, 'eval', 'tasks', 'web', 'auth.mjs'),
             join(itemDir, 'run', 'results.json'),
             ...(unblinded ? [runFile] : []),
-            ...(sourceShut ? [] : [join(repoDir, 'node_modules', '@mozilla', 'firefox-devtools-mcp', 'package.json')]),
+            ...(sourceShut ? [] : [join(repoDir, 'node_modules', ...DEVTOOLS_PACKAGE.split('/'), 'package.json')]),
           ],
         });
         await preflight;
@@ -2868,7 +2869,7 @@ async function main(args) {
       const toolOf = (row) => row.condition.split('/').pop().split('@')[0];
       const distinct = new Set(staged.map((a) => toolOf(a.row))).size === staged.length;
       const packageArm = (pkg) =>
-        distinct ? staged.find((a) => (pkg === '@mozilla/firefox-devtools-mcp') === (toolOf(a.row) === 'firefox-devtools-mcp'))?.label ?? null : null;
+        distinct ? staged.find((a) => (pkg === DEVTOOLS_PACKAGE) === (toolOf(a.row) === 'firefox-devtools-mcp'))?.label ?? null : null;
       const resultsFiles = [join(itemDir, 'run', 'results.json'), ...(unblinded ? [runFile] : [])].map(real);
       const roleOf = (p) => {
         if (own.has(p)) return own.get(p);

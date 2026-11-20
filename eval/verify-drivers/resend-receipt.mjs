@@ -121,7 +121,7 @@ export const DRIVERS = {
 
       // A form POST is not idempotent, so one click and no clickToPath retry.
       snap = await snapshot();
-      await mcp('click_by_uid', { uid: uidOf(snap, 'input value="Submit Request"') });
+      await mcp('click_by_uid', { uid: uidOf(snap, 'input[^\\n]* value="Submit Request"') });
       const receipt = await until('the receipt of the browser request', async () => {
         if (filed().length < 2) return null;
         const r = await evaluate(() => ({ path: location.pathname, text: document.body?.innerText ?? '' }));
@@ -145,7 +145,7 @@ export const DRIVERS = {
       });
       await mcp('fill_by_uid', { uid: uidOf(snap, 'input "Account number"'), value: REQUEST.acct });
       // A GET form submit is idempotent, so clickToPath may retry it.
-      const lookUp = async () => uidOf(await snapshot(), 'input value="Look Up"');
+      const lookUp = async () => uidOf(await snapshot(), 'input[^\\n]* value="Look Up"');
       await clickToPath(mcp, evaluate, lookUp, 'reqstatus.cgi');
       const listing = () =>
         evaluate(() =>
@@ -166,7 +166,7 @@ export const DRIVERS = {
       }
 
       snap = await snapshot();
-      const withdraws = [...snap.matchAll(/uid=(\S+) input value="Withdraw"/g)].map((m) => m[1]);
+      const withdraws = [...snap.matchAll(/uid=(\S+) input[^\n]* value="Withdraw"/g)].map((m) => m[1]);
       if (withdraws.length !== 2) {
         throw new Error(`${withdraws.length} Withdraw buttons in the snapshot, not 2`);
       }

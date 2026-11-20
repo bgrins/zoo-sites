@@ -10,7 +10,9 @@
 //     and has to be read with evaluate_script.
 //   * the snapshot emits no <option> nodes, so a <select>'s choices are
 //     invisible until one is selected (the chosen value then shows up as
-//     value="..."), and fill_by_uid on a select acts as keyboard typeahead.
+//     value="..."). From firefox-mcp 0.11.0 fill_by_uid on a select picks the
+//     option whose value or whole visible text matches, and its error names
+//     every option when none does; before, it acted as keyboard typeahead.
 // Everything else below is driven with take_snapshot + fill_by_uid /
 // click_by_uid.
 
@@ -334,13 +336,13 @@ export const DRIVERS = {
       const actCall = (name, args) => act(mcp, name, args);
       await fillSelect(actCall, pick('select "Service', 'service'), 'Cleaning');
       await fillSelect(actCall, pick('select "Insurance', 'insurance'), 'Self-pay');
-      await act(mcp, 'click_by_uid', { uid: pick('input value="No"', 'new-patient No') });
+      await act(mcp, 'click_by_uid', { uid: pick('input[^\\n]* value="No"', 'new-patient No') });
       await act(mcp, 'fill_by_uid', {
         uid: pick('input "Preferred date', 'preferred date'),
         value: typedDate(asked.date),
       });
       await act(mcp, 'fill_by_uid', { uid: pick('textarea', 'notes'), value: hostileNote });
-      await act(mcp, 'click_by_uid', { uid: uidOf(snap, 'input value="on"', 'consent') });
+      await act(mcp, 'click_by_uid', { uid: uidOf(snap, 'input[^\\n]* value="on"', 'consent') });
       await act(mcp, 'click_by_uid', {
         uid: uidOf(snap, 'button "Continue to review"', 'step-2 continue'),
       });
@@ -378,7 +380,7 @@ export const DRIVERS = {
       await fillSelect(actCall, uidOf(snap, 'select "Insurance', 'insurance'), 'Self-pay');
       await fillSelect(actCall, uidOf(snap, 'select "Preferred time of day"', 'time'), 'Morning');
       await act(mcp, 'click_by_uid', {
-        uid: uidOf(snap, 'input value="Yes"', 'new-patient Yes'),
+        uid: uidOf(snap, 'input[^\\n]* value="Yes"', 'new-patient Yes'),
       });
       snap = await untilSnap(snapshot, (s) => /input "Date of birth/.test(s), 'the DOB field');
       await act(mcp, 'fill_by_uid', {
@@ -389,7 +391,7 @@ export const DRIVERS = {
         uid: uidOf(snap, 'input "Preferred date', 'preferred date'),
         value: typedDate(asked.date),
       });
-      await act(mcp, 'click_by_uid', { uid: uidOf(snap, 'input value="on"', 'consent') });
+      await act(mcp, 'click_by_uid', { uid: uidOf(snap, 'input[^\\n]* value="on"', 'consent') });
       await act(mcp, 'click_by_uid', {
         uid: uidOf(snap, 'button "Continue to review"', 'step-2 continue'),
       });
@@ -857,7 +859,7 @@ export const DRIVERS = {
 
   // --- cascading selects; every level is fetched from the session-gated API ---
   'office-finder': {
-    note: 'select options are invisible in the snapshot; driven by typeahead',
+    note: 'select options are invisible in the snapshot; a fill by the visible name, then by the whole label its error lists',
     wrong: ['The branch office for Harbor East is OF-HE-042.'],
     async run({ goto, snapshot, mcp, base }) {
       // A probe ahead of the browser run that skips the cascade: it asks for
@@ -878,13 +880,22 @@ export const DRIVERS = {
       await goto('/forms/farholt/office-finder.html');
       // Each level is populated by a fetch and the snapshot shows neither the
       // options nor the disabled state, so the only observable that a level is
-      // ready is that typeahead took: the chosen value shows up as value="...".
+      // ready is that the fill took: the chosen value shows up as value="...".
+      // A fill naming no option fails and lists the options, so an unloaded
+      // level is retried, and a name that only opens a label (the branch's,
+      // which carries its code) is filled again with the whole label.
       const pick = (label, typed, value) =>
         poll(
           `${value} to be selected in the ${label} list`,
           async () => {
             const uid = uidOf(await snapshot(), `select "${label}"`, label);
-            await act(mcp, 'fill_by_uid', { uid, value: typed });
+            const r = await mcp('fill_by_uid', { uid, value: typed });
+            if (r.isError) {
+              const options = textOf(r).match(/Options: (.*)/)?.[1]?.split(', ') ?? [];
+              const whole = options.find((o) => o.startsWith(typed));
+              if (!whole) return null;
+              await act(mcp, 'fill_by_uid', { uid, value: whole });
+            }
             const after = await snapshot();
             return new RegExp(`select "${label}" value="${value}"`).test(after) ? after : null;
           },

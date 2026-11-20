@@ -27,18 +27,24 @@ export async function until(label, fn, { tries = 240, gap = 250 } = {}) {
   throw new Error(`timed out waiting for ${label}`);
 }
 
-// fill_by_uid on a closed <select> picks an option by typeahead. Firefox keeps
-// one typeahead string for every select and extends it with each key typed
-// within ui.menu.incremental_search.timeout (1000ms) of the last, so a select
-// fill right after another fill types onto the previous value: "Sand" then
-// "Moss" searches for "SandMoss" and leaves the select where it was. From
-// firefox-devtools-mcp 0.10.5 nothing between two fills resets it. An agent's
-// fills are a model turn apart; a driver's are not, so this waits the timeout
-// out first. `call` is the driver's (tool, args) function.
-export const TYPEAHEAD_MS = 1000;
+// fill_by_uid on a <select> picks the option whose value or whole visible text
+// matches (firefox-mcp 0.11.0), and fails naming every option when none does.
+// An agent reads the label it meant off that list, so a name that only opens
+// one option's label ("Morning" for "Morning (8am–12pm)") is filled again with
+// the whole label. `call` is the driver's (tool, args) function, which may
+// throw on a failed call or return it.
 export async function fillSelect(call, uid, value) {
-  await new Promise((r) => setTimeout(r, TYPEAHEAD_MS + 100));
-  return call('fill_by_uid', { uid, value });
+  let r;
+  try {
+    r = await call('fill_by_uid', { uid, value });
+  } catch (error) {
+    r = { isError: true, content: [{ type: 'text', text: error.message }] };
+  }
+  if (!r?.isError) return r;
+  const text = textOf(r);
+  const whole = (text.match(/Options: (.*)/)?.[1]?.split(', ') ?? []).find((o) => o.startsWith(value));
+  if (!whole) throw new Error(`fill_by_uid could not pick "${value}": ${text}`);
+  return call('fill_by_uid', { uid, value: whole });
 }
 
 // An ISO date in the order fill_by_uid has to type it into a type=date input:

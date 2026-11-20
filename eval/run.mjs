@@ -633,14 +633,14 @@ Conditions and models:
                           Warns if you vary both axes at once.
   --conditions <list>     comma list of firefox-devtools-mcp, playwright-mcp
                           and any firefox-devtools-mcp@<label> (default: both —
-                          @mozilla/firefox-devtools-mcp and the vendored
+                          @mozilla/firefox-mcp and the vendored
                           @playwright/mcp, both over stdio driving their own
                           Firefox. --mcp-command replaces the former; with
                           --devtools-build, the default is every build)
   --devtools-build <label>=<root|dep>
                           add condition firefox-devtools-mcp@<label>, which
                           runs the build at <root> (a built checkout's repo
-                          root) or, for dep, the @mozilla/firefox-devtools-mcp
+                          root) or, for dep, the @mozilla/firefox-mcp
                           dependency. Repeatable; the same root under two
                           labels is an A/A pair, e.g.
                             --devtools-build base=dep --devtools-build aa=dep
@@ -1183,7 +1183,7 @@ function serverSpecFor(condition, { downloadsDir, privateDir, profileDir, userAg
       args: [
         // One resolver, shared with verify: a --devtools-build root, else
         // FIREFOX_DEVTOOLS_MCP for a local checkout, otherwise the
-        // @mozilla/firefox-devtools-mcp dependency.
+        // @mozilla/firefox-mcp dependency.
         devtoolsMcpEntry(devtoolsRootFor(condition)),
         '--enable-script',
         ...(HEADED ? [] : ['--headless', '--viewport', DEVTOOLS_WINDOW]),

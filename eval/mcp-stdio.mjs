@@ -17,12 +17,17 @@ const CALL_TIMEOUT_MS = 120000;
 // repo root, null for the dependency, or undefined for the default order:
 //   FIREFOX_DEVTOOLS_MCP  a local checkout of the tool, for the iterate-on-the-
 //                         tool loop and for working inside the tool's own repo
-//   the dependency        @mozilla/firefox-devtools-mcp, the normal case
-// The package name is scoped; `firefox-devtools-mcp` is only its bin name, so
-// resolving that unscoped specifier always throws. Both paths are checked for
+//   the dependency        DEVTOOLS_PACKAGE, the normal case
+// The package name is scoped; its bin name alone, unscoped, always throws when
+// resolved. Both paths are checked for
 // existence here rather than at connect time: the server is spawned as a child
 // with its stderr captured, so a missing entry would otherwise surface as an
 // opaque "MCP error -32000: Connection closed" naming neither path nor cause.
+// The npm package the firefox-devtools-mcp condition runs. Upstream renamed it
+// in 0.11.0 and still publishes it as @mozilla/firefox-devtools-mcp too;
+// the condition keeps its name so stored runs stay comparable.
+export const DEVTOOLS_PACKAGE = '@mozilla/firefox-mcp';
+
 export function devtoolsMcpEntry(root = undefined) {
   const fromEnv = root === undefined && Boolean(process.env.FIREFOX_DEVTOOLS_MCP);
   const checkout = root === undefined ? process.env.FIREFOX_DEVTOOLS_MCP || null : root;
@@ -37,19 +42,19 @@ export function devtoolsMcpEntry(root = undefined) {
   let resolved;
   try {
     resolved = join(
-      createRequire(import.meta.url).resolve('@mozilla/firefox-devtools-mcp/package.json'),
+      createRequire(import.meta.url).resolve(`${DEVTOOLS_PACKAGE}/package.json`),
       '..',
       'dist',
       'index.js'
     );
   } catch {
     throw new Error(
-      'Cannot find @mozilla/firefox-devtools-mcp. Run `npm install`, or set ' +
+      `Cannot find ${DEVTOOLS_PACKAGE}. Run \`npm install\`, or set ` +
         'FIREFOX_DEVTOOLS_MCP to a built checkout of the tool.'
     );
   }
   if (!existsSync(resolved)) {
-    throw new Error(`@mozilla/firefox-devtools-mcp is installed but ${resolved} is missing.`);
+    throw new Error(`${DEVTOOLS_PACKAGE} is installed but ${resolved} is missing.`);
   }
   return resolved;
 }
