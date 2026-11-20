@@ -1,6 +1,6 @@
-// Probes native form controls (date, time, datetime-local, range, select, select[multiple], datalist) through each condition's fill tools; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0).
+// Probes native form controls (date, time, datetime-local, range, select, select[multiple], datalist) through each condition's fill tools; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0) and @playwright/mcp 0.0.85 (Firefox 159.0), 2026-11-10.
 
-import { findings, page, probeServer, surface } from './lib.mjs';
+import { findings, page, probeServer, sleep, surface } from './lib.mjs';
 
 const probe = await probeServer({
   '/controls': page(
@@ -47,8 +47,8 @@ await log.header(dt, pw);
     return { error: toolError(r), ...(await values(dt)) };
   };
   const pick = (v, key) => ({ error: v.error, [key]: v[key] });
-  log.record('devtools fill date ISO', pick(await fill('Pickup date', '2027-03-04'), 'd'), { error: null, d: '2027-03-04' });
-  log.record('devtools fill date as typed (03/04/2027)', pick(await fill('Pickup date', '03/04/2027'), 'd'), { error: null, d: '' });
+  log.record('devtools fill date ISO', pick(await fill('Pickup date', '2027-03-04'), 'd'), { error: null, d: '7030-02-02' });
+  log.record('devtools fill date as typed (03/04/2027)', pick(await fill('Pickup date', '03/04/2027'), 'd'), { error: null, d: '2027-03-04' });
   log.record('devtools fill time 14:30', pick(await fill('Start time', '14:30'), 'tm'), { error: null, tm: '14:30' });
   log.record('devtools fill datetime-local ISO', pick(await fill('Closure starts', '2027-03-04T15:00'), 'dt'), { error: null, dt: '7030-02-02T04:15' });
   log.record('devtools fill datetime-local as typed', pick(await fill('Closure starts', '03/04/2027 03:00 PM'), 'dt'), { error: null, dt: '2027-03-04T15:00' });
@@ -58,14 +58,17 @@ await log.header(dt, pw);
   {
     const snap = await dt.snapshot();
     const uid = dt.target(snap, /"Regions"/);
+    // Firefox's select typeahead joins keys typed within 1000ms, so each fill
+    // waits out the previous one, as an agent's turn would.
     const after = async (value) => {
+      await sleep(1100);
       await dt.call('fill_by_uid', { uid, value });
       return (await values(dt)).many;
     };
     log.record(
       'devtools fill select[multiple] "West", then "Nowhere", then ""',
       [await after('West'), await after('Nowhere'), await after('')],
-      [['West'], ['North'], ['North', 'South', 'East', 'West', 'Central']]
+      [['West'], ['North'], ['North']]
     );
   }
   log.record(
@@ -95,14 +98,14 @@ await log.header(dt, pw);
   const pick = (v, key) => ({ error: v.error, [key]: v[key] });
   log.record('playwright fill_form date ISO', pick(await form('Pickup date', 'textbox', '2027-03-04'), 'd'), { error: null, d: '2027-03-04' });
   log.record('playwright type date as typed (03/04/2027)', pick(await type('Pickup date', '03/04/2027'), 'd'), {
-    error: 'Malformed value', d: '',
+    error: null, d: '',
   });
   log.record('playwright fill_form time 14:30', pick(await form('Start time', 'textbox', '14:30'), 'tm'), { error: null, tm: '14:30' });
   log.record('playwright fill_form datetime-local ISO', pick(await form('Closure starts', 'textbox', '2027-03-04T15:00'), 'dt'), {
     error: null, dt: '2027-03-04T15:00',
   });
   log.record('playwright type datetime-local as typed', pick(await type('Closure starts', '03/04/2027 03:00 PM'), 'dt'), {
-    error: 'Malformed value', dt: '',
+    error: null, dt: '',
   });
   log.record('playwright fill_form slider 70', pick(await form('Volume', 'slider', '70'), 'rg'), { error: null, rg: '70' });
   log.record('playwright fill_form combobox "Brisk Hill"', pick(await form('Borough', 'combobox', 'Brisk Hill'), 'one'), {

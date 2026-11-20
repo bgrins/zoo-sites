@@ -3,8 +3,9 @@
 // hover reply says, whether filling the card's message box and clicking its
 // Page button survive the pointer move off the link, and whether the profile
 // page, the slower route, pages as well; measured on firefox-devtools-mcp
-// 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0). One
-// browser runs at a time.
+// 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0);
+// remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0) and @playwright/mcp
+// 0.0.85 (Firefox 159.0), 2026-11-10. One browser runs at a time.
 
 import { findings, page, probeServer, sleep, surface } from './lib.mjs';
 
@@ -123,7 +124,9 @@ const EXPECTED = {
     click: { open: true, receipt: 'Paged. Receipt PG-4E1B7C', pages: [{ h: 'teodric', message: MESSAGE }] },
     leave: { opened: true, status: 'Off call, back Thu', closed: true },
     profile: [{ h: 'teodric', message: MESSAGE }],
-    covered: { toolError: false, timedOut: false, linkEntered: 1, cardEntered: 1 },
+    // From 0.10.5 hover_by_uid moves the pointer to the link's center, so the
+    // card on top of it takes the hover and the link never sees one.
+    covered: { toolError: false, timedOut: false, linkEntered: 0, cardEntered: 1 },
   },
   playwright: {
     hover: { open: true, status: 'On call until 18:40', cardGets: ['orlin', 'teodric'], replyNamesCard: false },

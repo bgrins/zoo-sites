@@ -195,13 +195,14 @@ So drive a capability through the tool surface before you build a task on it, an
 spike the tools no task exercises. A tool that reports success while doing nothing
 is the failure mode to expect, and `drag_by_uid_to_uid` is the standing example: it
 sends only untrusted dragstart and drop events, so a pointer-driven list does not
-move while the tool reports a drag. `set_viewport_size` silently clamps,
-`evaluate_script` times out at 5s by default and at 10s whatever timeout it is given,
-and a wrapping label does not name an input. `fill` on
-`type=range` silently keeps the old value. On `type=date` it takes an ISO value and
-silently leaves the field empty for the locale's typed order (03/04/2027), and on
-`datetime-local` it is the reverse: an ISO value silently stores a wrong date, and
-only the locale's typed order lands. On `select[multiple]` it leaves one option selected. Design around each
+move while the tool reports a drag. A wrapping label does not name an input. `fill` on
+`type=range` silently keeps the old value. On `type=date` and `datetime-local` it types
+the value key by key, so an ISO value silently stores a wrong date (7030-02-02 for
+2027-03-04), and only the locale's typed order (03/04/2027) lands. On `select[multiple]`
+it leaves one option selected, and a fill on any select within 1000ms of the last
+extends Firefox's typeahead string instead of starting a new one. `click_by_uid`
+scrolls an element into view only when it lies outside the window, so a click on one
+a scroll container clips lands on whatever covers that point. Design around each
 rather than discovering it mid-build. A task built on a capability that does not work
 grades the tool's bug instead of the agent.
 

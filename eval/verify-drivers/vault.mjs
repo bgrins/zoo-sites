@@ -33,13 +33,13 @@ export const DRIVERS = {
       if (!secretUid) throw new Error('no link to the deploy secret in the snapshot');
       await mcp('click_by_uid', { uid: secretUid });
 
-      await waitFor(
-        async () => (await snapshot()).includes('Copy token'),
-        'the secret detail view'
-      );
-      snap = await snapshot();
+      // The masked value renders after the Copy button, and click_by_uid
+      // returns without waiting, so the wait is on the value itself.
+      snap = await waitFor(async () => {
+        const s = await snapshot();
+        return s.includes('Copy token') && /stv_live_[0-9a-f]{4}…[0-9a-f]{4}/.test(s) ? s : null;
+      }, 'the secret detail view to render a masked value');
       const masked = snap.match(/stv_live_[0-9a-f]{4}…[0-9a-f]{4}/);
-      if (!masked) throw new Error('the secret page did not render a masked value');
       const copyUid = uidOf(snap, 'button "Copy token"');
       if (!copyUid) throw new Error('no Copy token button in the snapshot');
 

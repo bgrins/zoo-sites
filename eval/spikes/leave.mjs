@@ -1,4 +1,4 @@
-// Probes a beforeunload guard on a dirty form: whether each condition's navigate and click tools show it, bypass it, or block on it; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0).
+// Probes a beforeunload guard on a dirty form: whether each condition's navigate and click tools show it, bypass it, or block on it; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on @playwright/mcp 0.0.85 (Firefox 159.0) and firefox-devtools-mcp 0.10.7 (Firefox 158.0), 2026-11-10.
 
 import { findings, page, probeServer, sleep, surface } from './lib.mjs';
 
@@ -52,10 +52,15 @@ const dirty = async (s) => {
 {
   await dirty(pw);
   const nav = await pw.call('browser_navigate', { url: probe.url + '/roaming' });
+  const navModal = /Modal state[\s\S]*?beforeunload/i.test(nav);
+  // Firefox 159 prompts on a navigate where 152 left without asking. Accept it
+  // so the click below starts with no dialog pending.
+  if (navModal) await pw.call('browser_handle_dialog', { accept: true });
   await sleep(800);
-  log.record('playwright browser_navigate away from a dirty form', { toolError: /^(ERROR|THROW)/.test(nav), at: await where(pw) }, {
-    toolError: false, at: '/roaming',
-  });
+  log.record('playwright browser_navigate away from a dirty form', {
+    toolError: /^(ERROR|THROW)/.test(nav), modalState: navModal, replyAt: nav.match(/Page URL: \S+?(\/\w+)\n/)?.[1] ?? null,
+    atAfterAccept: await where(pw),
+  }, { toolError: false, modalState: true, replyAt: '/settings', atAfterAccept: '/roaming' });
   const snap = await dirty(pw);
   const click = await pw.call('browser_click', { element: 'Roaming', target: pw.target(snap, /"Roaming"/) });
   const modal = /Modal state[\s\S]*?(beforeunload|leave)/i.test(click);

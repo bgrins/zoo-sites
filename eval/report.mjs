@@ -915,8 +915,8 @@ export function launcherNote(meta, conditions = Object.keys(meta.env ?? {})) {
   const list = (xs) => (xs.length > 2 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : xs.join(' and '));
   return (
     `${list([...dt, ...pw])} launch Firefox their own ways, whatever the build: firefox-devtools-mcp's geckodriver, ` +
-    "with the Remote Agent it starts, sets prefs that Playwright's launch leaves at their defaults, such as " +
-    'dom.successive_dialog_time_limit and dom.navigation.navigationRateLimit.count (eval/spikes/launch-prefs.mjs lists them)' +
+    "and the policy it is launched with set prefs that Playwright's launch leaves at their defaults, such as " +
+    'marionette.port and remote.active-protocols (eval/spikes/launch-prefs.mjs lists them)' +
     (shared.length ? `; ${list(shared)} ran ${list(pw)}'s Firefox build, ${build(shared[0])}, so these prefs, not the build, are what differs` : '')
   );
 }

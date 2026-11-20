@@ -6,8 +6,11 @@
 // pdfjs.disabled back there; Playwright sets firefoxUserPrefs again once the
 // browser is up. Each launcher's browser loads about:blank and quits, and the
 // user prefs its prefs.js then holds are compared by name, leaving out the
-// state any profile writes for itself. Measured on firefox-devtools-mcp 0.10.3
-// and @playwright/mcp's playwright-core, Firefox 152.0.4, macOS, 2026-09-21.
+// state any profile writes for itself. Since Firefox 158 (bug 2074275) the
+// Remote Agent sets its recommended prefs on the default branch, so prefs.js
+// shows none of them and drops any user value that matches one. Measured on
+// firefox-devtools-mcp 0.10.7 and @playwright/mcp 0.0.85's playwright-core
+// 1.66.0-alpha-2026-11-09, Firefox 159.0, macOS, 2026-11-10.
 //
 //   node eval/spikes/launch-prefs.mjs
 
@@ -86,30 +89,49 @@ try {
   f.record("playwright's launch: pdf.js on", pw.pdf, true);
   const names = (a, b) => Object.keys(a).filter((k) => !(k in b)).sort();
   f.record('prefs only the devtools arm sets (geckodriver, its Remote Agent, the policy)', names(pinned.prefs, pw.prefs), [
-    'browser.backup.enabled', 'browser.contentblocking.introCount', 'browser.discovery.enabled', 'browser.dom.window.dump.enabled',
-    'browser.http.blank_page_with_error_response.enabled', 'browser.ml.enable',
-    'browser.newtabpage.activity-stream.asrouter.providers.cfr', 'browser.newtabpage.activity-stream.asrouter.providers.cfr-fxa',
+    'browser.dom.window.dump.enabled', 'browser.newtabpage.activity-stream.asrouter.providers.cfr',
+    'browser.newtabpage.activity-stream.asrouter.providers.cfr-fxa',
     'browser.newtabpage.activity-stream.asrouter.providers.message-groups',
     'browser.newtabpage.activity-stream.asrouter.providers.messaging-experiments',
     'browser.newtabpage.activity-stream.asrouter.providers.whats-new-panel',
-    'browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features', 'browser.newtabpage.activity-stream.discoverystream.config',
-    'browser.newtabpage.activity-stream.feeds.snippets', 'browser.newtabpage.activity-stream.fxaccounts.endpoint',
-    'browser.newtabpage.activity-stream.testing.shouldInitializeFeeds', 'browser.newtabpage.activity-stream.tippyTop.service.endpoint',
-    'browser.policies.applied', 'browser.tabs.remote.unloadDelayMs', 'browser.tabs.unloadOnLowMemory',
-    'browser.toolbars.bookmarks.visibility', 'browser.urlbar.merino.endpointURL', 'browser.urlbar.merino.ohttpConfigURL',
-    'browser.urlbar.merino.ohttpRelayURL', 'browser.webapps.checkForUpdates', 'devtools.console.stdout.chrome',
-    'dom.ipc.processPriorityManager.enabled', 'dom.navigation.navigationRateLimit.count', 'dom.successive_dialog_time_limit',
-    'extensions.blocklist.detailsURL', 'extensions.blocklist.itemURL', 'extensions.formautofill.addresses.enabled',
-    'extensions.formautofill.creditCards.enabled', 'extensions.hotfix.url', 'extensions.systemAddon.update.enabled',
-    'extensions.update.background.url', 'extensions.update.url', 'geo.prompt.open_system_prefs', 'geo.provider.network.url',
-    'identity.fxaccounts.auth.uri', 'marionette.port', 'media.sanity-test.disabled', 'mousewheel.allow_scrolling_more_than_one_page',
-    'pdfjs.migrationVersion', 'privacy.trackingprotection.pbmode.enabled', 'remote.active-protocols', 'remote.prefs.recommended.applied',
-    'security.remote_settings.intermediates.enabled', 'services.settings.loglevel',
-    'signon.management.page.breach-alerts.enabled', 'signon.management.page.vulnerable-passwords.enabled',
-    'telemetry.fog.test.localhost_port', 'threads.lower_mainthread_priority_in_background.enabled',
+    'browser.newtabpage.activity-stream.discoverystream.config', 'browser.newtabpage.activity-stream.feeds.snippets',
+    'browser.newtabpage.activity-stream.fxaccounts.endpoint', 'browser.newtabpage.activity-stream.tippyTop.service.endpoint',
+    'browser.policies.applied', 'browser.webapps.checkForUpdates', 'devtools.console.stdout.chrome', 'marionette.port',
+    'media.sanity-test.disabled', 'pdfjs.migrationVersion', 'remote.active-protocols',
+  ]);
+  // playwright.cfg's copy of the Remote Agent's recommended prefs (152.0.4's
+  // cfg had none): the devtools arm runs with the same values, as defaults.
+  f.record("prefs only playwright-mcp's arm sets", names(pw.prefs, pinned.prefs), [
+    'app.normandy.api_url', 'app.update.disabledForTesting', 'apz.axis_lock.mode', 'apz.content_response_timeout',
+    'apz.touch_move_tolerance', 'apz.touch_start_tolerance', 'browser.backup.enabled', 'browser.discovery.enabled',
+    'browser.download.alwaysOpenPanel', 'browser.download.panel.shown', 'browser.http.blank_page_with_error_response.enabled',
+    'browser.ml.enable', 'browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features',
+    'browser.newtabpage.activity-stream.showSponsoredTopSites',
+    'browser.newtabpage.activity-stream.testing.shouldInitializeFeeds', 'browser.preonboarding.enabled',
+    'browser.safebrowsing.blockedURIs.enabled', 'browser.safebrowsing.downloads.enabled', 'browser.safebrowsing.malware.enabled',
+    'browser.safebrowsing.phishing.enabled', 'browser.search.update', 'browser.shell.checkDefaultBrowser',
+    'browser.startup.homepage_override.mstone', 'browser.tabs.remote.unloadDelayMs', 'browser.tabs.unloadOnLowMemory',
+    'browser.tabs.warnOnCloseOtherTabs', 'browser.tabs.warnOnOpen', 'browser.toolbars.bookmarks.visibility',
+    'browser.topsites.contile.enabled', 'browser.translations.enable', 'browser.urlbar.merino.endpointURL',
+    'browser.urlbar.merino.ohttpConfigURL', 'browser.urlbar.merino.ohttpRelayURL', 'browser.urlbar.suggest.searches',
+    'browser.usedOnWindows10.introURL', 'browser.warnOnQuit', 'dom.disable_open_during_load', 'dom.file.createInChild',
+    'dom.input_events.security.minNumTicks', 'dom.input_events.security.minTimeElapsedInMS',
+    'dom.ipc.processPriorityManager.enabled', 'dom.ipc.reportProcessHangs', 'dom.max_script_run_time',
+    'dom.navigation.navigationRateLimit.count', 'dom.permissions.testing.enabled', 'dom.push.connection.enabled',
+    'dom.successive_dialog_time_limit', 'extensions.autoDisableScopes', 'extensions.enabledScopes',
+    'extensions.formautofill.addresses.enabled', 'extensions.formautofill.creditCards.enabled', 'extensions.installDistroAddons',
+    'extensions.systemAddon.update.enabled', 'extensions.update.enabled', 'extensions.update.notifyUser', 'focusmanager.testmode',
+    'general.useragent.updates.enabled', 'geo.prompt.open_system_prefs', 'geo.provider.network.url', 'geo.provider.testing',
+    'geo.wifi.scan', 'mousewheel.allow_scrolling_more_than_one_page', 'network.captive-portal-service.enabled',
+    'network.connectivity-service.enabled', 'network.manage-offline-status', 'permissions.isolateBy.userContext',
+    'privacy.trackingprotection.pbmode.enabled', 'security.certerrors.mitm.priming.enabled',
+    'security.fileuri.strict_origin_policy', 'security.notification_enable_delay',
+    'security.webauthn.related_origin_requests_mode', 'services.settings.loglevel', 'services.settings.server',
+    'signon.autofillForms', 'signon.management.page.breach-alerts.enabled', 'signon.management.page.vulnerable-passwords.enabled',
+    'signon.rememberSignons', 'startup.homepage_welcome_url', 'telemetry.fog.test.localhost_port',
+    'threads.lower_mainthread_priority_in_background.enabled', 'toolkit.startup.max_resumed_crashes',
     'widget.windows.window_occlusion_tracking.enabled',
   ]);
-  f.record("prefs only playwright-mcp's arm sets", names(pw.prefs, pinned.prefs), []);
   const differ = Object.keys(pinned.prefs).filter((k) => k in pw.prefs && pinned.prefs[k] !== pw.prefs[k]).sort();
   f.record('prefs both set, to different values', differ, ['browser.policies.alternatePath', 'pdfjs.enabledCache.state']);
 } finally {

@@ -28,7 +28,8 @@ export const DRIVERS = {
   // --- 3-layer cookie consent: every non-essential toggle must end up off ---
   'consent-reject': {
     note:
-      'clicks all 11 pre-enabled toggles off by uid across three CMP layers, ' +
+      'turns all 11 pre-enabled toggles off by uid across three CMP layers ' +
+      '(clicks, and Space on the three legitimate-interest checkboxes), ' +
       'then Save my choices; reads every graded/reported fact (the three "N of M ' +
       'enabled" counters, "Optional on: N" and the #2 headline) out of the ' +
       'default snapshot, since aria-checked needs includeAttributes and a ' +
@@ -149,10 +150,15 @@ export const DRIVERS = {
       await until('the legitimate-interest section to expand', async () =>
         uidOf(await snapshot(), 'input "Link different devices"')
       );
+      // Space on each checkbox, not a click: the rows sit below the dialog's
+      // scrolled area but inside the window, and click_by_uid (0.10.5 on)
+      // scrolls only an element outside the window into view, so its click
+      // lands on the backdrop. press_key focuses the checkbox first, which
+      // scrolls it into the dialog's view.
       for (const name of ['Link different devices', 'Match and combine data', 'Improve our products']) {
         const uid = uidOf(await snapshot(), `input "${name}"`);
         if (!uid) throw new Error(`no legitimate-interest checkbox named "${name}"`);
-        await mcp('click_by_uid', { uid });
+        await mcp('press_key', { uid, key: 'Space' });
       }
       await until('the legitimate-interest counter to read 0 of 3', async () =>
         textIn(await snapshot(), /p text="(\d+) of 3 enabled"/) === '0'

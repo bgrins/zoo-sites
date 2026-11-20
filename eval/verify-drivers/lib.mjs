@@ -27,6 +27,28 @@ export async function until(label, fn, { tries = 240, gap = 250 } = {}) {
   throw new Error(`timed out waiting for ${label}`);
 }
 
+// fill_by_uid on a closed <select> picks an option by typeahead. Firefox keeps
+// one typeahead string for every select and extends it with each key typed
+// within ui.menu.incremental_search.timeout (1000ms) of the last, so a select
+// fill right after another fill types onto the previous value: "Sand" then
+// "Moss" searches for "SandMoss" and leaves the select where it was. From
+// firefox-devtools-mcp 0.10.5 nothing between two fills resets it. An agent's
+// fills are a model turn apart; a driver's are not, so this waits the timeout
+// out first. `call` is the driver's (tool, args) function.
+export const TYPEAHEAD_MS = 1000;
+export async function fillSelect(call, uid, value) {
+  await new Promise((r) => setTimeout(r, TYPEAHEAD_MS + 100));
+  return call('fill_by_uid', { uid, value });
+}
+
+// An ISO date in the order fill_by_uid has to type it into a type=date input:
+// from firefox-devtools-mcp 0.10.5 it sends keystrokes, and Firefox's en-US
+// control reads them as MM/DD/YYYY, so an ISO value lands as a wrong date.
+export function typedDate(iso) {
+  const [y, m, d] = iso.split('-');
+  return `${m}/${d}/${y}`;
+}
+
 // Click a navigation link and PROVE the document changed, retrying the click if
 // it did not.
 //

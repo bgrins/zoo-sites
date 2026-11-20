@@ -26,7 +26,7 @@ export const SNAPSHOT_TOOL = /^(take_snapshot|browser_snapshot)$/;
 export const SCRIPT_TOOL = /^(evaluate_script|browser_evaluate|browser_run_code\w*)$/;
 // Both surfaces' page actions: firefox-devtools-mcp's, then playwright-mcp's.
 export const ACTION_TOOL =
-  /^(click_by_uid|fill_by_uid|fill_form_by_uid|navigate_page|navigate_history|hover_by_uid|drag_by_uid_to_uid|select_option|press_key|type_text|browser_click|browser_type|browser_fill_form|browser_navigate|browser_navigate_back|browser_hover|browser_drag|browser_select_option|browser_press_key)$/;
+  /^(click_by_uid|fill_by_uid|fill_form_by_uid|navigate_page|navigate_history|hover_by_uid|drag_by_uid_to_uid|select_option|press_key|type_text|browser_click|browser_type|browser_fill_form|browser_navigate|browser_navigate_back|browser_hover|browser_drag|browser_drop|browser_select_option|browser_press_key)$/;
 const CLICK_TOOL = /^(click_by_uid|browser_click)$/;
 const WAIT_TOOL = /wait/i;
 

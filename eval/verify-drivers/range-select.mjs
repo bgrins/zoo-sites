@@ -3,11 +3,6 @@ import { randomBytes } from 'node:crypto';
 import { ANSWERS } from '../answers.mjs';
 import { addSession, bumpCode, esc, findSession, snapText, straySession, uidOf, until } from './lib.mjs';
 
-// WebDriver key codepoints, which fill_by_uid passes through as keys
-// (eval/spikes/keys.mjs, eval/spikes/range-select.mjs).
-const SHIFT = String.fromCodePoint(0xe008);
-const F10 = String.fromCodePoint(0xe03a);
-
 const NEAR_MISSES = ['26-11', '26-141'];
 
 export const DRIVERS = {
@@ -59,7 +54,7 @@ export const DRIVERS = {
       // The keyboard route: Shift+F10 on a row opens the actions menu.
       let snap = await snapText(mcp, { maxLines: 500 });
       const box = (name) => uidOf(snap, `input "Select ${esc(name)}"`);
-      await mcp('fill_by_uid', { uid: box(names[0]), value: SHIFT + F10 });
+      await mcp('press_key', { uid: box(names[0]), key: 'shift+F10' });
       await until('the actions menu to open from Shift+F10', () =>
         evaluate(() => document.getElementById('ctxMenu').matches(':popover-open')));
 

@@ -286,8 +286,8 @@ route. T133-T139 and T144 form the judge's first build batch, the next wave: eve
 one runs single-origin and needs no `server.mjs` edit and no mail bus. Together they exercise
 every interaction tool the review found no driver calling: `accept_dialog`,
 `dismiss_dialog`, `navigate_history`, `list_downloads` and `hover_by_uid` on devtools,
-and `browser_press_key` on playwright. Of the devtools five, only `list_downloads` is
-still called by no driver (`eval/spikes/tools.mjs`). The rest follow the wave, and any
+and `browser_press_key` on playwright. A driver now calls each of the devtools five
+(`eval/spikes/tools.mjs`). The rest follow the wave, and any
 that needs a prerequisite names it in its plan. Host-routed serving and ctx.pick have
 landed, which frees the cross-site batch (T146, T149, then T140); T141 and T150 still
 wait on a task `sweep` field, and T147 on the mail bus.
@@ -325,9 +325,10 @@ first four have landed, ctx.pick without its `sweep` field; the mail bus has not
 - **env pins** (landed). The preflight records each condition's browser environment in
   `meta.env` and pins time zone, locale, viewport and colour scheme for both
   conditions (`eval/running.md`, "What a paid run pins"). Unpinned,
-  `eval/spikes/env.mjs` measured Firefox 156 against 152, a 1366x683 viewport against
-  1280x720, and dark against light. T137 needed it, because devtools' datetime-local
-  typing order follows the locale.
+  `eval/spikes/env.mjs` measured Firefox 156 against 152 when the pins landed (158
+  against 159 on 2026-11-10), a 1366x683 viewport against 1280x720, and dark against
+  light. T137 needed it, because devtools' date and datetime-local typing order follows
+  the locale.
 - **host-routed serving** (landed). `--vhosts` in `serve.mjs`, `eval/run.mjs` and
   `eval/verify.mjs` routes on the Host header, so every origin gets its own
   `<key>.localhost` on one port, and paid runs now serve each site on its own origin
@@ -601,7 +602,7 @@ plans do.
 - Effort: S
 
 ### T061 — Keyboard-Only Checkout
-- Spike (2026-09-19, `eval/spikes/keys.mjs`): both conditions have a key route. firefox-devtools-mcp 0.9.15 has no key-press tool (0.10.2 adds `press_key` and `type_text`, which no spike drives yet), but `fill_by_uid` passes WebDriver key codepoints through as trusted keys: U+E004 moves focus, and U+E007 or U+E00D filled into a button activates it. playwright-mcp's `browser_press_key` Tab moves focus, and Enter or Space activates the focused button. Both activations arrive as a click whose `detail` is 0.
+- Spike (2026-09-19, `eval/spikes/keys.mjs`): both conditions have a key route. firefox-devtools-mcp 0.9.15 has no key-press tool (0.10.2 adds `press_key` and `type_text`; `eval/spikes/range-select.mjs` drives `press_key` shift+ArrowDown and shift+F10), but `fill_by_uid` passes WebDriver key codepoints through as trusted keys: U+E004 moves focus, and U+E007 or U+E00D filled into a button activates it. playwright-mcp's `browser_press_key` Tab moves focus, and Enter or Space activates the focused button. Both activations arrive as a click whose `detail` is 0.
 - DECIDE FIRST: because keyboard activation dispatches a click, the capture-phase swallow below also swallows it unless it filters on `detail`, and a page that swallows clicks breaks "Build the honest fixture". Rebuild the idea as a keyboard-native site (the review's web 3270 terminal) or kill it.
 - Fixture: `pages/shop/voltro/keyboard.html` variant (~+80 lines over a copied product page): capture-phase click handler calls `preventDefault()`/`stopPropagation()` and beacons the attempt; buttons have `keydown` handlers for Enter/Space; visible "keyboard mode" banner. Add to cart beacons count.
 - Server: `POST /api/kbd/click-attempt` → increment `ctx.pages.state.kbd[sid].clickAttempts`; `POST /api/kbd/cart {count}` → set `.cartCount`.

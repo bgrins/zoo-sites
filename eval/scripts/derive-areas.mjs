@@ -91,7 +91,7 @@ const toolAreas = [
   [/^(upload_file_by_uid|browser_file_upload)$/, 'uploads'],
   [/^(set_viewport_size|browser_resize)$/, 'viewport'],
   [/^(list_console_messages|browser_console_messages)$/, 'console'],
-  [/^(list_downloads|set_download_behavior)$/, 'downloads'],
+  [/^(list_downloads|clear_downloads|set_download_behavior)$/, 'downloads'],
   [/^(navigate_history|browser_navigate_back)$/, 'navigation'],
 ];
 // get_page_text (firefox-devtools-mcp 0.10.0) is the page text read agents on

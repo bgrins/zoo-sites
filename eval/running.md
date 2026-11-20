@@ -258,7 +258,8 @@ directory and the temp root both lie in `/tmp`, so both preflights stop a run wh
 servers run unsandboxed, so a `file://` page or an upload tool still reaches the
 repository, and a copy of the graded truth outside your home and every checkout stays
 readable. Codex's `view_image` reads any file, not only an image, in codex's own
-process, and 0.145.0 cannot turn it off, so a codex row whose `view_image` names a
+process, and 0.145.0 cannot turn it off (0.167.1 has a `view_image` feature switch, which
+the harness leaves on), so a codex row whose `view_image` names a
 denied path, or a path in the temp root outside the attempt's own directories, is
 marked invalid too. Both backends print the denied and re-opened paths into the agent's
 prompt, so run from checkouts whose paths say nothing about the run, and compare input
@@ -405,8 +406,8 @@ conditions or from its pin:
 | PDF viewer | pdf.js on | pref `pdfjs.disabled=false` via `--pref`, already the release default; on Playwright's build, a policy (below) | the same pref via `firefoxUserPrefs`, which overrides the `playwright.cfg` that turns pdf.js off |
 
 **The Firefox build is pinned only on request.** By default `firefox-devtools-mcp`
-drives the installed Firefox (156.0 on 2026-09-21) and playwright-mcp its own patched
-build (152.0.4), so a cross-tool comparison compares two browsers as well. The reports
+drives the installed Firefox (158.0 on 2026-11-10) and playwright-mcp its own patched
+build (159.0), so a cross-tool comparison compares two browsers as well. The reports
 say so: `ENVIRONMENT MISMATCH` in `report.md` and `ENV-MISMATCH` in the A/B report name
 each arm's build, by version and build ID, since two builds can report one version, and
 its user agent's version beside it. The preflight refuses a server whose browser's user
@@ -437,12 +438,16 @@ policy that sets it back, which the cfg reads through `PLAYWRIGHT_FIREFOX_POLICI
 (`mcp-stdio.mjs` `devtoolsFirefoxLaunch`), and the build table reads `enabled by a
 pinned policy over playwright.cfg`. A pref the cfg locks, or a cfg without that hook,
 keeps its value, and the preflight names it. The second stays open: each launcher sets
-prefs of its own. On one build, 54 prefs are set in firefox-devtools-mcp's browser that
+prefs of its own. On one build, 17 prefs are set in firefox-devtools-mcp's browser that
 Playwright's launch leaves at their defaults: geckodriver's own (`marionette.port` and
-`remote.active-protocols` among them), those the Remote Agent it starts recommends
-(`dom.successive_dialog_time_limit` 0, `dom.navigation.navigationRateLimit.count` 0,
-`browser.tabs.remote.unloadDelayMs` 0 among them), and the policy's
-`browser.policies.applied` (`spikes/launch-prefs.mjs` lists them). All but the policy's
+`remote.active-protocols` among them) and the policy's `browser.policies.applied`
+(`spikes/launch-prefs.mjs` lists them). The Remote Agent that geckodriver starts sets
+its recommended prefs as defaults (Firefox 158 on, bug 2074275), and Playwright's 159.0
+build sets most of them to the same values in `playwright.cfg`
+(`dom.successive_dialog_time_limit` 0, `dom.navigation.navigationRateLimit.count` 0
+among them). The few the cfg lacks (`remote.prefs.recommended.applied`,
+`extensions.update.url` among them) differ unseen, since prefs.js does not record
+default-branch prefs. All but the policy's
 reach the arm on the installed Firefox too, so they belong to the tool's launch, not the
 browser, and both reports print them as `LAUNCH PREFS DIFFER` on every comparison of
 firefox-devtools-mcp with playwright-mcp, whatever the builds.
@@ -483,18 +488,19 @@ and such a run raises no `EVAL-DIRTY`; a run that does quotes the hash on that l
 that hold its tools. Its `tools` holds what the preflight's tools/list returned (count,
 names, schema characters, hash) and `tools.instructions` the size and hash of the
 instructions the server's initialize reply carried, null for none. firefox-devtools-mcp
-0.9.15 sends none and 0.10.3 sends 1,697 characters, with 48 tools in 26,687 schema
-characters against 44 in 21,920. The instructions reach the model as the tool
+0.9.15 sends none, 0.10.3 sends 1,697 characters and 0.10.7 sends 1,729, with 44 tools
+in 21,920 schema characters on 0.9.15, 48 in 26,687 on 0.10.3 and 49 in 27,395 on 0.10.7. The instructions reach the model as the tool
 definitions do, and each backend delivers them its own way (`spikes/instructions.mjs`,
 which runs both CLIs against a fake loopback API and pays nothing). The Claude CLI sends
 them once, as a system message headed "# MCP Server Instructions" after the prompt, and
-every later request carries that message with the rest of the conversation. Codex in
-code mode leaves them out of the first request and opens each of the server's
-`ALL_TOOLS` descriptions with them, so a script that prints the catalog prints them once
-per tool. All 132 stored codex firefox-devtools-mcp rows ran such a script, printing the
+every later request carries that message with the rest of the conversation. Codex
+0.167.1's first request carries only their first line, cut to 250 characters, in a
+developer message that lists the deferred tool namespaces. In code mode codex opens each
+of the server's `ALL_TOOLS` descriptions with the whole instructions, so a script that
+prints the catalog prints them once per tool. All 132 stored codex firefox-devtools-mcp rows ran such a script, printing the
 firefox tools' descriptions. Printing every firefox tool's entry gives 22,409 characters,
-whole, on 0.9.15 and 27,432 tokens on 0.10.3, which codex cuts to its 10,000-token output
-budget, leaving 18 of the 48 entries. The preflight
+whole, on 0.9.15, 27,432 tokens on 0.10.3 and 28,445 on 0.10.7, which codex cuts to its
+10,000-token output budget, leaving 18 entries (of 48 on 0.10.3, of 49 on 0.10.7). The preflight
 prints all three sizes, report.md's build table and the A/B report's validity block show
 them, and each tap log's `initialize` record carries the instructions' size and hash.
 
@@ -546,10 +552,10 @@ sees only what the script prints. That changes what a codex number measures:
 - Codex cuts an exec's whole output past a token budget (10,000 unless the script's
   first-line `// @exec:` pragma sets `max_output_tokens`) and marks the cut `Warning:
   truncated output` before the model sees it. The tap records the full reply.
-- On firefox-devtools-mcp 0.10.3 that budget hides most of the catalog. Codex opens
+- On firefox-devtools-mcp 0.10.3 and 0.10.7 that budget hides most of the catalog. Codex opens
   every one of the server's `ALL_TOOLS` descriptions with the server's instructions, so
   a script that prints the firefox tools' entries prints 0.10.3's instructions once per
-  tool, and codex cuts the print to 18 of the 48 entries ("The run records the code it
+  tool, and codex cuts the print to 18 entries (of 48 on 0.10.3, of 49 on 0.10.7) ("The run records the code it
   ran" above gives the sizes, which `spikes/instructions.mjs` measures). 0.9.15 sends no
   instructions, and its 44 entries print whole, so a codex comparison of the two builds
   carries a catalog the 0.10.3 arm saw in part. The cut costs the agent: on the full

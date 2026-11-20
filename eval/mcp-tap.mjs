@@ -181,7 +181,7 @@ const ACTION_TOOLS = new Set([
   'click_by_uid', 'fill_by_uid', 'fill_form_by_uid', 'hover_by_uid', 'drag_by_uid_to_uid',
   'navigate_page', 'navigate_history', 'select_option', 'press_key', 'type_text',
   'browser_click', 'browser_type', 'browser_fill_form', 'browser_navigate', 'browser_navigate_back',
-  'browser_hover', 'browser_drag', 'browser_select_option', 'browser_press_key',
+  'browser_hover', 'browser_drag', 'browser_drop', 'browser_select_option', 'browser_press_key',
 ]);
 // A call that reads the page back: a snapshot, a page-text read, or a script
 // call that writes nothing (scriptedWrite).
@@ -359,6 +359,7 @@ const READ_ONLY_TOOLS = new Set([
   'list_pages', 'take_snapshot', 'resolve_uid_to_selector', 'list_network_requests', 'get_network_request',
   'list_console_messages', 'screenshot_page', 'screenshot_by_uid', 'list_downloads', 'get_firefox_output',
   'get_firefox_info', 'profiler_is_active', 'list_scripts', 'get_script_source', 'get_logpoint_results', 'get_page_text',
+  'print_page',
   'browser_console_messages', 'browser_find', 'browser_network_requests', 'browser_network_request',
   'browser_take_screenshot', 'browser_snapshot', 'browser_wait_for',
 ]);

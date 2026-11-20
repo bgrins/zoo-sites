@@ -15,8 +15,8 @@
 // click_by_uid.
 
 import {
-  addSession, bumpCode, esc, findSession, notBeforeToday, pageDay, snapText, straySession, textOf, uidOf as uidMatch,
-  until as poll,
+  addSession, bumpCode, esc, fillSelect, findSession, notBeforeToday, pageDay, snapText, straySession, textOf, typedDate,
+  uidOf as uidMatch, until as poll,
 } from './lib.mjs';
 import { ANSWERS } from '../answers.mjs';
 import { GRID_EDIT_STATES } from './extraction-lib.mjs';
@@ -331,15 +331,13 @@ export const DRIVERS = {
       snap = await untilSnap(snapshot, (s) => /select "Service/.test(s), 'markup walk step 2');
       const hostileNote = '<img src="x" onerror="window.__reviewInjected = true">';
       const pick = (pattern, what) => uidOf(snap, pattern, what);
-      await act(mcp, 'fill_by_uid', { uid: pick('select "Service', 'service'), value: 'Cleaning' });
-      await act(mcp, 'fill_by_uid', {
-        uid: pick('select "Insurance', 'insurance'),
-        value: 'Self-pay',
-      });
+      const actCall = (name, args) => act(mcp, name, args);
+      await fillSelect(actCall, pick('select "Service', 'service'), 'Cleaning');
+      await fillSelect(actCall, pick('select "Insurance', 'insurance'), 'Self-pay');
       await act(mcp, 'click_by_uid', { uid: pick('input value="No"', 'new-patient No') });
       await act(mcp, 'fill_by_uid', {
         uid: pick('input "Preferred date', 'preferred date'),
-        value: asked.date,
+        value: typedDate(asked.date),
       });
       await act(mcp, 'fill_by_uid', { uid: pick('textarea', 'notes'), value: hostileNote });
       await act(mcp, 'click_by_uid', { uid: uidOf(snap, 'input value="on"', 'consent') });
@@ -376,29 +374,20 @@ export const DRIVERS = {
         uid: uidOf(snap, 'button "Continue to visit details"', 'step-1 continue'),
       });
       snap = await untilSnap(snapshot, (s) => /select "Service/.test(s), 'step 2');
-      await act(mcp, 'fill_by_uid', {
-        uid: uidOf(snap, 'select "Service', 'service'),
-        value: 'Cleaning',
-      });
-      await act(mcp, 'fill_by_uid', {
-        uid: uidOf(snap, 'select "Insurance', 'insurance'),
-        value: 'Self-pay',
-      });
-      await act(mcp, 'fill_by_uid', {
-        uid: uidOf(snap, 'select "Preferred time of day"', 'time'),
-        value: 'Morning',
-      });
+      await fillSelect(actCall, uidOf(snap, 'select "Service', 'service'), 'Cleaning');
+      await fillSelect(actCall, uidOf(snap, 'select "Insurance', 'insurance'), 'Self-pay');
+      await fillSelect(actCall, uidOf(snap, 'select "Preferred time of day"', 'time'), 'Morning');
       await act(mcp, 'click_by_uid', {
         uid: uidOf(snap, 'input value="Yes"', 'new-patient Yes'),
       });
       snap = await untilSnap(snapshot, (s) => /input "Date of birth/.test(s), 'the DOB field');
       await act(mcp, 'fill_by_uid', {
         uid: uidOf(snap, 'input "Date of birth', 'date of birth'),
-        value: '1990-03-14',
+        value: typedDate('1990-03-14'),
       });
       await act(mcp, 'fill_by_uid', {
         uid: uidOf(snap, 'input "Preferred date', 'preferred date'),
-        value: asked.date,
+        value: typedDate(asked.date),
       });
       await act(mcp, 'click_by_uid', { uid: uidOf(snap, 'input value="on"', 'consent') });
       await act(mcp, 'click_by_uid', {

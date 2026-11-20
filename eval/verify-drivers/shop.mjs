@@ -2,7 +2,7 @@
 
 import { ANSWERS } from '../answers.mjs';
 import { CHECKOUT_STOP_CONTACT } from '../tasks/web/commerce.mjs';
-import { addSession, bumpCode, findSession, notBeforeToday, snapText, straySession } from './lib.mjs';
+import { addSession, bumpCode, fillSelect, findSession, notBeforeToday, snapText, straySession } from './lib.mjs';
 
 // The default snapshot is 100 lines, which truncates every one of these
 // listings before the interesting controls; 500 is the tool's hard cap.
@@ -751,7 +751,7 @@ export const DRIVERS = {
       // select_option tool, but the option label typed into the closed select
       // picks it and fires change, which is what the page listens for.
       const choose = async (target, value, id) => {
-        await h.mcp('fill_by_uid', { uid: target, value });
+        await fillSelect(h.mcp, target, value);
         const got = await h.evaluate(`() => document.getElementById('${id}').value`);
         if (got !== value) {
           throw new Error(

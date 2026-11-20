@@ -1,4 +1,4 @@
-// Probes multi-select input on a file list: plain, Shift and Ctrl or Cmd clicks, checkbox clicks, right-click, Shift+Arrow and Shift+F10 keys, a popover=manual context menu and a <dialog> label picker; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0), macOS.
+// Probes multi-select input on a file list: plain, Shift and Ctrl or Cmd clicks, checkbox clicks, right-click, Shift+Arrow and Shift+F10 keys, a popover=manual context menu and a <dialog> label picker; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0), macOS; remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0) and @playwright/mcp 0.0.85 (Firefox 159.0), 2026-11-10.
 //
 // The page's selection model is the one pages/filemgr/scans.html ships: a plain
 // click selects one row, Shift extends from the anchor, Ctrl or Cmd toggles, a
@@ -9,7 +9,8 @@
 import { findings, page, probeServer, surface } from './lib.mjs';
 
 // WebDriver key codepoints, which devtools fill_by_uid passes through as keys
-// (eval/spikes/keys.mjs).
+// (eval/spikes/keys.mjs). From 0.10.5 it presses and releases each one in
+// turn, so a modifier no longer chords with the key after it.
 const SHIFT = String.fromCodePoint(0xe008);
 const DOWN = String.fromCodePoint(0xe015);
 const F10 = String.fromCodePoint(0xe03a);
@@ -199,8 +200,10 @@ const load = async (s) => {
     before, after: await selected(dt), reply: reply.replace(/\b(?:\d+_\d+|e\d+)\b/, '<uid>'),
   }, { before: [4, 5, 6, 7], after: [6], reply: 'click <uid>' });
 
-  // Keys through fill_by_uid: WebDriver clears a non-editable target with
-  // Ctrl+A and Delete before it types, so the page sees a select-all first.
+  // Keys through fill_by_uid: up to 0.10.3 WebDriver cleared a non-editable
+  // target with Ctrl+A and Delete before it typed, so the page saw a
+  // select-all first. From 0.10.5 it types with no clear, and Shift is
+  // released before each ArrowDown.
   snap = await load(dt);
   await dt.call('click_by_uid', { uid: dt.target(snap, /td text="scan-004\.pdf"/) });
   await probe.drain();
@@ -213,8 +216,8 @@ const load = async (s) => {
     selected: await selected(dt),
   }, {
     toolError: false,
-    keys: ['Control', 'Ctrl+a', 'Ctrl+Unidentified', 'Ctrl+Delete', 'Shift', 'Shift+ArrowDown', 'Shift+ArrowDown', 'Shift+ArrowDown'],
-    selected: [4, 5, 6, 7],
+    keys: ['Shift', 'ArrowDown', 'ArrowDown', 'ArrowDown'],
+    selected: [7],
   });
 
   snap = await load(dt);
@@ -229,7 +232,29 @@ const load = async (s) => {
     menuOpen: await menuOpen(dt),
     via: await dt.evaluate(() => window.menuVia ?? null),
     selected: await selected(dt),
-  }, { contextmenu: false, menuOpen: true, via: 'keyboard', selected: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] });
+  }, { contextmenu: false, menuOpen: false, via: null, selected: [4, 5, 6, 7] });
+
+  snap = await load(dt);
+  await dt.call('click_by_uid', { uid: dt.target(snap, /td text="scan-004\.pdf"/) });
+  await probe.drain();
+  for (let i = 0; i < 3; i++) await dt.call('press_key', { key: 'shift+ArrowDown' });
+  const pressKeys = keys(await probe.drain());
+  const afterPress = await selected(dt);
+  await dt.call('press_key', { key: 'shift+F10' });
+  const pressF10 = await probe.drain();
+  log.record('devtools press_key shift+ArrowDown x3, then shift+F10', {
+    keys: pressKeys,
+    selected: afterPress,
+    contextmenu: pressF10.some((e) => e.k === 'contextmenu'),
+    menuOpen: await menuOpen(dt),
+    via: await dt.evaluate(() => window.menuVia ?? null),
+  }, {
+    keys: ['Shift', 'Shift+ArrowDown', 'Shift', 'Shift+ArrowDown', 'Shift', 'Shift+ArrowDown'],
+    selected: [4, 5, 6, 7],
+    contextmenu: false,
+    menuOpen: true,
+    via: 'keyboard',
+  });
 
   // A Shift-click synthesised through script: untrusted, and a page that
   // does not check isTrusted, as few real ones do, honours it.

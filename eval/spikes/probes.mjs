@@ -1,4 +1,4 @@
-// Probes every firefox-devtools-mcp limit and behaviour the docs, the drivers and the devtools-mcp roadmap rely on, one bare page each, and says per build whether the documented behaviour HOLDS or CHANGED, with the value measured; measured on firefox-devtools-mcp 0.10.3 (Firefox 156.0). The six probes whose claims name 0.9.15, and the two of close_firefox_session, which 0.9.15 lacks, print CHANGED on that build.
+// Probes every firefox-devtools-mcp limit and behaviour the docs, the drivers and the devtools-mcp roadmap rely on, one bare page each, and says per build whether the documented behaviour HOLDS or CHANGED, with the value measured; measured on firefox-devtools-mcp 0.10.3 (Firefox 156.0); remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0), 2026-11-10. The six probes whose claims name 0.9.15, and the two of close_firefox_session, which 0.9.15 lacks, print CHANGED on that build; the three whose claims name 0.10.3 print CHANGED on that build.
 //
 //   node eval/spikes/probes.mjs [--build [<label>=]<root|dep>]... [--only <ids>]
 //                               [--out <json>] [--compare <baseline.json>]
@@ -424,17 +424,20 @@ const PROBES = [
   },
   {
     id: 'fill-date',
-    claim: 'fill_by_uid on type=date takes an ISO value',
+    claim: 'fill_by_uid on type=date types its value, so an ISO value lands as a wrong date and the en-US order 09/19/2026 lands (0.10.3 took an ISO value)',
     async measure({ go, snap, call, evaluate, uid }) {
-      await go('/inputs');
-      const r = await call('fill_by_uid', { uid: uid(await snap(), /input "Date"/), value: '2026-09-19' });
-      return { toolError: r.startsWith('ERROR'), value: await evaluate(() => document.getElementById('d').value) };
+      const fill = async (value) => {
+        await go('/inputs');
+        const r = await call('fill_by_uid', { uid: uid(await snap(), /input "Date"/), value });
+        return { toolError: r.startsWith('ERROR'), value: await evaluate(() => document.getElementById('d').value) };
+      };
+      return { iso: await fill('2026-09-19'), typed: await fill('09/19/2026') };
     },
-    holds: (v) => v.value === '2026-09-19',
+    holds: (v) => v.iso.value !== '2026-09-19' && v.typed.value === '2026-09-19',
   },
   {
     id: 'viewport-clamp',
-    claim: 'set_viewport_size sizes the window and clamps a narrow one to about 500 px',
+    claim: 'set_viewport_size sets the selected tab\'s viewport to the width asked, however narrow (0.10.3 sized the window and clamped a narrow one to about 500 px)',
     async measure({ call, evaluate, go }) {
       await go('/text');
       const inner = {};
@@ -445,7 +448,7 @@ const PROBES = [
       await call('set_viewport_size', { width: 1366, height: 768 });
       return inner;
     },
-    holds: (v) => v[480] >= 490 && v[320] >= 490,
+    holds: (v) => v[480] === 480 && v[320] === 320,
   },
   {
     id: 'is-xhr',
@@ -476,7 +479,7 @@ const PROBES = [
   },
   {
     id: 'evaluate-timeout',
-    claim: 'evaluate_script times out at 5 s by default, and at 10 s whatever timeout it is given',
+    claim: 'evaluate_script times out at 5 s by default and honours a longer timeout (0.10.3 stopped every script at 10 s whatever timeout it was given)',
     async measure({ go, call }) {
       await go('/text');
       // Both at once, so the probe costs one wait rather than two.
@@ -491,7 +494,7 @@ const PROBES = [
       ]);
       return { byDefault, asked20s };
     },
-    holds: (v) => v.byDefault.error && v.byDefault.s < 5.6 && v.asked20s.error && v.asked20s.s < 11.5,
+    holds: (v) => v.byDefault.error && v.byDefault.s < 5.6 && !v.asked20s.error && v.asked20s.s >= 11.5,
   },
   {
     id: 'uid-repeated-selector',

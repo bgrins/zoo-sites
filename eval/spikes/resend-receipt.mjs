@@ -1,4 +1,4 @@
-// Probes resend-receipt's surface: a legacy document POST answered 200 with no redirect and no-store, and what each condition does with it. It records whether the receipt's number reaches the snapshot, the Referer and Sec-Fetch-User each POST carries, how a reload or a Back onto the POST entry surfaces the resend prompt, what re-POSTs, what Back to the form (sent no-cache, private, as certcopy.html is) restores, and whether the site's status lookup and withdraw route are reachable on both; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0). One browser at a time.
+// Probes resend-receipt's surface: a legacy document POST answered 200 with no redirect and no-store, and what each condition does with it. It records whether the receipt's number reaches the snapshot, the Referer and Sec-Fetch-User each POST carries, how a reload or a Back onto the POST entry surfaces the resend prompt, what re-POSTs, what Back to the form (sent no-cache, private, as certcopy.html is) restores, and whether the site's status lookup and withdraw route are reachable on both; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on @playwright/mcp 0.0.85 (Firefox 159.0) and firefox-devtools-mcp 0.10.7 (Firefox 158.0), 2026-11-10. One browser at a time.
 
 import { findings, page, probeServer, sleep, surface } from './lib.mjs';
 
@@ -153,6 +153,9 @@ async function run(name, measured) {
 
   // A slow CGI: does the click return before the receipt lands?
   const slow = await v.submit('/cgi?delay=1500');
+  // devtools click_by_uid returns before the response from 0.10.5, so wait for
+  // the receipt before snapshotting it.
+  for (let i = 0; i < 50 && (await title(s)) !== 'Request received'; i++) await sleep(100);
   const receipt = await s.snapshot();
   log.record(`${name} submit click against a 1.5s CGI`, {
     waitedForResponse: slow.ms >= 1500,
@@ -183,6 +186,7 @@ async function run(name, measured) {
   log.record(`${name} reload of the receipt`, {
     snapshotRefused: failed(next),
     snapshotNamesDialog: /confirmEx|repeat any action/.test(next),
+    snapshotShowsReceipt: dt ? /a "Request Status"/.test(next) : null,
     dismissed: !failed(dismissed),
     postsAfterDismiss: afterDismiss,
     accepted: !failed(accepted),
@@ -207,7 +211,7 @@ async function run(name, measured) {
   // script reload where the devtools snapshot shows no button.
   base = posts();
   if (dt) await v.reload();
-  else await v.click(/button \[ref/, errSnap);
+  else await v.click(/button (?:"Try Again" )?\[ref/, errSnap);
   await sleep(1200);
   const retried = await v.accept();
   await sleep(1200);
@@ -225,7 +229,12 @@ async function run(name, measured) {
     await v.submit();
     await sleep(500);
     const r = await s.call('browser_run_code_unsafe', { code: 'async (page) => { await page.reload(); return page.url(); }' });
-    pageReload = { toolError: failed(r), title: await title(s) };
+    // Firefox 159 raises the resend prompt here, where 152 reloaded the entry
+    // as a GET. Dismiss it so the steps below start with no prompt pending.
+    const modalState = /Modal state[\s\S]*?repeat any action/.test(r);
+    if (modalState) await v.dismiss();
+    await sleep(500);
+    pageReload = { toolError: failed(r), modalState, title: await title(s) };
   }
   log.record(`${name} navigate to the CGI address (and playwright page.reload())`, {
     rePosted: posts() - base - (dt ? 0 : 1),
@@ -287,13 +296,17 @@ async function run(name, measured) {
 
 await run('devtools', {
   select: { byLabel: 'CD', byValue: 'CD' },
-  submit: { waitedForResponse: true, replyNamesReceipt: false, posts: 1, headers: { user: '?1', cc: null, ref: '/form' } },
+  // From 0.10.5 click_by_uid sends BiDi input actions and returns without
+  // waiting for the navigation they start.
+  submit: { waitedForResponse: false, replyNamesReceipt: false, posts: 1, headers: { user: '?1', cc: null, ref: '/form' } },
   receipt: { defaultSnapshot: false, includeAll: true },
-  // take_snapshot answers the pending prompt itself ("Unexpected confirmEx
-  // dialog detected. Performed handler \"dismiss\""), so dismiss_dialog then
-  // finds nothing; accept_dialog before any snapshot re-POSTs.
+  // From 0.10.5 take_snapshot reads the receipt under the pending prompt and
+  // leaves the prompt alone, so dismiss_dialog finds it and nothing re-POSTs;
+  // accept_dialog re-POSTs. Through 0.10.3 take_snapshot answered the prompt
+  // itself ("Unexpected confirmEx dialog detected. Performed handler
+  // \"dismiss\"") and dismiss_dialog then found nothing.
   reload: {
-    snapshotRefused: true, snapshotNamesDialog: true, dismissed: false, postsAfterDismiss: 0,
+    snapshotRefused: false, snapshotNamesDialog: false, snapshotShowsReceipt: true, dismissed: true, postsAfterDismiss: 0,
     accepted: true, postsAfterAccept: 1, resendHeaders: { user: null, cc: null, ref: '/form' },
   },
   // "Reached error page: about:neterror?e=notCached", and the snapshot is an
@@ -316,14 +329,15 @@ await run('playwright', {
   // A modal state quoting Firefox's own warning ("must send information that
   // will repeat any action"); snapshot and evaluate refuse until it is handled.
   reload: {
-    snapshotRefused: true, snapshotNamesDialog: true, dismissed: true, postsAfterDismiss: 0,
+    snapshotRefused: true, snapshotNamesDialog: true, snapshotShowsReceipt: null, dismissed: true, postsAfterDismiss: 0,
     accepted: true, postsAfterAccept: 1, resendHeaders: { user: '?1', cc: null, ref: '/form' },
   },
   // NS_ERROR_DOCUMENT_NOT_CACHED, and a "Document Expired" page whose Try
   // Again button raises the same modal.
   back: { toolError: true, rePosted: 0, title: 'Problem loading page', snapshotSaysExpired: true },
   retry: { promptAccepted: true, rePosted: 1, headers: { user: '?1', cc: null, ref: '/form' } },
-  navigate: { rePosted: 0, pageReload: { toolError: false, title: 'No request received' } },
+  // page.reload() raises the same resend modal; dismissed, the receipt stays.
+  navigate: { rePosted: 0, pageReload: { toolError: false, modalState: true, title: 'Request received' } },
   resubmit: { formRefetched: 0, fieldKept: 'TA-1', posts: 1, sameFormId: true, headers: { user: '?1', cc: null, ref: '/form' } },
   status: { rowsInSnapshot: true, withdrawButtons: true, withdrawn: true },
   cachedBack: { toolError: false, rePosted: 0, title: 'Request received' },

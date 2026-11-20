@@ -4,7 +4,9 @@
 // whether the honest routes (pause the updates, filter to one row, open the
 // deploy's own page) land on the right row; measured on
 // firefox-devtools-mcp 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78
-// (Firefox 152.0). One browser runs at a time.
+// (Firefox 152.0); remeasured on @playwright/mcp 0.0.85 (Firefox 159.0) and
+// firefox-devtools-mcp 0.10.7 (Firefox 158.0), 2026-11-10. One browser runs
+// at a time.
 
 import { findings, page, probeServer, sleep, surface } from './lib.mjs';
 
@@ -13,9 +15,9 @@ const cancelled = [];
 
 // An index-keyed renderer: four row nodes whose contents rotate, the way a
 // list re-sorted by ETA patches existing nodes. A page timer rather than a
-// tool call does it, because any playwright tool call between the re-render
-// and the click re-resolves every ref against the page as it now is; the
-// `between` probe measures that. `keyed` re-creates the nodes instead, the
+// tool call does it, because through @playwright/mcp 0.0.78 any tool call
+// between the re-render and the click re-resolved every ref against the page
+// as it then was; the `between` probe measures that. `keyed` re-creates the nodes instead, the
 // renderer a keyed framework uses, for comparison.
 const queue = ({ every, keyed = false }) =>
   page(
@@ -102,7 +104,11 @@ const EXPECTED = {
   playwright: {
     naive: { cancelled: ['build-4194 ap-south'], resultNamesHitRow: true, resultNamesTarget: false },
     keyed: { cancelled: [], toolError: true },
-    between: { cancelled: [], toolError: true },
+    // 0.0.78 snapshotted the page after every tool call, so the evaluate
+    // dropped the ref and the click failed with "Ref ... not found". 0.0.85
+    // snapshots only for tools that report one, so the ref survives and the
+    // click lands on the row now in the node.
+    between: { cancelled: ['build-4194 ap-south'], toolError: false },
     pause: ['build-4193 eu-west'],
     filter: ['build-4193 eu-west'],
     detail: ['build-4193 eu-west'],

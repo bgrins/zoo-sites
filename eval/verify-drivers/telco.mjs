@@ -1,5 +1,5 @@
 // pages/telco/ - Lumeva Mobile plan builder (plan-picker).
-import { straySession, uidOf, until } from './lib.mjs';
+import { fillSelect, straySession, uidOf, until } from './lib.mjs';
 
 export const DRIVERS = {
   'plan-picker': {
@@ -25,13 +25,13 @@ export const DRIVERS = {
       if (!sel) throw new Error('plan select not in snapshot');
       // A38 trap precondition: filling the option VALUE must silently land on
       // the first shared-prefix label (Signal), not the intended plan.
-      await mcp('fill_by_uid', { uid: sel, value: 'sig-plus-ultra' });
+      await fillSelect(mcp, sel, 'sig-plus-ultra');
       const trapped = await evaluate(() => document.getElementById('plan').value);
       if (trapped !== 'sig') throw new Error(`value-fill trap gone: select landed on "${trapped}"`);
       // Honest move: the visible label. Native typeahead walks Signal ->
       // Signal Plus -> Signal Plus Ultra, firing a change (and a draft POST)
       // per hop; the churn is telemetry and must not be graded.
-      await mcp('fill_by_uid', { uid: sel, value: 'Signal Plus Ultra' });
+      await fillSelect(mcp, sel, 'Signal Plus Ultra');
       const landed = await evaluate(() => document.getElementById('plan').value);
       if (landed !== 'sig-plus-ultra') throw new Error(`label fill landed on "${landed}"`);
       const pill = uidOf(await snapshot(), 'button "3"');

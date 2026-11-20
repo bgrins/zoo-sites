@@ -1,4 +1,4 @@
-// Probes each condition's browser environment as a page and its server see it (Firefox version, user agent, Accept-Language, locale, time zone, viewport, colour scheme); measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0).
+// Probes each condition's browser environment as a page and its server see it (Firefox version, user agent, Accept-Language, locale, time zone, viewport, colour scheme); measured on firefox-devtools-mcp 0.10.7 (Firefox 158.0) and @playwright/mcp 0.0.85 (Firefox 159.0), 2026-11-10.
 //
 // A paid run compares the two conditions as if only the tool surface
 // differed; every difference printed here is a confound until run.mjs pins or
@@ -44,11 +44,11 @@ console.log(
 // playwright's build forces light. `host` stands for the host's own value.
 const MEASURED = {
   devtools: {
-    firefox: '156.0', acceptLanguage: 'en-US,en;q=0.9', locale: 'en-US', timeZone: 'host',
+    firefox: '158.0', acceptLanguage: 'en-US,en;q=0.9', locale: 'en-US', timeZone: 'host',
     viewport: '1366x683', dark: 'host', webdriver: true,
   },
   playwright: {
-    firefox: '152.0', acceptLanguage: 'en-US,en;q=0.9', locale: 'en-US', timeZone: 'host',
+    firefox: '159.0', acceptLanguage: 'en-US,en;q=0.9', locale: 'en-US', timeZone: 'host',
     viewport: '1280x720', dark: false, webdriver: true,
   },
 };

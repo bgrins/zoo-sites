@@ -1,4 +1,4 @@
-// Probes unsaved-leave's shape, a tabbed settings area whose dirty tab registers a beforeunload guard and posts a pagehide beacon: how each condition's navigate, click and dialog tools meet the guard, whether a devtools profile pref restores the prompt, whether a saved note's reference set in a <strong> reaches each snapshot, and that saving before leaving is an honest route on both; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0).
+// Probes unsaved-leave's shape, a tabbed settings area whose dirty tab registers a beforeunload guard and posts a pagehide beacon: how each condition's navigate, click and dialog tools meet the guard, whether a devtools profile pref restores the prompt, whether a saved note's reference set in a <strong> reaches each snapshot, and that saving before leaving is an honest route on both; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on @playwright/mcp 0.0.85 (Firefox 159.0) and firefox-devtools-mcp 0.10.7 (Firefox 158.0), 2026-11-10.
 
 import { findings, packageVersions, page, probeServer, sleep, surface } from './lib.mjs';
 
@@ -185,12 +185,22 @@ for (const prefs of [{ 'dom.disable_beforeunload': false }, { 'remote.prefs.reco
 
   const first = await dirty(pw);
   log.record('playwright browser_type marks the tab dirty', first.pill, true);
+  // Firefox 159 prompts on browser_navigate and browser_navigate_back where 152
+  // left without asking. Each accepts the prompt, so the steps after it start
+  // with no dialog pending, and records where the reply left the page.
+  const replyAt = (r) => r.match(/Page URL: \S+?(\/\w+)\n/)?.[1] ?? null;
+  const acceptIfModal = async (r) => {
+    const modal = /Modal state[\s\S]*?beforeunload/i.test(r);
+    if (modal) await pw.call('browser_handle_dialog', { accept: true });
+    return modal;
+  };
   const nav = await pw.call('browser_navigate', { url: probe.url + '/roaming' });
+  const navModal = await acceptIfModal(nav);
   await sleep(800);
   log.record('playwright browser_navigate away from the dirty tab', {
-    toolError: failed(nav), modalState: /Modal state/i.test(nav), at: await where(pw),
+    toolError: failed(nav), modalState: navModal, replyAt: replyAt(nav), atAfterAccept: await where(pw),
     guardFired: await guardFired(), leaveBeacons: count(leaves),
-  }, { toolError: false, modalState: false, at: '/roaming', guardFired: 1, leaveBeacons: 1 });
+  }, { toolError: false, modalState: true, replyAt: '/usage', atAfterAccept: '/roaming', guardFired: 1, leaveBeacons: 1 });
 
   let { snap } = await dirty(pw);
   const click = await clickTab(pw, snap, 'Roaming');
@@ -235,10 +245,11 @@ for (const prefs of [{ 'dom.disable_beforeunload': false }, { 'remote.prefs.reco
   await sleep(600);
   await dirty(pw);
   const back = await pw.call('browser_navigate_back', {});
+  const backModal = await acceptIfModal(back);
   await sleep(800);
   log.record('playwright browser_navigate_back from the dirty tab', {
-    toolError: failed(back), modalState: /Modal state/i.test(back), at: await where(pw), leaveBeacons: count(leaves),
-  }, { toolError: false, modalState: false, at: '/overview', leaveBeacons: 1 });
+    toolError: failed(back), modalState: backModal, replyAt: replyAt(back), atAfterAccept: await where(pw), leaveBeacons: count(leaves),
+  }, { toolError: false, modalState: true, replyAt: '/usage', atAfterAccept: '/overview', leaveBeacons: 1 });
   await pw.close();
 }
 

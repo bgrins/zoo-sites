@@ -53,7 +53,7 @@ const sameTokens = (a, b) => a.size === b.size && [...a].every((w) => b.has(w));
 
 export const DRIVERS = {
   'native-permit': {
-    note: 'fills the select and the datetimes naively first, reads the corruption off the check page (an includeAll snapshot, because the page is a <dl>), fixes them through Change (option clicks from an includeAll snapshot, typed-order datetimes), then submits once',
+    note: 'fills the select and the datetimes naively first, reads the corruption off the check page (an includeAll snapshot, because the page is a <dl>), fixes them through Change (a click on the first street and Ctrl+ArrowDown, Ctrl+Space for the rest, typed-order datetimes), then submits once',
     wrong: ['I applied for the street closure and the permit number is PT-000000.'],
     async run({ mcp, goto, evaluate, snapshot }, ctx) {
       const state = ctx.pages.state;
@@ -213,19 +213,25 @@ export const DRIVERS = {
         throw new Error('the first check page does not show the corrupted draft');
       }
 
-      // Change: the form comes back holding the draft; fix the streets by
-      // clicking options (each click toggles one in a select[multiple]) and
-      // type the datetimes in the control's own order.
+      // Change: the form comes back holding the draft; fix the streets from
+      // the keyboard and type the datetimes in the control's own order. A
+      // click on an option is a real click from firefox-devtools-mcp 0.10.5,
+      // so it selects that option alone, as it would for a person: the first
+      // street is clicked, and each other one is reached with Ctrl+ArrowDown,
+      // which moves without selecting, and added with Ctrl+Space.
       await clickToPath(mcp, evaluate, async () => uidOf(await snapshot(), 'a "Change"'), 'change=1', 'the Change link');
       await until('the form to prefill from the draft', async () => (await values()).streets.length === 1);
-      for (const name of streets) {
-        const selected = (await values()).streets;
-        if (selected.includes(name)) continue;
-        const all = textOf(await mcp('take_snapshot', { includeAll: true, maxLines: 400 }));
-        // includeAll prints an option as: option value="<id>" text="<name>"
-        const option = uidOf(all, `option [^\n]*text="${name}"`);
-        if (!option) throw new Error(`no option uid for ${name} in the includeAll snapshot`);
-        await mcp('click_by_uid', { uid: option });
+      const all = textOf(await mcp('take_snapshot', { includeAll: true, maxLines: 400 }));
+      // includeAll prints an option as: option value="<id>" text="<name>"
+      const order = [...all.matchAll(/option [^\n]*text="([^"]*)"/g)].map((m) => m[1]);
+      const at = streets.map((name) => {
+        if (!order.includes(name)) throw new Error(`no option for ${name} in the includeAll snapshot`);
+        return order.indexOf(name);
+      }).sort((a, b) => a - b);
+      await mcp('click_by_uid', { uid: uidOf(all, `option [^\n]*text="${order[at[0]]}"`) });
+      for (let i = 1, cur = at[0]; i < at.length; cur = at[i++]) {
+        for (let k = cur; k < at[i]; k++) await mcp('press_key', { key: 'ctrl+ArrowDown' });
+        await mcp('press_key', { key: 'ctrl+Space' });
       }
       const fixSnap = await snapshot();
       await fill(field(fixSnap, 'Closure starts'), typedOrder(`${date}T${from}`));

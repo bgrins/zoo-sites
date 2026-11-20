@@ -1,4 +1,4 @@
-// Probes the native-permit form shape end to end on each condition: a select[multiple] of 14 streets, two datetime-local fields, a time field with step=900 and a datalist input, submitted as a real form POST whose parsed body the probe server records; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0).
+// Probes the native-permit form shape end to end on each condition: a select[multiple] of 14 streets, two datetime-local fields, a time field with step=900 and a datalist input, submitted as a real form POST whose parsed body the probe server records; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0) and @playwright/mcp 0.0.85 (Firefox 159.0), 2026-11-10.
 //
 // It runs one browser at a time. controls.mjs measures each control alone;
 // this spike measures what reaches a server through each condition's honest
@@ -107,18 +107,22 @@ const running = [];
     // devtools snapshot cannot say which streets are chosen.
     const first = optionLines(all)[0] ?? '';
     log.record('devtools includeAll option line names a selected state', /selected/i.test(first), false);
+    // From 0.10.5 a click is a real pointer click at the option's center: it
+    // selects that option alone, and one below the listbox's eight visible
+    // rows (s9, s12) is missed, because the tool scrolls only elements
+    // outside the window.
     for (const name of WANT_NAMES) {
       const snap = await dt.snapshot({ includeAll: true });
       const line = snap.split('\n').find((l) => l.includes(name));
       await dt.call('click_by_uid', { uid: line.match(/uid=(\S+)/)[1] });
     }
-    log.record('devtools click_by_uid on four options in turn', (await values(dt)).streets, WANT);
+    log.record('devtools click_by_uid on four options in turn', (await values(dt)).streets, [WANT[1]]);
     {
       const snap = await dt.snapshot({ includeAll: true });
       const line = snap.split('\n').find((l) => l.includes(WANT_NAMES[1]));
       await dt.call('click_by_uid', { uid: line.match(/uid=(\S+)/)[1] });
     }
-    log.record('devtools click_by_uid on a selected option again', (await values(dt)).streets, [WANT[0], WANT[2], WANT[3]]);
+    log.record('devtools click_by_uid on a selected option again', (await values(dt)).streets, [WANT[1]]);
   }
 
   {
@@ -147,7 +151,7 @@ const running = [];
     error: null, end: '2027-07-17T19:45',
   });
   log.record('devtools fill time 21:30', await fillOne('Amplified sound stops', '21:30', 'quiet'), { error: null, quiet: '21:30' });
-  log.record('devtools fill time 09:30 PM', await fillOne('Amplified sound stops', '09:30 PM', 'quiet'), { error: null, quiet: '' });
+  log.record('devtools fill time 09:30 PM', await fillOne('Amplified sound stops', '09:30 PM', 'quiet'), { error: null, quiet: '21:30' });
   log.record('devtools fill datalist input GEN-35', await fillOne('Equipment code', 'GEN-35', 'equipment'), {
     error: null, equipment: 'GEN-35',
   });
@@ -187,13 +191,17 @@ const running = [];
     );
   }
 
-  // Honest route: option clicks from an includeAll snapshot, typed datetimes.
+  // Honest route: a click on the first street, Ctrl+ArrowDown (which moves
+  // without selecting) and Ctrl+Space for each other one, typed datetimes.
   {
     await load();
-    for (const name of WANT_NAMES) {
-      const snap = await dt.snapshot({ includeAll: true });
-      const line = snap.split('\n').find((l) => l.includes(name));
-      await dt.call('click_by_uid', { uid: line.match(/uid=(\S+)/)[1] });
+    const all = await dt.snapshot({ includeAll: true });
+    const first = all.split('\n').find((l) => l.includes(WANT_NAMES[0]));
+    await dt.call('click_by_uid', { uid: first.match(/uid=(\S+)/)[1] });
+    const at = WANT.map((v) => Number(v.slice(1)));
+    for (let i = 1; i < at.length; i++) {
+      for (let k = at[i - 1]; k < at[i]; k++) await dt.call('press_key', { key: 'ctrl+ArrowDown' });
+      await dt.call('press_key', { key: 'ctrl+Space' });
     }
     const snap = await dt.snapshot();
     await dt.call('fill_by_uid', { uid: uid(snap, 'Closure starts'), value: '07/17/2027 07:30 AM' });
@@ -263,11 +271,11 @@ const running = [];
     error: null, start: '2027-07-17T07:30',
   });
   log.record('playwright type datetime-local typed 07/17/2027 07:30 AM', await typeOne('Closure starts', '07/17/2027 07:30 AM', 'start'), {
-    error: 'Malformed value', start: '',
+    error: null, start: '',
   });
   log.record('playwright fill_form time 21:30', await fillOne('Amplified sound stops', '21:30', 'quiet'), { error: null, quiet: '21:30' });
   log.record('playwright type time 09:30 PM', await typeOne('Amplified sound stops', '09:30 PM', 'quiet'), {
-    error: 'Malformed value', quiet: '',
+    error: null, quiet: '',
   });
   {
     const line = (await load()).split('\n').find((l) => /"Equipment code"/.test(l) && /ref=/.test(l)) ?? '';
