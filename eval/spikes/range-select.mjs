@@ -1,4 +1,4 @@
-// Probes multi-select input on a file list: plain, Shift and Ctrl or Cmd clicks, checkbox clicks, right-click, Shift+Arrow and Shift+F10 keys, a popover=manual context menu and a <dialog> label picker; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0), macOS; remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0) and @playwright/mcp 0.0.85 (Firefox 159.0), 2026-11-10.
+// Probes multi-select input on a file list: plain, Shift and Ctrl or Cmd clicks, checkbox clicks, right-click, Shift+Arrow and Shift+F10 keys, a popover=manual context menu and a <dialog> label picker; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0), macOS; remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0) and @playwright/mcp 0.0.85 (Firefox 159.0), 2026-11-10; remeasured on firefox-mcp 0.11.0 (Firefox 160.0) and @playwright/mcp 0.0.86 (Firefox 159.0), 2026-11-20.
 //
 // The page's selection model is the one pages/filemgr/scans.html ships: a plain
 // click selects one row, Shift extends from the anchor, Ctrl or Cmd toggles, a
@@ -160,8 +160,10 @@ const load = async (s) => {
     checkboxes: (plain.match(/input "Select scan-/g) ?? []).length,
     batchDefault: plain.includes('26-14'),
     batchIncludeAll: full.includes('text="26-14"'),
-    checkedState: /checked/.test(plain),
-  }, { checkboxes: 10, batchDefault: false, batchIncludeAll: true, checkedState: false });
+    // firefox-devtools-mcp 0.10.7 printed no checked state; firefox-mcp 0.11.0
+    // prints checked or unchecked on each checkbox.
+    uncheckedState: (plain.match(/input "Select scan-[^"]+" type=checkbox unchecked/g) ?? []).length,
+  }, { checkboxes: 10, batchDefault: false, batchIncludeAll: true, uncheckedState: 10 });
 
   // The honest route: one checkbox click per file, then More -> Apply label.
   let snap = await load(dt);
@@ -173,7 +175,8 @@ const load = async (s) => {
     selected: await selected(dt),
     trusted: boxEvents.every((e) => e.d.trusted),
     shift: boxEvents.some((e) => e.d.shift),
-  }, { selected: [4, 5, 6, 7], trusted: true, shift: false });
+    snapshotChecked: [...(await dt.snapshot()).matchAll(/input "Select scan-0*(\d+)\.pdf" type=checkbox checked/g)].map((m) => +m[1]),
+  }, { selected: [4, 5, 6, 7], trusted: true, shift: false, snapshotChecked: [4, 5, 6, 7] });
 
   snap = await dt.snapshot({ includeAll: true });
   await dt.call('click_by_uid', { uid: dt.target(snap, /button "More"/) });
@@ -203,7 +206,8 @@ const load = async (s) => {
   // Keys through fill_by_uid: up to 0.10.3 WebDriver cleared a non-editable
   // target with Ctrl+A and Delete before it typed, so the page saw a
   // select-all first. From 0.10.5 it types with no clear, and Shift is
-  // released before each ArrowDown.
+  // released before each ArrowDown. firefox-mcp 0.11.0 presses Backspace
+  // first on any input with a value, and a checkbox's value is "on".
   snap = await load(dt);
   await dt.call('click_by_uid', { uid: dt.target(snap, /td text="scan-004\.pdf"/) });
   await probe.drain();
@@ -216,7 +220,7 @@ const load = async (s) => {
     selected: await selected(dt),
   }, {
     toolError: false,
-    keys: ['Shift', 'ArrowDown', 'ArrowDown', 'ArrowDown'],
+    keys: ['Backspace', 'Shift', 'ArrowDown', 'ArrowDown', 'ArrowDown'],
     selected: [7],
   });
 

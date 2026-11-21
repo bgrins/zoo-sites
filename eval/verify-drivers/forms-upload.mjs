@@ -6,12 +6,14 @@
 //
 // Driven entirely through the tool surface: take_snapshot to locate the
 // controls, upload_file_by_uid for the file, click_by_uid for the confirmation
-// checkbox and the Transmit button. Two snapshot gaps shape it:
-//   * a control's `type` never reaches the snapshot, so the file input and the
-//     confirmation checkbox both appear as a bare `input` and have to be told
+// checkbox and the Transmit button. Two snapshot gaps through
+// firefox-devtools-mcp 0.10.7 shape it; 0.11.0 prints a control's type and a
+// checkbox's checked state, closing both, and the driver keeps its route:
+//   * a control's `type` never reached the snapshot, so the file input and the
+//     confirmation checkbox both appeared as a bare `input` and had to be told
 //     apart by position and by the value the browser reports afterwards
 //     (value="C:\fakepath\<name>" for the file input, value="on" for the box);
-//   * a checked checkbox is byte-identical to an unchecked one in the snapshot,
+//   * a checked checkbox was byte-identical to an unchecked one in the snapshot,
 //     so the tick is confirmed through the page's own "Count confirmed" chip.
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';

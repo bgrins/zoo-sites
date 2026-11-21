@@ -1,4 +1,4 @@
-// Probes typing into a contenteditable editor: whether each condition's fill keeps existing content, what beforeinput events an editor's input rules would see, and keyboard text selection; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0).
+// Probes typing into a contenteditable editor: whether each condition's fill keeps existing content, what beforeinput events an editor's input rules would see, and keyboard text selection; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on firefox-mcp 0.11.0 (Firefox 160.0) and @playwright/mcp 0.0.86 (Firefox 159.0), 2026-11-20.
 
 import { findings, page, probeServer, surface } from './lib.mjs';
 
@@ -30,8 +30,10 @@ await log.header(dt, pw);
   const snap = await dt.snapshot();
   await probe.drain();
   await dt.call('fill_by_uid', { uid: dt.target(snap, /"Update body"/), value: '- Monitoring' });
+  // firefox-devtools-mcp 0.10.7 typed straight over the content (12 insertText);
+  // 0.11.0 selects it and presses Backspace first.
   log.record('devtools fill_by_uid on the editor', { ...typed(await probe.drain()), html: await body(dt) }, {
-    beforeinput: 12, inputTypes: ['insertText'], trusted: true, html: '- Monitoring',
+    beforeinput: 13, inputTypes: ['deleteContentBackward', 'insertText'], trusted: true, html: '- Monitoring',
   });
 }
 

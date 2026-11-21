@@ -202,8 +202,9 @@ export const DRIVERS = {
       await goto('/gov/offices.html');
       const snap = await snapshot();
       if (!/iframe/.test(snap)) throw new Error('schedule iframe missing from the snapshot');
-      // On 0.9.15 the walker descends into same-origin frames (0.10.3's default
-      // snapshot stops at the frame, spikes/frames.mjs), but the schedule is a
+      // On 0.9.15 and from 0.11.0 the walker descends into same-origin frames
+      // (0.10.3 to 0.10.7's default snapshot stops at the frame,
+      // spikes/frames.mjs), but the schedule is a
       // <table> nested six levels down in the host page's table soup: table/tr/
       // td are filtered as irrelevant and MAX_DEPTH=10 cuts off what is left,
       // so no cell text reaches the snapshot. contentDocument is the only read.

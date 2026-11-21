@@ -135,7 +135,7 @@ export const TOOL_POLICY = {
     'graded truth outside the home and every checkout. macOS only: on Linux, codex\'s bwrap sandbox does not ' +
     're-open a read entry inside a denied directory, so the preflight fails',
   serverOutput:
-    'firefox-devtools-mcp saves under <its HOME>/.firefox-devtools-mcp (saveTo:true in its output/, and on 0.10.3 ' +
+    'firefox-devtools-mcp saves under <its HOME>/.firefox-mcp (.firefox-devtools-mcp before 0.11.0; saveTo:true in its output/, and from 0.10.3 ' +
     'every absolute saveTo and set_download_behavior\'s downloads), outside the attempt directory, and names the ' +
     'file in its reply; the shell reads it as a serverOutputDirs entry and cannot write it. A --mcp-command server ' +
     'keeps the operator HOME, so a file it saves there is unreadable to the shell',

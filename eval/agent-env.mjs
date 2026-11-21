@@ -325,7 +325,8 @@ async function describeFile(path, name) {
 // output directory is the server's file too. `elsewhere` maps a label to a
 // directory outside the attempt where a server's own tool sends the browser's
 // downloads: firefox-devtools-mcp 0.10.3's set_download_behavior 'allowed'
-// saves to <its HOME>/.firefox-devtools-mcp/output/downloads, or to the folder
+// saves to <its HOME>/.firefox-mcp/output/downloads (.firefox-devtools-mcp
+// before 0.11.0), or to the folder
 // the call names, where 0.9.15 left the browser's download directory in place.
 // Such a file is named `<label>/<name>`. Never throws, like removeTempDir: a
 // file it cannot read is recorded with its error.

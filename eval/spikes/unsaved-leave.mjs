@@ -1,4 +1,4 @@
-// Probes unsaved-leave's shape, a tabbed settings area whose dirty tab registers a beforeunload guard and posts a pagehide beacon: how each condition's navigate, click and dialog tools meet the guard, whether a devtools profile pref restores the prompt, whether a saved note's reference set in a <strong> reaches each snapshot, and that saving before leaving is an honest route on both; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on @playwright/mcp 0.0.85 (Firefox 159.0) and firefox-devtools-mcp 0.10.7 (Firefox 158.0), 2026-11-10.
+// Probes unsaved-leave's shape, a tabbed settings area whose dirty tab registers a beforeunload guard and posts a pagehide beacon: how each condition's navigate, click and dialog tools meet the guard, whether a devtools profile pref restores the prompt, whether a saved note's reference set in a <strong> reaches each snapshot, and that saving before leaving is an honest route on both; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on @playwright/mcp 0.0.85 (Firefox 159.0) and firefox-devtools-mcp 0.10.7 (Firefox 158.0), 2026-11-10; remeasured on firefox-mcp 0.11.0 (Firefox 160.0) and @playwright/mcp 0.0.86 (Firefox 159.0), 2026-11-20.
 
 import { findings, packageVersions, page, probeServer, sleep, surface } from './lib.mjs';
 
@@ -124,7 +124,7 @@ const versions = packageVersions();
     leaveBeacons: count(leaves), acceptDialog: firstLine(accept),
   }, {
     reply: 'click <uid>', at: '/roaming', guardFired: 1, leaveBeacons: 1,
-    acceptDialog: 'ERROR Error: Failed to accept dialog: ',
+    acceptDialog: 'ERROR Error: Failed to accept dialog: BiDi error: "no such alert"',
   });
 
   await dirty(dt);
@@ -161,10 +161,10 @@ const versions = packageVersions();
 
 // Whether the devtools bypass is a profile pref. Firefox's remote agent sets
 // recommended prefs that a user.js value overrides. Neither pref below brings
-// the prompt back while the page's guard still fires, and firefox-devtools-mcp
-// requests no unhandledPromptBehavior capability, which points at WebDriver's
-// default user-prompt handler (accept, for beforeunload) rather than a pref a
-// profile could seed.
+// the prompt back while the page's guard still fires. firefox-mcp 0.11.0
+// requests unhandledPromptBehavior "ignore", which as a string value leaves
+// beforeunload on WebDriver's default handler (accept), so the bypass is the
+// session's, not a pref a profile could seed.
 for (const prefs of [{ 'dom.disable_beforeunload': false }, { 'remote.prefs.recommended': false }]) {
   const dt = await surface('devtools', { prefs: () => prefs });
   const { snap } = await dirty(dt);
@@ -173,7 +173,7 @@ for (const prefs of [{ 'dom.disable_beforeunload': false }, { 'remote.prefs.reco
   const accept = await dt.call('accept_dialog', {});
   log.record(`devtools with ${JSON.stringify(prefs)} seeded: tab link from the dirty tab`, {
     at: await where(dt), guardFired: await guardFired(), acceptDialog: firstLine(accept),
-  }, { at: '/roaming', guardFired: 1, acceptDialog: 'ERROR Error: Failed to accept dialog: ' });
+  }, { at: '/roaming', guardFired: 1, acceptDialog: 'ERROR Error: Failed to accept dialog: BiDi error: "no such alert"' });
   count(leaves);
   await dt.close();
 }

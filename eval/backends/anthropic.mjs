@@ -178,7 +178,7 @@ export const TOOL_POLICY = {
     'MCP server, which run unsandboxed (file:// and the upload tools reach the repository), and copies of the ' +
     'graded truth outside the home and every checkout',
   serverOutput:
-    'firefox-devtools-mcp saves under <its HOME>/.firefox-devtools-mcp (saveTo:true in its output/, an absolute ' +
+    'firefox-devtools-mcp saves under <its HOME>/.firefox-mcp (.firefox-devtools-mcp before 0.11.0; saveTo:true in its output/, an absolute ' +
     'saveTo anywhere inside on 0.9.15 and inside output/ on 0.10.3, whose set_download_behavior saves downloads in ' +
     'output/downloads), outside the attempt directory, and names the file in its reply: a Read allow rule ' +
     'opens that root, under each spelling of a /private path, with no Edit rule and no sandbox write, so it stays ' +

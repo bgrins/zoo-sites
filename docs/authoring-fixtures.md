@@ -220,14 +220,16 @@ to. If a browser tool cannot cope with it, that is a result the eval exists to
 report, not a fixture defect to engineer around.
 
 Do not tune pages to one vendor's snapshot caps; that would hide the differences
-this eval exists to measure. The observed limits of firefox-devtools-mcp 0.10.3
+this eval exists to measure. The observed limits of firefox-mcp 0.11.0
 are in `docs/browser-tool-limits.md`. They help interpret a failure, not decide
 how a site should look, and can change with a tool upgrade.
 
 The best tasks are the ones where a limit changes the strategy a surface needs
 rather than deciding the outcome outright: the agent has to scroll, search, open
-the thing, or read the DOM another way. `shadow-unlock` is the model — it puts the
-control inside a shadow root the walker cannot enter and leaves a real route in.
+the thing, or read the DOM another way. `shadow-unlock` was the model: through
+firefox-devtools-mcp 0.10.7 it put the control inside a shadow root the walker could
+not enter, and left a real route in. From firefox-mcp 0.11.0 the walker enters open
+shadow roots, so the task no longer tests that limit.
 A task no surface can win is weak evidence, because a floor of zero does not
 distinguish a bad tool from a bad agent; but do not fix that by softening the
 page. Fix it by giving the page an honest second route, the way a real site has
@@ -314,7 +316,7 @@ driver in `eval/verify-drivers/` navigates and acts through the same
 correct agent would produce. Read `eval/verify-drivers/probes.mjs` (the driver
 contract), `eval/verify-drivers/lib.mjs` (`until`, `clickToPath`, `uidOf`,
 `snapText`, `bumpCode`, and `addSession`, `findSession`, `addBeacon` for state
-cases) and `eval/verify-drivers/registrar.mjs` (shadowing probe, confirm dead end,
+cases) and `eval/verify-drivers/registrar.mjs` (shadowing probe, a confirm() the driver dismisses,
 uid clicks), write your driver in the same shape, and run
 `node eval/verify.mjs --task <your-id>`. Add `--origins` to drive it with every site
 on its own port, the shape the container serves. That flag maps where the driver

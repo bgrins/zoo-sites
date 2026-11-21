@@ -1,4 +1,4 @@
-// Probes native form controls (date, time, datetime-local, range, select, select[multiple], datalist) through each condition's fill tools; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0) and @playwright/mcp 0.0.85 (Firefox 159.0), 2026-11-10.
+// Probes native form controls (date, time, datetime-local, range, select, select[multiple], datalist) through each condition's fill tools; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0) and @playwright/mcp 0.0.85 (Firefox 159.0), 2026-11-10; remeasured on firefox-mcp 0.11.0 (Firefox 160.0) and @playwright/mcp 0.0.86 (Firefox 159.0), 2026-11-20.
 
 import { findings, page, probeServer, sleep, surface } from './lib.mjs';
 
@@ -58,17 +58,24 @@ await log.header(dt, pw);
   {
     const snap = await dt.snapshot();
     const uid = dt.target(snap, /"Regions"/);
-    // Firefox's select typeahead joins keys typed within 1000ms, so each fill
-    // waits out the previous one, as an agent's turn would.
+    // firefox-devtools-mcp 0.10.7 typed into the select, and Firefox's select
+    // typeahead joins keys typed within 1000ms, so each fill waits out the
+    // previous one, as an agent's turn would.
     const after = async (value) => {
       await sleep(1100);
-      await dt.call('fill_by_uid', { uid, value });
-      return (await values(dt)).many;
+      const r = await dt.call('fill_by_uid', { uid, value });
+      return { error: toolError(r) && (r.match(/has no option [^\n]*/)?.[0] ?? toolError(r)), many: (await values(dt)).many };
     };
+    // 0.10.7 left [West], [North], [North] without an error: typeahead moved to
+    // the option nearest "Nowhere" and "" typed nothing.
     log.record(
       'devtools fill select[multiple] "West", then "Nowhere", then ""',
       [await after('West'), await after('Nowhere'), await after('')],
-      [['West'], ['North'], ['North']]
+      [
+        { error: null, many: ['West'] },
+        { error: 'has no option "Nowhere". Options: North, South, East, West, Central', many: ['West'] },
+        { error: 'has no option "". Options: North, South, East, West, Central', many: ['West'] },
+      ]
     );
   }
   log.record(

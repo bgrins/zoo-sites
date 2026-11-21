@@ -1,4 +1,4 @@
-// Probes a document form POST with no redirect: what a reload and history traversal onto the POST entry do through each condition (resend prompt, re-POST, error); measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0).
+// Probes a document form POST with no redirect: what a reload and history traversal onto the POST entry do through each condition (resend prompt, re-POST, error); measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on firefox-mcp 0.11.0 (Firefox 160.0) and @playwright/mcp 0.0.86 (Firefox 159.0), 2026-11-20.
 
 import { findings, page, probeServer, sleep, surface } from './lib.mjs';
 
@@ -44,9 +44,18 @@ await log.header(dt, pw);
   log.record('devtools reload of a POST result (no reload tool; via script)', {
     postsBeforeAccept: beforeAccept,
     promptAccepted: !failed(accept),
+    bidiError: accept.match(/BiDi error: "([^"]+)"/)?.[1] ?? null,
     postsAfterAccept: posts() - base,
-  }, { postsBeforeAccept: 0, promptAccepted: true, postsAfterAccept: 1 });
+  }, { postsBeforeAccept: 0, promptAccepted: false, bidiError: 'unsupported operation', postsAfterAccept: 0 });
 
+  // Since 0.11.0 BiDi refuses to close the resend prompt (confirmEx), which
+  // then blocks clicks on the page, so the history probe starts from a fresh POST.
+  await dt.navigate(probe.url + '/form');
+  snap = await dt.snapshot();
+  await dt.call('fill_by_uid', { uid: dt.target(snap, /"Account"/), value: 'TA-2' });
+  snap = await dt.snapshot();
+  await dt.call('click_by_uid', { uid: dt.target(snap, /button "Send request"/) });
+  await sleep(1000);
   snap = await dt.snapshot();
   await dt.call('click_by_uid', { uid: dt.target(snap, /"Check status"/) });
   await sleep(1000);

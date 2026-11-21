@@ -51,8 +51,8 @@ export const DRIVERS = {
       );
 
       // Fixture preconditions: each slider carries its own accessible name (a
-      // wrapping label names nothing on our surface) and the Apply button is
-      // reachable from the snapshot.
+      // wrapping label named nothing through firefox-devtools-mcp 0.10.7) and
+      // the Apply button is reachable from the snapshot.
       const snap = await snapshot();
       const sliderUid = (name) => uidOf(snap, `input "${name}"`);
       const sliders = {

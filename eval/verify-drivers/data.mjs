@@ -1454,9 +1454,10 @@ export const DRIVERS = {
         await clickOn('button "Continue removal"', 'the Continue removal button, again');
         await clickOn(`button "Yes, I'm sure"`, 'the dialog confirm button');
         // Screen 3: the digest opt-in is pre-checked, and finishing with it still
-        // on re-subscribes the address instead of removing it. A checkbox reaches
-        // the snapshot as a bare `input ... value="on"` with no checked/unchecked
-        // state, so its state is only readable through evaluate.
+        // on re-subscribes the address instead of removing it. Through
+        // firefox-devtools-mcp 0.10.7 a checkbox reached the snapshot with no
+        // checked/unchecked state (0.11.0 prints it), so the driver reads its
+        // state through evaluate.
         const checkboxes = () =>
           evaluate(() => [...document.querySelectorAll('input[type=checkbox]')].map((box) => ({
             checked: box.checked,

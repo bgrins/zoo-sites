@@ -1,4 +1,4 @@
-// Probes every firefox-devtools-mcp limit and behaviour the docs, the drivers and the devtools-mcp roadmap rely on, one bare page each, and says per build whether the documented behaviour HOLDS or CHANGED, with the value measured; measured on firefox-devtools-mcp 0.10.3 (Firefox 156.0); remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0), 2026-11-10. The six probes whose claims name 0.9.15, and the two of close_firefox_session, which 0.9.15 lacks, print CHANGED on that build; the three whose claims name 0.10.3 print CHANGED on that build.
+// Probes every firefox-devtools-mcp limit and behaviour the docs, the drivers and the devtools-mcp roadmap rely on, one bare page each, and says per build whether the documented behaviour HOLDS or CHANGED, with the value measured; measured on firefox-devtools-mcp 0.10.3 (Firefox 156.0); remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0), 2026-11-10; remeasured on firefox-mcp 0.11.0 (Firefox 160.0), 2026-11-20. A probe whose claim says an earlier version behaved otherwise prints CHANGED on that version, and the two of close_firefox_session, which 0.9.15 lacks, print CHANGED on 0.9.15.
 //
 //   node eval/spikes/probes.mjs [--build [<label>=]<root|dep>]... [--only <ids>]
 //                               [--out <json>] [--compare <baseline.json>]
@@ -71,7 +71,7 @@ const probe = await probeServer({
     `<div id="host"></div><script>document.getElementById('host').attachShadow({ mode: 'open' }).innerHTML = '<button>inside-shadow</button>';</script>`
   ),
   '/iframe': page('Frame', '<iframe title="Inner" src="/iframe-inner"></iframe>'),
-  '/iframe-inner': page('Inner', '<button>frame-button</button>'),
+  '/iframe-inner': page('Inner', `<button onclick="parent.document.body.dataset.r = 'frame-clicked'">frame-button</button>`),
   '/label': page('Label', '<label>Wrapped email <input id="a"></label> <label for="b">For email</label> <input id="b">'),
   '/checkbox': page(
     'Checkbox',
@@ -166,7 +166,7 @@ const probe = await probeServer({
   '/console': page('Console', `<p>console</p><script>function inner() { throw new Error('boom-8812'); } setTimeout(() => inner(), 10);</script>`),
 });
 
-// Each probe: the behaviour as the docs state it for 0.10.3, a measurement
+// Each probe: the behaviour as the docs state it for 0.11.0, a measurement
 // against its probe page, and whether the measurement still shows that
 // behaviour. `holds` returning null marks a probe that only measures.
 const count = (s, re) => (s.match(re) ?? []).length;
@@ -250,9 +250,10 @@ const PROBES = [
     async measure({ go, call, scratch }) {
       await go('/nodes');
       // A relative path lands in the server's cwd, the scratch dir surface()
-      // removes on close. `true` would leave a file under
-      // ~/.firefox-devtools-mcp/output/, and both builds refuse an absolute path
-      // outside ~/.firefox-devtools-mcp (0.10.3 outside its output/).
+      // removes on close. `true` would leave a file under the server's root,
+      // ~/.firefox-mcp/output/ (~/.firefox-devtools-mcp before 0.11.0), and
+      // every build refuses an absolute path outside that root (from 0.10.3,
+      // outside its output/).
       const saved = await call('take_snapshot', { saveTo: 'node-cap-snapshot.txt' });
       const path = saved.match(/saved to:?\s*(\S+)/i)?.[1];
       const full = path ? readFileSync(resolve(scratch, path), 'utf8') : saved;
@@ -305,44 +306,50 @@ const PROBES = [
   },
   {
     id: 'shadow-root',
-    claim: 'the walker never descends into shadow roots',
+    claim: 'the walker descends into an open shadow root (0.10.7 never did)',
     async measure({ go, snap }) {
       await go('/shadow');
       await sleep(100);
       return { present: (await snap()).includes('inside-shadow') };
     },
-    holds: (v) => !v.present,
+    holds: (v) => v.present,
   },
   {
     id: 'iframe-same-origin',
-    claim: 'a same-origin frame is walked only under includeAll (0.9.15 walked it in the default snapshot)',
-    async measure({ go, snap }) {
+    claim:
+      'a same-origin frame is walked in the default snapshot and click_by_uid acts inside it ' +
+      '(0.10.3 to 0.10.7 walked it only under includeAll, and an action on a uid inside it failed after a five second visibility wait)',
+    async measure({ go, snap, call, evaluate, uid }) {
       await go('/iframe');
       await sleep(300);
-      return { present: (await snap()).includes('frame-button'), includeAll: (await snap({ includeAll: true })).includes('frame-button') };
+      const s = await snap();
+      const present = s.includes('frame-button');
+      const includeAll = (await snap({ includeAll: true })).includes('frame-button');
+      const r = await call('click_by_uid', { uid: uid(await snap({ includeAll: true }), /button "frame-button"/) });
+      return { present, includeAll, clickError: r.startsWith('ERROR'), clicked: await evaluate(() => document.body.dataset.r ?? null) };
     },
-    holds: (v) => !v.present && v.includeAll,
+    holds: (v) => v.present && v.includeAll && v.clicked === 'frame-clicked',
   },
   {
     id: 'wrapping-label',
-    claim: 'a wrapping <label> does not name its input; label[for] does',
+    claim: 'a wrapping <label> names its input, as label[for] does (0.10.7 named only the label[for] one)',
     async measure({ go, snap }) {
       await go('/label');
       const inputs = (await snap()).split('\n').filter((l) => / input/.test(l)).map((l) => l.replace(/uid=\S+ /, '').trim());
       return { inputs };
     },
-    holds: (v) => !v.inputs.some((l) => /Wrapped email/.test(l)) && v.inputs.some((l) => /For email/.test(l)),
+    holds: (v) => v.inputs.some((l) => /Wrapped email/.test(l)) && v.inputs.some((l) => /For email/.test(l)),
   },
   {
     id: 'checkbox-state',
-    claim: 'a checked and an unchecked checkbox read the same in the default snapshot',
+    claim: 'the default snapshot marks a checkbox checked or unchecked (0.10.7 printed a checked and an unchecked one the same)',
     async measure({ go, snap }) {
       await go('/checkbox');
       const line = (s, name) => s.split('\n').find((l) => l.includes(`"${name}"`))?.replace(/uid=\S+ /, '').replace(name, '').trim();
       const s = await snap();
       return { checked: line(s, 'Newsletter'), unchecked: line(s, 'Offers') };
     },
-    holds: (v) => v.checked != null && v.checked === v.unchecked,
+    holds: (v) => / checked\b/.test(v.checked ?? '') && / unchecked\b/.test(v.unchecked ?? ''),
   },
   {
     id: 'select-options',
@@ -354,41 +361,56 @@ const PROBES = [
     holds: (v) => !v.present,
   },
   {
+    id: 'select-fill-miss',
+    claim:
+      "fill_by_uid on a select with no option of that value or whole text fails and lists every option's text " +
+      '(0.10.7 typed the value, and typeahead picked the nearest option without an error)',
+    async measure({ go, snap, call, evaluate, uid }) {
+      await go('/select');
+      const r = await call('fill_by_uid', { uid: uid(await snap(), /"Plan"/), value: 'Pro' });
+      return { reply: r.replace(/^ERROR Error: \S+ /, 'ERROR '), value: await evaluate(() => document.getElementById('s').value) };
+    },
+    holds: (v) => /^ERROR/.test(v.reply) && /Basic, Pro annual, Pro monthly/.test(v.reply) && v.value === 'Basic',
+  },
+  {
     id: 'confirm-auto-dismiss',
-    claim: 'window.confirm() is dismissed before the click returns (it returns false) and accept_dialog finds nothing',
+    claim:
+      'window.confirm() stays open after the click, whose reply names it; other tools are refused until accept_dialog, ' +
+      'and confirm() then returns true (0.10.7 dismissed it before the click returned, so it returned false and accept_dialog found nothing)',
     async measure({ go, snap, call, evaluate, uid }) {
       await go('/confirm');
       const click = await call('click_by_uid', { uid: uid(await snap(), /button "Delete"/) });
-      const returned = await evaluate(() => document.body.dataset.r ?? null);
+      const during = await call('evaluate_script', { function: '() => 1' });
       const accept = await call('accept_dialog', {});
-      await call('dismiss_dialog', {});
-      return { clickError: click.startsWith('ERROR'), returned, acceptError: accept.startsWith('ERROR') };
+      const returned = await evaluate(() => document.body.dataset.r ?? null);
+      return { click: click.slice(0, 60), during: during.slice(0, 60), accept: accept.slice(0, 40), returned };
     },
-    holds: (v) => v.returned === 'false' && v.acceptError,
+    holds: (v) => /Dialog opened/.test(v.click) && /dialog is blocking/.test(v.during) && !/^ERROR/.test(v.accept) && v.returned === 'true',
   },
   {
     id: 'alert-auto-dismiss',
-    claim: 'alert() does not block the click that raised it',
+    claim:
+      'alert() blocks the handler that raised it until dismiss_dialog, and the click returns with a reply naming it ' +
+      '(0.10.7 dismissed it at once, so the handler ran on)',
     async measure({ go, snap, call, evaluate, uid }) {
       await go('/alert');
       const click = await call('click_by_uid', { uid: uid(await snap(), /button "Alert"/) });
-      const after = await evaluate(() => document.body.dataset.r ?? null);
+      const during = await call('evaluate_script', { function: '() => document.body.dataset.r ?? null' });
       await call('dismiss_dialog', {});
-      return { clickError: click.startsWith('ERROR'), after };
+      return { click: click.slice(0, 60), during: during.slice(0, 60), after: await evaluate(() => document.body.dataset.r ?? null) };
     },
-    holds: (v) => v.after === 'after-alert',
+    holds: (v) => /Dialog opened/.test(v.click) && /dialog is blocking/.test(v.during) && v.after === 'after-alert',
   },
   {
     id: 'prompt-auto-dismiss',
-    claim: 'prompt() is dismissed at once and returns null',
+    claim: "prompt() stays open until accept_dialog, and returns its promptText (0.10.7 dismissed it at once and it returned null)",
     async measure({ go, snap, call, evaluate, uid }) {
       await go('/prompt');
-      await call('click_by_uid', { uid: uid(await snap(), /button "Prompt"/) });
-      const returned = await evaluate(() => document.body.dataset.r ?? null);
-      await call('dismiss_dialog', {});
-      return { returned };
+      const click = await call('click_by_uid', { uid: uid(await snap(), /button "Prompt"/) });
+      const accept = await call('accept_dialog', { promptText: 'Ada' });
+      return { click: click.slice(0, 60), accept: accept.slice(0, 40), returned: await evaluate(() => document.body.dataset.r ?? null) };
     },
-    holds: (v) => v.returned === 'null',
+    holds: (v) => /Dialog opened/.test(v.click) && v.returned === 'Ada',
   },
   {
     id: 'drag-html5',
@@ -537,7 +559,7 @@ const PROBES = [
   },
   {
     id: 'click-reply',
-    claim: 'a click replies with its uid alone: no URL, title or dialog state',
+    claim: 'a click on a link replies with its uid alone: no URL or title (from 0.11.0 a click that opens a dialog names it instead; see confirm-auto-dismiss)',
     async measure({ go, snap, call, uid }) {
       await go('/link');
       const reply = await call('click_by_uid', { uid: uid(await snap(), /(?:link|a) "Go to landing"/) });

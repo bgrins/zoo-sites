@@ -186,9 +186,10 @@ export function routes(ctx) {
       });
     }
 
-    // Route telemetry for the Delete button's native confirm, detail-only:
-    // on our surface confirm auto-returns false, and this counter is the
-    // only server-side trace the dead end leaves.
+    // Route telemetry for the Delete button's native confirm, detail-only.
+    // firefox-devtools-mcp through 0.10.7 made confirm return false at once,
+    // a dead end this counter is the only server-side trace of; from 0.11.0
+    // the dialog stays open for the agent to accept or dismiss.
     if (req.method === 'POST' && pathname0 === '/api/registrar/confirm-choice') {
       let payload;
       try {

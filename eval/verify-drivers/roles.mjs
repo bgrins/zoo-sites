@@ -9,8 +9,9 @@
 // Three measured properties of our surface this driver is written around:
 //   - <legend> never reaches the snapshot, so the four facet groups arrive as
 //     one flat list of 21 checkboxes with no group boundary;
-//   - a native checkbox's checked state never reaches the snapshot either, so
-//     the applied-filter chips are the only readable record of what is on;
+//   - a native checkbox's checked state did not reach the snapshot through
+//     firefox-devtools-mcp 0.10.7 (0.11.0 prints it), so the driver reads the
+//     applied-filter chips as the record of what is on;
 //   - every href is absolutized and cut at 27 chars, so a result row's vacancy
 //     id is unreadable and the link has to be clicked rather than followed.
 

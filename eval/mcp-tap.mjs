@@ -338,7 +338,7 @@ const ERROR_KEEP = 4000;
 // downloads/ and playwright-output/, hold only what a surface wrote.
 const REPLY_LINK = /\[([^\]\n]{1,80})\]\(([^)\s]+)\)/g;
 const SAVED_TO = /\bsaved to:?\s+(\S+)/gi;
-const SURFACE_OUTPUT = /(?:^|\/)(?:downloads|playwright-output)\/|\/\.firefox-devtools-mcp\/output\//;
+const SURFACE_OUTPUT = /(?:^|\/)(?:downloads|playwright-output)\/|\/\.firefox(?:-devtools)?-mcp\/output\//;
 const filePath = (raw) => {
   const p = String(raw ?? '')
     .trim()
@@ -359,7 +359,7 @@ const READ_ONLY_TOOLS = new Set([
   'list_pages', 'take_snapshot', 'resolve_uid_to_selector', 'list_network_requests', 'get_network_request',
   'list_console_messages', 'screenshot_page', 'screenshot_by_uid', 'list_downloads', 'get_firefox_output',
   'get_firefox_info', 'profiler_is_active', 'list_scripts', 'get_script_source', 'get_logpoint_results', 'get_page_text',
-  'print_page',
+  'print_page', 'list_extensions',
   'browser_console_messages', 'browser_find', 'browser_network_requests', 'browser_network_request',
   'browser_take_screenshot', 'browser_snapshot', 'browser_wait_for',
 ]);

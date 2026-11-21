@@ -1,4 +1,4 @@
-// Probes iframes: whether each condition's snapshot descends into a same-origin and a cross-origin frame, and whether it can type and click inside the cross-origin one; measured on firefox-devtools-mcp 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0).
+// Probes iframes: whether each condition's snapshot descends into a same-origin and a cross-origin frame, and whether it can type and click inside the cross-origin one; measured on firefox-devtools-mcp 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on firefox-mcp 0.11.0 (Firefox 160.0) and @playwright/mcp 0.0.86 (Firefox 159.0), 2026-11-20.
 //
 // The page is served on 127.0.0.1 and the cross-origin frame on localhost at
 // the same port: a different host, so a different origin and site, with one
@@ -49,7 +49,8 @@ for (const s of [dt, pw]) {
     })
   );
   // firefox-devtools-mcp 0.9.15 walked a same-origin frame in the default
-  // snapshot; 0.10.3 walks it only under includeAll.
+  // snapshot; 0.10.3 to 0.10.7 walked it only under includeAll; firefox-mcp
+  // 0.11.0 walks it in the default snapshot again.
   const all = s.name === 'devtools' ? await s.snapshot({ includeAll: true }) : null;
   log.record(`${s.name} snapshot and script reach into frames`, {
     sameOriginText: /Next slot/.test(snap),
@@ -57,7 +58,7 @@ for (const s of [dt, pw]) {
     crossOriginField: /Card number/.test(snap),
     contentDocument: reach,
   }, s.name === 'devtools'
-    ? { sameOriginText: false, sameOriginTextIncludeAll: true, crossOriginField: false, contentDocument: ['document', 'null'] }
+    ? { sameOriginText: true, sameOriginTextIncludeAll: true, crossOriginField: false, contentDocument: ['document', 'null'] }
     : { sameOriginText: true, crossOriginField: true, contentDocument: ['document', 'null'] });
 
   if (s.name === 'devtools') continue;

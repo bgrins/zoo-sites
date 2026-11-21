@@ -140,10 +140,11 @@ export const DRIVERS = {
       }
 
       // Layer 2, collapsed legitimate-interest section: the rows are not in the
-      // page until the disclosure is opened (they come from /api/consent/tier),
-      // and their checked state never reaches the snapshot at all (every
-      // checkbox reports value="on"), so the "N of 3 enabled" counter is the
-      // only tell.
+      // page until the disclosure is opened (they come from /api/consent/tier).
+      // Through firefox-devtools-mcp 0.10.7 their checked state never reached
+      // the snapshot (every checkbox reported value="on"), so the "N of 3
+      // enabled" counter was the only tell; from 0.11.0 the snapshot marks each
+      // one checked or unchecked, and the driver still reads the counter.
       const disc = uidOf(await snapshot(), 'button "Legitimate interest \\(3\\)"');
       if (!disc) throw new Error('no legitimate-interest disclosure in the manage layer');
       await mcp('click_by_uid', { uid: disc });

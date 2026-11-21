@@ -59,9 +59,9 @@ export const DRIVERS = {
       await until('the Unsaved changes pill', pillShown, { tries: 20 });
 
       // The trap: the Roaming tab link with the edit unsaved. firefox-devtools-mcp
-      // 0.9.15 and 0.10.3 surface no beforeunload prompt, so the click just navigates
-      // (eval/spikes/unsaved-leave.mjs); a build that holds the prompt open gets
-      // it accepted here, which leaves the edit behind the same way.
+      // 0.9.15 through 0.11.0 surface no beforeunload prompt, so the click just
+      // navigates (eval/spikes/unsaved-leave.mjs); a build that holds the prompt
+      // open gets it accepted here, which leaves the edit behind the same way.
       await mcp('click_by_uid', { uid: await tabLink('Roaming')() });
       await Promise.resolve(mcp('accept_dialog', {})).catch(() => {});
       const left = await until('the dirty Usage tab to be left for Roaming', async () =>

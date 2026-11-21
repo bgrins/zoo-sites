@@ -1,4 +1,4 @@
-// Probes the native-permit form shape end to end on each condition: a select[multiple] of 14 streets, two datetime-local fields, a time field with step=900 and a datalist input, submitted as a real form POST whose parsed body the probe server records; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0) and @playwright/mcp 0.0.85 (Firefox 159.0), 2026-11-10.
+// Probes the native-permit form shape end to end on each condition: a select[multiple] of 14 streets, two datetime-local fields, a time field with step=900 and a datalist input, submitted as a real form POST whose parsed body the probe server records; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on firefox-devtools-mcp 0.10.7 (Firefox 158.0) and @playwright/mcp 0.0.85 (Firefox 159.0), 2026-11-10; remeasured on firefox-mcp 0.11.0 (Firefox 160.0) and @playwright/mcp 0.0.86 (Firefox 159.0), 2026-11-20.
 //
 // It runs one browser at a time. controls.mjs measures each control alone;
 // this spike measures what reaches a server through each condition's honest
@@ -132,6 +132,16 @@ const running = [];
       error: null, streets: [WANT[0]],
     });
   }
+  // firefox-devtools-mcp 0.10.7 typed the joined names into the listbox and
+  // typeahead landed on the first; firefox-mcp 0.11.0 matches an option's
+  // value or whole text, so the call fails and lists the options.
+  {
+    const snap = await load();
+    const r = await dt.call('fill_by_uid', { uid: uid(snap, 'Streets to close'), value: WANT_NAMES.join(', ') });
+    log.record('devtools fill select[multiple] four names joined', {
+      error: r.match(/has no option "[^"]*"\. Options: [^,]+/)?.[0] ?? toolError(r), streets: (await values(dt)).streets,
+    }, { error: `has no option "${WANT_NAMES.join(', ')}". Options: ${STREETS[0]}`, streets: [] });
+  }
 
   const fillOne = async (label, value, key) => {
     const snap = await load();
@@ -156,10 +166,11 @@ const running = [];
     error: null, equipment: 'GEN-35',
   });
 
-  // Naive route: one fill per field, ISO datetimes, then Continue.
+  // Naive route: one fill per street, then per field, ISO datetimes, then
+  // Continue. Each select fill replaces the selection, so the last street wins.
   {
     const snap = await load();
-    await dt.call('fill_by_uid', { uid: uid(snap, 'Streets to close'), value: WANT_NAMES.join(', ') });
+    for (const name of WANT_NAMES) await dt.call('fill_by_uid', { uid: uid(snap, 'Streets to close'), value: name });
     await dt.call('fill_by_uid', { uid: uid(snap, 'Closure starts'), value: '2027-07-17T07:30' });
     await dt.call('fill_by_uid', { uid: uid(snap, 'Closure ends'), value: '2027-07-17T19:45' });
     await dt.call('fill_by_uid', { uid: uid(snap, 'Amplified sound stops'), value: '21:30' });
@@ -168,7 +179,7 @@ const running = [];
     await dt.call('click_by_uid', { uid: dt.target(snap, /button "Continue"/) });
     await sleep(500);
     log.record('devtools naive route: what the server parsed', posts.length > n ? await lastPost() : null, {
-      streets: [WANT[0]], start: '7071-02-02T07:07', end: '7071-02-02T07:19', quiet: '21:30', equipment: 'GEN-35',
+      streets: [WANT[3]], start: '7071-02-02T07:07', end: '7071-02-02T07:19', quiet: '21:30', equipment: 'GEN-35',
       dest: 'document', mode: 'navigate',
     });
     // The devtools walker keeps text only from div, span, p, li, ul and ol
@@ -181,7 +192,7 @@ const running = [];
     const echoAll = await dt.snapshot({ includeAll: true });
     log.record(
       'devtools <dl> check page, default snapshot: tags carrying the parsed start, street lines',
-      [tagsOf(echo, '7071-02-02T07:07'), tagsOf(echo, WANT_NAMES[0]).length],
+      [tagsOf(echo, '7071-02-02T07:07'), tagsOf(echo, WANT_NAMES[3]).length],
       [[], 1]
     );
     log.record(

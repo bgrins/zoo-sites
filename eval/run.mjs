@@ -1114,7 +1114,8 @@ function mcpStdioFor(condition, { downloadsDir, privateDir, profileDir = null, u
   return spec && tapLog ? tapSpec(spec, tapLog) : spec;
 }
 
-// firefox-devtools-mcp's saveTo root is ~/.firefox-devtools-mcp, so it runs
+// firefox-devtools-mcp's saveTo root is ~/.firefox-mcp (~/.firefox-devtools-mcp
+// before 0.11.0, which renames the old root to the new one), so it runs
 // with a HOME of the attempt's own; stored runs found that directory shared by
 // every attempt and holding files from earlier days. Its WebDriver's driver
 // cache stays the operator's, since an empty one downloads geckodriver, and
@@ -1129,21 +1130,27 @@ function devtoolsServerEnv(privateDir) {
 
 // Where a condition's server saves files outside the attempt directory and
 // names them in its replies, for the backend to let the agent read and not
-// write: firefox-devtools-mcp saves under <its HOME>/.firefox-devtools-mcp,
-// saveTo:true in its output/. An absolute saveTo lands anywhere inside that
-// root on 0.9.15 and only inside output/ from 0.10.3, which also sends a
-// set_download_behavior 'allowed' download to output/downloads; the root
-// covers both builds. playwright-mcp saves inside the attempt directory, and
+// write: firefox-devtools-mcp saves under <its HOME>/.firefox-mcp, and
+// .firefox-devtools-mcp before 0.11.0, saveTo:true in its output/. An absolute
+// saveTo lands anywhere inside that root on 0.9.15 and only inside output/ from
+// 0.10.3, which also sends a set_download_behavior 'allowed' download to
+// output/downloads; the two roots cover every build. Neither is created here,
+// since 0.11.0 would rename a legacy one. playwright-mcp saves inside the attempt directory, and
 // a --mcp-command server keeps the operator's HOME, which the agent may not
 // read.
 const serverOutputDirsFor = (condition, privateDir) =>
-  builtInDevtools(condition) ? [join(devtoolsHome(privateDir), '.firefox-devtools-mcp')] : [];
+  builtInDevtools(condition)
+    ? [join(devtoolsHome(privateDir), '.firefox-mcp'), join(devtoolsHome(privateDir), '.firefox-devtools-mcp')]
+    : [];
 // The downloads a condition's own tool can send outside the attempt's
 // downloads directory, by the label the row names them under
 // (agent-env.mjs attemptDownloads).
 const serverDownloadDirsFor = (condition, privateDir) =>
   builtInDevtools(condition)
-    ? { '~/.firefox-devtools-mcp/output/downloads': join(devtoolsHome(privateDir), '.firefox-devtools-mcp', 'output', 'downloads') }
+    ? {
+        '~/.firefox-mcp/output/downloads': join(devtoolsHome(privateDir), '.firefox-mcp', 'output', 'downloads'),
+        '~/.firefox-devtools-mcp/output/downloads': join(devtoolsHome(privateDir), '.firefox-devtools-mcp', 'output', 'downloads'),
+      }
     : {};
 
 function serverSpecFor(condition, { downloadsDir, privateDir, profileDir, userAgent }) {
@@ -2555,7 +2562,7 @@ function buildMeta(startedAt, selected, env, tools, taskHashes) {
         '<attempt dir>/downloads, or playwright-mcp\'s --output-dir <attempt dir>/playwright-output; the agent\'s ' +
         'sandbox denies it writes to either (agent-env.mjs serverDirs); recorded on the row without the servers\' ' +
         'own files, a file the agent named in a tool call or a reply said it saved, with what firefox-devtools-mcp\'s ' +
-        'set_download_behavior sent to <its HOME>/.firefox-devtools-mcp/output/downloads or the folder its reply named ' +
+        'set_download_behavior sent to <its HOME>/.firefox-mcp/output/downloads (.firefox-devtools-mcp before 0.11.0) or the folder its reply named ' +
         '(0.10.3), each named under its folder',
       ...(HEADED ? { browserProfile: 'seeded per attempt with its grid cell' } : {}),
       env: Object.fromEntries(BACKEND_NAMES.map((n) => [n, Object.keys(agentEnvFor(n)).sort()])),
@@ -2564,7 +2571,7 @@ function buildMeta(startedAt, selected, env, tools, taskHashes) {
       shellStubs: SHIMMED_COMMANDS,
       devtoolsHome:
         'fresh per attempt, outside the agent\'s directory; SE_CACHE_PATH keeps the WebDriver cache; its ' +
-        '.firefox-devtools-mcp, where saveTo saves (output/ on 0.10.3), is the backend\'s serverOutputDirs, readable ' +
+        '.firefox-mcp (.firefox-devtools-mcp before 0.11.0), where saveTo saves (output/ from 0.10.3), is the backend\'s serverOutputDirs, readable ' +
         'and not writable by the agent',
       browserTag: {
         how: 'each attempt\'s browser sends the preflight user agent plus a space and 8 hex digits',

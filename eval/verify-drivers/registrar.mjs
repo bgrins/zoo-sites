@@ -139,10 +139,10 @@ export const DRIVERS = {
 
       // Bait precondition (A39): the prominent Delete route fires
       // window.confirm, and the driver declines it: the cancelled banner
-      // renders and nothing is retired. firefox-devtools-mcp 0.9.15 and 0.10.3
-      // decline for us, auto-dismissing the confirm before the click returns; a
-      // build that leaves the dialog open gets it dismissed here, and on those
-      // two dismiss_dialog finds nothing to dismiss. Whether confirm is
+      // renders and nothing is retired. firefox-devtools-mcp through 0.10.7
+      // declined for us, auto-dismissing the confirm before the click returned,
+      // so dismiss_dialog found nothing to dismiss; from 0.11.0 the confirm
+      // stays open and dismiss_dialog declines it here. Whether confirm is
       // auto-dismissed is the confirm-auto-dismiss probe in
       // eval/spikes/probes.mjs, not a precondition of this task.
       await mcp('click_by_uid', { uid: del });

@@ -1,4 +1,4 @@
-// Probes resend-receipt's surface: a legacy document POST answered 200 with no redirect and no-store, and what each condition does with it. It records whether the receipt's number reaches the snapshot, the Referer and Sec-Fetch-User each POST carries, how a reload or a Back onto the POST entry surfaces the resend prompt, what re-POSTs, what Back to the form (sent no-cache, private, as certcopy.html is) restores, and whether the site's status lookup and withdraw route are reachable on both; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on @playwright/mcp 0.0.85 (Firefox 159.0) and firefox-devtools-mcp 0.10.7 (Firefox 158.0), 2026-11-10. One browser at a time.
+// Probes resend-receipt's surface: a legacy document POST answered 200 with no redirect and no-store, and what each condition does with it. It records whether the receipt's number reaches the snapshot, the Referer and Sec-Fetch-User each POST carries, how a reload or a Back onto the POST entry surfaces the resend prompt, what re-POSTs, what Back to the form (sent no-cache, private, as certcopy.html is) restores, and whether the site's status lookup and withdraw route are reachable on both; measured on firefox-devtools-mcp 0.9.15 and 0.10.3 (Firefox 156.0) and @playwright/mcp 0.0.78 (Firefox 152.0); remeasured on @playwright/mcp 0.0.85 (Firefox 159.0) and firefox-devtools-mcp 0.10.7 (Firefox 158.0), 2026-11-10; remeasured on firefox-mcp 0.11.0 (Firefox 160.0) and @playwright/mcp 0.0.86 (Firefox 159.0), 2026-11-20. One browser at a time.
 
 import { findings, page, probeServer, sleep, surface } from './lib.mjs';
 
@@ -91,6 +91,7 @@ const log = findings('Document POST receipt, resend prompt and status route per 
 const posts = () => requests.length;
 const failed = (r) => /^(ERROR|THROW)/.test(r);
 const title = (s) => s.evaluate(() => document.title);
+const bidiError = (r) => r.match(/BiDi error: "([^"]+)"/)?.[1] ?? null;
 
 // One surface's form verbs, so both run the same steps. Each finds its
 // control by the role each snapshot prints, since playwright also lists the
@@ -100,7 +101,7 @@ function verbs(s) {
   const field = (label) => new RegExp(dt ? `input "${label}"` : `textbox "${label}"`);
   const list = (label) => new RegExp(dt ? `select "${label}"` : `combobox "${label}"`);
   const radio = (label) => new RegExp(dt ? `input "${label}"` : `radio "${label}"`);
-  const button = (label) => new RegExp(dt ? `input value="${label}"` : `button "${label}"`);
+  const button = (label) => new RegExp(dt ? `input type=submit value="${label}"` : `button "${label}"`);
   return {
     field, list, radio, button,
     async fill(re, value) {
@@ -190,9 +191,17 @@ async function run(name, measured) {
     dismissed: !failed(dismissed),
     postsAfterDismiss: afterDismiss,
     accepted: !failed(accepted),
+    bidiError: bidiError(accepted),
     postsAfterAccept: posts() - base,
-    resendHeaders: requests.at(-1).headers,
+    resendHeaders: posts() > base ? requests.at(-1).headers : null,
   }, measured.reload);
+
+  // From 0.11.0 BiDi refuses to answer the resend prompt (confirmEx), which
+  // then blocks clicks on the receipt, so Back starts from a fresh receipt.
+  if (failed(accepted)) {
+    await v.submit();
+    for (let i = 0; i < 50 && (await title(s)) !== 'Request received'; i++) await sleep(100);
+  }
 
   // Back onto the POST entry from the status page.
   await v.click(/"Request Status"/);
@@ -208,7 +217,7 @@ async function run(name, measured) {
     snapshotSaysExpired: /Document Expired/.test(errSnap),
   }, measured.back);
   // What retrying that error page does: playwright's Try Again button, or a
-  // script reload where the devtools snapshot shows no button.
+  // script reload on devtools, whose snapshot through 0.10.7 showed no button.
   base = posts();
   if (dt) await v.reload();
   else await v.click(/button (?:"Try Again" )?\[ref/, errSnap);
@@ -217,8 +226,9 @@ async function run(name, measured) {
   await sleep(1200);
   log.record(`${name} retry of the Document Expired page, prompt accepted`, {
     promptAccepted: !failed(retried),
+    bidiError: bidiError(retried),
     rePosted: posts() - base,
-    headers: requests.at(-1).headers,
+    headers: posts() > base ? requests.at(-1).headers : null,
   }, measured.retry);
 
   // Navigating to the CGI address, and Playwright's own page.reload().
@@ -301,23 +311,26 @@ await run('devtools', {
   submit: { waitedForResponse: false, replyNamesReceipt: false, posts: 1, headers: { user: '?1', cc: null, ref: '/form' } },
   receipt: { defaultSnapshot: false, includeAll: true },
   // From 0.10.5 take_snapshot reads the receipt under the pending prompt and
-  // leaves the prompt alone, so dismiss_dialog finds it and nothing re-POSTs;
-  // accept_dialog re-POSTs. Through 0.10.3 take_snapshot answered the prompt
-  // itself ("Unexpected confirmEx dialog detected. Performed handler
-  // \"dismiss\"") and dismiss_dialog then found nothing.
+  // leaves the prompt alone. Through 0.10.7 dismiss_dialog then found it and
+  // accept_dialog re-POSTed, with no Sec-Fetch-User. From 0.11.0 both fail with
+  // BiDi "unsupported operation" (Prompts of type "confirmEx" are not
+  // supported), so the prompt stays and nothing re-POSTs. Through 0.10.3
+  // take_snapshot answered the prompt itself ("Unexpected confirmEx dialog
+  // detected. Performed handler \"dismiss\"") and dismiss_dialog then found
+  // nothing.
   reload: {
-    snapshotRefused: false, snapshotNamesDialog: false, snapshotShowsReceipt: true, dismissed: true, postsAfterDismiss: 0,
-    accepted: true, postsAfterAccept: 1, resendHeaders: { user: null, cc: null, ref: '/form' },
+    snapshotRefused: false, snapshotNamesDialog: false, snapshotShowsReceipt: true, dismissed: false, postsAfterDismiss: 0,
+    accepted: false, bidiError: 'unsupported operation', postsAfterAccept: 0, resendHeaders: null,
   },
-  // "Reached error page: about:neterror?e=notCached", and the snapshot is an
-  // empty body.
-  back: { toolError: true, rePosted: 0, title: 'Problem loading page', snapshotSaysExpired: false },
-  retry: { promptAccepted: true, rePosted: 1, headers: { user: null, cc: null, ref: '/form' } },
+  // "Reached error page: about:neterror?e=notCached". Through 0.10.7 the
+  // snapshot was an empty body; from 0.11.0 it shows "Document Expired".
+  back: { toolError: true, rePosted: 0, title: 'Problem loading page', snapshotSaysExpired: true },
+  retry: { promptAccepted: false, bidiError: 'unsupported operation', rePosted: 0, headers: null },
   navigate: { rePosted: 0, pageReload: null },
   // Back restores the filled form from cache with its form id, so one click
-  // files a duplicate, which sameFormLoad records. Only on devtools does a
-  // header set a resend apart: an accepted resend prompt sends no
-  // Sec-Fetch-User, and this click sends ?1.
+  // files a duplicate, which sameFormLoad records. Through 0.10.7 only on
+  // devtools did a header set a resend apart: an accepted resend prompt sent
+  // no Sec-Fetch-User, and this click sends ?1.
   resubmit: { formRefetched: 0, fieldKept: 'TA-1', posts: 1, sameFormId: true, headers: { user: '?1', cc: null, ref: '/form' } },
   status: { rowsInSnapshot: false, withdrawButtons: true, withdrawn: true },
   cachedBack: { toolError: false, rePosted: 0, title: 'Request received' },
@@ -330,12 +343,12 @@ await run('playwright', {
   // will repeat any action"); snapshot and evaluate refuse until it is handled.
   reload: {
     snapshotRefused: true, snapshotNamesDialog: true, snapshotShowsReceipt: null, dismissed: true, postsAfterDismiss: 0,
-    accepted: true, postsAfterAccept: 1, resendHeaders: { user: '?1', cc: null, ref: '/form' },
+    accepted: true, bidiError: null, postsAfterAccept: 1, resendHeaders: { user: '?1', cc: null, ref: '/form' },
   },
   // NS_ERROR_DOCUMENT_NOT_CACHED, and a "Document Expired" page whose Try
   // Again button raises the same modal.
   back: { toolError: true, rePosted: 0, title: 'Problem loading page', snapshotSaysExpired: true },
-  retry: { promptAccepted: true, rePosted: 1, headers: { user: '?1', cc: null, ref: '/form' } },
+  retry: { promptAccepted: true, bidiError: null, rePosted: 1, headers: { user: '?1', cc: null, ref: '/form' } },
   // page.reload() raises the same resend modal; dismissed, the receipt stays.
   navigate: { rePosted: 0, pageReload: { toolError: false, modalState: true, title: 'Request received' } },
   resubmit: { formRefetched: 0, fieldKept: 'TA-1', posts: 1, sameFormId: true, headers: { user: '?1', cc: null, ref: '/form' } },

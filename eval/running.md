@@ -407,7 +407,7 @@ conditions or from its pin:
 | PDF viewer | pdf.js on | pref `pdfjs.disabled=false` via `--pref`, already the release default; on Playwright's build, a policy (below) | the same pref via `firefoxUserPrefs`, which overrides the `playwright.cfg` that turns pdf.js off |
 
 **The Firefox build is pinned only on request.** By default `firefox-devtools-mcp`
-drives the installed Firefox (158.0 on 2026-11-10) and playwright-mcp its own patched
+drives the installed Firefox (160.0 on 2026-11-20) and playwright-mcp its own patched
 build (159.0), so a cross-tool comparison compares two browsers as well. The reports
 say so: `ENVIRONMENT MISMATCH` in `report.md` and `ENV-MISMATCH` in the A/B report name
 each arm's build, by version and build ID, since two builds can report one version, and
@@ -489,19 +489,19 @@ and such a run raises no `EVAL-DIRTY`; a run that does quotes the hash on that l
 that hold its tools. Its `tools` holds what the preflight's tools/list returned (count,
 names, schema characters, hash) and `tools.instructions` the size and hash of the
 instructions the server's initialize reply carried, null for none. firefox-devtools-mcp
-0.9.15 sends none, 0.10.3 sends 1,697 characters and 0.10.7 sends 1,729, with 44 tools
-in 21,920 schema characters on 0.9.15, 48 in 26,687 on 0.10.3 and 49 in 27,395 on 0.10.7. The instructions reach the model as the tool
+0.9.15 sends none, 0.10.3 sends 1,697 characters, 0.10.7 1,729 and 0.11.0 1,736, with 44 tools
+in 21,920 schema characters on 0.9.15, 48 in 26,687 on 0.10.3, 49 in 27,395 on 0.10.7 and 50 in 28,058 on 0.11.0. The instructions reach the model as the tool
 definitions do, and each backend delivers them its own way (`spikes/instructions.mjs`,
 which runs both CLIs against a fake loopback API and pays nothing). The Claude CLI sends
 them once, as a system message headed "# MCP Server Instructions" after the prompt, and
 every later request carries that message with the rest of the conversation. Codex
-0.167.1's first request carries only their first line, cut to 250 characters, in a
+0.171.0's first request, like 0.167.1's, carries only their first line, cut to 250 characters, in a
 developer message that lists the deferred tool namespaces. In code mode codex opens each
 of the server's `ALL_TOOLS` descriptions with the whole instructions, so a script that
 prints the catalog prints them once per tool. All 132 stored codex firefox-devtools-mcp rows ran such a script, printing the
 firefox tools' descriptions. Printing every firefox tool's entry gives 22,409 characters,
-whole, on 0.9.15, 27,432 tokens on 0.10.3 and 28,445 on 0.10.7, which codex cuts to its
-10,000-token output budget, leaving 18 entries (of 48 on 0.10.3, of 49 on 0.10.7). The preflight
+whole, on 0.9.15, 27,432 tokens on 0.10.3, 28,445 on 0.10.7 and 29,135 on 0.11.0, which codex cuts to its
+10,000-token output budget, leaving 18 entries (of 48 on 0.10.3, 49 on 0.10.7, 50 on 0.11.0). The preflight
 prints all three sizes, report.md's build table and the A/B report's validity block show
 them, and each tap log's `initialize` record carries the instructions' size and hash.
 
@@ -553,10 +553,10 @@ sees only what the script prints. That changes what a codex number measures:
 - Codex cuts an exec's whole output past a token budget (10,000 unless the script's
   first-line `// @exec:` pragma sets `max_output_tokens`) and marks the cut `Warning:
   truncated output` before the model sees it. The tap records the full reply.
-- On firefox-devtools-mcp 0.10.3 and 0.10.7 that budget hides most of the catalog. Codex opens
+- On firefox-devtools-mcp 0.10.3 to 0.11.0 that budget hides most of the catalog. Codex opens
   every one of the server's `ALL_TOOLS` descriptions with the server's instructions, so
   a script that prints the firefox tools' entries prints 0.10.3's instructions once per
-  tool, and codex cuts the print to 18 entries (of 48 on 0.10.3, of 49 on 0.10.7) ("The run records the code it
+  tool, and codex cuts the print to 18 entries (of 48 on 0.10.3, 49 on 0.10.7, 50 on 0.11.0) ("The run records the code it
   ran" above gives the sizes, which `spikes/instructions.mjs` measures). 0.9.15 sends no
   instructions, and its 44 entries print whole, so a codex comparison of the two builds
   carries a catalog the 0.10.3 arm saw in part. The cut costs the agent: on the full
